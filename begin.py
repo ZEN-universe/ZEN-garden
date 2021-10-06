@@ -14,7 +14,7 @@ import os
 import logging
 import numpy as np
 import pandas as pd
-import config
+import modelSettings
 import core.model as ValueChain
 
 # SETUP LOGGER

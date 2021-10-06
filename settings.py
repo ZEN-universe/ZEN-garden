@@ -7,24 +7,25 @@
 #                                        ETH Zurich, September 2021
 
 # ======================================================================================================================
-#                                               DEFAULT CONFIGURATION
+#                                               MODEL SETTINGS
+# adjust model settings here
 # ======================================================================================================================
-# TODO description of file content
+from data import defaultSettings
 
 # ANALYSIS FRAMEWORK
-analysis = dict()
+analysis = defaultSettings.analysis
 analysis['objective'] = 'minimum-cost'                                                 # objective function
 analysis['technologyApproximation'] = 'linear'                                         # technology approximation
 analysis['timeHorizon'] = 25                                                           # length of time horizon in years
 analysis['discountRate'] = 0.06                                                        # discount rate
 
 # TOPOLOGY OF THE VALUE CHAIN SYSTEM
-system = dict()
+system = defaultSettings.system
 system['setCarriers'] = ['electricity', 'gas', 'hydrogen', 'biomass', 'CO2']           # set of energy carriers
 system['setConversion'] = ['Electrolysis', 'SMR', 'b_SMR', 'b_Gasification']           # set of conversion technologies
 system['setStorage'] = ['CO2_storage']                                                 # set of storage technologies
 
 # SOLVER SETTINGS
-solver = dict()                                                                         # solver options:
+solver = defaultSettings.solver                                                         # solver options:
 solver['name'] = 'gurobi',                                                              # solver name
 solver['gap'] = 0.01                                                                    # gap to optimality
