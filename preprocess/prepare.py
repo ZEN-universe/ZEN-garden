@@ -14,7 +14,7 @@ import os
 import pandas as pd
 import preprocess.auxiliary.initialise as init
 import preprocess.auxiliary.read_data as read
-import preprocess.auxiliary.compute_from_data as compute
+import preprocess.compute_from_data as compute
 
 class Prepare:
     
@@ -63,6 +63,7 @@ class Prepare:
     def computeData(self):
         
         compute.DistanceMtx(self)
+        pd.DataFrame(self.input['Network']['distance_mtx']).to_csv('df.csv')
         
     
     

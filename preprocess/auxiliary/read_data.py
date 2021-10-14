@@ -15,17 +15,36 @@ def Carriers(self):
     
     for carrier in self.input['Carriers'].keys():
         
-        path = '{}{}//'.format(
-            self.paths['Carriers'],
-            carrier)
+        # Read properties of the energy carrier
+        path = '{}{}//'.format(self.paths['Carriers'], carrier)
         
         file = pd.read_csv(\
-            path+'file.csv', header=0, index_col=0)
+            path+'properties.csv', header=0, index_col=0)
         
         for attribute in file.index:
             self.input['Carriers'][carrier][attribute] =\
                 file.loc[attribute,'value']
+        
+        # Read properties of the energy carrier demand and supply
+        for data_type in ['demand', 'supply']:
             
+            self.input['Carriers'][carrier][data_type] = dict()
+            
+            path = '{}{}//{}//'.format(self.paths['Carriers'],
+                carrier, data_type)
+            
+            # scalar attributes
+            file = pd.read_csv(\
+                path+'attributes.csv', header=0, index_col=0)
+            
+            for attribute in file.index:
+                self.input['Carriers'][carrier][data_type][attribute] =\
+                    file.loc[attribute,'value']
+                    
+            # table attributes                
+            self.input['Carriers'][carrier][data_type]['table'] = pd.read_csv(
+                path+'values.csv', header=0, index_col=None)
+                
 def Network(self):
     
     path = self.paths['Network']
@@ -68,7 +87,7 @@ def Technologies(self):
             technology)
         
         file = pd.read_csv(\
-            path+'file.csv', header=0, index_col=0)
+            path+'attributes.csv', header=0, index_col=0)
         
         for attribute in file.index:
             self.input['Technologies'][technology][attribute] =\

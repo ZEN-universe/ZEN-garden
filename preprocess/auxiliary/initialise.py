@@ -9,7 +9,7 @@
 # ======================================================================================================================
 
 import os
-
+    
 def Carriers(self):
     
     self.input['Carriers'] = dict()
@@ -18,7 +18,7 @@ def Carriers(self):
     path = self.paths['Carriers']
     for carrier in next(os.walk(path))[1]:
         self.input['Carriers'][carrier] = dict() 
-    
+        
 def Network(self):
 
     self.input['Network'] = dict()
