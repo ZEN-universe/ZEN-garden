@@ -14,7 +14,6 @@ import os
 import pandas as pd
 import preprocess.auxiliary.initialise as init
 import preprocess.auxiliary.read_data as read
-import preprocess.compute_from_data as compute
 
 class Prepare:
     
@@ -42,9 +41,6 @@ class Prepare:
         
         # read the data given the initialised dictionary
         self.readData()
-        
-        # derive data from input data
-        self.computeData()
 
     def initDict(self):
         
@@ -59,11 +55,6 @@ class Prepare:
         read.Carriers(self)
         read.Network(self)
         read.Technologies(self)
-        
-    def computeData(self):
-        
-        compute.DistanceMtx(self)
-        pd.DataFrame(self.input['Network']['distance_mtx']).to_csv('df.csv')
         
     
     
