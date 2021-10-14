@@ -14,19 +14,21 @@ import os
 import logging
 import numpy as np
 import pandas as pd
-import modelSettings
-import core.model as ValueChain
+# import modelSettings
+from preprocess.prepare import Prepare
+# import core.model as ValueChain
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
-if not os.path.esits('logs'):
+if not os.path.exists('logs'):
     os.mkdir('logs')
 logging.basicConfig(filename='logs/valueChain.log', level=logging.CRITICAL, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
 logging.propagate = False #prevent double printing
 
 # CREATE INPUT DICTIONARY
-#prepare(config.analyis, config.system)
+# prepare = Prepare(config.analyis, config.system)
+prepare = Prepare(0, 0)
 
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-valueChain = ValueChain(config.analyis, config.system)
-valueChain.solve(config.solver)
+# valueChain = ValueChain(config.analyis, config.system)
+# valueChain.solve(config.solver)

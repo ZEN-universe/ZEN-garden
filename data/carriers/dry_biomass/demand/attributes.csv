@@ -1,0 +1,5 @@
+attribute,value
+name,dry_biomass
+default,0
+doc,This is the dry biomass demand
+u.m.,MWh
