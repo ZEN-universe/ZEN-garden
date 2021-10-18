@@ -1,0 +1,10 @@
+time,node,demand
+0,Rome,0.5
+0,Zurich,0.5
+0,Berlin,0.5
+1,Rome,1
+1,Zurich,1
+1,Berlin,1
+2,Rome,2
+2,Zurich,2
+2,Berlin,2

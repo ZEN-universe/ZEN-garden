@@ -1,0 +1,4 @@
+"doc, Parameter specifies the time- and node-specific carrier demand"
+"for each, carrier, time, node"
+"default, 0"
+"within, NonNegativeReals"

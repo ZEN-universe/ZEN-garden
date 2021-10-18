@@ -1,5 +1,0 @@
-attribute,value
-name,dry_biomass
-default,0
-doc,This is the dry biomass supply
-u.m.,MWh
