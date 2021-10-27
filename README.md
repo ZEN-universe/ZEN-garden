@@ -8,6 +8,8 @@ Multiple developers are working in parallel. To allow a smooth cooperation, the 
 * for any modification, every developer should create a new branch of "development" to modify the code. 
 * this can be done from the "development" branch with: 'git branch new_branch_name'
 * once the modifications are done: 
-  'git add .'
-  'git commit'
-  'git push origin new_branch_name'
+  '''
+  git add .
+  git commit
+  'it push origin new_branch_name
+  '''
