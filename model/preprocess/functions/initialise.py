@@ -10,7 +10,7 @@
 
 import os           
     
-def Carriers(self):
+def carriers(self):
     
     self.input['carriers'] = dict()
     path = self.paths['carriers']['folder']
@@ -20,7 +20,7 @@ def Carriers(self):
         self.input['carriers'][carrier] = dict()
 
         
-def Networks(self):
+def networks(self):
 
     self.input['networks'] = dict() 
     path = self.paths['networks']['folder']
@@ -29,14 +29,14 @@ def Networks(self):
     for network in next(os.walk(path))[1]:
         self.input['networks'][network] = dict()
         
-def Technologies(self):
+def technologies(self):
     
-    technology_types = ['production_technologies',\
+    technologyTypes = ['production_technologies',\
                         'storage_technologies',\
                         'transport_technologies'
                         ]
     
-    for technology_type in technology_types:
+    for technology_type in technologyTypes:
         
         self.input[technology_type] = dict()
         path = self.paths[technology_type]['folder']

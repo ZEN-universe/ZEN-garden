@@ -38,7 +38,7 @@ When an issue is opened, it should be assigned to one or more developers and it 
         """
 
 ### Methods
-* the name of the methods and the name of the files containing them should always be in lower case letters
+* the name of the methods should always be in lower case letters
 * the name can be composed by two words, in that case the second word should be capitalised e.g. addVariables()
 * main methods should all have a short desciption of what they do, e.g.:
 
@@ -59,3 +59,11 @@ When an issue is opened, it should be assigned to one or more developers and it 
 ### Variables name
 * the name of the variables should always be in lower case letters
 * the name can be composed by two words, in that case the second word should be capitalised e.g. myVariable
+
+### Files name
+* the files name should always be lower case
+* the name can be composed by multiple words, seprated by underscores
+
+### Folders name
+* the name of the folders should always be lower case
+* the name can be composed by multiple words, seprated by underscores

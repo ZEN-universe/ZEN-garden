@@ -12,9 +12,9 @@
 
 import os
 import pandas as pd
-import model.preprocess.functions.paths_data as paths
-import model.preprocess.functions.initialise as init
-import model.preprocess.functions.read_data as read
+import model.preprocess.functions.paths_data as Paths
+import model.preprocess.functions.initialise as Init
+import model.preprocess.functions.read_data as Read
 
 class Prepare:
     
@@ -46,13 +46,13 @@ class Prepare:
         """
         
         # create paths of data folders: carriers, networks, technologies
-        paths.Data(self)
+        Paths.data(self)
         # create paths of carriers' folders
-        paths.Carriers(self)
+        Paths.carriers(self)
         # create paths of netwoks' folders        
-        paths.Networks(self)
+        Paths.networks(self)
         # create paths of technologies' folders   
-        paths.Technologies(self)        
+        Paths.technologies(self)        
         
     def initDict(self):
         """
@@ -64,11 +64,11 @@ class Prepare:
         self.input = dict()
         
         # initialise the keys with the carriers' name
-        init.Carriers(self)
+        Init.carriers(self)
         # initialise the keys with the networks' name      
-        init.Networks(self)
+        Init.networks(self)
         # initialise the keys with the technologies' name           
-        init.Technologies(self)
+        Init.technologies(self)
         
     def readData(self):
         """
@@ -78,11 +78,11 @@ class Prepare:
         """                
         
         # fill the initialised dictionary by reading the carriers' data
-        read.Carriers(self)
+        Read.carriers(self)
         # fill the initialised dictionary by reading the netwroks' data        
-        read.Networks(self)
+        Read.networks(self)
         # fill the initialised dictionary by reading the technologies' data          
-        read.Technologies(self)
+        Read.technologies(self)
         
     
     

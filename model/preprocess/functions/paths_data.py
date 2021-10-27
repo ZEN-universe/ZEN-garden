@@ -10,21 +10,20 @@
 
 import os
 
-def Data(self):
+def data(self):
     
     # define path to access dataset related to the current analysis
-    self.path_data = './/data//{}//'.format(self.analysis['case'])    
+    self.pathData = './/data//{}//'.format(self.analysis['case'])    
     
     self.paths = dict()
-    # create a dictionary with the keys based on the folders from path_data
-    for folder_name in next(os.walk(self.path_data))[1]:
-        self.paths[folder_name] = dict()
-        self.paths[folder_name]['folder'] = \
-            self.path_data+'{}//'.format(folder_name)
+    # create a dictionary with the keys based on the folders from pathData
+    for folderName in next(os.walk(self.pathData))[1]:
+        self.paths[folderName] = dict()
+        self.paths[folderName]['folder'] = \
+            self.pathData+'{}//'.format(folderName)
 
-def Carriers(self):
+def carriers(self):
 
-    ## Carriers
     # add the paths for all the directories in carriers
     path = self.paths['carriers']['folder']
     for carrier in next(os.walk(path))[1]:
@@ -32,9 +31,8 @@ def Carriers(self):
         self.paths['carriers'][carrier]['folder'] = \
             path+'{}//'.format(carrier)
 
-def Networks(self):   
+def networks(self):   
          
-    ## Networks
     # add the paths for all the directories in networks
     path = self.paths['networks']['folder']
     for network in next(os.walk(path))[1]:
@@ -42,15 +40,14 @@ def Networks(self):
         self.paths['networks'][network]['folder'] = \
             path+'{}//'.format(network)         
             
-def Technologies(self):
+def technologies(self):
             
-    ## Technologies
     # add the paths for all the directories in technologies  
-    technology_types = ['production_technologies',\
+    technologyTypes = ['production_technologies',\
                         'storage_technologies',\
                         'transport_technologies'
                         ]
-    for technology_type in technology_types:        
+    for technology_type in technologyTypes:        
         path = self.paths[technology_type]['folder']
         for technology in next(os.walk(path))[1]:
             self.paths[technology_type][technology] = dict()

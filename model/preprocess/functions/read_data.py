@@ -13,10 +13,10 @@ import numpy as np
 from deepdiff import DeepDiff
 import sys
 
-def Carriers(self):
+def carriers(self):
     
-    node_ls = []
-    time_ls = []
+    listNode = []
+    listTime = []
     
     for carrier in self.input['carriers'].keys():
         
@@ -41,20 +41,20 @@ def Carriers(self):
                 file.loc[:,'time'].values  
             
             if list(file.loc[:,'node'].values) != []:
-                node_ls.append(list(file.loc[:,'node'].values))
+                listNode.append(list(file.loc[:,'node'].values))
             if list(file.loc[:,'time'].values) != []:
-                time_ls.append(list(file.loc[:,'time'].values))
+                listTime.append(list(file.loc[:,'time'].values))
     
     # verify that the input data are consinstent in time and nodes
-    if (DeepDiff([node_ls[0]]*len(node_ls), node_ls) != {}):
-        print(DeepDiff(node_ls[0], node_ls))
+    if (DeepDiff([listNode[0]]*len(listNode), listNode) != {}):
+        print(DeepDiff(listNode[0], listNode))
         raise ValueError('Inconsistent nodes in carrier input data')
 
-    elif (DeepDiff([time_ls[0]]*len(time_ls), time_ls) != {}):
+    elif (DeepDiff([listTime[0]]*len(listTime), listTime) != {}):
         raise ValueError('Inconsistent time carrier input data')
         
                 
-def Networks(self):
+def networks(self):
     
     mtxsize_ls = []
     
@@ -81,7 +81,7 @@ def Networks(self):
         print(DeepDiff(mtxsize_ls[0], mtxsize_ls))
         raise ValueError('Inconsistent size in network input data')
         
-def Technologies(self):
+def technologies(self):
     
     mtxsize_ls = []
     
