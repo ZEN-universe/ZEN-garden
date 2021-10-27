@@ -15,7 +15,7 @@ import logging
 import numpy as np
 import pandas as pd
 #import config
-from preprocess.prepare import Prepare
+from model.preprocess.prepare import Prepare
 #from core.model import Model
 # import core.model as ValueChain
 
@@ -28,7 +28,7 @@ logging.propagate = False #prevent double printing
 
 # CREATE INPUT FILE
 resolution = 'NUTS0'
-prepare = Prepare(0, 0)
+prepare = Prepare({'case':'NUTS0'}, {})
 
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
 #model = Model(config.analyis, config.system)
