@@ -11,5 +11,5 @@ Multiple developers are working in parallel. To allow a smooth cooperation, the 
   '''
   git add .
   git commit
-  'it push origin new_branch_name
+  it push origin new_branch_name
   '''
