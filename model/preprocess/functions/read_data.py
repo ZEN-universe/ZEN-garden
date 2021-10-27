@@ -56,7 +56,7 @@ def carriers(self):
                 
 def networks(self):
     
-    mtxsize_ls = []
+    listMtxsize = []
     
     for network in self.input['networks'].keys():
         
@@ -74,16 +74,16 @@ def networks(self):
             self.input['networks'][network][data_type] =\
                 file
                 
-            mtxsize_ls.append(list(file.shape))
+            listMtxsize.append(list(file.shape))
     
     # verify that the input data are consinstent in time and nodes
-    if (DeepDiff([mtxsize_ls[0]]*len(mtxsize_ls), mtxsize_ls) != {}):
-        print(DeepDiff(mtxsize_ls[0], mtxsize_ls))
+    if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
+        print(DeepDiff(listMtxsize[0], listMtxsize))
         raise ValueError('Inconsistent size in network input data')
         
 def technologies(self):
     
-    mtxsize_ls = []
+    listMtxsize = []
     
     for technology in self.input['production_technologies'].keys():
         
@@ -102,15 +102,15 @@ def technologies(self):
                 file
             
             if data_type in ['availability_matrix']:
-                mtxsize_ls.append(list(file.shape))
+                listMtxsize.append(list(file.shape))
     
     # verify that the input data are consinstent in time and nodes
-    if (DeepDiff([mtxsize_ls[0]]*len(mtxsize_ls), mtxsize_ls) != {}):
-        print(DeepDiff(mtxsize_ls[0], mtxsize_ls))
+    if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
+        print(DeepDiff(listMtxsize[0], listMtxsize))
         raise ValueError('Inconsistent size in production technology'+\
                          ' availability matrix')   
     
-    mtxsize_ls = [] 
+    listMtxsize = [] 
     
     for technology in self.input['storage_technologies'].keys():
         
@@ -131,15 +131,15 @@ def technologies(self):
                 
             if data_type in ['availability_matrix','max_capacity',\
                              'min_capacity']:
-                mtxsize_ls.append(list(file.shape))  
+                listMtxsize.append(list(file.shape))  
 
         # verify that the input data are consinstent in time and nodes
-        if (DeepDiff([mtxsize_ls[0]]*len(mtxsize_ls), mtxsize_ls) != {}):
+        if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
             error = 'Inconsistent size in storage technology'+\
                 ' availability matrix'
             raise ValueError(error)                  
 
-    mtxsize_ls = [] 
+    listMtxsize = [] 
 
     for technology in self.input['transport_technologies'].keys():
         
@@ -158,10 +158,10 @@ def technologies(self):
             self.input['transport_technologies'][technology][data_type] =\
                 file   
             
-            mtxsize_ls.append(list(file.shape))  
+            listMtxsize.append(list(file.shape))  
 
         # verify that the input data are consinstent in time and nodes
-        if (DeepDiff([mtxsize_ls[0]]*len(mtxsize_ls), mtxsize_ls) != {}):
+        if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
         
             error = 'Inconsistent size in transport technology input data'
             raise ValueError(error)  
