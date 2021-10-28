@@ -22,7 +22,7 @@ git push origin new_branch_name
 * at the stage of merging, it's possible to reference to an existing issue with '#issue_number'
 * the reference of the merging to the issue can also be done in a second stage, with the generated '#commit_number'
 
-## Creation of issues
+## Creating issues
 Apart from the first stages of development, very specific issues should be opened when the need of improvements occur.
 When an issue is opened, it should be assigned to one or more developers and it should be classified according to the typology of issue (e.g. documentation, improvement).
 
@@ -53,8 +53,17 @@ When an issue is opened, it should be assigned to one or more developers and it 
 * comments are located above the line of code they refer to
 
 ### File header
-* the file header is the same in the files
-* files containing main components of the tool, e.g. preprocess, core, postprocess have an additional heading line in capital letters followd by a separator "# ====="
+* all files contain a header which contains the following information: 
+* """===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      month-20yy
+Authors:      Jane Doe (jdoe@ethz.ch)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+
+Description:  Class defining ...
+              The class takes as inputs ...
+              The class returns ... 
+==========================================================================================================================================================================="""
 
 ### Variables name
 * the name of the variables should always be in lower case letters
