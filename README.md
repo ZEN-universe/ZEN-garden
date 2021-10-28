@@ -54,7 +54,7 @@ When an issue is opened, it should be assigned to one or more developers and it 
 
 ### File header
 * all files contain a header which contains the following information: 
-* """===========================================================================================================================================================================
+        """===========================================================================================================================================================================
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      month-20yy
 Authors:      Jane Doe (jdoe@ethz.ch)
