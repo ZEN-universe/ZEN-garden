@@ -54,16 +54,18 @@ When an issue is opened, it should be assigned to one or more developers and it 
 
 ### File header
 * all files contain a header which contains the following information: 
-        """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
-Created:      month-20yy
-Authors:      Jane Doe (jdoe@ethz.ch)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+        """
+      ===========================================================================================================================================================================
+        Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+        Created:      month-20yy
+        Authors:      Jane Doe (jdoe@ethz.ch)
+        Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class defining ...
-              The class takes as inputs ...
-              The class returns ... 
-==========================================================================================================================================================================="""
+        Description:  Class defining ...
+                      The class takes as inputs ...
+                      The class returns ... 
+      ===========================================================================================================================================================================
+        """
 
 ### Variables name
 * the name of the variables should always be in lower case letters
