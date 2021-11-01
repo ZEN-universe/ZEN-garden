@@ -21,55 +21,33 @@ class Carrier(Element):
         logging.info('initialize object of a generic carrier')
         super.__init__(model)
 
-
-    #%% METHODS
-    def addCarrierSets(self):
-        """add carrier subsets"""
-        logging.info('add parameters of a generic carrier')
-
+        # SETS AND SUBSETS
         self.sets = {
-            'setAliasCarrier':  'Copy of the set of all carriers'}
-            #'setGridIn':        'Set of all carriers with limited grid supply. Subset: setCarrier'}
+            'setCarriersIn':  'Set of input carriers. Subset: setCarriers',
+            'setCarriersOut': 'Set of output carriers. Subset: setCarriers'}
+        self.addSets(self, self.set)
 
-        for set, setProperties in self.Sets.items():
-            self.addSet(self, set, setProperties)
-
-    def addCarrierParams(self):
-        """add carrier parameters"""
-        logging.info('add parameters of a generic carrier')
-
+        # PARAMETERS
         self.params = {
-            'demand': 'Parameter which specifies the carrier demand. Dimensions: setCarriers, setNodes, setTimeSteps',
-            'price': 'Parameter which specifies the carrier price. Dimensions: setCarriers, setNodes, setTimeSteps',
-            'cFootprint': 'Parameter which specifies the carbon intensity of a carrier. Dimensions: setCarriers',
-            'gridIn': 'Parameter which specifies the maximum energy that can be imported from the grid. Dimensions: setCarriers, setNodes, setTimeSteps'}
+            'demand':        'Parameter which specifies the carrier demand. Dimensions: setCarriers, setNodes, setTimeSteps',
+            'price':         'Parameter which specifies the carrier price. Dimensions: setCarriers, setNodes, setTimeSteps',
+            'cFootprint':    'Parameter which specifies the carbon intensity of a carrier. Dimensions: setCarriers',
+            'cAvailability': 'Parameter which specifies the maximum energy that can be imported from the grid. Dimensions: setCarriers, setNodes, setTimeSteps'}
+        self.addParams(self.model, self.params)
 
-        for param, paramProperties in self.params.items():
-            self.addParam(self.model, param, paramProperties)
-
-
-    def addCarrierVariables(self):
-        """add carrier variables"""
-        logging.info('add variables of a generic carrier')
-
+        # VARIABLES
         self.vars = {
             'importCarrier': 'node- and time-dependent carrier import from the grid. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
             'exportCarrier': 'node- and time-dependent carrier export from the grid. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
-            'converEnergy': 'energy involved in conversion of carrier. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'}
+            'converEnergy':  'energy involved in conversion of carrier. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'}
+        self.addVar(self.model, self.vars)
 
-
-        for var, varProperties in self.vars.items():
-            self.addVar(self.model, var, varProperties)
-
-    def addCarrierConstraints(self):
-        """add carrier constraints"""
-        logging.info('add generic carrier constraints')
-
+        # CONSTRAINTS
         self.constraints = {
             'constraint_max_carrier_import': 'max carrier import from grid. Dimensions: setNodes, setTimeSteps'}
+        self.addConstr(self.model, self.constraints)
 
-        for constr, constrProperties in self.constraints.items():
-            self.addConstr(self.model, constr, constrProperties)
+        logging.info('added carrier sets, parameters, decision variables and constraints')
 
     #%% CONSTRAINTS
     def constraint_max_carrier_import_rule(model, carrier, node, time):

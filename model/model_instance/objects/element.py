@@ -46,63 +46,61 @@ class Element:
 
         return doc, dimensions, domain
 
-    def addSet(self, set, setProperties):
-        """add set to model
-        :param set:           set name
-        :param setProperties: set properties"""
+    def addSets(self, sets, data):
+        """add sets to model
+        :param sets: dictionary containing set names and properties"""
 
-        if 'Subset' in setProperties:
-            subsetOf = setProperties.split(':')[-1]
-            peSet  = pe.Set(within= getattr(self.model, subsetOf), doc=setProperties)
-        if 'Alias' in set:
-            aliasOf   = set.remove('Alias')
-            peSet = pe.SetOf(getattr(self.model, aliasOf))
-        else:
-            peSet = pe.Set(doc=setProperties)
+        for set, setProperties in sets.items():
+            if 'Subset' in setProperties:
+                subsetOf = setProperties.split(':')[-1]
+                peSet  = pe.Set(within= getattr(self.model, subsetOf), doc=setProperties)
+            if 'Alias' in set:
+                aliasOf   = set.remove('Alias')
+                peSet = pe.SetOf(getattr(self.model, aliasOf))
+            else:
+                peSet = pe.Set(doc=setProperties)
 
-        addattr(self.model, set, peSet)
+            setattr(self.model, set, peSet)
 
-    def addParam(self, param, paramProperties):
+    def addParam(self, params):
         """add parameter to model
-        :param model:           abstract optimization model
-        :param param:           param name
-        :param paramProperties: param properties"""
+        :param params: dictionary containing param names and properties"""
 
-        if not 'Dimensions' in paramProperties:
-            raise ValueError('Dimensions of parameter {0} are undefined'.format(param))
+        for param, paramProperties in params.items():
+            if not 'Dimensions' in paramProperties:
+                raise ValueError('Dimensions of parameter {0} are undefined'.format(param))
 
-        doc, dimensions, _ = self.getProperties(self, paramProperties)
-        peParam            = pe.Param(*dimensions, doc=doc)
+            doc, dimensions, _ = self.getProperties(self, paramProperties)
+            peParam            = pe.Param(*dimensions, doc=doc)
 
-        setattr(self.model, param, peParam)
+            setattr(self.model, param, peParam)
 
-    def addVar(self, var, varProperties):
+    def addVar(self, vars):
         """add variable to model
-        :param model:           abstract optimization model
-        :param param:           var name
-        :param varProperties: var properties"""
+        :param vars: dictionary containing var names and properties"""
 
-        if not 'Dimensions' in varProperties:
-            raise ValueError('Dimensions of variable {0} are undefined'.format(var))
-        if not 'Domain' in varProperties:
-            raise ValueError('Domain of variable {0} are undefined'.format(var))
+        for var, varProperties in vars.items():
+            if not 'Dimensions' in varProperties:
+                raise ValueError('Dimensions of variable {0} are undefined'.format(var))
+            if not 'Domain' in varProperties:
+                raise ValueError('Domain of variable {0} are undefined'.format(var))
 
-        doc, dimensions, domain  = self.getProperties(self, varProperties)
-        peVar                    = pe.Vars(*dimensions, within=getattr(self.model, domain), doc=doc)
+            doc, dimensions, domain  = self.getProperties(self, varProperties)
+            dimensions               = [getattr(self.model, dim) for dim in dimensions]
+            peVar                    = pe.Var(*dimensions, within=getattr(pe, domain), doc=doc)
 
-        setattr(self.model, var, peVar)
+            setattr(self.model, var, peVar)
 
-    def addConstr(self, constr, constrProperties):
+    def addConstr(self, constraints):
         """add constraint to model
-        :param model:           abstract optimization model
-        :param param:           constr name
-        :param paramProperties: constr properties"""
+        :param constraints: dictionary containing var names and properties"""
 
-        if not 'Dimensions' in constrProperties:
-            raise ValueError('Dimensions of constraint {0} are undefined'.format(constr))
+        for constr, constrProperties in constraints.items():
+            if not 'Dimensions' in constrProperties:
+                raise ValueError('Dimensions of constraint {0} are undefined'.format(constr))
 
-        _,dimensions,_ = self.getProperties(self, constrProperties)
-        peConstr   = pe.Constraint(*dimensions, rule=exec('{0}_rule'.format(constr)))
+            _,dimensions,_ = self.getProperties(self, constrProperties)
+            peConstr   = pe.Constraint(*dimensions, rule=exec('{0}_rule'.format(constr)))
 
-        setattr(self.model, constr, peConstr)
+            setattr(self.model, constr, peConstr)
 

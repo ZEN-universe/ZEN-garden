@@ -55,7 +55,7 @@ class Model:
 
         for set, setProperties in sets.items():
             peSet = pe.Set(doc=setProperties)
-            addattr(self.model, set, peSet)
+            setattr(self.model, set, peSet)
 
 
         # TECHNOLOGIES
@@ -81,24 +81,7 @@ class Model:
         #else:
         #    peSet = pe.Set(doc=doc)
 
-
-    def addConstr(self, listConstraints):
-        """
-        :param modelConstraints:
-        :return:
-        """
-
-    #TODO add Constr from csv/txt files
-    for constr in listConstraints:
-        name = constr['name']
-        forEach = constr['forEach']
-        rule = constr['rule']
-
-        exec
-        '@staticmethod def {0}({1}): return {2}'.format(name, forEach, rule)
-
-
-    def addCarriers(self, analysis,  carriers, input):
+    def addElements(self, analysis):
         """
         This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
         :param analysis: dictionary defining the analysis framework
@@ -107,25 +90,27 @@ class Model:
         # TODO create list of carrier types, only add relevant types
         # TODO to create list of carrier tpyes (e.g. general, CO2,...) write a function getCarrierTypes
 
-        carrierTypes = getCarrierTypes(carriers)
+        Carrier(self.model)
 
-        if 'standard' in carrierTypes:
-            Carrier(self.model)
-        #if 'other' in carrierTypes:
-        #    otherCarrier(self.model)
-
+        if 'production' in analysis['technologies']:
+            ProductionTechnology(self.model)
+        if 'transport' in analysis['technologies']:
+            ProductionTechnology(self.model)
+        if 'storage' in analysis['technologies']:
+            ProductionTechnology(self.model)
 
     def addTechnologies(self):
         """
         This method sets up the parameters, variables and constraints of the technologies of the optimization problem.
         """
 
+        # distinguish production, storage, and transport technologies
+
         technology = Technology(self.model)
         technology.addTechnologySets()
         technology.addTechnologyParams()
         technology.addTechnologyVars()
         technology.addTechnologyConstr()
-
 
     def addObjecctive(self):
         """
@@ -134,9 +119,20 @@ class Model:
 
         # TODO figure out a way to formulate objective function using pyomo?
 
-    def addConstraints(self):
+    def addConstr(self, listConstraints):
+        """
+        :param modelConstraints:
+        :return:
+        """
 
-        # TODO add constraints like product balance, emissions etc
+    # TODO add Constr from csv/txt files
+    for constr in listConstraints:
+        name = constr['name']
+        forEach = constr['forEach']
+        rule = constr['rule']
+
+        exec
+        '@staticmethod def {0}({1}): return {2}'.format(name, forEach, rule)
 
 
     def solve(self):
