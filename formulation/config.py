@@ -10,7 +10,7 @@
 #                                               MODEL SETTINGS
 # adjust model settings here
 # ======================================================================================================================
-from data import default_config
+from model import default_config
 
 # ANALYSIS FRAMEWORK
 analysis = default_config.analysis
@@ -20,7 +20,8 @@ analysis['modelFormulation'] = 'HSC'
 
 # TOPOLOGY OF THE VALUE CHAIN SYSTEM
 system = default_config.system
-system['setCarriers'] = ['electricity', 'hydrogen']                                    # set of energy carriers
+system['setInputCarriers'] = ['biomass']                                               # set of input carriers
+system['setOutputCarriers'] = ['hydrogen']                                               # set of output carriers
 system['setConversion'] = ['Electrolysis']                                             # set of conversion technologies
 system['setStorage'] = []                                                              # set of storage technologies
 system['setTransport'] = ['truck']                                                     # set of transport technologies

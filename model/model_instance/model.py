@@ -18,15 +18,19 @@ from objects.technology import Technology
 
 class Model:
 
-    def __init__(self, analysis, system):
+    def __init__(self, analysis, system, data):
         """
         create Pyomo Abstract Model
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
         """
-
-        self.analysis = analysis  # analysis structure
-        self.solver = analysis.solver  # solver structure
+        
+        # instanciate analysis structure
+        self.analysis = analysis 
+        # instanciate solver structure
+        self.solver = analysis.solver
+        # instanciate input data
+        self.data = data
         self.constraints = dict() # dictionary containing the constraints
 
         self.model = pe.AbstractModel()

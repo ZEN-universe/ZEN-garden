@@ -14,7 +14,7 @@ import os
 import logging
 import numpy as np
 import pandas as pd
-#import config
+from formulation import config
 from model.preprocess.prepare import Prepare
 #from core.model import Model
 # import core.model as ValueChain
@@ -27,11 +27,10 @@ logging.basicConfig(filename='logs/valueChain.log', level=logging.CRITICAL, form
 logging.propagate = False #prevent double printing
 
 # CREATE INPUT FILE
-resolution = 'NUTS0'
-prepare = Prepare({'case':'NUTS0'}, {})
+prepare = Prepare(config.analysis, config.system)
 
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-#model = Model(config.analyis, config.system)
+#model = Model(config.analyis, config.system, prepare.input)
 # results = valueChain.solve(config.solver)
 
 # EVALUATE RESULTS

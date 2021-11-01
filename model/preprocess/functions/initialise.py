@@ -15,21 +15,21 @@ def carriers(self):
                     'output_carriers'
                     ]
     for carrierType in carrierTypes:      
-        self.input[carrierType] = dict()
+        self.data[carrierType] = dict()
         path = self.paths[carrierType]['folder']
         
         # read all the folders in the carriers directory
         for carrierName in next(os.walk(path))[1]:
-            self.input[carrierType][carrierName] = dict()
+            self.data[carrierType][carrierName] = dict()
         
 def networks(self):
 
-    self.input['networks'] = dict() 
+    self.data['networks'] = dict() 
     path = self.paths['networks']['folder']
     
     # read all the folders in the networks directory
     for networkName in next(os.walk(path))[1]:
-        self.input['networks'][networkName] = dict()
+        self.data['networks'][networkName] = dict()
         
 def technologies(self):
     
@@ -40,24 +40,24 @@ def technologies(self):
     
     for technologyType in technologyTypes:
         
-        self.input[technologyType] = dict()
+        self.data[technologyType] = dict()
         path = self.paths[technologyType]['folder']
         
         # read all the folders in the directory of the specific type of 
         # technology
         for technologyName in next(os.walk(path))[1]:
-            self.input[technologyType][technologyName] = dict()         
+            self.data[technologyType][technologyName] = dict()         
         
 def nodes(self):
     
-    self.input['nodes'] = dict()
+    self.data['nodes'] = dict()
 
 def times(self):
     
-    self.input['times'] = dict()   
+    self.data['times'] = dict()   
     
 def scenarios(self):
     
-    self.input['scenarios'] = dict()     
+    self.data['scenarios'] = dict()     
     
     

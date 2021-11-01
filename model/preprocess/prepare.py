@@ -1,20 +1,21 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Davide Tonelli (davidetonelli@outlook.com)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                               Labratory of Risk and Reliability Engineering
-#                                         ETH Zurich, September 2021
-
-# ======================================================================================================================
-#                                    PREPARATION: DEFINE PATHS AND REARRANGE DATA
-# ======================================================================================================================
+Description:  Class reading the input data associated to the sets of the model.
+              The class takes as inputs the data of carriers, technologies, ntworks, nodes and store them in an dictionary which is then passed to 
+              the class for the creaiton of the instance of the model.
+              After initializing the dictionary with its keys, the dicitonary is filled with the data from files.
+==========================================================================================================================================================================="""
 
 import os
 import pandas as pd
 import model.preprocess.functions.paths_data as Paths
 import model.preprocess.functions.initialise as Init
 import model.preprocess.functions.read_data as Read
+import model.preprocess.functions.pyomo_dict as Pyo
 
 class Prepare:
     
@@ -29,6 +30,9 @@ class Prepare:
         # instantiate analysis object
         self.analysis = analysis
         
+        # instantiate system object
+        self.system = system
+        
         # create a dictionary with the paths to access the model inputs
         self.createPaths()
         
@@ -37,6 +41,9 @@ class Prepare:
         
         # read data and store in the initialised dictionary
         self.readData()
+        
+        # convert input data based on config file for Pyomo
+        self.createDict()
 
     def createPaths(self):
         """
@@ -62,7 +69,7 @@ class Prepare:
         :return: dictionary initialised with keys
         """        
         
-        self.input = dict()
+        self.data = dict()
         
         # initialise the keys with the input carriers' name
         Init.carriers(self)
@@ -96,6 +103,26 @@ class Prepare:
         Read.times(self)    
         # fill the initialised dictionary by reading the scenarios' data       
         Read.scenarios(self) 
+        
+    def createDict(self):
+        """
+        This method takes the disctionary with all the input data, the 
+        settings from the config file and creates new dictionary which is the
+        input to the abstract model in Pyomo. The keys of the dictionary have
+        to be the same as the keys when the abstract model is created.
+        :param system: dictionary containing the subset of elements based on
+            which the abstract model is built
+        :param data: dictionary containing all the input data
+        :return: dictionary containing the input data to the abstract model
+            in the format of Pyomo
+        """  
+        
+        self.pyoDict = {None:{}}
+        
+        # store the data of carriers in pyomo dictionary based on system
+        # Pyo.carriers(self)
+        
+        
         
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.

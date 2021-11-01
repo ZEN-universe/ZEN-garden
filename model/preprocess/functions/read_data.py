@@ -1,16 +1,15 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Davide Tonelli (davidetonelli@outlook.com)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                               Labratory of Risk and Reliability Engineering
-#                                         ETH Zurich, September 2021
+Description: Colleciton of methods used in the class Prepare
+==========================================================================================================================================================================="""
 
-# ======================================================================================================================
 
 import pandas as pd
 import numpy as np
-from deepdiff import DeepDiff
 import sys
 import logging
 
@@ -23,52 +22,30 @@ def carriers(self):
                     ]
     
     for carrierType in carrierTypes:
-        
-        listNode = []
-        listTime = []
-        
-        for carrierName in self.input[carrierType].keys():
+
+        for carrierName in self.data[carrierType].keys():
             
             # Read the input data of the energy carrier
-            for data_type in ['demand', 'supply', 'price']:
+            for dataType in ['demand', 'availability', 'importPrice', 'exportPrice']:
                 
                 path = self.paths[carrierType][carrierName]['folder']
                 
                 fileformat = 'csv'            
-                filename = '{}.{}'.format(data_type, fileformat)
+                filename = '{}.{}'.format(dataType, fileformat)
                         
                 # table attributes                     
-                file = pd.read_csv(path+filename, header=0, index_col=None)
+                file = pd.read_csv(path+filename,\
+                                   header=0, index_col=None\
+                                   ).set_index(['node', 'time', 'scenario'])
                 
-                self.input[carrierType][carrierName][data_type] =\
-                    file.loc[:,data_type].values     
-                
-                self.input[carrierType][carrierName]['node'] =\
-                    file.loc[:,'node'].values
-                    
-                self.input[carrierType][carrierName]['time'] =\
-                    file.loc[:,'time'].values  
-                
-                if list(file.loc[:,'node'].values) != []:
-                    listNode.append(list(file.loc[:,'node'].values))
-                if list(file.loc[:,'time'].values) != []:
-                    listTime.append(list(file.loc[:,'time'].values))
-        
-        # verify that the input data are consinstent in time and nodes
-        if (DeepDiff([listNode[0]]*len(listNode), listNode) != {}):
-            # print(DeepDiff(listNode[0], listNode))
-            logging.error('Inconsistent nodes in carrier input data')
-    
-        elif (DeepDiff([listTime[0]]*len(listTime), listTime) != {}):
-            logging.error('Inconsistent time carrier input data')     
+                self.data[carrierType][carrierName][dataType] =\
+                    file
                 
 def networks(self):
     
     logging.info('read data of all the networks')       
     
-    listMtxsize = []
-    
-    for networkName in self.input['networks'].keys():
+    for networkName in self.data['networks'].keys():
         
         # Read the input data of the networks
         for data_type in ['distance']:
@@ -81,102 +58,62 @@ def networks(self):
             # table attributes                     
             file = pd.read_csv(path+filename, header=0, index_col=0)
             
-            self.input['networks'][networkName][data_type] =\
+            self.data['networks'][networkName][data_type] =\
                 file
-                
-            listMtxsize.append(list(file.shape))
-    
-    # verify that the input data are consinstent in time and nodes
-    if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
-        # print(DeepDiff(listMtxsize[0], listMtxsize))
-        logging.error('Inconsistent size in network input data')
         
 def technologies(self):
     
     logging.info('read data of all the technologies')      
     
-    listMtxsize = []
-    
-    for technologyName in self.input['production_technologies'].keys():
+    for technologyName in self.data['production_technologies'].keys():
         
         # Read the input data of the energy carrier
-        for data_type in ['attributes', 'availability_matrix']:
+        for dataType in ['attributes', 'availability_matrix']:
             
             path = self.paths['production_technologies'][technologyName]['folder']
             
             fileformat = 'csv'            
-            filename = '{}.{}'.format(data_type, fileformat)
+            filename = '{}.{}'.format(dataType, fileformat)
                     
             # table attributes                     
             file = pd.read_csv(path+filename, header=0, index_col=0)
             
-            self.input['production_technologies'][technologyName][data_type] =\
+            self.data['production_technologies'][technologyName][dataType] =\
                 file
-            
-            if data_type in ['availability_matrix']:
-                listMtxsize.append(list(file.shape))
     
-    # verify that the input data are consinstent in time and nodes
-    if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
-        # print(DeepDiff(listMtxsize[0], listMtxsize))
-        logging.error('Inconsistent size in production technology'+\
-                         ' availability matrix')   
-    
-    listMtxsize = [] 
-    
-    for technologyName in self.input['storage_technologies'].keys():
+    for technologyName in self.data['storage_technologies'].keys():
         
         # Read the input data of the energy carrier
-        for data_type in ['attributes', 'availability_matrix',\
+        for dataType in ['attributes', 'availability_matrix',\
                           'max_capacity','min_capacity']:
             
             path = self.paths['storage_technologies'][technologyName]['folder']
             
             fileformat = 'csv'            
-            filename = '{}.{}'.format(data_type, fileformat)
+            filename = '{}.{}'.format(dataType, fileformat)
                     
             # table attributes                     
             file = pd.read_csv(path+filename, header=0, index_col=0)
             
-            self.input['storage_technologies'][technologyName][data_type] =\
+            self.data['storage_technologies'][technologyName][dataType] =\
                 file   
-                
-            if data_type in ['availability_matrix','max_capacity',\
-                             'min_capacity']:
-                listMtxsize.append(list(file.shape))  
 
-        # verify that the input data are consinstent in time and nodes
-        if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
-            error = 'Inconsistent size in storage technology'+\
-                ' availability matrix'
-            logging.error(error)                  
-
-    listMtxsize = [] 
-
-    for technologyName in self.input['transport_technologies'].keys():
+    for technologyName in self.data['transport_technologies'].keys():
         
         # Read the input data of the energy carrier
-        for data_type in ['availability_matrix',\
+        for dataType in ['availability_matrix',\
                           'cost_per_distance', 'efficiency_per_distance']:
             
             path = self.paths['transport_technologies'][technologyName]['folder']
             
             fileformat = 'csv'            
-            filename = '{}.{}'.format(data_type, fileformat)
+            filename = '{}.{}'.format(dataType, fileformat)
                     
             # table attributes                     
             file = pd.read_csv(path+filename, header=0, index_col=0)
             
-            self.input['transport_technologies'][technologyName][data_type] =\
-                file   
-            
-            listMtxsize.append(list(file.shape))  
-
-        # verify that the input data are consinstent in time and nodes
-        if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
-        
-            error = 'Inconsistent size in transport technology input data'
-            logging.error(error)  
+            self.data['transport_technologies'][technologyName][dataType] =\
+                file
             
 def nodes(self):
 
@@ -188,10 +125,10 @@ def nodes(self):
     
     file = pd.read_csv(path+filename, header=0, index_col=False)
     
-    indexNodes = np.arange(0, file['nodes'].values.size)
+    indexNodes = np.arange(0, file['node'].values.size)
     
     for indexNode in indexNodes:
-        self.input['nodes'][file['nodes'].iloc[indexNode]] = indexNode
+        self.data[data_type][file['node'].iloc[indexNode]] = indexNode
         
 def times(self):
     
@@ -203,10 +140,10 @@ def times(self):
     
     file = pd.read_csv(path+filename, header=0, index_col=False)
     
-    indexNodes = np.arange(0, file['times'].values.size)
+    indexNodes = np.arange(0, file['time'].values.size)
     
     for indexNode in indexNodes:
-        self.input['times'][file['times'].iloc[indexNode]] = indexNode  
+        self.data[data_type][file['time'].iloc[indexNode]] = indexNode  
         
 def scenarios(self):
     
@@ -218,10 +155,10 @@ def scenarios(self):
     
     file = pd.read_csv(path+filename, header=0, index_col=False)
     
-    indexNodes = np.arange(0, file['scenarios'].values.size)
+    indexNodes = np.arange(0, file['scenario'].values.size)
     
     for indexNode in indexNodes:
-        self.input['scenarios'][file['scenarios'].iloc[indexNode]] = indexNode         
+        self.data[data_type][file['scenario'].iloc[indexNode]] = indexNode         
         
                 
                              

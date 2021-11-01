@@ -1,19 +1,19 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Davide Tonelli (davidetonelli@outlook.com)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                               Labratory of Risk and Reliability Engineering
-#                                         ETH Zurich, September 2021
-
-# ======================================================================================================================
+Description:    Collections of methods used in the class Prepare to create the paths where data are stored with respect to carriers, technologies and
+                networks
+==========================================================================================================================================================================="""
 
 import os
 
 def data(self):
     
     # define path to access dataset related to the current analysis
-    self.pathData = './/data//{}//'.format(self.analysis['case'])    
+    self.pathData = './/data//{}//'.format(self.analysis['spatialResolution'])    
     
     self.paths = dict()
     # create a dictionary with the keys based on the folders in pathData
