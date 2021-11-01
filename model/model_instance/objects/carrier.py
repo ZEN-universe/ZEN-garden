@@ -1,99 +1,82 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Alissa Ganter (aganter@ethz.ch)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                               Labratory of Risk and Reliability Engineering
-#                                         ETH Zurich, September 2021
-
-# ======================================================================================================================
-#                                    DEFINITION OF THE CARRIERS
-# ======================================================================================================================
+Description:  Class defining a generic energy carrier.
+              The class takes as inputs the abstract optimization model. The class adds parameters, variables and
+              constraints of a generic carrier and returns the abstract optimization model.
+==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
+from element import Element
 
-def Carrier:
-    """This class defines the generic carrier"""
+class Carrier(Element):
 
     def __init__(self, model):
-        """init generic carrier object"""
-        self.model = model
-        self.constraint_names = list()
+        """initialization of a generic carrier object
+        :param model: object of the abstract optimization model"""
+
+        logging.info('initialize object of a generic carrier')
+        super.__init__(model)
 
 
-    def addCarrierParams(self, paramProperties):
-        """add carrier params"""
+    #%% METHODS
+    def addCarrierSets(self):
+        """add carrier subsets"""
         logging.info('add parameters of a generic carrier')
 
-        for param, properties in paramProperties.items():
+        self.sets = {
+            'setAliasCarrier':  'Copy of the set of all carriers'}
+            #'setGridIn':        'Set of all carriers with limited grid supply. Subset: setCarrier'}
 
-            peParam = pe.Param(
-                *paramProperties[param]['for each'],
-                default = paramProperties[param]['default'],
-                within = getattr(pe, paramProperties[param]['within'])
-                doc = paramProperties[param]['default']
-            )
+        for set, setProperties in self.Sets.items():
+            self.addSet(self, set, setProperties)
 
-            setAttr(
-                self.model,
-                param,
-                peParam
-            )
+    def addCarrierParams(self):
+        """add carrier parameters"""
+        logging.info('add parameters of a generic carrier')
 
-        # self.model.demand = pe.Param(
-        #     self.model.setCarriers,
-        #     self.model.setNodes,
-        #     self.model.setTimeSteps,
-        #     default = 0,
-        #     within = pe.NonNegativeReals,
-        #     doc = 'Parameter which specifies the node- and time-dependent carrier demand')
-        # self.model.price = pe.Param(
-        #     self.model.setCarriers,
-        #     self.model.setNodes,
-        #     self.model.setTimeSteps,
-        #     default=0,
-        #     within=pe.NonNegativeReals,
-        #     doc='Parameter which specifies the node- and time-dependent carrier price')
-        # self.model.Cfootprint = pe.Param(
-        #     self.model.setCarriers,
-        #     default=0,
-        #     within=pe.NonNegativeReals,
-        #     doc='Parameter which specifies the carbon intensity of a carrier')
-        # self.model.gridIn = pe.Param(
-        #     self.model.setCarriers,
-        #     default=0,
-        #     within=pe.NonNegativeReals,
-        #     doc='Parameter which specifies the maximum energy that can be imported from the grid per unit of time')
+        self.params = {
+            'demand': 'Parameter which specifies the carrier demand. Dimensions: setCarriers, setNodes, setTimeSteps',
+            'price': 'Parameter which specifies the carrier price. Dimensions: setCarriers, setNodes, setTimeSteps',
+            'cFootprint': 'Parameter which specifies the carbon intensity of a carrier. Dimensions: setCarriers',
+            'gridIn': 'Parameter which specifies the maximum energy that can be imported from the grid. Dimensions: setCarriers, setNodes, setTimeSteps'}
+
+        for param, paramProperties in self.params.items():
+            self.addParam(self.model, param, paramProperties)
+
 
     def addCarrierVariables(self):
         """add carrier variables"""
         logging.info('add variables of a generic carrier')
 
-        # node- and time-dependent carrier imported from the grid
-        self.model.importCarrier = pe.Var(
-            self.model.setCarriers,
-            self.model.setNodes,
-            self.model.setTimeSteps,
-            within=pe.NonNegativeReals)
-        # energy involved in conversion within MES (??)
-        self.model.conver = pe.Var(
-            self.model.setCarriers,
-            self.model.setNodes,
-            self.model.TimeSteps,
-            within=pe.NonNegativeReals)
+        self.vars = {
+            'importCarrier': 'node- and time-dependent carrier import from the grid. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
+            'exportCarrier': 'node- and time-dependent carrier export from the grid. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
+            'converEnergy': 'energy involved in conversion of carrier. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'}
 
-    def addCarrierVariables(self):
+
+        for var, varProperties in self.vars.items():
+            self.addVar(self.model, var, varProperties)
+
+    def addCarrierConstraints(self):
         """add carrier constraints"""
         logging.info('add generic carrier constraints')
 
-        # max. carrier import from the grid
-        self.model.constraint_max_carrier_import = pe.Constraint(
-            self.model.setCarriers,
-            self.model.setNodes,
-            self.model.setTimeSteps,
-            rule=constraint_max_carrier_import_rule
-        )
+        self.constraints = {
+            'constraint_max_carrier_import': 'max carrier import from grid. Dimensions: setNodes, setTimeSteps'}
 
-        self.constraint_names.append('carrier_constraints')
+        for constr, constrProperties in self.constraints.items():
+            self.addConstr(self.model, constr, constrProperties)
+
+    #%% CONSTRAINTS
+    def constraint_max_carrier_import_rule(model, carrier, node, time):
+        """max carrier import from grid. Dimensions: setCarriers, setNodes, setTimeSteps"""
+
+        return(model.importCarrier[carrier, node, time] <= model.gridIn[carrier,node,time])
+
+
 
 

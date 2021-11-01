@@ -1,14 +1,15 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Alissa Ganter (aganter@ethz.ch)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                               Labratory of Risk and Reliability Engineering
-#                                         ETH Zurich, September 2021
-
-# ======================================================================================================================
-#                                    MES: VALUE CHAIN DEFINITION
-# ======================================================================================================================
+Description:  Class defining the abstract optimization model.
+              The class takes as inputs the properties of the optimization problem. The properties are saved in the
+              dictionaries analysis and system which are passed to the class. After initializing the abstract model, the
+              class adds carriers and technologies to the abstract model and returns the abstract optimization model.
+              The class also includes a method to solve the optimization problem.
+==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
 from pyomo.opt import SolverStatus, TerminationCondition
@@ -16,9 +17,6 @@ from objects.carrier import Carrier
 from objects.technology import Technology
 
 class Model:
-    """
-    Definition of the value chain
-    """
 
     def __init__(self, analysis, system):
         """
@@ -29,65 +27,60 @@ class Model:
 
         self.analysis = analysis  # analysis structure
         self.solver = analysis.solver  # solver structure
+        self.constraints = dict() # dictionary containing the constraints
 
         self.model = pe.AbstractModel()
         self.addSets()
         self.addCarriers()
         self.addTechnologies()
 
-    def addSets(self, Sets):
+    def addSets(self):
         """
         This method sets up the sets of the optimization problem.
         Some sets are initialized with default values, if the value is not specified by the input data
         """
 
-        for set in Sets:
-            setattr(self.model, set['name'], pe.Set)
+        ## FYI
+        #(1) model.ct = Set(model.t)  # model.ct is “dictionary” of sets, i.e., model.ct[i] = Set() for all i in model.t
+        #(2) model.ct = Set(within=model.t)  # model.ct is a subset of model.t, Pyomo will do the verification of this
+        #(3) model.i = Set(initialize=model.t)  # makes a copy of whatever is in model.t during the time of construction
+        #(4) model.i = SetOf(model.t)  # references whatever is in model.t at runtime (alias)
+        # 'setTransport': 'Set of all transport technologies. Subset: setTechnologies'
+        # 'setProduction': 'Set of all production technologies. Subset: setTechnologies'
+
+        sets = {'setCarriers':      'Set of carriers',     # Subsets: setInputCarriers, setOutputCarriers
+                'setTechnologies':  'Set of technologies', # Subsets: setTransportTechnologies, setProductionTechnologies
+                'setTimeSteps':     'Set of timesteps',
+                'setNodes':         'Set of nodes'}
+
+        for set, setProperties in sets.items():
+            peSet = pe.Set(doc=setProperties)
+            addattr(self.model, set, peSet)
+
 
         # TECHNOLOGIES
         # self.model.setTechnologies = pe.Set()  # set of all technologies
         # self.model.setProduction = pe.Set()  # subset containing the production technologies
         # self.model.setTransport = pe.Set()  # subset containing transport technologies
         # self.model.setStorage = pe.Set()  # subset containing the storage technologies
-        #
-        # CARRIERS
-        # self.model.setCarriers = pe.Set()  # set of carriers
-        # self.model.setAliasCarriers = pe.Set()  # auxiliary set of carriers
-        #
+
         # NETWORK
         # self.model.setNodes = pe.Set()  # set of nodes
         # self.model.setAliasNodes = pe.Set()  # auxiliary set of nodes
-        #
-        # TIME STEPS
-        # self.model.setTimeSteps = pe.Set()  # set of time steps
 
-    def addParams(self, paramProperties):
-        """add carrier params"""
-        logging.info('add parameters of a generic carrier')
 
-        for param, properties in paramProperties.items():
+        # check if set is a subset
+        #if 'Subset' in doc:
+        #    try:  # dimension > 1?
+        #        subset = doc.split(':', 1)[-1].split(',')
+        #    try:
+        #        subset = doc.split(':', 1)[-1]
+        #    except TypeError:
+        #        print("Error in Subset definition.")
+        #    peSet = pe.Set(doc=doc, within=subset)
+        #else:
+        #    peSet = pe.Set(doc=doc)
 
-            peParam = pe.Param(
-                *paramProperties[param]['for each'],
-                default = paramProperties[param]['default'],
-                within = getattr(pe, paramProperties[param]['within'])
-                doc = paramProperties[param]['default']
-            )
-
-            setAttr(
-                self.model,
-                param,
-                peParam
-            )
-
-    def addVars(self, varsProperties):
-        """
-        :param varsProperties:
-        :return:
-        """
-
-        #TODO add vars from csv/txt files
-        #for...
 
     def addConstr(self, listConstraints):
         """
@@ -105,24 +98,21 @@ class Model:
         '@staticmethod def {0}({1}): return {2}'.format(name, forEach, rule)
 
 
-
-
-
-
-    def addCarriers(self, analysis,  system, input):
+    def addCarriers(self, analysis,  carriers, input):
         """
         This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
         """
+        # TODO create list of carrier types, only add relevant types
+        # TODO to create list of carrier tpyes (e.g. general, CO2,...) write a function getCarrierTypes
 
-        for carrierName in system['carriers'].keys():
-            carrierParams = input['carrier'][carrierName]
-            carrier = Carrier(self.model)
-            carrier.addCarrierParams(carrierParams)
-            carrier.addCarrierVars(carrierParams)
-            carrier.addCarrierConstr(analysis, system)
+        carrierTypes = getCarrierTypes(carriers)
 
+        if 'standard' in carrierTypes:
+            Carrier(self.model)
+        #if 'other' in carrierTypes:
+        #    otherCarrier(self.model)
 
 
     def addTechnologies(self):
@@ -131,49 +121,23 @@ class Model:
         """
 
         technology = Technology(self.model)
+        technology.addTechnologySets()
         technology.addTechnologyParams()
         technology.addTechnologyVars()
         technology.addTechnologyConstr()
 
-    def addTechnologies(self, data):
-        """
-        Add  a technology object to value chain
-        :param data:
-        :return:
-        """
-
-        for k in range(len(self.setTechnologies)):
-            technology = self.setTechnologies[k]
-            technology_type = 'renewable' #TODO somehow get type of technology -- maybe from data?
-            if technology_type == 'renewable':
-                mes.technologies[k] = technologyR(self, data, self.setTechnologies[k])
-            elif technology_type == 'conventional':
-                mes.technologies[k] = technologyC(self, data, self.setTechnologies[k])
-            elif technology_type == 'co-generation':
-                mes.technologies[k] = technologyCoGen(self, data, self.setTechnologies[k])
-            elif technology_type == 'storage':
-                mes.technologies[k] = technologyS(self, data, self.setTechnologies[k])
-
-    def addConstraints(self):
-        """
-        :return:
-        """
-
-        #TODO figure out a way to formulate constraints using pyomo?
 
     def addObjecctive(self):
         """
         :return:
         """
-        ## OBJECTIVE FUNCTIONS
-        self.objective = []  # objective function of the optimization problem
-        self.costTotal = 0  # total cost of the system                             [CHF/y]
-        self.costInstallation = 0  # total installation cost of the system (annual value) [CHF/y]
-        self.costOperation = 0  # total operation cost of the system                   [CHF/y]
-        self.emissionsTotal = 0  # total CO2 emissions of the system                    [gCO2/y]
-        self.expEnergyNotSupplied = 0  # expected energy not supplied
 
         # TODO figure out a way to formulate objective function using pyomo?
+
+    def addConstraints(self):
+
+        # TODO add constraints like product balance, emissions etc
+
 
     def solve(self):
         """

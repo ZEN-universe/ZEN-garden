@@ -16,8 +16,7 @@ import numpy as np
 import pandas as pd
 #import config
 from preprocess.prepare import Prepare
-#from core.model import Model
-# import core.model as ValueChain
+from model_instance.model import Model
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -27,11 +26,10 @@ logging.basicConfig(filename='logs/valueChain.log', level=logging.CRITICAL, form
 logging.propagate = False #prevent double printing
 
 # CREATE INPUT FILE
-resolution = 'NUTS0'
-prepare = Prepare(0, 0)
+#prepare = Prepare(0, 0)
 
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-#model = Model(config.analyis, config.system)
+model = Model(config.analyis, config.system)
 # results = valueChain.solve(config.solver)
 
 # EVALUATE RESULTS

@@ -1,88 +1,69 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Alissa Ganter (aganter@ethz.ch)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                               Labratory of Risk and Reliability Engineering
-#                                         ETH Zurich, September 2021
-
-# ======================================================================================================================
-#                                    DEFINITION OF THE GENERIC TECHNOLOGY OBJECT
-# ======================================================================================================================
+Description:  Class defining the parameters, variables and constraints that hold for all technologies.
+              The class takes as inputs the abstract optimization model. The class adds parameters, variables and
+              constraints of a generic carrier and returns the abstract optimization model.
+==========================================================================================================================================================================="""
 
 import logging
 import pyomo.environ as pe
 
 class Technology:
-    """This class defines a generic technology"""
 
     def __init__(self, model):
         """init generic technology object"""
-        self.model = model
-        self.constraint_names = list()
+
+        logging.info('initialize object of a generic technology')
+        super.__init__(model)
+
+    def addTechnologySets(self):
+        """add technology sets"""
+
+        if analysis['technologyApproximation'] == 'PWA':
+            self.sets['setSupportPointsPWA'] = 'Set of support points for piecewise affine linearization'
 
     def addTechnologyParams(self):
         """add technology params"""
 
-        ## INPUT DATA
-        self.model.typeIn = pe.param(
-            self.model.setTechnologies, #'Electrolyzer', 'SMR', 'PV'
-            self.model.setCarriers,
-            default=0,
-            doc='Binary parameter which specifies the input carrier of the technology')
-        self.model.typeOut = pe.param(
-            self.model.setTechnologies,
-            self.model.setCarriers,
-            default=0,
-            doc='Binary parameter which specifies the output carrier of the technology')
-        self.model.sizeMin = pe.param(
-            self.model.setTechnologies,
-            self.model.setCarriers,
-            default=0,
-            doc='Parameter which specifies the minimum technology size that can be installed')
-        self.model.sizeMax = pe.param(
-            self.model.setTechnologies,
-            self.model.setCarriers,
-            default=0,
-            doc='Parameter which specifies the maximum technology size that can be installed')
-        self.model.alphaL = pe.param(
-            self.model.setCarriersCarrier,
-            self.model.setAliasCarriers,
-            self.model.setTechnologies,
-            doc='Parameter which specifies the linear conversion efficiency of a technology')
+        self.params = {
+            'typeIn':  'Binary parameter which specifies the input carrier of the technology. Dimensions: setTechnologies, setCarriers',
+            'typeOUT': 'Binary parameter which specifies the output carrier of the technology. Dimensions: setTechnologies, setCarriers',
+            'sizeMin': 'Parameter which specifies the minimum technology size that can be installed. Dimensions: setTechnologies, setCarriers',
+            'sizeMax': 'Parameter which specifies the maximum technology size that can be installed. Dimensions: setTechnologies, setCarriers'}
 
+        if analysis['technologyApproximation'] == 'linear':
+            self.params['converEfficiencyL']: 'Parameter which specifies the linear conversion efficiency of a technology.Dimensions: setTechnologies, setCarriers, setAliasCarriers'
+        elif analysis['technologyApproximation'] == 'PWA':
+            self.params['converEfficiency']: 'Parameter which specifies the linear conversion efficiency of a technology. Dimensions: setTechnologies, setCarriers, setAliasCarriers, setSupportPointsPWA'
 
-        self.efficiency = dict()                            # efficiency data (used in other modules such as eventTrees)
-        self.efficiency['alphaL'] = mytech['alphaL']
-        self.efficiency['alpha'] = mytech['alpha']
-        self.efficiency['beta'] = mytech['beta']
-        self.efficiency['eta0'] = mytech['eta0']
-        self.efficiency['eta1'] = mytech['eta1']
-        self.efficiency['eta2'] = mytech['eta2']
-        self.efficiency['eta'] = mytech['eta']
-        self.efficiency['lambda'] = mytech['lambda']
-
-        ## DECISION VARIABLES
-        #TODO figure out a way to add the decision variables with pyomo
-        timeHorizon = self.analysis['T']                    # length of the time horizon
-        self.select = 0                                     # technology selection
-        self.size = 0                                       # technology size         [kW]
-        self.input = 0
-
+        for param, paramProperties in params.items():
+            self.addParam(self.model, param, paramProperties)
 
     def addTechnologyVariables(self):
         """add technology variables"""
 
+        self.vars = {'carrierIn':   '',
+                     'carrierOut':  ''}
+
+        for var, varProperties in vars.items():
+            self.addVar(self.model, var, varProperties)
 
     def addTechnologyConstraints(self):
         """add technology constraints"""
 
-        # max. carrier import from the grid
-        self.model.constraint_max_carrier_import = pe.Constraint(
-            self.model.setCarriers,
-            self.model.setNodes,
-            self.model.setTimeSteps,
-            rule=constraint_max_carrier_import_rule
-        )
+        self.constraints = {
+            'constraint_technology_performance': '. Dimensions: setTechnologies, setCarriers, setAliasCarriers, setNodes, setTimeSteps'}
 
-        self.constraint_names.append('carrier_constraints')
+        for constr, constrProperties in self.constraints.items():
+            self.addConstr(self.model, constr, constrProperties)
+
+    # %% CONSTRAINTS
+    def constraint_constraint_technology_performance(model, tech, carrier, aliasCarrier, node, time):
+        """max carrier import from grid. Dimensions: setCarriers, setNodes, setTimeSteps"""
+
+            return (model.converEfficiency[tech, carrier, aliasCarrier] * model.carrierIn[tech, carrier, node, time]
+                    <= model.carrierIn[tech, aliasCarrier, node, time])

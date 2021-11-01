@@ -17,7 +17,7 @@ analysis = dict()
 analysis['objective'] = 'minimum-cost'                                                 # objective function
 analysis['technologyApproximation'] = 'linear'                                         # technology approximation
 analysis['timeHorizon'] = 25                                                           # length of time horizon in years
-analysis['yearly'] = 'yearly'                                                          # time resolution
+analysis['timeResolution'] = 'yearly'                                                  # time resolution
 analysis['discountRate'] = 0.06                                                        # discount rate
 
 # TOPOLOGY OF THE SYSTEM

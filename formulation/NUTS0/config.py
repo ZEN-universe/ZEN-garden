@@ -15,14 +15,15 @@ from data import default_config
 # ANALYSIS FRAMEWORK
 analysis = default_config.analysis
 analysis['timeHorizon'] = 1                                                            # length of time horizon in years
-
+analysis['spatialResolution'] = 'NUTS0' # config
+analysis['modelFormulation'] = 'HSC'
 
 # TOPOLOGY OF THE VALUE CHAIN SYSTEM
 system = default_config.system
 system['setCarriers'] = ['electricity', 'hydrogen']                                    # set of energy carriers
 system['setConversion'] = ['Electrolysis']                                             # set of conversion technologies
 system['setStorage'] = []                                                              # set of storage technologies
-system['setTransport'] = ['Trucks']                                                    # set of transport technologies
+system['setTransport'] = ['truck']                                                     # set of transport technologies
 
 # SOLVER SETTINGS
 solver = default_config.solver                                                         # solver options:
