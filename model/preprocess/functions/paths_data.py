@@ -16,20 +16,25 @@ def data(self):
     self.pathData = './/data//{}//'.format(self.analysis['case'])    
     
     self.paths = dict()
-    # create a dictionary with the keys based on the folders from pathData
+    # create a dictionary with the keys based on the folders in pathData
     for folderName in next(os.walk(self.pathData))[1]:
         self.paths[folderName] = dict()
         self.paths[folderName]['folder'] = \
             self.pathData+'{}//'.format(folderName)
 
 def carriers(self):
+    
+    # add the paths for all the directories in carriers    
+    carrierTypes = ['input_carriers',
+                     'output_carriers']
+    
+    for carrierType in carrierTypes:     
 
-    # add the paths for all the directories in carriers
-    path = self.paths['carriers']['folder']
-    for carrier in next(os.walk(path))[1]:
-        self.paths['carriers'][carrier] = dict()
-        self.paths['carriers'][carrier]['folder'] = \
-            path+'{}//'.format(carrier)
+        path = self.paths[carrierType]['folder']
+        for carrier in next(os.walk(path))[1]:
+            self.paths[carrierType][carrier] = dict()
+            self.paths[carrierType][carrier]['folder'] = \
+                path+'{}//'.format(carrier)
 
 def networks(self):   
          
@@ -47,9 +52,12 @@ def technologies(self):
                         'storage_technologies',\
                         'transport_technologies'
                         ]
-    for technology_type in technologyTypes:        
-        path = self.paths[technology_type]['folder']
+    for technologyType in technologyTypes:        
+        path = self.paths[technologyType]['folder']
         for technology in next(os.walk(path))[1]:
-            self.paths[technology_type][technology] = dict()
-            self.paths[technology_type][technology]['folder'] = \
-                path+'{}//'.format(technology)      
+            self.paths[technologyType][technology] = dict()
+            self.paths[technologyType][technology]['folder'] = \
+                path+'{}//'.format(technology)
+    
+    
+    

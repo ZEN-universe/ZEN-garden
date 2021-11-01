@@ -21,6 +21,7 @@ class Prepare:
     def __init__(self, analysis, system):
         """
         This class creates the dictionary containing all the input data
+        organised per set according to the model formulation
         :param analysis: dictionary defining the analysis framework
         :return: dictionary containing all the input data
         """
@@ -45,14 +46,14 @@ class Prepare:
         :return: dictionary all the paths for reading data
         """
         
-        # create paths of data folders: carriers, networks, technologies
+        # create paths of the data folders according to the input sets
         Paths.data(self)
-        # create paths of carriers' folders
-        Paths.carriers(self)
+        # create paths of the input carriers' folders
+        Paths.carriers(self)    
         # create paths of netwoks' folders        
         Paths.networks(self)
         # create paths of technologies' folders   
-        Paths.technologies(self)        
+        Paths.technologies(self)
         
     def initDict(self):
         """
@@ -63,12 +64,18 @@ class Prepare:
         
         self.input = dict()
         
-        # initialise the keys with the carriers' name
+        # initialise the keys with the input carriers' name
         Init.carriers(self)
         # initialise the keys with the networks' name      
         Init.networks(self)
         # initialise the keys with the technologies' name           
         Init.technologies(self)
+        # initialise the key of nodes
+        Init.nodes(self)
+        # initialise the key of times
+        Init.times(self)  
+        # initialise the key of scenarios
+        Init.scenarios(self)             
         
     def readData(self):
         """
@@ -77,14 +84,21 @@ class Prepare:
         :return: dictionary containing all the input data 
         """                
         
-        # fill the initialised dictionary by reading the carriers' data
-        Read.carriers(self)
+        # fill the initialised dictionary by reading the input carriers' data        
+        Read.carriers(self)     
         # fill the initialised dictionary by reading the netwroks' data        
         Read.networks(self)
         # fill the initialised dictionary by reading the technologies' data          
         Read.technologies(self)
+        # fill the initialised dictionary by reading the nodes' data         
+        Read.nodes(self)
+        # fill the initialised dictionary by reading the times' data           
+        Read.times(self)    
+        # fill the initialised dictionary by reading the scenarios' data       
+        Read.scenarios(self) 
         
-    
-    
-    
+    def checkData(self):
+        # TODO: define a routine to check the consistency of the data w.r.t.
+        # the nodes, times and scenarios
+        pass
         
