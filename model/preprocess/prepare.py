@@ -1,20 +1,18 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Davide Tonelli (davidetonelli@outlook.com)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                               Labratory of Risk and Reliability Engineering
-#                                         ETH Zurich, September 2021
-
-# ======================================================================================================================
-#                                    PREPARATION: DEFINE PATHS AND REARRANGE DATA
-# ======================================================================================================================
-
+Description:    Class to read the data from input files, collect them into a dictionary and convert the dictionary into a Pyomo
+                compatible dictionary to be passed to the compile routine.
+==========================================================================================================================================================================="""
 import os
 import pandas as pd
-import model.preprocess.functions.paths_data as Paths
-import model.preprocess.functions.initialise as Init
-import model.preprocess.functions.read_data as Read
+from model.preprocess.functions.paths_data import Paths
+from model.preprocess.functions.initialise import Init
+from model.preprocess.functions.read_data import Read
+from model.preprocess.functions.fill_pyomo_dictionary import FillPyoDict
 
 class Prepare:
     
@@ -22,12 +20,15 @@ class Prepare:
         """
         This class creates the dictionary containing all the input data
         organised per set according to the model formulation
-        :param analysis: dictionary defining the analysis framework
+        :param system: dictionary defining the system framework
         :return: dictionary containing all the input data
         """
         
         # instantiate analysis object
         self.analysis = analysis
+        
+        # instantiate system object
+        self.system = system
         
         # create a dictionary with the paths to access the model inputs
         self.createPaths()
@@ -37,12 +38,14 @@ class Prepare:
         
         # read data and store in the initialised dictionary
         self.readData()
+        
+        # convert data into a pyomo dictinary
+        self.createPyoDict()
 
     def createPaths(self):
         """
         This method creates a dictionary with the paths of the data split
         by carriers, networks, tecnhologies
-        :param analysis: dictionary defining the analysis framework
         :return: dictionary all the paths for reading data
         """
         
@@ -50,8 +53,6 @@ class Prepare:
         Paths.data(self)
         # create paths of the input carriers' folders
         Paths.carriers(self)    
-        # create paths of netwoks' folders        
-        Paths.networks(self)
         # create paths of technologies' folders   
         Paths.technologies(self)
         
@@ -62,12 +63,10 @@ class Prepare:
         :return: dictionary initialised with keys
         """        
         
-        self.input = dict()
+        self.data = dict()
         
         # initialise the keys with the input carriers' name
         Init.carriers(self)
-        # initialise the keys with the networks' name      
-        Init.networks(self)
         # initialise the keys with the technologies' name           
         Init.technologies(self)
         # initialise the key of nodes
@@ -86,16 +85,36 @@ class Prepare:
         
         # fill the initialised dictionary by reading the input carriers' data        
         Read.carriers(self)     
-        # fill the initialised dictionary by reading the netwroks' data        
-        Read.networks(self)
         # fill the initialised dictionary by reading the technologies' data          
-        Read.technologies(self)
+        Read.technologies(self)      
         # fill the initialised dictionary by reading the nodes' data         
         Read.nodes(self)
         # fill the initialised dictionary by reading the times' data           
         Read.times(self)    
         # fill the initialised dictionary by reading the scenarios' data       
         Read.scenarios(self) 
+        
+    def createPyoDict(self):
+        """
+        This method reshapes the input data dictionary into a dictionary 
+        with format compatible with Pyomo
+        :param system: dictionary defining the system framework
+        :param data: dictionary containing all the input data
+        :return: dictionary with data based on system in Pyomo format      
+        """
+        
+        self.pyoDict = {None:{}}
+        
+        # fill the dictionary with the sets based on system 
+        FillPyoDict.sets(self)
+        # fill the dictionary with the parameters related to the carrier
+        FillPyoDict.carrierParameters(self)
+        # fill the dictionary with the parameters related to the technology
+        FillPyoDict.technologyTranspParameters(self)
+        # fill the dictionary with the parameters related to the technology
+        FillPyoDict.technologyProductionStorageParameters(self)
+        # fill the dictionary with the parameters attributes of a technology
+        FillPyoDict.attributes(self)
         
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.

@@ -1,229 +1,119 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Davide Tonelli (davidetonelli@outlook.com)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                               Labratory of Risk and Reliability Engineering
-#                                         ETH Zurich, September 2021
-
-# ======================================================================================================================
+Description:    Class to read the data from input files, collect them into a dictionary.
+==========================================================================================================================================================================="""
 
 import pandas as pd
 import numpy as np
 from deepdiff import DeepDiff
 import sys
 import logging
+import os
 
-def carriers(self):
+class Read:
     
-    logging.info('read data of all the carriers')   
-    
-    carrierTypes = ['input_carriers',
-                    'output_carriers'
-                    ]
-    
-    for carrierType in carrierTypes:
+    def __init__(self):
+        pass
+
+    def carriers(self):
         
-        listNode = []
-        listTime = []
+        logging.info('read data of all the carriers')   
         
-        for carrierName in self.input[carrierType].keys():
+        for carrierSubset in self.analysis['carrierSubsets']:
             
-            # Read the input data of the energy carrier
-            for data_type in ['demand', 'supply', 'price']:
+            for carrierName in self.data[carrierSubset].keys():
                 
-                path = self.paths[carrierType][carrierName]['folder']
+                path = self.paths[carrierSubset][carrierName]['folder']
                 
-                fileformat = 'csv'            
-                filename = '{}.{}'.format(data_type, fileformat)
+                fileNames = [fileName for fileName in os.listdir(path)\
+                             if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
+
+                for fileName in fileNames:
+                            
+                    # table attributes                     
+                    file = pd.read_csv(path+fileName, header=0, index_col=None) 
+                    
+                    dataInput = fileName.split('.')[0]
+                    self.data[carrierSubset][carrierName][dataInput] = file
+            
+    def technologies(self):
+        
+        logging.info('read data of technologies')  
+        
+        for technologySubset in self.analysis['technologySubsets']:
+            
+            for technologyName in self.data[technologySubset].keys():
+        
+                path = self.paths[technologySubset][technologyName]['folder']
+                
+                fileNames = [fileName for fileName in os.listdir(path)\
+                             if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
+                
+                for fileName in fileNames:                 
+                            
+                    # table attributes                     
+                    file = pd.read_csv(path+fileName, header=0, index_col=None)                    
+                    dataInput = fileName.split('.')[0]
+    
+                    self.data[technologySubset][technologyName][dataInput] = file 
+              
+    def nodes(self):
+    
+        logging.info('read the nodes set') 
+          
+        path = self.paths['setNodes']['folder']        
+        
+        nameNodes = self.analysis['dataInputs']['nameNodes']
+        
+        fileNames = [fileName for fileName in os.listdir(path)\
+                     if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
+        
+        for fileName in fileNames:
                         
-                # table attributes                     
-                file = pd.read_csv(path+filename, header=0, index_col=None)
-                
-                self.input[carrierType][carrierName][data_type] =\
-                    file.loc[:,data_type].values     
-                
-                self.input[carrierType][carrierName]['node'] =\
-                    file.loc[:,'node'].values
+            file = pd.read_csv(path+fileName, header=0, index_col=None)
+            dataInput = fileName.split('.')[0]
+            
+            self.data[dataInput] = file.loc[:, nameNodes]
+            
+    def times(self):
+        
+        logging.info('read the times set')    
+        
+        path = self.paths['setTimeSteps']['folder']
+        
+        nameTimeSteps = self.analysis['dataInputs']['nameTimeSteps']
+        
+        fileNames = [fileName for fileName in os.listdir(path)\
+                     if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
+        
+        for fileName in fileNames:
+                        
+            file = pd.read_csv(path+fileName, header=0, index_col=None)
+            dataInput = fileName.split('.')[0]
+            
+            self.data[dataInput] = file.loc[:, nameTimeSteps]
                     
-                self.input[carrierType][carrierName]['time'] =\
-                    file.loc[:,'time'].values  
-                
-                if list(file.loc[:,'node'].values) != []:
-                    listNode.append(list(file.loc[:,'node'].values))
-                if list(file.loc[:,'time'].values) != []:
-                    listTime.append(list(file.loc[:,'time'].values))
+    def scenarios(self):
         
-        # verify that the input data are consinstent in time and nodes
-        if (DeepDiff([listNode[0]]*len(listNode), listNode) != {}):
-            # print(DeepDiff(listNode[0], listNode))
-            logging.error('Inconsistent nodes in carrier input data')
-    
-        elif (DeepDiff([listTime[0]]*len(listTime), listTime) != {}):
-            logging.error('Inconsistent time carrier input data')     
-                
-def networks(self):
-    
-    logging.info('read data of all the networks')       
-    
-    listMtxsize = []
-    
-    for networkName in self.input['networks'].keys():
+        logging.info('read the scenarios set') 
+         
+        path = self.paths['setScenarios']['folder']
         
-        # Read the input data of the networks
-        for data_type in ['distance']:
-            
-            path = self.paths['networks'][networkName]['folder']
-            
-            fileformat = 'csv'            
-            filename = '{}.{}'.format(data_type, fileformat)
-                    
-            # table attributes                     
-            file = pd.read_csv(path+filename, header=0, index_col=0)
-            
-            self.input['networks'][networkName][data_type] =\
-                file
-                
-            listMtxsize.append(list(file.shape))
-    
-    # verify that the input data are consinstent in time and nodes
-    if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
-        # print(DeepDiff(listMtxsize[0], listMtxsize))
-        logging.error('Inconsistent size in network input data')
+        nameScenarios = self.analysis['dataInputs']['nameScenarios']
         
-def technologies(self):
-    
-    logging.info('read data of all the technologies')      
-    
-    listMtxsize = []
-    
-    for technologyName in self.input['production_technologies'].keys():
+        fileNames = [fileName for fileName in os.listdir(path)\
+                     if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
         
-        # Read the input data of the energy carrier
-        for data_type in ['attributes', 'availability_matrix']:
+        for fileName in fileNames:
+                        
+            file = pd.read_csv(path+fileName, header=0, index_col=None)
+            dataInput = fileName.split('.')[0]
             
-            path = self.paths['production_technologies'][technologyName]['folder']
-            
-            fileformat = 'csv'            
-            filename = '{}.{}'.format(data_type, fileformat)
-                    
-            # table attributes                     
-            file = pd.read_csv(path+filename, header=0, index_col=0)
-            
-            self.input['production_technologies'][technologyName][data_type] =\
-                file
-            
-            if data_type in ['availability_matrix']:
-                listMtxsize.append(list(file.shape))
-    
-    # verify that the input data are consinstent in time and nodes
-    if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
-        # print(DeepDiff(listMtxsize[0], listMtxsize))
-        logging.error('Inconsistent size in production technology'+\
-                         ' availability matrix')   
-    
-    listMtxsize = [] 
-    
-    for technologyName in self.input['storage_technologies'].keys():
-        
-        # Read the input data of the energy carrier
-        for data_type in ['attributes', 'availability_matrix',\
-                          'max_capacity','min_capacity']:
-            
-            path = self.paths['storage_technologies'][technologyName]['folder']
-            
-            fileformat = 'csv'            
-            filename = '{}.{}'.format(data_type, fileformat)
-                    
-            # table attributes                     
-            file = pd.read_csv(path+filename, header=0, index_col=0)
-            
-            self.input['storage_technologies'][technologyName][data_type] =\
-                file   
-                
-            if data_type in ['availability_matrix','max_capacity',\
-                             'min_capacity']:
-                listMtxsize.append(list(file.shape))  
-
-        # verify that the input data are consinstent in time and nodes
-        if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
-            error = 'Inconsistent size in storage technology'+\
-                ' availability matrix'
-            logging.error(error)                  
-
-    listMtxsize = [] 
-
-    for technologyName in self.input['transport_technologies'].keys():
-        
-        # Read the input data of the energy carrier
-        for data_type in ['availability_matrix',\
-                          'cost_per_distance', 'efficiency_per_distance']:
-            
-            path = self.paths['transport_technologies'][technologyName]['folder']
-            
-            fileformat = 'csv'            
-            filename = '{}.{}'.format(data_type, fileformat)
-                    
-            # table attributes                     
-            file = pd.read_csv(path+filename, header=0, index_col=0)
-            
-            self.input['transport_technologies'][technologyName][data_type] =\
-                file   
-            
-            listMtxsize.append(list(file.shape))  
-
-        # verify that the input data are consinstent in time and nodes
-        if (DeepDiff([listMtxsize[0]]*len(listMtxsize), listMtxsize) != {}):
-        
-            error = 'Inconsistent size in transport technology input data'
-            logging.error(error)  
-            
-def nodes(self):
-
-    path = self.paths['nodes']['folder']
-    
-    data_type = 'nodes'
-    fileformat = 'csv'            
-    filename = '{}.{}'.format(data_type, fileformat)  
-    
-    file = pd.read_csv(path+filename, header=0, index_col=False)
-    
-    indexNodes = np.arange(0, file['nodes'].values.size)
-    
-    for indexNode in indexNodes:
-        self.input['nodes'][file['nodes'].iloc[indexNode]] = indexNode
-        
-def times(self):
-    
-    path = self.paths['times']['folder']
-    
-    data_type = 'times'
-    fileformat = 'csv'            
-    filename = '{}.{}'.format(data_type, fileformat)  
-    
-    file = pd.read_csv(path+filename, header=0, index_col=False)
-    
-    indexNodes = np.arange(0, file['times'].values.size)
-    
-    for indexNode in indexNodes:
-        self.input['times'][file['times'].iloc[indexNode]] = indexNode  
-        
-def scenarios(self):
-    
-    path = self.paths['scenarios']['folder']
-    
-    data_type = 'scenarios'
-    fileformat = 'csv'            
-    filename = '{}.{}'.format(data_type, fileformat)  
-    
-    file = pd.read_csv(path+filename, header=0, index_col=False)
-    
-    indexNodes = np.arange(0, file['scenarios'].values.size)
-    
-    for indexNode in indexNodes:
-        self.input['scenarios'][file['scenarios'].iloc[indexNode]] = indexNode         
-        
-                
-                             
+            self.data[dataInput] = file.loc[:, nameScenarios]
+                                         
         
     
