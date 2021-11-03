@@ -1,12 +1,12 @@
 # =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Davide Tonelli (davidetonelli@outlook.com)
+Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                               Labratory of Risk and Reliability Engineering
-#                                         ETH Zurich, September 2021
-
-# ======================================================================================================================
+Description:    Class to initialise the dictionary to store the input data.
+==========================================================================================================================================================================="""
 
 import os
 
@@ -17,7 +17,7 @@ class Init:
         
     def carriers(self):
         
-        for carrierSubset in self.system['carrierSubsets']:
+        for carrierSubset in self.analysis['carrierSubsets']:
             self.data[carrierSubset] = dict()
             path = self.paths[carrierSubset]['folder']
             
@@ -27,7 +27,7 @@ class Init:
             
     def technologies(self):
     
-        for technologySubset in self.system['technologySubsets']:
+        for technologySubset in self.analysis['technologySubsets']:
             
             self.data[technologySubset] = dict()
             path = self.paths[technologySubset]['folder']

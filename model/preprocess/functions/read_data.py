@@ -12,6 +12,7 @@ import numpy as np
 from deepdiff import DeepDiff
 import sys
 import logging
+import os
 
 class Read:
     
@@ -22,131 +23,97 @@ class Read:
         
         logging.info('read data of all the carriers')   
         
-        self.carrierTypes = {'input_carriers':'setCarriersIn',
-                             'output_carriers':'setCarriersOut',
-                             }
-        
-        self.dataTypes = {'input_carriers': ['availability', 'importPrice', 'exportPrice'],
-                     'output_carriers':['demand', 'importPrice', 'exportPrice']}
+        for carrierSubset in self.analysis['carrierSubsets']:
             
-        for carrierType in self.carrierTypes.keys():
-            
-            for carrierName in self.data[carrierType].keys():
+            for carrierName in self.data[carrierSubset].keys():
                 
-                # Read the input data of the energy carrier
-                for data_type in self.dataTypes[carrierType]:
-                    
-                    path = self.paths[carrierType][carrierName]['folder']
-                    
-                    fileformat = 'csv'            
-                    filename = '{}.{}'.format(data_type, fileformat)
+                path = self.paths[carrierSubset][carrierName]['folder']
+                
+                fileNames = [fileName for fileName in os.listdir(path)\
+                             if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
+
+                for fileName in fileNames:
                             
                     # table attributes                     
-                    file = pd.read_csv(path+filename, header=0, index_col=None) 
-                    indexList = ['scenario', 'time', 'node']
-                
-                    self.data[carrierType][carrierName][data_type] = file.set_index(indexList)
+                    file = pd.read_csv(path+fileName, header=0, index_col=None) 
+                    
+                    dataInput = fileName.split('.')[0]
+                    self.data[carrierSubset][carrierName][dataInput] = file
             
     def technologies(self):
         
-        logging.info('read data of all the technologies')      
+        logging.info('read data of technologies')  
         
-        for technologyName in self.data['production_technologies'].keys():
+        for technologySubset in self.analysis['technologySubsets']:
             
-            # Read the input data of the energy carrier
-            for data_type in ['attributes', 'availability_matrix']:
-                
-                path = self.paths['production_technologies'][technologyName]['folder']
-                
-                fileformat = 'csv'            
-                filename = '{}.{}'.format(data_type, fileformat)
-                        
-                # table attributes                     
-                file = pd.read_csv(path+filename, header=0, index_col=0)
-                
-                self.data['production_technologies'][technologyName][data_type] =\
-                    file
+            for technologyName in self.data[technologySubset].keys():
         
-        for technologyName in self.data['storage_technologies'].keys():
-            
-            # Read the input data of the energy carrier
-            for data_type in ['attributes', 'availability_matrix',\
-                              'max_capacity','min_capacity']:
+                path = self.paths[technologySubset][technologyName]['folder']
                 
-                path = self.paths['storage_technologies'][technologyName]['folder']
+                fileNames = [fileName for fileName in os.listdir(path)\
+                             if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
                 
-                fileformat = 'csv'            
-                filename = '{}.{}'.format(data_type, fileformat)
-                        
-                # table attributes                     
-                file = pd.read_csv(path+filename, header=0, index_col=0)
-                
-                self.data['storage_technologies'][technologyName][data_type] =\
-                    file   
+                for fileName in fileNames:                 
+                            
+                    # table attributes                     
+                    file = pd.read_csv(path+fileName, header=0, index_col=None)                    
+                    dataInput = fileName.split('.')[0]
     
-        for technologyName in self.data['transport_technologies'].keys():
-            
-            # Read the input data of the energy carrier
-            for data_type in ['availability_matrix',\
-                              'cost_per_distance', 'efficiency_per_distance']:
-                
-                path = self.paths['transport_technologies'][technologyName]['folder']
-                
-                fileformat = 'csv'            
-                filename = '{}.{}'.format(data_type, fileformat)
-                        
-                # table attributes                     
-                file = pd.read_csv(path+filename, header=0, index_col=0)
-                
-                self.data['transport_technologies'][technologyName][data_type] =\
-                    file   
-                
+                    self.data[technologySubset][technologyName][dataInput] = file 
+              
     def nodes(self):
     
-        path = self.paths['nodes']['folder']
+        logging.info('read the nodes set') 
+          
+        path = self.paths['setNodes']['folder']        
         
-        data_type = 'nodes'
-        fileformat = 'csv'            
-        filename = '{}.{}'.format(data_type, fileformat)  
+        nameNodes = self.analysis['dataInputs']['nameNodes']
         
-        file = pd.read_csv(path+filename, header=0, index_col=False)
+        fileNames = [fileName for fileName in os.listdir(path)\
+                     if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
         
-        indexNodes = np.arange(0, file['nodes'].values.size)
-        
-        for indexNode in indexNodes:
-            self.data['nodes'][file['nodes'].iloc[indexNode]] = indexNode
+        for fileName in fileNames:
+                        
+            file = pd.read_csv(path+fileName, header=0, index_col=None)
+            dataInput = fileName.split('.')[0]
+            
+            self.data[dataInput] = file.loc[:, nameNodes]
             
     def times(self):
         
-        path = self.paths['times']['folder']
+        logging.info('read the times set')    
         
-        data_type = 'times'
-        fileformat = 'csv'            
-        filename = '{}.{}'.format(data_type, fileformat)  
+        path = self.paths['setTimeSteps']['folder']
         
-        file = pd.read_csv(path+filename, header=0, index_col=False)
+        nameTimeSteps = self.analysis['dataInputs']['nameTimeSteps']
         
-        indexNodes = np.arange(0, file['times'].values.size)
+        fileNames = [fileName for fileName in os.listdir(path)\
+                     if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
         
-        for indexNode in indexNodes:
-            self.data['times'][file['times'].iloc[indexNode]] = indexNode  
+        for fileName in fileNames:
+                        
+            file = pd.read_csv(path+fileName, header=0, index_col=None)
+            dataInput = fileName.split('.')[0]
             
+            self.data[dataInput] = file.loc[:, nameTimeSteps]
+                    
     def scenarios(self):
         
-        path = self.paths['scenarios']['folder']
+        logging.info('read the scenarios set') 
+         
+        path = self.paths['setScenarios']['folder']
         
-        data_type = 'scenarios'
-        fileformat = 'csv'            
-        filename = '{}.{}'.format(data_type, fileformat)  
+        nameScenarios = self.analysis['dataInputs']['nameScenarios']
         
-        file = pd.read_csv(path+filename, header=0, index_col=False)
+        fileNames = [fileName for fileName in os.listdir(path)\
+                     if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
         
-        indexNodes = np.arange(0, file['scenarios'].values.size)
-        
-        for indexNode in indexNodes:
-            self.data['scenarios'][file['scenarios'].iloc[indexNode]] = indexNode      
-        
-                
-                             
+        for fileName in fileNames:
+                        
+            file = pd.read_csv(path+fileName, header=0, index_col=None)
+            dataInput = fileName.split('.')[0]
+            
+            self.data[dataInput] = file.loc[:, nameScenarios]
+                                         
         
     

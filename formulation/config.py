@@ -20,14 +20,15 @@ analysis['modelFormulation'] = 'HSC'
 
 # TOPOLOGY OF THE VALUE CHAIN SYSTEM
 system = default_config.system
-system['setCarriersIn'] = ['electricity']                                               # set of energy carriers
+system['setCarriersIn'] = ['electricity', 'dry_biomass']                                               # set of energy carriers
 system['setCarriersOut'] = ['hydrogen']                                                 # set of energy carriers
-system['setConversion'] = ['Electrolysis']                                             # set of conversion technologies
-system['setStorage'] = []                                                              # set of storage technologies
-system['setTransport'] = ['truck']                                                     # set of transport technologies
+system['setConversion'] = ['electrolysis']                                             # set of conversion technologies
+system['setStorage'] = ['carbon_storage']                                                             # set of storage technologies
+system['setTransport'] = ['pipeline_hydrogen', 'truck_hydrogen_gas', 'truck_hydrogen_liquid']                                                # set of transport technologies
+system['setProduction'] = ['electrolysis']
 system['setScenarios'] = ['a']                                                    # set of scenarios
 system['setTimeSteps'] = [1]                                                       # set of time steps
-system['setNodes'] = ['Berlin']
+system['setNodes'] = ['Berlin', 'Rome']
 
 # SOLVER SETTINGS
 solver = default_config.solver                                                         # solver options:

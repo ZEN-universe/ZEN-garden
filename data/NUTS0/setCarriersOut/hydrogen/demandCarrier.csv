@@ -1,4 +1,4 @@
-scenario,time,node,demand
+scenario,time,node,demandCarrier
 a,0,Rome,3
 a,0,Zurich,2
 a,0,Berlin,5

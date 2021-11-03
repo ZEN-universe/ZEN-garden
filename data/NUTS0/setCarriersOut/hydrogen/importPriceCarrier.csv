@@ -1,4 +1,4 @@
-scenario,time,node,exportPrice
+scenario,time,node,importPriceCarrier
 a,0,Rome,1
 a,0,Zurich,1
 a,0,Berlin,1

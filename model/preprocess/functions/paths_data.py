@@ -1,4 +1,3 @@
-# =====================================================================================================================
 """===========================================================================================================================================================================
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
@@ -30,7 +29,7 @@ class Paths:
     def carriers(self):
         
         # add the paths for all the directories in each carrier subset    
-        for carrierSubset in self.systemsystem['carriersSubsets']:
+        for carrierSubset in self.analysis['carrierSubsets']:
             path = self.paths[carrierSubset]['folder']
             for carrier in next(os.walk(path))[1]:
                 self.paths[carrierSubset][carrier] = dict()
@@ -40,7 +39,7 @@ class Paths:
     def technologies(self):
                 
         # add the paths for all the directories in technologies  
-        for technologySubset in self.system['technologiesSubsets']:        
+        for technologySubset in self.analysis['technologySubsets']:        
             path = self.paths[technologySubset]['folder']
             for technology in next(os.walk(path))[1]:
                 self.paths[technologySubset][technology] = dict()

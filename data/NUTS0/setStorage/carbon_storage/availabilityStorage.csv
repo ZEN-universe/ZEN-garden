@@ -1,0 +1,10 @@
+scenario,time,node,availabilityStorage
+a,0,Rome,1
+a,0,Zurich,1
+a,0,Berlin,0
+a,1,Rome,1
+a,1,Zurich,1
+a,1,Berlin,0
+a,2,Rome,1
+a,2,Zurich,1
+a,2,Berlin,1

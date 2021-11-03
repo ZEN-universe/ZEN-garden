@@ -86,7 +86,7 @@ class Prepare:
         # fill the initialised dictionary by reading the input carriers' data        
         Read.carriers(self)     
         # fill the initialised dictionary by reading the technologies' data          
-        Read.technologies(self)
+        Read.technologies(self)      
         # fill the initialised dictionary by reading the nodes' data         
         Read.nodes(self)
         # fill the initialised dictionary by reading the times' data           
@@ -107,11 +107,14 @@ class Prepare:
         
         # fill the dictionary with the sets based on system 
         FillPyoDict.sets(self)
-        
         # fill the dictionary with the parameters related to the carrier
         FillPyoDict.carrierParameters(self)
-        
-        
+        # fill the dictionary with the parameters related to the technology
+        FillPyoDict.technologyTranspParameters(self)
+        # fill the dictionary with the parameters related to the technology
+        FillPyoDict.technologyProductionStorageParameters(self)
+        # fill the dictionary with the parameters attributes of a technology
+        FillPyoDict.attributes(self)
         
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.
