@@ -23,7 +23,6 @@ class FillPyoDict:
         for setName in self.data.keys():
             # create sets
             self.pyoDict[None][setName] = {None: self.system[setName]}
-
         
     def carrierParameters(self):
         """
@@ -32,6 +31,7 @@ class FillPyoDict:
         :param analysis: dictionary defining the analysis framework
         :return: dictionary containing all the input data        
         """        
+        
         parameterNames = {
             'setCarriersIn': ['availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
             'setCarriersOut': ['demandCarrier', 'exportPriceCarrier', 'importPriceCarrier']            
@@ -42,20 +42,26 @@ class FillPyoDict:
                 for nodeName in self.system['setNodes']:
                     for timeName in self.system['setTimeSteps']:
                         for scenarioName in self.system['setScenarios']:
-                            # assumption: all the following parameters have the same data structure
+                            # warning: all the following parameters must have the same data structure
                             for parameterName in parameterNames[carrierSubset]:                                
-    
+                                # dataframe stored in data 
                                 df = self.data[carrierSubset][carrierName][parameterName]
-                                dfIndexNames = [self.analysis['dataInputs']['nameScenarios'], self.analysis['dataInputs']['nameTimeSteps'], self.analysis['dataInputs']['nameNodes']]
+                                # list of columns of the dataframe to use as indexes
+                                dfIndexNames = [self.analysis['dataInputs']['nameScenarios'],\
+                                                self.analysis['dataInputs']['nameTimeSteps'],\
+                                                self.analysis['dataInputs']['nameNodes']]
+                                # index of the single cell in the dataframe to add to the dictionary
                                 dfIndex = (scenarioName, timeName, nodeName)
+                                # column of the single cell in the dataframe to add to the dictionary                                
                                 dfColumn = parameterName
+                                # key to use in the Pyomo dictionary
                                 key = (carrierName, nodeName, timeName, scenarioName)  
-                                
+                                # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                                 add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)                            
                                 
     def technologyTranspParameters(self):
         """
-        This method adds the parameters of the models dependent on the technologies based on config
+        This method adds the parameters of the models dependent on the transport technologies based on config
         :param analysis: dictionary defining the analysis framework
         :return: dictionary containing all the input data        
         """  
@@ -66,23 +72,28 @@ class FillPyoDict:
                 for nodeNameAlias in self.system['setNodes']:
                     for timeName in self.system['setTimeSteps']:
                         for scenarioName in self.system['setScenarios']:
-                            # assumption: all the following parameters have the same data structure
+                            # warning: all the following parameters must have the same data structure
                             for parameterName in ['availabilityTransport', 'costPerDistance', 'distance', 'efficiencyPerDistance']:
-        
+                                # dataframe stored in data 
                                 df = self.data[technologySubset][technologyName][parameterName]
+                                # list of columns of the dataframe to use as indexes
                                 dfIndexNames = [self.analysis['dataInputs']['nameNodes']]
+                                # index of the single cell in the dataframe to add to the dictionary
                                 dfIndex = nodeName
+                                # column of the single cell in the dataframe to add to the dictionary  
                                 dfColumn = nodeNameAlias
+                                # key to use in the Pyomo dictionary
                                 key = (technologyName, nodeName, nodeNameAlias, timeName, scenarioName)
-                                
+                                # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                                 add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)   
                                         
     def technologyProductionStorageParameters(self):
         """
-        This method adds the parameters of the models dependent on the technologies based on config
+        This method adds the parameters of the models dependent on the production technologies based on config
         :param analysis: dictionary defining the analysis framework
         :return: dictionary containing all the input data        
         """  
+        
         parameterNames = {
             'setProduction': ['availabilityProduction'],
             'setStorage': ['availabilityStorage']            
@@ -93,25 +104,38 @@ class FillPyoDict:
                 for nodeName in self.system['setNodes']:
                     for timeName in self.system['setTimeSteps']:
                         for scenarioName in self.system['setScenarios']:
-                            # assumption: all the following parameters have the same data structure
+                            # warning: all the following parameters must have the same data structure
                             for parameterName in parameterNames[technologySubset]:
-        
+                                # dataframe stored in data 
                                 df = self.data[technologySubset][technologyName][parameterName]
-                                dfIndexNames = [self.analysis['dataInputs']['nameScenarios'], self.analysis['dataInputs']['nameTimeSteps'], self.analysis['dataInputs']['nameNodes']]
+                                # list of columns of the dataframe to use as indexes
+                                dfIndexNames = [self.analysis['dataInputs']['nameScenarios'],\
+                                                self.analysis['dataInputs']['nameTimeSteps'],\
+                                                self.analysis['dataInputs']['nameNodes']]
+                                # index of the single cell in the dataframe to add to the dictionary
                                 dfIndex = (scenarioName, timeName, nodeName)
+                                # column of the single cell in the dataframe to add to the dictionary 
                                 dfColumn = parameterName
+                                # key to use in the Pyomo dictionary
                                 key = (technologyName, nodeName, timeName, scenarioName)
-                                
+                                # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                                 add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName) 
         
     def attributes(self):
+        """
+        This method adds the parameters of the models dependent on the production and storage technologies based on config
+        :param analysis: dictionary defining the analysis framework
+        :return: dictionary containing all the input data
+        """          
         
         parameterName = 'attributes'
         technologySubset = 'setProduction'        
         for attribute in ['minCapacityProduction', 'maxCapacityProduction']:
             self.pyoDict[None][attribute] = {}
             for technologyName in self.system[technologySubset]:
+                # dataframe stored in data 
                 df = self.data[technologySubset][technologyName][parameterName].set_index(['index'])
+                # add the paramter to the Pyomo dictionary
                 self.pyoDict[None][attribute][technologyName] = df.loc[attribute, parameterName]
                 
         technologySubset = 'setStorage'        
@@ -119,9 +143,13 @@ class FillPyoDict:
             self.pyoDict[None][parameterName] = {}
             for nodeName in self.system['setNodes']:
                 for technologyName in self.system[technologySubset]:
+                    # dataframe stored in data 
                     df = self.data[technologySubset][technologyName][parameterName].set_index(self.analysis['dataInputs']['nameNodes'])
+                    # key to use in the Pyomo dictionary
                     key = (technologyName, nodeName)
+                    # value to use in the Pyomo dictionary
                     value = df.loc[nodeName, parameterName]
+                    # add the paramter to the Pyomo dictionary
                     self.pyoDict[None][parameterName][key] = value     
         
         
