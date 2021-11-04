@@ -44,17 +44,14 @@ class Carrier(Element):
 
         # CONSTRAINTS
         self.constraints = {
-            'constraint_max_carrier_import': 'max carrier import from grid. Dimensions: setNodes, setTimeSteps'}
+            'constraintMaxCarrierImport': 'max carrier import from grid. Dimensions: setNodes, setTimeSteps'}
         self.addConstr(self.model, self.constraints)
 
         logging.info('added carrier sets, parameters, decision variables and constraints')
 
     #%% CONSTRAINTS
-    def constraint_max_carrier_import_rule(model, carrier, node, time):
+    def constraintMaxCarrierImportRule(model, carrier, node, time):
         """max carrier import from grid. Dimensions: setCarriers, setNodes, setTimeSteps"""
 
         return(model.importCarrier[carrier, node, time] <= model.gridIn[carrier,node,time])
-
-
-
 
