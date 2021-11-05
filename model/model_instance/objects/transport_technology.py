@@ -22,20 +22,27 @@ class TransportTechnology(Technology):
         # SETS AND SUBSETS
         self.sets = {
             'setAliasNodes':     'Copy of the set of nodes to model transport. Subset: setNodes',
-            'setTransportTech': 'Set of production technologies: Subset: setTechnologies'}
+            'setTransportTech':  'Set of production technologies: Subset: setTechnologies'}
 
         # PARAMETERS
         params = {
-            'minTransportTechLoad':     'fraction of installed transport technology size that determines the minimum load of the transport technology. Dimensions: setTransportTech',
+            'minTransportTechLoad': 'fraction of installed transport technology size that determines the minimum load of the transport technology. \
+                                     Dimensions: setTransportTech',
             }
         techParams  = self.getTechParams('TransportTech')
         self.params = {**techParams, **params}
 
         # VARIABLES
         vars = {
-            'flowTransportTech':      'carrier flow through transport technology from node i to node j. Dimensions: setCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-            'carrierFlowAux':         'auxilary variable to model the min possible flow through transport technology from node i to node j. Dimensions: setCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-            'flowLimitTransportTech': 'auxilary variable to model the minimum flow through a transport technology between nodes. Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps'}
+            'flowTransportTech':      'carrier flow through transport technology from node i to node j. \
+                                       Dimensions: setCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.\
+                                       Domain: NonNegativeReals',
+            'carrierFlowAux':         'auxiliary variable to model the min possible flow through transport technology from node i to node j. \
+                                       Dimensions: setCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.\
+                                       Domain: NonNegativeReals',
+            'flowLimitTransportTech': 'auxiliary variable to model the minimum flow through a transport technology between nodes. \
+                                       Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.\
+                                       Domain: NonNegativeReals'}
         techVars = self.getTechVars('TransportTech')
         self.vars = {**techVars, **vars}
 
@@ -71,3 +78,6 @@ class TransportTechnology(Technology):
         """min amount of carrier transported with transport technology between two nodes. Dimensions: setCarrier, setTransportTech, setNodes, setAlias, setTimeSteps"""
         return(model.flowTransportTech[carrier, tech, node, aliasNode, time] <= model.sizeTransportTech[tech, node, aliasNode, time])
 
+    def constraintAvailabilityTransportTechRule(model, tech, node, aliasNode, time):
+        """limited availability of production technology. Dimensions: setProductionTechnologies, setNodes, setTimeSteps"""
+        return (model.availabilityTransportTech[tech, node, aliasNode, time] <= model.installTransportTech[tech, node, aliasNode, time])

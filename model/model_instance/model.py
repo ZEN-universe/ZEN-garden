@@ -30,9 +30,8 @@ class Model:
         self.constraints = dict() # dictionary containing the constraints
 
         self.model = pe.AbstractModel()
-        self.addSets()
-        self.addCarriers()
-        self.addTechnologies()
+        self.addSets(self)
+        self.addElements()
 
     def addSets(self):
         """
@@ -50,36 +49,12 @@ class Model:
 
         sets = {'setCarriers':      'Set of carriers',     # Subsets: setInputCarriers, setOutputCarriers
                 'setTechnologies':  'Set of technologies', # Subsets: setTransportTechnologies, setProductionTechnologies
-                'setTimeSteps':     'Set of timesteps',
+                'setTimeSteps':     'Set of time-steps',
                 'setNodes':         'Set of nodes'}
 
         for set, setProperties in sets.items():
             peSet = pe.Set(doc=setProperties)
             setattr(self.model, set, peSet)
-
-
-        # TECHNOLOGIES
-        # self.model.setTechnologies = pe.Set()  # set of all technologies
-        # self.model.setProduction = pe.Set()  # subset containing the production technologies
-        # self.model.setTransport = pe.Set()  # subset containing transport technologies
-        # self.model.setStorage = pe.Set()  # subset containing the storage technologies
-
-        # NETWORK
-        # self.model.setNodes = pe.Set()  # set of nodes
-        # self.model.setAliasNodes = pe.Set()  # auxiliary set of nodes
-
-
-        # check if set is a subset
-        #if 'Subset' in doc:
-        #    try:  # dimension > 1?
-        #        subset = doc.split(':', 1)[-1].split(',')
-        #    try:
-        #        subset = doc.split(':', 1)[-1]
-        #    except TypeError:
-        #        print("Error in Subset definition.")
-        #    peSet = pe.Set(doc=doc, within=subset)
-        #else:
-        #    peSet = pe.Set(doc=doc)
 
     def addElements(self, analysis):
         """
