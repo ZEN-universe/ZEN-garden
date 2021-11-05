@@ -13,8 +13,8 @@ Description:  Class defining the abstract optimization model.
 import logging
 import pyomo.environ as pe
 from pyomo.opt import SolverStatus, TerminationCondition
-from objects.carrier import Carrier
-from objects.technology import Technology
+from objects.carrier import *
+from objects.technology import *
 
 class Model:
 
@@ -98,6 +98,11 @@ class Model:
             ProductionTechnology(self.model)
         if 'storage' in analysis['technologies']:
             ProductionTechnology(self.model)
+
+        for carrier in list_carriers:
+            c = Carrier()
+            c.set(data)
+            c.getCarrieravailability()
 
     def addTechnologies(self):
         """

@@ -100,7 +100,8 @@ class Element:
                 raise ValueError('Dimensions of constraint {0} are undefined'.format(constr))
 
             _,dimensions,_ = self.getProperties(self, constrProperties)
-            peConstr   = pe.Constraint(*dimensions, rule=exec('{0}_rule'.format(constr)))
+            peConstr   = pe.Constraint(*dimensions, rule=getattr(self, '{0}_rule'.format(constr))) #check if constraint can be added like that. Otherwise it might be necessary to pass the constraint in the function
 
             setattr(self.model, constr, peConstr)
+
 
