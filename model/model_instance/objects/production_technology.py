@@ -67,28 +67,26 @@ class ProductionTechnology(Technology):
     def constraintProductionTechSizeRule(model, tech, node, time):
         """min and max size of production technology. Dimensions: setProductionTech, setNodes, setTimeSteps"""
 
-        return (model.maxSizeProductionTech[tech] * model.installProductionTech[tech, node, time],
-                model.sizeProductionTech[tech, node],
-                model.maxSizeProductionTech[tech] * model.installProductionTech[tech, node, time])
+        return (model.maxSizeProductionTech[tech] * model.installProductionTech[tech, node, time], # lb
+                model.sizeProductionTech[tech, node],                                              # expr
+                model.maxSizeProductionTech[tech] * model.installProductionTech[tech, node, time]) # ub
 
     def constraintMinLoadProductionTech1Rule(model, carrier, tech, node, aliasNode, time):
         """min amount of carrier transported with transport technology between two nodes. Dimensions: setCarrier, setTransportTech, setNodes, setAlias, setTimeSteps"""
-        return (model.flowLimit[transportTech, node, aliasNode, time] * model.minSizeTransportTech[transportTech],  # lb
-                model.carrierFlowAux[carrier, transportTech, node, aliasNode, time],  # expr
-                model.flowLimit[transportTech, node, aliasNode, time] * model.maxSizeTransportTech[transportTech])  # ub
+        return (model.flowLimit[transportTech, node, aliasNode, time] * model.minSizeTransportTech[transportTech], # lb
+                model.carrierFlowAux[carrier, transportTech, node, aliasNode, time],                               # expr
+                model.flowLimit[transportTech, node, aliasNode, time] * model.maxSizeTransportTech[transportTech]) # ub
 
     def constraintMinLoadProductionTech2Rule(model, carrier, tech, node, time):
         """min amount of carrier transported with transport technology between two nodes. Dimensions: setCarrier, setTransportTech, setNodes, setAlias, setTimeSteps"""
-        return (model.carrierFlow - model.maxSizeTransportTech[transportTech] * (
-                1 - model.flowLimit[transportTech, node, aliasNode, time]),
-                model.carrierFlowAux[carrier, transportTech, node, aliasNode, time],
-                model.carrierFlow[carrier, transportTech, node, aliasNode, time])
+        return (model.carrierFlow - model.maxSizeTransportTech[tech] * (1 - model.flowLimit[tech, node, aliasNode, time]), # lb
+                model.carrierFlowAux[carrier, tech, node, aliasNode, time],                                                # expr
+                model.carrierFlow[carrier, tech, node, aliasNode, time])                                                   # ub
 
     def constraintMaxLoadProductionTechRule(model, carrier, tech, node, time):
         """min amount of carrier transported with transport technology between two nodes. Dimensions: setCarrier, setTransportTech, setNodes, setAlias, setTimeSteps"""
         return (model.outputProductionTech[carrier, tech, node, time] <= model.sizeProductionTech[tech, node, time])
 
-    def constraintAvailabilityProductionTechRule(model, carrier, tech, node, time):
+    def constraintAvailabilityProductionTechRule(model, tech, node, time):
         """limited availability of production technology. Dimensions: setProductionTechnologies, setNodes, setTimeSteps"""
-        return (model.carrierFlow[carrier, transportTech, node, aliasNode, time] <= model.sizeTransportTech[
-            transportTech, node, aliasNode, time])
+        return (model.availabilityProductionTech[tech, node, time] <= model.installProductionTech[tech, node, time])

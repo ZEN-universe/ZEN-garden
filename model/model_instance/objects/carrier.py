@@ -32,26 +32,34 @@ class Carrier(Element):
             'demand':        'Parameter which specifies the carrier demand. Dimensions: setCarriers, setNodes, setTimeSteps',
             'price':         'Parameter which specifies the carrier price. Dimensions: setCarriers, setNodes, setTimeSteps',
             'cFootprint':    'Parameter which specifies the carbon intensity of a carrier. Dimensions: setCarriers',
-            'cAvailability': 'Parameter which specifies the maximum energy that can be imported from the grid. Dimensions: setCarriers, setNodes, setTimeSteps'}
+            'cAvailability': 'Parameter which specifies the maximum energy that can be imported from the grid. Dimensions: setCarriersIn, setNodes, setTimeSteps'}
         self.addParams(self.model, self.params)
 
         # VARIABLES
         self.vars = {
             'importCarrier': 'node- and time-dependent carrier import from the grid. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
-            'exportCarrier': 'node- and time-dependent carrier export from the grid. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
-            'converEnergy':  'energy involved in conversion of carrier. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'}
+            'exportCarrier': 'node- and time-dependent carrier export from the grid. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'}
+            #todo add conversion energy / conditioning of carriers
+            #'converEnergy':  'energy involved in conversion of carrier. Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
         self.addVar(self.model, self.vars)
 
         # CONSTRAINTS
         self.constraints = {
-            'constraintMaxCarrierImport': 'max carrier import from grid. Dimensions: setNodes, setTimeSteps'}
+            'constraintAvailabilityCarrier': 'node- and time-dependent carrier availability. Dimensions: setCarriersIn, setNodes, setTimeSteps',
+            'constraintMassBalance':         'nodal mass balance for each time step. Dimensions: setCarriers, setNodes, setTimeSteps'}
+
         self.addConstr(self.model, self.constraints)
 
         logging.info('added carrier sets, parameters, decision variables and constraints')
 
     #%% CONSTRAINTS
-    def constraintMaxCarrierImportRule(model, carrier, node, time):
-        """max carrier import from grid. Dimensions: setCarriers, setNodes, setTimeSteps"""
+    def constraintAvailabilityCarrierRule(model, carrier, node, time):
+        """node- and time-dependent carrier availability. Dimensions: setCarriers, setNodes, setTimeSteps"""
 
-        return(model.importCarrier[carrier, node, time] <= model.gridIn[carrier,node,time])
+        return(model.importCarrier[carrier, node, time] <= model.cAvailability[carrier,node,time])
 
+
+def constraintMassBalanceRule(model, carrier, node, time):
+    """node- and time-dependent carrier availability. Dimensions: setCarriers, setNodes, setTimeSteps"""
+
+    return (model.importCarrier[carrier, node, time] <= model.cAvailability[carrier, node, time])

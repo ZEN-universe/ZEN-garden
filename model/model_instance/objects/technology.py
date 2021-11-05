@@ -43,8 +43,8 @@ class Technology(Element):
 
         dim = self.getDimensions(tech)
         vars = {
-            f'install{tech}': f'installment of a {tech} at node i and time t. Dimensions: set{tech}, {dim}, setTimeSteps',
-            f'size{tech}':    f'size of {tech} installed between nodes at time t. Dimensions: set{tech}, {dim}, setTimeSteps'}
+            f'install{tech}': f'installment of a {tech} at node i and time t. Dimensions: set{tech}, {dim}, setTimeSteps. Domain: Binary',
+            f'size{tech}':    f'size of {tech} installed between nodes at time t. Dimensions: set{tech}, {dim}, setTimeSteps. Domain: NonNegativeReals'}
 
         if tech not 'TransportTech':
             vars[f'input{tech}']   = f'Input stream of a carrier into {tech}. Dimensions: setCarrierIn, set{tech}, setNodes, setTimeSteps',
@@ -60,8 +60,7 @@ class Technology(Element):
             f'constraintMinLoad{tech}1':     f'min load of {tech}, part one. Dimensions: setCarrier, set{tech}, {dim}, setTimeSteps',
             f'constraintMinLoad{tech}2':     f'min load of {tech}, part two. Dimensions: setCarrier, set{tech}, {dim}, setTimeSteps',
             f'constraintMaxLoad{tech}':      f'max load of {tech}. Dimensions: , setTransportTech, set{tech}, {dim}, setTimeSteps',
-            f'constraintAvailability{tech}': f'limited availability of {tech}. Dimensions: set{tech}, {dim}, setTimeSteps'
-        }
+            f'constraintAvailability{tech}': f'limited availability of {tech}. Dimensions: set{tech}, {dim}, setTimeSteps'}
 
         return constraints
 
