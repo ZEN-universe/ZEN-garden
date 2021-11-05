@@ -1,4 +1,4 @@
 node,x,y
-Rome,0.2,0.1
-Zurich,1.2,0.4
-Berlin,0.5,3.7
+Rome,0,0
+Zurich,-1000,1000
+Berlin,0,2000
