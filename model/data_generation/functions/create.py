@@ -224,6 +224,7 @@ class Create:
         indexes = self.dictionary['setNodes']['Names']
         columns = self.dictionary['setNodes']['Names']
         file = pd.DataFrame(columns=columns, index=indexes)
+        file.index.name = 'node'
         ext = '.csv'
         
         for transportName in self.dictionary['setTransport']:
