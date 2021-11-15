@@ -1,15 +1,11 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Alissa Ganter (aganter@ethz.ch)
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                                     Risk and Reliability Engineering
-#                                        ETH Zurich, September 2021
-
-# ======================================================================================================================
-#                                               MODEL SETTINGS
-# adjust model settings here
-# ======================================================================================================================
+Description:  Model settings. Overwrite default values defined in default_config.py here.
+==========================================================================================================================================================================="""
 from model import default_config
 
 # ANALYSIS FRAMEWORK
