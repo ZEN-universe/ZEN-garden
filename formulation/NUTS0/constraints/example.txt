@@ -1,3 +1,0 @@
-name: productBalance
-for each: carrier, node, time
-rule: model.demand[carrier, node, time] - model.supply[carrier, node, time] - sum(model.production[carrier,node,time,tech] for tech in model.setTechnologies) == 0

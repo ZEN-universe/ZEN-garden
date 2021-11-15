@@ -2,7 +2,7 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class defining the abstract optimization model.
               The class takes as inputs the properties of the optimization problem. The properties are saved in the
@@ -13,8 +13,9 @@ Description:  Class defining the abstract optimization model.
 import logging
 import pyomo.environ as pe
 from pyomo.opt import SolverStatus, TerminationCondition
-from objects.carrier import *
-from objects.technology import *
+from model.model_instance.objects.carrier import Carrier
+from model.model_instance.objects.production_technology import ProductionTechnology
+from model.model_instance.objects.transport_technology import TransportTechnology
 
 class Model:
 
@@ -24,14 +25,13 @@ class Model:
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
         """
-
-        self.analysis = analysis  # analysis structure
-        self.solver = analysis.solver  # solver structure
-        self.constraints = dict() # dictionary containing the constraints
+        self.analysis = analysis
+        self.system = system
 
         self.model = pe.AbstractModel()
-        self.addSets(self)
+        self.addSets()
         self.addElements()
+        self.addObjectiveFunction()
 
     def addSets(self):
         """
@@ -56,7 +56,7 @@ class Model:
             peSet = pe.Set(doc=setProperties)
             setattr(self.model, set, peSet)
 
-    def addElements(self, analysis):
+    def addElements(self):
         """
         This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
         :param analysis: dictionary defining the analysis framework
@@ -65,71 +65,83 @@ class Model:
         # TODO create list of carrier types, only add relevant types
         # TODO to create list of carrier tpyes (e.g. general, CO2,...) write a function getCarrierTypes
 
-        Carrier(self.model)
+        # add carrier parameters, variables, and constraints
+        Carrier(self)
+        # add technology parameters, variables, and constraints
+        if self.system['setProduction']:
+            ProductionTechnology(self)
+        if self.system['setTransport']:
+            TransportTechnology(self)
+        if self.system['setStorage']:
+            print("Storage Technologies are not yet implemented")
 
-        if 'production' in analysis['technologies']:
-            ProductionTechnology(self.model)
-        if 'transport' in analysis['technologies']:
-            ProductionTechnology(self.model)
-        if 'storage' in analysis['technologies']:
-            ProductionTechnology(self.model)
+        #TODO: decide if mass balance should be added here instead of wihtin Carrier??
 
-        for carrier in list_carriers:
-            c = Carrier()
-            c.set(data)
-            c.getCarrieravailability()
+    def addObjectiveFunction(self):
+        """ add objective function to abstract optimization model"""
 
-    def addTechnologies(self):
-        """
-        This method sets up the parameters, variables and constraints of the technologies of the optimization problem.
-        """
-
-        # distinguish production, storage, and transport technologies
-
-        technology = Technology(self.model)
-        technology.addTechnologySets()
-        technology.addTechnologyParams()
-        technology.addTechnologyVars()
-        technology.addTechnologyConstr()
-
-    def addObjecctive(self):
+        objFunc  = self.analysis['objective']
+        objSense = self.analysis['sense']
+        objRule  = 'objective' + objFunc + 'Rule'
+        peObj    = pe.Objective(rule =  getattr(self, objRule),
+                                sense = getattr(pe,   objSense))
+        setattr(self.model, objFunc, peObj)
+    # %% CONSTRAINTS
+    def objectiveTotalCostRule(model):
         """
         :return:
         """
+        # carrier
+        carrierCost = sum(sum(sum(model.importCarrier[carrier, node, time] * model.price[carrier, node, time]
+                                for time in model.setTimeSteps)
+                            for node in model.setNodes)
+                        for carrier in model.setCarriersIn)
 
-        # TODO figure out a way to formulate objective function using pyomo?
+        # production and storage techs
+        installCost = 0
+        for techType in ['Production', 'Storage']:
+            if hassattr(model, f'set{techType}'):
+                installCost += sum(sum(sum(model.installProductionTech[tech, node, time]
+                                           for time in model.setTimeSteps)
+                                        for node in model.setNodes)
+                                    for tech in getattr(model, f'set{techType}'))
 
-    def addConstr(self, listConstraints):
+        # transport techs
+        if hassattr(model, 'setTransport'):
+            installCost += sum(sum(sum(sum(model.installProductionTech[tech, node, aliasNode, time]
+                                            for time in model.setTimeSteps)
+                                        for node in model.setNodes)
+                                    for aliasNode in model.setAliasNodes)
+                                for tech in model.setTransport)
+
+        return(carrierCost + installCost)
+
+    def objectiveCarbonEmissionsRule(self):
         """
-        :param modelConstraints:
+        :return:
+        """
+        # TODO implement objective functions for emissions
+
+    def solve(self, solver, pyoDict):
+        """
+        create model instance by assigning parameter values and instantiating the sets
+        :param data: dictionary containing the input data
         :return:
         """
 
-    # TODO add Constr from csv/txt files
-    for constr in listConstraints:
-        name = constr['name']
-        forEach = constr['forEach']
-        rule = constr['rule']
+        solverName = solver['name']
+        del solver['name']
+        solverOptions = solver
 
-        exec
-        '@staticmethod def {0}({1}): return {2}'.format(name, forEach, rule)
+        logging.info("Create model instance")
+        try:
+            self.instance = self.model.create_instance(data=pyoDict)
+        except:
+            raise ValueError("Please provide pyoDict with input data.")
 
+        logging.info(f"Solve model instance using {solverName}")
+        self.opt = pe.SolverFactory(solverName, options=solverOptions)
+        self.results = self.opt.solve(self.instance, tee=True)
 
-    def solve(self):
-        """
-        :return:
-        """
-
-        options = solveroptions(self)
-
-        # TODO specify which objective function should be used depending on the settings
-
-    def save(self, diagnostic, sepc):
-        """
-        :param diagnostic:
-        :param sepc:
-        :return:
-        """
-
-        #TODO save results
+        # TODO save and evaluate results
 

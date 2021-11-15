@@ -1,20 +1,17 @@
-# =====================================================================================================================
-#                                   ENERGY-CARBON OPTIMIZATION PLATFORM
-# =====================================================================================================================
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      October-2021
+Authors:      Alissa Ganter (aganter@ethz.ch)
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-#                                Institute of Energy and Process Engineering
-#                                     Risk and Reliability Engineering
-#                                        ETH Zurich, September 2021
-
-# ======================================================================================================================
-#                                               DEFAULT SETTINGS
-# default settings of the model. Do not change this script. Changes from the default values are specified in settings.py
-# ======================================================================================================================
-
+Description:  Default settings. Changes from the default values are specified in settings.py
+==========================================================================================================================================================================="""
 
 # ANALYSIS FRAMEWORK
 analysis = dict()
-analysis['objective'] = 'minimum-cost'                                                 # objective function
+analysis['objective'] = 'TotalCost'                                                    # objective function
+analysis['sense']     = 'minimize'                                                     # sense (mininmize or maximize)
+
 analysis['technologyApproximation'] = 'linear'                                         # technology approximation
 analysis['timeHorizon'] = 25                                                           # length of time horizon in years
 analysis['timeResolution'] = 'yearly'                                                  # time resolution
@@ -42,5 +39,8 @@ system['setNodes'] = ['Berlin', 'Zurich', 'Rome']                               
 
 # SOLVER SETTINGS
 solver = dict()                                                                         # solver options:
-solver['name'] = 'gurobi',                                                              # solver name
-solver['gap'] = 0.01                                                                    # gap to optimalityanalysis
+solver['name']      = 'gurobi',                                                         # solver name
+solver['MIPgap']    = 0.01                                                              # gap to optimality
+#solver['TimeLimit'] = 8760                                                              # time limit in seconds
+
+# find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html
