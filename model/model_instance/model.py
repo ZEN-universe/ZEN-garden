@@ -2,7 +2,7 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class defining the abstract optimization model.
               The class takes as inputs the properties of the optimization problem. The properties are saved in the

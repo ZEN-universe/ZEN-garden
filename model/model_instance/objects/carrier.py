@@ -2,7 +2,7 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class defining a generic energy carrier.
               The class takes as inputs the abstract optimization model. The class adds parameters, variables and

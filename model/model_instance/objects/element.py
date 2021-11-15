@@ -2,7 +2,7 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class defining a standard element. Contains methods to add parameters, variables and constraints to the
               optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
