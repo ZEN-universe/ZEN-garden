@@ -8,25 +8,27 @@ Description:  Model settings. Overwrite default values defined in default_config
 ==========================================================================================================================================================================="""
 from model import default_config
 
-# ANALYSIS FRAMEWORK
+## Analysis - Defaul dictionary
 analysis = default_config.analysis
-analysis['timeHorizon'] = 1                                                            # length of time horizon in years
-analysis['spatialResolution'] = 'NUTS0' # config
+## System - Defaul dictionary
+system = default_config.system
+## Solver - Defaul dictionary
+solver = default_config.solver   
+
+## Analysis - settings update compared to default values
+analysis['timeHorizon'] = 1                                                            
+analysis['spatialResolution'] = 'NUTS0'
 analysis['modelFormulation'] = 'HSC'
 
-# TOPOLOGY OF THE VALUE CHAIN SYSTEM
-system = default_config.system
-system['setCarriersIn'] = ['electricity', 'dry_biomass']                                               # set of energy carriers
-system['setCarriersOut'] = ['hydrogen']                                                 # set of energy carriers
-system['setConversion'] = ['electrolysis']                                             # set of conversion technologies
-system['setStorage'] = ['carbon_storage']                                                             # set of storage technologies
-system['setTransport'] = ['pipeline_hydrogen', 'truck_hydrogen_gas', 'truck_hydrogen_liquid']                                                # set of transport technologies
-system['setProduction'] = ['electrolysis']
-system['setScenarios'] = ['a']                                                    # set of scenarios
-system['setTimeSteps'] = [1]                                                       # set of time steps
+## System - settings update compared to default values
+system['setInputCarriers'] = ['electricity', 'dry_biomass']
+system['setOutputCarriers'] = ['hydrogen']
+system['setStorageTechnologies'] = ['carbon_storage']
+system['setTransportTechnologies'] = ['pipeline_hydrogen', 'truck_hydrogen_gas', 'truck_hydrogen_liquid']
+system['setProductionTechnologies'] = ['electrolysis']
+system['setScenarios'] = 'a'
+system['setTimeSteps'] = [1]
 system['setNodes'] = ['Berlin', 'Rome']
 
-# SOLVER SETTINGS
-solver = default_config.solver                                                         # solver options:
-solver['name'] = 'gurobi',                                                              # solver name
-solver['gap'] = 0.01                                                                    # gap to optimality
+## Solver - settings update compared to default values
+solver['gap'] = 0.01
