@@ -16,9 +16,9 @@ from model.model_instance.model import Model
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
-if not os.path.exists('logs'):
-    os.mkdir('logs')
-logging.basicConfig(filename='logs/valueChain.log', level=logging.CRITICAL, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+if not os.path.exists('outputs/logs'):
+    os.mkdir('outputs/logs')
+logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.CRITICAL, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
 # prevent double printing
 logging.propagate = False
 
