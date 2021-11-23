@@ -50,7 +50,7 @@ class TransportTechnology(Technology):
 
 
         # CONSTRAINTS
-        constr = {'constraintTransportTechnologiesPerformance':  'performance of transport technology. Dimensions: setTransportTechnologies, setTransportCarriers, setNodes, setTimeSteps'}
+        constr = {}#{'constraintTransportTechnologiesPerformance':  'performance of transport technology. Dimensions: setTransportTechnologies, setTransportCarriers, setNodes, setTimeSteps'}
         # TODO add constraints for transport losses
         constr = {**constr, **self.getTechConstr()}
         self.addConstr(constr)
@@ -58,27 +58,27 @@ class TransportTechnology(Technology):
         logging.info('added transport technology sets, parameters, decision variables and constraints')
 
     def constraintTransportTechnologiesPerformanceRule(model, tech, carrier, node, aliasNode, time):
-        """conversion efficiency of production technology. Dimensions: setProductionTechnologies, setInputCarriers, setNodes, setTimeSteps"""
+        """constraint to account for transport losses. Dimensions: setTransportTechnologies, setTransportCarriers, setNodes, setTimeSteps"""
         # TODO implement transport losses
-        return (model.carrierFlow[tech, carrier, node, aliasNode, time]
-                == model.carrierFlow[tech, carrier, node, aliasNode, time])
+        return (model.carrierFlowAux[tech, carrier, node, aliasNode, time]
+                == model.carrierFlowAux[tech, carrier, node, aliasNode, time])
     
     # pre-defined in Technology class
-    def constraintTransportTechnologiesSizeRule(model, tech, node, aliasNode, time):
+    def constraintTransportTechnologiesSizeRule(model, tech, carrier, node, aliasNode, time):
         """min size of transport technology that can be installed between two nodes. setTransportTechnologiesnologies, setNodes, setAliasNodes, setTimeSteps"""
-        return(model.installTransportTechnologies[tech, node, aliasNode, time]*model.minSizeTransportTechnologies[tech], # lb
+        return(model.installTransportTechnologies[tech, node, aliasNode, time]*model.minCapacityTransport[tech], # lb
                model.sizeTransportTechnologies[tech, node, aliasNode, time],                                              # expr
-               model.installTransportTechnologies[tech, node, aliasNode, time]*model.maxSizeTransportTechnologies[tech]) # ub
+               model.installTransportTechnologies[tech, node, aliasNode, time]*model.maxCapacityTransport[tech]) # ub
     
     def constraintMinLoadTransportTechnologies1Rule(model, carrier, tech, node, aliasNode, time):
         """min amount of carrier transported with transport technology between two nodes. Dimensions: setCarrier, setTransportTechnologiesnologies, setNodes, setAlias, setTimeSteps"""
-        return(model.flowLimitTransportTechnologies[tech,node, aliasNode, time] * model.minSizeTransportTechnologies[tech], # lb
+        return(model.flowLimitTransportTechnologies[tech,node, aliasNode, time] * model.minCapacityTransport[tech], # lb
                model.carrierFlowAux[carrier, tech, node, aliasNode, time],                              # expr
-               model.flowLimitTransportTechnologies[tech,node, aliasNode, time] * model.maxSizeTransportTechnologies[tech]) # ub
+               model.flowLimitTransportTechnologies[tech,node, aliasNode, time] * model.maxCapacityTransport[tech]) # ub
     
     def constraintMinLoadTransportTechnologies2Rule(model, carrier, tech, node, aliasNode, time):
         """min amount of carrier transported with transport technology between two nodes. Dimensions: setCarrier, setTransportTechnologiesnologies, setNodes, setAlias, setTimeSteps"""
-        return(model.flowTransportTechnologies[carrier, tech, node, aliasNode, time] - model.maxSizeTransportTechnologies[tech]*(1-model.flowLimit[tech, node, aliasNode, time]),  # lb
+        return(model.flowTransportTechnologies[carrier, tech, node, aliasNode, time] - model.maxCapacityTransport[tech]*(1-model.flowLimit[tech, node, aliasNode, time]),  # lb
                model.carrierFlowAux[carrier, tech, node, aliasNode, time],                                                     # expr
                model.carrierFlow[carrier, tech, node, aliasNode, time])                                                        # ub
     

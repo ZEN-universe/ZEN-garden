@@ -17,6 +17,7 @@ from model.model_instance.objects.carrier import Carrier
 from model.model_instance.objects.technology.production_technology import ProductionTechnology
 from model.model_instance.objects.technology.transport_technology import TransportTechnology
 from model.model_instance.objects.objective_function import ObjectiveFunction
+from model.model_instance.objects.mass_balance import MassBalance
 
 class Model:
 
@@ -33,6 +34,7 @@ class Model:
         self.addSets()
         self.addElements()
         self.addObjectiveFunction()
+        self.addMassBalance()
 
     def addSets(self):
         """
@@ -81,11 +83,18 @@ class Model:
         #TODO: decide if mass balance should be added here instead of wihtin Carrier??
 
     def addObjectiveFunction(self):
-        """ 
+        """
         Add objective function to abstract optimization model
         """
-        
-        ObjectiveFunction(self.analysis, self.model)
+
+        ObjectiveFunction(self)
+
+    def addMassBalance(self):
+        """
+        Add objective function to abstract optimization model
+        """
+
+        MassBalance(self)
 
     def solve(self, solver, pyoDict):
         """
@@ -103,6 +112,8 @@ class Model:
         # try:
         # import sys
         # sys.exit()
+        pyoDict[None]['converEfficiency'] = {('electrolysis','electricity', 'hydrogen'): 0.65,
+                                             ('electrolysis','dry_biomass', 'hydrogen'): 0.65,}
         self.instance = self.model.create_instance(data=pyoDict)
         # except:
         #     raise ValueError("Please provide pyoDict with input data.")

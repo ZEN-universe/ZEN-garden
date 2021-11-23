@@ -35,6 +35,12 @@ class FillPyoDict:
         # 'setTransportCarriers' is defined in config.py
         self.pyoDict[None]['setTransportCarriers'] = {None:[]}
         self.pyoDict[None]['setTransportCarriers'][None].extend(self.system['setTransportCarriers'])
+
+        setTechnologies = [*self.pyoDict[None]['setProductionTechnologies'][None],
+                           *self.pyoDict[None]['setTransportTechnologies'][None],
+                           *self.pyoDict[None]['setStorageTechnologies'][None]]
+        self.pyoDict[None]['setTechnologies'] = {None: setTechnologies}
+
         
     def carrierParameters(self):
         """
@@ -149,7 +155,7 @@ class FillPyoDict:
                 # dataframe stored in data 
                 df = self.data[technologySubset][technologyName][parameterName].set_index(['index'])
                 # add the paramter to the Pyomo dictionary
-                self.pyoDict[None][attribute][technologyName] = df.loc[attribute, parameterName]
+                self.pyoDict[None][attribute][(technologyName)] = df.loc[attribute, parameterName]
                 
         technologySubset = 'setStorageTechnologies'        
         for parameterName in ['minCapacityStorage', 'maxCapacityStorage']:
