@@ -46,6 +46,8 @@ class Element:
                 if ',' in dimensions:
                     dimensions = dimensions.split(',')
                     dimensions = [getattr(self.model, dim.strip()) for dim in dimensions]
+                else:
+                    dimensions = [getattr(self.model, dimensions.strip())]
             if 'Domain' in propertyName:
                 domain = propertyName.split(':')[-1].strip()
                 domain = getattr(pe, domain)

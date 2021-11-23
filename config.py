@@ -19,6 +19,7 @@ solver = default_config.solver
 analysis['timeHorizon'] = 1                                                            
 analysis['spatialResolution'] = 'NUTS0'
 analysis['modelFormulation'] = 'HSC'
+analysis['technologyApproximation'] = 'linear'
 
 ## System - settings update compared to default values
 system['setInputCarriers'] = ['electricity', 'dry_biomass']
