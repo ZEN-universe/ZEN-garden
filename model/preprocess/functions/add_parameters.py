@@ -14,7 +14,7 @@ def add_parameter(dictionary, df, dfIndexNames, dfIndex, dfColumn, key, paramete
     
     else:
         df = df.set_index(dfIndexNames)
-                                     
+        
         value = df.loc[dfIndex, dfColumn] 
 
         if parameterName not in dictionary.keys():       

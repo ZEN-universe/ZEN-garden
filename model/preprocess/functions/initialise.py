@@ -17,7 +17,7 @@ class Init:
         
     def carriers(self):
         
-        for carrierSubset in self.analysis['carrierSubsets']:
+        for carrierSubset in self.analysis['subsets']['setCarriers']:
             self.data[carrierSubset] = dict()
             path = self.paths[carrierSubset]['folder']
             
@@ -27,7 +27,7 @@ class Init:
             
     def technologies(self):
     
-        for technologySubset in self.analysis['technologySubsets']:
+        for technologySubset in self.analysis['subsets']['setTechnologies']:
             
             self.data[technologySubset] = dict()
             path = self.paths[technologySubset]['folder']
