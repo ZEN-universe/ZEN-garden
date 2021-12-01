@@ -27,9 +27,9 @@ class Fill:
         
         distance = self.computeDistanceMatrix(N, xArr, yArr, 'eucledian')
         
-        for nameTransport in  self.dictionary['setTransport']:
+        for nameTransport in  self.dictionary['setTransportTechnologies']:
             if 'pipeline' in nameTransport.split('_'):
-                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setTransport', nameTransport)
+                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setTransportTechnologies', nameTransport)
                 fileName = 'distance'
                 ext = '.csv'
                 df = pd.read_csv(path+fileName+ext, header=0, index_col=0)        

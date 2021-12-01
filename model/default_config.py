@@ -33,12 +33,13 @@ analysis['timeHorizon'] = 25
 analysis['timeResolution'] = 'yearly'
 # discount rate
 analysis['discountRate'] = 0.06
-# name of subsets of carriers
-analysis['carrierSubsets'] = ['setInputCarriers', 'setOutputCarriers']
-# name of subsets of technologies
-analysis['technologySubsets'] = ['setProductionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']
+# dictionary with subsets related to set
+analysis['subsets'] = {
+    'setCarriers': ['setInputCarriers', 'setOutputCarriers'], 
+    'setTechnologies': ['setProductionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']
+    }
 # headers in input files
-analysis['dataInputs'] = {'nameScenarios':'scenario', 'nameNodes':'node', 'nameTimeSteps':'time'}
+analysis['dataInputs'] = {'nameScenarios':'scenario', 'nameNodes':'node', 'nameTimeSteps':'time', 'nameConversionBalance':'energy', 'nameCarrier':'carrier'}
 # file format of input data
 analysis['fileFormat'] = 'csv'
 

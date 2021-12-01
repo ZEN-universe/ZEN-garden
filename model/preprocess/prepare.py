@@ -9,9 +9,11 @@ Description:    Class to read the data from input files, collect them into a dic
 ==========================================================================================================================================================================="""
 import os
 import pandas as pd
+from model.preprocess.functions.modify_config import UpdateConfig
 from model.preprocess.functions.paths_data import Paths
 from model.preprocess.functions.initialise import Init
 from model.preprocess.functions.read_data import Read
+from model.preprocess.functions.create_data import Create
 from model.preprocess.functions.fill_pyomo_dictionary import FillPyoDict
 
 class Prepare:
@@ -30,6 +32,9 @@ class Prepare:
         # instantiate system object
         self.system = system
         
+        # update system and analysis with derived settings
+        self.configUpdate()
+        
         # create a dictionary with the paths to access the model inputs
         self.createPaths()
         
@@ -39,9 +44,16 @@ class Prepare:
         # read data and store in the initialised dictionary
         self.readData()
         
+        # create new data items from default values and input data
+        self.createData()
+        
         # convert data into a pyomo dictinary
         self.createPyoDict()
 
+    def configUpdate(self):
+        
+        UpdateConfig.createSetsFromSubsets(self)
+        
     def createPaths(self):
         """
         This method creates a dictionary with the paths of the data split
@@ -94,6 +106,15 @@ class Prepare:
         # fill the initialised dictionary by reading the scenarios' data       
         Read.scenarios(self) 
         
+    def createData(self):
+        """
+        This method creates data from the input dataset adding default values
+        :return: new item in data dictionary
+        """
+        
+        # create efficiency matrix
+        Create.conversionMatrix(self)
+        
     def createPyoDict(self):
         """
         This method reshapes the input data dictionary into a dictionary 
@@ -109,12 +130,14 @@ class Prepare:
         FillPyoDict.sets(self)
         # fill the dictionary with the parameters related to the carrier
         FillPyoDict.carrierParameters(self)
-        # fill the dictionary with the parameters related to the technology
+        # # fill the dictionary with the parameters related to the technology
         FillPyoDict.technologyTranspParameters(self)
-        # fill the dictionary with the parameters related to the technology
+        # # fill the dictionary with the parameters related to the technology
         FillPyoDict.technologyProductionStorageParameters(self)
-        # fill the dictionary with the parameters attributes of a technology
+        # # fill the dictionary with the parameters attributes of a technology
         FillPyoDict.attributes(self)
+        # # fill the dictionary with the conversion coefficients of a technology
+        # FillPyoDict.conversionBalanceParameters(self)
         
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.

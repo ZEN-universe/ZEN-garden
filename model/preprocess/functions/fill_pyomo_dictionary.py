@@ -20,27 +20,10 @@ class FillPyoDict:
         :return: dictionary containing all the input data        
         """
         
-        for setName in self.data.keys():
-            # create sets
-            self.pyoDict[None][setName] = {None: self.system[setName]}
-        
-        ## create new sets derived from the sets from input data
-        # 'setCarriers' is composed by all the sets in the data containing 'Carrier' in the name
-        self.pyoDict[None]['setCarriers'] = {None:[]}
-        subsetCarriers = [subsetName for subsetName in self.data.keys() if 'Carrier' in subsetName]
-        if subsetCarriers != []:      
-            for setName in subsetCarriers:
-                self.pyoDict[None]['setCarriers'][None].extend(self.system[setName])
-        
-        # 'setTransportCarriers' is defined in config.py
-        self.pyoDict[None]['setTransportCarriers'] = {None:[]}
-        self.pyoDict[None]['setTransportCarriers'][None].extend(self.system['setTransportCarriers'])
-
-        setTechnologies = [*self.pyoDict[None]['setProductionTechnologies'][None],
-                           *self.pyoDict[None]['setTransportTechnologies'][None],
-                           *self.pyoDict[None]['setStorageTechnologies'][None]]
-        self.pyoDict[None]['setTechnologies'] = {None: setTechnologies}
-
+        for setName in self.system.keys():
+            if 'set' in setName:
+                # create sets
+                self.pyoDict[None][setName] = {None: self.system[setName]}
         
     def carrierParameters(self):
         """
@@ -57,12 +40,12 @@ class FillPyoDict:
         
         scenarioName = self.system['setScenarios']
         
-        for carrierSubset in self.analysis['carrierSubsets']:
+        for carrierSubset in self.analysis['subsets']['setCarriers']:
             for carrierName in self.system[carrierSubset]:
                 for nodeName in self.system['setNodes']:
                     for timeName in self.system['setTimeSteps']:
                         # warning: all the following parameters must have the same data structure
-                        for parameterName in parameterNames[carrierSubset]:                                
+                        for parameterName in parameterNames[carrierSubset]:                            
                             # dataframe stored in data 
                             df = self.data[carrierSubset][carrierName][parameterName]
                             # list of columns of the dataframe to use as indexes
@@ -74,7 +57,7 @@ class FillPyoDict:
                             # column of the single cell in the dataframe to add to the dictionary                                
                             dfColumn = parameterName
                             # key to use in the Pyomo dictionary
-                            key = (carrierName, nodeName, timeName)  
+                            key = (carrierName, nodeName, timeName)
                             # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                             add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)                            
                                 
@@ -139,7 +122,7 @@ class FillPyoDict:
                             key = (technologyName, nodeName, timeName)
                             # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                             add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName) 
-        
+    
     def attributes(self):
         """
         This method adds the parameters of the models dependent on the production and storage technologies based on config
@@ -169,6 +152,36 @@ class FillPyoDict:
                     # value to use in the Pyomo dictionary
                     value = df.loc[nodeName, parameterName]
                     # add the paramter to the Pyomo dictionary
-                    self.pyoDict[None][parameterName][key] = value     
+                    self.pyoDict[None][parameterName][key] = value           
+
+    def conversionBalanceParameters(self):
         
+            # # list of columns of the dataframe to use as indexes
+            # dfIndexNames = [self.analysis['dataInputs']['nameConversionBalance']]
+            # for carrierName in self.pyoDict[None]['setCarriers'][None]:
+            #     for carrierNameAlias in self.pyoDict[None]['setCarriers'][None]:
+            #         # index of the single cell in the dataframe to add to the dictionary
+            #         dfIndex = (carrierName)
+            #         # column of the single cell in the dataframe to add to the dictionary 
+            #         dfColumn = carrierNameAlias
+            #         # key to use in the Pyomo dictionary
+            #         key = (technologyName, carrierName, carrierNameAlias)
+            #         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
+            #         add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)               
+        
+        # Create a boolean matrix with entry = 1 only if efficiency present for the two related carriers
+        
+        pass
+    
+    def dataNonlinearIntepolation(self):
+        
+        # Create a function which interpolates the input data for the nonlinear trend
+        
+        pass
+    
+    def dataPWAApproximation(self):
+        
+        # Create a funciton which stores the support points of the linear approximation
+        
+        pass
         

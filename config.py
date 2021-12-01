@@ -7,6 +7,7 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Model settings. Overwrite default values defined in default_config.py here.
 ==========================================================================================================================================================================="""
 from model import default_config
+import string
 
 ## Analysis - Defaul dictionary
 analysis = default_config.analysis
@@ -16,20 +17,20 @@ system = default_config.system
 solver = default_config.solver   
 
 ## Analysis - settings update compared to default values
-analysis['timeHorizon'] = 1                                                            
-analysis['spatialResolution'] = 'NUTS0'
+analysis['timeHorizon'] = 1                                                      
+analysis['spatialResolution'] = 'Test'
 analysis['modelFormulation'] = 'HSC'
 analysis['technologyApproximation'] = 'linear'
 
 ## System - settings update compared to default values
-system['setInputCarriers'] = ['electricity', 'dry_biomass']
+system['setInputCarriers'] = ['electricity']
 system['setOutputCarriers'] = ['hydrogen']
-system['setStorageTechnologies'] = ['carbon_storage']
-system['setTransportTechnologies'] = ['pipeline_hydrogen', 'truck_hydrogen_gas', 'truck_hydrogen_liquid']
+system['setStorageTechnologies'] = []
+system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setProductionTechnologies'] = ['electrolysis']
 system['setScenarios'] = 'a'
-system['setTimeSteps'] = [1]
-system['setNodes'] = ['Berlin', 'Rome']
+system['setTimeSteps'] = [0]
+system['setNodes'] = list(string.ascii_uppercase[:9])
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01

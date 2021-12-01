@@ -23,7 +23,7 @@ class Read:
         
         logging.info('read data of all the carriers')   
         
-        for carrierSubset in self.analysis['carrierSubsets']:
+        for carrierSubset in self.analysis['subsets']['setCarriers']:
             
             for carrierName in self.data[carrierSubset].keys():
                 
@@ -44,7 +44,7 @@ class Read:
         
         logging.info('read data of technologies')  
         
-        for technologySubset in self.analysis['technologySubsets']:
+        for technologySubset in self.analysis['subsets']['setTechnologies']:
             
             for technologyName in self.data[technologySubset].keys():
         

@@ -29,7 +29,7 @@ class Paths:
     def carriers(self):
         
         # add the paths for all the directories in each carrier subset    
-        for carrierSubset in self.analysis['carrierSubsets']:
+        for carrierSubset in self.analysis['subsets']['setCarriers']:
             path = self.paths[carrierSubset]['folder']
             for carrier in next(os.walk(path))[1]:
                 self.paths[carrierSubset][carrier] = dict()
@@ -39,7 +39,7 @@ class Paths:
     def technologies(self):
                 
         # add the paths for all the directories in technologies  
-        for technologySubset in self.analysis['technologySubsets']:        
+        for technologySubset in self.analysis['subsets']['setTechnologies']:        
             path = self.paths[technologySubset]['folder']
             for technology in next(os.walk(path))[1]:
                 self.paths[technologySubset][technology] = dict()
