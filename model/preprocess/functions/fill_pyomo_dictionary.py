@@ -156,22 +156,28 @@ class FillPyoDict:
 
     def conversionBalanceParameters(self):
         
-            # # list of columns of the dataframe to use as indexes
-            # dfIndexNames = [self.analysis['dataInputs']['nameConversionBalance']]
-            # for carrierName in self.pyoDict[None]['setCarriers'][None]:
-            #     for carrierNameAlias in self.pyoDict[None]['setCarriers'][None]:
-            #         # index of the single cell in the dataframe to add to the dictionary
-            #         dfIndex = (carrierName)
-            #         # column of the single cell in the dataframe to add to the dictionary 
-            #         dfColumn = carrierNameAlias
-            #         # key to use in the Pyomo dictionary
-            #         key = (technologyName, carrierName, carrierNameAlias)
-            #         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-            #         add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)               
+        technologySubset = 'setProductionTechnologies'
+        parameterNames = ['conversionMatrix', 'availabilityMatrix']
         
-        # Create a boolean matrix with entry = 1 only if efficiency present for the two related carriers
-        
-        pass
+        for technologyName in self.system[technologySubset]:
+            for parameterName in parameterNames:
+                for carrierName in self.system['setCarriers']:
+                    for carrierNameAlias in self.system['setCarriers']:
+                        # dataframe stored in data 
+                        df = self.data[technologySubset][technologyName][parameterName]
+                        # list of columns of the dataframe to use as indexes
+                        dfIndexNames = [self.analysis['dataInputs']['nameCarrier']]
+                        
+                        # index of the single cell in the dataframe to add to the dictionary
+                        dfIndex = carrierName
+                        # column of the single cell in the dataframe to add to the dictionary  
+                        dfColumn = carrierNameAlias
+                        # key to use in the Pyomo dictionary
+                        key = (technologyName, carrierName, carrierNameAlias)
+                        # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]                                                
+                        if self.data[technologySubset][technologyName][parameterName].set_index(dfIndexNames).loc[dfIndex, dfColumn] != 0:
+                            add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)   
+
     
     def dataNonlinearIntepolation(self):
         

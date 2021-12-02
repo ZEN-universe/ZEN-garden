@@ -15,40 +15,55 @@ class Create:
     def __init__(self):
         pass
     
-    def conversionMatrix(self):
+    def conversionMatrices(self):
         """
-        Create the efficiency matrix with the input data for each technology
+        Create the efficiency matrix with the input data for each technology and the availability matrix which defines which carriers can are converted
         """
 
-        numberCarriers = len(self.system['setCarriers'])
         technologySubset = 'setProductionTechnologies'
         inputFileName = 'conversionBalanceConstant'
-        newFileName = 'conversionMatrix'
+        newFileNameEfficiency = 'conversionMatrix'
+        newFileNameAvailability = 'availabilityMatrix'
+        
+        numberCarriers = len(self.system['setCarriers'])        
         
         for technologyName in self.system[technologySubset]:
             
+            # create empty dataframes having all the setCarriers as index and columns
+            dfConversionBalance = pd.DataFrame(np.zeros([numberCarriers, numberCarriers]),
+                                                index = self.system['setCarriers'],
+                                                columns = self.system['setCarriers'],
+                                                dtype=np.int)
+            dfAvailabilityMatrix = pd.DataFrame(np.zeros([numberCarriers, numberCarriers]),
+                                                index = self.system['setCarriers'],
+                                                columns = self.system['setCarriers'],
+                                                dtype=np.int)
+            
             # dataframe stored in data
-            dfConversionBalance = self.data[technologySubset][technologyName][inputFileName]
-            dfConversionBalance = dfConversionBalance.set_index(self.analysis['dataInputs']['nameCarrier'])
+            dataConversionBalance = self.data[technologySubset][technologyName][inputFileName]
+            dataConversionBalance = dataConversionBalance.set_index(self.analysis['dataInputs']['nameCarrier'])  
+                 
+            # list of input and output carriers
+            mapOutputCarriers = (dataConversionBalance[self.analysis['dataInputs']['nameConversionBalance']] == 1.0)
+            outputCarriers = list(dataConversionBalance[mapOutputCarriers].index)
+            # collect the remaining carriers in the input dataframe and remove the output carriers
+            inputCarriers = list(dataConversionBalance[~mapOutputCarriers].index)            
             
-            # list of carrier taken as reference
-            mapCarriersReference = (dfConversionBalance[self.analysis['dataInputs']['nameConversionBalance']] == 1.0)
-            carriersReference = list(dfConversionBalance[mapCarriersReference].index)
-            # collect the remaining carriers in the input dataframe and remove the reference carriers
-            carriersConverted = list(dfConversionBalance.index)
-            for carrierReference in carriersReference:
-                carriersConverted.remove(carrierReference)
+            for inputCarrier in inputCarriers:
+                for outputCarrier in outputCarriers:
+                    
+                    if ((inputCarrier not in self.system['setCarriers']) or (outputCarrier not in self.system['setCarriers'])):
+                        raise ValueError("Carriers in technology {technologyName} not matching setCarriers")
+                        
+                    # assign the conversion balance constants according to the input data
+                    dfConversionBalance.loc[inputCarrier, outputCarrier] = dataConversionBalance.loc[inputCarrier, self.analysis['dataInputs']['nameConversionBalance']]            
+                    # assign 0 or 1 depending if the carrier is converted
+                    dfAvailabilityMatrix.loc[inputCarrier, outputCarrier] = 1
             
-            # Create a matrix containing the parameters of the technology efficiency given in the input data 
-            dfCarriers = pd.DataFrame(
-                np.zeros([len(carriersReference), len(carriersConverted)]),
-                columns=carriersConverted,
-                index=carriersReference
-                )
+            # change the indexing and rename it as column
+            self.data[technologySubset][technologyName][newFileNameEfficiency] = dfConversionBalance.reset_index()
+            self.data[technologySubset][technologyName][newFileNameAvailability] = dfAvailabilityMatrix.reset_index()            
+            self.data[technologySubset][technologyName][newFileNameEfficiency].rename(columns={"index": self.analysis['dataInputs']['nameCarrier']}, inplace=True)
+            self.data[technologySubset][technologyName][newFileNameAvailability].rename(columns={"index": self.analysis['dataInputs']['nameCarrier']}, inplace=True)
             
-            # assign the conversion balance constants according to the input data
-            for carrierReference in carriersReference:
-                for carrierConverted in carriersConverted:
-                    dfCarriers.loc[carrierReference, carrierConverted] = dfConversionBalance.loc[carrierConverted, self.analysis['dataInputs']['nameConversionBalance']]
         
-            self.data[technologySubset][technologyName][newFileName] = dfCarriers

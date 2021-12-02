@@ -11,7 +11,6 @@ Description:  Class defining a generic energy carrier.
 import logging
 import pyomo.environ as pe
 from model.model_instance.objects.element import Element
-from model.model_instance.aux_functions.hassattr import hassattr
 
 class Carrier(Element):
 

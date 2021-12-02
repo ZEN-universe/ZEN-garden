@@ -51,7 +51,12 @@ class Prepare:
         self.createPyoDict()
 
     def configUpdate(self):
+        """
+        This method creates new entries in the dictionaries of config
+        :return: dictionaries in config with additional entries
+        """
         
+        # create new list of sets from subsets
         UpdateConfig.createSetsFromSubsets(self)
         
     def createPaths(self):
@@ -112,8 +117,8 @@ class Prepare:
         :return: new item in data dictionary
         """
         
-        # create efficiency matrix
-        Create.conversionMatrix(self)
+        # create efficiency and avaialability matrices
+        Create.conversionMatrices(self)
         
     def createPyoDict(self):
         """
@@ -136,8 +141,8 @@ class Prepare:
         FillPyoDict.technologyProductionStorageParameters(self)
         # # fill the dictionary with the parameters attributes of a technology
         FillPyoDict.attributes(self)
-        # # fill the dictionary with the conversion coefficients of a technology
-        # FillPyoDict.conversionBalanceParameters(self)
+        # fill the dictionary with the conversion coefficients of a technology
+        FillPyoDict.conversionBalanceParameters(self)
         
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.
