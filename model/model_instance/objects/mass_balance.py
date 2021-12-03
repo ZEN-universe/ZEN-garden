@@ -4,7 +4,7 @@ Created:      November-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class containing the mass balance.
+Description:  Class containing the mass balance and its attributes.
 ==========================================================================================================================================================================="""
 from model.model_instance.objects.element import Element
 import pyomo.environ as pe
@@ -12,22 +12,19 @@ import pyomo.environ as pe
 class MassBalance(Element):
 
     def __init__(self, object):
-        """
-        initialization of a generic carrier object
-        :param model: object of the abstract optimization model
-        """
+        """initialization of the mass balance
+        :param object: object of the abstract optimization model """
 
         super().__init__(object)
         constraint = {'constraintNodalMassBalance':    'nodal mass balance for each time step. \
                                                         Dimensions: setCarriers, setNodes, setTimeSteps'}
         self.addConstr(constraint)
 
+    # RULES
     @staticmethod
     def constraintNodalMassBalanceRule(model, carrier, node, time):
-        """"
-        nodal mass balance for each time step.
-        Dimensions: setCarriers, setNodes, setTimeSteps
-        """
+        """" nodal mass balance for each time step.
+        Dimensions: setCarriers, setNodes, setTimeSteps"""
         carrierImport, carrierExport = 0, 0
         if carrier in model.setInputCarriers:
                 carrierImport = model.importCarrier[carrier, node, time]

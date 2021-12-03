@@ -22,11 +22,9 @@ from model.model_instance.objects.mass_balance import MassBalance
 class Model:
 
     def __init__(self, analysis, system):
-        """
-        create Pyomo Abstract Model
+        """create Pyomo Abstract Model
         :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system
-        """
+        :param system: dictionary defining the system"""
         self.analysis = analysis
         self.system = system
 
@@ -37,18 +35,16 @@ class Model:
         self.addMassBalance()
 
     def addSets(self):
-        """
-        This method sets up the sets of the optimization problem.
+        """ This method sets up the sets of the optimization problem.
         Some sets are initialized with default values, if the value is not specified by the input data
         Sets in Pyomo:
             (1) model.ct = Set(model.t) : model.ct is “dictionary” of sets, i.e., model.ct[i] = Set() for all i in model.t
             (2) model.ct = Set(within=model.t) : model.ct is a subset of model.t, Pyomo will do the verification of this
             (3) model.i = Set(initialize=model.t) : makes a copy of whatever is in model.t during the time of construction
-            (4) model.i = SetOf(model.t) : references whatever is in model.t at runtime (alias)
-        """
+            (4) model.i = SetOf(model.t) : references whatever is in model.t at runtime (alias)"""
         
         # Sets:
-        # 'setCarriers' includes the subsets 'setInputCarriers', 'setOutputCarriers'
+        # 'setCarriers'     includes the subsets 'setInputCarriers', 'setOutputCarriers'
         # 'setTechnologies' includes the subsets 'setTransportTechnologies', 'setProductionTechnologies', 'setStorageTechnologies'
         
         sets = {'setCarriers':      'Set of carriers',
@@ -62,13 +58,9 @@ class Model:
             setattr(self.model, setName, peSet)
 
     def addElements(self):
-        """
-        This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
+        """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
         :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system
-        """
-        # TODO create list of carrier types, only add relevant types
-        # TODO to create list of carrier tpyes (e.g. general, CO2,...) write a function getCarrierTypes
+        :param system: dictionary defining the system"""
 
         # add carrier parameters, variables, and constraints
         Carrier(self)
@@ -80,28 +72,20 @@ class Model:
         if self.system['setStorageTechnologies']:
             print("Storage Technologies are not yet implemented")
 
-        #TODO: decide if mass balance should be added here instead of wihtin Carrier??
-
     def addObjectiveFunction(self):
-        """
-        Add objective function to abstract optimization model
-        """
+        """Add objective function to abstract optimization model"""
 
         ObjectiveFunction(self)
 
     def addMassBalance(self):
-        """
-        Add objective function to abstract optimization model
-        """
+        """Add mass balance to abstract optimization model"""
 
         MassBalance(self)
 
     def solve(self, solver, pyoDict):
-        """
-        Create model instance by assigning parameter values and instantiating the sets
-        :param data: dictionary containing the input data
-        :return:
-        """
+        """Create model instance by assigning parameter values and instantiating the sets
+        :param solver: dictionary containing the solver settings
+        :param pyoDict: dictionary containing the input data"""
 
         solverName = solver['name']
         # del solver['name']

@@ -18,23 +18,19 @@ class Element:
     constraints = dict()
 
     def __init__(self,object):
-        """
-        initialization of an element
-        :param model: object of the abstract optimization model
-        """
+        """ initialization of an element
+        :param model: object of the abstract optimization model"""
 
         self.model = object.model
         self.analysis = object.analysis
         self.system = object.system
 
     def getProperties(self, properties):
-        """
-        get properties (doc, dimensions, domain)
+        """get properties (doc, dimensions, domain)
         :param  properties:      parameter, variable or constraint properties
         :return doc:             documentation
         :return dimensions:      dimensions of the parameter, variable, constraint
-        :return domain:          variable domain, empty for parameters and constraints
-        """
+        :return domain:          variable domain, empty for parameters and constraints"""
 
         doc        = properties
         dimensions = []
@@ -56,9 +52,8 @@ class Element:
 
     def addSubsets(self, subsets):
         """
-        add sets to model
-        :param sets: dictionary containing set names and properties
-        """
+        add sets or subsets to model
+        :param sets: dictionary containing set names and properties"""
 
         for setName, setProperty in subsets.items():
             if 'Subset' in setProperty:
@@ -73,10 +68,8 @@ class Element:
             setattr(self.model, setName, peSet)
 
     def addParams(self, params):
-        """
-        add parameter to model
-        :param params: dictionary containing param names and properties
-        """
+        """add parameters to model
+        :param params: dictionary containing param names and properties"""
 
         for param, paramProperties in params.items():
             if not 'Dimensions' in paramProperties:
@@ -88,10 +81,8 @@ class Element:
             setattr(self.model, param, peParam)
 
     def addVars(self, variables):
-        """
-        add variable to model
-        :param variables: dictionary containing var names and properties
-        """
+        """add variables to model
+        :param variables: dictionary containing var names and properties"""
 
         for var, varProperties in variables.items():
             if not 'Dimensions' in varProperties:
@@ -105,7 +96,7 @@ class Element:
             setattr(self.model, var, peVar)
 
     def addConstr(self, constraints):
-        """add constraint to model
+        """add constraints to model
         :param constraints: dictionary containing var names and properties"""
 
         for constr, constrProperties in constraints.items():
