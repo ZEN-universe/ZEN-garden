@@ -53,15 +53,16 @@ class ProductionTechnology(Technology):
         # CONSTRAINTS
         constr = {
             'constraintProductionTechnologiesPerformance': 'Conversion efficiency of production technology. \
-                                                            Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers, setNodes, setTimeSteps',
-            'constraintMinLoadProductionTechnologies1':    'min load of production technology, part one. \
-                                                            Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps',
-            'constraintMinLoadProductionTechnologies2':    'min load of production technology, part two. \
-                                                            Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps',
-            'constraintMaxLoadProductionTechnologies1':    'max load of production technology, part one. \
-                                                            Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps',
-            'constraintMaxLoadProductionTechnologies2':    'max load of production technology, part two. \
-                                                            Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps'}
+                                                            Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers, setNodes, setTimeSteps'
+            #'constraintMinLoadProductionTechnologies1':    'min load of production technology, part one. \
+            #                                                Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps',
+            #'constraintMinLoadProductionTechnologies2':    'min load of production technology, part two. \
+            #                                                Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps',
+            #'constraintMaxLoadProductionTechnologies1':    'max load of production technology, part one. \
+            #                                                Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps',
+            #'constraintMaxLoadProductionTechnologies2':    'max load of production technology, part two. \
+            #                                                Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps'
+                                                            }
         constr = {**constr, **self.getTechConstr()}
         self.addConstr(constr)
 

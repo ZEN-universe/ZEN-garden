@@ -30,29 +30,33 @@ class ObjectiveFunction(Element):
         """
     
         # carrier
-        # carrierCost = sum(sum(sum(model.importCarrier[carrier, node, time] * model.price[carrier, node, time]
-        #                         for time in model.setTimeSteps)
-        #                     for node in model.setNodes)
-        #                 for carrier in model.setCarriersIn)
-        #
-        # # production and storage techs
-        # installCost = 0
-        # for techType in ['Production', 'Storage']:
-        #     if hassattr(model, f'set{techType}Technologies'):
-        #         installCost += sum(sum(sum(model.installProductionTech[tech, node, time]
-        #                                    for time in model.setTimeSteps)
-        #                                 for node in model.setNodes)
-        #                             for tech in getattr(model, f'set{techType}Technologies'))
-        #
-        # # transport techs
-        # if hassattr(model, 'setTransport'):
-        #     installCost += sum(sum(sum(sum(model.installProductionTech[tech, node, aliasNode, time]
-        #                                     for time in model.setTimeSteps)
-        #                                 for node in model.setNodes)
-        #                             for aliasNode in model.setAliasNodes)
-        #                         for tech in model.setTransport)
+        carrierImport = sum(sum(sum(model.importCarrier[carrier, node, time] * model.importPriceCarrier[carrier, node, time]
+                                for time in model.setTimeSteps)
+                            for node in model.setNodes)
+                        for carrier in model.setInputCarriers)
+
+        carrierExport = sum(sum(sum(model.exportCarrier[carrier, node, time] * model.exportPriceCarrier[carrier, node, time]
+                                for time in model.setTimeSteps)
+                            for node in model.setNodes)
+                        for carrier in model.setOutputCarriers)
+        # production and storage techs
+        installCost = 0
+        for techType in ['Production', 'Storage']:
+            if hasattr(model, f'set{techType}Technologies'):
+                installCost += sum(sum(sum(model.installProductionTechnologies[tech, node, time]
+                                           for time in model.setTimeSteps)
+                                        for node in model.setNodes)
+                                    for tech in getattr(model, f'set{techType}Technologies'))
+
+        # transport techs
+        if hasattr(model, 'setTransport'):
+            installCost += sum(sum(sum(sum(model.installTransportTechnologies[tech, node, aliasNode, time]
+                                            for time in model.setTimeSteps)
+                                        for node in model.setNodes)
+                                    for aliasNode in model.setAliasNodes)
+                                for tech in model.setTransport)
     
-        return(1)#carrierCost + installCost)
+        return(carrierImport - carrierExport + installCost)
 
     @staticmethod
     def objectiveCarbonEmissionsRule(model):
