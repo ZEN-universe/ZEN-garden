@@ -112,8 +112,7 @@ class Model:
         # try:
         # import sys
         # sys.exit()
-        pyoDict[None]['converEfficiency'] = {('electrolysis','electricity', 'hydrogen'): 0.65,
-                                             ('electrolysis','dry_biomass', 'hydrogen'): 0.65,}
+
         self.instance = self.model.create_instance(data=pyoDict)
         # except:
         #     raise ValueError("Please provide pyoDict with input data.")

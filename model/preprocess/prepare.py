@@ -15,6 +15,7 @@ from model.preprocess.functions.initialise import Init
 from model.preprocess.functions.read_data import Read
 from model.preprocess.functions.create_data import Create
 from model.preprocess.functions.fill_pyomo_dictionary import FillPyoDict
+from model.preprocess.functions.attach_pyomo_dictionary import AddPyoDict
 
 class Prepare:
     
@@ -131,22 +132,26 @@ class Prepare:
         :return: dictionary with data based on system in Pyomo format      
         """
         
-        self.pyoDict = {None:{}}
+        self.pyoDict = {None:{}, 'NLP':{}}
         
         # fill the dictionary with the sets based on system 
         FillPyoDict.sets(self)
         # fill the dictionary with the parameters related to the carrier
         FillPyoDict.carrierParameters(self)
-        # # fill the dictionary with the parameters related to the technology
+        # fill the dictionary with the parameters related to the transport technology
         FillPyoDict.technologyTranspParameters(self)
-        # # fill the dictionary with the parameters related to the technology
+        # fill the dictionary with the parameters related to the storage and the production technology
         FillPyoDict.technologyProductionStorageParameters(self)
-        # # fill the dictionary with the parameters attributes of a technology
+        # fill the dictionary with the parameters attributes of a technology
         FillPyoDict.attributes(self)
         # fill the dictionary with the conversion coefficients of a technology
         FillPyoDict.conversionBalanceParameters(self)
-        # fille the dictionary with the PWA input data
+        # fill the dictionary with the PWA input data
         FillPyoDict.dataPWAApproximation(self)
+        
+        
+        # attach to the dictionary the interpolated functions
+        AddPyoDict.functionNonlinearApproximation(self)
         
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.

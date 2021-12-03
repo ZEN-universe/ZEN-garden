@@ -27,8 +27,8 @@ logging.propagate = False
 prepare = Prepare(analysis, system)
 
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-# model = Model(analysis, system)
-# model.solve(solver, prepare.pyoDict)
+model = Model(analysis, system)
+model.solve(solver, prepare.pyoDict)
 # results = valueChain.solve(config.solver)
 
 # EVALUATE RESULTS

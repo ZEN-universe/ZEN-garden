@@ -22,8 +22,8 @@ class Create:
 
         technologySubset = 'setProductionTechnologies'
         inputFileName = 'conversionBalanceConstant'
-        newFileNameEfficiency = 'conversionMatrix'
-        newFileNameAvailability = 'availabilityMatrix'
+        newFileNameEfficiency = 'converEfficiency'
+        newFileNameAvailability = 'converAvailability'
         
         numberCarriers = len(self.system['setCarriers'])        
         

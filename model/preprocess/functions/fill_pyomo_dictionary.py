@@ -155,9 +155,14 @@ class FillPyoDict:
                     self.pyoDict[None][parameterName][key] = value           
 
     def conversionBalanceParameters(self):
+        """
+        This method adds the parameters of the models dependent on the production and storage technologies based on config
+        :param analysis: dictionary defining the analysis framework
+        :return: dictionary containing the input data
+        """           
         
         technologySubset = 'setProductionTechnologies'
-        parameterNames = ['conversionMatrix', 'availabilityMatrix']
+        parameterNames = ['converEfficiency', 'converAvailability']
         
         for technologyName in self.system[technologySubset]:
             for parameterName in parameterNames:
@@ -182,7 +187,7 @@ class FillPyoDict:
         
         # add the parameters associated to the PWA approximation
         technologySubset = 'setProductionTechnologies'
-        approximatedParameterNames = ['CapexPWA']
+        approximatedParameterNames = ['linearCapex']
         PWAParameterNames = ['slope', 'extreme0', 'extreme1', 'value0']
         for technologyName in self.system[technologySubset]:
             for approximatedParameterName in approximatedParameterNames:
@@ -205,10 +210,5 @@ class FillPyoDict:
                         key = (technologyName, supportPointPWA)
                         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]                                                
                         add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)                       
-    
-    def dataNonlinearIntepolation(self):
-        
-        # Create a function which interpolates the input data for the nonlinear trend
-        
-        pass    
+     
         

@@ -26,7 +26,7 @@ class UpdateConfig:
     def createSupportPoints(self):
         
         technologySubset = 'setProductionTechnologies'
-        parameterNames = ['CapexPWA']
+        parameterNames = ['linearCapex']
         
         # add a set containing the supporting points of the cost
         for technologyName in self.system[technologySubset]:
@@ -34,5 +34,5 @@ class UpdateConfig:
                 df = self.data[technologySubset][technologyName][parameterName]
                 
                 # create a new set with the indexes of the supporting points
-                setName = 'set'+parameterName
+                setName = 'set'+parameterName.replace('linear', 'Linear')
                 self.system[setName] = list(df[self.analysis['dataInputs']['PWA']['supportPoints']].values)
