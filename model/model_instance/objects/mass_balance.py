@@ -18,7 +18,8 @@ class MassBalance(Element):
         """
 
         super().__init__(object)
-        constraint = {}#'constraintNodalMassBalance':    'nodal mass balance for each time step. Dimensions: setCarriers, setNodes, setTimeSteps'}
+        constraint = {'constraintNodalMassBalance':    'nodal mass balance for each time step. \
+                                                        Dimensions: setCarriers, setNodes, setTimeSteps'}
         self.addConstr(constraint)
 
     @staticmethod
@@ -29,32 +30,31 @@ class MassBalance(Element):
         """
         carrierImport, carrierExport = 0, 0
         if carrier in model.setInputCarriers:
-            if hassattr(model, 'setCarriers'):
                 carrierImport = model.importCarrier[carrier, node, time]
 
         demand = 0
         if carrier in model.setOutputCarriers:
             demand = model.demandCarrier[carrier, node, time]
-            if hassattr(model, 'setCarriers'):
-                carrierExport = model.exportCarrier[carrier, node, time]
+            carrierExport = model.exportCarrier[carrier, node, time]
 
         carrierProductionIn, carrierProductionOut = 0, 0
-        if hassattr(model, 'setProductionTechnologies'):
+        if hasattr(model, 'setProductionTechnologies'):
             if carrier in model.setInputCarriers:
-                carrierProductionIn = sum(model.outputProductionTechnologies[tech, carrier, node, time] for tech in
+                carrierProductionIn = sum(model.inputProductionTechnologies[carrier, tech, node, time] for tech in
                                           model.setProductionTechnologies)
             if carrier in model.setOutputCarriers:
-                carrierProductionOut = sum(-model.outputProductionTechnologies[tech, carrier, node, time] for tech in
+                carrierProductionOut = sum(-model.outputProductionTechnologies[carrier, tech, node, time] for tech in
                                            model.setProductionTechnologies)
 
         carrierFlowIn, carrierFlowOut = 0, 0
-        if hassattr(model, 'setTransportTechnologies'):
+        if hasattr(model, 'setTransportTechnologies') and carrier in model.setTransportCarriers:
             carrierFlowIn = sum(
-                sum(model.flowTransportTech[tech, carrier, aliasNode, node, time] for aliasNode in model.setAliasNodes) for
-                tech in model.setTransportTech)
+                sum(model.carrierFlow[carrier, tech, aliasNode, node, time] for aliasNode in model.setAliasNodes) for
+                tech in model.setTransportTechnologies)
             carrierFlowOut = sum(
-                sum(model.flowTransportTech[tech, carrier, node, aliasNode, time] for aliasNode in model.setAliasNodes) for
-                tech in model.setTransportTech)
+                sum(model.carrierFlow[carrier, tech, node, aliasNode, time] for aliasNode in model.setAliasNodes) for
+                tech in model.setTransportTechnologies)
+
         # TODO implement storage
 
         return (carrierImport - carrierExport
