@@ -6,7 +6,7 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class containing the available objective functions as attributes
 ==========================================================================================================================================================================="""
-from model.model_instance.aux_functions import hassattr
+
 from model.model_instance.objects.element import Element
 import pyomo.environ as pe
 
