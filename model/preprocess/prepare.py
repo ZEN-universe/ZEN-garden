@@ -32,9 +32,6 @@ class Prepare:
         # instantiate system object
         self.system = system
         
-        # update system and analysis with derived settings
-        self.configUpdate()
-        
         # create a dictionary with the paths to access the model inputs
         self.createPaths()
         
@@ -43,6 +40,9 @@ class Prepare:
         
         # read data and store in the initialised dictionary
         self.readData()
+        
+        # update system and analysis with derived settings
+        self.configUpdate()        
         
         # create new data items from default values and input data
         self.createData()
@@ -58,6 +58,8 @@ class Prepare:
         
         # create new list of sets from subsets
         UpdateConfig.createSetsFromSubsets(self)
+        # create sets of support points for PWA
+        UpdateConfig.createSupportPoints(self)        
         
     def createPaths(self):
         """
@@ -143,6 +145,8 @@ class Prepare:
         FillPyoDict.attributes(self)
         # fill the dictionary with the conversion coefficients of a technology
         FillPyoDict.conversionBalanceParameters(self)
+        # fille the dictionary with the PWA input data
+        FillPyoDict.dataPWAApproximation(self)
         
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.

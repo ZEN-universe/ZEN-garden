@@ -22,3 +22,17 @@ class UpdateConfig:
         for setName in self.analysis['subsets'].keys():
             for subsetName in self.analysis['subsets'][setName]:
                 self.system[setName].extend(self.system[subsetName])
+                
+    def createSupportPoints(self):
+        
+        technologySubset = 'setProductionTechnologies'
+        parameterNames = ['CapexPWA']
+        
+        # add a set containing the supporting points of the cost
+        for technologyName in self.system[technologySubset]:
+            for parameterName in parameterNames:
+                df = self.data[technologySubset][technologyName][parameterName]
+                
+                # create a new set with the indexes of the supporting points
+                setName = 'set'+parameterName
+                self.system[setName] = list(df[self.analysis['dataInputs']['PWA']['supportPoints']].values)

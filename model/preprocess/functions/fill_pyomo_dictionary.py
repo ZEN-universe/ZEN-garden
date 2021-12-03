@@ -177,17 +177,38 @@ class FillPyoDict:
                         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]                                                
                         if self.data[technologySubset][technologyName][parameterName].set_index(dfIndexNames).loc[dfIndex, dfColumn] != 0:
                             add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)   
-
+    
+    def dataPWAApproximation(self):
+        
+        # add the parameters associated to the PWA approximation
+        technologySubset = 'setProductionTechnologies'
+        approximatedParameterNames = ['CapexPWA']
+        PWAParameterNames = ['slope', 'extreme0', 'extreme1', 'value0']
+        for technologyName in self.system[technologySubset]:
+            for approximatedParameterName in approximatedParameterNames:
+                df = self.data[technologySubset][technologyName][approximatedParameterName]
+                for PWAParameterName in PWAParameterNames:
+                    for supportPointPWA in df[self.analysis['dataInputs']['PWA']['supportPoints']]:
+                        
+                        parameterName = PWAParameterName+approximatedParameterName
+                        
+                        # dataframe stored in data 
+                        df = self.data[technologySubset][technologyName][approximatedParameterName]
+                        # list of columns of the dataframe to use as indexes
+                        dfIndexNames = [self.analysis['dataInputs']['PWA']['supportPoints']]
+                        
+                        # index of the single cell in the dataframe to add to the dictionary
+                        dfIndex = supportPointPWA
+                        # column of the single cell in the dataframe to add to the dictionary  
+                        dfColumn = self.analysis['dataInputs']['PWA'][PWAParameterName]
+                        # key to use in the Pyomo dictionary
+                        key = (technologyName, supportPointPWA)
+                        # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]                                                
+                        add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)                       
     
     def dataNonlinearIntepolation(self):
         
         # Create a function which interpolates the input data for the nonlinear trend
         
-        pass
-    
-    def dataPWAApproximation(self):
-        
-        # Create a funciton which stores the support points of the linear approximation
-        
-        pass
+        pass    
         

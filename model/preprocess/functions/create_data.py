@@ -66,4 +66,5 @@ class Create:
             self.data[technologySubset][technologyName][newFileNameEfficiency].rename(columns={"index": self.analysis['dataInputs']['nameCarrier']}, inplace=True)
             self.data[technologySubset][technologyName][newFileNameAvailability].rename(columns={"index": self.analysis['dataInputs']['nameCarrier']}, inplace=True)
             
+            
         
