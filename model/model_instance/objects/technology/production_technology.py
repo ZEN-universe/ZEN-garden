@@ -38,10 +38,13 @@ class ProductionTechnology(Technology):
         self.addParams(params)
 
         # DECISION VARIABLES
-        vars = {'inputProductionTechnologies':  'Input stream of a carrier into production technology. \
-                                                 Dimensions: setInputCarriers, setProductionTechnologies, setNodes, setTimeSteps. Domain: NonNegativeReals',
-                'outputProductionTechnologies':'Output stream of a carrier into production technology. \
-                                                 Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps. Domain: NonNegativeReals'}
+        vars = {'inputProductionTechnologies':     'Input stream of a carrier into production technology. \
+                                                    Dimensions: setInputCarriers, setProductionTechnologies, setNodes, setTimeSteps. Domain: NonNegativeReals',
+                'outputProductionTechnologies':    'Output stream of a carrier into production technology. \
+                                                    Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps. Domain: NonNegativeReals',
+                'outputProductionTechnologiesAux': 'Auxiliary variable to describe output stream of a carrier into production technology. \
+                                                    Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps. Domain: NonNegativeReals'
+                }
         vars = {**vars, **self.getTechVars()}
         self.addVars(vars)
         #TODO implement conditioning for e.g. hydrogen
@@ -49,7 +52,16 @@ class ProductionTechnology(Technology):
 
         # CONSTRAINTS
         constr = {
-            'constraintProductionTechnologiesPerformance': 'Conversion efficiency of production technology. Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers, setNodes, setTimeSteps'}
+            'constraintProductionTechnologiesPerformance': 'Conversion efficiency of production technology. \
+                                                            Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers, setNodes, setTimeSteps',
+            'constraintMinLoadProductionTechnologies1':    'min load of production technology, part one. \
+                                                            Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps',
+            'constraintMinLoadProductionTechnologies2':    'min load of production technology, part two. \
+                                                            Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps',
+            'constraintMaxLoadProductionTechnologies1':    'max load of production technology, part one. \
+                                                            Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps',
+            'constraintMaxLoadProductionTechnologies2':    'max load of production technology, part two. \
+                                                            Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps'}
         constr = {**constr, **self.getTechConstr()}
         self.addConstr(constr)
 
@@ -61,45 +73,52 @@ class ProductionTechnology(Technology):
         """conversion efficiency of production technology. Dimensions: setProductionTechnologiesnologies, setInputCarriers, setNodes, setTimeSteps"""
     
         if model.converEfficiency[tech, carrierIn, carrierOut]>0:
-            return (model.converEfficiency[tech, carrierIn, carrierOut] * model.inputProductionTechnologies[carrierIn, tech, node, time]
+            return(model.converEfficiency[tech, carrierIn, carrierOut] * model.inputProductionTechnologies[carrierIn, tech, node, time]
                     <= model.outputProductionTechnologies[carrierOut, tech, node, time])
         else:
             return(model.inputProductionTechnologies[carrierIn, tech, node, time] == 0)
 
-    # pre-defined in Technology class
+    ## Constraints that are pre-defined in Technology class
+    # Capacity constraints
     @staticmethod
-    def constraintProductionTechnologiesSizeRule(model, tech, node, time):
-        """min and max size of production technology. Dimensions: setProductionTechnologiesnologies, setNodes, setTimeSteps"""
+    def constraintProductionTechnologiesMinCapacityRule(model, tech, node, time):
+        """min size of production technology. Dimensions: setProductionTechnologiesnologies, setNodes, setTimeSteps"""
     
-        return (model.minCapacityProduction[tech] * model.installProductionTechnologies[tech, node, time],
-                model.sizeProductionTechnologies[tech, node, time],
-                model.maxCapacityProduction[tech] * model.installProductionTechnologies[tech, node, time])
+        return (model.minCapacityProduction[tech] * model.installProductionTechnologies[tech, node, time]
+                <= model.capacityProductionTechnologies[tech, node, time])
 
+    @ staticmethod
+    def constraintProductionTechnologiesMaxCapacityRule(model, tech, node, time):
+        """max size of production technology. Dimensions: setProductionTechnologiesnologies, setNodes, setTimeSteps"""
+        return (model.maxCapacityProduction[tech] * model.installProductionTechnologies[tech, node, time]
+                >= model.capacityProductionTechnologies[tech, node, time])
+
+    # Operational constraints
     @staticmethod
     def constraintMinLoadProductionTechnologies1Rule(model, carrier, tech, node, time):
-        """min amount of carrier transported with transport technology between two nodes. Dimensions: setCarrier, setTransportTechnologies, setNodes, setAlias, setTimeSteps"""
-        #return (model.flowLimit[tech, node, aliasNode, time] * model.minSizeProductionTech[tech], # lb
-        #        model.carrierFlowAux[carrier, Tech, node, aliasNode, time],                       # expr
-        #        model.flowLimit[tech, node, aliasNode, time] * model.maxSizeProductionTech[tech]) # ub
-        return (model.sizeProductionTechnologies[tech, node, time] >= 0)
+        """min amount of carrier produced with production technology. Dimensions: setCarrier, setProductionTechnologies, setNodes, setTimeSteps"""
+        return (model.minLoadProduction[tech] *  model.minCapacityProduction[tech] * model.installProductionTechnologies[tech, node, time]
+                <= model.outputProductionTechnologiesAux[carrier, tech, node, time])
 
     @staticmethod
     def constraintMinLoadProductionTechnologies2Rule(model, carrier, tech, node, time):
-        """min amount of carrier transported with transport technology between two nodes. Dimensions: setCarrier, setTransportTechnologies, setNodes, setAlias, setTimeSteps"""
-        #return (model.carrierFlow - model.maxSizeTransportTech[tech] * (1 - model.flowLimit[tech, node, aliasNode, time]), # lb
-        #        model.carrierFlowAux[carrier, tech, node, aliasNode, time],                                                # expr
-        #        model.carrierFlow[carrier, tech, node, aliasNode, time])                                                   # ub
-        return (model.sizeProductionTechnologies[tech, node, time] >= 0)
+        """min amount of carrier produced with production technology between two nodes. Dimensions: setCarrier, setProductionTechnologies, setNodes, setTimeSteps"""
+        return (model.outputProductionTechnologies[carrier, tech, node, time] - model.maxCapacityProduction[tech] * (1 - model.installProductionTechnologies[tech, node, time])
+                <= model.outputProductionTechnologiesAux[carrier, tech, node, time])
 
     @staticmethod
-    def constraintMaxLoadProductionTechnologiesRule(model, carrierIn, carrierOut, tech, node, time):
-        """min amount of carrier transported with transport technology between two nodes. Dimensions: setCarrier, setTransportTechnologies, setNodes, setAlias, setTimeSteps"""
-        if model.converEfficiency[tech, carrierIn, carrierOut] > 0:
-            return (model.outputProductionTechnologies[carrierOut, tech, node, time] <= model.sizeProductionTechnologies[tech, node, time])
-        else:
-            return (model.outputProductionTechnologies[carrierOut, tech, node, time] == 0)
+    def constraintMaxLoadProductionTechnologies1Rule(model, carrier, tech, node, time):
+        """max amount of carrier produced with production technology. Dimensions: setCarrier, setProductionTechnologies, setNodes, setTimeSteps"""
+        return (model.capacityProductionTechnologies[tech, node, time]
+                >= model.outputProductionTechnologiesAux[carrier, tech, node, time])
+
+    @staticmethod
+    def constraintMaxLoadProductionTechnologies2Rule(model, carrier, tech, node, time):
+        """max amount of carrier produced with production technology. Dimensions: setCarrier, setProductionTechnologies, setNodes, setTimeSteps"""
+        return (model.outputProductionTechnologies[carrier, tech, node, time]
+                >= model.outputProductionTechnologiesAux[carrier, tech, node, time])
 
     @staticmethod
     def constraintAvailabilityProductionTechnologiesRule(model, tech, node, time):
         """limited availability of production technology. Dimensions: setProductionTechnologiesnologies, setNodes, setTimeSteps"""
-        return (model.availabilityProductionTechnologies[tech, node, time] <= model.installProductionTechnologies[tech, node, time])
+        return (model.availabilityProduction[tech, node, time] <= model.installProductionTechnologies[tech, node, time])

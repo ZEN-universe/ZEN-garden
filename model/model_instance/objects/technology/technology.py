@@ -57,26 +57,23 @@ class Technology(Element):
     def getTechVars(self):
 
         variables = {
-            f'install{self.type}Technologies': f'installment of a {self.type} at node i and time t. \
-                                               Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. Domain: Binary',
-            f'size{self.type}Technologies':    f'size of {self.type} installed between nodes at time t. \
-                                               Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. Domain: NonNegativeReals'}
+            f'install{self.type}Technologies':  f'installment of a {self.type} at node i and time t. \
+                                                Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. Domain: Binary',
+            f'capacity{self.type}Technologies': f'size of {self.type} installed between nodes at time t. \
+                                                Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. Domain: NonNegativeReals'}
 
 
         return variables
 
     def getTechConstr(self):
 
-        constraints = {}
-            #f'constraint{self.type}TechnologiesSize':         f'size restriction of {self.type} technology that can be installed. \
-            #                                                 Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'
-            # f'constraintMinLoad{self.type}Technologies1':     f'min load of {self.type} technology, part one. \
-            #                                                   Dimensions: setCarriers, set{self.type}Technologies, {self.dim}, setTimeSteps',
-            # f'constraintMinLoad{self.type}Technologies2':     f'min load of {self.type} technology, part two. \
-            #                                                   Dimensions: setCarriers, set{self.type}Technologies, {self.dim}, setTimeSteps',
-            # f'constraintMaxLoad{self.type}Technologies':      f'max load of {self.type} technology. \
-            #                                                   Dimensions: setCarriers, set{self.type}Technologies, {self.dim}, setTimeSteps',
-            # f'constraintAvailability{self.type}Technologies': f'limited availability of {self.type} technology. \
-            #                                                   Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'
+        constraints = {
+            f'constraint{self.type}TechnologiesMinCapacity':  f'min capacity of {self.type} technology that can be installed. \
+                                                              Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
+            f'constraint{self.type}TechnologiesMaxCapacity':  f'max capacity of {self.type} technology that can be installed. \
+                                                              Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
+            f'constraintAvailability{self.type}Technologies': f'limited availability of {self.type} technology. \
+                                                              Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'
+            }
 
         return constraints
