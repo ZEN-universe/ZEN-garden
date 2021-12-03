@@ -16,7 +16,9 @@ from model.model_instance.objects.element import Element
 class Technology(Element):
 
     def __init__(self, object, technologyType):
-        """init generic technology object"""
+        """init generic technology object
+        :param object: object of the abstract optimization model
+        :param technologyType: type of technology that is added to the model"""
 
         logging.info('initialize object of a generic technology')
         super().__init__(object)
@@ -24,6 +26,8 @@ class Technology(Element):
         self.dim  = self.getDimensions()
 
     def getDimensions(self):
+        """ determine dimensions depending on the technology type
+        :return dim: return dimensions"""
 
         if self.type == 'Transport':
             dim = 'setNodes, setAliasNodes'
@@ -33,6 +37,8 @@ class Technology(Element):
         return dim
 
     def getTechSubsets(self):
+        """ get the subsets of the technology type
+        :return subsets: return dictionary containing the technology subsets"""
 
         subsets = {
             f'set{self.type}Technologies': f'Set of {self.type} technologies: Subset: setTechnologies'}
@@ -41,6 +47,8 @@ class Technology(Element):
         return subsets
 
     def getTechParams(self):
+        """ get the parameters of the technology type
+        :return params: return dictionary containing the technology parameters"""
 
         params = {
             f'minCapacity{self.type}':       f'Parameter which specifies the minimum {self.type} size that can be installed. \
@@ -55,6 +63,8 @@ class Technology(Element):
         return params
 
     def getTechVars(self):
+        """ get the variables of the technology type
+        :return vars: return dictionary containing the technology variables"""
 
         variables = {
             f'install{self.type}Technologies':  f'installment of a {self.type} at node i and time t. \
@@ -66,6 +76,8 @@ class Technology(Element):
         return variables
 
     def getTechConstr(self):
+        """get the variables of the technology type
+        :return constraints: return dictionary containing the technology constraints"""
 
         constraints = {
             f'constraint{self.type}TechnologiesMinCapacity':  f'min capacity of {self.type} technology that can be installed. \

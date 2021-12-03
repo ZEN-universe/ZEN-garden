@@ -2,9 +2,10 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      November-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
+              Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:    Class containing the available objective functions as attributes
+Description:   Class containing the available objective function and its attributes.
 ==========================================================================================================================================================================="""
 
 from model.model_instance.objects.element import Element
@@ -13,6 +14,8 @@ import pyomo.environ as pe
 class ObjectiveFunction(Element):
 
     def __init__(self, object):
+        """initialization of the objective function
+        :param object: object of the abstract optimization model"""
 
         super().__init__(object)
 
@@ -23,13 +26,12 @@ class ObjectiveFunction(Element):
                                 sense = getattr(pe,   objSense))
         setattr(self.model, objFunc, peObj)
 
+    # RULES
     @staticmethod
     def objectiveTotalCostRule(model):
-        """
-        objective function to minimize the total cost
-        """
+        """objective function to minimize the total cost"""
     
-        # carrier
+        # CARRIERS
         carrierImport = sum(sum(sum(model.importCarrier[carrier, node, time] * model.importPriceCarrier[carrier, node, time]
                                 for time in model.setTimeSteps)
                             for node in model.setNodes)
@@ -39,7 +41,8 @@ class ObjectiveFunction(Element):
                                 for time in model.setTimeSteps)
                             for node in model.setNodes)
                         for carrier in model.setOutputCarriers)
-        # production and storage techs
+
+        # PRODUCTION AND STORAGE TECHNOLOGIES
         installCost = 0
         for techType in ['Production', 'Storage']:
             if hasattr(model, f'set{techType}Technologies'):
@@ -48,7 +51,7 @@ class ObjectiveFunction(Element):
                                         for node in model.setNodes)
                                     for tech in getattr(model, f'set{techType}Technologies'))
 
-        # transport techs
+        # TRANSPORT TECHNOLOGIES
         if hasattr(model, 'setTransport'):
             installCost += sum(sum(sum(sum(model.installTransportTechnologies[tech, node, aliasNode, time]
                                             for time in model.setTimeSteps)
@@ -60,8 +63,14 @@ class ObjectiveFunction(Element):
 
     @staticmethod
     def objectiveCarbonEmissionsRule(model):
-        """
-        :return:
-        """
+        """objective function to minimize total emissions"""
+
         # TODO implement objective functions for emissions
-        pass
+        return pe.Constraint.Skip
+
+    @staticmethod
+    def objectiveRisk(model):
+        """objective function to minimize total risk"""
+
+        # TODO implement objective functions for risk
+        return pe.Constraint.Skip
