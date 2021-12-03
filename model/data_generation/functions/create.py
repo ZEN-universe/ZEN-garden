@@ -75,8 +75,8 @@ class Create:
                         
                         idx +=1
             
-            for carrierName in  self.dictionary['setCarriersIn']:
-                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setCarriersIn', carrierName)
+            for carrierName in  self.dictionary['setInputCarriers']:
+                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setInputCarriers', carrierName)
                 file.to_csv(path+fileName+ext, header=True, index=False)
                 
             
@@ -98,9 +98,9 @@ class Create:
                         
                         idx +=1
             
-            for carrierName in  self.dictionary['setCarriersOut']:
+            for carrierName in  self.dictionary['setOutputCarriers']:
                 
-                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setCarriersOut', carrierName)
+                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setOutputCarriers', carrierName)
                 file.to_csv(path+fileName+ext, header=True, index=False)
                 
     def nodesFiles(self):
@@ -171,9 +171,9 @@ class Create:
                         
                         idx +=1
             
-            for carrierName in  self.dictionary['setProduction']:
+            for carrierName in  self.dictionary['setProductionTechnologies']:
                 
-                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setProduction', carrierName)
+                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setProductionTechnologies', carrierName)
                 file.to_csv(path+fileName+ext, header=True, index=False)
         
         fileName = 'attributes'
@@ -182,9 +182,9 @@ class Create:
         file = pd.DataFrame(columns=columns, index=indexes)
         file.index.name = 'index'
         
-        for carrierName in self.dictionary['setProduction']:
+        for carrierName in self.dictionary['setProductionTechnologies']:
             
-            path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setProduction', carrierName)
+            path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setProductionTechnologies', carrierName)
             file.to_csv(path+fileName+ext, header=True, index=True)
             
     def storageFiles(self):
@@ -205,9 +205,9 @@ class Create:
                         
                         idx +=1
             
-            for storageName in self.dictionary['setStorage']:
+            for storageName in self.dictionary['setStorageTechnologies']:
                 
-                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setStorage', storageName)
+                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setStorageTechnologies', storageName)
                 file.to_csv(path+fileName+ext, header=True, index=False)
         
         for fileName in ['maxCapacityStorage', 'minCapacityStorage']:
@@ -215,8 +215,8 @@ class Create:
             file = pd.DataFrame(columns=columns)
             file[self.headerNodes] = self.dictionary['setNodes']['Names']
             
-            for storageName in self.dictionary['setStorage']:
-                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setStorage', storageName)
+            for storageName in self.dictionary['setStorageTechnologies']:
+                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setStorageTechnologies', storageName)
                 file.to_csv(path+fileName+ext, header=True, index=False)     
             
     def transportFiles(self):
@@ -227,9 +227,9 @@ class Create:
         file.index.name = 'node'
         ext = '.csv'
         
-        for transportName in self.dictionary['setTransport']:
+        for transportName in self.dictionary['setTransportTechnologies']:
             for fileName in ['availabilityTransport', 'costPerDistance', 'distance', 'efficiencyPerDistance']:
-                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setTransport', transportName)
+                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setTransportTechnologies', transportName)
                 file.to_csv(path+fileName+ext, header=True, index=True)  
                 
             

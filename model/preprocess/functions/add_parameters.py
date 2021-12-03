@@ -14,7 +14,7 @@ def add_parameter(dictionary, df, dfIndexNames, dfIndex, dfColumn, key, paramete
     
     else:
         df = df.set_index(dfIndexNames)
-                                     
+        
         value = df.loc[dfIndex, dfColumn] 
 
         if parameterName not in dictionary.keys():       
@@ -23,3 +23,17 @@ def add_parameter(dictionary, df, dfIndexNames, dfIndex, dfColumn, key, paramete
         else:
             # add the indexes to the dictionary
             dictionary[parameterName][key] = value    
+            
+            
+def add_function(dictionary, function, key, parameterName):
+    
+    if parameterName not in dictionary.keys():       
+        # create a new dictionary for the function
+        dictionary[parameterName] = {key: function}
+    else:
+        # add the indexes to the dictionary
+        dictionary[parameterName][key] = function    
+    
+    
+    
+    

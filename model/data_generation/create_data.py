@@ -13,39 +13,43 @@ import os, sys
 import string
 main_directory = os.path.abspath('..//..')
 sys.path.insert(1, main_directory)
-from formulation.config import analysis
+from config import analysis
 from functions.create import Create
 from functions.fill import Fill
 
 # inputs for the creation of a the new data folder
-numberScenarios = 10
-numberTimeSteps = 3
+numberScenarios = 1
+numberTimeSteps = 1
  
 data = dict()
-data['mainFolder'] = 'NEW'
-data['setCarriersIn'] = ['dry_biomass', 'electricity']
-data['setCarriersOut'] = ['hydrogen']
-data['setNodes'] = {'Names': ['Rome', 'Zurich', 'Berlin'], 'XCoord':[0, -1000, 0], 'YCoord':[0, 1000, 2000]}
-data['setProduction'] = ['electrolysis']
+data['mainFolder'] = 'Test'
+data['setInputCarriers'] = ['electricity']
+data['setOutputCarriers'] = ['hydrogen']
+coords = np.arange(0,81, 40)
+data['setNodes'] = {'Names': list(string.ascii_uppercase)[:9], 
+                    'XCoord': list(np.tile(coords, (3,1)).flatten()), 
+                    'YCoord': list(np.tile(coords, (3,1)).T.flatten())}
+data['setProductionTechnologies'] = ['electrolysis']
 data['setScenarios'] = list(string.ascii_lowercase)[:numberScenarios]
-data['setStorage'] = ['carbon_storage']
+data['setStorageTechnologies'] = ['carbon_storage']
 data['setTimeSteps'] = np.arange(numberTimeSteps, dtype=np.int)
-data['setTransport'] = ['pipeline_hydrogen', 'truck_hydrogen_liquid']
+data['setTransportTechnologies'] = ['pipeline_hydrogen', 'truck_hydrogen_liquid']
 
-Create = Create(data, analysis)
-Create.mainFolder(data['mainFolder'])
-Create.secondLevelFolders()
-Create.thirdLevelFolders()
-
-Create.carriersInFiles()
-Create.carriersOutFiles()
-Create.productionFiles()
-Create.storageFiles()
-Create.transportFiles()
-
-Create.nodesFiles()
-Create.scenariosFiles()
-Create.timeStepsFiles()
-
-Fill = Fill(data)
-Fill.distanceMatrix()
+if True:
+    Create = Create(data, analysis)
+    Create.mainFolder(data['mainFolder'])
+    Create.secondLevelFolders()
+    Create.thirdLevelFolders()
+    
+    Create.carriersInFiles()
+    Create.carriersOutFiles()
+    Create.productionFiles()
+    Create.storageFiles()
+    Create.transportFiles()
+    
+    Create.nodesFiles()
+    Create.scenariosFiles()
+    Create.timeStepsFiles()
+    
+    Fill = Fill(data)
+    Fill.distanceMatrix()
