@@ -109,13 +109,7 @@ class Model:
         solverOptions.pop('name')
         
         logging.info("Create model instance")
-        # try:
-        # import sys
-        # sys.exit()
-
         self.instance = self.model.create_instance(data=pyoDict)
-        # except:
-        #     raise ValueError("Please provide pyoDict with input data.")
 
         logging.info(f"Solve model instance using {solverName}")
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
