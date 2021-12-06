@@ -31,24 +31,24 @@ class Carrier(Element):
 
         # PARAMETERS
         params = {
-            'demandCarrier': 'Parameter which specifies the carrier demand. Dimensions: setOutputCarriers, setNodes, setTimeSteps',
-            'exportPriceCarrier': 'Parameter which specifies the export carrier price. Dimensions: setCarriers, setNodes, setTimeSteps',
-            'importPriceCarrier': 'Parameter which specifies the import carrier price. Dimensions: setCarriers, setNodes, setTimeSteps',            
-            'footprintCarrier': 'Parameter which specifies the carbon intensity of a carrier. Dimensions: setCarriers',
-            'availabilityCarrier': 'Parameter which specifies the maximum energy that can be imported from the grid. Dimensions: setInputCarriers, setNodes, setTimeSteps'
+            'demandCarrier': 'Parameter which specifies the carrier demand. \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps',
+            'exportPriceCarrier': 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',
+            'importPriceCarrier': 'Parameter which specifies the import carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',            
+            'footprintCarrier': 'Parameter which specifies the carbon intensity of a carrier. \n\t Dimensions: setCarriers',
+            'availabilityCarrier': 'Parameter which specifies the maximum energy that can be imported from the grid. \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps'
             }
         self.addParams(params)
 
         # VARIABLES
         variables = {
-            'importCarrier': 'node- and time-dependent carrier import from the grid. Dimensions: setInputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
-            'exportCarrier': 'node- and time-dependent carrier export from the grid. Dimensions: setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
+            'importCarrier': 'node- and time-dependent carrier import from the grid. \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
+            'exportCarrier': 'node- and time-dependent carrier export from the grid. \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
             }
         self.addVars(variables)
 
         # CONSTRAINTS
         constr = {
-            'constraintAvailabilityCarrier': 'node- and time-dependent carrier availability. Dimensions: setInputCarriers, setNodes, setTimeSteps'
+            'constraintAvailabilityCarrier': 'node- and time-dependent carrier availability. \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps'
             }
         self.addConstr(constr)
 
@@ -57,8 +57,7 @@ class Carrier(Element):
     # RULES
     @staticmethod
     def constraintAvailabilityCarrierRule(model, carrier, node, time):
-        """node- and time-dependent carrier availability.
-        Dimensions: setCarriers, setNodes, setTimeSteps"""
+        """node- and time-dependent carrier availability. \n\t Dimensions: setCarriers, setNodes, setTimeSteps"""
     
         return(model.importCarrier[carrier, node, time] <= model.availabilityCarrier[carrier,node,time])
     

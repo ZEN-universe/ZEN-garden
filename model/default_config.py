@@ -62,6 +62,8 @@ system['setScenarios'] = 'a'
 system['setTimeSteps'] = [1,2,3]
 # set of nodes
 system['setNodes'] = ['Berlin', 'Zurich', 'Rome']
+# folder output
+system['folderOutput'] = 'outputs/results/'
 
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
@@ -70,3 +72,5 @@ solver['name']      = 'gurobi'
 solver['MIPgap']    = 0.01
 # time limit in seconds
 solver['TimeLimit'] = 8760
+# log file of results
+solver['logfile'] = './/outputs//logs//pyomoLogFile.log'

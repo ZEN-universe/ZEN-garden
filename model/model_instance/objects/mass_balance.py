@@ -17,14 +17,14 @@ class MassBalance(Element):
 
         super().__init__(object)
         constraint = {'constraintNodalMassBalance':    'nodal mass balance for each time step. \
-                                                        Dimensions: setCarriers, setNodes, setTimeSteps'}
+                                                        \n\t Dimensions: setCarriers, setNodes, setTimeSteps'}
         self.addConstr(constraint)
 
     # RULES
     @staticmethod
     def constraintNodalMassBalanceRule(model, carrier, node, time):
         """" nodal mass balance for each time step.
-        Dimensions: setCarriers, setNodes, setTimeSteps"""
+        \n\t Dimensions: setCarriers, setNodes, setTimeSteps"""
         carrierImport, carrierExport = 0, 0
         if carrier in model.setInputCarriers:
                 carrierImport = model.importCarrier[carrier, node, time]
