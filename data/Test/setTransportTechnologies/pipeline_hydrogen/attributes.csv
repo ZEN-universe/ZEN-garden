@@ -1,3 +1,5 @@
 index,attributes
-minCapacityProduction,0
-maxCapacityProduction,1.00E+09
+minCapacityTransport,0
+maxCapacityTransport,1.00E+09
+minLoadTransport,0
+maxLoadTransport,1.00E+09

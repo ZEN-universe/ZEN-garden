@@ -9,7 +9,7 @@ Description:    Class to add to pyomo dictionary the nonlinear functions
 from model.preprocess.functions.add_parameters import add_function
 from scipy.interpolate import interp1d
 
-class AddPyoDict:
+class FillNlpDict:
     
     def __init__(self):
         pass                  
@@ -29,4 +29,4 @@ class AddPyoDict:
                         # key to use in the Pyomo dictionary
                         key = (technologyName)
                         # add the function to the Pyomo dictionary based on the key and the function object
-                        add_function(self.pyoDict['NLP'], interp1d(x, y, kind='linear'), key, parameterName)
+                        add_function(self.nlpDict[None], interp1d(x, y, kind='linear'), key, parameterName)
