@@ -14,6 +14,7 @@ import pandas as pd
 from config import *
 from model.preprocess.prepare import Prepare
 from model.model_instance.model import Model
+from model.postprocess.evaluation import Evaluation
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -30,7 +31,6 @@ prepare = Prepare(analysis, system)
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
 model = Model(analysis, system)
 model.solve(solver, prepare.pyoDict)
-# results = valueChain.solve(config.solver)
 
 # EVALUATE RESULTS
-# postprocess(results)
+evaluation = Evaluation(system, model)

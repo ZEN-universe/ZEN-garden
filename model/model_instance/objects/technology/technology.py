@@ -52,13 +52,13 @@ class Technology(Element):
 
         params = {
             f'minCapacity{self.type}':       f'Parameter which specifies the minimum {self.type} size that can be installed. \
-                                             Dimensions: set{self.type}Technologies',
+                                             \n\t Dimensions: set{self.type}Technologies',
             f'maxCapacity{self.type}':       f'Parameter which specifies the maximum {self.type} size that can be installed. \
-                                             Dimensions: set{self.type}Technologies',
+                                             \n\t Dimensions: set{self.type}Technologies',
             f'minLoad{self.type}':           f'fraction used to determine the minimum load of/ flow through the {self.type}. \
-                                             Dimensions: set{self.type}Technologies',
+                                             \n\t Dimensions: set{self.type}Technologies',
             f'availability{self.type}':      f'node- and time-dependent availability of {self.type}. \
-                                             Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'}
+                                             \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'}
 
         return params
 
@@ -68,9 +68,10 @@ class Technology(Element):
 
         variables = {
             f'install{self.type}Technologies':  f'installment of a {self.type} at node i and time t. \
-                                                Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. Domain: Binary',
+                                                \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps.\
+                                                \n\t Domain: Binary',
             f'capacity{self.type}Technologies': f'size of {self.type} installed between nodes at time t. \
-                                                Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. Domain: NonNegativeReals'}
+                                                \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. \n\t Domain: NonNegativeReals'}
 
 
         return variables
@@ -81,11 +82,11 @@ class Technology(Element):
 
         constraints = {
             f'constraint{self.type}TechnologiesMinCapacity':  f'min capacity of {self.type} technology that can be installed. \
-                                                              Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
+                                                              \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
             f'constraint{self.type}TechnologiesMaxCapacity':  f'max capacity of {self.type} technology that can be installed. \
-                                                              Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
+                                                              \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
             f'constraintAvailability{self.type}Technologies': f'limited availability of {self.type} technology. \
-                                                              Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'
+                                                              \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'
             }
 
         return constraints

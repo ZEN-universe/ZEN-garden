@@ -1,0 +1,40 @@
+Solver command line: ['/usr/local/bin/gurobi.sh']
+
+Academic license - for non-commercial use only - expires 2022-09-17
+Using license file /Library/gurobi912/gurobi.lic
+Read LP format model from file /var/folders/_8/jlm5xxcd6f7bbwht52xhr6qw0000gp/T/tmp43ssf9i4.pyomo.lp
+Reading time = 0.00 seconds
+x388: 100 rows, 136 columns, 316 nonzeros
+Changed value of parameter MIPgap to 0.01
+   Prev: 0.0001  Min: 0.0  Max: inf  Default: 0.0001
+Changed value of parameter TimeLimit to 8760.0
+   Prev: inf  Min: 0.0  Max: inf  Default: inf
+Changed value of parameter logfile to .//outputs//logs//pyomoLogFile.log
+   Prev:   Default: 
+No parameters matching 'gap' found
+Gurobi Optimizer version 9.1.2 build v9.1.2rc0 (mac64)
+Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+Optimize a model with 100 rows, 136 columns and 316 nonzeros
+Model fingerprint: 0x2d4f7124
+Variable types: 127 continuous, 9 integer (9 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+09]
+  Objective range  [1e+00, 1e+09]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+09]
+Warning: Model contains large matrix coefficients
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 100 rows and 136 columns
+Presolve time: 0.01s
+Presolve: All rows and columns removed
+
+Explored 0 nodes (0 simplex iterations) in 0.02 seconds
+Thread count was 1 (of 8 available processors)
+
+Solution count 1: -9e+18 
+No other solutions better than -9e+18
+
+Optimal solution found (tolerance 1.00e-02)
+Best objective -8.999999973000e+18, best bound -8.999999973000e+18, gap -0.0000%
+
