@@ -132,13 +132,22 @@ class FillPyoDict:
         
         parameterName = 'attributes'
         technologySubset = 'setProductionTechnologies'        
-        for attribute in ['minCapacityProduction', 'maxCapacityProduction']:
+        for attribute in ['minCapacityProduction', 'maxCapacityProduction', 'minLoadProduction', 'maxLoadProduction']:
             self.pyoDict[None][attribute] = {}
             for technologyName in self.system[technologySubset]:
                 # dataframe stored in data 
                 df = self.data[technologySubset][technologyName][parameterName].set_index(['index'])
                 # add the paramter to the Pyomo dictionary
                 self.pyoDict[None][attribute][(technologyName)] = df.loc[attribute, parameterName]
+                
+        technologySubset = 'setTransportTechnologies'        
+        for attribute in ['minCapacityTransport', 'maxCapacityTransport', 'minLoadTransport', 'maxLoadTransport']:
+            self.pyoDict[None][attribute] = {}
+            for technologyName in self.system[technologySubset]:
+                # dataframe stored in data 
+                df = self.data[technologySubset][technologyName][parameterName].set_index(['index'])
+                # add the paramter to the Pyomo dictionary
+                self.pyoDict[None][attribute][(technologyName)] = df.loc[attribute, parameterName]                
                 
         technologySubset = 'setStorageTechnologies'        
         for parameterName in ['minCapacityStorage', 'maxCapacityStorage']:

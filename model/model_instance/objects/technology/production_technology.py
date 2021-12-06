@@ -30,8 +30,8 @@ class ProductionTechnology(Technology):
         self.addSubsets(subsets)
 
         # PARAMETERS
-        params = {'converAvailability':  'Parameter that links production technology, input, and ouput carriers. \'
-                                         'Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers'}
+        params = {'converAvailability':  'Parameter that links production technology, input, and ouput carriers. \
+                                         Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers'}
         if self.analysis['technologyApproximation'] == 'linear':
             params['converEfficiency'] = 'Parameter which specifies the linear conversion efficiency of a technology.\
                                           Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers'

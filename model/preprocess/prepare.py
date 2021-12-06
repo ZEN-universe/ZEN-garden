@@ -15,7 +15,7 @@ from model.preprocess.functions.initialise import Init
 from model.preprocess.functions.read_data import Read
 from model.preprocess.functions.create_data import Create
 from model.preprocess.functions.fill_pyomo_dictionary import FillPyoDict
-from model.preprocess.functions.attach_pyomo_dictionary import AddPyoDict
+from model.preprocess.functions.fill_nlp_dictionary import FillNlpDict
 
 class Prepare:
     
@@ -132,7 +132,7 @@ class Prepare:
         :return: dictionary with data based on system in Pyomo format      
         """
         
-        self.pyoDict = {None:{}, 'NLP':{}}
+        self.pyoDict = {None:{}}
         
         # fill the dictionary with the sets based on system 
         FillPyoDict.sets(self)
@@ -149,9 +149,10 @@ class Prepare:
         # fill the dictionary with the PWA input data
         FillPyoDict.dataPWAApproximation(self)
         
+        self.nlpDict = {None:{}}
         
         # attach to the dictionary the interpolated functions
-        AddPyoDict.functionNonlinearApproximation(self)
+        FillNlpDict.functionNonlinearApproximation(self)
         
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.
