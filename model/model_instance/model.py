@@ -6,19 +6,24 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class defining the abstract optimization model.
               The class takes as inputs the properties of the optimization problem. The properties are saved in the
-              dictionaries analysis and system which are passed to the class. After initializing the abstract model, the
-              class adds carriers and technologies to the abstract model and returns the abstract optimization model.
+              analysis and system dictionaries, which are passed to the class. After initializing the abstract model, the
+              class adds carriers and technologies to it and returns the abstract optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
+
+#%% IMPORT AND SETUP
 import logging
 import pyomo.environ as pe
-from pyomo.opt import SolverStatus, TerminationCondition
-from model.model_instance.objects.carrier import Carrier
-from model.model_instance.objects.technology.production_technology import ProductionTechnology
-from model.model_instance.objects.technology.transport_technology import TransportTechnology
-from model.model_instance.objects.objective_function import ObjectiveFunction
-from model.model_instance.objects.mass_balance import MassBalance
 
+from pyomo.opt                                                     import SolverStatus, TerminationCondition
+from model.model_instance.objects.carrier                          import Carrier
+from model.model_instance.objects.technology.production_technology import ProductionTechnology
+from model.model_instance.objects.technology.transport_technology  import TransportTechnology
+from model.model_instance.objects.objective_function               import ObjectiveFunction
+from model.model_instance.objects.mass_balance                     import MassBalance
+
+
+#%% CLASS DEFINITION AND METHODS
 class Model:
 
     def __init__(self, analysis, system):
@@ -28,7 +33,7 @@ class Model:
         :param system: dictionary defining the system
         """
         self.analysis = analysis
-        self.system = system
+        self.system   = system
 
         self.model = pe.AbstractModel()
         self.addSets()
@@ -36,6 +41,7 @@ class Model:
         self.addObjectiveFunction()
         self.addMassBalance()
 
+    # CLASS METHOD: ADD SETS DEFINING THE OPTIMIZATION PROBLEM
     def addSets(self):
         """
         This method sets up the sets of the optimization problem.
@@ -43,8 +49,8 @@ class Model:
         Sets in Pyomo:
             (1) model.ct = Set(model.t) : model.ct is “dictionary” of sets, i.e., model.ct[i] = Set() for all i in model.t
             (2) model.ct = Set(within=model.t) : model.ct is a subset of model.t, Pyomo will do the verification of this
-            (3) model.i = Set(initialize=model.t) : makes a copy of whatever is in model.t during the time of construction
-            (4) model.i = SetOf(model.t) : references whatever is in model.t at runtime (alias)
+            (3) model.i  = Set(initialize=model.t) : makes a copy of whatever is in model.t during the time of construction
+            (4) model.i  = SetOf(model.t) : references whatever is in model.t at runtime (alias)
         """
         
         # Sets:
