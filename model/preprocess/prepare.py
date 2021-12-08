@@ -39,16 +39,16 @@ class Prepare:
         # initialise a dictionary with the keys of the data to be read --> module Init called from initialise.py
         self.initDict() 
         
-        # read data and store in the initialised dictionary --> module Read called from read_data.py
+        # read data and store in the initialised dictionary --> module Read called called from read_data.py
         self.readData()    
         
-        # update system and analysis with derived settings --> module UpdateConfig from modify_config.py
+        # update system and analysis with derived settings --> module UpdateConfig called from modify_config.py
         self.configUpdate()        
         
-        # create new data items from default values and input data
+        # create new data items from default values and input data --> module Create called from create_data.py
         self.createData()
         
-        # convert data into a pyomo dictinary
+        # convert data into a pyomo dictinary --> module FillPyoDict called from fill_pyomo_dictionary.py
         self.createPyoDict()
 
 
@@ -145,19 +145,26 @@ class Prepare:
         
         # fill the dictionary with the sets based on system 
         FillPyoDict.sets(self)
+
         # fill the dictionary with the parameters related to the carrier
         FillPyoDict.carrierParameters(self)
-        # # fill the dictionary with the parameters related to the technology
+
+        # fill the dictionary with the parameters related to the transport technology
         FillPyoDict.technologyTranspParameters(self)
-        # # fill the dictionary with the parameters related to the technology
+
+        # fill the dictionary with the parameters related to the production and storage technology
         FillPyoDict.technologyProductionStorageParameters(self)
-        # # fill the dictionary with the parameters attributes of a technology
+
+        # fill the dictionary with the parameters attributes of a technology
         FillPyoDict.attributes(self)
+
         # fill the dictionary with the conversion coefficients of a technology
         FillPyoDict.conversionBalanceParameters(self)
-        # fille the dictionary with the PWA input data
+
+        # fill the dictionary with the PWA input data
         FillPyoDict.dataPWAApproximation(self)
         
+
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.
         # the nodes, times and scenarios

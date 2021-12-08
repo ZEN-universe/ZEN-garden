@@ -29,6 +29,7 @@ logging.propagate = False
 #%% OPTIMIZATION PROBLEM
 # CREATE INPUT FILE
 prepare = Prepare(config.analysis, config.system)
+print(' Model preparation completed.')
 
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
 # model = Model(analysis, system)
