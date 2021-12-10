@@ -15,11 +15,10 @@ from model.preprocess.functions.add_parameters import add_parameter
 class FillPyoDict:
  
     def sets(self):
-        """
-        This method adds the sets of the models based on config and creates new sets used in the creation of the model instance
+        """ This method adds the sets of the models based on config and creates new sets used in the creation of the model instance
         :param analysis: dictionary defining the analysis framework
-        :return: dictionary containing all the input data        
-        """     
+        :return: dictionary containing all the input data """  
+
         for setName in self.system.keys():
             if 'set' in setName:
                 # create sets
@@ -27,12 +26,11 @@ class FillPyoDict:
         
 
     def carrierParameters(self):
-        """
-        This method adds the parameters of the models dependent on the energy carriers based on config.
+        """ This method adds the parameters of the models dependent on the energy carriers based on config.
         If two parameters are called with the same and the carriers appear in two subsets, the parameter is overwritten
         :param analysis: dictionary defining the analysis framework
-        :return: dictionary containing the input data        
-        """              
+        :return: dictionary containing the input data """       
+
         parameterNames = {
             'setInputCarriers': ['availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
             'setOutputCarriers': ['demandCarrier', 'exportPriceCarrier', 'importPriceCarrier']            
@@ -70,11 +68,10 @@ class FillPyoDict:
 
 
     def technologyTranspParameters(self):
-        """
-        This method adds the parameters of the models dependent on the transport technologies based on config
+        """ This method adds the parameters of the models dependent on the transport technologies based on config
         :param analysis: dictionary defining the analysis framework
-        :return: dictionary containing the input data        
-        """  
+        :return: dictionary containing the input data """ 
+
         technologySubset = 'setTransportTechnologies'
         for technologyName in self.system[technologySubset]:
             for nodeName in self.system['setNodes']:
@@ -104,11 +101,10 @@ class FillPyoDict:
 
 
     def technologyProductionStorageParameters(self):
-        """
-        This method adds the parameters of the models dependent on the production and storage technologies based on config
+        """ This method adds the parameters of the models dependent on the production and storage technologies based on config
         :param analysis: dictionary defining the analysis framework
-        :return: dictionary containing the input data        
-        """  
+        :return: dictionary containing the input data """
+
         parameterNames = {
             'setProductionTechnologies': ['availabilityProduction'],
             'setStorageTechnologies': ['availabilityStorage']            
@@ -146,15 +142,13 @@ class FillPyoDict:
     
 
     def attributes(self):
-        """
-        This method adds the parameters of the models dependent on the production and storage technologies based on config
+        """ This method adds the parameters of the models dependent on the production and storage technologies based on config
         :param analysis: dictionary defining the analysis framework
-        :return: dictionary containing the input data
-        """          
+        :return: dictionary containing the input data """
+                  
         parameterName    = 'attributes'
-        technologySubset = 'setProductionTechnologies'      
-
-        for attribute in ['minCapacityProduction', 'maxCapacityProduction']:
+        technologySubset = 'setProductionTechnologies'        
+        for attribute in ['minCapacityProduction', 'maxCapacityProduction', 'minLoadProduction', 'maxLoadProduction']:
             self.pyoDict[None][attribute] = {}
 
             for technologyName in self.system[technologySubset]:
@@ -164,6 +158,15 @@ class FillPyoDict:
                 
                 # add the paramter to the Pyomo dictionary
                 self.pyoDict[None][attribute][(technologyName)] = df.loc[attribute, parameterName]
+                
+        technologySubset = 'setTransportTechnologies'        
+        for attribute in ['minCapacityTransport', 'maxCapacityTransport', 'minLoadTransport', 'maxLoadTransport']:
+            self.pyoDict[None][attribute] = {}
+            for technologyName in self.system[technologySubset]:
+                # dataframe stored in data 
+                df = self.data[technologySubset][technologyName][parameterName].set_index(['index'])
+                # add the paramter to the Pyomo dictionary
+                self.pyoDict[None][attribute][(technologyName)] = df.loc[attribute, parameterName]                
                 
         technologySubset = 'setStorageTechnologies'        
 
@@ -187,11 +190,12 @@ class FillPyoDict:
 
 
     def conversionBalanceParameters(self):
-        """
-        This method fills the dictionary with the conversion coefficients of a technology
-        """
+        """ This method adds the parameters of the models dependent on the production and storage technologies based on config
+        :param analysis: dictionary defining the analysis framework
+        :return: dictionary containing the input data """           
+        
         technologySubset = 'setProductionTechnologies'
-        parameterNames = ['conversionMatrix', 'availabilityMatrix']
+        parameterNames = ['converEfficiency', 'converAvailability']
         
         for technologyName in self.system[technologySubset]:
             for parameterName in parameterNames:
@@ -219,14 +223,13 @@ class FillPyoDict:
     
 
     def dataPWAApproximation(self):
-        """
-        This method fills the dictionary with the PWA input data
-        """    
+        """ This method fills the dictionary with the PWA input data """
+            
         # add the parameters associated to the PWA approximation
         technologySubset           = 'setProductionTechnologies'
-        approximatedParameterNames = ['CapexPWA']
+        approximatedParameterNames = ['linearCapex']
         PWAParameterNames          = ['slope', 'extreme0', 'extreme1', 'value0']
-
+        
         for technologyName in self.system[technologySubset]:
             for approximatedParameterName in approximatedParameterNames:
                 df = self.data[technologySubset][technologyName][approximatedParameterName]
@@ -252,11 +255,4 @@ class FillPyoDict:
                         
                         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]                                                
                         add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)                       
-    
-    
-    def dataNonlinearIntepolation(self):
-        
-        # Create a function which interpolates the input data for the nonlinear trend
-        
-        pass    
-        
+     

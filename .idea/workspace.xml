@@ -2,19 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="a0ba2cfd-b1cf-49bb-a036-b323e05a13f0" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/model/model_instance/objects/mass_balance.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/NUTS0/setProductionTechnologies/electrolysis/attributes.csv" beforeDir="false" afterPath="$PROJECT_DIR$/data/NUTS0/setProductionTechnologies/electrolysis/attributes.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/NUTS0/setStorageTechnologies/carbon_storage/maxCapacityStorage.csv" beforeDir="false" afterPath="$PROJECT_DIR$/data/NUTS0/setStorageTechnologies/carbon_storage/maxCapacityStorage.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/NUTS0/setStorageTechnologies/carbon_storage/minCapacityStorage.csv" beforeDir="false" afterPath="$PROJECT_DIR$/data/NUTS0/setStorageTechnologies/carbon_storage/minCapacityStorage.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/compile.py" beforeDir="false" afterPath="$PROJECT_DIR$/compile.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/model_instance/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/model_instance/model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/model_instance/objects/carrier.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/model_instance/objects/carrier.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/model_instance/objects/element.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/model_instance/objects/element.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/model_instance/objects/mass_balance.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/model_instance/objects/mass_balance.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/model_instance/objects/objective_function.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/model_instance/objects/objective_function.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/model_instance/objects/technology/production_technology.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/model_instance/objects/technology/production_technology.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/model_instance/objects/technology/technology.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/model_instance/objects/technology/technology.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/model_instance/objects/technology/transport_technology.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/model_instance/objects/technology/transport_technology.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model/preprocess/functions/fill_pyomo_dictionary.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/preprocess/functions/fill_pyomo_dictionary.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,20 +37,43 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RunManager">
-    <configuration name="compile" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="Energy-Carbon-Optimization-Platform" />
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="compile" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Users\aganter\Documents\Github\virtEnvECOP\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/compile.py" />
       <option name="PARAMETERS" value="" />
@@ -79,6 +99,8 @@
       <option name="presentableId" value="Default" />
       <updated>1637674535216</updated>
       <workItem from="1637674537677" duration="11339000" />
+      <workItem from="1637759404777" duration="3730000" />
+      <workItem from="1638537113618" duration="17254000" />
     </task>
     <servers />
   </component>
@@ -95,19 +117,47 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/model/model_instance/model.py</url>
-          <line>116</line>
+          <line>96</line>
           <option name="timeStamp" value="19" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/compile.py</url>
+          <line>31</line>
+          <option name="timeStamp" value="23" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/model/model_instance/objects/mass_balance.py</url>
+          <line>45</line>
+          <option name="timeStamp" value="24" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/model/model_instance/objects/mass_balance.py</url>
+          <line>31</line>
+          <option name="timeStamp" value="25" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/model/model_instance/objects/mass_balance.py</url>
+          <line>36</line>
+          <option name="timeStamp" value="26" />
+        </line-breakpoint>
       </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Energy_Carbon_Optimization_Platform$compile.coverage" NAME="compile Coverage Results" MODIFIED="1637689484520" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Energy_Carbon_Optimization_Platform$compile.coverage" NAME="compile Coverage Results" MODIFIED="1638563880041" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

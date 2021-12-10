@@ -16,15 +16,15 @@ import numpy  as np
 class Create:
     
     def conversionMatrices(self):
-        """
-        This method creates: (i)  the efficiency matrix with the input data for each technology,
-                             (ii) the availability matrix which defines which carriers can be converted
-        """
+        """ This method creates: (i)  the efficiency matrix with the input data for each technology,
+                                 (ii) the availability matrix which defines which carriers can be converted """
+
         technologySubset        = 'setProductionTechnologies'
         inputFileName           = 'conversionBalanceConstant'
-        newFileNameEfficiency   = 'conversionMatrix'
-        newFileNameAvailability = 'availabilityMatrix'
-        numberCarriers          = len(self.system['setCarriers'])        
+        newFileNameEfficiency   = 'converEfficiency'
+        newFileNameAvailability = 'converAvailability'
+        
+        numberCarriers = len(self.system['setCarriers'])        
         
         for technologyName in self.system[technologySubset]:
             

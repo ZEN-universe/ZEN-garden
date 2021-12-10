@@ -1,7 +1,8 @@
 # """===========================================================================================================================================================================
 # Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 # Created:      October-2021
-# Authors:      Davide Tonelli, Alissa Ganter (aganter@ethz.ch)
+# Authors:      Davide Tonelli (davidetonelli@outlook.com)
+#               Alissa Ganter (aganter@ethz.ch)
 # Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 #
 # Description:  Compilation  of the optimization problem.
@@ -13,8 +14,9 @@ import config
 import numpy  as np
 import pandas as pd
 
-from model.preprocess.prepare   import Prepare
-from model.model_instance.model import Model
+from model.preprocess.prepare     import Prepare
+from model.model_instance.model   import Model
+from model.postprocess.evaluation import Evaluation
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -33,8 +35,7 @@ print(' Model preparation completed.')
 
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
 model = Model(config.analysis, config.system)
-# model.solve(solver, prepare.pyoDict)
-# results = valueChain.solve(config.solver)
+model.solve(config.solver, prepare.pyoDict)
 
 # EVALUATE RESULTS
-# postprocess(results)
+evaluation = Evaluation(config.system, model)

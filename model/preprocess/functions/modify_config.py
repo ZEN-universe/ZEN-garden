@@ -11,9 +11,8 @@ Description:  Class to modify the config dictionary based on existing inputs fro
 class UpdateConfig:
     
     def createSetsFromSubsets(self):
-        """
-        This method creates new list of sets from subsets' keys
-        """
+        """ This method creates new list of sets from subsets' keys """
+        
         # create a new list per set name
         for setName in self.analysis['subsets'].keys():
             self.system[setName] = []
@@ -25,11 +24,10 @@ class UpdateConfig:
                 
 
     def createSupportPoints(self):
-        """
-        This method creates sets of support points for PWA
-        """
+        """ This method creates sets of support points for PWA """
+
         technologySubset = 'setProductionTechnologies'
-        parameterNames   = ['CapexPWA']
+        parameterNames   = ['linearCapex']
         
         # add a set containing the supporting points of the cost
         for technologyName in self.system[technologySubset]:
@@ -37,6 +35,5 @@ class UpdateConfig:
                 df = self.data[technologySubset][technologyName][parameterName]
                 
                 # create a new set with the indexes of the supporting points
-                setName = 'set'+parameterName
+                setName = 'set'+parameterName.replace('linear', 'Linear')
                 self.system[setName] = list(df[self.analysis['dataInputs']['PWA']['supportPoints']].values)
-                

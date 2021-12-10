@@ -16,7 +16,9 @@ from model.model_instance.objects.element import Element
 class Technology(Element):
 
     def __init__(self, object, technologyType):
-        """init generic technology object"""
+        """init generic technology object
+        :param object: object of the abstract optimization model
+        :param technologyType: type of technology that is added to the model"""
 
         logging.info('initialize object of a generic technology')
         super().__init__(object)
@@ -24,6 +26,8 @@ class Technology(Element):
         self.dim  = self.getDimensions()
 
     def getDimensions(self):
+        """ determine dimensions depending on the technology type
+        :return dim: return dimensions"""
 
         if self.type == 'Transport':
             dim = 'setNodes, setAliasNodes'
@@ -33,6 +37,8 @@ class Technology(Element):
         return dim
 
     def getTechSubsets(self):
+        """ get the subsets of the technology type
+        :return subsets: return dictionary containing the technology subsets"""
 
         subsets = {
             f'set{self.type}Technologies': f'Set of {self.type} technologies: Subset: setTechnologies'}
@@ -41,42 +47,46 @@ class Technology(Element):
         return subsets
 
     def getTechParams(self):
+        """ get the parameters of the technology type
+        :return params: return dictionary containing the technology parameters"""
 
         params = {
             f'minCapacity{self.type}':       f'Parameter which specifies the minimum {self.type} size that can be installed. \
-                                             Dimensions: set{self.type}Technologies',
+                                             \n\t Dimensions: set{self.type}Technologies',
             f'maxCapacity{self.type}':       f'Parameter which specifies the maximum {self.type} size that can be installed. \
-                                             Dimensions: set{self.type}Technologies',
+                                             \n\t Dimensions: set{self.type}Technologies',
             f'minLoad{self.type}':           f'fraction used to determine the minimum load of/ flow through the {self.type}. \
-                                             Dimensions: set{self.type}Technologies',
+                                             \n\t Dimensions: set{self.type}Technologies',
             f'availability{self.type}':      f'node- and time-dependent availability of {self.type}. \
-                                             Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'}
+                                             \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'}
 
         return params
 
     def getTechVars(self):
+        """ get the variables of the technology type
+        :return vars: return dictionary containing the technology variables"""
 
         variables = {
-            f'install{self.type}Technologies': f'installment of a {self.type} at node i and time t. \
-                                               Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. Domain: Binary',
-            f'size{self.type}Technologies':    f'size of {self.type} installed between nodes at time t. \
-                                               Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. Domain: NonNegativeReals'}
+            f'install{self.type}Technologies':  f'installment of a {self.type} at node i and time t. \
+                                                \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps.\
+                                                \n\t Domain: Binary',
+            f'capacity{self.type}Technologies': f'size of {self.type} installed between nodes at time t. \
+                                                \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. \n\t Domain: NonNegativeReals'}
 
 
         return variables
 
     def getTechConstr(self):
+        """get the variables of the technology type
+        :return constraints: return dictionary containing the technology constraints"""
 
-        constraints = {}
-            #f'constraint{self.type}TechnologiesSize':         f'size restriction of {self.type} technology that can be installed. \
-            #                                                 Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'
-            # f'constraintMinLoad{self.type}Technologies1':     f'min load of {self.type} technology, part one. \
-            #                                                   Dimensions: setCarriers, set{self.type}Technologies, {self.dim}, setTimeSteps',
-            # f'constraintMinLoad{self.type}Technologies2':     f'min load of {self.type} technology, part two. \
-            #                                                   Dimensions: setCarriers, set{self.type}Technologies, {self.dim}, setTimeSteps',
-            # f'constraintMaxLoad{self.type}Technologies':      f'max load of {self.type} technology. \
-            #                                                   Dimensions: setCarriers, set{self.type}Technologies, {self.dim}, setTimeSteps',
-            # f'constraintAvailability{self.type}Technologies': f'limited availability of {self.type} technology. \
-            #                                                   Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'
+        constraints = {
+            f'constraint{self.type}TechnologiesMinCapacity':  f'min capacity of {self.type} technology that can be installed. \
+                                                              \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
+            f'constraint{self.type}TechnologiesMaxCapacity':  f'max capacity of {self.type} technology that can be installed. \
+                                                              \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
+            f'constraintAvailability{self.type}Technologies': f'limited availability of {self.type} technology. \
+                                                              \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'
+            }
 
         return constraints

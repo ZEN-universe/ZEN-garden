@@ -18,17 +18,17 @@ from model.preprocess.functions.read_data             import Read
 from model.preprocess.functions.modify_config         import UpdateConfig
 from model.preprocess.functions.create_data           import Create
 from model.preprocess.functions.fill_pyomo_dictionary import FillPyoDict
+from model.preprocess.functions.fill_nlp_dictionary import FillNlpDict
 
 
 #%% CLASS DEFINITION
 class Prepare:
     
     def __init__(self, analysis, system):
-        """
-        This class creates the dictionary containing all input data, organised per set according to the model formulation.
+        """ This class creates the dictionary containing all input data, organised per set according to the model formulation.
         :param system: dictionary defining the system framework
-        :return: dictionary containing all the input data
-        """
+        :return: dictionary containing all the input data """
+
         # instantiate the analysis and system properties for Prepare (from config)
         self.analysis = analysis
         self.system   = system
@@ -55,10 +55,9 @@ class Prepare:
 #%% CLASS METHODS
 
     def createPaths(self):
-        """
-        This method creates a dictionary with the paths of the data split by carriers, networks, tecnhologies
-        :return: dictionary all the paths for reading data
-        """   
+        """ This method creates a dictionary with the paths of the data split by carriers, networks, tecnhologies
+        :return: dictionary all the paths for reading data """
+
         # create paths of the data folders according to the input sets
         Paths.data(self)
 
@@ -70,10 +69,9 @@ class Prepare:
 
     
     def initDict(self):
-        """
-        This method initialises a dictionary containing all the input data split by carriers, networks, tecnhologies
-        :return: dictionary initialised with keys
-        """        
+        """ This method initialises a dictionary containing all the input data split by carriers, networks, tecnhologies
+        :return: dictionary initialised with keys """  
+
         self.data = dict()
         
         # initialise the keys with the names of input carriers
@@ -93,10 +91,9 @@ class Prepare:
 
         
     def readData(self):
-        """
-        This method fills in the dictionary with all the input data split by carriers, networks, tecnhologies
-        :return: dictionary containing all the input data 
-        """                       
+        """ This method fills in the dictionary with all the input data split by carriers, networks, tecnhologies
+        :return: dictionary containing all the input data """
+
         # fill the initialised dictionary by reading the input carriers' data        
         Read.carriers(self)     
 
@@ -114,10 +111,9 @@ class Prepare:
 
 
     def configUpdate(self):
-        """
-        This method creates new entries in the dictionaries of config
-        :return: dictionaries in config with additional entries
-        """  
+        """ This method creates new entries in the dictionaries of config
+        :return: dictionaries in config with additional entries """  
+
         # create new list of sets from subsets
         UpdateConfig.createSetsFromSubsets(self)
 
@@ -126,21 +122,19 @@ class Prepare:
                     
         
     def createData(self):
-        """
-        This method creates data from the input dataset adding default values
-        :return: new item in data dictionary
-        """
+        """ This method creates data from the input dataset adding default values
+        :return: new item in data dictionary """
+
         # create efficiency and avaialability matrices
         Create.conversionMatrices(self)
         
 
     def createPyoDict(self):
-        """
-        This method reshapes the input data dictionary into a dictionary with format compatible with Pyomo
+        """ This method reshapes the input data dictionary into a dictionary with format compatible with Pyomo
         :param system: dictionary defining the system framework
         :param data: dictionary containing all the input data
-        :return: dictionary with data based on system in Pyomo format      
-        """
+        :return: dictionary with data based on system in Pyomo format """
+        
         self.pyoDict = {None:{}}
         
         # fill the dictionary with the sets based on system 
@@ -162,9 +156,13 @@ class Prepare:
         FillPyoDict.conversionBalanceParameters(self)
 
         # fill the dictionary with the PWA input data
-        FillPyoDict.dataPWAApproximation(self)
+        FillPyoDict.dataPWAApproximation(self)       
+        self.nlpDict = {None:{}}
         
-
+        # attach to the dictionary the interpolated functions
+        FillNlpDict.functionNonlinearApproximation(self)
+        
+        
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.
         # the nodes, times and scenarios

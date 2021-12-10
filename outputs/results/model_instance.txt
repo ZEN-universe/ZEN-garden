@@ -1,0 +1,570 @@
+My description of the instance!
+Model unknown
+
+  Variables:
+    importCarrier : node- and time-dependent carrier import from the grid. 
+        	 Dimensions: setInputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals
+        Size=9, Index=importCarrier_index
+        Key                     : Lower : Value : Upper : Fixed : Stale : Domain
+        ('electricity', 'A', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'B', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'C', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'D', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'E', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'F', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'G', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'H', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'I', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+    exportCarrier : node- and time-dependent carrier export from the grid. 
+        	 Dimensions: setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals
+        Size=9, Index=exportCarrier_index
+        Key                  : Lower : Value        : Upper : Fixed : Stale : Domain
+        ('hydrogen', 'A', 0) :     0 : 8999999973.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'B', 0) :     0 :          0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'C', 0) :     0 :          0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'D', 0) :     0 :          0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'E', 0) :     0 :          0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'F', 0) :     0 :          0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'G', 0) :     0 :          0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'H', 0) :     0 :          0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'I', 0) :     0 :          0.0 :  None : False : False : NonNegativeReals
+    inputProductionTechnologies : Input stream of a carrier into production technology.                                                     
+        	 Dimensions: setInputCarriers, setProductionTechnologies, setNodes, setTimeSteps. 
+        	 Domain: NonNegativeReals
+        Size=9, Index=inputProductionTechnologies_index
+        Key                                     : Lower : Value : Upper : Fixed : Stale : Domain
+        ('electricity', 'electrolysis', 'A', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'electrolysis', 'B', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'electrolysis', 'C', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'electrolysis', 'D', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'electrolysis', 'E', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'electrolysis', 'F', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'electrolysis', 'G', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'electrolysis', 'H', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+        ('electricity', 'electrolysis', 'I', 0) :     0 :   0.0 :  None : False : False : NonNegativeReals
+    outputProductionTechnologies : Output stream of a carrier into production technology.                                                     
+        	 Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps. 
+        	 Domain: NonNegativeReals
+        Size=9, Index=outputProductionTechnologies_index
+        Key                                  : Lower : Value        : Upper : Fixed : Stale : Domain
+        ('hydrogen', 'electrolysis', 'A', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'B', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'C', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'D', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'E', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'F', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'G', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'H', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'I', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+    outputProductionTechnologiesAux : Auxiliary variable to describe output stream of a carrier into production technology.                                                     
+        	 Dimensions: setOutputCarriers, setProductionTechnologies, setNodes, setTimeSteps. 
+        	 Domain: NonNegativeReals
+        Size=9, Index=outputProductionTechnologiesAux_index
+        Key                                  : Lower : Value        : Upper : Fixed : Stale : Domain
+        ('hydrogen', 'electrolysis', 'A', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'B', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'C', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'D', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'E', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'F', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'G', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'H', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'electrolysis', 'I', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+    installProductionTechnologies : installment of a Production at node i and time t.                                                 
+        	 Dimensions: setProductionTechnologies, setNodes, setTimeSteps.                                                
+        	 Domain: Binary
+        Size=9, Index=installProductionTechnologies_index
+        Key                      : Lower : Value : Upper : Fixed : Stale : Domain
+        ('electrolysis', 'A', 0) :     0 :   1.0 :     1 : False : False : Binary
+        ('electrolysis', 'B', 0) :     0 :   1.0 :     1 : False : False : Binary
+        ('electrolysis', 'C', 0) :     0 :   1.0 :     1 : False : False : Binary
+        ('electrolysis', 'D', 0) :     0 :   1.0 :     1 : False : False : Binary
+        ('electrolysis', 'E', 0) :     0 :   1.0 :     1 : False : False : Binary
+        ('electrolysis', 'F', 0) :     0 :   1.0 :     1 : False : False : Binary
+        ('electrolysis', 'G', 0) :     0 :   1.0 :     1 : False : False : Binary
+        ('electrolysis', 'H', 0) :     0 :   1.0 :     1 : False : False : Binary
+        ('electrolysis', 'I', 0) :     0 :   1.0 :     1 : False : False : Binary
+    capacityProductionTechnologies : size of Production installed between nodes at time t.                                                 
+        	 Dimensions: setProductionTechnologies, setNodes, setTimeSteps. 
+        	 Domain: NonNegativeReals
+        Size=9, Index=capacityProductionTechnologies_index
+        Key                      : Lower : Value        : Upper : Fixed : Stale : Domain
+        ('electrolysis', 'A', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('electrolysis', 'B', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('electrolysis', 'C', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('electrolysis', 'D', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('electrolysis', 'E', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('electrolysis', 'F', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('electrolysis', 'G', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('electrolysis', 'H', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+        ('electrolysis', 'I', 0) :     0 : 1000000000.0 :  None : False : False : NonNegativeReals
+    carrierFlow : carrier flow through transport technology from node i to node j.                                        
+        	 Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.                                       
+        	 Domain: NonNegativeReals
+        Size=81, Index=carrierFlow_index
+        Key                                            : Lower : Value       : Upper : Fixed : Stale : Domain
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'A', 0) :     0 :        None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'B', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'C', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'D', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'E', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'F', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'G', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'H', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'I', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'A', 0) :     0 : 999999997.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'B', 0) :     0 :        None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'C', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'D', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'E', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'F', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'G', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'H', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'I', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'A', 0) :     0 : 999999997.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'B', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'C', 0) :     0 :        None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'D', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'E', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'F', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'G', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'H', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'I', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'A', 0) :     0 : 999999997.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'B', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'C', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'D', 0) :     0 :        None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'E', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'F', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'G', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'H', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'I', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'A', 0) :     0 : 999999997.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'B', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'C', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'D', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'E', 0) :     0 :        None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'F', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'G', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'H', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'I', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'A', 0) :     0 : 999999997.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'B', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'C', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'D', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'E', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'F', 0) :     0 :        None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'G', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'H', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'I', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'A', 0) :     0 : 999999997.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'B', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'C', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'D', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'E', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'F', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'G', 0) :     0 :        None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'H', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'I', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'A', 0) :     0 : 999999997.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'B', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'C', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'D', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'E', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'F', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'G', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'H', 0) :     0 :        None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'I', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'A', 0) :     0 : 999999997.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'B', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'C', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'D', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'E', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'F', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'G', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'H', 0) :     0 :         0.0 :  None : False : False : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'I', 0) :     0 :        None :  None : False :  True : NonNegativeReals
+    carrierFlowAux : auxiliary variable to model the min possible flow through transport technology from node i to node j.                                        
+        	 Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.                                       
+        	 Domain: NonNegativeReals
+        Size=81, Index=carrierFlowAux_index
+        Key                                            : Lower : Value : Upper : Fixed : Stale : Domain
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'A', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'B', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'C', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'D', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'E', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'F', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'G', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'H', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('hydrogen', 'pipeline_hydrogen', 'I', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+    installTransportTechnologies : installment of a Transport at node i and time t.                                                 
+        	 Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.                                                
+        	 Domain: Binary
+        Size=81, Index=installTransportTechnologies_index
+        Key                                : Lower : Value : Upper : Fixed : Stale : Domain
+        ('pipeline_hydrogen', 'A', 'A', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'A', 'B', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'A', 'C', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'A', 'D', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'A', 'E', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'A', 'F', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'A', 'G', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'A', 'H', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'A', 'I', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'B', 'A', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'B', 'B', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'B', 'C', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'B', 'D', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'B', 'E', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'B', 'F', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'B', 'G', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'B', 'H', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'B', 'I', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'C', 'A', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'C', 'B', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'C', 'C', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'C', 'D', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'C', 'E', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'C', 'F', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'C', 'G', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'C', 'H', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'C', 'I', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'D', 'A', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'D', 'B', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'D', 'C', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'D', 'D', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'D', 'E', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'D', 'F', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'D', 'G', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'D', 'H', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'D', 'I', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'E', 'A', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'E', 'B', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'E', 'C', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'E', 'D', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'E', 'E', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'E', 'F', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'E', 'G', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'E', 'H', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'E', 'I', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'F', 'A', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'F', 'B', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'F', 'C', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'F', 'D', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'F', 'E', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'F', 'F', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'F', 'G', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'F', 'H', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'F', 'I', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'G', 'A', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'G', 'B', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'G', 'C', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'G', 'D', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'G', 'E', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'G', 'F', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'G', 'G', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'G', 'H', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'G', 'I', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'H', 'A', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'H', 'B', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'H', 'C', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'H', 'D', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'H', 'E', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'H', 'F', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'H', 'G', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'H', 'H', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'H', 'I', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'I', 'A', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'I', 'B', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'I', 'C', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'I', 'D', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'I', 'E', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'I', 'F', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'I', 'G', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'I', 'H', 0) :     0 :  None :     1 : False :  True : Binary
+        ('pipeline_hydrogen', 'I', 'I', 0) :     0 :  None :     1 : False :  True : Binary
+    capacityTransportTechnologies : size of Transport installed between nodes at time t.                                                 
+        	 Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps. 
+        	 Domain: NonNegativeReals
+        Size=81, Index=capacityTransportTechnologies_index
+        Key                                : Lower : Value : Upper : Fixed : Stale : Domain
+        ('pipeline_hydrogen', 'A', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'A', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'A', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'A', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'A', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'A', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'A', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'A', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'A', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'B', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'B', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'B', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'B', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'B', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'B', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'B', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'B', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'B', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'C', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'C', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'C', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'C', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'C', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'C', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'C', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'C', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'C', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'D', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'D', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'D', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'D', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'D', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'D', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'D', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'D', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'D', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'E', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'E', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'E', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'E', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'E', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'E', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'E', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'E', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'E', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'F', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'F', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'F', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'F', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'F', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'F', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'F', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'F', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'F', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'G', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'G', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'G', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'G', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'G', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'G', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'G', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'G', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'G', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'H', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'H', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'H', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'H', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'H', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'H', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'H', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'H', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'H', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'I', 'A', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'I', 'B', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'I', 'C', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'I', 'D', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'I', 'E', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'I', 'F', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'I', 'G', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'I', 'H', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+        ('pipeline_hydrogen', 'I', 'I', 0) :     0 :  None :  None : False :  True : NonNegativeReals
+
+  Objectives:
+    TotalCost : Size=1, Index=None, Active=True
+        Key  : Active : Value
+        None :   True : -8.999999973e+18
+
+  Constraints:
+    constraintAvailabilityCarrier : Size=9
+        Key                     : Lower : Body : Upper
+        ('electricity', 'A', 0) :  None :  0.0 : 1000000000.0
+        ('electricity', 'B', 0) :  None :  0.0 : 1000000000.0
+        ('electricity', 'C', 0) :  None :  0.0 : 1000000000.0
+        ('electricity', 'D', 0) :  None :  0.0 : 1000000000.0
+        ('electricity', 'E', 0) :  None :  0.0 : 1000000000.0
+        ('electricity', 'F', 0) :  None :  0.0 : 1000000000.0
+        ('electricity', 'G', 0) :  None :  0.0 : 1000000000.0
+        ('electricity', 'H', 0) :  None :  0.0 : 1000000000.0
+        ('electricity', 'I', 0) :  None :  0.0 : 1000000000.0
+    constraintProductionTechnologiesPerformance : Size=9
+        Key                                                 : Lower : Body          : Upper
+        ('electrolysis', 'electricity', 'hydrogen', 'A', 0) :  None : -1000000000.0 :   0.0
+        ('electrolysis', 'electricity', 'hydrogen', 'B', 0) :  None : -1000000000.0 :   0.0
+        ('electrolysis', 'electricity', 'hydrogen', 'C', 0) :  None : -1000000000.0 :   0.0
+        ('electrolysis', 'electricity', 'hydrogen', 'D', 0) :  None : -1000000000.0 :   0.0
+        ('electrolysis', 'electricity', 'hydrogen', 'E', 0) :  None : -1000000000.0 :   0.0
+        ('electrolysis', 'electricity', 'hydrogen', 'F', 0) :  None : -1000000000.0 :   0.0
+        ('electrolysis', 'electricity', 'hydrogen', 'G', 0) :  None : -1000000000.0 :   0.0
+        ('electrolysis', 'electricity', 'hydrogen', 'H', 0) :  None : -1000000000.0 :   0.0
+        ('electrolysis', 'electricity', 'hydrogen', 'I', 0) :  None : -1000000000.0 :   0.0
+    constraintMinLoadProductionTechnologies1 : Size=9
+        Key                                  : Lower : Body         : Upper
+        ('hydrogen', 'electrolysis', 'A', 0) :   0.0 : 1000000000.0 :  None
+        ('hydrogen', 'electrolysis', 'B', 0) :   0.0 : 1000000000.0 :  None
+        ('hydrogen', 'electrolysis', 'C', 0) :   0.0 : 1000000000.0 :  None
+        ('hydrogen', 'electrolysis', 'D', 0) :   0.0 : 1000000000.0 :  None
+        ('hydrogen', 'electrolysis', 'E', 0) :   0.0 : 1000000000.0 :  None
+        ('hydrogen', 'electrolysis', 'F', 0) :   0.0 : 1000000000.0 :  None
+        ('hydrogen', 'electrolysis', 'G', 0) :   0.0 : 1000000000.0 :  None
+        ('hydrogen', 'electrolysis', 'H', 0) :   0.0 : 1000000000.0 :  None
+        ('hydrogen', 'electrolysis', 'I', 0) :   0.0 : 1000000000.0 :  None
+    constraintMinLoadProductionTechnologies2 : Size=9
+        Key                                  : Lower : Body : Upper
+        ('hydrogen', 'electrolysis', 'A', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'B', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'C', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'D', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'E', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'F', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'G', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'H', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'I', 0) :  None :  0.0 :   0.0
+    constraintMaxLoadProductionTechnologies1 : Size=9
+        Key                                  : Lower : Body : Upper
+        ('hydrogen', 'electrolysis', 'A', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'B', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'C', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'D', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'E', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'F', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'G', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'H', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'I', 0) :  None :  0.0 :   0.0
+    constraintMaxLoadProductionTechnologies2 : Size=9
+        Key                                  : Lower : Body : Upper
+        ('hydrogen', 'electrolysis', 'A', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'B', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'C', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'D', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'E', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'F', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'G', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'H', 0) :  None :  0.0 :   0.0
+        ('hydrogen', 'electrolysis', 'I', 0) :  None :  0.0 :   0.0
+    constraintProductionTechnologiesMinCapacity : Size=9
+        Key                      : Lower : Body         : Upper
+        ('electrolysis', 'A', 0) :   0.0 : 1000000000.0 :  None
+        ('electrolysis', 'B', 0) :   0.0 : 1000000000.0 :  None
+        ('electrolysis', 'C', 0) :   0.0 : 1000000000.0 :  None
+        ('electrolysis', 'D', 0) :   0.0 : 1000000000.0 :  None
+        ('electrolysis', 'E', 0) :   0.0 : 1000000000.0 :  None
+        ('electrolysis', 'F', 0) :   0.0 : 1000000000.0 :  None
+        ('electrolysis', 'G', 0) :   0.0 : 1000000000.0 :  None
+        ('electrolysis', 'H', 0) :   0.0 : 1000000000.0 :  None
+        ('electrolysis', 'I', 0) :   0.0 : 1000000000.0 :  None
+    constraintProductionTechnologiesMaxCapacity : Size=9
+        Key                      : Lower : Body : Upper
+        ('electrolysis', 'A', 0) :  None :  0.0 :   0.0
+        ('electrolysis', 'B', 0) :  None :  0.0 :   0.0
+        ('electrolysis', 'C', 0) :  None :  0.0 :   0.0
+        ('electrolysis', 'D', 0) :  None :  0.0 :   0.0
+        ('electrolysis', 'E', 0) :  None :  0.0 :   0.0
+        ('electrolysis', 'F', 0) :  None :  0.0 :   0.0
+        ('electrolysis', 'G', 0) :  None :  0.0 :   0.0
+        ('electrolysis', 'H', 0) :  None :  0.0 :   0.0
+        ('electrolysis', 'I', 0) :  None :  0.0 :   0.0
+    constraintAvailabilityProductionTechnologies : Size=9
+        Key                      : Lower : Body : Upper
+        ('electrolysis', 'A', 0) :   1.0 :  1.0 :  None
+        ('electrolysis', 'B', 0) :   1.0 :  1.0 :  None
+        ('electrolysis', 'C', 0) :   1.0 :  1.0 :  None
+        ('electrolysis', 'D', 0) :   1.0 :  1.0 :  None
+        ('electrolysis', 'E', 0) :   1.0 :  1.0 :  None
+        ('electrolysis', 'F', 0) :   1.0 :  1.0 :  None
+        ('electrolysis', 'G', 0) :   1.0 :  1.0 :  None
+        ('electrolysis', 'H', 0) :   1.0 :  1.0 :  None
+        ('electrolysis', 'I', 0) :   1.0 :  1.0 :  None
+    constraintNodalMassBalance : Size=18
+        Key                     : Lower : Body : Upper
+        ('electricity', 'A', 0) :   0.0 :  0.0 :   0.0
+        ('electricity', 'B', 0) :   0.0 :  0.0 :   0.0
+        ('electricity', 'C', 0) :   0.0 :  0.0 :   0.0
+        ('electricity', 'D', 0) :   0.0 :  0.0 :   0.0
+        ('electricity', 'E', 0) :   0.0 :  0.0 :   0.0
+        ('electricity', 'F', 0) :   0.0 :  0.0 :   0.0
+        ('electricity', 'G', 0) :   0.0 :  0.0 :   0.0
+        ('electricity', 'H', 0) :   0.0 :  0.0 :   0.0
+        ('electricity', 'I', 0) :   0.0 :  0.0 :   0.0
+           ('hydrogen', 'A', 0) :   0.0 : None :   0.0
+           ('hydrogen', 'B', 0) :   0.0 : None :   0.0
+           ('hydrogen', 'C', 0) :   0.0 : None :   0.0
+           ('hydrogen', 'D', 0) :   0.0 : None :   0.0
+           ('hydrogen', 'E', 0) :   0.0 : None :   0.0
+           ('hydrogen', 'F', 0) :   0.0 : None :   0.0
+           ('hydrogen', 'G', 0) :   0.0 : None :   0.0
+           ('hydrogen', 'H', 0) :   0.0 : None :   0.0
+           ('hydrogen', 'I', 0) :   0.0 : None :   0.0

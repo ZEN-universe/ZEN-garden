@@ -78,6 +78,8 @@ system['setTimeSteps'] = [1,2,3]
 
 # set of nodes
 system['setNodes'] = ['Berlin', 'Zurich', 'Rome']
+# folder output
+system['folderOutput'] = 'outputs/results/'
 
 # ITEMS ASSIGNMENT - solver
 # solver selection (for gurobi, finds more solver options here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
@@ -88,3 +90,5 @@ solver['MIPgap'] = 0.001
 
 # time limit in seconds
 solver['TimeLimit'] = 8760
+# log file of results
+solver['logfile'] = './/outputs//logs//pyomoLogFile.log'
