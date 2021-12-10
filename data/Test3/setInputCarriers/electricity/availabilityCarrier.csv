@@ -1,0 +1,4 @@
+scenario,time,node,availabilityCarrier
+a,0,A,100
+a,0,B,100
+a,0,C,100

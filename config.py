@@ -4,35 +4,35 @@ Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Model settings. Overwrite default values defined in default_config.py.
+Description:  Model settings. Overwrite default values defined in default_config.py here.
 ==========================================================================================================================================================================="""
-
-# IMPORT AND SETUP
+from model import default_config
 import string
 
-from model import default_config
-
-
-#%% MODEL CONFIGURATION
-# DEFAULT DICTIONARIES
+## Analysis - Defaul dictionary
 analysis = default_config.analysis
-system   = default_config.system
-solver   = default_config.solver   
+## System - Defaul dictionary
+system = default_config.system
+## Solver - Defaul dictionary
+solver = default_config.solver   
 
-# SETTING UPDATE WITH RESPECT TO DEFAULT - analysis
-analysis['timeHorizon']             = 1                                                      
-analysis['spatialResolution']       = 'Test'
-analysis['modelFormulation']        = 'HSC'
-analysis['technologyApproximation'] = 'linear'
+## Analysis - settings update compared to default values
+analysis['timeHorizon'] = 1                                                      
+analysis['spatialResolution'] = 'Test3'
+analysis['modelFormulation'] = 'HSC'
+analysis['technologyApproximationCapex'] = 'linear'
+analysis['technologyApproximationEfficiency'] = 'linear'
+analysis['objective'] = 'BasicTotalCost'
 
-# SETTING UPDATE WITH RESPECT TO DEFAULT - system
-system['setInputCarriers']          = ['electricity']
-system['setOutputCarriers']         = ['hydrogen']
-system['setStorageTechnologies']    = []
-system['setTransportTechnologies']  = ['pipeline_hydrogen']
+## System - settings update compared to default values
+system['setInputCarriers'] = ['electricity']
+system['setOutputCarriers'] = ['hydrogen']
+system['setStorageTechnologies'] = []
+system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setProductionTechnologies'] = ['electrolysis']
-system['setTimeSteps']              = [0]
-system['setNodes']                  = list(string.ascii_uppercase[:9])
+system['setScenarios'] = 'a'
+system['setTimeSteps'] = [0]
+system['setNodes'] = list(string.ascii_uppercase[:3])
 
-# SETTING UPDATE WITH RESPECT TO DEFAULT - solver
-solver['MIPgap'] = 0.01
+## Solver - settings update compared to default values
+solver['gap'] = 0.01

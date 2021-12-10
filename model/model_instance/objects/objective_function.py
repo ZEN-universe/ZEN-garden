@@ -8,18 +8,14 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:   Class containing the available objective function and its attributes.
 ==========================================================================================================================================================================="""
 
-# IMPORT AND SETUP
+from model.model_instance.objects.element import Element
 import pyomo.environ as pe
 
-from model.model_instance.objects.element import Element
-
-
-#%% CLASS DEFINITION
 class ObjectiveFunction(Element):
 
     def __init__(self, object):
-        """ Initialization of the objective function
-        :param object: object of the abstract optimization model """
+        """initialization of the objective function
+        :param object: object of the abstract optimization model"""
 
         super().__init__(object)
 
@@ -30,11 +26,41 @@ class ObjectiveFunction(Element):
                                 sense = getattr(pe,   objSense))
         setattr(self.model, objFunc, peObj)
 
+    # RULES
+    @staticmethod
+    def objectiveBasicTotalCostRule(model):
+        " basic cost rule with PWA capex and linear transport cost"
+        
+        # Production cost
+        installCost = 0
+        for techType in ['Production']:
+            if hasattr(model, f'set{techType}Technologies'):
+                installCost += sum(sum(sum(
+                    # model.PWACapex[tech, node, time]
+                    model.valueCapex[tech] * model.capacityProductionTechnologies[tech,node,time]
+                    for time in model.setTimeSteps)
+                        for node in model.setNodes)
+                            for tech in getattr(model, f'set{techType}Technologies'))
+                
+        # Transport cost
+        for techType in ['Transport']:
+            if hasattr(model, f'set{techType}Technologies'):
 
-#%% RULES
+                installCost += sum(sum(sum(
+                    0.5*
+                    model.capacityTransportTechnologies[tech, node, nodealias, time]*
+                    model.distanceEucledian[tech, node, nodealias, time]*
+                    model.costPerDistance[tech, node, nodealias, time]
+                    for time in model.setTimeSteps)
+                        for nodealias in model.setNodes)
+                            for node in model.setAliasNodes
+                                for tech in getattr(model, f'set{techType}Technologies'))
+                
+        return installCost
+    
     @staticmethod
     def objectiveTotalCostRule(model):
-        """ Objective function to minimize the total  """
+        """objective function to minimize the total cost"""
     
         # CARRIERS
         carrierImport = sum(sum(sum(model.importCarrier[carrier, node, time] * model.importPriceCarrier[carrier, node, time]
@@ -66,18 +92,16 @@ class ObjectiveFunction(Element):
     
         return(carrierImport - carrierExport + installCost)
 
-
     @staticmethod
     def objectiveCarbonEmissionsRule(model):
-        """ Objective function to minimize total emissions """
+        """objective function to minimize total emissions"""
 
         # TODO implement objective functions for emissions
         return pe.Constraint.Skip
 
-
     @staticmethod
-    def objectiveRiskRule(model):
-        """ Objective function to minimize total risk """
+    def objectiveRisk(model):
+        """objective function to minimize total risk"""
 
         # TODO implement objective functions for risk
         return pe.Constraint.Skip

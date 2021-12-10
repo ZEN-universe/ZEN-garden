@@ -1,0 +1,5 @@
+index,attributes
+minCapacityTransport,0
+maxCapacityTransport,1E+6
+minLoadTransport,0
+maxLoadTransport,1

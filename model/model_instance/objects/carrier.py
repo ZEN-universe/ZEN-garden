@@ -8,62 +8,70 @@ Description:  Class defining a generic energy carrier.
               The class takes as inputs the abstract optimization model. The class adds parameters, variables and
               constraints of a generic carrier and returns the abstract optimization model.
 ==========================================================================================================================================================================="""
-
-# IMPORT AND SETUP
 import logging
 import pyomo.environ as pe
-
 from model.model_instance.objects.element import Element
 
-
-#%% CLASS DEFINITION
 class Carrier(Element):
 
     def __init__(self, object):
-        """ Initialization of a generic carrier object
-        :param model: object of the abstract optimization model """
+        """initialization of a generic carrier object
+        :param model: object of the abstract optimization model"""
 
         logging.info('initialize object of a generic carrier')
         super().__init__(object)
 
-        # SETS AND SUBSETS
+        #%% Sets and subsets
         subsets = {
-            'setInputCarriers':     'Set of input carriers. Subset: setCarriers',
-            'setOutputCarriers':    'Set of output carriers. Subset: setCarriers',
+            'setInputCarriers': 'Set of input carriers. Subset: setCarriers',
+            'setOutputCarriers': 'Set of output carriers. Subset: setCarriers',
             'setTransportCarriers': 'Set of carriers that can be transported. Subset: setCarriers'
             }
         self.addSubsets(subsets)
 
-        # PARAMETERS
+        #%% Parameters
         params = {
-            'demandCarrier':       'Parameter which specifies the carrier demand. \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps',
-            'exportPriceCarrier':  'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',
-            'importPriceCarrier':  'Parameter which specifies the import carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',            
-            'footprintCarrier':    'Parameter which specifies the carbon intensity of a carrier. \n\t Dimensions: setCarriers',
-            'availabilityCarrier': 'Parameter which specifies the maximum energy that can be imported from the grid. \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps'
+            'demandCarrier':                    'Parameter which specifies the carrier demand. \
+                                                \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps',         
+            'availabilityCarrier':              'Parameter which specifies the maximum energy that can be imported from the grid.\
+                                                \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps'
+            # 'exportPriceCarrier': 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',
+            # 'importPriceCarrier': 'Parameter which specifies the import carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',               
+            # 'footprintCarrier': 'Parameter which specifies the carbon intensity of a carrier. \n\t Dimensions: setCarriers',s
             }
         self.addParams(params)
 
-        # VARIABLES
+        #%% Variables
         variables = {
-            'importCarrier': 'node- and time-dependent carrier import from the grid. \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
-            'exportCarrier': 'node- and time-dependent carrier export from the grid. \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
+            'importCarrier':                    'node- and time-dependent carrier import from the grid.\
+                                                \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
+            'exportCarrier':                    'node- and time-dependent carrier export from the grid. \
+                                                \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
             }
         self.addVars(variables)
 
-        # CONSTRAINTS
+        #%% Contraints in current class
         constr = {
-            'constraintAvailabilityCarrier': 'node- and time-dependent carrier availability. \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps'
+            'constraintAvailabilityCarrier':    'node- and time-dependent carrier availability.\
+                                                \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps',
             }
         self.addConstr(constr)
 
         logging.info('added carrier sets, parameters, decision variables and constraints')
 
-
-#%% RULES   
+    #%% Rules contraints defined in current class
     @staticmethod
     def constraintAvailabilityCarrierRule(model, carrier, node, time):
-        """ Node- and time-dependent carrier availability. 
-        Dimensions: setCarriers, setNodes, setTimeSteps """
-        return(model.importCarrier[carrier, node, time] <= model.availabilityCarrier[carrier,node,time])
+        """
+        node- and time-dependent carrier availability
+        """
+        expression = (
+            model.importCarrier[carrier, node, time] <= model.availabilityCarrier[carrier,node,time]
+            )
+        return expression
+    
+    
+    
+    
+    
     
