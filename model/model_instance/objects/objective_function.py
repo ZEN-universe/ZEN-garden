@@ -8,14 +8,18 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:   Class containing the available objective function and its attributes.
 ==========================================================================================================================================================================="""
 
-from model.model_instance.objects.element import Element
+# IMPORT AND SETUP
 import pyomo.environ as pe
 
+from model.model_instance.objects.element import Element
+
+
+#%% CLASS DEFINITION
 class ObjectiveFunction(Element):
 
     def __init__(self, object):
-        """initialization of the objective function
-        :param object: object of the abstract optimization model"""
+        """ Initialization of the objective function
+        :param object: object of the abstract optimization model """
 
         super().__init__(object)
 
@@ -26,10 +30,11 @@ class ObjectiveFunction(Element):
                                 sense = getattr(pe,   objSense))
         setattr(self.model, objFunc, peObj)
 
-    # RULES
+
+#%% RULES
     @staticmethod
     def objectiveTotalCostRule(model):
-        """objective function to minimize the total cost"""
+        """ Objective function to minimize the total  """
     
         # CARRIERS
         carrierImport = sum(sum(sum(model.importCarrier[carrier, node, time] * model.importPriceCarrier[carrier, node, time]
@@ -61,16 +66,18 @@ class ObjectiveFunction(Element):
     
         return(carrierImport - carrierExport + installCost)
 
+
     @staticmethod
     def objectiveCarbonEmissionsRule(model):
-        """objective function to minimize total emissions"""
+        """ Objective function to minimize total emissions """
 
         # TODO implement objective functions for emissions
         return pe.Constraint.Skip
 
+
     @staticmethod
-    def objectiveRisk(model):
-        """objective function to minimize total risk"""
+    def objectiveRiskRule(model):
+        """ Objective function to minimize total risk """
 
         # TODO implement objective functions for risk
         return pe.Constraint.Skip

@@ -7,13 +7,15 @@
 #
 # Description:  Compilation  of the optimization problem.
 # ==========================================================================================================================================================================="""
-import os
-import logging
-import numpy as np
+
+# IMPORT AND SETUP
+import os, logging
+import config
+import numpy  as np
 import pandas as pd
-from config import *
-from model.preprocess.prepare import Prepare
-from model.model_instance.model import Model
+
+from model.preprocess.prepare     import Prepare
+from model.model_instance.model   import Model
 from model.postprocess.evaluation import Evaluation
 
 # SETUP LOGGER
@@ -21,16 +23,19 @@ log_format = '%(asctime)s %(filename)s: %(message)s'
 if not os.path.exists('outputs/logs'):
     os.mkdir('outputs/logs')
 logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.CRITICAL, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+
 # prevent double printing
 logging.propagate = False
 
 
+#%% OPTIMIZATION PROBLEM
 # CREATE INPUT FILE
-prepare = Prepare(analysis, system)
+prepare = Prepare(config.analysis, config.system)
+print(' Model preparation completed.')
 
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-model = Model(analysis, system)
-model.solve(solver, prepare.pyoDict)
+model = Model(config.analysis, config.system)
+model.solve(config.solver, prepare.pyoDict)
 
 # EVALUATE RESULTS
-evaluation = Evaluation(system, model)
+evaluation = Evaluation(config.system, model)

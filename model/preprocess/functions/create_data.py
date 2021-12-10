@@ -2,27 +2,26 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:    Class to create new data from the input datasets based on default values
+Description:  Class to create new data from the input datasets based on default values
 ==========================================================================================================================================================================="""
 
+# IMPORT AND SETUP
 import pandas as pd
-import numpy as np
+import numpy  as np
 
+
+#%% CLASS DEFINITION AND METHODS
 class Create:
     
-    def __init__(self):
-        pass
-    
     def conversionMatrices(self):
-        """
-        Create the efficiency matrix with the input data for each technology and the availability matrix which defines which carriers can are converted
-        """
+        """ This method creates: (i)  the efficiency matrix with the input data for each technology,
+                                 (ii) the availability matrix which defines which carriers can be converted """
 
-        technologySubset = 'setProductionTechnologies'
-        inputFileName = 'conversionBalanceConstant'
-        newFileNameEfficiency = 'converEfficiency'
+        technologySubset        = 'setProductionTechnologies'
+        inputFileName           = 'conversionBalanceConstant'
+        newFileNameEfficiency   = 'converEfficiency'
         newFileNameAvailability = 'converAvailability'
         
         numberCarriers = len(self.system['setCarriers'])        
@@ -31,13 +30,14 @@ class Create:
             
             # create empty dataframes having all the setCarriers as index and columns
             dfConversionBalance = pd.DataFrame(np.zeros([numberCarriers, numberCarriers]),
-                                                index = self.system['setCarriers'],
+                                                index   = self.system['setCarriers'],
                                                 columns = self.system['setCarriers'],
-                                                dtype=np.int)
+                                                dtype   = np.int)
+
             dfAvailabilityMatrix = pd.DataFrame(np.zeros([numberCarriers, numberCarriers]),
-                                                index = self.system['setCarriers'],
+                                                index   = self.system['setCarriers'],
                                                 columns = self.system['setCarriers'],
-                                                dtype=np.int)
+                                                dtype   = np.int)
             
             # dataframe stored in data
             dataConversionBalance = self.data[technologySubset][technologyName][inputFileName]
@@ -45,26 +45,25 @@ class Create:
                  
             # list of input and output carriers
             mapOutputCarriers = (dataConversionBalance[self.analysis['dataInputs']['nameConversionBalance']] == 1.0)
-            outputCarriers = list(dataConversionBalance[mapOutputCarriers].index)
+            outputCarriers    = list(dataConversionBalance[mapOutputCarriers].index)
+
             # collect the remaining carriers in the input dataframe and remove the output carriers
             inputCarriers = list(dataConversionBalance[~mapOutputCarriers].index)            
             
             for inputCarrier in inputCarriers:
-                for outputCarrier in outputCarriers:
-                    
+                for outputCarrier in outputCarriers:                  
                     if ((inputCarrier not in self.system['setCarriers']) or (outputCarrier not in self.system['setCarriers'])):
                         raise ValueError("Carriers in technology {technologyName} not matching setCarriers")
                         
                     # assign the conversion balance constants according to the input data
-                    dfConversionBalance.loc[inputCarrier, outputCarrier] = dataConversionBalance.loc[inputCarrier, self.analysis['dataInputs']['nameConversionBalance']]            
+                    dfConversionBalance.loc[inputCarrier, outputCarrier] = dataConversionBalance.loc[inputCarrier, self.analysis['dataInputs']['nameConversionBalance']]   
+
                     # assign 0 or 1 depending if the carrier is converted
                     dfAvailabilityMatrix.loc[inputCarrier, outputCarrier] = 1
             
             # change the indexing and rename it as column
-            self.data[technologySubset][technologyName][newFileNameEfficiency] = dfConversionBalance.reset_index()
+            self.data[technologySubset][technologyName][newFileNameEfficiency]   = dfConversionBalance.reset_index()
             self.data[technologySubset][technologyName][newFileNameAvailability] = dfAvailabilityMatrix.reset_index()            
             self.data[technologySubset][technologyName][newFileNameEfficiency].rename(columns={"index": self.analysis['dataInputs']['nameCarrier']}, inplace=True)
             self.data[technologySubset][technologyName][newFileNameAvailability].rename(columns={"index": self.analysis['dataInputs']['nameCarrier']}, inplace=True)
             
-            
-        

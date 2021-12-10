@@ -6,9 +6,14 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class containing the mass balance and its attributes.
 ==========================================================================================================================================================================="""
-from model.model_instance.objects.element import Element
+
+# IMPORT AND SETUP
 import pyomo.environ as pe
 
+from model.model_instance.objects.element import Element
+
+
+#%% CLASS DEFINITION
 class MassBalance(Element):
 
     def __init__(self, object):
