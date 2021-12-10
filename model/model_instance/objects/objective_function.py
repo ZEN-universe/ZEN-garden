@@ -7,13 +7,16 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:    Class containing the available objective functions as attributes
 ==========================================================================================================================================================================="""
 
-from model.model_instance.objects.element import Element
+# IMPORT AND SETUP
 import pyomo.environ as pe
 
+from model.model_instance.objects.element import Element
+
+
+#%% CLASS DEFINITION
 class ObjectiveFunction(Element):
 
     def __init__(self, object):
-
         super().__init__(object)
 
         objFunc  = self.analysis['objective']
@@ -23,12 +26,13 @@ class ObjectiveFunction(Element):
                                 sense = getattr(pe,   objSense))
         setattr(self.model, objFunc, peObj)
 
+
+#%% STATIC METHODS
     @staticmethod
     def objectiveTotalCostRule(model):
         """
-        objective function to minimize the total cost
+        This method defines the objective function to minimize the total cost
         """
-    
         # carrier
         # carrierCost = sum(sum(sum(model.importCarrier[carrier, node, time] * model.price[carrier, node, time]
         #                         for time in model.setTimeSteps)

@@ -32,7 +32,7 @@ prepare = Prepare(config.analysis, config.system)
 print(' Model preparation completed.')
 
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-# model = Model(analysis, system)
+model = Model(config.analysis, config.system)
 # model.solve(solver, prepare.pyoDict)
 # results = valueChain.solve(config.solver)
 

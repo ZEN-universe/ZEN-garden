@@ -29,7 +29,7 @@ class Prepare:
         :param system: dictionary defining the system framework
         :return: dictionary containing all the input data
         """
-        # instantiate the analysis and system properties
+        # instantiate the analysis and system properties for Prepare (from config)
         self.analysis = analysis
         self.system   = system
         

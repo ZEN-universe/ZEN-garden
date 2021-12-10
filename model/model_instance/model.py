@@ -11,7 +11,7 @@ Description:  Class defining the abstract optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
 
-#%% IMPORT AND SETUP
+# IMPORT AND SETUP
 import logging
 import pyomo.environ as pe
 
@@ -23,25 +23,36 @@ from model.model_instance.objects.objective_function               import Object
 from model.model_instance.objects.mass_balance                     import MassBalance
 
 
-#%% CLASS DEFINITION AND METHODS
+#%% CLASS DEFINITION
 class Model:
 
     def __init__(self, analysis, system):
         """
-        create Pyomo Abstract Model
+        This class creates a Pyomo abstract model
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
         """
+        # instantiate the analysis and system properties for Model (from config)
         self.analysis = analysis
         self.system   = system
 
+        # initialize the abstract model from pyomo
         self.model = pe.AbstractModel()
+
+        # create the sets of the model --> class method (see below)
         self.addSets()
+
+        # create the elements (carriers and technologies) of the model --> multiple modules called (see below)
         self.addElements()
+
+        # create the objective function of the model --> module ObjectiveFunction called from objective_function.py
         self.addObjectiveFunction()
+
+        # create the mass balance constraints of the model
         self.addMassBalance()
 
-    # CLASS METHOD: ADD SETS DEFINING THE OPTIMIZATION PROBLEM
+
+#%% CLASS METHODS
     def addSets(self):
         """
         This method sets up the sets of the optimization problem.
@@ -51,21 +62,20 @@ class Model:
             (2) model.ct = Set(within=model.t) : model.ct is a subset of model.t, Pyomo will do the verification of this
             (3) model.i  = Set(initialize=model.t) : makes a copy of whatever is in model.t during the time of construction
             (4) model.i  = SetOf(model.t) : references whatever is in model.t at runtime (alias)
-        """
-        
+        """     
         # Sets:
         # 'setCarriers' includes the subsets 'setInputCarriers', 'setOutputCarriers'
         # 'setTechnologies' includes the subsets 'setTransportTechnologies', 'setProductionTechnologies', 'setStorageTechnologies'
-        
-        sets = {'setCarriers':      'Set of carriers',
-                'setTechnologies':  'Set of technologies',      
-                'setTimeSteps':     'Set of time-steps',
-                'setNodes':         'Set of nodes'
+        sets = {'setCarriers':     'Set of carriers',
+                'setTechnologies': 'Set of technologies',      
+                'setTimeSteps':    'Set of time-steps',
+                'setNodes':        'Set of nodes'
                 }
 
         for setName, setProperty in sets.items():
             peSet = pe.Set(doc = setProperty)
             setattr(self.model, setName, peSet)
+
 
     def addElements(self):
         """
@@ -76,31 +86,35 @@ class Model:
         # TODO create list of carrier types, only add relevant types
         # TODO to create list of carrier tpyes (e.g. general, CO2,...) write a function getCarrierTypes
 
-        # add carrier parameters, variables, and constraints
+        # add carrier parameters, variables, and constraints --> module Carrier called from carrier.py
         Carrier(self)
-        # add technology parameters, variables, and constraints
+
+        # add technology parameters, variables, and constraints --> modules []Technology called from []_technology.py
         if self.system['setProductionTechnologies']:
             ProductionTechnology(self)
+
         if self.system['setTransportTechnologies']:
             TransportTechnology(self)
+
         if self.system['setStorageTechnologies']:
             print("Storage Technologies are not yet implemented")
 
         #TODO: decide if mass balance should be added here instead of wihtin Carrier??
 
+
     def addObjectiveFunction(self):
         """
         Add objective function to abstract optimization model
         """
-
         ObjectiveFunction(self)
+
 
     def addMassBalance(self):
         """
-        Add objective function to abstract optimization model
+        Add mass balance to abstract optimization model
         """
-
         MassBalance(self)
+
 
     def solve(self, solver, pyoDict):
         """
@@ -108,7 +122,6 @@ class Model:
         :param data: dictionary containing the input data
         :return:
         """
-
         solverName = solver['name']
         # del solver['name']
         solverOptions = solver.copy()
@@ -129,4 +142,3 @@ class Model:
         self.results = self.opt.solve(self.instance, tee=True)
         
         # TODO save and evaluate results
-
