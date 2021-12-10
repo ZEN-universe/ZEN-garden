@@ -2,4 +2,4 @@ index,attributes
 minCapacityTransport,0
 maxCapacityTransport,1.00E+09
 minLoadTransport,0
-maxLoadTransport,1.00E+09
+maxLoadTransport,1

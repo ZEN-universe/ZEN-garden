@@ -1,0 +1,4 @@
+scenario,time,node,demandCarrier
+a,0,A,1
+a,0,B,3
+a,0,C,1

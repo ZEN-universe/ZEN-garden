@@ -103,9 +103,9 @@ class Element:
             if not 'Dimensions' in constrProperties:
                 raise ValueError('Dimensions of constraint {0} are undefined'.format(constr))
                 
-            _,dimensions,_ = self.getProperties(constrProperties)
+            doc, dimensions,_ = self.getProperties(constrProperties)
 
-            peConstr   = pe.Constraint(*dimensions, rule=getattr(self, f'{constr}Rule')) 
+            peConstr   = pe.Constraint(*dimensions, rule=getattr(self, f'{constr}Rule'), doc=doc) 
 
             setattr(self.model, constr, peConstr)
                       

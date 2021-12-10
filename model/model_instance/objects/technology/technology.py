@@ -10,7 +10,6 @@ Description:  Class defining the parameters, variables and constraints that hold
 ==========================================================================================================================================================================="""
 
 import logging
-import pyomo.environ as pe
 from model.model_instance.objects.element import Element
 
 class Technology(Element):
@@ -51,14 +50,15 @@ class Technology(Element):
         :return params: return dictionary containing the technology parameters"""
 
         params = {
-            f'minCapacity{self.type}':       f'Parameter which specifies the minimum {self.type} size that can be installed. \
-                                             \n\t Dimensions: set{self.type}Technologies',
-            f'maxCapacity{self.type}':       f'Parameter which specifies the maximum {self.type} size that can be installed. \
-                                             \n\t Dimensions: set{self.type}Technologies',
-            f'minLoad{self.type}':           f'fraction used to determine the minimum load of/ flow through the {self.type}. \
-                                             \n\t Dimensions: set{self.type}Technologies',
-            f'availability{self.type}':      f'node- and time-dependent availability of {self.type}. \
-                                             \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'}
+            f'minCapacity{self.type}':              f'Parameter which specifies the minimum {self.type} size that can be installed. \
+                                                    \n\t Dimensions: set{self.type}Technologies',
+            f'maxCapacity{self.type}':              f'Parameter which specifies the maximum {self.type} size that can be installed. \
+                                                    \n\t Dimensions: set{self.type}Technologies',
+            f'availability{self.type}':             f'node- and time-dependent availability of {self.type}. \
+                                                    \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps.'                                             
+            # f'minLoad{self.type}':           f'fraction used to determine the minimum load of/ flow through the {self.type}. \
+            #                                  \n\t Dimensions: set{self.type}Technologies',
+            }
 
         return params
 
@@ -67,12 +67,13 @@ class Technology(Element):
         :return vars: return dictionary containing the technology variables"""
 
         variables = {
-            f'install{self.type}Technologies':  f'installment of a {self.type} at node i and time t. \
-                                                \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps.\
-                                                \n\t Domain: Binary',
-            f'capacity{self.type}Technologies': f'size of {self.type} installed between nodes at time t. \
-                                                \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. \n\t Domain: NonNegativeReals'}
-
+            f'install{self.type}Technologies':      f'installment of a {self.type} at node i and time t. \
+                                                    \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps.\
+                                                    \n\t Domain: Binary',
+            f'capacity{self.type}Technologies':     f'size of {self.type} installed between nodes at time t. \
+                                                    \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. \
+                                                    \n\t Domain: NonNegativeReals'
+            }
 
         return variables
 

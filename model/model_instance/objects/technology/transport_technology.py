@@ -21,103 +21,147 @@ class TransportTechnology(Technology):
         logging.info('initialize object of a transport technology')
         super().__init__(object, 'Transport')
 
-        # SETS AND SUBSETS
+        #%% Sets and subsets
         subsets = {
             'setAliasNodes': 'Copy of the set of nodes to model transport. Subset: setNodes'}
+        # merge new items with sets and subsets dictionary from Technology class  
         subsets = {**subsets, **self.getTechSubsets()}
         self.addSubsets(subsets)
 
-
-        # PARAMETERS
+        #%% Parameters
         params = {
-            'minTransportTechLoad': 'fraction of installed transport technology size that determines the minimum load of the transport technology. \
-                                     \n\t Dimensions: setTransportTechnologies'}
+            'distanceEucledian':        'eucledian distance between any input node. \
+                                         \n\t Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.',
+            'costPerDistance':          'capex tranport technology per unit distance. \
+                                         \n\t Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.',
+            # 'minTransportTechLoad':     'fraction of installed transport technology size that determines the minimum load of the transport technology. \
+            #                              \n\t Dimensions: setTransportTechnologies'            
+            }
+        # merge new items with parameters dictionary from Technology class 
         params = {**params, **self.getTechParams()}
         self.addParams(params)
 
-        # VARIABLES
-        vars = {
+        #%% Decision variables
+        variables = {
             'carrierFlow':            'carrier flow through transport technology from node i to node j. \
                                        \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.\
                                        \n\t Domain: NonNegativeReals',
-            'carrierFlowAux':         'auxiliary variable to model the min possible flow through transport technology from node i to node j. \
-                                       \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.\
-                                       \n\t Domain: NonNegativeReals'}
-        vars = {**vars, **self.getTechVars()}
-        self.addVars(vars)
+            # 'carrierFlowAux':         'auxiliary variable to model the min possible flow through transport technology from node i to node j. \
+            #                            \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.\
+            #                            \n\t Domain: NonNegativeReals'
+            }
+        # merge new items with variables dictionary from Technology class 
+        variables = {**variables, **self.getTechVars()}
+        self.addVars(variables)
 
-
-        # CONSTRAINTS
-        constr = {'constraintTransportTechnologiesPerformance':  'performance of transport technology. \
-                                                                  \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-                  'constraintMinLoadTransportTechnologies1':     'min flow through transport technology, part one. \
-                                                                  \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-                  'constraintMinLoadTransportTechnologies2':     'min flow through transport, part two. \
-                                                                  \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-                  'constraintMaxLoadTransportTechnologies1':     'max flow through transport technology, part one. \
-                                                                  \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-                  'constraintMaxLoadTransportTechnologies2':     'max flow through transport, part two. \
-                                                                  \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps'
+        #%%  Contraints in current class 
+        constr = {
+                'constraintTransportTechnologiesFlowCapacity':     'coupling flow carrier to capcity transport technology.\
+                                                                    \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.' 
+                  # 'constraintTransportTechnologiesPerformance':  'performance of transport technology. \
+                  #                                               \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
+                  # 'constraintMinLoadTransportTechnologies1':     'min flow through transport technology, part one. \
+                  #                                                 \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
+                  # 'constraintMinLoadTransportTechnologies2':     'min flow through transport, part two. \
+                  #                                                 \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
+                  # 'constraintMaxLoadTransportTechnologies1':     'max flow through transport technology, part one. \
+                  #                                                 \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
+                  # 'constraintMaxLoadTransportTechnologies2':     'max flow through transport, part two. \
+                  #                                                 \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps'
 
                   }
         # TODO add constraints for transport losses
         constr = {**constr, **self.getTechConstr()}
-        #self.addConstr(constr)
+        self.addConstr(constr)
 
         logging.info('added transport technology sets, parameters, decision variables and constraints')
-
-    # RULES
-    @staticmethod
-    def constraintTransportTechnologiesPerformanceRule(model, carrier, tech, node, aliasNode, time):
-        """constraint to account for transport losses.
-        \n\t Dimensions: setTransportTechnologies, setTransportCarriers, setNodes, setTimeSteps"""
-        # TODO implement transport losses
-        return (model.carrierFlow[carrier, tech, node, aliasNode, time]
-                == model.carrierFlow[carrier,tech, aliasNode, node, time])
-    
-    # Rules pre-defined in Technology class
-    # capacity constraints
+   
+    #%% Contraint rules pre-defined in Technology class
     @staticmethod
     def constraintTransportTechnologiesMinCapacityRule(model, tech, node, aliasNode, time):
-        """min size of transport technology.
-        \n\t Dimensions: setTransportTechnologiesnologies, setNodes, setAliasNodes, setTimeSteps"""
-
-        return (model.minCapacityTransport[tech] * model.installTransportTechnologies[tech, node, time]
-                <= model.capacityTransportTechnologies[tech, node, time])
-
+        """
+        min size of transport technology.
+        """
+        expression = (
+            model.minCapacityTransport[tech] * model.installTransportTechnologies[tech, node, aliasNode, time]
+            <= 
+            model.capacityTransportTechnologies[tech, node, aliasNode, time]
+            )
+        
+        return expression
+    
     @staticmethod
     def constraintTransportTechnologiesMaxCapacityRule(model, tech, node, aliasNode, time):
-        """max size of transport technology.
-        \n\t Dimensions: setTransportTechnologiesnologies, setNodes, setAliasNodes, setTimeSteps"""
-        return (model.maxCapacityTransport[tech] * model.installTransportTechnologies[tech, node, time]
-                >= model.capacityTransportTechnologies[tech, node, time])
-
-    # operational constraints
+        """
+        max size of transport technology.
+        """
+        expression = (
+            model.maxCapacityTransport[tech] * model.installTransportTechnologies[tech, node, aliasNode, time]
+            >=
+            model.capacityTransportTechnologies[tech, node, aliasNode, time]
+            )
+        return expression 
+    
     @staticmethod
-    def constraintMinLoadTransportTechnologies1Rule(model, carrier, tech, node, aliasNode, time):
-        """min flow through transport technology between two nodes.
-        \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps"""
-        return (model.minTransportTechLoad[tech] * model.installTransportTechnologies[tech, node, aliasNode, time] * model.minCapacityTransport[tech]
-                <= model.carrierFlowAux[carrier, tech, node, aliasNode, time])
-
-    def constraintMinLoadTransportTechnologies2Rule(model, carrier, tech, node, aliasNode, time):
-        """min amount of carrier flow thorugh transport technology between two nodes.
-        \n\t Dimensions: setCarrier, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps"""
-        return (model.carrierFlow[carrier, tech, node, aliasNode, time] - model.maxCapacityTransport[tech] * (1 - model.installTransportTechnologies[tech, node, aliasNode, time])
-                <= model.carrierFlowAux[carrier, tech, node, aliasNode, time])
-    
-    def constraintMaxLoadTransportTechnologies1Rule(model, carrier, tech, node, aliasNode, time):
-        """max amount of carrier flow through transport technology between two nodes.
-         \n\t Dimensions: setCarrier, setTransportTechnologiesnologies, setNodes, setAliasNodes, setTimeSteps"""
-        return (model.capacityTransportTechnologies[tech, node, aliasNode, time]
-                >= model.carrierFlowAux[carrier, tech, node, aliasNode, time])                                           # ub
-    
-    def constraintMaxLoadTransportTechnologies2Rule(model, carrier, tech, node, aliasNode, time):
-        """max amount of carrier flow through transport technology between two nodes.
-        \n\t Dimensions: setCarrier, setTransportTechnologiesnologies, setNodes, setAliasNodes, setTimeSteps"""
-        return (model.carrierFlow[carrier, tech, node, aliasNode, time]
-                >= model.carrierFlowAux[carrier, tech, node, aliasNode, time])
-
     def constraintAvailabilityTransportTechnologiesRule(model, tech, node, aliasNode, time):
-        """limited availability of production technology. \n\t Dimensions: setProductionTechnologies, setNodes, setTimeSteps"""
-        return (model.availabilityTransport[tech, node, aliasNode, time] <= model.installTransportTechnologies[tech, node, aliasNode, time])
+        """
+        limited availability of production technology.
+        """
+        expression = (
+            model.availabilityTransport[tech, node, aliasNode, time]
+            >= 
+            model.installTransportTechnologies[tech, node, aliasNode, time]
+            )
+        return expression
+
+    #%% Contraint rules defined in current class - Operation
+
+    @staticmethod
+    def constraintTransportTechnologiesFlowCapacityRule(model, carrier, tech, node, nodeAlias, time):
+        """
+        coupling flow carrier to capcity transport technology
+        """
+        
+        expression = (
+            model.capacityTransportTechnologies[tech, node, nodeAlias, time] 
+            ==
+            model.carrierFlow[carrier, tech, node, nodeAlias, time]
+            )
+        return expression
+    # Rules in current class
+    # @staticmethod
+    # def constraintTransportTechnologiesPerformanceRule(model, carrier, tech, node, aliasNode, time):
+    #     """constraint to account for transport losses.
+    #     \n\t Dimensions: setTransportTechnologies, setTransportCarriers, setNodes, setTimeSteps"""
+    #     # TODO implement transport losses
+    #     return (model.carrierFlow[carrier, tech, node, aliasNode, time]
+    #             == model.carrierFlow[carrier,tech, aliasNode, node, time])
+    
+  
+
+    # # operational constraints
+    # @staticmethod
+    # def constraintMinLoadTransportTechnologies1Rule(model, carrier, tech, node, aliasNode, time):
+    #     """min flow through transport technology between two nodes.
+    #     \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps"""
+    #     return (model.minTransportTechLoad[tech] * model.installTransportTechnologies[tech, node, aliasNode, time] * model.minCapacityTransport[tech]
+    #             <= model.carrierFlowAux[carrier, tech, node, aliasNode, time])
+
+    # def constraintMinLoadTransportTechnologies2Rule(model, carrier, tech, node, aliasNode, time):
+    #     """min amount of carrier flow thorugh transport technology between two nodes.
+    #     \n\t Dimensions: setCarrier, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps"""
+    #     return (model.carrierFlow[carrier, tech, node, aliasNode, time] - model.maxCapacityTransport[tech] * (1 - model.installTransportTechnologies[tech, node, aliasNode, time])
+    #             <= model.carrierFlowAux[carrier, tech, node, aliasNode, time])
+    
+    # def constraintMaxLoadTransportTechnologies1Rule(model, carrier, tech, node, aliasNode, time):
+    #     """max amount of carrier flow through transport technology between two nodes.
+    #      \n\t Dimensions: setCarrier, setTransportTechnologiesnologies, setNodes, setAliasNodes, setTimeSteps"""
+    #     return (model.capacityTransportTechnologies[tech, node, aliasNode, time]
+    #             >= model.carrierFlowAux[carrier, tech, node, aliasNode, time])                                           # ub
+    
+    # def constraintMaxLoadTransportTechnologies2Rule(model, carrier, tech, node, aliasNode, time):
+    #     """max amount of carrier flow through transport technology between two nodes.
+    #     \n\t Dimensions: setCarrier, setTransportTechnologiesnologies, setNodes, setAliasNodes, setTimeSteps"""
+    #     return (model.carrierFlow[carrier, tech, node, aliasNode, time]
+    #             >= model.carrierFlowAux[carrier, tech, node, aliasNode, time])
+

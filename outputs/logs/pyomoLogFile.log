@@ -2,9 +2,9 @@ Solver command line: ['/usr/local/bin/gurobi.sh']
 
 Academic license - for non-commercial use only - expires 2022-09-17
 Using license file /Library/gurobi912/gurobi.lic
-Read LP format model from file /var/folders/_8/jlm5xxcd6f7bbwht52xhr6qw0000gp/T/tmp43ssf9i4.pyomo.lp
+Read LP format model from file /var/folders/_8/jlm5xxcd6f7bbwht52xhr6qw0000gp/T/tmpfbn96339.pyomo.lp
 Reading time = 0.00 seconds
-x388: 100 rows, 136 columns, 316 nonzeros
+x46: 61 rows, 46 columns, 106 nonzeros
 Changed value of parameter MIPgap to 0.01
    Prev: 0.0001  Min: 0.0  Max: inf  Default: 0.0001
 Changed value of parameter TimeLimit to 8760.0
@@ -14,27 +14,31 @@ Changed value of parameter logfile to .//outputs//logs//pyomoLogFile.log
 No parameters matching 'gap' found
 Gurobi Optimizer version 9.1.2 build v9.1.2rc0 (mac64)
 Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
-Optimize a model with 100 rows, 136 columns and 316 nonzeros
-Model fingerprint: 0x2d4f7124
-Variable types: 127 continuous, 9 integer (9 binary)
+Optimize a model with 61 rows, 46 columns and 106 nonzeros
+Model fingerprint: 0x32474453
+Variable types: 34 continuous, 12 integer (12 binary)
 Coefficient statistics:
-  Matrix range     [1e+00, 1e+09]
-  Objective range  [1e+00, 1e+09]
+  Matrix range     [7e-01, 1e+06]
+  Objective range  [2e+02, 7e+05]
   Bounds range     [1e+00, 1e+00]
-  RHS range        [1e+00, 1e+09]
-Warning: Model contains large matrix coefficients
-         Consider reformulating model or setting NumericFocus parameter
-         to avoid numerical issues.
-Presolve removed 100 rows and 136 columns
+  RHS range        [1e+00, 1e+02]
+Presolve removed 60 rows and 41 columns
 Presolve time: 0.01s
-Presolve: All rows and columns removed
+Presolved: 1 rows, 5 columns, 5 nonzeros
+Variable types: 5 continuous, 0 integer (0 binary)
 
-Explored 0 nodes (0 simplex iterations) in 0.02 seconds
-Thread count was 1 (of 8 available processors)
+Root relaxation: objective 3.500000e+06, 0 iterations, 0.00 seconds
 
-Solution count 1: -9e+18 
-No other solutions better than -9e+18
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+*    0     0               0    3500000.0000 3500000.00  0.00%     -    0s
+
+Explored 0 nodes (0 simplex iterations) in 0.03 seconds
+Thread count was 8 (of 8 available processors)
+
+Solution count 1: 3.5e+06 
 
 Optimal solution found (tolerance 1.00e-02)
-Best objective -8.999999973000e+18, best bound -8.999999973000e+18, gap -0.0000%
+Best objective 3.500000000000e+06, best bound 3.500000000000e+06, gap 0.0000%
 
