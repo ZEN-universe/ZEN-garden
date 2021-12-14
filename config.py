@@ -20,7 +20,7 @@ solver = default_config.solver
 analysis['timeHorizon'] = 1                                                      
 analysis['spatialResolution'] = 'Test3'
 analysis['modelFormulation'] = 'HSC'
-analysis['technologyApproximationCapex'] = 'linear'
+analysis['technologyApproximationCapex'] = 'PWA'
 analysis['technologyApproximationEfficiency'] = 'linear'
 analysis['objective'] = 'BasicTotalCost'
 

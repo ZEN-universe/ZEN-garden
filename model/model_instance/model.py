@@ -12,7 +12,6 @@ Description:  Class defining the abstract optimization model.
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
-from pyomo.opt import SolverStatus, TerminationCondition
 from model.model_instance.objects.carrier import Carrier
 from model.model_instance.objects.technology.production_technology import ProductionTechnology
 from model.model_instance.objects.technology.transport_technology import TransportTechnology

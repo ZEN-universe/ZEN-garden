@@ -23,7 +23,6 @@ logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.CRITIC
 # prevent double printing
 logging.propagate = False
 
-
 # CREATE INPUT FILE
 prepare = Prepare(analysis, system)
 

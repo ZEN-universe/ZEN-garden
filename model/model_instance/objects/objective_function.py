@@ -28,19 +28,26 @@ class ObjectiveFunction(Element):
 
     # RULES
     @staticmethod
-    def objectiveBasicTotalCostRule(model):
+    def objectiveBasicTotalCostRule(model, analysis):
         " basic cost rule with PWA capex and linear transport cost"
         
-        # Production cost
+        ## Production cost
+        # Capex
         installCost = 0
         for techType in ['Production']:
             if hasattr(model, f'set{techType}Technologies'):
-                installCost += sum(sum(sum(
-                    # model.PWACapex[tech, node, time]
-                    model.valueCapex[tech] * model.capacityProductionTechnologies[tech,node,time]
-                    for time in model.setTimeSteps)
-                        for node in model.setNodes)
-                            for tech in getattr(model, f'set{techType}Technologies'))
+                if hasattr(model, 'valueCapex'):
+                    installCost += sum(sum(sum(
+                        model.valueCapex[tech] * model.capacityProductionTechnologies[tech,node,time]
+                            for time in model.setTimeSteps)
+                                for node in model.setNodes)
+                                    for tech in getattr(model, f'set{techType}Technologies'))
+                elif hasattr(model, 'PWACapex'):
+                    installCost += sum(sum(sum(
+                        model.PWACapex[tech, node, time]
+                            for time in model.setTimeSteps)
+                                for node in model.setNodes)
+                                    for tech in getattr(model, f'set{techType}Technologies'))
                 
         # Transport cost
         for techType in ['Transport']:

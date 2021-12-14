@@ -8,9 +8,6 @@ Description:    Class to read the data from input files, collect them into a dic
 ==========================================================================================================================================================================="""
 
 import pandas as pd
-import numpy as np
-from deepdiff import DeepDiff
-import sys
 import logging
 import os
 
