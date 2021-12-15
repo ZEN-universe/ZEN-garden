@@ -32,38 +32,45 @@ class ProductionTechnology(Technology):
         #%% Parameters
         params = {'converAvailability':  'Parameter that links production technology, input, and ouput carriers. \
                                          \n\t Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers'}
-        # technology conversion efficiency
-        if self.analysis['technologyApproximationEfficiency'] == 'linear':
-            params['converEfficiency'] = 'Parameter which specifies the linear conversion efficiency of a technology.\
-                                          \n\t Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers'
-        elif self.analysis['technologyApproximationEfficiency'] == 'PWA':
-            params['slopePWAconverEfficiency'] = ''
-            params['extreme0PWAconverEfficiency'] = ''
-            params['extreme1PWAconverEfficiency'] = ''
-            params['value0PWAconverEfficiency'] = ''
-
-        # technology capex
-        if self.analysis['technologyApproximationCapex'] == 'linear':
-            params['valueCapex'] = 'Parameter which defines the coefficient of proportionality of capex. \
-                                    \n\t Dimensions: setProductionTechnologies'
-        elif self.analysis['technologyApproximationCapex'] == 'PWA':
-            params['slopePWACapex'] = 'Parameter which specifies the slope in the PWA approximation of Capex of a production technology. \
-                                          \n\t Dimensions: setProductionTechnologies, setPWACapex.'
-            params['extreme0PWACapex'] = 'Parameter which specifies the 1st domain extremes in the PWA approximation of Capex of a production technology. \
-                                          \n\t Dimensions: setProductionTechnologies, setPWACapex'
-            params['extreme1PWACapex'] = 'Parameter which specifies the 2nd domain extremes in the PWA approximation of Capex of a production technology. \
-                                          \n\t Dimensions: setProductionTechnologies, setPWACapex'
-            params['value0PWACapex'] = 'Parameter which specifies the value of Capex in the PWA approximation of a production technology. \
-                                          \n\t Dimensions: setProductionTechnologies, setPWACapex'
-        # technology operation
-            params['minLoadProduction'] = 'Parameter which specifies the minimum load of a production technology. \
-                                          \n\t Dimensions: setProductionTechnologies'
-            params['maxLoadProduction'] = 'Parameter which specifies the minimum load of a production technology. \
-                                          \n\t Dimensions: setProductionTechnologies'
-
         # merge new items with parameters dictionary from Technology class
         params = {**params, **self.getTechParams()}
         self.addParams(params)
+
+        # technology conversion efficiency
+        params_efficiency = {}
+        if self.analysis['technologyApproximationEfficiency'] == 'linear':
+            params_efficiency['converEfficiency'] = 'Parameter which specifies the linear conversion efficiency of a technology.\
+                                          \n\t Dimensions: setProductionTechnologies, setInputCarriers, setOutputCarriers'
+        elif self.analysis['technologyApproximationEfficiency'] == 'PWA':
+            params_efficiency['slopePWAconverEfficiency'] = ''
+            params_efficiency['extreme0PWAconverEfficiency'] = ''
+            params_efficiency['extreme1PWAconverEfficiency'] = ''
+            params_efficiency['value0PWAconverEfficiency'] = ''
+        self.addParams(params_efficiency)
+
+        # technology capex
+        params_capex = {}
+        if self.analysis['technologyApproximationCapex'] == 'linear':
+            params_capex['valueCapex'] = 'Parameter which defines the coefficient of proportionality of capex. \
+                                    \n\t Dimensions: setProductionTechnologies'
+        elif self.analysis['technologyApproximationCapex'] == 'PWA':
+            params_capex['slopePWACapex'] = 'Parameter which specifies the slope in the PWA approximation of Capex of a production technology. \
+                                          \n\t Dimensions: setProductionTechnologies, setPWACapex.'
+            params_capex['extreme0PWACapex'] = 'Parameter which specifies the 1st domain extremes in the PWA approximation of Capex of a production technology. \
+                                          \n\t Dimensions: setProductionTechnologies, setPWACapex'
+            params_capex['extreme1PWACapex'] = 'Parameter which specifies the 2nd domain extremes in the PWA approximation of Capex of a production technology. \
+                                          \n\t Dimensions: setProductionTechnologies, setPWACapex'
+            params_capex['value0PWACapex'] = 'Parameter which specifies the value of Capex in the PWA approximation of a production technology. \
+                                          \n\t Dimensions: setProductionTechnologies, setPWACapex'
+        self.addParams(params_capex)
+
+        # technology operation
+        params_operation = {}
+        params_operation['minLoadProduction'] = 'Parameter which specifies the minimum load of a production technology. \
+                                      \n\t Dimensions: setProductionTechnologies'
+        params_operation['maxLoadProduction'] = 'Parameter which specifies the minimum load of a production technology. \
+                                      \n\t Dimensions: setProductionTechnologies'
+        self.addParams(params_operation)
 
         #%% Decision variables
         variables = {
@@ -321,26 +328,26 @@ class ProductionTechnology(Technology):
 
     #TODO implement conditioning for e.g. hydrogen
 
-    #%% Contraint rules defined in current class - Operation
+    #%% Constraint rules defined in current class - Operation
 
-    # @staticmethod
-    # def constraintProductionTechnologiesFlowCapacityRule(model, tech, carrierIn, carrierOut, node, time):
-    #     """
-    #     coupling the output energy flow and the capacity of production technology
-    #     """
-    #     expression = None
-    #
-    #     if model.converAvailability[tech, carrierIn, carrierOut] == 1:
-    #         expression = (
-    #             model.capacityProductionTechnologies[tech, node, time]
-    #             ==
-    #             model.outputProductionTechnologies[carrierOut, tech, node, time]
-    #             )
-    #     else:
-    #         expression = (
-    #             model.outputProductionTechnologies[carrierOut, tech, node, time] == 0
-    #             )
-    #     return expression
+    @staticmethod
+    def constraintProductionTechnologiesFlowCapacityRule(model, tech, carrierIn, carrierOut, node, time):
+        """
+        coupling the output energy flow and the capacity of production technology
+        """
+        expression = None
+
+        if model.converAvailability[tech, carrierIn, carrierOut] == 1:
+            expression = (
+                model.capacityProductionTechnologies[tech, node, time]
+                ==
+                model.outputProductionTechnologies[carrierOut, tech, node, time]
+                )
+        else:
+            expression = (
+                model.outputProductionTechnologies[carrierOut, tech, node, time] == 0
+                )
+        return expression
 
     @staticmethod
     def constraintMinProductionTechnologiesFlowCapacityRule(model, tech, carrierOut, node, time):
