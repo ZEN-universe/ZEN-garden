@@ -97,6 +97,7 @@ class Model:
         logging.info(f"Solve model instance using {solverName}")
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
         self.results = self.opt.solve(self.instance, tee=True, logfile=solver['logfile'])
-        
-        # TODO save and evaluate results
+        self.instance.solutions.load_from(self.results)
+
+
 

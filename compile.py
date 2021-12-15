@@ -13,11 +13,13 @@ import logging
 from config import analysis, system, solver
 from model.preprocess.prepare import Prepare
 from model.model_instance.model import Model
-from model.postprocess.evaluation import Evaluation
+from model.postprocess.results import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
 if not os.path.exists('outputs/logs'):
+    if not os.path.exists('outputs'):
+        os.mkdir('outputs')
     os.mkdir('outputs/logs')
 logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.CRITICAL, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
 # prevent double printing
@@ -31,4 +33,4 @@ model = Model(analysis, system)
 model.solve(solver, prepare.pyoDict)
 
 # EVALUATE RESULTS
-evaluation = Evaluation(system, model)
+evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
