@@ -100,20 +100,5 @@ class Model:
         self.results = self.opt.solve(self.instance, tee=True, logfile=solver['logfile'])
         self.instance.solutions.load_from(self.results)
 
-        # print all variables
-        # TODO add function that writes all vars to a dictionary or dataframe (we could use the pyodict and add the results?)
-        for v in self.instance.component_objects(pe.Var, active=True):
-            print("Variable", v)
-            for index in v:
-                print("   ", index, pe.value(v[index]))
-
-        # print all parameters
-        for parmobject in self.instance.component_objects(pe.Param, active=True):
-            nametoprint = str(str(parmobject.name))
-            print("Parameter ", nametoprint)
-            for index in parmobject:
-                vtoprint = pe.value(parmobject[index])
-                print("   ", index, vtoprint)
-
 
 
