@@ -34,5 +34,5 @@ class UpdateConfig:
                 df = self.data[technologySubset][technologyName][parameterName]
                 
                 # create a new set with the indexes of the supporting points
-                setName = 'set'+parameterName
+                setName = 'set'+parameterName+technologyName.capitalize()
                 self.system[setName] = list(df[self.analysis['dataInputs']['PWA']['supportPoints']].values)
