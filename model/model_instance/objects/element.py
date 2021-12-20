@@ -95,17 +95,19 @@ class Element:
 
             setattr(self.model, var, peVar)
 
-    def addConstr(self, constraints):
+    def addConstr(self, constraints, replace = None):
         """add constraints to model
         :param constraints: dictionary containing var names and properties"""
 
         for constr, constrProperties in constraints.items():
             if not 'Dimensions' in constrProperties:
                 raise ValueError('Dimensions of constraint {0} are undefined'.format(constr))
-                
+            if replace:
+                constr.replace(replace[0], replace[1])
+
             doc, dimensions,_ = self.getProperties(constrProperties)
 
-            peConstr   = pe.Constraint(*dimensions, rule=getattr(self, f'{constr}Rule'), doc=doc) 
+            peConstr   = pe.Constraint(*dimensions, rule=getattr(self, f'{constr}Rule'), doc=doc)
 
             setattr(self.model, constr, peConstr)
                       

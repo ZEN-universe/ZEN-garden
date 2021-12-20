@@ -39,8 +39,7 @@ class Technology(Element):
         """ get the subsets of the technology type
         :return subsets: return dictionary containing the technology subsets"""
 
-        subsets = {
-            f'set{self.type}Technologies': f'Set of {self.type} technologies: Subset: setTechnologies'}
+        subsets = {f'set{self.type}Technologies': f'Set of {self.type} technologies: Subset: setTechnologies'}
         if self.type == 'Transport':
             subsets['setAliasNodes']: 'Copy of the set of nodes to model transport. Subset: setNodes'
         return subsets
@@ -49,16 +48,12 @@ class Technology(Element):
         """ get the parameters of the technology type
         :return params: return dictionary containing the technology parameters"""
 
-        params = {
-            f'minCapacity{self.type}':              f'Parameter which specifies the minimum {self.type} size that can be installed. \
-                                                    \n\t Dimensions: set{self.type}Technologies',
-            f'maxCapacity{self.type}':              f'Parameter which specifies the maximum {self.type} size that can be installed. \
-                                                    \n\t Dimensions: set{self.type}Technologies',
-            f'availability{self.type}':             f'node- and time-dependent availability of {self.type}. \
-                                                    \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps.'                                             
-            # f'minLoad{self.type}':           f'fraction used to determine the minimum load of/ flow through the {self.type}. \
-            #                                  \n\t Dimensions: set{self.type}Technologies',
-            }
+        params = {f'minCapacity{self.type}':              f'Parameter which specifies the minimum {self.type} size that can be installed. \
+                                                          \n\t Dimensions: set{self.type}Technologies',
+                  f'maxCapacity{self.type}':              f'Parameter which specifies the maximum {self.type} size that can be installed. \
+                                                          \n\t Dimensions: set{self.type}Technologies',
+                  f'availability{self.type}':             f'node- and time-dependent availability of {self.type}. \
+                                                          \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps.'}
 
         return params
 
@@ -66,14 +61,12 @@ class Technology(Element):
         """ get the variables of the technology type
         :return vars: return dictionary containing the technology variables"""
 
-        variables = {
-            f'install{self.type}Technologies':      f'installment of a {self.type} at node i and time t. \
-                                                    \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps.\
-                                                    \n\t Domain: Binary',
-            f'capacity{self.type}Technologies':     f'size of {self.type} installed between nodes at time t. \
-                                                    \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. \
-                                                    \n\t Domain: NonNegativeReals'
-            }
+        variables = {f'install{self.type}Technologies':      f'installment of a {self.type} at node i and time t. \
+                                                             \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps.\
+                                                             \n\t Domain: Binary',
+                     f'capacity{self.type}Technologies':     f'size of {self.type} installed between nodes at time t. \
+                                                             \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps. \
+                                                             \n\t Domain: NonNegativeReals'}
 
         return variables
 
@@ -81,13 +74,11 @@ class Technology(Element):
         """get the variables of the technology type
         :return constraints: return dictionary containing the technology constraints"""
 
-        constraints = {
-            f'constraint{self.type}TechnologiesMinCapacity':  f'min capacity of {self.type} technology that can be installed. \
-                                                              \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
-            f'constraint{self.type}TechnologiesMaxCapacity':  f'max capacity of {self.type} technology that can be installed. \
-                                                              \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
-            f'constraintAvailability{self.type}Technologies': f'limited availability of {self.type} technology. \
-                                                              \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'
-            }
+        constraints = {f'constraint{self.type}TechnologiesAvailability': f'limited availability of {self.type} technology. \
+                                                                         \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
+                       f'constraint{self.type}TechnologiesMinCapacity':  f'min capacity of {self.type} technology that can be installed. \
+                                                                         \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps',
+                       f'constraint{self.type}TechnologiesMaxCapacity':  f'max capacity of {self.type} technology that can be installed. \
+                                                                         \n\t Dimensions: set{self.type}Technologies, {self.dim}, setTimeSteps'}
 
         return constraints
