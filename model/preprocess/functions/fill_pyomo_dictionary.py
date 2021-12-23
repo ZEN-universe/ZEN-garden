@@ -96,7 +96,7 @@ class FillPyoDict:
         """  
         
         parameterNames = {
-            'setProductionTechnologies': ['availabilityProduction'],
+            'setConversionTechnologies': ['availabilityConversion'],
             'setStorageTechnologies': ['availabilityStorage']            
             }       
         
@@ -131,7 +131,7 @@ class FillPyoDict:
         """          
         
         parameterName = 'attributes'
-        technologySubset = 'setProductionTechnologies'        
+        technologySubset = 'setConversionTechnologies'
         for attribute in ['minCapacityProduction', 'maxCapacityProduction', 'minLoadProduction', 'maxLoadProduction', 'valueCapex']:
             self.pyoDict[None][attribute] = {}
             for technologyName in self.system[technologySubset]:
@@ -170,7 +170,7 @@ class FillPyoDict:
         :return: dictionary containing the input data
         """           
         
-        technologySubset = 'setProductionTechnologies'
+        technologySubset = 'setConversionTechnologies'
         parameterNames = ['converEfficiency', 'converAvailability']
         
         for technologyName in self.system[technologySubset]:
@@ -198,7 +198,7 @@ class FillPyoDict:
     def dataPWAApproximation(self):
         
         # add the parameters associated to the PWA approximation
-        technologySubset = 'setProductionTechnologies'
+        technologySubset = 'setConversionTechnologies'
         approximatedParameterNames = ['PWACapex']
         PWAParameterNames = ['slope', 'extreme0', 'extreme1', 'value0']
         for technologyName in self.system[technologySubset]:

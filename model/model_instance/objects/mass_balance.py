@@ -18,7 +18,7 @@ class MassBalance(Element):
         super().__init__(object)
 
         #%% Contraints
-        constraint = {'constraintNodalMassBalance':    'nodal mass balance for each time step. \
+        constraint = {'NodalMassBalance':    'nodal mass balance for each time step. \
                                                         \n\t Dimensions: setCarriers, setNodes, setTimeSteps'
             }
         self.addConstr(constraint)  

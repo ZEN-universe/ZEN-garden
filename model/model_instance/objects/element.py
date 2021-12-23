@@ -30,6 +30,7 @@ class Element:
         :param  properties:      parameter, variable or constraint properties
         :return doc:             documentation
         :return dimensions:      dimensions of the parameter, variable, constraint
+                                 (note: in case of constraints additional information can be passed with the keyword "Other")
         :return domain:          variable domain, empty for parameters and constraints"""
 
         doc        = properties
@@ -44,24 +45,32 @@ class Element:
                     dimensions = [getattr(self.model, dim.strip()) for dim in dimensions]
                 else:
                     dimensions = [getattr(self.model, dimensions.strip())]
-            if 'Domain' in propertyName:
+            elif 'Domain' in propertyName:
                 domain = propertyName.split(':')[-1].strip()
                 domain = getattr(pe, domain)
 
         return doc, dimensions, domain
 
-    def addSubsets(self, subsets):
-        """
-        add sets or subsets to model
+    def addSets(self, subsets):
+        """add sets or subsets to model
         :param sets: dictionary containing set names and properties"""
 
         for setName, setProperty in subsets.items():
             if 'Subset' in setProperty:
                 subsetOf = setProperty.split(':')[-1].strip()
                 peSet  = pe.Set(within= getattr(self.model, subsetOf), doc=setProperty)
-            if 'Alias' in setName:
+            elif 'Alias' in setName:
                 aliasOf   = setName.replace('Alias','')
                 peSet = pe.SetOf(getattr(self.model, aliasOf))
+            elif 'Index' in setName:
+                index = setProperty.split(':').strip()[-1]
+                peSet = pe.Set(index, doc=setProperty)
+            elif 'Dimension' in setName:
+                dimension = len(setProperty.split(':')[-1].split(','))
+                peSet = pe.Set(dimen = dimension)
+            elif 'Rule' in setName:
+                rule = setProperty.split(':').strip()[-1]
+                peSet = pe.Set(initialize=rule, doc=setProperty)
             else:
                 peSet = pe.Set(doc=setProperty)
 
@@ -72,8 +81,6 @@ class Element:
         :param params: dictionary containing param names and properties"""
 
         for param, paramProperties in params.items():
-            if not 'Dimensions' in paramProperties:
-                raise ValueError('Dimensions of parameter {0} are undefined'.format(param))
 
             doc, dimensions, _ = self.getProperties(paramProperties)
             peParam            = pe.Param(*dimensions, doc=doc)
@@ -95,19 +102,19 @@ class Element:
 
             setattr(self.model, var, peVar)
 
-    def addConstr(self, constraints, replace = None):
+    def addConstr(self, constraints, replace = ['', ''], passValues = None):
         """add constraints to model
         :param constraints: dictionary containing var names and properties"""
 
         for constr, constrProperties in constraints.items():
             if not 'Dimensions' in constrProperties:
                 raise ValueError('Dimensions of constraint {0} are undefined'.format(constr))
-            if replace:
-                constr.replace(replace[0], replace[1])
 
             doc, dimensions,_ = self.getProperties(constrProperties)
+            if passValues:
+                dimensions = passValues + dimensions
 
-            peConstr   = pe.Constraint(*dimensions, rule=getattr(self, f'{constr}Rule'), doc=doc)
+            peConstr   = pe.Constraint(*dimensions, rule=getattr(self, f'constraint{constr.replace(*replace)}Rule'), doc=doc)
 
-            setattr(self.model, constr, peConstr)
+            setattr(self.model, f'constraint{constr}', peConstr)
                       

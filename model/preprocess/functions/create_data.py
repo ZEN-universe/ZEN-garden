@@ -20,7 +20,7 @@ class Create:
         Create the efficiency matrix with the input data for each technology and the availability matrix which defines which carriers can are converted
         """
 
-        technologySubset = 'setProductionTechnologies'
+        technologySubset = 'setConversionTechnologies'
         inputFileName = 'conversionBalanceConstant'
         newFileNameEfficiency = 'converEfficiency'
         newFileNameAvailability = 'converAvailability'

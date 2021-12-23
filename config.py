@@ -20,8 +20,8 @@ solver = default_config.solver
 analysis['timeHorizon'] = 1                                                      
 analysis['spatialResolution'] = 'Test3'
 analysis['modelFormulation'] = 'HSC'
-analysis['technologyApproximationCapex'] = 'linear'
-analysis['technologyApproximationEfficiency'] = 'linear'
+analysis['nonlinearTechnologyApproximation'] = {'Capex': [],
+                                                'ConverEfficiency': []}
 analysis['objective'] = 'BasicTotalCost'
 
 ## System - settings update compared to default values
@@ -29,7 +29,7 @@ system['setInputCarriers'] = ['electricity']
 system['setOutputCarriers'] = ['hydrogen']
 system['setStorageTechnologies'] = []
 system['setTransportTechnologies'] = ['pipeline_hydrogen']
-system['setProductionTechnologies'] = ['electrolysis']
+system['setConversionTechnologies'] = ['electrolysis']
 system['setScenarios'] = 'a'
 system['setTimeSteps'] = [0]
 system['setNodes'] = list(string.ascii_uppercase[:3])

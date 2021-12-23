@@ -13,13 +13,14 @@ Description:  Class defining the abstract optimization model.
 import logging
 import pyomo.environ as pe
 from pyomo.opt import SolverStatus, TerminationCondition
+from model.model_instance.objects.element import Element
 from model.model_instance.objects.carrier import Carrier
-from model.model_instance.objects.technology.production_technology import ProductionTechnology
+from model.model_instance.objects.technology.conversion_technology import ConversionTechnology
 from model.model_instance.objects.technology.transport_technology import TransportTechnology
 from model.model_instance.objects.objective_function import ObjectiveFunction
 from model.model_instance.objects.mass_balance import MassBalance
 
-class Model:
+class Model():
 
     def __init__(self, analysis, system):
         """create Pyomo Abstract Model
@@ -45,17 +46,16 @@ class Model:
         
         # Sets:
         # 'setCarriers'     includes the subsets 'setInputCarriers', 'setOutputCarriers'
-        # 'setTechnologies' includes the subsets 'setTransportTechnologies', 'setProductionTechnologies', 'setStorageTechnologies'
+        # 'setTechnologies' includes the subsets 'setTransportTechnologies', 'setConversionTechnologies', 'setStorageTechnologies'
         
         sets = {'setCarriers':      'Set of carriers',
-                'setTechnologies':  'Set of technologies',      
+                'setTechnologies': 'Set of technologies',
                 'setTimeSteps':     'Set of time-steps',
-                'setNodes':         'Set of nodes'
+                'setNodes':         'Set of nodes',
+                'setAliasNodes':    'Copy of the set of nodes to model edges. Subset: setNodes'
                 }
 
-        for setName, setProperty in sets.items():
-            peSet = pe.Set(doc = setProperty)
-            setattr(self.model, setName, peSet)
+        Element.addSets(self, sets)
 
     def addElements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -65,12 +65,13 @@ class Model:
         # add carrier parameters, variables, and constraints
         Carrier(self)
         # add technology parameters, variables, and constraints
-        if self.system['setProductionTechnologies']:
-            ProductionTechnology(self)
-        if self.system['setTransportTechnologies']:
-            TransportTechnology(self)
-        if self.system['setStorageTechnologies']:
-            print("Storage Technologies are not yet implemented")
+        for conversionTech in self.system['setConversionTechnologies']:
+            ConversionTechnology(self, conversionTech)
+        for transportTech in self.system['setTransportTechnologies']:
+            TransportTechnology(self, transportTech)
+        # TODO implement storage technologies
+        # for storageTech in self.system['setStorageTechnologies']:
+        #     print("Storage Technologies are not yet implemented")
 
     def addMassBalance(self):
         """Add mass balance to abstract optimization model"""
@@ -93,6 +94,9 @@ class Model:
         solverOptions.pop('name')
         
         logging.info("Create model instance")
+
+        pyoDict
+
         self.instance = self.model.create_instance(data=pyoDict)
 
         logging.info(f"Solve model instance using {solverName}")

@@ -25,7 +25,7 @@ class UpdateConfig:
                 
     def createSupportPoints(self):
         
-        technologySubset = 'setProductionTechnologies'
+        technologySubset = 'setConversionTechnologies'
         parameterNames = ['PWACapex']
         
         # add a set containing the supporting points of the cost

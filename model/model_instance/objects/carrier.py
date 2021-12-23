@@ -23,16 +23,16 @@ class Carrier(Element):
 
         #%% Sets and subsets
         subsets = {
-            'setInputCarriers': 'Set of input carriers. Subset: setCarriers',
-            'setOutputCarriers': 'Set of output carriers. Subset: setCarriers',
-            'setTransportCarriers': 'Set of carriers that can be transported. Subset: setCarriers'
-            }
-        self.addSubsets(subsets)
+            'setInputCarriers':      'Set of technology specific input carriers. \
+                                      \n\t Dimension: setCarriers',
+            'setOutputCarriers':     'Set of technology specific output carriers. \
+                                      \n\t Subset: setCarriers'}
+        self.addSets(subsets)
 
         #%% Parameters
         params = {
             'demandCarrier':                    'Parameter which specifies the carrier demand. \
-                                                \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps',         
+                                                \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps',
             'availabilityCarrier':              'Parameter which specifies the maximum energy that can be imported from the grid.\
                                                 \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps'
             # 'exportPriceCarrier': 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',
@@ -52,8 +52,8 @@ class Carrier(Element):
 
         #%% Contraints in current class
         constr = {
-            'constraintAvailabilityCarrier':    'node- and time-dependent carrier availability.\
-                                                \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps',
+            'AvailabilityCarrier':    'node- and time-dependent carrier availability.\
+                                       \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps',
             }
         self.addConstr(constr)
 
@@ -62,13 +62,9 @@ class Carrier(Element):
     #%% Rules contraints defined in current class
     @staticmethod
     def constraintAvailabilityCarrierRule(model, carrier, node, time):
-        """
-        node- and time-dependent carrier availability
-        """
-        expression = (
-            model.importCarrier[carrier, node, time] <= model.availabilityCarrier[carrier,node,time]
-            )
-        return expression
+        """node- and time-dependent carrier availability"""
+
+        return(model.importCarrier[carrier, node, time] <= model.availabilityCarrier[carrier,node,time])
     
     
     

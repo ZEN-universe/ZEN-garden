@@ -16,7 +16,7 @@ class FillNlpDict:
     
     def functionNonlinearApproximation(self):
             
-        technologySubsets = ['setProductionTechnologies']
+        technologySubsets = ['setConversionTechnologies']
 
         for technologySubset in technologySubsets:
             for technologyName in self.system[technologySubset]:

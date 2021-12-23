@@ -23,3 +23,11 @@ model/model_instance/objects/technology/__pycache__/transport_technology.cpython
 *.pyc
 *.pyc
 model/model_instance/objects/technology/__pycache__/transport_technology.cpython-38.pyc
+model/__pycache__/default_config.cpython-38.pyc
+data/NUTS0/setConversionTechnologies/.DS_Store
+data/NUTS0/setConversionTechnologies/electrolysis/.DS_Store
+data/NUTS0/setProductionTechnologies/.DS_Store
+data/NUTS0/setProductionTechnologies/electrolysis/.DS_Store
+data/NUTS0/setProductionTechnologies/.DS_Store
+model/model_instance/objects/__pycache__/carrier.cpython-38.pyc
+*.pyc

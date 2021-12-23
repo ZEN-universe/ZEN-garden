@@ -36,7 +36,7 @@ analysis['discountRate'] = 0.06
 # dictionary with subsets related to set
 analysis['subsets'] = {
     'setCarriers': ['setInputCarriers', 'setOutputCarriers'], 
-    'setTechnologies': ['setProductionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']
+    'setTechnologies': ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']
     }
 # headers in input files
 analysis['dataInputs'] = {'nameScenarios':'scenario', 'nameNodes':'node', 'nameTimeSteps':'time', 'nameConversionBalance':'energy', 'nameCarrier':'carrier', 
@@ -50,8 +50,8 @@ analysis['fileFormat'] = 'csv'
 system['setInputCarriers'] = ['electricity', 'gas', 'hydrogen', 'biomass', 'CO2']
 # set of energy carriers for transport
 system['setTransportCarriers'] = ['hydrogen']
-# set of production technologies
-system['setProductionTechnologies'] = ['electrolysis', 'SMR', 'b_SMR', 'b_Gasification']
+# set of conversion technologies
+system['setConversionTechnologies'] = ['electrolysis', 'SMR', 'b_SMR', 'b_Gasification']
 # set of storage technologies
 system['setStorageTechnologies'] = ['CO2_storage']
 # set of transport technologies
