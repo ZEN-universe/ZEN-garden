@@ -46,8 +46,7 @@ class Carrier(Element):
             'importCarrier':                    'node- and time-dependent carrier import from the grid.\
                                                 \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
             'exportCarrier':                    'node- and time-dependent carrier export from the grid. \
-                                                \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
-            }
+                                                \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'}
         self.addVars(variables)
 
         #%% Contraints in current class

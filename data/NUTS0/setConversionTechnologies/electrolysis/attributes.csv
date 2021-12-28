@@ -1,4 +1,4 @@
 index,attributes
-minCapacityProduction,0
-maxCapacityProduction,1.00E+06
+minCapacity,0
+maxCapacity,1.00E+06
 converEfficiency,0.65

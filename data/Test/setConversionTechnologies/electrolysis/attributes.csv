@@ -1,6 +1,6 @@
 index,attributes
-minCapacityProduction,0
-maxCapacityProduction,1.00E+09
-minLoadProduction,0
-maxLoadProduction,1
+minCapacity,0
+maxCapacity,1.00E+09
+minLoad,0
+maxLoad,1
 valueCapex,700000

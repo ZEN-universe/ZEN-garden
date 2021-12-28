@@ -63,12 +63,15 @@ class Technology(Element):
         """ get the variables of the technology type
         :return vars: return dictionary containing the technology variables"""
 
-        variables = {f'install{self.tech}Technologies':      f'installment of a {self.tech} at node i and time t. \
-                                                             \n\t Dimensions: {self.dim}, setTimeSteps.\
-                                                             \n\t Domain: Binary',
-                     f'capacity{self.tech}Technologies':     f'size of {self.tech} installed between nodes at time t. \
-                                                             \n\t Dimensions: {self.dim}, setTimeSteps. \
-                                                             \n\t Domain: NonNegativeReals'}
+        variables = {f'install{self.tech}':  f'installment of a {self.tech} at node i and time t. \
+                                             \n\t Dimensions: {self.dim}, setTimeSteps.\
+                                             \n\t Domain: Binary',
+                     f'capacity{self.tech}': f'size of {self.tech} installed between nodes at time t. \
+                                             \n\t Dimensions: {self.dim}, setTimeSteps. \
+                                             \n\t Domain: NonNegativeReals',
+                     f'capex{self.tech}':    f'capital expenditures for {self.tech} installed between nodes at time t. \
+                                             \n\t Dimensions: {self.dim}, setTimeSteps. \
+                                             \n\t Domain: NonNegativeReals'}
 
         return variables
 

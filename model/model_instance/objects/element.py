@@ -112,7 +112,7 @@ class Element:
 
             doc, dimensions,_ = self.getProperties(constrProperties)
             if passValues:
-                dimensions = passValues + dimensions
+                dimensions.insert(0, pe.Set(initialize=passValues))
 
             peConstr   = pe.Constraint(*dimensions, rule=getattr(self, f'constraint{constr.replace(*replace)}Rule'), doc=doc)
 

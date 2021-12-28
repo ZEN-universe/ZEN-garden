@@ -1,4 +1,4 @@
-scenario,time,node,availabilityConversion
+scenario,time,node,availability
 a,0,Rome,1
 a,0,Zurich,1
 a,0,Berlin,1

@@ -75,7 +75,7 @@ class ObjectiveFunction(Element):
 
         # PRODUCTION AND STORAGE TECHNOLOGIES
         installCost = 0
-        for techType in ['Production', 'Storage']:
+        for techType in ['Conversion', 'Storage']:
             if hasattr(model, f'set{techType}Technologies'):
                 installCost += sum(sum(sum(model.installProductionTechnologies[tech, node, time]
                                            for time in model.setTimeSteps)

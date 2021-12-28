@@ -21,8 +21,8 @@ class ConversionTechnology(Technology):
         logging.info('initialize object of a conversion technology')
         super().__init__(object, 'Conversion', tech)
 
-        subsets = {f'setInputCarriers{tech}':    f'Set of input carrier of {tech}.',
-                   f'setOutputCarriers{tech}':   f'Set of output carriers of {tech}.'}
+        subsets = {f'setInputCarriers{tech}':    f'Set of input carrier of {tech}. Subset: setInputCarriers',
+                   f'setOutputCarriers{tech}':   f'Set of output carriers of {tech}. Subset: setOutputCarriers'}
         subsets = {**subsets, **self.getTechSubsets()}
         self.addSets(subsets)
 
@@ -75,54 +75,56 @@ class ConversionTechnology(Technology):
         :param type: type of the function that is linearized (capex or efficiency)"""
 
         #%% Subsets
-        subsets = {f'set{type}{tech}Segments': f'Set of support points for PWA of {type} for {tech}'}
+        subsets = {f'setSegments{type}{tech}': f'Set of support points for PWA of {type} for {tech}'}
         self.addSets(subsets)
 
         #%% Parameters
         params = {f'slope{type}{tech}':     f'Parameter which specifies the slope of the {type} segment {tech}.\
-                                            \n\t Dimensions: set{type}{tech}Segments',
+                                            \n\t Dimensions: setSegments{type}{tech}',
                   f'intercept{type}{tech}': f'Parameter which specifies the intercept of the {type} segment {tech}.\
-                                            \n\t Dimensions: set{type}{tech}Segments',
+                                            \n\t Dimensions: setSegments{type}{tech}',
                   f'lbSegment{type}{tech}': f'Parameter which specifies the lower bound of the {type} segment {tech}.\
-                                            \n\t Dimensions: set{type}{tech}Segments',
+                                            \n\t Dimensions: setSegments{type}{tech}',
                   f'ubSegment{type}{tech}': f'Parameter which specifies the upper bound of the {type} segment {tech}.\
-                                            \n\t Dimensions: set{type}{tech}Segments'}
+                                            \n\t Dimensions: setSegments{type}{tech}'}
         self.addParams(params)
 
         #%% Variables
         variables = {
-            f'select{type}{tech}Segment': f'Binary variable to model the activation of a segment in the PWA approximation of {type} of the {tech}. \
-                                          \n\t Dimensions: set{type}{tech}Segments, setNodes, setTimeSteps.\
-                                          \n\t Domain: Binary',
-            f'{type}{tech}Aux':           f'Auxiliary variable to model conversion efficiency of the {tech} technologies. \
-                                          \n\t Dimensions: set{type}{tech}Segments, setNodes, setTimeSteps.\
-                                          \n\t Domain: NonNegativeReals',
-            f'{type}{tech}Aux':           f'Auxiliary variable to model capex of {tech}. \
-                                          \n\t Dimensions: set{type}{tech}Segments, setNodes, setTimeSteps.\
-                                          \n\t Domain: NonNegativeReals'}
+            f'selectSegment{type}{tech}': f'Binary variable to model the activation of a segment in the PWA approximation of {type} of the {tech}. \
+                                          \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps.\
+                                          \n\t Domain: Binary'}
+        if type == 'Capex':
+            variables[f'capacityAux{tech}'] = f'Auxiliary variable to model {type} of {tech} technologies. \
+                                              \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps.\
+                                              \n\t Domain: NonNegativeReals'
+        elif type == 'ConverEfficiency':
+            variables[f'inputAux{tech}']   = f'Auxiliary variable to model {type} of {tech} technologies. \
+                                             \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setNodes, setTimeSteps.\
+                                             \n\t Domain: NonNegativeReals'
         self.addVars(variables)
 
         #%% Constraints
         constr = dict()
         if type == 'Capex':
             constr[f'{tech}Linear{type}']    = f'Linearization of {type} for {type} of {tech}.\
-                                                \n\t Dimensions: set{type}{tech}Segments, setNodes, setTimeSteps'
+                                               \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}LB']  = f'lower bound of segment for {type} of {tech}.\
-                                                \n\t Dimensions: set{type}{tech}Segments, setNodes, setTimeSteps'
+                                               \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}UB']  = f'upper bound of segment for {type} of {tech}.\
-                                                \n\t Dimensions: set{type}{tech}Segments, setNodes, setTimeSteps'
+                                               \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}Aux'] = f'linking the auxiliary variable and variable for {type} of {tech}.\
-                                                \n\t Dimensions: set{type}{tech}Segments, setNodes, setTimeSteps'
+                                               \n\t Dimensions: setNodes, setTimeSteps'
 
         elif type == 'ConverEfficiency':
             constr[f'{tech}Linear{type}']    = f'Linearization of {type} for {type} of {tech}.\
-                                               \n\t Dimensions: set{type}{tech}Segments, setInputCarriers{tech}, setOutputCarriers{tech}, setNodes, setTimeSteps'
+                                               \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setOutputCarriers{tech}, setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}LB']  = f'lower bound of segment for {type} of {tech}.\
-                                               \n\t Dimensions: set{type}{tech}Segments, setInputCarriers{tech}, setNodes, setTimeSteps'
+                                               \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}UB']  = f'upper bound of segment for {type} of {tech}.\
-                                               \n\t Dimensions: set{type}{tech}Segments, setInputCarriers{tech}, setNodes, setTimeSteps'
+                                               \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}Aux'] = f'linking the auxiliary variable and variable for {type} of {tech}.\
-                                               \n\t Dimensions: set{type}{tech}Segments, setInputCarriers{tech}, setNodes, setTimeSteps'
+                                               \n\t Dimensions: setInputCarriers{tech}, setNodes, setTimeSteps'
 
         constr[f'{tech}Linear{type}SegmentSelection']  = f'Segment selection for {type} of {tech}.\
                                                          \n\t Dimensions: setNodes, setTimeSteps.'
@@ -140,34 +142,31 @@ class ConversionTechnology(Technology):
         # variables
         installTechnology      = getattr(model, f'install{tech}')
 
-        return (availabilityTechnology[tech, node, time]
-                >= installTechnology[tech, node, time])
+        return (availabilityTechnology[node, time] >= installTechnology[node, time])
 
     @staticmethod
     def constraintConversionTechnologyMinCapacityRule(model, tech, node, time):
         """min size of conversion technology"""
 
         # parameters
-        minCapacityTechnology = getattr(model, f'minCapacityTechnology{tech}')
+        minCapacityTechnology = getattr(model, f'minCapacity{tech}')
         # variables
         installTechnology     = getattr(model, f'install{tech}')
         capacityTechnology    = getattr(model, f'capacity{tech}')
 
-        return(minCapacityTechnology * installTechnology[node, time]
-               <= capacityTechnology[node, time])
+        return(minCapacityTechnology * installTechnology[node, time] <= capacityTechnology[node, time])
     
     @staticmethod
     def constraintConversionTechnologyMaxCapacityRule(model, tech, node, time):
         """max size of conversion technology"""
 
         # parameters
-        maxCapacityTechnology = getattr(model, f'minCapacityTechnology{tech}')
+        maxCapacityTechnology = getattr(model, f'minCapacity{tech}')
         # variables
         installTechnology  = getattr(model, f'install{tech}')
         capacityTechnology = getattr(model, f'capacity{tech}')
 
-        return(maxCapacityTechnology * installTechnology[node, time]
-                >= capacityTechnology[node, time])
+        return(maxCapacityTechnology * installTechnology[node, time] >= capacityTechnology[node, time])
         
     #%% Constraint rules defined in current class - Operation
     @staticmethod
@@ -191,7 +190,7 @@ class ConversionTechnology(Technology):
         slope     = getattr(model,f'slopeConverEfficiency{tech}')
         intercept = getattr(model,f'interceptConverEfficiency{tech}')
         # variables
-        inputTechnologyAux = getattr(model,f'ConverEfficiency{tech}Aux')
+        inputTechnologyAux = getattr(model,f'inputAux{tech}')
         outputTechnology   = getattr(model,f'output{tech}')
 
         return(outputTechnology[carrierOut, node, time]
@@ -205,10 +204,10 @@ class ConversionTechnology(Technology):
         # parameters
         lbSegment = getattr(model, f'lbSegmentConverEfficiency{tech}')
         # variables
-        inputTechnologyAux = getattr(model, f'input{tech}Aux')
-        selectSegment      = getattr(model, f'selectConverEfficiencySegment{tech}')
+        inputTechnologyAux = getattr(model, f'inputAux{tech}')
+        selectSegment      = getattr(model, f'selectSegmentConverEfficiency{tech}')
 
-        return(selectSegment[segment] * lbSegment[segment]
+        return(selectSegment[segment, node, time] * lbSegment[segment]
                    <= inputTechnologyAux[segment, carrierIn, node, time])
 
     @staticmethod
@@ -217,11 +216,11 @@ class ConversionTechnology(Technology):
 
         # parameters
         ubSegment     = getattr(model, f'ubSegmentConverEfficiency{tech}')
-        selectSegment = getattr(model, f'selectConverEfficiencySegment{tech}')
         # variables
-        inputTechnologyAux = getattr(model, f'input{tech}Aux')
+        inputTechnologyAux = getattr(model, f'inputAux{tech}')
+        selectSegment = getattr(model, f'selectSegmentConverEfficiency{tech}')
 
-        return (selectSegment[segment] * ubSegment[segment]
+        return (selectSegment[segment, node, time] * ubSegment[segment]
                 >= inputTechnologyAux[segment, carrierIn, node, time])
 
     @staticmethod
@@ -229,12 +228,12 @@ class ConversionTechnology(Technology):
         """link auxiliary variable and actual variable"""
 
         # sets
-        setSegments = getattr(model, 'setConverEfficiency{tech}Segment')
+        setSegments = getattr(model, f'setSegmentsConverEfficiency{tech}')
         # variables
-        inputTechnologyAux = getattr(model, f'input{tech}Aux')
+        inputTechnologyAux = getattr(model, f'inputAux{tech}')
         inputTechnology    = getattr(model, f'input{tech}')
 
-        return(sum(inputTechnologyAux[segment, carrierIn, tech, node, time] for segment in setSegments)
+        return(sum(inputTechnologyAux[segment, carrierIn, node, time] for segment in setSegments)
                 == inputTechnology[carrierIn, node, time])
 
     @staticmethod
@@ -242,9 +241,10 @@ class ConversionTechnology(Technology):
         """only select one segment at the time"""
 
         # sets
-        setSegments = getattr(model, 'setConverEfficiency{tech}Segment')
+        setSegments = getattr(model, f'setSegmentsConverEfficiency{tech}')
         # variables
         installTechnology = getattr(model, f'install{tech}')
+        selectSegment     = getattr(model, f'selectSegmentConverEfficiency{tech}')
 
         return(sum(selectSegment[segment, node, time] for segment in setSegments)
                <= installTechnology[node, time])
@@ -259,8 +259,7 @@ class ConversionTechnology(Technology):
         intercept = getattr(model, f'interceptCapex{tech}')
         # variables
         capexTechnology       = getattr(model, f'capex{tech}')
-        capacityTechnologyAux = getattr(model, f'capacity{tech}Aux')
-
+        capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
 
         return (capexTechnology[node, time]
                     == slope[segment] * capacityTechnologyAux[segment, node, time] + intercept[segment])
@@ -271,11 +270,11 @@ class ConversionTechnology(Technology):
 
         # parameters
         lbSegment     = getattr(model, f'lbSegmentCapex{tech}')
-        selectSegment = getattr(model, f'selectCapex{tech}')
         # variables
-        capacityTechnologyAux = getattr(model, f'capacity{tech}Aux')
+        capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
+        selectSegment         = getattr(model, f'selectSegmentCapex{tech}')
 
-        return (selectSegment[segment] * lbSegment[segment]
+        return (selectSegment[segment, node, time] * lbSegment[segment]
                 <= capacityTechnologyAux[segment, node, time])
 
     @staticmethod
@@ -284,11 +283,11 @@ class ConversionTechnology(Technology):
 
         # parameters
         ubSegment = getattr(model, f'ubSegmentCapex{tech}')
-        selectSegment = getattr(model, f'selectCapexSegment{tech}')
         # variables
-        capacityTechnologyAux = getattr(model, f'capacity{tech}Aux')
+        capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
+        selectSegment         = getattr(model, f'selectSegmentCapex{tech}')
 
-        return(selectSegment[segment] * ubSegment[segment]
+        return(selectSegment[segment, node, time] * ubSegment[segment]
                 >= capacityTechnologyAux[segment, node, time])
 
     @staticmethod
@@ -296,22 +295,23 @@ class ConversionTechnology(Technology):
         """link auxiliary variable and actual variable"""
 
         #sets
-        setSegments = getattr(model, f'setCapexSegments{tech}')
+        setSegments = getattr(model, f'setSegmentsCapex{tech}')
         # variables
-        capacityTechnologyAux = getattr(model, f'capacity{tech}Aux')
-        capacityTechnologies  = getattr(model, f'capacity{tech}')
+        capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
+        capacityTechnology    = getattr(model, f'capacity{tech}')
 
         return(sum(capacityTechnologyAux[segment, node, time] for segment in setSegments)
-                == capacityTechnologies[node, time])
+                == capacityTechnology[node, time])
 
     @staticmethod
     def constraintConversionTechnologyLinearCapexSegmentSelectionRule(model, tech, node, time):
         """only one segment can be selected at a time, and only if the technology is built (installTechnology =1)"""
 
         # sets
-        setSegments = getattr(model, f'setConverEfficiencySegments{tech}')
+        setSegments = getattr(model, f'setSegmentsCapex{tech}')
         # variables
         installTechnology = getattr(model, f'install{tech}')
+        selectSegment = getattr(model, f'selectSegmentCapex{tech}')
 
         return(sum(selectSegment[segment, node, time] for segment in setSegments)
                 <= installTechnology[node, time])
