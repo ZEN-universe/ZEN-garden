@@ -21,13 +21,16 @@ class ConversionTechnology(Technology):
         logging.info('initialize object of a conversion technology')
         super().__init__(object, 'Conversion', tech)
 
+        # %% Subsets
         subsets = {f'setInputCarriers{tech}':    f'Set of input carrier of {tech}. Subset: setInputCarriers',
                    f'setOutputCarriers{tech}':   f'Set of output carriers of {tech}. Subset: setOutputCarriers'}
+        # merge new items with parameters dictionary from Technology class
         subsets = {**subsets, **self.getTechSubsets()}
         self.addSets(subsets)
 
-        # merge new items with parameters dictionary from Technology class
+        # %% Parameters
         params = {}
+        # merge new items with parameters dictionary from Technology class
         params = {**params, **self.getTechParams()}
         self.addParams(params)
 
@@ -95,6 +98,10 @@ class ConversionTechnology(Technology):
                                           \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps.\
                                           \n\t Domain: Binary'}
         if type == 'Capex':
+            variables['capexTechnologyValue'] = f'Definition of Capex appearing in the objective function. \
+                                              \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps.\
+                                              \n\t Domain: NonNegativeReals'
+
             variables[f'capacityAux{tech}'] = f'Auxiliary variable to model {type} of {tech} technologies. \
                                               \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps.\
                                               \n\t Domain: NonNegativeReals'
@@ -106,9 +113,18 @@ class ConversionTechnology(Technology):
 
         #%% Constraints
         constr = dict()
+        ## add linear constraints defined for all the conversion technologies
+        if type == 'Capex':
+            constr[f'ConversionTechnologyLinear{type}Value']    = f'Definition of {type} for all the conversion technologies.\
+                                               \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps'
+
+            self.addConstr(constr)
+
+        constr = dict()
+        ## add linear constraints defined for single conversion technology: set of single technology added as dimension 0
         if type == 'Capex':
             constr[f'{tech}Linear{type}']    = f'Linearization of {type} for {type} of {tech}.\
-                                               \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
+                                               \n\t Dimensions:setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}LB']  = f'lower bound of segment for {type} of {tech}.\
                                                \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}UB']  = f'upper bound of segment for {type} of {tech}.\
@@ -130,7 +146,6 @@ class ConversionTechnology(Technology):
                                                          \n\t Dimensions: setNodes, setTimeSteps.'
 
         self.addConstr(constr, replace = [tech, 'ConversionTechnology'], passValues = [tech])
-
 
     #%% Constraint rules pre-defined in Technology class
     @staticmethod
@@ -180,7 +195,6 @@ class ConversionTechnology(Technology):
         return (capacityTechnology[node, time]
                 >= outputTechnology[carrierOut, node, time])
 
-
     #%% Constraint rules defined in current class  - Conversion Efficiency
     @staticmethod
     def constraintConversionTechnologyLinearConverEfficiencyRule(model, tech, segment, carrierIn, carrierOut, node, time):
@@ -195,7 +209,6 @@ class ConversionTechnology(Technology):
 
         return(outputTechnology[carrierOut, node, time]
                     == slope[segment] * inputTechnologyAux[segment, carrierIn, node, time] + intercept[segment])
-
 
     @staticmethod
     def constraintConversionTechnologyLinearConverEfficiencyLBRule(model, tech, segment, carrierIn, node, time):
@@ -250,10 +263,21 @@ class ConversionTechnology(Technology):
                <= installTechnology[node, time])
 
     # %% Constraint rules defined in current class - Capital Expenditures (Capex)
+
     @staticmethod
-    def constraintConversionTechnologyLinearCapexRule(model, tech, segment, node, time):
+    def constraintConversionTechnologyLinearCapexValueRule(model, tech, node, time):
+        """ definition of capex variable appearing in objective function"""
+        # variables
+        capexTechnology = getattr(model, f'capex{tech}')
+
+        return model.capexTechnologyValue[tech,node,time] == capexTechnology[node,time]
+
+    @staticmethod
+    def constraintConversionTechnologyLinearCapexRule(model, tech, node, time):
         """linearized conversion efficiency of conversion technology"""
 
+        # sets
+        setSegments = getattr(model, f'setSegmentsCapex{tech}')
         # parameters
         slope     = getattr(model, f'slopeCapex{tech}')
         intercept = getattr(model, f'interceptCapex{tech}')
@@ -261,8 +285,9 @@ class ConversionTechnology(Technology):
         capexTechnology       = getattr(model, f'capex{tech}')
         capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
 
-        return (capexTechnology[node, time]
-                    == slope[segment] * capacityTechnologyAux[segment, node, time] + intercept[segment])
+        return (capexTechnology[node, time] ==
+                    sum(slope[segment] * capacityTechnologyAux[segment, node, time] + intercept[segment]
+                        for segment in setSegments))
 
     @staticmethod
     def constraintConversionTechnologyLinearCapexLBRule(model, tech, segment, node, time):
@@ -315,6 +340,5 @@ class ConversionTechnology(Technology):
 
         return(sum(selectSegment[segment, node, time] for segment in setSegments)
                 <= installTechnology[node, time])
-
 
     #%% TODO implement conditioning for e.g. hydrogen

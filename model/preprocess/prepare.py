@@ -48,7 +48,7 @@ class Prepare:
         # create new data items from default values and input data
         self.createData()
         
-        # convert data into a pyomo dictinary
+        # convert data into a pyomo dictionary
         self.createPyoDict()
 
     def configUpdate(self):
@@ -148,7 +148,7 @@ class Prepare:
         FillPyoDict.conversionBalanceParameters(self)
         # fill the dictionary with the PWA input data
         FillPyoDict.dataPWAApproximation(self)
-        
+
         self.nlpDict = {None:{}}
         
         # attach to the dictionary the interpolated functions

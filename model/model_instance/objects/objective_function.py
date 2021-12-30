@@ -30,14 +30,15 @@ class ObjectiveFunction(Element):
     @staticmethod
     def objectiveBasicTotalCostRule(model):
         " basic cost rule with PWA capex and linear transport cost"
-        
+
+        print("*** Has attribute valueCapex", hasattr(model, 'valueCapex'))
+
         # Production cost
         installCost = 0
         for techType in ['Production']:
             if hasattr(model, f'set{techType}Technologies'):
                 installCost += sum(sum(sum(
-                    # model.PWACapex[tech, node, time]
-                    model.valueCapex[tech] * model.capacityProductionTechnologies[tech,node,time]
+                    model.capexTechnologyValue[tech, node, time]
                     for time in model.setTimeSteps)
                         for node in model.setNodes)
                             for tech in getattr(model, f'set{techType}Technologies'))

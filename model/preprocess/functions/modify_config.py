@@ -2,10 +2,11 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class to modify the config dictionary based on existing inputs from config and default_config
 ==========================================================================================================================================================================="""
+import numpy as np
 
 class UpdateConfig:
     
@@ -26,13 +27,14 @@ class UpdateConfig:
     def createSupportPoints(self):
         
         technologySubset = 'setConversionTechnologies'
-        parameterNames = ['PWACapex']
-        
-        # add a set containing the supporting points of the cost
+        types = self.analysis['linearTechnologyApproximation'].keys()
         for technologyName in self.system[technologySubset]:
-            for parameterName in parameterNames:
-                df = self.data[technologySubset][technologyName][parameterName]
-                
-                # create a new set with the indexes of the supporting points
-                setName = 'set'+parameterName
-                self.system[setName] = list(df[self.analysis['dataInputs']['PWA']['supportPoints']].values)
+            for type in types:
+                if technologyName in self.analysis['linearTechnologyApproximation'][type]:
+                    df = self.data[technologySubset][technologyName][f'linear{type}']
+                elif technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
+                    pass
+                else:
+                    df = self.data[technologySubset][technologyName][f'PWA{type}']
+                setName = f'setSegments{type}{technologyName}'
+                self.system[setName] = df.index.values

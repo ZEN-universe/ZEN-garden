@@ -89,25 +89,11 @@ class Model():
         :param pyoDict: dictionary containing the input data"""
 
         solverName = solver['name']
-        # del solver['name']
         solverOptions = solver.copy()
         solverOptions.pop('name')
         
         logging.info("Create model instance")
 
-        tech = 'electrolysis'
-        # linear capex
-        pyoDict[None][f'setSegmentsCapex{tech}'] = {None: [1]}
-        pyoDict[None][f'slopeCapex{tech}']       = {1: 1000}
-        pyoDict[None][f'interceptCapex{tech}']   = {1: 150000}
-        pyoDict[None][f'lbSegmentCapex{tech}']   = {1: 0}
-        pyoDict[None][f'ubSegmentCapex{tech}']   = {1: 100000000}
-        # linear conversion efficiency
-        pyoDict[None][f'setSegmentsConverEfficiency{tech}'] = {None: [1]}
-        pyoDict[None][f'slopeConverEfficiency{tech}']       = {1: 0.53}
-        pyoDict[None][f'interceptConverEfficiency{tech}']   = {1: 0}
-        pyoDict[None][f'lbSegmentConverEfficiency{tech}']   = {1: 0}
-        pyoDict[None][f'ubSegmentConverEfficiency{tech}']   = {1: 100000000}
         # transport technologies
         pyoDict[None]['setTransportCarrierpipeline_hydrogen'] = {None: {'hydrogen'}}
 

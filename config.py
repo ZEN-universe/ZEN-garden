@@ -20,8 +20,8 @@ solver = default_config.solver
 analysis['timeHorizon'] = 1                                                      
 analysis['spatialResolution'] = 'Test3'
 analysis['modelFormulation'] = 'HSC'
-analysis['nonlinearTechnologyApproximation'] = {'Capex': [],
-                                                'ConverEfficiency': []}
+analysis['nonlinearTechnologyApproximation'] = {'Capex': [], 'ConversionEfficiency':[]}
+analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConversionEfficiency':['electrolysis']}
 analysis['objective'] = 'BasicTotalCost'
 
 ## System - settings update compared to default values

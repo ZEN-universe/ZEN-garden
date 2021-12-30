@@ -2,15 +2,12 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class to read the data from input files, collect them into a dictionary.
 ==========================================================================================================================================================================="""
 
 import pandas as pd
-import numpy as np
-from deepdiff import DeepDiff
-import sys
 import logging
 import os
 

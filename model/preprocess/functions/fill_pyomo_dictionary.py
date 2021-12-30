@@ -2,7 +2,7 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com), Alissa Ganter (aganter@ethz.ch)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class to convert the dictionary into a Pyomo compatible dictionary to be passed to the compile routine.
 ==========================================================================================================================================================================="""
@@ -86,7 +86,7 @@ class FillPyoDict:
                             # key to use in the Pyomo dictionary
                             key = (nodeName, nodeNameAlias, timeName)
                             # key to use in the Pyomo dictionary
-                            name = (nodeName, nodeNameAlias, timeName)
+                            name = parameterName + technologyName
                             # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                             add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
                                         
@@ -138,9 +138,12 @@ class FillPyoDict:
         #         so it is less "hard-coded"?
 
         parameterName = 'attributes'
+        attributes = {'setConversionTechnologies':['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex'],
+                      'setTransportTechnologies': ['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex','setTransportCarriers']
+                      }
         for technologySubset in ['setConversionTechnologies', 'setTransportTechnologies']:
             for technologyName in self.system[technologySubset]:
-                for attribute in ['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex']:
+                for attribute in attributes[technologySubset]:
                     self.pyoDict[None][attribute+technologyName] = {}
                     # dataframe stored in data
                     df = self.data[technologySubset][technologyName][parameterName].set_index(['index'])
@@ -182,7 +185,7 @@ class FillPyoDict:
             setInputCarriers  = df[dfIndexName].tolist()
             setOutputCarriers = df.columns.tolist()[1:]
             # add input and output carrier set to pyoDict
-            self.pyoDict[None][f'setInputCarriers{technologyName}']  = {None: setInputCarriers}
+            self.pyoDict[None][f'setInputCarriers{technologyName}'] = {None: setInputCarriers}
             self.pyoDict[None][f'setOutputCarriers{technologyName}'] = {None: setOutputCarriers}
 
             for carrierIn in setInputCarriers:
@@ -196,35 +199,33 @@ class FillPyoDict:
                     #  name to use in the Pyomo dictionary
                     name = parameterName + technologyName
                     # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                    #if self.data[technologySubset][technologyName][parameterName].set_index(dfIndexNames).loc[dfIndex, dfColumn] != 0:
                     add_parameter(self.pyoDict[None], df, dfIndexName, dfIndex, dfColumn, key, name)
 
     def dataPWAApproximation(self):
         
         # add the parameters associated to the PWA approximation
         technologySubset = 'setConversionTechnologies'
-        approximatedParameterNames = ['PWACapex']
-        PWAParameterNames = ['slope', 'extreme0', 'extreme1', 'value0']
+        types = self.analysis['linearTechnologyApproximation'].keys()
         for technologyName in self.system[technologySubset]:
-            for approximatedParameterName in approximatedParameterNames:
-                df = self.data[technologySubset][technologyName][approximatedParameterName]
-                for PWAParameterName in PWAParameterNames:
-                    for supportPointPWA in df[self.analysis['dataInputs']['PWA']['supportPoints']]:
-                        
-                        parameterName = PWAParameterName+approximatedParameterName
-                        
-                        # dataframe stored in data 
-                        df = self.data[technologySubset][technologyName][approximatedParameterName]
+            for type in types:
+                if technologyName in self.analysis['linearTechnologyApproximation'][type]:
+                    df = self.data[technologySubset][technologyName][f'linear{type}']
+                elif technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
+                    pass
+                else:
+                    df = self.data[technologySubset][technologyName][f'PWA{type}']
+
+                df['index'] = df.index.values
+                for parameterName in self.analysis['dataInputs']['PWA'].values():
+                    for supportPointPWA in df.index.values:
+                        name = f'{parameterName}{type}{technologyName}'
                         # list of columns of the dataframe to use as indexes
-                        dfIndexNames = [self.analysis['dataInputs']['PWA']['supportPoints']]
-                        
+                        dfIndexNames = ['index']
                         # index of the single cell in the dataframe to add to the dictionary
                         dfIndex = supportPointPWA
-                        # column of the single cell in the dataframe to add to the dictionary  
-                        dfColumn = self.analysis['dataInputs']['PWA'][PWAParameterName]
+                        # column of the single cell in the dataframe to add to the dictionary
+                        dfColumn = self.analysis['dataInputs']['PWA'][parameterName]
                         # key to use in the Pyomo dictionary
-                        key = (technologyName, supportPointPWA)
-                        # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]                                                
-                        add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)                       
-     
-        
+                        key = (supportPointPWA)
+                        # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
+                        add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)

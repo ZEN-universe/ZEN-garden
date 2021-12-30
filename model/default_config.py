@@ -25,8 +25,6 @@ system = dict()
 analysis['objective'] = 'TotalCost'
 # typology of optimisation: minimize or maximize
 analysis['sense']     = 'minimize'
-# technology approximation
-analysis['technologyApproximation'] = 'linear'
 # length of time horizon
 analysis['timeHorizon'] = 25
 # time resolution
@@ -40,7 +38,7 @@ analysis['subsets'] = {
     }
 # headers in input files
 analysis['dataInputs'] = {'nameScenarios':'scenario', 'nameNodes':'node', 'nameTimeSteps':'time', 'nameConversionBalance':'energy', 'nameCarrier':'carrier', 
-                          'PWA':{'supportPoints':'sp', 'slope':'m', 'extreme0':'x0', 'extreme1':'x1', 'value0':'y0'}
+                          'PWA':{'slope':'slope', 'intercept':'intercept', 'ubSegment':'ubSegment', 'lbSegment':'lbSegment'}
                           }
 # file format of input data
 analysis['fileFormat'] = 'csv'

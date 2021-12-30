@@ -119,7 +119,7 @@ class TransportTechnology(Technology):
     #%% Contraint rules defined in current class - Operation
     @staticmethod
     def constraintTransportTechnologyFlowCapacityRule(model, carrier, tech, node, nodeAlias, time):
-        """coupling flow carrier to capcity transport technology"""
+        """coupling flow carrier to capacity transport technology"""
 
         # variables
         capacityTechnology    = getattr(model, f'capacity{tech}')
@@ -137,7 +137,6 @@ class TransportTechnology(Technology):
     #     return (model.carrierFlow[carrier, tech, node, aliasNode, time]
     #             == model.carrierFlow[carrier,tech, aliasNode, node, time])
     
-  
 
     # # operational constraints
     # @staticmethod
