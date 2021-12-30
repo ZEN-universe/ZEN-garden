@@ -138,19 +138,25 @@ class FillPyoDict:
         #         so it is less "hard-coded"?
 
         parameterName = 'attributes'
-        attributes = {'setConversionTechnologies':['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex'],
-                      'setTransportTechnologies': ['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex','setTransportCarriers']
-                      }
+        attributes = ['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex']
+
         for technologySubset in ['setConversionTechnologies', 'setTransportTechnologies']:
             for technologyName in self.system[technologySubset]:
-                for attribute in attributes[technologySubset]:
+                for attribute in attributes:
                     self.pyoDict[None][attribute+technologyName] = {}
                     # dataframe stored in data
                     df = self.data[technologySubset][technologyName][parameterName].set_index(['index'])
                     # Pyomo dictionary key
                     key = None
                     # add the parameter to the Pyomo dictionary
-                    self.pyoDict[None][attribute+technologyName][key] = df.loc[attribute, parameterName]
+                    self.pyoDict[None][attribute + technologyName][key] = df.loc[attribute, parameterName]
+
+        technologySubset = 'setTransportTechnologies'
+        for technologyName in self.system[technologySubset]:
+            for carrierName in set(self.system['setOutputCarriers']+self.system['setInputCarriers']):
+                if carrierName in technologyName:
+                    self.pyoDict[None]['setTransportCarriers'+technologyName] = {None:[carrierName]}
+
                 
         technologySubset = 'setStorageTechnologies'        
         for parameterName in ['minCapacityStorage', 'maxCapacityStorage']:

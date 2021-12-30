@@ -25,12 +25,11 @@ logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.CRITIC
 # prevent double printing
 logging.propagate = False
 
-
 # CREATE INPUT FILE
 prepare = Prepare(analysis, system)
-# # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-# model = Model(analysis, system)
-# model.solve(solver, prepare.pyoDict)
-#
-# # EVALUATE RESULTS
-# evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
+# FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
+model = Model(analysis, system)
+model.solve(solver, prepare.pyoDict)
+
+# EVALUATE RESULTS
+evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')

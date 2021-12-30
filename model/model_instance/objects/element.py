@@ -59,7 +59,8 @@ class Element:
             if 'Subset' in setProperty:
                 subsetOf = setProperty.split(':')[-1].strip()
                 peSet  = pe.Set(within= getattr(self.model, subsetOf), doc=setProperty)
-            elif 'Alias' in setName:
+                setattr(self.model, setName, peSet)
+            if 'Alias' in setName:
                 aliasOf   = setName.replace('Alias','')
                 peSet = pe.SetOf(getattr(self.model, aliasOf))
             elif 'Index' in setName:

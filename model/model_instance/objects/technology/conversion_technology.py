@@ -98,7 +98,7 @@ class ConversionTechnology(Technology):
                                           \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps.\
                                           \n\t Domain: Binary'}
         if type == 'Capex':
-            variables['capexTechnologyValue'] = f'Definition of Capex appearing in the objective function. \
+            variables['capexConversionTechnologyValue'] = f'Definition of Capex appearing in the objective function. \
                                               \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps.\
                                               \n\t Domain: NonNegativeReals'
 
@@ -134,7 +134,7 @@ class ConversionTechnology(Technology):
 
         elif type == 'ConverEfficiency':
             constr[f'{tech}Linear{type}']    = f'Linearization of {type} for {type} of {tech}.\
-                                               \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setOutputCarriers{tech}, setNodes, setTimeSteps'
+                                               \n\t Dimensions: setInputCarriers{tech}, setOutputCarriers{tech}, setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}LB']  = f'lower bound of segment for {type} of {tech}.\
                                                \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setNodes, setTimeSteps'
             constr[f'{tech}Linear{type}UB']  = f'upper bound of segment for {type} of {tech}.\
@@ -176,7 +176,7 @@ class ConversionTechnology(Technology):
         """max size of conversion technology"""
 
         # parameters
-        maxCapacityTechnology = getattr(model, f'minCapacity{tech}')
+        maxCapacityTechnology = getattr(model, f'maxCapacity{tech}')
         # variables
         installTechnology  = getattr(model, f'install{tech}')
         capacityTechnology = getattr(model, f'capacity{tech}')
@@ -195,20 +195,24 @@ class ConversionTechnology(Technology):
         return (capacityTechnology[node, time]
                 >= outputTechnology[carrierOut, node, time])
 
-    #%% Constraint rules defined in current class  - Conversion Efficiency
+    #%% Constraint rules defined in current class - Conversion Efficiency
     @staticmethod
-    def constraintConversionTechnologyLinearConverEfficiencyRule(model, tech, segment, carrierIn, carrierOut, node, time):
+    def constraintConversionTechnologyLinearConverEfficiencyRule(model, tech, carrierIn, carrierOut, node, time):
         """linearized conversion efficiency of conversion technology"""
-
+        # segments
+        setSegments = getattr(model, f'setSegmentsConverEfficiency{tech}')
         # parameters
         slope     = getattr(model,f'slopeConverEfficiency{tech}')
         intercept = getattr(model,f'interceptConverEfficiency{tech}')
         # variables
+        selectSegment = getattr(model, f'selectSegmentCapex{tech}')
         inputTechnologyAux = getattr(model,f'inputAux{tech}')
         outputTechnology   = getattr(model,f'output{tech}')
 
         return(outputTechnology[carrierOut, node, time]
-                    == slope[segment] * inputTechnologyAux[segment, carrierIn, node, time] + intercept[segment])
+                    == sum(slope[segment] * inputTechnologyAux[segment, carrierIn, node, time]
+                           + intercept[segment]*selectSegment[segment, node, time]
+                           for segment in setSegments))
 
     @staticmethod
     def constraintConversionTechnologyLinearConverEfficiencyLBRule(model, tech, segment, carrierIn, node, time):
@@ -270,7 +274,7 @@ class ConversionTechnology(Technology):
         # variables
         capexTechnology = getattr(model, f'capex{tech}')
 
-        return model.capexTechnologyValue[tech,node,time] == capexTechnology[node,time]
+        return model.capexConversionTechnologyValue[tech,node,time] == capexTechnology[node,time]
 
     @staticmethod
     def constraintConversionTechnologyLinearCapexRule(model, tech, node, time):

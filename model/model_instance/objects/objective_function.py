@@ -31,31 +31,22 @@ class ObjectiveFunction(Element):
     def objectiveBasicTotalCostRule(model):
         " basic cost rule with PWA capex and linear transport cost"
 
-        print("*** Has attribute valueCapex", hasattr(model, 'valueCapex'))
+        installCost = 0
 
         # Production cost
-        installCost = 0
-        for techType in ['Production']:
-            if hasattr(model, f'set{techType}Technologies'):
-                installCost += sum(sum(sum(
-                    model.capexTechnologyValue[tech, node, time]
-                    for time in model.setTimeSteps)
-                        for node in model.setNodes)
-                            for tech in getattr(model, f'set{techType}Technologies'))
+        installCost += sum(sum(sum(
+            model.capexConversionTechnologyValue[tech, node, time]
+            for time in model.setTimeSteps)
+                for node in model.setNodes)
+                    for tech in getattr(model, f'setConversionTechnologies'))
                 
         # Transport cost
-        for techType in ['Transport']:
-            if hasattr(model, f'set{techType}Technologies'):
-
-                installCost += sum(sum(sum(
-                    0.5*
-                    model.capacityTransportTechnologies[tech, node, nodealias, time]*
-                    model.distanceEucledian[tech, node, nodealias, time]*
-                    model.costPerDistance[tech, node, nodealias, time]
-                    for time in model.setTimeSteps)
-                        for nodealias in model.setNodes)
-                            for node in model.setAliasNodes
-                                for tech in getattr(model, f'set{techType}Technologies'))
+        installCost += sum(sum(sum(
+            model.capexTransportTechnologyValue[tech, node, aliasNode, time]
+            for time in model.setTimeSteps)
+                for node in model.setNodes)
+                    for aliasNode in model.setAliasNodes
+                        for tech in getattr(model, f'setTransportTechnologies'))
                 
         return installCost
     

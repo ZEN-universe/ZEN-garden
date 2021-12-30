@@ -31,6 +31,26 @@ class MassBalance(Element):
         nodal mass balance for each time step
         """
 
+        # carrier input and output conversion technologies
+        carrierConversionIn, carrierConversionOut = 0, 0
+        if hasattr(model, 'setConversionTechnologies'):
+            for tech in model.setConversionTechnologies:
+                inputTechnology  = getattr(model, f'input{tech}')
+                outputTechnology = getattr(model, f'output{tech}')
+                if carrier in getattr(model, f'setInputCarriers{tech}'):
+                    carrierConversionIn += inputTechnology[carrier, node, time]
+                if carrier in getattr(model, f'setOutputCarriers{tech}'):
+                    carrierConversionOut += outputTechnology[carrier, node, time]
+
+        # carrier flow transport technologies
+        carrierFlowIn, carrierFlowOut = 0, 0
+        if hasattr(model, 'setTransportTechnologies'):
+            for tech in model.setTransportTechnologies:
+                carrierFlow = getattr(model, f'carrierFlow{tech}')
+                if carrier in getattr(model, f'setTransportCarriers{tech}'):
+                    carrierFlowIn += sum(carrierFlow[carrier, aliasNode, node, time] for aliasNode in model.setAliasNodes)
+                    carrierFlowOut += sum(carrierFlow[carrier, node, aliasNode, time] for aliasNode in model.setAliasNodes)
+
         # carrier import, demand and export
         carrierImport, carrierExport, carrierDemand = 0, 0, 0
         if carrier in model.setInputCarriers:
@@ -39,29 +59,6 @@ class MassBalance(Element):
             carrierDemand = model.demandCarrier[carrier, node, time]
             carrierExport = model.exportCarrier[carrier, node, time]
 
-        # carrier input and output conversion technologies
-        carrierConversionIn, carrierConversionOut = 0, 0
-        if hasattr(model, 'setConversionTechnologies'):
-            for tech in model.setConversionTechnologies:
-                inputTechnology  = getattr(model, f'input{tech}')
-                outputTechnology = getattr(model, f'output{tech}')
-                for carrierIn in getattr(model, f'setInputCarriers{tech}'):
-                    carrierConversionIn += inputTechnology[carrierIn, node, time]
-                for carrierOut in getattr(model, f'setOutputCarriers{tech}'):
-                    carrierConversionOut += outputTechnology[carrierOut, node, time]
-
-        # carrier flow transport technologies
-        carrierFlowIn, carrierFlowOut = 0, 0
-        if hasattr(model, 'setTransportTechnologies'):
-            for tech in model.setTransportTechnologies:
-                carrierFlow = getattr(model, f'carrierFlow{tech}')
-                carrierFlowIn += sum(carrierFlow[carrier, tech, aliasNode, node, time] for aliasNode in model.setAliasNodes)
-                carrierFlowOut += sum(model.carrierFlow[carrier, tech, node, aliasNode, time] for aliasNode in model.setAliasNodes)
-
         # TODO implement storage
 
-        return (carrierImport - carrierExport
-                - carrierConversionIn + carrierConversionOut
-                + carrierFlowIn - carrierFlowOut
-                - carrierDemand
-                == 0)
+        return (carrierConversionOut - carrierConversionIn + carrierFlowIn - carrierFlowOut + carrierImport - carrierExport - carrierDemand == 0)

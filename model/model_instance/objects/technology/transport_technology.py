@@ -30,12 +30,12 @@ class TransportTechnology(Technology):
 
         #%% Parameters
         params = {
-            f'distanceEucledian{tech}': 'eucledian distance between two nodes for {tech}. \
-                                        \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps.',
-            f'costPerDistance{tech}':   'capex {tech} per unit distance. \
-                                        \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps.',
+            f'distanceEucledian{tech}': f'eucledian distance between two nodes for {tech}.\
+                                        \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
+            f'costPerDistance{tech}':   f'capex {tech} per unit distance.\
+                                        \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
             # 'minTransportTechLoad':     'fraction of installed transport technology size that determines the minimum load of the transport technology. \
-            #                              \n\t Dimensions: setTransportTechnologies'            
+            #                              \n\t Dimensions: setTransportTechnologies'
             }
         # merge new items with parameters dictionary from Technology class 
         params = {**params, **self.getTechParams()}
@@ -43,6 +43,9 @@ class TransportTechnology(Technology):
 
         #%% Decision variables
         variables = {
+            f'capexTransportTechnologyValue':   f'capex of transport capacity used in definition of objective function. \
+                                       \n\t Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.\
+                                       \n\t Domain: NonNegativeReals',
             f'carrierFlow{tech}':      f'carrier flow through transport technology from node i to node j. \
                                        \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps.\
                                        \n\t Domain: NonNegativeReals',
@@ -54,10 +57,11 @@ class TransportTechnology(Technology):
         variables = {**variables, **self.getTechVars()}
         self.addVars(variables)
 
-        #%%  Contraints in current class 
+        #%%  Contraints in current class
+        ## add linear constraints defined for single conversion technology: set of single technology added as dimension 0
         constr = {
-                f'{tech}FlowCapacity':     f'modelling carrier flow through {tech}.\
-                                            \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps.'
+            f'{tech}FlowCapacity':     f'carrier flow through {tech}.\
+                                        \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps.'
                   # 'constraintTransportTechnologiesPerformance':  'performance of transport technology. \
                   #                                               \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
                   # 'constraintMinLoadTransportTechnologies1':     'min flow through transport technology, part one. \
@@ -75,14 +79,20 @@ class TransportTechnology(Technology):
         self.addConstr(constr, replace = [tech, 'TransportTechnology'], passValues = [tech])
 
         logging.info(f'added subsets, parameters, decision variables and constraints for {tech}')
+
+        constr = dict()
+        ## add linear constraints defined for all the conversion technologies
+        constr[f'TransportTechnologyLinearCapexValue']    = f'Definition of Capex for all the transport technologies.\
+                                           \n\t Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.'
+        self.addConstr(constr)
    
-    #%% Contraint rules pre-defined in Technology class
+    #%% Constraint rules pre-defined in Technology class
     @staticmethod
     def constraintTransportTechnologyAvailabilityRule(model, tech, node, aliasNode, time):
         """limited availability of production technology"""
 
         # parameters
-        availabilityTechnology = getattr(model, f'maxCapacity{tech}')
+        availabilityTechnology = getattr(model, f'availability{tech}')
         # variables
         installTechnology = getattr(model, f'install{tech}')
 
@@ -99,9 +109,8 @@ class TransportTechnology(Technology):
         installTechnology  = getattr(model, f'install{tech}')
         capacityTechnology = getattr(model, f'capacity{tech}')
 
-        return (minCapacityTechnology * installTechnology[node, aliasNode, time]
-                    <=capacityTechnology[node, aliasNode, time])
-    
+        return (minCapacityTechnology * installTechnology[node, aliasNode, time] <= capacityTechnology[node, aliasNode, time])
+
     @staticmethod
     def constraintTransportTechnologyMaxCapacityRule(model, tech, node, aliasNode, time):
         """max size of transport technology"""
@@ -118,7 +127,7 @@ class TransportTechnology(Technology):
 
     #%% Contraint rules defined in current class - Operation
     @staticmethod
-    def constraintTransportTechnologyFlowCapacityRule(model, carrier, tech, node, nodeAlias, time):
+    def constraintTransportTechnologyFlowCapacityRule(model, tech, carrier, node, nodeAlias, time):
         """coupling flow carrier to capacity transport technology"""
 
         # variables
@@ -126,7 +135,7 @@ class TransportTechnology(Technology):
         carrierFlowTechnology = getattr(model, f'carrierFlow{tech}')
 
         return (carrierFlowTechnology[carrier, node, nodeAlias, time]
-                    == capacityTechnology[node, nodeAlias, time])
+                    <= capacityTechnology[node, nodeAlias, time])
 
     # Rules in current class
     # @staticmethod
@@ -164,3 +173,17 @@ class TransportTechnology(Technology):
     #     return (model.carrierFlow[carrier, tech, node, aliasNode, time]
     #             >= model.carrierFlowAux[carrier, tech, node, aliasNode, time])
 
+    # %% Constraint rules defined in current class - Capital Expenditures (Capex)
+
+    @staticmethod
+    def constraintTransportTechnologyLinearCapexValueRule(model, tech, node, aliasNode, time):
+        """ definition of capex variable appearing in objective function"""
+        # variables
+        capacityTransportTechnology = getattr(model, f'capacity{tech}')
+        # parameters
+        distanceEucledian = getattr(model, f'distanceEucledian{tech}')
+        costPerDistance = getattr(model, f'costPerDistance{tech}')
+        return (model.capexTransportTechnologyValue[tech,node,aliasNode, time] == 0.5 *
+                    capacityTransportTechnology[node, aliasNode, time] *
+                    distanceEucledian[node, aliasNode, time] *
+                    costPerDistance[node, aliasNode, time])

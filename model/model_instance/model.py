@@ -94,9 +94,6 @@ class Model():
         
         logging.info("Create model instance")
 
-        # transport technologies
-        pyoDict[None]['setTransportCarrierpipeline_hydrogen'] = {None: {'hydrogen'}}
-
         self.instance = self.model.create_instance(data=pyoDict)
 
         logging.info(f"Solve model instance using {solverName}")
