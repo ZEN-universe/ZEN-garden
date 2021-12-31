@@ -35,14 +35,14 @@ class ObjectiveFunction(Element):
 
         # Production cost
         installCost += sum(sum(sum(
-            model.capexConversionTechnologyValue[tech, node, time]
+            model.capexConversionTechnology[tech, node, time]
             for time in model.setTimeSteps)
                 for node in model.setNodes)
                     for tech in getattr(model, f'setConversionTechnologies'))
                 
         # Transport cost
         installCost += sum(sum(sum(
-            model.capexTransportTechnologyValue[tech, node, aliasNode, time]
+            model.capexTransportTechnology[tech, node, aliasNode, time]
             for time in model.setTimeSteps)
                 for node in model.setNodes)
                     for aliasNode in model.setAliasNodes

@@ -33,3 +33,4 @@ model.solve(solver, prepare.pyoDict)
 
 # EVALUATE RESULTS
 evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
+print(evaluation)

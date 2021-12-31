@@ -68,9 +68,6 @@ class Technology(Element):
                                              \n\t Domain: Binary',
                      f'capacity{self.tech}': f'size of {self.tech} installed between nodes at time t. \
                                              \n\t Dimensions: {self.dim}, setTimeSteps. \
-                                             \n\t Domain: NonNegativeReals',
-                     f'capex{self.tech}':    f'capital expenditures for {self.tech} installed between nodes at time t. \
-                                             \n\t Dimensions: {self.dim}, setTimeSteps. \
                                              \n\t Domain: NonNegativeReals'}
 
         return variables

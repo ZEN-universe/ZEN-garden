@@ -98,10 +98,13 @@ class ConversionTechnology(Technology):
                                           \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps.\
                                           \n\t Domain: Binary'}
         if type == 'Capex':
-            variables['capexConversionTechnologyValue'] = f'Definition of Capex appearing in the objective function. \
+            variables['capexConversionTechnology'] = f'Definition of Capex appearing in the objective function. \
                                               \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps.\
                                               \n\t Domain: NonNegativeReals'
 
+            variables[f'capex{self.tech}']  = f'capital expenditures for {self.tech} installed between nodes at time t. \
+                                              \n\t Dimensions: {self.dim}, setTimeSteps. \
+                                              \n\t Domain: NonNegativeReals'
             variables[f'capacityAux{tech}'] = f'Auxiliary variable to model {type} of {tech} technologies. \
                                               \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps.\
                                               \n\t Domain: NonNegativeReals'
@@ -115,22 +118,21 @@ class ConversionTechnology(Technology):
         constr = dict()
         ## add linear constraints defined for all the conversion technologies
         if type == 'Capex':
-            constr[f'ConversionTechnologyLinear{type}Value']    = f'Definition of {type} for all the conversion technologies.\
-                                               \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps'
-
+            constr[f'ConversionTechnologyLinear{type}Value'] = f'Definition of {type} for all the conversion technologies.\
+                                                               \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps'
             self.addConstr(constr)
 
         constr = dict()
         ## add linear constraints defined for single conversion technology: set of single technology added as dimension 0
         if type == 'Capex':
-            constr[f'{tech}Linear{type}']    = f'Linearization of {type} for {type} of {tech}.\
-                                               \n\t Dimensions:setNodes, setTimeSteps'
-            constr[f'{tech}Linear{type}LB']  = f'lower bound of segment for {type} of {tech}.\
-                                               \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
-            constr[f'{tech}Linear{type}UB']  = f'upper bound of segment for {type} of {tech}.\
-                                               \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
-            constr[f'{tech}Linear{type}Aux'] = f'linking the auxiliary variable and variable for {type} of {tech}.\
-                                               \n\t Dimensions: setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}']      = f'Linearization of {type} for {tech}.\
+                                                 \n\t Dimensions:setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}LB']    = f'lower bound of segment for {type} of {tech}.\
+                                                 \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}UB']    = f'upper bound of segment for {type} of {tech}.\
+                                                 \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}Aux']   = f'linking the auxiliary variable and variable for {type} of {tech}.\
+                                                 \n\t Dimensions: setNodes, setTimeSteps'
 
         elif type == 'ConverEfficiency':
             constr[f'{tech}Linear{type}']    = f'Linearization of {type} for {type} of {tech}.\
@@ -274,7 +276,7 @@ class ConversionTechnology(Technology):
         # variables
         capexTechnology = getattr(model, f'capex{tech}')
 
-        return model.capexConversionTechnologyValue[tech,node,time] == capexTechnology[node,time]
+        return model.capexConversionTechnology[tech,node,time] == capexTechnology[node,time]
 
     @staticmethod
     def constraintConversionTechnologyLinearCapexRule(model, tech, node, time):

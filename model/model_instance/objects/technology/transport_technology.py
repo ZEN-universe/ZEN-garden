@@ -23,8 +23,7 @@ class TransportTechnology(Technology):
 
         # merge new items with sets and subsets dictionary from Technology class
         subsets = {
-            f'setTransportCarriers{tech}': f'carriers that can be transported with {tech}. Subset: setCarriers'
-            }
+            f'setTransportCarriers{tech}': f'carriers that can be transported with {tech}. Subset: setCarriers'}
         subsets = {**subsets, **self.getTechSubsets()}
         self.addSets(subsets)
 
@@ -43,7 +42,7 @@ class TransportTechnology(Technology):
 
         #%% Decision variables
         variables = {
-            f'capexTransportTechnologyValue':   f'capex of transport capacity used in definition of objective function. \
+            f'capexTransportTechnology':   f'capex of transport capacity used in definition of objective function. \
                                        \n\t Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.\
                                        \n\t Domain: NonNegativeReals',
             f'carrierFlow{tech}':      f'carrier flow through transport technology from node i to node j. \
@@ -58,33 +57,28 @@ class TransportTechnology(Technology):
         self.addVars(variables)
 
         #%%  Contraints in current class
+
+        ## add linear constraints defined for all the conversion technologies
+        constr = {
+            f'TransportTechnologyLinearCapexValue': f'Definition of Capex for all the transport technologies.\
+                                                    \n\t Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.'}
+        self.addConstr(constr)
+
         ## add linear constraints defined for single conversion technology: set of single technology added as dimension 0
         constr = {
-            f'{tech}FlowCapacity':     f'carrier flow through {tech}.\
-                                        \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps.'
-                  # 'constraintTransportTechnologiesPerformance':  'performance of transport technology. \
-                  #                                               \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-                  # 'constraintMinLoadTransportTechnologies1':     'min flow through transport technology, part one. \
-                  #                                                 \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-                  # 'constraintMinLoadTransportTechnologies2':     'min flow through transport, part two. \
-                  #                                                 \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-                  # 'constraintMaxLoadTransportTechnologies1':     'max flow through transport technology, part one. \
-                  #                                                 \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps',
-                  # 'constraintMaxLoadTransportTechnologies2':     'max flow through transport, part two. \
-                  #                                                 \n\t Dimensions: setTransportCarriers, setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps'
-
-                  }
-        # TODO add constraints for transport losses
+            f'{tech}Availability': f'limited availability of {tech} depending on node and time.\
+                                   \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps.',
+            f'{tech}MinCapacity':  f'min capacity of {tech} that can be installed.\
+                                   \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps.',
+            f'{tech}MaxCapacity':  f'max capacity of {tech} that can be installed.\
+                                   \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps.',
+            f'{tech}FlowCapacity': f'carrier flow through {tech}.\
+                                   \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps.'}
+            # TODO add constraints for transport losses
         constr = {**constr, **self.getTechConstr()}
         self.addConstr(constr, replace = [tech, 'TransportTechnology'], passValues = [tech])
 
         logging.info(f'added subsets, parameters, decision variables and constraints for {tech}')
-
-        constr = dict()
-        ## add linear constraints defined for all the conversion technologies
-        constr[f'TransportTechnologyLinearCapexValue']    = f'Definition of Capex for all the transport technologies.\
-                                           \n\t Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.'
-        self.addConstr(constr)
    
     #%% Constraint rules pre-defined in Technology class
     @staticmethod
@@ -109,7 +103,8 @@ class TransportTechnology(Technology):
         installTechnology  = getattr(model, f'install{tech}')
         capacityTechnology = getattr(model, f'capacity{tech}')
 
-        return (minCapacityTechnology * installTechnology[node, aliasNode, time] <= capacityTechnology[node, aliasNode, time])
+        return (minCapacityTechnology * installTechnology[node, aliasNode, time]
+                <= capacityTechnology[node, aliasNode, time])
 
     @staticmethod
     def constraintTransportTechnologyMaxCapacityRule(model, tech, node, aliasNode, time):
@@ -138,14 +133,20 @@ class TransportTechnology(Technology):
                     <= capacityTechnology[node, nodeAlias, time])
 
     # Rules in current class
-    # @staticmethod
-    # def constraintTransportTechnologiesPerformanceRule(model, carrier, tech, node, aliasNode, time):
-    #     """constraint to account for transport losses.
-    #     \n\t Dimensions: setTransportTechnologies, setTransportCarriers, setNodes, setTimeSteps"""
-    #     # TODO implement transport losses
-    #     return (model.carrierFlow[carrier, tech, node, aliasNode, time]
-    #             == model.carrierFlow[carrier,tech, aliasNode, node, time])
-    
+    @staticmethod
+    def constraintTransportTechnologyLinearCapexValueRule(model, tech, node, aliasNode, time):
+        """ definition of capex variable appearing in objective function"""
+
+        # parameters
+        distanceEucledian = getattr(model, f'distanceEucledian{tech}')
+        costPerDistance   = getattr(model, f'costPerDistance{tech}')
+        # variables
+        capacityTechnology = getattr(model, f'capacity{tech}')
+
+        return (model.capexTransportTechnology[tech, node, aliasNode, time] == 0.5 *
+                capacityTechnology[node, aliasNode, time] *
+                distanceEucledian[node, aliasNode, time] *
+                costPerDistance[node, aliasNode, time])
 
     # # operational constraints
     # @staticmethod
@@ -174,16 +175,3 @@ class TransportTechnology(Technology):
     #             >= model.carrierFlowAux[carrier, tech, node, aliasNode, time])
 
     # %% Constraint rules defined in current class - Capital Expenditures (Capex)
-
-    @staticmethod
-    def constraintTransportTechnologyLinearCapexValueRule(model, tech, node, aliasNode, time):
-        """ definition of capex variable appearing in objective function"""
-        # variables
-        capacityTransportTechnology = getattr(model, f'capacity{tech}')
-        # parameters
-        distanceEucledian = getattr(model, f'distanceEucledian{tech}')
-        costPerDistance = getattr(model, f'costPerDistance{tech}')
-        return (model.capexTransportTechnologyValue[tech,node,aliasNode, time] == 0.5 *
-                    capacityTransportTechnology[node, aliasNode, time] *
-                    distanceEucledian[node, aliasNode, time] *
-                    costPerDistance[node, aliasNode, time])
