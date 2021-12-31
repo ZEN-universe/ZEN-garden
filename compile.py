@@ -10,7 +10,7 @@ Description:  Compilation  of the optimization problem.
 
 import os
 import logging
-from config import analysis, system, solver
+import config
 from model.preprocess.prepare import Prepare
 from model.model_instance.model import Model
 from model.postprocess.results import Postprocess
@@ -26,10 +26,10 @@ logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.CRITIC
 logging.propagate = False
 
 # CREATE INPUT FILE
-prepare = Prepare(analysis, system)
+prepare = Prepare(config.analysis, config.system)
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-model = Model(analysis, system)
-model.solve(solver, prepare.pyoDict)
+model = Model(config.analysis, config.system)
+model.solve(config.solver, prepare.pyoDict)
 
 # EVALUATE RESULTS
 evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
