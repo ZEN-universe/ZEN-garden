@@ -6,7 +6,7 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class to convert the dictionary into a Pyomo compatible dictionary to be passed to the compile routine.
 ==========================================================================================================================================================================="""
-from model.preprocess.functions.add_parameters import add_parameter
+from preprocess.functions.add_parameters import add_parameter
 
 class FillPyoDict:
     

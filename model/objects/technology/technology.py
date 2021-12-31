@@ -10,7 +10,7 @@ Description:  Class defining the parameters, variables and constraints that hold
 ==========================================================================================================================================================================="""
 
 import logging
-from model.model_instance.objects.element import Element
+from model.objects.element import Element
 
 class Technology(Element):
 

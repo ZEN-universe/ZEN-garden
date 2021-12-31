@@ -11,9 +11,9 @@ Description:  Compilation  of the optimization problem.
 import os
 import logging
 import config
-from model.preprocess.prepare import Prepare
-from model.model_instance.model import Model
-from model.postprocess.results import Postprocess
+from preprocess.prepare import Prepare
+from model.model import Model
+from postprocess.results import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'

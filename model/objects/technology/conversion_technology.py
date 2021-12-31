@@ -10,7 +10,7 @@ Description:  Class defining the parameters, variables and constraints of the co
 ==========================================================================================================================================================================="""
 
 import logging
-from model.model_instance.objects.technology.technology import Technology
+from model.objects.technology.technology import Technology
 
 class ConversionTechnology(Technology):
 

@@ -6,7 +6,7 @@ Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class to add to pyomo dictionary the nonlinear functions
 ==========================================================================================================================================================================="""
-from model.preprocess.functions.add_parameters import add_function
+from preprocess.functions.add_parameters import add_function
 from scipy.interpolate import interp1d
 
 class FillNlpDict:

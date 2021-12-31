@@ -10,7 +10,7 @@ Description:  Class defining the parameters, variables and constraints that hold
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
-from model.model_instance.objects.technology.technology import Technology
+from model.objects.technology.technology import Technology
 
 class TransportTechnology(Technology):
 

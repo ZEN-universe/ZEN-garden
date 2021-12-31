@@ -10,7 +10,7 @@ Description:  Class defining a generic energy carrier.
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
-from model.model_instance.objects.element import Element
+from model.objects.element import Element
 
 class Carrier(Element):
 

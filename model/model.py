@@ -13,12 +13,12 @@ Description:  Class defining the abstract optimization model.
 import logging
 import pyomo.environ as pe
 from pyomo.opt import SolverStatus, TerminationCondition
-from model.model_instance.objects.element import Element
-from model.model_instance.objects.carrier import Carrier
-from model.model_instance.objects.technology.conversion_technology import ConversionTechnology
-from model.model_instance.objects.technology.transport_technology import TransportTechnology
-from model.model_instance.objects.objective_function import ObjectiveFunction
-from model.model_instance.objects.mass_balance import MassBalance
+from model.objects.element import Element
+from model.objects.carrier import Carrier
+from model.objects.technology.conversion_technology import ConversionTechnology
+from model.objects.technology.transport_technology import TransportTechnology
+from model.objects.objective_function import ObjectiveFunction
+from model.objects.mass_balance import MassBalance
 
 class Model():
 

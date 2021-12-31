@@ -9,13 +9,13 @@ Description:    Class to read the data from input files, collect them into a dic
 ==========================================================================================================================================================================="""
 import os
 import pandas as pd
-from model.preprocess.functions.modify_config import UpdateConfig
-from model.preprocess.functions.paths_data import Paths
-from model.preprocess.functions.initialise import Init
-from model.preprocess.functions.read_data import Read
-from model.preprocess.functions.create_data import Create
-from model.preprocess.functions.fill_pyomo_dictionary import FillPyoDict
-from model.preprocess.functions.fill_nlp_dictionary import FillNlpDict
+from preprocess.functions.modify_config import UpdateConfig
+from preprocess.functions.paths_data import Paths
+from preprocess.functions.initialise import Init
+from preprocess.functions.read_data import Read
+from preprocess.functions.create_data import Create
+from preprocess.functions.fill_pyomo_dictionary import FillPyoDict
+from preprocess.functions.fill_nlp_dictionary import FillNlpDict
 
 class Prepare:
     
