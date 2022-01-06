@@ -76,7 +76,7 @@ class ObjectiveFunction(Element):
 
         installCost = 0
 
-        # Production cost
+        # Conversion cost
         installCost += sum(sum(sum(
             model.capexConversionTechnology[tech, node, time]
             for time in model.setTimeSteps)
@@ -108,16 +108,16 @@ class ObjectiveFunction(Element):
                             for node in model.setNodes)
                         for carrier in model.setOutputCarriers)
 
-        # PRODUCTION AND STORAGE TECHNOLOGIES
+        # Conversion and storage technologies
         installCost = 0
         for techType in ['Conversion', 'Storage']:
             if hasattr(model, f'set{techType}Technologies'):
-                installCost += sum(sum(sum(model.installProductionTechnologies[tech, node, time]
+                installCost += sum(sum(sum(model.installConversionTechnologies[tech, node, time]
                                            for time in model.setTimeSteps)
                                         for node in model.setNodes)
                                     for tech in getattr(model, f'set{techType}Technologies'))
 
-        # TRANSPORT TECHNOLOGIES
+        # transport technologies
         if hasattr(model, 'setTransport'):
             installCost += sum(sum(sum(sum(model.installTransportTechnologies[tech, node, aliasNode, time]
                                             for time in model.setTimeSteps)

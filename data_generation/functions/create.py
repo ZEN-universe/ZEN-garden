@@ -153,9 +153,9 @@ class Create:
         path = '{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setTimeSteps')
         file.to_csv(path+fileName+ext, header=True, index=False)        
 
-    def productionFiles(self):
+    def conversionFiles(self):
 
-        for fileName in ['availabilityProduction']:
+        for fileName in ['availabilityConversion']:
             ext = '.csv'
             columns = [self.headerScenario, self.headerTimeSteps, self.headerNodes, fileName]
             file = pd.DataFrame(columns=columns)
@@ -171,20 +171,20 @@ class Create:
                         
                         idx +=1
             
-            for carrierName in  self.dictionary['setProductionTechnologies']:
+            for carrierName in  self.dictionary['setConversionTechnologies']:
                 
-                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setProductionTechnologies', carrierName)
+                path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setConversionTechnologies', carrierName)
                 file.to_csv(path+fileName+ext, header=True, index=False)
         
         fileName = 'attributes'
         columns = ['attributes']
-        indexes = ['minCapacityProduction', 'maxCapacityProduction']
+        indexes = ['minCapacityConversio', 'maxCapacityConversion']
         file = pd.DataFrame(columns=columns, index=indexes)
         file.index.name = 'index'
         
-        for carrierName in self.dictionary['setProductionTechnologies']:
+        for carrierName in self.dictionary['setConversionTechnologies']:
             
-            path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setProductionTechnologies', carrierName)
+            path = '{}//{}//{}//{}//'.format(self.pathMainFolder, self.dictionary['mainFolder'], 'setConversionTechnologies', carrierName)
             file.to_csv(path+fileName+ext, header=True, index=True)
             
     def storageFiles(self):

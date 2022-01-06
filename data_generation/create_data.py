@@ -29,7 +29,7 @@ coords = np.arange(0,81, 40)
 data['setNodes'] = {'Names': list(string.ascii_uppercase)[:9], 
                     'XCoord': list(np.tile(coords, (3,1)).flatten()), 
                     'YCoord': list(np.tile(coords, (3,1)).T.flatten())}
-data['setProductionTechnologies'] = ['electrolysis']
+data['setConversionTechnologies'] = ['electrolysis']
 data['setScenarios'] = list(string.ascii_lowercase)[:numberScenarios]
 data['setStorageTechnologies'] = ['carbon_storage']
 data['setTimeSteps'] = np.arange(numberTimeSteps, dtype=np.int)
@@ -43,7 +43,7 @@ if True:
     
     Create.carriersInFiles()
     Create.carriersOutFiles()
-    Create.productionFiles()
+    Create.conversionFiles()
     Create.storageFiles()
     Create.transportFiles()
     

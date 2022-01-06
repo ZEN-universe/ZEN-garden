@@ -140,8 +140,8 @@ class Prepare:
         FillPyoDict.carrierParameters(self)
         # fill the dictionary with the parameters related to the transport technology
         FillPyoDict.technologyTranspParameters(self)
-        # fill the dictionary with the parameters related to the storage and the production technology
-        FillPyoDict.technologyProductionStorageParameters(self)
+        # fill the dictionary with the parameters related to the storage and the conversion technology
+        FillPyoDict.technologyConversionStorageParameters(self)
         # fill the dictionary with the parameters attributes of a technology
         FillPyoDict.attributes(self)
         # fill the dictionary with the conversion coefficients of a technology

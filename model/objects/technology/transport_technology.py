@@ -87,7 +87,7 @@ class TransportTechnology(Technology):
     #%% Constraint rules pre-defined in Technology class
     @staticmethod
     def constraintTransportTechnologyAvailabilityRule(model, tech, node, aliasNode, time):
-        """limited availability of production technology"""
+        """limited availability of conversion technology"""
 
         # parameters
         availabilityTechnology = getattr(model, f'availability{tech}')
