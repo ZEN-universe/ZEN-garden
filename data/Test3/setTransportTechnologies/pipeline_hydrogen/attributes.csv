@@ -1,6 +1,7 @@
 index,attributes
 minCapacity,0
 maxCapacity,1.00E+06
-minLoad,0
-maxLoad,1
+minFlow,0
+maxFlow,1
+lossFlow,0
 valueCapex,0

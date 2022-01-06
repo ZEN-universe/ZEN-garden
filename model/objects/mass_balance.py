@@ -19,7 +19,7 @@ class MassBalance(Element):
 
         #%% Contraints
         constraint = {'NodalMassBalance':    'nodal mass balance for each time step. \
-                                                        \n\t Dimensions: setCarriers, setNodes, setTimeSteps'
+                                             \n\t Dimensions: setCarriers, setNodes, setTimeSteps'
             }
         self.addConstr(constraint)  
 
@@ -47,8 +47,10 @@ class MassBalance(Element):
         if hasattr(model, 'setTransportTechnologies'):
             for tech in model.setTransportTechnologies:
                 carrierFlow = getattr(model, f'carrierFlow{tech}')
+                carrierLoss = getattr(model, f'carrierLoss{tech}')
                 if carrier in getattr(model, f'setTransportCarriers{tech}'):
-                    carrierFlowIn += sum(carrierFlow[carrier, aliasNode, node, time] for aliasNode in model.setAliasNodes)
+                    carrierFlowIn += sum(carrierFlow[carrier, aliasNode, node, time]
+                                         - carrierLoss[carrier, aliasNode, node, time] for aliasNode in model.setAliasNodes)
                     carrierFlowOut += sum(carrierFlow[carrier, node, aliasNode, time] for aliasNode in model.setAliasNodes)
 
         # carrier import, demand and export

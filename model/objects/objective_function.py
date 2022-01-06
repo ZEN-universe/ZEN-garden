@@ -19,6 +19,8 @@ class ObjectiveFunction(Element):
 
         super().__init__(object)
 
+        self.addAuxiliaryConstraints()
+
         objFunc  = self.analysis['objective']
         objSense = self.analysis['sense']
         objRule  = 'objective' + objFunc + 'Rule'
@@ -26,7 +28,48 @@ class ObjectiveFunction(Element):
                                 sense = getattr(pe,   objSense))
         setattr(self.model, objFunc, peObj)
 
-    # RULES
+    def addAuxiliaryConstraints(self):
+        """add auxiliary constraints for more direct formulation of the objective function"""
+
+        vars = {
+            f'capexTransportTechnology': f'Capex of transport technologies used in definition of objective function. \
+                                         \n\t Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.\
+                                         \n\t Domain: NonNegativeReals',
+            'capexConversionTechnology': f'Capex of conversion technologies used in definition of objective function. \
+                                         \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps.\
+                                         \n\t Domain: NonNegativeReals'}
+        self.addVars(vars)
+
+        constr = {
+            f'TransportTechnologyLinearCapexValue': f'Definition of Capex for all the transport technologies.\
+                                                    \n\t Dimensions: setTransportTechnologies, setNodes, setAliasNodes, setTimeSteps.',
+            f'ConversionTechnologyLinearCapexValue': f'Definition of Capex for all the conversion technologies.\
+                                                    \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps.'}
+        self.addConstr(constr)
+
+    #%% RULES
+    # Auxiliary constraints
+    @staticmethod
+    def constraintConversionTechnologyLinearCapexValueRule(model, tech, node, time):
+        """definition of capex variable appearing in objective function"""
+
+        # variables
+        capexConversionTechnology = getattr(model, f'capex{tech}')
+
+        return(model.capexConversionTechnology[tech, node, time]
+               == capexConversionTechnology[node, time])
+
+    @staticmethod
+    def constraintTransportTechnologyLinearCapexValueRule(model, tech, node, aliasNode, time):
+        """ definition of capex variable appearing in objective function"""
+
+        # variables
+        capexTransportTechnology = getattr(model, f'capex{tech}')
+
+        return(model.capexTransportTechnology[tech, node, aliasNode, time]
+               == capexTransportTechnology[node, aliasNode, time])
+
+    # Objective functions
     @staticmethod
     def objectiveBasicTotalCostRule(model):
         " basic cost rule with PWA capex and linear transport cost"
