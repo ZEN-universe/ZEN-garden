@@ -31,6 +31,8 @@ analysis['timeHorizon'] = 25
 analysis['timeResolution'] = 'yearly'
 # discount rate
 analysis['discountRate'] = 0.06
+# transport distance (euclidean or actual)
+analysis['transportDistance'] = 'Euclidean'
 # dictionary with subsets related to set
 analysis['subsets'] = {
     'setCarriers': ['setInputCarriers', 'setOutputCarriers'], 

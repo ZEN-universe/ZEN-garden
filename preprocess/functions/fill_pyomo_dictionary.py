@@ -74,7 +74,7 @@ class FillPyoDict:
                 for nodeNameAlias in self.system['setNodes']:
                     for timeName in self.system['setTimeSteps']:
                         # warning: all the following parameters must have the same data structure
-                        for parameterName in ['availability', 'costPerDistance', 'distanceEucledian', 'efficiencyPerDistance']:
+                        for parameterName in ['availability', 'costPerDistance', 'efficiencyPerDistance']:
                             # dataframe stored in data 
                             df = self.data[technologySubset][technologyName][parameterName]
                             # list of columns of the dataframe to use as indexes
@@ -89,7 +89,35 @@ class FillPyoDict:
                             name = parameterName + technologyName
                             # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                             add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
-                                        
+
+        parameterName = 'distance'
+        #TODO implement a method so we can choose between using the acutal distances depending on the mode of transport
+        # or computing the euclidean distance based on the coordinates
+        if self.analysis['transportDistance'] == 'Euclidean':
+            distance = 'Euclidean'
+        elif self.analysis['transportDistance'] == 'Actual':
+            print('Actual distances have not been implemented, use Euclidean distance for now')
+
+        for technologyName in self.system[technologySubset]:
+            for nodeName in self.system['setNodes']:
+                for nodeNameAlias in self.system['setNodes']:
+                        # warning: all the following parameters must have the same data structure
+                        # dataframe stored in data
+                        df = self.data[technologySubset][technologyName][parameterName+distance]
+                        # list of columns of the dataframe to use as indexes
+                        dfIndexNames = [self.analysis['dataInputs']['nameNodes']]
+                        # index of the single cell in the dataframe to add to the dictionary
+                        dfIndex = nodeName
+                        # column of the single cell in the dataframe to add to the dictionary
+                        dfColumn = nodeNameAlias
+                        # key to use in the Pyomo dictionary
+                        key = (nodeName, nodeNameAlias)
+                        # key to use in the Pyomo dictionary
+                        name = parameterName + technologyName
+                        # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
+                        add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
+
+
     def technologyProductionStorageParameters(self):
         """
         This method adds the parameters of the models dependent on the production technologies based on config
@@ -138,11 +166,12 @@ class FillPyoDict:
         #         so it is less "hard-coded"?
 
         parameterName = 'attributes'
-        attributes = ['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex']
+        attributes = {'setConversionTechnologies': ['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex'],
+                      'setTransportTechnologies':  ['minCapacity', 'maxCapacity', 'minFlow', 'maxFlow', 'lossFlow', 'valueCapex']}
 
         for technologySubset in ['setConversionTechnologies', 'setTransportTechnologies']:
             for technologyName in self.system[technologySubset]:
-                for attribute in attributes:
+                for attribute in attributes[technologySubset]:
                     self.pyoDict[None][attribute+technologyName] = {}
                     # dataframe stored in data
                     df = self.data[technologySubset][technologyName][parameterName].set_index(['index'])
