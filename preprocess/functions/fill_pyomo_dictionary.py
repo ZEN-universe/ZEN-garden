@@ -118,9 +118,9 @@ class FillPyoDict:
                         add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
 
 
-    def technologyProductionStorageParameters(self):
+    def technologyConversionStorageParameters(self):
         """
-        This method adds the parameters of the models dependent on the production technologies based on config
+        This method adds the parameters of the models dependent on the conversion technologies based on config
         :param analysis: dictionary defining the analysis framework
         :return: dictionary containing the input data        
         """  
@@ -157,7 +157,7 @@ class FillPyoDict:
     
     def attributes(self):
         """
-        This method adds the parameters of the models dependent on the production and storage technologies based on config
+        This method adds the parameters of the models dependent on the conversion and storage technologies based on config
         :param analysis: dictionary defining the analysis framework
         :return: dictionary containing the input data
         """
@@ -203,7 +203,7 @@ class FillPyoDict:
 
     def conversionBalanceParameters(self):
         """
-        This method adds the parameters of the models dependent on the production and storage technologies based on config
+        This method adds the parameters of the models dependent on the conversion and storage technologies based on config
         :param analysis: dictionary defining the analysis framework
         :return: dictionary containing the input data
         """           

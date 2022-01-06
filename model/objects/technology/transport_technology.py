@@ -72,12 +72,18 @@ class TransportTechnology(Technology):
                                    \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps',
             f'{tech}MaxFlow':      f'max possible carrier flow through {tech}.\
                                    \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps',
+            f'{tech}Selection1':   f'select if {tech} is used or not Part 1.\
+                                   \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
+            f'{tech}Selection2':   f'select if {tech} is used or not Part 2.\
+                                   \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
             f'{tech}AuxLBFlow':    f'LB for auxiliary variable capacityAux{tech}.\
-                                   \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps',
+                                   \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
             f'{tech}AuxUBFlow':    f'UB for auxiliary variable capacityAux{tech}.\
-                                   \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps',
+                                   \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
             f'{tech}LossesFlow':   f'Carrier loss due to transport with through {tech}.\
-                                   \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps'}
+                                   \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps',
+            f'{tech}LinearCapex':  f'Capital expenditures for installing {tech}.\
+                                   \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps'}
 
         constr = {**constr, **self.getTechConstr()}
         self.addConstr(constr, replace = [tech, 'TransportTechnology'], passValues = [tech])
@@ -87,15 +93,14 @@ class TransportTechnology(Technology):
     #%% Constraint rules pre-defined in Technology class
     @staticmethod
     def constraintTransportTechnologyAvailabilityRule(model, tech, node, aliasNode, time):
-        """limited availability of production technology"""
+        """limited availability of conversion technology"""
 
         # parameters
         availabilityTechnology = getattr(model, f'availability{tech}')
         # variables
-        capacityTechnology     = getattr(model, f'capacity{tech}')
+        installTechnology     = getattr(model, f'install{tech}')
 
-        return (availabilityTechnology[node, aliasNode, time]
-                    >= capacityTechnology[node, aliasNode, time])
+        return (availabilityTechnology[node, aliasNode, time] >= installTechnology[node, aliasNode, time])
 
     @staticmethod
     def constraintTransportTechnologyMinCapacityRule(model, tech, node, aliasNode, time):
@@ -184,6 +189,19 @@ class TransportTechnology(Technology):
 
     #%% Contraint rules defined in current class - Operation
     @staticmethod
+    def constraintTransportTechnologyMinFlowRule(model, tech, carrier, node, aliasNode, time):
+        """min carrier flow through transport technology"""
+
+        # parameters
+        minFlowTechnology = getattr(model, f'minFlow{tech}')
+        # variables
+        capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
+        carrierFlowTechnology = getattr(model, f'carrierFlow{tech}')
+
+        return (carrierFlowTechnology[carrier, node, aliasNode, time]
+                >= minFlowTechnology * capacityTechnologyAux[node, aliasNode, time])
+
+    @staticmethod
     def constraintTransportTechnologyMaxFlowRule(model, tech, carrier, node, aliasNode, time):
         """max flow carrier through  transport technology"""
 
@@ -197,43 +215,56 @@ class TransportTechnology(Technology):
                     <= maxFlowTechnology * capacityTechnologyAux[node, aliasNode, time])
 
     @staticmethod
-    def constraintTransportTechnologyMinFlowRule(model, tech, carrier, node, aliasNode, time):
-        """min carrier flow through transport technology"""
+    def constraintTransportTechnologySelection1Rule(model, tech, node, aliasNode, time):
+        """select if transport technology is used or not"""
 
         # parameters
-        minFlowTechnology = getattr(model, f'minFlow{tech}')
+        minCapacityTechnology = getattr(model, f'minCapacity{tech}')
         # variables
-        capacityTechnologyAux = getattr(model, f'capacity{tech}')
-        carrierFlowTechnology = getattr(model, f'carrierFlow{tech}')
+        capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
+        selectTechnology      = getattr(model, f'select{tech}')
 
-        return (carrierFlowTechnology[carrier, node, aliasNode, time]
-                >= minFlowTechnology * capacityTechnologyAux[node, aliasNode, time])
+        return (capacityTechnologyAux[node, aliasNode, time]
+                >= minCapacityTechnology * selectTechnology[node, aliasNode, time])
 
     @staticmethod
-    def constraintTransportTechnologyAuxLBFlowRule(model, tech, carrier, node, aliasNode, time):
-        """coupling flow and auxiliary variable of transport technology"""
+    def constraintTransportTechnologySelection2Rule(model, tech, node, aliasNode, time):
+        """select if transport technology is used or not"""
+
+        # parameters
+        maxCapacityTechnology = getattr(model, f'maxCapacity{tech}')
+        # variables
+        capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
+        selectTechnology      = getattr(model, f'select{tech}')
+
+        return (capacityTechnologyAux[node, aliasNode, time]
+                <= maxCapacityTechnology * selectTechnology[node, aliasNode, time])
+
+    @staticmethod
+    def constraintTransportTechnologyAuxLBFlowRule(model, tech, node, aliasNode, time):
+        """coupling capacity and auxiliary capacity variable of transport technology"""
 
         # parameters
         maxCapacityTechnology = getattr(model, f'maxCapacity{tech}')
         # variables
         selectTechnology      = getattr(model, f'select{tech}')
-        capacityTechnologyAux = getattr(model, f'capacity{tech}')
-        carrierFlowTechnology = getattr(model, f'carrierFlow{tech}')
+        capacityTechnology    = getattr(model, f'capacity{tech}')
+        capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
 
-        return (carrierFlowTechnology[carrier, node, aliasNode, time]
-                - maxCapacityTechnology * (1-selectTechnology[node, aliasNode, time])
+        return (capacityTechnology[node, aliasNode, time]
+                - maxCapacityTechnology * (1 - selectTechnology[node, aliasNode, time])
                 <= capacityTechnologyAux[node, aliasNode, time])
 
     @staticmethod
-    def constraintTransportTechnologyAuxUBFlowRule(model, tech, carrier, node, aliasNode, time):
-        """coupling flow and auxiliary variable of transport technology"""
+    def constraintTransportTechnologyAuxUBFlowRule(model, tech, node, aliasNode, time):
+        """coupling capacity and auxiliary capacity variable of transport technology"""
 
         # variables
-        capacityTechnologyAux = getattr(model, f'capacity{tech}')
-        carrierFlowTechnology = getattr(model, f'carrierFlow{tech}')
+        capacityTechnology    = getattr(model, f'capacity{tech}')
+        capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
 
-        return (carrierFlowTechnology[carrier, node, aliasNode, time]
-                <= capacityTechnologyAux[node, aliasNode, time])
+        return (capacityTechnologyAux[node, aliasNode, time]
+                <= capacityTechnology[node, aliasNode, time])
 
     @staticmethod
     def constraintTransportTechnologyLossesFlowRule(model, tech, carrier, node, aliasNode, time):

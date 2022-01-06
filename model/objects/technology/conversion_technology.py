@@ -47,8 +47,12 @@ class ConversionTechnology(Technology):
         self.addVars(variables)
 
         #%% Constraints
+        constr = {
+            f'{tech}MaxOutput': f'maximum output of {tech} is limited by the installed capacity. \
+                                \n\t Dimensions: setOutputCarriers{tech}, setNodes, setTimeSteps'}
+        constr = {**constr, **self.getTechConstr()}
         # add constraints defined in technology class
-        self.addConstr(self.getTechConstr(), replace = [tech, 'ConversionTechnology'], passValues = [tech])
+        self.addConstr(constr, replace = [tech, 'ConversionTechnology'], passValues = [tech])
 
         # add linear/nonlinear constraints to model capex and conversion efficiency
         for type, nonLinearTechs in self.analysis['nonlinearTechnologyApproximation'].items():
@@ -152,7 +156,8 @@ class ConversionTechnology(Technology):
         installTechnology     = getattr(model, f'install{tech}')
         capacityTechnology    = getattr(model, f'capacity{tech}')
 
-        return (minCapacityTechnology * installTechnology[node, time] <= capacityTechnology[node, time])
+        return (minCapacityTechnology * installTechnology[node, time]
+                <= capacityTechnology[node, time])
 
     @staticmethod
     def constraintConversionTechnologyMaxCapacityRule(model, tech, node, time):
@@ -226,6 +231,17 @@ class ConversionTechnology(Technology):
         
     #%% Constraint rules defined in current class - Operation
     @staticmethod
+    def constraintConversionTechnologyMaxOutputRule(model, tech, carrierOut, node, time):
+        """output is limited by the installed capacity"""
+
+        # variables
+        capacityTechnology  = getattr(model, f'capacity{tech}')
+        outputTechnology    = getattr(model, f'output{tech}')
+
+        return (capacityTechnology[node, time]
+                >= outputTechnology[carrierOut, node, time])
+
+    @staticmethod
     def constraintConversionTechnologyLinearConverEfficiencyRule(model, tech, carrierIn, carrierOut, node, time):
         """linearized conversion efficiency of conversion technology"""
         # segments
@@ -238,10 +254,10 @@ class ConversionTechnology(Technology):
         inputTechnologyAux = getattr(model,f'inputAux{tech}')
         outputTechnology   = getattr(model,f'output{tech}')
 
-        return(outputTechnology[carrierOut, node, time]
-                    == sum(slope[segment] * inputTechnologyAux[segment, carrierIn, node, time]
-                           + intercept[segment]*selectSegment[segment, node, time]
-                           for segment in setSegments))
+        return (outputTechnology[carrierOut, node, time]
+               == sum(slope[segment] * inputTechnologyAux[segment, carrierIn, node, time]
+                      + intercept[segment]*selectSegment[segment, node, time]
+                      for segment in setSegments))
 
     @staticmethod
     def constraintConversionTechnologyLinearConverEfficiencyLBRule(model, tech, segment, carrierIn, node, time):
@@ -253,8 +269,8 @@ class ConversionTechnology(Technology):
         inputTechnologyAux = getattr(model, f'inputAux{tech}')
         selectSegment      = getattr(model, f'selectSegmentConverEfficiency{tech}')
 
-        return(selectSegment[segment, node, time] * lbSegment[segment]
-                   <= inputTechnologyAux[segment, carrierIn, node, time])
+        return (selectSegment[segment, node, time] * lbSegment[segment]
+                <= inputTechnologyAux[segment, carrierIn, node, time])
 
     @staticmethod
     def constraintConversionTechnologyLinearConverEfficiencyUBRule(model, tech, segment, carrierIn, node, time):
@@ -279,7 +295,7 @@ class ConversionTechnology(Technology):
         inputTechnologyAux = getattr(model, f'inputAux{tech}')
         inputTechnology    = getattr(model, f'input{tech}')
 
-        return(sum(inputTechnologyAux[segment, carrierIn, node, time] for segment in setSegments)
+        return (sum(inputTechnologyAux[segment, carrierIn, node, time] for segment in setSegments)
                 == inputTechnology[carrierIn, node, time])
 
     @staticmethod
@@ -290,8 +306,9 @@ class ConversionTechnology(Technology):
         setSegments = getattr(model, f'setSegmentsConverEfficiency{tech}')
         # variables
         selectSegment     = getattr(model, f'selectSegmentConverEfficiency{tech}')
+        installTechnology = getattr(model, f'install{tech}')
 
-        return(sum(selectSegment[segment, node, time] for segment in setSegments) <= 1)
+        return(sum(selectSegment[segment, node, time] for segment in setSegments) <= installTechnology[node, time])
 
 
     #%% Constraint rules defined in current class - Capital Expenditures (Capex)
@@ -307,9 +324,11 @@ class ConversionTechnology(Technology):
         # variables
         capexTechnology       = getattr(model, f'capex{tech}')
         capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
+        selectSegment         = getattr(model, f'selectSegmentCapex{tech}')
 
         return (capexTechnology[node, time] ==
-                    sum(slope[segment] * capacityTechnologyAux[segment, node, time] + intercept[segment]
+                    sum(slope[segment] * capacityTechnologyAux[segment, node, time]
+                        + intercept[segment] * selectSegment[segment, node, time]
                         for segment in setSegments))
 
     @staticmethod
@@ -335,7 +354,7 @@ class ConversionTechnology(Technology):
         capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
         selectSegment         = getattr(model, f'selectSegmentCapex{tech}')
 
-        return(selectSegment[segment, node, time] * ubSegment[segment]
+        return (selectSegment[segment, node, time] * ubSegment[segment]
                 >= capacityTechnologyAux[segment, node, time])
 
     @staticmethod
@@ -348,7 +367,7 @@ class ConversionTechnology(Technology):
         capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
         capacityTechnology    = getattr(model, f'capacity{tech}')
 
-        return(sum(capacityTechnologyAux[segment, node, time] for segment in setSegments)
+        return (sum(capacityTechnologyAux[segment, node, time] for segment in setSegments)
                 == capacityTechnology[node, time])
 
     @staticmethod
@@ -361,7 +380,7 @@ class ConversionTechnology(Technology):
         installTechnology = getattr(model, f'install{tech}')
         selectSegment = getattr(model, f'selectSegmentCapex{tech}')
 
-        return(sum(selectSegment[segment, node, time] for segment in setSegments)
+        return (sum(selectSegment[segment, node, time] for segment in setSegments)
                 <= installTechnology[node, time])
 
     #%% TODO implement conditioning for e.g. hydrogen
