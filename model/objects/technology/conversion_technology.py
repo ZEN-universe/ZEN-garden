@@ -290,8 +290,9 @@ class ConversionTechnology(Technology):
         setSegments = getattr(model, f'setSegmentsConverEfficiency{tech}')
         # variables
         selectSegment     = getattr(model, f'selectSegmentConverEfficiency{tech}')
+        installTechnology = getattr(model, f'install{tech}')
 
-        return(sum(selectSegment[segment, node, time] for segment in setSegments) <= 1)
+        return(sum(selectSegment[segment, node, time] for segment in setSegments) <= installTechnology[node, time])
 
 
     #%% Constraint rules defined in current class - Capital Expenditures (Capex)
@@ -307,9 +308,11 @@ class ConversionTechnology(Technology):
         # variables
         capexTechnology       = getattr(model, f'capex{tech}')
         capacityTechnologyAux = getattr(model, f'capacityAux{tech}')
+        selectSegment         = getattr(model, f'selectSegmentCapex{tech}')
 
         return (capexTechnology[node, time] ==
-                    sum(slope[segment] * capacityTechnologyAux[segment, node, time] + intercept[segment]
+                    sum(slope[segment] * capacityTechnologyAux[segment, node, time]
+                        + intercept[segment] * selectSegment[segment, node, time]
                         for segment in setSegments))
 
     @staticmethod

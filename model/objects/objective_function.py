@@ -76,19 +76,19 @@ class ObjectiveFunction(Element):
 
         installCost = 0
 
-        # Conversion cost
+        # Capex conversion technologies
         installCost += sum(sum(sum(
             model.capexConversionTechnology[tech, node, time]
             for time in model.setTimeSteps)
                 for node in model.setNodes)
                     for tech in getattr(model, f'setConversionTechnologies'))
                 
-        # Transport cost
-        installCost += sum(sum(sum(
+        # Capex transport technologies
+        installCost += sum(sum(sum(sum(
             model.capexTransportTechnology[tech, node, aliasNode, time]
             for time in model.setTimeSteps)
-                for node in model.setNodes)
-                    for aliasNode in model.setAliasNodes
+                for node in model.setAliasNodes)
+                    for aliasNode in model.setNodes)
                         for tech in getattr(model, f'setTransportTechnologies'))
                 
         return installCost
@@ -108,22 +108,23 @@ class ObjectiveFunction(Element):
                             for node in model.setNodes)
                         for carrier in model.setOutputCarriers)
 
-        # Conversion and storage technologies
-        installCost = 0
-        for techType in ['Conversion', 'Storage']:
-            if hasattr(model, f'set{techType}Technologies'):
-                installCost += sum(sum(sum(model.installConversionTechnologies[tech, node, time]
+        # Capex Conversion and Storage technologies
+        technologies = ['Conversion', 'Storage']
+        for tech in technologies:
+            if hasattr(model, f'set{tech}Technologies'):
+                installCost += sum(sum(sum(get(model, f'capex{tech}Technology')[tech, node, time]
                                            for time in model.setTimeSteps)
-                                        for node in model.setNodes)
-                                    for tech in getattr(model, f'set{techType}Technologies'))
+                                       for node in model.setNodes)
+                                   for tech in getattr(model, f'setConversionTechnologies'))
 
-        # transport technologies
-        if hasattr(model, 'setTransport'):
-            installCost += sum(sum(sum(sum(model.installTransportTechnologies[tech, node, aliasNode, time]
-                                            for time in model.setTimeSteps)
-                                        for node in model.setNodes)
-                                    for aliasNode in model.setAliasNodes)
-                                for tech in model.setTransport)
+
+        # Capex transport technologies
+        if hasattr(model, f'setTransportTechnologies'):
+            installCost += sum(sum(sum(sum(model.capexTransportTechnology[tech, node, aliasNode, time]
+                                           for time in model.setTimeSteps)
+                                       for node in model.setAliasNodes)
+                                   for aliasNode in model.setNodes)
+                               for tech in getattr(model, f'setTransportTechnologies'))
     
         return(carrierImport - carrierExport + installCost)
 
