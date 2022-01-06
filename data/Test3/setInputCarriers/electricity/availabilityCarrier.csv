@@ -2,3 +2,9 @@ scenario,time,node,availabilityCarrier
 a,0,A,100
 a,0,B,100
 a,0,C,100
+a,1,A,100
+a,1,B,100
+a,1,C,100
+a,2,A,100
+a,2,B,100
+a,2,C,100

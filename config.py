@@ -31,7 +31,7 @@ system['setStorageTechnologies'] = []
 system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setConversionTechnologies'] = ['electrolysis']
 system['setScenarios'] = 'a'
-system['setTimeSteps'] = [0]
+system['setTimeSteps'] = [0,1]
 system['setNodes'] = list(string.ascii_uppercase[:3])
 
 ## Solver - settings update compared to default values
