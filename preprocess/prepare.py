@@ -19,7 +19,7 @@ from preprocess.functions.fill_nlp_dictionary import FillNlpDict
 
 class Prepare:
     
-    def __init__(self, analysis, system):
+    def __init__(self, config):
         """
         This class creates the dictionary containing all the input data
         organised per set according to the model formulation
@@ -28,11 +28,14 @@ class Prepare:
         """
         
         # instantiate analysis object
-        self.analysis = analysis
+        self.analysis = config.analysis
         
         # instantiate system object
-        self.system = system
-        
+        self.system = config.system
+
+        # instantiate the solver object
+        self.solver = config.solver
+
         # create a dictionary with the paths to access the model inputs
         self.createPaths()
         
@@ -126,7 +129,8 @@ class Prepare:
     def createPyoDict(self):
         """
         This method reshapes the input data dictionary into a dictionary 
-        with format compatible with Pyomo
+        with format compatible with Pyomo (pyoDict)
+        and creates the dictionary of data passed to the nonlinear solver (nlpDict)
         :param system: dictionary defining the system framework
         :param data: dictionary containing all the input data
         :return: dictionary with data based on system in Pyomo format      
@@ -149,8 +153,10 @@ class Prepare:
         # fill the dictionary with the PWA input data
         FillPyoDict.dataPWAApproximation(self)
 
-        self.nlpDict = {None:{}}
-        
+        self.nlpDict = {}
+
+        # create input arrays based on solver configuration
+        FillNlpDict.configSolver(self)
         # attach to the dictionary the interpolated functions
         FillNlpDict.functionNonlinearApproximation(self)
         

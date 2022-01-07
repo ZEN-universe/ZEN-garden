@@ -69,7 +69,6 @@ class ConversionTechnology(Technology):
         :param tech: conversion technology
         :param type: parameter type of the nonlinear function (capex or efficiency)"""
 
-        pass
        #TODO add non-linear formulations
 
     def addLinearConstraints(self, type, tech):

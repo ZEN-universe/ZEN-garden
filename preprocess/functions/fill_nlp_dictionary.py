@@ -8,11 +8,9 @@ Description:    Class to add to pyomo dictionary the nonlinear functions
 ==========================================================================================================================================================================="""
 from preprocess.functions.add_parameters import add_function
 from scipy.interpolate import interp1d
+import numpy as np
 
 class FillNlpDict:
-    
-    def __init__(self):
-        pass                  
     
     def functionNonlinearApproximation(self):
             
@@ -29,4 +27,31 @@ class FillNlpDict:
                         # key to use in the Pyomo dictionary
                         key = (technologyName)
                         # add the function to the Pyomo dictionary based on the key and the function object
-                        add_function(self.nlpDict[None], interp1d(x, y, kind='linear'), key, parameterName)
+                        add_function(self.nlpDict, interp1d(x, y, kind='linear'), key, parameterName)
+
+
+    def configSolver(self):
+
+        # derive parameters from those in config.solver
+        FEMax = self.solver['parametersMetaheuristic']['FEsMax']
+        k = self.solver['parametersMetaheuristic']['kNumber']
+        m = self.solver['parametersMetaheuristic']['mNumber']
+        self.solver['parametersMetaheuristic']['iterationsNumber'] = np.int(FEMax/(k+m))
+
+        # add parameters from solver or create arrays based on them
+        for parameterName in self.solver['parametersMetaheuristic'].keys():
+            if 'Number' in parameterName:
+                # create array of integers with length given by the input parameter
+                object = np.arange(self.solver['parametersMetaheuristic'][parameterName], dtype=np.int)
+                key = parameterName+'Array'
+            else:
+                object = self.solver['parametersMetaheuristic'][parameterName]
+                key = parameterName
+
+            # add the element to the dictionary based on the respective key
+            self.nlpDict[key] = object
+
+        if self.analysis['sense'] == 'minimize':
+            self.nlpDict['penalty'] = np.inf
+        elif self.analysis['sense'] == 'maximize':
+            self.nlpDict['penalty'] = -np.inf

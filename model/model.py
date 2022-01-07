@@ -100,6 +100,3 @@ class Model():
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
         self.results = self.opt.solve(self.instance, tee=True, logfile=solver['logfile'])
         self.instance.solutions.load_from(self.results)
-
-
-

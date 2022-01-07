@@ -243,24 +243,25 @@ class FillPyoDict:
         types = self.analysis['linearTechnologyApproximation'].keys()
         for technologyName in self.system[technologySubset]:
             for type in types:
-                if technologyName in self.analysis['linearTechnologyApproximation'][type]:
-                    df = self.data[technologySubset][technologyName][f'linear{type}']
-                elif technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
+                if technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
                     pass
                 else:
-                    df = self.data[technologySubset][technologyName][f'PWA{type}']
+                    if technologyName in self.analysis['linearTechnologyApproximation'][type]:
+                        df = self.data[technologySubset][technologyName][f'linear{type}']
+                    else:
+                        df = self.data[technologySubset][technologyName][f'PWA{type}']
+                    df['index'] = df.index.values
 
-                df['index'] = df.index.values
-                for parameterName in self.analysis['dataInputs']['PWA'].values():
-                    for supportPointPWA in df.index.values:
-                        name = f'{parameterName}{type}{technologyName}'
-                        # list of columns of the dataframe to use as indexes
-                        dfIndexNames = ['index']
-                        # index of the single cell in the dataframe to add to the dictionary
-                        dfIndex = supportPointPWA
-                        # column of the single cell in the dataframe to add to the dictionary
-                        dfColumn = self.analysis['dataInputs']['PWA'][parameterName]
-                        # key to use in the Pyomo dictionary
-                        key = (supportPointPWA)
-                        # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                        add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
+                    for parameterName in self.analysis['dataInputs']['PWA'].values():
+                        for supportPointPWA in df.index.values:
+                            name = f'{parameterName}{type}{technologyName}'
+                            # list of columns of the dataframe to use as indexes
+                            dfIndexNames = ['index']
+                            # index of the single cell in the dataframe to add to the dictionary
+                            dfIndex = supportPointPWA
+                            # column of the single cell in the dataframe to add to the dictionary
+                            dfColumn = self.analysis['dataInputs']['PWA'][parameterName]
+                            # key to use in the Pyomo dictionary
+                            key = (supportPointPWA)
+                            # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
+                            add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
