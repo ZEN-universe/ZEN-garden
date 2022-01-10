@@ -74,7 +74,7 @@ solver['MIPgap']    = 0.01
 solver['TimeLimit'] = 8760
 # log file of results
 solver['logfile'] = './/outputs//logs//pyomoLogFile.log'
-# typology of model solved
+# typology of model solved: MILP or MINLP
 solver['model']      = 'MILP'
 # parameters of meta-heuristic algorithm
 solver['parametersMetaheuristic'] = {'FEsMax':1e9, 'kNumber':90, 'mNumber':5, 'q':0.05099, 'xi':0.6795, 'epsilon':1e-5, 'MaxStagIter':650,
