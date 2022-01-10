@@ -72,7 +72,7 @@ class Technology(Element):
                                              \n\t Domain: Binary',
                      f'capacity{self.tech}': f'size of {self.tech} installed at time t. \
                                              \n\t Dimensions: {self.dim}, setTimeSteps. \
-                                             \n\t Domain: NonNegativeReals',
+                                             \n\t Domain: PositiveIntegers',
                      f'capex{self.tech}':    f'capital expenditures for installing {self.tech} time t. \
                                              \n\t Dimensions: {self.dim}, setTimeSteps. \
                                              \n\t Domain: NonNegativeReals'}

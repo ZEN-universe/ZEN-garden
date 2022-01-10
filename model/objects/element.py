@@ -17,7 +17,7 @@ class Element:
     variables   = dict()
     constraints = dict()
 
-    def __init__(self,object):
+    def __init__(self, object):
         """ initialization of an element
         :param model: object of the abstract optimization model"""
 

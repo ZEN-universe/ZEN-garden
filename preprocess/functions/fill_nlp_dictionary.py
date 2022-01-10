@@ -55,3 +55,17 @@ class FillNlpDict:
             self.nlpDict['penalty'] = np.inf
         elif self.analysis['sense'] == 'maximize':
             self.nlpDict['penalty'] = -np.inf
+
+    def collectDomainExtremes(self):
+
+        self.nlpDict['LB'] = {}
+        self.nlpDict['UB'] = {}
+
+        for variableName in self.analysis['variablesNonlinearModel']:
+            for technologyName in self.analysis['variablesNonlinearModel'][variableName]:
+                if variableName == 'capacity':
+                    for setName in ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']:
+                        if technologyName in self.pyoDict[None][setName][None]:
+                            self.nlpDict['LB'][variableName+technologyName] = self.pyoDict[None]['minCapacity'+technologyName][None]
+                            self.nlpDict['UB'][variableName+technologyName] = self.pyoDict[None]['maxCapacity' + technologyName][None]
+

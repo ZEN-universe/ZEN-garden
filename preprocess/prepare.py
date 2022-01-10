@@ -159,6 +159,8 @@ class Prepare:
         FillNlpDict.configSolver(self)
         # attach to the dictionary the interpolated functions
         FillNlpDict.functionNonlinearApproximation(self)
+        # collect data concerning the variables' domain
+        FillNlpDict.collectDomainExtremes(self)
         
     def checkData(self):
         # TODO: define a routine to check the consistency of the data w.r.t.
