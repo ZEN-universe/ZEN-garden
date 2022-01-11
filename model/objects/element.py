@@ -25,6 +25,7 @@ class Element:
         self.analysis = object.analysis
         self.system = object.system
 
+
     def getProperties(self, properties):
         """get properties (doc, dimensions, domain)
         :param  properties:      parameter, variable or constraint properties

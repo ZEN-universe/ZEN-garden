@@ -55,8 +55,8 @@ class ConversionTechnology(Technology):
         self.addConstr(constr, replace = [tech, 'ConversionTechnology'], passValues = [tech])
 
         # add linear/nonlinear constraints to model capex and conversion efficiency
-        for type, nonLinearTechs in self.analysis['nonlinearTechnologyApproximation'].items():
-            if tech in nonLinearTechs:
+        for type in self.analysis['nonlinearTechnologyApproximation'].keys():
+            if tech in self.analysis['nonlinearTechnologyApproximation'][type]:
                 self.addNonlinearConstraints(type, tech)
             else:
                 self.addLinearConstraints(type, tech)
@@ -176,17 +176,16 @@ class ConversionTechnology(Technology):
     def constraintConversionTechnologyLifetimeRule(model, tech, node, time):
         """limited lifetime of the technology"""
 
-        # parameters
-        lifetime = getattr(model, f'lifetime{tech}')
         # variables
-        capacityTechnology = getattr(model, f'capacity{tech}')
-
+        capacityTechnology      = getattr(model, f'capacity{tech}')
+        buildCapacityTechnology = getattr(model, f'buildCapacity{tech}')
         # time range
-        t_start = max(1, t - lifetime + 1)
+        t_start = max(0, time - getattr(model, f'lifetime{tech}') + 1)
         t_end = time + 1
 
         return (capacityTechnology[node, time]
-                == sum((capacityTechnology[node, t + 1] - capacityTechnology[node, t] for t in range(t_start, t_end))))
+                == sum(buildCapacityTechnology[node, t] for t in range(t_start, t_end)))
+
 
     @staticmethod
     def constraintConversionTechnologyMinCapacityExpansionRule(model, tech, node, time):
@@ -195,11 +194,11 @@ class ConversionTechnology(Technology):
         # parameters
         minCapacityExpansion = getattr(model, f'minCapacityExpansion{tech}')
         # variables
-        expandTechnology   = getattr(model, f'expand{tech}')
-        capacityTechnology = getattr(model, f'capacity{tech}')
+        expandTechnology        = getattr(model, f'expand{tech}')
+        buildCapacityTechnology = getattr(model, f'buildCapacity{tech}')
 
         return (expandTechnology[node, t] * minCapacityExpansion
-                >= capacityTechnology[node, time] - capacityTechnology[node, time])
+                >= buildCapacityTechnology[node, t])
 
     @staticmethod
     def constraintConversionTechnologyMaxCapacityExpansionRule(model, tech, node, time):
@@ -208,11 +207,11 @@ class ConversionTechnology(Technology):
         # parameters
         maxCapacityExpansion = getattr(model, f'maxCapacityExpansion{tech}')
         # variables
-        expandTechnology = getattr(model, f'expand{tech}')
-        capacityTechnology = getattr(model, f'capacity{tech}')
+        expandTechnology        = getattr(model, f'expand{tech}')
+        buildCapacityTechnology = getattr(model, f'buildCapacity{tech}')
 
         return (expandTechnology[node, t] * maxCapacityExpansion
-                <= capacityTechnology[node, time] - capacityTechnology[node, time])
+                <= buildCapacityTechnology[node, time])
 
     @staticmethod
     def constraintConversionTechnologyLimitedCapacityExpansionRule(model, tech, node, time):
@@ -221,13 +220,14 @@ class ConversionTechnology(Technology):
         # parameters
         lifetime = getattr(model, f'lifetime{tech}')
         # variables
+        installCapacity  = getattr(model, f'install{tech}')
         expandTechnology = getattr(model, f'expand{tech}')
 
         # time range
-        t_start = max(1, t - lifetime + 1)
+        t_start = max(0, t - lifetime + 1)
         t_end = time + 1
 
-        return (sum(expandTechnology[node, t] for t in range(t_start, t_end)) <= 1)
+        return (sum(expandTechnology[node, t] for t in range(t_start, t_end)) <= installCapacity[node, t])
         
     #%% Constraint rules defined in current class - Operation
     @staticmethod
@@ -258,6 +258,7 @@ class ConversionTechnology(Technology):
                == sum(slope[segment] * inputTechnologyAux[segment, carrierIn, node, time]
                       + intercept[segment]*selectSegment[segment, node, time]
                       for segment in setSegments))
+
 
     @staticmethod
     def constraintConversionTechnologyLinearConverEfficiencyLBRule(model, tech, segment, carrierIn, node, time):

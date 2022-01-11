@@ -56,10 +56,10 @@ class Technology(Element):
         params = {f'minCapacity{self.tech}':  f'Parameter which specifies the minimum {self.tech} size that can be installed',
                   f'maxCapacity{self.tech}':  f'Parameter which specifies the maximum {self.tech} size that can be installed',
                   f'maxCapacity{self.tech}':  f'Parameter which specifies the maximum {self.tech} size that can be installed',
+                  f'lifetime{self.tech}':     f'Parameter which specifies the lifetime of {self.tech}.',
                   f'availability{self.tech}': f'node- and time-dependent availability of {self.tech}.\
                                               \n\t Dimensions: {self.dim}, setTimeSteps'}
-        ## limited technology lifetime
-        # f'lifetime{self.tech}' parameter that specifies the lifetime of a technology
+
 
         return params
 
@@ -67,15 +67,19 @@ class Technology(Element):
         """ get the variables of the technology type
         :return vars: return dictionary containing the technology variables"""
 
-        variables = {f'install{self.tech}':  f'installment of a {self.tech} at node i and time t. \
-                                             \n\t Dimensions: {self.dim}, setTimeSteps.\
-                                             \n\t Domain: Binary',
-                     f'capacity{self.tech}': f'size of {self.tech} installed at time t. \
-                                             \n\t Dimensions: {self.dim}, setTimeSteps. \
-                                             \n\t Domain: NonNegativeReals',
-                     f'capex{self.tech}':    f'capital expenditures for installing {self.tech} time t. \
-                                             \n\t Dimensions: {self.dim}, setTimeSteps. \
-                                             \n\t Domain: NonNegativeReals'}
+        variables = {
+            f'install{self.tech}':       f'installment of a {self.tech} at node i and time t. \
+                                         \n\t Dimensions: {self.dim}, setTimeSteps.\
+                                         \n\t Domain: Binary',
+            f'capacity{self.tech}':      f'size of {self.tech} installed at time t. \
+                                         \n\t Dimensions: {self.dim}, setTimeSteps. \
+                                         \n\t Domain: NonNegativeReals',
+            f'buildCapacity{self.tech}': f'size of {self.tech} build at time t. \
+                                         \n\t Dimensions: {self.dim}, setTimeSteps. \
+                                         \n\t Domain: NonNegativeReals',
+            f'capex{self.tech}':         f'capital expenditures for installing {self.tech} time t. \
+                                         \n\t Dimensions: {self.dim}, setTimeSteps. \
+                                         \n\t Domain: NonNegativeReals'}
 
         ## to enable technology expansion add the following binary variable
         # f'expand{self.tech}' which is a binary decision variable to model if the technology capacity is expanded over its lifetime'
@@ -91,10 +95,9 @@ class Technology(Element):
                        f'{self.tech}MinCapacity':      f'min capacity of {self.tech} technology. \
                                                        \n\t Dimensions: {self.dim}, setTimeSteps',
                        f'{self.tech}MaxCapacity':      f'max capacity of {self.tech} technology. \
+                                                       \n\t Dimensions: {self.dim}, setTimeSteps',
+                       f'{self.tech}Lifetime':         f'limited lifetime of {self.tech} technology. \
                                                        \n\t Dimensions: {self.dim}, setTimeSteps'}
-        ## limited technology lifetime
-        # f'{self.tech}LimitedLifetime':  f'limited lifetime of {self.tech} technology. \
-        #                                 \n\t Dimensions: {self.dim}, setTimeSteps'
         ## to enable technology expansion add the following constraints
         # f'{self.tech}MinCapacityExpansionRule', f'{self.tech}MaxCapacityExpansionRule', f'{self.tech}LimitCapacityExpansionRule'
 

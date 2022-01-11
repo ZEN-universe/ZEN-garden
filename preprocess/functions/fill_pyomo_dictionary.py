@@ -166,8 +166,8 @@ class FillPyoDict:
         #         so it is less "hard-coded"?
 
         parameterName = 'attributes'
-        attributes = {'setConversionTechnologies': ['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex'],
-                      'setTransportTechnologies':  ['minCapacity', 'maxCapacity', 'minFlow', 'maxFlow', 'lossFlow', 'valueCapex']}
+        attributes = {'setConversionTechnologies': ['minCapacity', 'maxCapacity', 'minLoad', 'maxLoad', 'valueCapex', 'lifetime'],
+                      'setTransportTechnologies':  ['minCapacity', 'maxCapacity', 'minFlow', 'maxFlow', 'lossFlow', 'valueCapex', 'lifetime']}
 
         for technologySubset in ['setConversionTechnologies', 'setTransportTechnologies']:
             for technologyName in self.system[technologySubset]:

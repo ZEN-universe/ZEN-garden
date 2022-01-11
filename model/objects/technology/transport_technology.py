@@ -129,21 +129,18 @@ class TransportTechnology(Technology):
                     >= capacityTechnology[node, aliasNode, time])
 
     @staticmethod
-    def constraintTransportTechnologyLimitedLifetimeRule(model, tech, node, aliasNode, time):
+    def constraintTransportTechnologyLifetimeRule(model, tech, node, aliasNode, time):
         """limited lifetime of the technologies"""
 
-        # parameters
-        lifetime = getattr(model, f'lifetime{tech}')
         # variables
-        capacityTechnology = getattr(model, f'capacity{tech}')
-
+        capacityTechnology      = getattr(model, f'capacity{tech}')
+        buildCapacityTechnology = getattr(model, f'buildCapacity{tech}')
         # time range
-        t_start = max(1, t - lifetime + 1)
+        t_start = max(0, time - getattr(model, f'lifetime{tech}') + 1)
         t_end = time + 1
 
         return (capacityTechnology[node, aliasNode, time]
-                == sum((capacityTechnology[node, aliasNode, t + 1] - capacityTechnology[node, aliasNode, t]
-                        for t in range(t_start, t_end))))
+                == sum(buildCapacityTechnology[node, aliasNode, t] for t in range(t_start, t_end)))
 
     @staticmethod
     def constraintTransportTechnologyMinCapacityExpansionRule(model, tech, node, aliasNode, time):
@@ -153,10 +150,10 @@ class TransportTechnology(Technology):
         minCapacityExpansion = getattr(model, f'minCapacityExpansion{tech}')
         # variables
         expandTechnology = getattr(model, f'expand{tech}')
-        capacityTechnology = getattr(model, f'capacity{tech}')
+        buildCapacityTechnology = getattr(model, f'buildCapacity{tech}')
 
         return (expandTechnology[node, aliasNode, t] * minCapacityExpansion
-                >= capacityTechnology[node, aliasNode, time] - capacityTechnology[node, aliasNode, time])
+                >= buildCapacityTechnology[node, aliasNode, time])
 
     @staticmethod
     def constraintTransportTechnologyMaxCapacityExpansionRule(model, tech, node, aliasNode, time):
@@ -169,7 +166,7 @@ class TransportTechnology(Technology):
         capacityTechnology = getattr(model, f'capacity{tech}')
 
         return (expandTechnology[node, aliasNode, t] * maxCapacityExpansion
-                <= capacityTechnology[node, aliasNode, time] - capacityTechnology[node, aliasNode, time])
+                <= buildCapacityTechnology[node, aliasNode, time])
 
     @staticmethod
     def constraintConversionTechnologyLimitedCapacityExpansionRule(model, tech, node, aliasNode, time):
@@ -179,12 +176,13 @@ class TransportTechnology(Technology):
         lifetime = getattr(model, f'lifetime{tech}')
         # variables
         installTechnology = getattr(model, f'install{tech}')
+        expandTechnology  = getattr(model, f'expandit{tech}')
 
         # time range
         t_start = max(1, t - lifetime + 1)
         t_end = time + 1
 
-        return (sum(installTechnology[node, aliasNode, t] for t in range(t_start, t_end)) <= 1)
+        return (sum(expandTechnology[node, aliasNode, t] for t in range(t_start, t_end)) <= installTechnology[node, aliasNode, t])
 
 
     #%% Contraint rules defined in current class - Operation
@@ -212,7 +210,7 @@ class TransportTechnology(Technology):
         carrierFlowTechnology = getattr(model, f'carrierFlow{tech}')
 
         return (carrierFlowTechnology[carrier, node, aliasNode, time]
-                    <= maxFlowTechnology * capacityTechnologyAux[node, aliasNode, time])
+                <= maxFlowTechnology * capacityTechnologyAux[node, aliasNode, time])
 
     @staticmethod
     def constraintTransportTechnologySelection1Rule(model, tech, node, aliasNode, time):
