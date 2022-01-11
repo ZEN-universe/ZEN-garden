@@ -33,4 +33,7 @@ model.solve(config.solver, prepare.pyoDict)
 
 # EVALUATE RESULTS
 evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
-print(evaluation)
+
+# CREATE DICTIONARY TO VISUALIZE RESULTS IN DASHBOARD
+
+

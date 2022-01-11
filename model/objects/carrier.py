@@ -58,7 +58,8 @@ class Carrier(Element):
 
         logging.info('added carrier sets, parameters, decision variables and constraints')
 
-    #%% Rules constraints defined in current class
+
+    #%% Constraint rules defined in current class
     @staticmethod
     def constraintAvailabilityCarrierRule(model, carrier, node, time):
         """node- and time-dependent carrier availability"""

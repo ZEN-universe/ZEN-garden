@@ -28,6 +28,7 @@ class ObjectiveFunction(Element):
                                 sense = getattr(pe,   objSense))
         setattr(self.model, objFunc, peObj)
 
+
     def addAuxiliaryConstraints(self):
         """add auxiliary constraints for more direct formulation of the objective function"""
 
@@ -47,8 +48,7 @@ class ObjectiveFunction(Element):
                                                     \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps.'}
         self.addConstr(constr)
 
-    #%% RULES
-    # Auxiliary constraints
+    #%% Constraint rules defined in current class - Auxiliary constraints
     @staticmethod
     def constraintConversionTechnologyLinearCapexValueRule(model, tech, node, time):
         """definition of capex variable appearing in objective function"""
@@ -69,7 +69,7 @@ class ObjectiveFunction(Element):
         return(model.capexTransportTechnology[tech, node, aliasNode, time]
                == capexTransportTechnology[node, aliasNode, time])
 
-    # Objective functions
+    #%% Objective functions
     @staticmethod
     def objectiveBasicTotalCostRule(model):
         " basic cost rule with PWA capex and linear transport cost"

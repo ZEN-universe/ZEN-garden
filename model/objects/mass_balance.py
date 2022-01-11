@@ -23,8 +23,8 @@ class MassBalance(Element):
             }
         self.addConstr(constraint)  
 
-#%% Constraint rules defined in current class
-        
+
+    #%% Constraint rules defined in current class
     @staticmethod
     def constraintNodalMassBalanceRule(model, carrier, node, time):
         """" 
