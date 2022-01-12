@@ -11,6 +11,7 @@ Description:  Class defining the metaheuristic algorithm.
 ==========================================================================================================================================================================="""
 import logging
 from model.metaheuristic.variables import Variables
+from model.metaheuristic.solutions import Solutions
 
 class Metaheuristic:
 
@@ -22,12 +23,16 @@ class Metaheuristic:
         self.analysis = model.analysis
         # instantiate system
         self.system = model.system
+        # instantiate dictionary containing all the required hyperparamters and input data
+        self.nlpDict = nlpDict
 
+        # collect the properties of the decision variables handled by the metaheuristic
         self.dictVars = {}
-        # TODO: define the delta in an input file
-        # delta discretization
-        nlpDict['DS']= {'capacityelectrolysis': 1E3}
-        Variables(self, model, nlpDict)
+        Vars = Variables(self, model)
+
+        for run in nlpDict['hyperparameters']['runsNumberArray']:
+            # instantiate the class containing all the methods for the generation and modification of solutions
+            Solution = Solutions(self, run)
 
         # for run in nlpDict['runsNumberArray']:
         #     # initialize run

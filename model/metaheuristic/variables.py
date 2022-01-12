@@ -1,22 +1,31 @@
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      January-2022
+Authors:      Davide Tonelli (davidetonelli@outlook.com)
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+
+Description:  Class interfacing the declaration of variables and parameters in the slave algorithm with the master algorithm.
+==========================================================================================================================================================================="""
+
 from model.objects.element import Element
 import itertools
 import numpy as np
 
 class Variables:
 
-    def __init__(self, object, model, nlpDict):
+    def __init__(self, object, model):
 
         # inherit attributes from parent class
         self.model = model.model
         self.analysis = object.analysis
         self.system = object.system
         self.dictVars = object.dictVars
-        self.nlpDict = nlpDict
+        self.nlpDict = object.nlpDict
 
         # define the variables input and output of the master algorithm
         self.collectVariables()
         # collect the attributes necessary to handle the solution archive
-        self.createInputsArchive()
+        self.createInputsSolutionArchive()
 
     def collectVariables(self):
         """"create a dictionary containing the set of variables subject to nonlinearities.
@@ -67,7 +76,10 @@ class Variables:
             'domain': domain.local_name
         }
 
-    def createInputsArchive(self):
+    def createInputsSolutionArchive(self):
+        """collect inputs in the format of the solution archive concerning the variables domain.
+        :return:  dictionary with additional keys
+        """
         for varType in ['R', 'O']:
             self.dictVars[varType] = {'names': []}
 
@@ -97,8 +109,8 @@ class Variables:
             for idx in self.dictVars[type]['idxArray']:
                 name = self.dictVars[type]['idx_to_name'][idx].split('_')[0]
                 if type == 'R':
-                    self.dictVars[type]['LBArray'][0, idx] = self.nlpDict['LB'][name]
-                    self.dictVars[type]['UBArray'][0, idx] = self.nlpDict['UB'][name]
+                    self.dictVars[type]['LBArray'][0, idx] = self.nlpDict['data']['LB'][name]
+                    self.dictVars[type]['UBArray'][0, idx] = self.nlpDict['data']['UB'][name]
                 elif type == 'O':
                     self.dictVars[type]['LBArray'][0, idx] = 0
-                    self.dictVars[type]['UBArray'][0, idx] = np.int(self.nlpDict['UB'][name]/self.nlpDict['DS'][name])
+                    self.dictVars[type]['UBArray'][0, idx] = np.int(self.nlpDict['data']['UB'][name]/self.nlpDict['DS'][name])

@@ -13,7 +13,8 @@ import numpy as np
 class FillNlpDict:
     
     def functionNonlinearApproximation(self):
-            
+
+        self.nlpDict['data'] = {}
         technologySubsets = ['setConversionTechnologies']
 
         for technologySubset in technologySubsets:
@@ -27,10 +28,12 @@ class FillNlpDict:
                         # key to use in the Pyomo dictionary
                         key = (technologyName)
                         # add the function to the Pyomo dictionary based on the key and the function object
-                        add_function(self.nlpDict, interp1d(x, y, kind='linear'), key, parameterName)
+                        add_function(self.nlpDict['data'], interp1d(x, y, kind='linear'), key, parameterName)
 
 
     def configSolver(self):
+
+        self.nlpDict['hyperparameters'] = {}
 
         # derive parameters from those in config.solver
         FEMax = self.solver['parametersMetaheuristic']['FEsMax']
@@ -49,23 +52,24 @@ class FillNlpDict:
                 key = parameterName
 
             # add the element to the dictionary based on the respective key
-            self.nlpDict[key] = object
+            self.nlpDict['hyperparameters'][key] = object
 
         if self.analysis['sense'] == 'minimize':
-            self.nlpDict['penalty'] = np.inf
+            self.nlpDict['hyperparameters']['penalty'] = np.inf
         elif self.analysis['sense'] == 'maximize':
-            self.nlpDict['penalty'] = -np.inf
+            self.nlpDict['hyperparameters']['penalty'] = -np.inf
 
     def collectDomainExtremes(self):
 
-        self.nlpDict['LB'] = {}
-        self.nlpDict['UB'] = {}
+        self.nlpDict['data']['LB'] = {}
+        self.nlpDict['data']['UB'] = {}
+        self.nlpDict['data']['DS'] = {}
 
         for variableName in self.analysis['variablesNonlinearModel']:
             for technologyName in self.analysis['variablesNonlinearModel'][variableName]:
                 if variableName == 'capacity':
                     for setName in ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']:
                         if technologyName in self.pyoDict[None][setName][None]:
-                            self.nlpDict['LB'][variableName+technologyName] = self.pyoDict[None]['minCapacity'+technologyName][None]
-                            self.nlpDict['UB'][variableName+technologyName] = self.pyoDict[None]['maxCapacity' + technologyName][None]
-
+                            self.nlpDict['data']['LB'][variableName+technologyName] = self.pyoDict[None]['minCapacity'+technologyName][None]
+                            self.nlpDict['data']['UB'][variableName+technologyName] = self.pyoDict[None]['maxCapacity' + technologyName][None]
+                            self.nlpDict['data']['DS'][variableName + technologyName] = self.pyoDict[None]['deltaCapacity' + technologyName][None]
