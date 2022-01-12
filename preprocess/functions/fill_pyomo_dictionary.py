@@ -23,7 +23,7 @@ class FillPyoDict:
         for setName in self.system.keys():
             if 'set' in setName:
                 # create sets
-                self.pyoDict[None][setName] = {None: self.system[setName]}
+                self.pyoDict[setName] = {None: self.system[setName]}
         
     def carrierParameters(self):
         """
@@ -59,7 +59,7 @@ class FillPyoDict:
                             # key to use in the Pyomo dictionary
                             key = (carrierName, nodeName, timeName)
                             # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                            add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, parameterName)                            
+                            add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName)                            
                                 
     def technologyTranspParameters(self):
         """
@@ -88,7 +88,7 @@ class FillPyoDict:
                             # key to use in the Pyomo dictionary
                             name = parameterName + technologyName
                             # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                            add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
+                            add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName, technologyName)
 
         parameterName = 'distance'
         #TODO implement a method so we can choose between using the acutal distances depending on the mode of transport
@@ -115,7 +115,7 @@ class FillPyoDict:
                         # key to use in the Pyomo dictionary
                         name = parameterName + technologyName
                         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                        add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
+                        add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName, technologyName)
 
 
     def technologyConversionStorageParameters(self):
@@ -153,7 +153,7 @@ class FillPyoDict:
                             # name to use in the Pyomo dictionary
                             name = parameterName + technologyName
                             # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                            add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
+                            add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName, technologyName)
     
     def attributes(self):
         """
@@ -170,26 +170,31 @@ class FillPyoDict:
                       'setTransportTechnologies':  ['minCapacity', 'maxCapacity', 'minFlow', 'maxFlow', 'lossFlow', 'valueCapex', 'lifetime']}
 
         for technologySubset in ['setConversionTechnologies', 'setTransportTechnologies']:
-            for technologyName in self.system[technologySubset]:
-                for attribute in attributes[technologySubset]:
-                    self.pyoDict[None][attribute+technologyName] = {}
+            for attribute in attributes[technologySubset]:
+                if attribute not in self.pyoDict:
+                    self.pyoDict[attribute] = {}
+                for technologyName in self.system[technologySubset]:
+                    self.pyoDict[attribute][technologyName] = {}
                     # dataframe stored in data
                     df = self.data[technologySubset][technologyName][parameterName].set_index(['index'])
                     # Pyomo dictionary key
                     key = None
                     # add the parameter to the Pyomo dictionary
-                    self.pyoDict[None][attribute + technologyName][key] = df.loc[attribute, parameterName]
+                    # self.pyoDict[attribute][technologyName][key] = df.loc[attribute, parameterName]
+                    self.pyoDict[attribute][technologyName] = df.loc[attribute, parameterName]
 
         technologySubset = 'setTransportTechnologies'
+        self.pyoDict['setTransportCarriers'] = {}
         for technologyName in self.system[technologySubset]:
+            self.pyoDict['setTransportCarriers'][technologyName] = []
             for carrierName in set(self.system['setOutputCarriers']+self.system['setInputCarriers']):
                 if carrierName in technologyName:
-                    self.pyoDict[None]['setTransportCarriers'+technologyName] = {None:[carrierName]}
+                    self.pyoDict['setTransportCarriers'][technologyName].append(carrierName)
 
                 
         technologySubset = 'setStorageTechnologies'        
         for parameterName in ['minCapacityStorage', 'maxCapacityStorage']:
-            self.pyoDict[None][parameterName] = {}
+            self.pyoDict[parameterName] = {}
             for nodeName in self.system['setNodes']:
                 for technologyName in self.system[technologySubset]:
                     # dataframe stored in data 
@@ -199,7 +204,7 @@ class FillPyoDict:
                     # value to use in the Pyomo dictionary
                     value = df.loc[nodeName, parameterName]
                     # add the parameter to the Pyomo dictionary
-                    self.pyoDict[None][parameterName][key] = value           
+                    self.pyoDict[parameterName][key] = value           
 
     def conversionBalanceParameters(self):
         """
@@ -220,11 +225,11 @@ class FillPyoDict:
             setInputCarriers  = df[dfIndexName].tolist()
             setOutputCarriers = df.columns.tolist()[1:]
             # add input and output carrier set to pyoDict
-            self.pyoDict[None][f'setInputCarriers{technologyName}'] = {None: setInputCarriers}
-            self.pyoDict[None][f'setOutputCarriers{technologyName}'] = {None: setOutputCarriers}
+            self.pyoDict[f'setInputCarriers{technologyName}'] = {None: setInputCarriers}
+            self.pyoDict[f'setOutputCarriers{technologyName}'] = {None: setOutputCarriers}
 
             for carrierIn in setInputCarriers:
-                 for carrierOut in setOutputCarriers:
+                for carrierOut in setOutputCarriers:
                     # index of the single cell in the dataframe to add to the dictionary
                     dfIndex = carrierIn
                     # column of the single cell in the dataframe to add to the dictionary
@@ -234,7 +239,7 @@ class FillPyoDict:
                     #  name to use in the Pyomo dictionary
                     name = parameterName + technologyName
                     # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                    add_parameter(self.pyoDict[None], df, dfIndexName, dfIndex, dfColumn, key, name)
+                    add_parameter(self.pyoDict, df, dfIndexName, dfIndex, dfColumn, key, parameterName, technologyName)
 
     def dataPWAApproximation(self):
         
@@ -253,7 +258,8 @@ class FillPyoDict:
                 df['index'] = df.index.values
                 for parameterName in self.analysis['dataInputs']['PWA'].values():
                     for supportPointPWA in df.index.values:
-                        name = f'{parameterName}{type}{technologyName}'
+                        # name = f'{parameterName}{type}{technologyName}'
+                        name = f'{parameterName}{type}'
                         # list of columns of the dataframe to use as indexes
                         dfIndexNames = ['index']
                         # index of the single cell in the dataframe to add to the dictionary
@@ -263,4 +269,4 @@ class FillPyoDict:
                         # key to use in the Pyomo dictionary
                         key = (supportPointPWA)
                         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                        add_parameter(self.pyoDict[None], df, dfIndexNames, dfIndex, dfColumn, key, name)
+                        add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, name, technologyName)

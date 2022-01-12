@@ -4,10 +4,10 @@ Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class defining the abstract optimization model.
+Description:  Class defining the Concrete optimization model.
               The class takes as inputs the properties of the optimization problem. The properties are saved in the
-              dictionaries analysis and system which are passed to the class. After initializing the abstract model, the
-              class adds carriers and technologies to the abstract model and returns the abstract optimization model.
+              dictionaries analysis and system which are passed to the class. After initializing the Concrete model, the
+              class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
 import logging
@@ -22,14 +22,16 @@ from model.objects.mass_balance import MassBalance
 
 class Model():
 
-    def __init__(self, analysis, system):
-        """create Pyomo Abstract Model
+    def __init__(self, analysis, system, pyoDict):
+        """create Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system"""
+        :param system: dictionary defining the system
+        :param pyoDict: input dictionary of optimization """
         self.analysis = analysis
         self.system = system
+        self.pyoDict = pyoDict
 
-        self.model = pe.AbstractModel()
+        self.model = pe.ConcreteModel()
         self.addSets()
         self.addElements()
         self.addObjectiveFunction()
@@ -49,7 +51,7 @@ class Model():
         # 'setTechnologies' includes the subsets 'setTransportTechnologies', 'setConversionTechnologies', 'setStorageTechnologies'
         
         sets = {'setCarriers':      'Set of carriers',
-                'setTechnologies': 'Set of technologies',
+                'setTechnologies':  'Set of technologies',
                 'setTimeSteps':     'Set of time-steps',
                 'setNodes':         'Set of nodes',
                 'setAliasNodes':    'Copy of the set of nodes to model edges. Subset: setNodes'
@@ -63,12 +65,15 @@ class Model():
         :param system: dictionary defining the system"""
 
         # add carrier parameters, variables, and constraints
-        Carrier(self)
+        for carrier in self.system["setCarriers"]:
+            Carrier(self,carrier)
+            break ##### TODO only for now to avoid error in construction of set
         # add technology parameters, variables, and constraints
         for conversionTech in self.system['setConversionTechnologies']:
             ConversionTechnology(self, conversionTech)
         for transportTech in self.system['setTransportTechnologies']:
             TransportTechnology(self, transportTech)
+        a=1
         # TODO implement storage technologies
         # for storageTech in self.system['setStorageTechnologies']:
         #     print("Storage Technologies are not yet implemented")

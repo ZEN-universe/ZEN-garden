@@ -132,7 +132,7 @@ class Prepare:
         :return: dictionary with data based on system in Pyomo format      
         """
         
-        self.pyoDict = {None:{}}
+        self.pyoDict = {}   
         
         # fill the dictionary with the sets based on system 
         FillPyoDict.sets(self)

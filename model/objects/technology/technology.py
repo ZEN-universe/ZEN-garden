@@ -13,6 +13,8 @@ import logging
 from model.objects.element import Element
 
 class Technology(Element):
+    # empty list of elements
+    listOfElements = []
 
     def __init__(self, object, technologyType, technology):
         """init generic technology object
@@ -21,10 +23,18 @@ class Technology(Element):
         :param technology: technology that is added to the model"""
 
         logging.info('initialize object of a generic technology')
-        super().__init__(object)
+        super().__init__(object,technology)
         self.type = technologyType
         self.tech = technology
         self.dim  = self.getDimensions()
+
+        # set attributes
+        self.minCapacity = object.pyoDict["minCapacity"][technology]
+        self.maxCapacity = object.pyoDict["maxCapacity"][technology]
+        self.lifetime = object.pyoDict["lifetime"][technology]
+        self.availability = object.pyoDict["availability"][technology]
+        # add Technology to list
+        Technology.addElement(self)
 
         if not hasattr(self.model, f'set{self.type}Technologies'):
             sets = {f'set{self.type}Technologies': f'Set of {self.type} technologies. Subset: setTechnologies'}
@@ -55,7 +65,7 @@ class Technology(Element):
 
         params = {f'minCapacity{self.tech}':  f'Parameter which specifies the minimum {self.tech} size that can be installed',
                   f'maxCapacity{self.tech}':  f'Parameter which specifies the maximum {self.tech} size that can be installed',
-                  f'maxCapacity{self.tech}':  f'Parameter which specifies the maximum {self.tech} size that can be installed',
+                #   f'maxCapacity{self.tech}':  f'Parameter which specifies the maximum {self.tech} size that can be installed',
                   f'lifetime{self.tech}':     f'Parameter which specifies the lifetime of {self.tech}.',
                   f'availability{self.tech}': f'node- and time-dependent availability of {self.tech}.\
                                               \n\t Dimensions: {self.dim}, setTimeSteps'}
@@ -102,3 +112,5 @@ class Technology(Element):
         # f'{self.tech}MinCapacityExpansionRule', f'{self.tech}MaxCapacityExpansionRule', f'{self.tech}LimitCapacityExpansionRule'
 
         return constraints
+
+    

@@ -8,23 +8,31 @@ Description:  Class defining a standard element. Contains methods to add paramet
               optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
               optimization model as an input.
 ==========================================================================================================================================================================="""
+import logging
 import pyomo.environ as pe
 
 class Element:
+    # empty list of elements
+    listOfElements = []
 
     subsets     = dict()
     params      = dict()
     variables   = dict()
     constraints = dict()
 
-    def __init__(self,object):
+    def __init__(self,object,element):
         """ initialization of an element
-        :param model: object of the abstract optimization model"""
+        :param object: object of the abstract optimization model
+        :param element: element that is added to the model"""
 
         self.model = object.model
         self.analysis = object.analysis
         self.system = object.system
-
+        # set attributes
+        self.name = element
+        
+        # add element to list
+        Element.addElement(self)
 
     def getProperties(self, properties):
         """get properties (doc, dimensions, domain)
@@ -120,3 +128,25 @@ class Element:
 
             setattr(self.model, f'constraint{constr}', peConstr)
                       
+    # classmethods
+    @classmethod
+    def addElement(cls,element):
+        """ add element to element list. Inherited by child classes.
+        :param element: new element that is to be added to the list """
+        cls.listOfElements.append(element)
+
+    @classmethod
+    def getAllElements(cls):
+        """ get all elements in class. Inherited by child classes.
+        :return cls.listOfElements: list of elements in this class """
+        return cls.listOfElements
+
+    @classmethod
+    def getElement(cls,name:str):
+        """ get single element in class by name. Inherited by child classes.
+        :param name: name of element
+        :return element: return element whose name is matched """
+        for element in cls.listOfElements:
+            if element.name == name:
+                return element
+        return None

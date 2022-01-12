@@ -13,6 +13,8 @@ import logging
 from model.objects.technology.technology import Technology
 
 class ConversionTechnology(Technology):
+    # empty list of elements
+    listOfElements = []
 
     def __init__(self, object, tech):
         """init generic technology object
@@ -20,6 +22,9 @@ class ConversionTechnology(Technology):
 
         logging.info('initialize object of a conversion technology')
         super().__init__(object, 'Conversion', tech)
+
+        # add ConversionTechnology to list
+        ConversionTechnology.addElement(self)
 
         # %% Subsets
         subsets = {f'setInputCarriers{tech}':    f'Set of input carrier of {tech}. Subset: setInputCarriers',
@@ -224,14 +229,14 @@ class ConversionTechnology(Technology):
         expandTechnology = getattr(model, f'expand{tech}')
 
         # time range
-        t_start = max(0, t - lifetime + 1)
+        t_start = max(0, t - lifetime + 1) ### TODO what is t?
         t_end = time + 1
 
         return (sum(expandTechnology[node, t] for t in range(t_start, t_end)) <= installCapacity[node, t])
         
     #%% Constraint rules defined in current class - Operation
     @staticmethod
-    def constraintConversionTechnologyMaxOutputRule(model, tech, carrierOut, node, time):
+    def constraintConversionTechnologyMaxOutputRule(model, tech, carrierOut, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """output is limited by the installed capacity"""
 
         # variables
@@ -242,7 +247,7 @@ class ConversionTechnology(Technology):
                 >= outputTechnology[carrierOut, node, time])
 
     @staticmethod
-    def constraintConversionTechnologyLinearConverEfficiencyRule(model, tech, carrierIn, carrierOut, node, time):
+    def constraintConversionTechnologyLinearConverEfficiencyRule(model, tech, carrierIn, carrierOut, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """linearized conversion efficiency of conversion technology"""
         # segments
         setSegments = getattr(model, f'setSegmentsConverEfficiency{tech}')
@@ -261,7 +266,7 @@ class ConversionTechnology(Technology):
 
 
     @staticmethod
-    def constraintConversionTechnologyLinearConverEfficiencyLBRule(model, tech, segment, carrierIn, node, time):
+    def constraintConversionTechnologyLinearConverEfficiencyLBRule(model, tech, segment, carrierIn, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """lower bound of the current segment"""
 
         # parameters
@@ -274,7 +279,7 @@ class ConversionTechnology(Technology):
                 <= inputTechnologyAux[segment, carrierIn, node, time])
 
     @staticmethod
-    def constraintConversionTechnologyLinearConverEfficiencyUBRule(model, tech, segment, carrierIn, node, time):
+    def constraintConversionTechnologyLinearConverEfficiencyUBRule(model, tech, segment, carrierIn, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """upper bound of the current segment"""
 
         # parameters
@@ -287,7 +292,7 @@ class ConversionTechnology(Technology):
                 >= inputTechnologyAux[segment, carrierIn, node, time])
 
     @staticmethod
-    def constraintConversionTechnologyLinearConverEfficiencyAuxRule(model, tech, carrierIn, node, time):
+    def constraintConversionTechnologyLinearConverEfficiencyAuxRule(model, tech, carrierIn, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """link auxiliary variable and actual variable"""
 
         # sets
@@ -300,7 +305,7 @@ class ConversionTechnology(Technology):
                 == inputTechnology[carrierIn, node, time])
 
     @staticmethod
-    def constraintConversionTechnologyLinearConverEfficiencySegmentSelectionRule(model, tech, node, time):
+    def constraintConversionTechnologyLinearConverEfficiencySegmentSelectionRule(model, tech, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """at most one segment can be selected at the time"""
 
         # sets
@@ -314,7 +319,7 @@ class ConversionTechnology(Technology):
 
     #%% Constraint rules defined in current class - Capital Expenditures (Capex)
     @staticmethod
-    def constraintConversionTechnologyLinearCapexRule(model, tech, node, time):
+    def constraintConversionTechnologyLinearCapexRule(model, tech, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """linearized conversion efficiency of conversion technology"""
 
         # sets
@@ -333,7 +338,7 @@ class ConversionTechnology(Technology):
                         for segment in setSegments))
 
     @staticmethod
-    def constraintConversionTechnologyLinearCapexLBRule(model, tech, segment, node, time):
+    def constraintConversionTechnologyLinearCapexLBRule(model, tech, segment, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """lower bound of the current segment"""
 
         # parameters
@@ -346,7 +351,7 @@ class ConversionTechnology(Technology):
                 <= capacityTechnologyAux[segment, node, time])
 
     @staticmethod
-    def constraintConversionTechnologyLinearCapexUBRule(model, tech, segment, node, time):
+    def constraintConversionTechnologyLinearCapexUBRule(model, tech, segment, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """upper bound of the current segment"""
 
         # parameters
@@ -359,7 +364,7 @@ class ConversionTechnology(Technology):
                 >= capacityTechnologyAux[segment, node, time])
 
     @staticmethod
-    def constraintConversionTechnologyLinearCapexAuxRule(model, tech, node, time):
+    def constraintConversionTechnologyLinearCapexAuxRule(model, tech, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """link auxiliary variable and actual variable"""
 
         #sets
@@ -372,7 +377,7 @@ class ConversionTechnology(Technology):
                 == capacityTechnology[node, time])
 
     @staticmethod
-    def constraintConversionTechnologyLinearCapexSegmentSelectionRule(model, tech, node, time):
+    def constraintConversionTechnologyLinearCapexSegmentSelectionRule(model, tech, node, time): #TODO: for each conversion technology (in title) but also indexed by tech 
         """only one segment can be selected at a time, and only if the technology is built (installTechnology =1)"""
 
         # sets

@@ -13,13 +13,18 @@ import pyomo.environ as pe
 from model.objects.technology.technology import Technology
 
 class TransportTechnology(Technology):
-
+    # empty list of elements
+    listOfElements = []
+    
     def __init__(self, object, tech):
         """init generic technology object
         :param object: object of the abstract optimization model"""
 
         logging.info('initialize object of a transport technology')
         super().__init__(object, 'Transport', tech)
+
+        # add TransportTechnology to list
+        TransportTechnology.addElement(self)
 
         # merge new items with sets and subsets dictionary from Technology class
         subsets = {

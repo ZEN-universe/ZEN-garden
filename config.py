@@ -32,7 +32,7 @@ system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setConversionTechnologies'] = ['electrolysis']
 system['setScenarios'] = 'a'
 system['setTimeSteps'] = [0,1]
-system['setNodes'] = list(string.ascii_uppercase[:3])
+system['setNodes'] = list(string.ascii_uppercase[:3]) #TODO: define proper nomenclature for nodes
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01

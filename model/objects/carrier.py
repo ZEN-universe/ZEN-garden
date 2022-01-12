@@ -13,13 +13,22 @@ import pyomo.environ as pe
 from model.objects.element import Element
 
 class Carrier(Element):
+    # empty list of elements
+    listOfElements = []
 
-    def __init__(self, object):
+    def __init__(self, object,carrier):
         """initialization of a generic carrier object
-        :param model: object of the abstract optimization model"""
+        :param object: object of the abstract optimization model
+        :param carrier: carrier that is added to the model"""
 
         logging.info('initialize object of a generic carrier')
-        super().__init__(object)
+        super().__init__(object,carrier)
+
+        # set attributes of carrier
+
+        # add carrier to list
+        Carrier.addElement(self)
+
 
         #%% Sets and subsets
         subsets = {
@@ -55,7 +64,7 @@ class Carrier(Element):
                                        \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps',
             }
         self.addConstr(constr)
-
+        
         logging.info('added carrier sets, parameters, decision variables and constraints')
 
 
@@ -65,3 +74,5 @@ class Carrier(Element):
         """node- and time-dependent carrier availability"""
 
         return(model.importCarrier[carrier, node, time] <= model.availabilityCarrier[carrier,node,time])
+
+    

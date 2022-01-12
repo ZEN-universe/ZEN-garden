@@ -7,7 +7,10 @@ Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 Description:    Methods used in the class FillPyoDict to fill the dictionary in Pyomo format
 ==========================================================================================================================================================================="""
 
-def add_parameter(dictionary, df, dfIndexNames, dfIndex, dfColumn, key, parameterName):
+from pyomo.core.base import param
+
+
+def add_parameter(dictionary, df, dfIndexNames, dfIndex, dfColumn, key, parameter, element=None):
     
     if df.empty:
         pass
@@ -17,17 +20,30 @@ def add_parameter(dictionary, df, dfIndexNames, dfIndex, dfColumn, key, paramete
         
         value = df.loc[dfIndex, dfColumn] 
 
-        if parameterName not in dictionary.keys():       
-            # create a new dictionary for the parameter
-            dictionary[parameterName] = {key: value}
+        if element:
+            # if no element specified
+            if parameter not in dictionary:
+                # create a new dictionary for the parameter
+                dictionary[parameter] = {element:{key:value}}
+            else:
+                if element not in dictionary[parameter]:
+                    # create a new dictionary for the element in the parameter
+                    dictionary[parameter][element] = {key:value}
+                else:
+                    # add the indexes to the dictionary
+                    dictionary[parameter][element][key] = value
         else:
-            # add the indexes to the dictionary
-            dictionary[parameterName][key] = value    
+            if parameter not in dictionary:       
+                # create a new dictionary for the parameter
+                dictionary[parameter] = {key: value}
+            else:
+                # add the indexes to the dictionary
+                dictionary[parameter][key] = value    
             
             
 def add_function(dictionary, function, key, parameterName):
     
-    if parameterName not in dictionary.keys():       
+    if parameterName not in dictionary:       
         # create a new dictionary for the function
         dictionary[parameterName] = {key: function}
     else:
