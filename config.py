@@ -25,8 +25,8 @@ analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['e
 analysis['objective'] = 'BasicTotalCost'
 
 ## System - settings update compared to default values
-system['setInputCarriers'] = ['electricity']
-system['setOutputCarriers'] = ['hydrogen']
+system['setImportCarriers'] = ['electricity']
+system['setExportCarriers'] = ['hydrogen']
 system['setStorageTechnologies'] = []
 system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setConversionTechnologies'] = ['electrolysis']

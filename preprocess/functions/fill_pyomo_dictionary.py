@@ -23,7 +23,7 @@ class FillPyoDict:
         for setName in self.system.keys():
             if 'set' in setName:
                 # create sets
-                self.pyoDict[setName] = {None: self.system[setName]}
+                self.pyoDict[setName] = self.system[setName]
         
     def carrierParameters(self):
         """
@@ -34,8 +34,8 @@ class FillPyoDict:
         """        
         
         parameterNames = {
-            'setInputCarriers': ['availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
-            'setOutputCarriers': ['demandCarrier', 'exportPriceCarrier', 'importPriceCarrier']            
+            'setImportCarriers': ['availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
+            'setExportCarriers': ['demandCarrier', 'exportPriceCarrier', 'importPriceCarrier']            
             }        
         
         scenarioName = self.system['setScenarios']
@@ -57,9 +57,9 @@ class FillPyoDict:
                             # column of the single cell in the dataframe to add to the dictionary                                
                             dfColumn = parameterName
                             # key to use in the Pyomo dictionary
-                            key = (carrierName, nodeName, timeName)
+                            key = (nodeName, timeName)
                             # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                            add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName)                            
+                            add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName,carrierName)                            
                                 
     def technologyTranspParameters(self):
         """
@@ -67,28 +67,34 @@ class FillPyoDict:
         :param analysis: dictionary defining the analysis framework
         :return: dictionary containing the input data        
         """  
-        
         technologySubset = 'setTransportTechnologies'
-        for technologyName in self.system[technologySubset]:
-            for nodeName in self.system['setNodes']:
-                for nodeNameAlias in self.system['setNodes']:
-                    for timeName in self.system['setTimeSteps']:
-                        # warning: all the following parameters must have the same data structure
-                        for parameterName in ['availability', 'costPerDistance', 'efficiencyPerDistance']:
-                            # dataframe stored in data 
-                            df = self.data[technologySubset][technologyName][parameterName]
-                            # list of columns of the dataframe to use as indexes
-                            dfIndexNames = [self.analysis['dataInputs']['nameNodes']]
-                            # index of the single cell in the dataframe to add to the dictionary
-                            dfIndex = nodeName
-                            # column of the single cell in the dataframe to add to the dictionary  
-                            dfColumn = nodeNameAlias
-                            # key to use in the Pyomo dictionary
-                            key = (nodeName, nodeNameAlias, timeName)
-                            # key to use in the Pyomo dictionary
-                            name = parameterName + technologyName
-                            # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                            add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName, technologyName)
+
+        self.pyoDict["setEdges"] = {}
+        # edge_counter = 0
+        for nodeName in self.system['setNodes']:
+            for nodeNameAlias in self.system['setNodes']:
+                if nodeName != nodeNameAlias:
+                    self.pyoDict["setEdges"][nodeName+"-"+nodeNameAlias] = (nodeName,nodeNameAlias)
+                    for technologyName in self.system[technologySubset]:
+                        for timeName in self.system['setTimeSteps']:
+                            # warning: all the following parameters must have the same data structure
+                            for parameterName in ['availability', 'costPerDistance', 'efficiencyPerDistance']:
+                                # dataframe stored in data 
+                                df = self.data[technologySubset][technologyName][parameterName]
+                                # list of columns of the dataframe to use as indexes
+                                dfIndexNames = [self.analysis['dataInputs']['nameNodes']]
+                                # index of the single cell in the dataframe to add to the dictionary
+                                dfIndex = nodeName
+                                # column of the single cell in the dataframe to add to the dictionary  
+                                dfColumn = nodeNameAlias
+                                # key to use in the Pyomo dictionary
+                                key = (nodeName, nodeNameAlias, timeName)
+                                key = (nodeName+"-"+nodeNameAlias,timeName)
+                                # key to use in the Pyomo dictionary
+                                name = parameterName + technologyName
+                                # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
+                                add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName, technologyName)
+                    # edge_counter += 1
 
         parameterName = 'distance'
         #TODO implement a method so we can choose between using the acutal distances depending on the mode of transport
@@ -98,9 +104,11 @@ class FillPyoDict:
         elif self.analysis['transportDistance'] == 'Actual':
             print('Actual distances have not been implemented, use Euclidean distance for now')
 
-        for technologyName in self.system[technologySubset]:
-            for nodeName in self.system['setNodes']:
-                for nodeNameAlias in self.system['setNodes']:
+        # edge_counter = 0
+        for nodeName in self.system['setNodes']:
+            for nodeNameAlias in self.system['setNodes']:
+                if nodeName != nodeNameAlias:
+                    for technologyName in self.system[technologySubset]:
                         # warning: all the following parameters must have the same data structure
                         # dataframe stored in data
                         df = self.data[technologySubset][technologyName][parameterName+distance]
@@ -112,11 +120,12 @@ class FillPyoDict:
                         dfColumn = nodeNameAlias
                         # key to use in the Pyomo dictionary
                         key = (nodeName, nodeNameAlias)
+                        key = nodeName+"-"+nodeNameAlias
                         # key to use in the Pyomo dictionary
                         name = parameterName + technologyName
                         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                         add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName, technologyName)
-
+                    # edge_counter += 1
 
     def technologyConversionStorageParameters(self):
         """
@@ -187,7 +196,7 @@ class FillPyoDict:
         self.pyoDict['setTransportCarriers'] = {}
         for technologyName in self.system[technologySubset]:
             self.pyoDict['setTransportCarriers'][technologyName] = []
-            for carrierName in set(self.system['setOutputCarriers']+self.system['setInputCarriers']):
+            for carrierName in set(self.system['setExportCarriers']+self.system['setImportCarriers']):
                 if carrierName in technologyName:
                     self.pyoDict['setTransportCarriers'][technologyName].append(carrierName)
 
@@ -225,8 +234,12 @@ class FillPyoDict:
             setInputCarriers  = df[dfIndexName].tolist()
             setOutputCarriers = df.columns.tolist()[1:]
             # add input and output carrier set to pyoDict
-            self.pyoDict[f'setInputCarriers{technologyName}'] = {None: setInputCarriers}
-            self.pyoDict[f'setOutputCarriers{technologyName}'] = {None: setOutputCarriers}
+            if "setInputCarriers" in self.pyoDict:
+                self.pyoDict['setInputCarriers'][technologyName] = setInputCarriers
+                self.pyoDict['setOutputCarriers'][technologyName] = setOutputCarriers
+            else:
+                self.pyoDict['setInputCarriers'] = {technologyName: setInputCarriers}
+                self.pyoDict['setOutputCarriers'] = {technologyName: setOutputCarriers}
 
             for carrierIn in setInputCarriers:
                 for carrierOut in setOutputCarriers:

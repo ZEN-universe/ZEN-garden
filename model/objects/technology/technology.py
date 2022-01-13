@@ -10,6 +10,8 @@ Description:  Class defining the parameters, variables and constraints that hold
 ==========================================================================================================================================================================="""
 
 import logging
+import pyomo.environ as pe
+import numpy as np
 from model.objects.element import Element
 
 class Technology(Element):
@@ -26,7 +28,7 @@ class Technology(Element):
         super().__init__(object,technology)
         self.type = technologyType
         self.tech = technology
-        self.dim  = self.getDimensions()
+        # self.dim  = self.getDimensions()
 
         # set attributes
         self.minCapacity = object.pyoDict["minCapacity"][technology]
@@ -36,81 +38,294 @@ class Technology(Element):
         # add Technology to list
         Technology.addElement(self)
 
-        if not hasattr(self.model, f'set{self.type}Technologies'):
-            sets = {f'set{self.type}Technologies': f'Set of {self.type} technologies. Subset: setTechnologies'}
-            self.addSets(sets)
+    #     if not hasattr(self.model, f'set{self.type}Technologies'):
+    #         sets = {f'set{self.type}Technologies': f'Set of {self.type} technologies. Subset: setTechnologies'}
+    #         # self.addSets(sets)
 
-    def getDimensions(self):
-        """ determine dimensions depending on the technology type
-        :return dim: return dimensions"""
+    # def getDimensions(self):
+    #     """ determine dimensions depending on the technology type
+    #     :return dim: return dimensions"""
 
-        if self.type == 'Transport':
-            dim = 'setNodes, setAliasNodes'
-        else:
-            dim = 'setNodes'
+    #     if self.type == 'Transport':
+    #         dim = 'setNodes, setAliasNodes'
+    #     else:
+    #         dim = 'setNodes'
 
-        return dim
+    #     return dim
 
-    def getTechSubsets(self):
-        """ get the subsets of the technology type
-        :return subsets: return dictionary containing the technology subsets"""
+    # def getTechSubsets(self):
+    #     """ get the subsets of the technology type
+    #     :return subsets: return dictionary containing the technology subsets"""
 
-        subsets = dict()
+    #     subsets = dict()
 
-        return subsets
+    #     return subsets
 
-    def getTechParams(self):
-        """ get the parameters of the technology type
-        :return params: return dictionary containing the technology parameters"""
+    # def getTechParams(self):
+    #     """ get the parameters of the technology type
+    #     :return params: return dictionary containing the technology parameters"""
 
-        params = {f'minCapacity{self.tech}':  f'Parameter which specifies the minimum {self.tech} size that can be installed',
-                  f'maxCapacity{self.tech}':  f'Parameter which specifies the maximum {self.tech} size that can be installed',
-                #   f'maxCapacity{self.tech}':  f'Parameter which specifies the maximum {self.tech} size that can be installed',
-                  f'lifetime{self.tech}':     f'Parameter which specifies the lifetime of {self.tech}.',
-                  f'availability{self.tech}': f'node- and time-dependent availability of {self.tech}.\
-                                              \n\t Dimensions: {self.dim}, setTimeSteps'}
+    #     params = {f'minCapacity{self.tech}':  f'Parameter which specifies the minimum {self.tech} size that can be installed',
+    #               f'maxCapacity{self.tech}':  f'Parameter which specifies the maximum {self.tech} size that can be installed',
+    #             #   f'maxCapacity{self.tech}':  f'Parameter which specifies the maximum {self.tech} size that can be installed',
+    #               f'lifetime{self.tech}':     f'Parameter which specifies the lifetime of {self.tech}.',
+    #               f'availability{self.tech}': f'node- and time-dependent availability of {self.tech}.\
+    #                                           \n\t Dimensions: {self.dim}, setTimeSteps'}
 
 
-        return params
+    #     return params
 
-    def getTechVars(self):
-        """ get the variables of the technology type
-        :return vars: return dictionary containing the technology variables"""
+    # def getTechVars(self):
+    #     """ get the variables of the technology type
+    #     :return vars: return dictionary containing the technology variables"""
 
-        variables = {
-            f'install{self.tech}':       f'installment of a {self.tech} at node i and time t. \
-                                         \n\t Dimensions: {self.dim}, setTimeSteps.\
-                                         \n\t Domain: Binary',
-            f'capacity{self.tech}':      f'size of {self.tech} installed at time t. \
-                                         \n\t Dimensions: {self.dim}, setTimeSteps. \
-                                         \n\t Domain: NonNegativeReals',
-            f'buildCapacity{self.tech}': f'size of {self.tech} build at time t. \
-                                         \n\t Dimensions: {self.dim}, setTimeSteps. \
-                                         \n\t Domain: NonNegativeReals',
-            f'capex{self.tech}':         f'capital expenditures for installing {self.tech} time t. \
-                                         \n\t Dimensions: {self.dim}, setTimeSteps. \
-                                         \n\t Domain: NonNegativeReals'}
+    #     variables = {
+    #         f'install{self.tech}':       f'installment of a {self.tech} at node i and time t. \
+    #                                      \n\t Dimensions: {self.dim}, setTimeSteps.\
+    #                                      \n\t Domain: Binary',
+    #         f'capacity{self.tech}':      f'size of {self.tech} installed at time t. \
+    #                                      \n\t Dimensions: {self.dim}, setTimeSteps. \
+    #                                      \n\t Domain: NonNegativeReals',
+    #         f'buildCapacity{self.tech}': f'size of {self.tech} build at time t. \
+    #                                      \n\t Dimensions: {self.dim}, setTimeSteps. \
+    #                                      \n\t Domain: NonNegativeReals',
+    #         f'capex{self.tech}':         f'capital expenditures for installing {self.tech} time t. \
+    #                                      \n\t Dimensions: {self.dim}, setTimeSteps. \
+    #                                      \n\t Domain: NonNegativeReals'}
 
-        ## to enable technology expansion add the following binary variable
-        # f'expand{self.tech}' which is a binary decision variable to model if the technology capacity is expanded over its lifetime'
+    #     ## to enable technology expansion add the following binary variable
+    #     # f'expand{self.tech}' which is a binary decision variable to model if the technology capacity is expanded over its lifetime'
 
-        return variables
+    #     return variables
 
-    def getTechConstr(self):
-        """get the variables of the technology type
-        :return constraints: return dictionary containing the technology constraints"""
+    # def getTechConstr(self):
+    #     """get the variables of the technology type
+    #     :return constraints: return dictionary containing the technology constraints"""
 
-        constraints = {f'{self.tech}Availability':     f'limited availability of {self.tech} technology. \
-                                                       \n\t Dimensions: {self.dim}, setTimeSteps',
-                       f'{self.tech}MinCapacity':      f'min capacity of {self.tech} technology. \
-                                                       \n\t Dimensions: {self.dim}, setTimeSteps',
-                       f'{self.tech}MaxCapacity':      f'max capacity of {self.tech} technology. \
-                                                       \n\t Dimensions: {self.dim}, setTimeSteps',
-                       f'{self.tech}Lifetime':         f'limited lifetime of {self.tech} technology. \
-                                                       \n\t Dimensions: {self.dim}, setTimeSteps'}
-        ## to enable technology expansion add the following constraints
-        # f'{self.tech}MinCapacityExpansionRule', f'{self.tech}MaxCapacityExpansionRule', f'{self.tech}LimitCapacityExpansionRule'
+    #     constraints = {f'{self.tech}Availability':     f'limited availability of {self.tech} technology. \
+    #                                                    \n\t Dimensions: {self.dim}, setTimeSteps',
+    #                    f'{self.tech}MinCapacity':      f'min capacity of {self.tech} technology. \
+    #                                                    \n\t Dimensions: {self.dim}, setTimeSteps',
+    #                    f'{self.tech}MaxCapacity':      f'max capacity of {self.tech} technology. \
+    #                                                    \n\t Dimensions: {self.dim}, setTimeSteps',
+    #                    f'{self.tech}Lifetime':         f'limited lifetime of {self.tech} technology. \
+    #                                                    \n\t Dimensions: {self.dim}, setTimeSteps'}
+    #     ## to enable technology expansion add the following constraints
+    #     # f'{self.tech}MinCapacityExpansionRule', f'{self.tech}MaxCapacityExpansionRule', f'{self.tech}LimitCapacityExpansionRule'
 
-        return constraints
-
+    #     return constraints
     
+    ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Technology --- ###
+    @classmethod
+    def defineSets(cls):
+        """ defines the pe.Sets of the class <Technology> """
+        # define the pe.Sets of the class <Technology>
+        model = cls.getConcreteModel()
+        pyoDict = cls.getPyoDict()
+        
+        # conversion technologies
+        model.setConversionTechnologies = pe.Set(
+            initialize=pyoDict["setConversionTechnologies"], 
+            doc='Set of conversion technologies. Subset: setTechnologies')
+        # transport technologies
+        model.setTransportTechnologies = pe.Set(
+            initialize=pyoDict["setTransportTechnologies"], 
+            doc='Set of transport technologies. Subset: setTechnologies')
+        # combined technology and location set
+        model.setTechnologyLocation = pe.Set(
+            initialize = technologyLocationRule,
+            doc = "Combined set of technologies and locations. Conversion technologies are paired with nodes, transport technologies are paired with edges"
+        )
+
+        # add pe.Sets of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.defineSets()
+
+    @classmethod
+    def defineParams(cls):
+        """ defines the pe.Params of the class <Technology> """
+        ### define pe.Param of the class <Technology>
+        model = cls.getConcreteModel()
+        pyoDict = cls.getPyoDict()
+
+        # minimum capacity
+        model.minCapacity = pe.Param(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("minCapacity"),
+            doc = 'Parameter which specifies the minimum technology size that can be installed.\n\t Dimensions: setTechnologies')
+        # maximum capacity
+        model.maxCapacity = pe.Param(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("maxCapacity"),
+            doc = 'Parameter which specifies the maximum technology size that can be installed.\n\t Dimensions: setTechnologies')
+        # lifetime
+        model.lifetimeTechnology = pe.Param(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("lifetime"),
+            doc = 'Parameter which specifies the lifetime of technology.\n\t Dimensions: setTechnologies')
+        # availability of  technologies
+        model.availabilityTechnology = pe.Param(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            initialize = cls.getAttributeOfAllElements("availability"),
+            doc = 'Parameter which specifies the availability of technologies.\n\t Dimensions: setTechnologyLocation, setTimeSteps')
+
+        # add pe.Param of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.defineParams()
+
+    @classmethod
+    def defineVars(cls):
+        """ defines the pe.Vars of the class <Technology> """
+        model = cls.getConcreteModel()
+        # define pe.Vars of the class <Technology>
+        # install technology
+        model.installTechnology = pe.Var(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            domain = pe.Binary,
+            doc = 'installment of a technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: Binary')
+        # capacity technology
+        model.capacityTechnology = pe.Var(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            domain = pe.NonNegativeReals,
+            doc = 'size of installed technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: NonNegativeReals')
+        # builtCapacity technology
+        model.builtCapacityTechnology = pe.Var(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            domain = pe.NonNegativeReals,
+            doc = 'size of built technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: NonNegativeReals')
+        # capex technology
+        model.capexTechnology = pe.Var(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            domain = pe.NonNegativeReals,
+            doc = 'capex for installing technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: NonNegativeReals')
+
+        # add pe.Vars of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.defineVars()
+
+    @classmethod
+    def defineConstraints(cls):
+        """ defines the pe.Constraints of the class <Technology> """
+        model = cls.getConcreteModel()
+        # define pe.Constraints of the class <Technology>
+        # transport technology availability
+        model.constraintTechnologyAvailability = pe.Constraint(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            rule = constraintTechnologyAvailabilityRule,
+            doc = 'limited availability of transport technology depending on node and time. \n\t Dimensions: setTransportLocation, setTimeSteps'
+        )
+        # minimum capacity
+        model.constraintTechnologyMinCapacity = pe.Constraint(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            rule = constraintTechnologyMinCapacityRule,
+            doc = 'min capacity of transport technology that can be installed. \n\t Dimensions: setTransportLocation, setTimeSteps'
+        )
+        # maximum capacity
+        model.constraintTechnologyMaxCapacity = pe.Constraint(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            rule = constraintTechnologyMaxCapacityRule,
+            doc = 'max capacity of transport technology that can be installed. \n\t Dimensions: setTransportLocation, setTimeSteps'
+        )
+        
+        # lifetime
+        model.constraintTechnologyLifetime = pe.Constraint(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            rule = constraintTechnologyLifetimeRule,
+            doc = 'max capacity of transport technology that can be installed. \n\t Dimensions: setTransportLocation, setTimeSteps'
+        )
+        # add pe.Constraints of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.defineConstraints()
+
+# function to combine the technologies and locations
+def technologyLocationRule(model):
+    """ creates list for setTechnologyLocation, where ConversionTechnologies are paired with the nodes and TransportTechnologies are paired with edges
+    :return technologyLocationList: list of 2-tuple with (technology, location)"""
+    technologyLocationList = [(technology,location) for technology in model.setConversionTechnologies for location in model.setNodes]
+    technologyLocationList.extend([(technology,location) for technology in model.setTransportTechnologies for location in model.setEdges])
+    return technologyLocationList
+
+
+### --- staticmethods with constraint rules --- ###
+#%% Constraint rules pre-defined in Technology class
+def constraintTechnologyAvailabilityRule(model, tech, location, time):
+    """limited availability of  technology"""
+    if model.availabilityTechnology[tech, location, time] != np.inf:
+        return (model.availabilityTechnology[tech, location, time] >= model.installTechnology[tech, location, time])
+    else:
+        return pe.Constraint.Skip
+
+def constraintTechnologyMinCapacityRule(model, tech, location, time):
+    """ min capacity expansion of  technology."""
+    if model.minCapacity[tech] != 0:
+        return (model.minCapacity[tech] * model.installTechnology[tech, location, time]
+                <= model.capacityTechnology[tech, location, time])
+    else:
+        return pe.Constraint.Skip
+
+def constraintTechnologyMaxCapacityRule(model, tech, location, time):
+    """max capacity expansion of  technology"""
+    if model.maxCapacity[tech] != np.inf:
+        return (model.maxCapacity[tech] * model.installTechnology[tech, location, time]
+                >= model.capacityTechnology[tech, location, time])
+    else:
+        return pe.Constraint.Skip
+
+def constraintTechnologyLifetimeRule(model, tech, location, time):
+    """limited lifetime of the technologies"""
+    # time range
+    t_start = max(0, time - model.lifetimeTechnology[tech] + 1)
+    t_end = time + 1
+
+    return (model.capacityTechnology[tech, location, time]
+            == sum(model.builtCapacityTechnology[tech,location, t] for t in range(t_start, t_end)))
+
+### TODO fix from here ###
+def constraintTechnologyMinCapacityExpansionRule(model, tech, location, time):
+    """min capacity expansion of conversion technology"""
+
+    # parameters
+    minCapacityExpansion = getattr(model, f'minCapacityExpansion{tech}')
+    # variables
+    expandTechnology = getattr(model, f'expand{tech}')
+    
+
+    return (expandTechnology[location, t] * minCapacityExpansion #TODO what is t, fix!
+            >= model.builtCapacityTechnologies[tech, location, time])
+
+def constraintTechnologyMaxCapacityExpansionRule(model, tech, location, time):
+    """max capacity expansion of conversion technology"""
+
+    # parameters
+    maxCapacityExpansion = getattr(model, f'maxCapacityExpansion{tech}')
+    # variables
+    expandTechnology = getattr(model, f'expand{tech}')
+
+    return (expandTechnology[location, t] * maxCapacityExpansion #TODO what is t, fix!
+            <= model.builtCapacityTechnologies[tech, location, time])
+
+def constraintConversionTechnologyLimitedCapacityExpansionRule(model, tech, location, time):
+    """technology capacity can only be expanded once during its lifetime"""
+
+    # parameters
+    lifetime = getattr(model, f'lifetime{tech}')
+    # variables
+    installTechnology = getattr(model, f'install{tech}')
+    expandTechnology  = getattr(model, f'expandit{tech}')
+
+    # time range
+    t_start = max(1, t - lifetime + 1)
+    t_end = time + 1
+
+    return (sum(expandTechnology[location, t] for t in range(t_start, t_end)) <= installTechnology[location, t])
+
+### TODO fix until here

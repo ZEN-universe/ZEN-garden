@@ -14,11 +14,13 @@ import logging
 import pyomo.environ as pe
 from pyomo.opt import SolverStatus, TerminationCondition
 from model.objects.element import Element
-from model.objects.carrier import Carrier
+# the order of the following classes defines the order in which they are constructed. Keep this way
 from model.objects.technology.conversion_technology import ConversionTechnology
 from model.objects.technology.transport_technology import TransportTechnology
-from model.objects.objective_function import ObjectiveFunction
-from model.objects.mass_balance import MassBalance
+from model.objects.carrier import Carrier
+
+# from model.objects.objective_function import ObjectiveFunction
+# from model.objects.mass_balance import MassBalance
 
 class Model():
 
@@ -32,32 +34,38 @@ class Model():
         self.pyoDict = pyoDict
 
         self.model = pe.ConcreteModel()
-        self.addSets()
+        # set concrete model to class <Element>
+        Element.setConcreteModel(self.model)
+        # set pyoDict to class <Element>
+        Element.setPyoDict(self.pyoDict)
         self.addElements()
-        self.addObjectiveFunction()
-        self.addMassBalance()
+        # define and construct components of self.model
+        Element.defineModelComponents()
+        a=1
+        # self.addObjectiveFunction()
+        # self.addMassBalance()
 
-    def addSets(self):
-        """ This method sets up the sets of the optimization problem.
-        Some sets are initialized with default values, if the value is not specified by the input data
-        Sets in Pyomo:
-            (1) model.ct = Set(model.t) : model.ct is “dictionary” of sets, i.e., model.ct[i] = Set() for all i in model.t
-            (2) model.ct = Set(within=model.t) : model.ct is a subset of model.t, Pyomo will do the verification of this
-            (3) model.i = Set(initialize=model.t) : makes a copy of whatever is in model.t during the time of construction
-            (4) model.i = SetOf(model.t) : references whatever is in model.t at runtime (alias)"""
+    # def addSets(self):
+    #     """ This method sets up the sets of the optimization problem.
+    #     Some sets are initialized with default values, if the value is not specified by the input data
+    #     Sets in Pyomo:
+    #         (1) model.ct = Set(model.t) : model.ct is “dictionary” of sets, i.e., model.ct[i] = Set() for all i in model.t
+    #         (2) model.ct = Set(within=model.t) : model.ct is a subset of model.t, Pyomo will do the verification of this
+    #         (3) model.i = Set(initialize=model.t) : makes a copy of whatever is in model.t during the time of construction
+    #         (4) model.i = SetOf(model.t) : references whatever is in model.t at runtime (alias)"""
         
-        # Sets:
-        # 'setCarriers'     includes the subsets 'setInputCarriers', 'setOutputCarriers'
-        # 'setTechnologies' includes the subsets 'setTransportTechnologies', 'setConversionTechnologies', 'setStorageTechnologies'
+    #     # Sets:
+    #     # 'setCarriers'     includes the subsets 'setInputCarriers', 'setOutputCarriers'
+    #     # 'setTechnologies' includes the subsets 'setTransportTechnologies', 'setConversionTechnologies', 'setStorageTechnologies'
         
-        sets = {'setCarriers':      'Set of carriers',
-                'setTechnologies':  'Set of technologies',
-                'setTimeSteps':     'Set of time-steps',
-                'setNodes':         'Set of nodes',
-                'setAliasNodes':    'Copy of the set of nodes to model edges. Subset: setNodes'
-                }
+    #     sets = {'setCarriers':      'Set of carriers',
+    #             'setTechnologies':  'Set of technologies',
+    #             'setTimeSteps':     'Set of time-steps',
+    #             'setNodes':         'Set of nodes',
+    #             'setAliasNodes':    'Copy of the set of nodes to model edges. Subset: setNodes'
+    #             }
 
-        Element.addSets(self, sets)
+    #     Element.addSets(self, sets)
 
     def addElements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -67,13 +75,11 @@ class Model():
         # add carrier parameters, variables, and constraints
         for carrier in self.system["setCarriers"]:
             Carrier(self,carrier)
-            break ##### TODO only for now to avoid error in construction of set
         # add technology parameters, variables, and constraints
         for conversionTech in self.system['setConversionTechnologies']:
             ConversionTechnology(self, conversionTech)
         for transportTech in self.system['setTransportTechnologies']:
             TransportTechnology(self, transportTech)
-        a=1
         # TODO implement storage technologies
         # for storageTech in self.system['setStorageTechnologies']:
         #     print("Storage Technologies are not yet implemented")

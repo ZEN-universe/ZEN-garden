@@ -11,9 +11,14 @@ Description:  Class defining a standard element. Contains methods to add paramet
 import logging
 import pyomo.environ as pe
 
+
 class Element:
     # empty list of elements
     listOfElements = []
+    # pe.ConcreteModel
+    concreteModel = None
+    # input dictionary
+    pyoDict = None
 
     subsets     = dict()
     params      = dict()
@@ -128,12 +133,37 @@ class Element:
 
             setattr(self.model, f'constraint{constr}', peConstr)
                       
-    # classmethods
+    ### --- classmethods --- ###
+    # setter/getter classmethods
     @classmethod
     def addElement(cls,element):
         """ add element to element list. Inherited by child classes.
         :param element: new element that is to be added to the list """
         cls.listOfElements.append(element)
+
+    @classmethod
+    def setConcreteModel(cls,concreteModel):
+        """ set concreteModel to the class <Element>. Every child class can access model and add components.
+        :param concreteModel: pe.ConcreteModel """
+        cls.concreteModel = concreteModel
+    
+    @classmethod
+    def setPyoDict(cls,pyoDict):
+        """ set pyoDict 
+        :param pyoDict: input dictionary of optimization """
+        cls.pyoDict = pyoDict
+    
+    @classmethod
+    def getConcreteModel(cls):
+        """ get concreteModel of the class <Element>. Every child class can access model and add components.
+        :return concreteModel: pe.ConcreteModel """
+        return cls.concreteModel
+
+    @classmethod
+    def getPyoDict(cls):
+        """ get pyoDict 
+        :return pyoDict: input dictionary of optimization """
+        return cls.pyoDict
 
     @classmethod
     def getAllElements(cls):
@@ -146,7 +176,129 @@ class Element:
         """ get single element in class by name. Inherited by child classes.
         :param name: name of element
         :return element: return element whose name is matched """
-        for element in cls.listOfElements:
-            if element.name == name:
-                return element
+        for _element in cls.listOfElements:
+            if _element.name == name:
+                return _element
         return None
+
+    @classmethod
+    def getAllSubclasses(cls):
+        """ get all subclasses (child classes) of cls 
+        :return subclasses: subclasses of cls """
+        return cls.__subclasses__()
+    
+    @classmethod
+    def getAttributeOfAllElements(cls,attributeName:str):
+        """ get attribute values of all elements in this class 
+        :param attributeName: str name of attribute
+        :return dictOfAttributes: returns dict of attribute values """
+        _classElements = cls.getAllElements()
+        dictOfAttributes = {}
+        for _element in _classElements:
+            if hasattr(_element,attributeName):
+                _attribute = getattr(_element,attributeName)
+                if isinstance(_attribute,dict):
+                    # if attribute is dict
+                    for _key in _attribute:
+                        if isinstance(_key,tuple):
+                            dictOfAttributes[(_element.name,)+_key] = _attribute[_key]
+                        else:
+                            dictOfAttributes[(_element.name,_key)] = _attribute[_key]
+                else:
+                    dictOfAttributes[_element.name] = _attribute
+
+        return dictOfAttributes
+
+    ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Element --- ###
+    # Here, after defining Element-specific components, the components of the other classes are defined
+    @classmethod
+    def defineModelComponents(cls):
+        """ defines the model components of the class <Element> """
+        # define pe.Sets
+        cls.defineSets()
+        # define pe.Params
+        cls.defineParams()
+        # define pe.Vars
+        cls.defineVars()
+        # define pe.Constraints
+        cls.defineConstraints()
+        # define pe.Objective
+        cls.defineObjective()
+
+    @classmethod
+    def defineSets(cls):
+        """ defines the pe.Sets of the class <Element> """
+        # define pe.Sets of the class <Element>
+        model = cls.getConcreteModel()
+        pyoDict = cls.getPyoDict()
+
+        # nodes
+        model.setNodes = pe.Set(
+            initialize=pyoDict["setNodes"], 
+            doc='Set of nodes')
+        # connected nodes
+        model.setAliasNodes = pe.Set(
+            initialize=pyoDict["setNodes"],
+            doc='Copy of the set of nodes to model edges. Subset: setNodes')
+        # edges
+        model.setEdges = pe.Set(
+            initialize = pyoDict["setEdges"].keys(),
+            doc = 'Set of edges'
+        )
+        # nodes on edges
+        model.setNodesOnEdges = pe.Set(
+            model.setEdges,
+            initialize = pyoDict["setEdges"],
+            doc = 'Set of nodes that constitute an edge. Edge connects first node with second node.'
+        )
+        # carriers
+        model.setCarriers = pe.Set(
+            initialize=pyoDict["setCarriers"],
+            doc='Set of carriers')
+        # technologies
+        model.setTechnologies = pe.Set(
+            initialize=pyoDict["setTechnologies"],
+            doc='Set of technologies')
+        # time-steps
+        model.setTimeSteps = pe.Set(
+            initialize=pyoDict["setTimeSteps"],
+            doc='Set of time-steps')
+        # scenarios
+        model.setScenarios = pe.Set(
+            initialize=pyoDict["setScenarios"],
+            doc='Set of scenarios')
+
+        # define pe.Sets of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.defineSets()
+
+    @classmethod
+    def defineParams(cls):
+        """ defines the pe.Params of the class <Element> """
+        ### TODO define pe.Params of the class <Element>
+        # define pe.Params of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.defineParams()
+
+    @classmethod
+    def defineVars(cls):
+        """ defines the pe.Vars of the class <Element> """
+        ### TODO define pe.Vars of the class <Element>
+        # define pe.Vars of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.defineVars()
+
+    @classmethod
+    def defineConstraints(cls):
+        """ defines the pe.Constraints of the class <Element> """
+        ### TODO define pe.Constraints of the class <Element>
+        # define pe.Constraints of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.defineConstraints()
+    
+    @classmethod
+    def defineObjective(cls):
+        """ defines the pe.Objective of the class <Element> """
+        ### TODO define pe.Objective of the class <Element>
+        pass
+

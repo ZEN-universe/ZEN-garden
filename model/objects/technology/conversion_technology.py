@@ -10,6 +10,8 @@ Description:  Class defining the parameters, variables and constraints of the co
 ==========================================================================================================================================================================="""
 
 import logging
+from pyomo.core.base import initializer
+import pyomo.environ as pe
 from model.objects.technology.technology import Technology
 
 class ConversionTechnology(Technology):
@@ -30,14 +32,14 @@ class ConversionTechnology(Technology):
         subsets = {f'setInputCarriers{tech}':    f'Set of input carrier of {tech}. Subset: setInputCarriers',
                    f'setOutputCarriers{tech}':   f'Set of output carriers of {tech}. Subset: setOutputCarriers'}
         # merge new items with parameters dictionary from Technology class
-        subsets = {**subsets, **self.getTechSubsets()}
-        self.addSets(subsets)
+        # subsets = {**subsets, **self.getTechSubsets()}
+        # self.addSets(subsets)
 
         # %% Parameters
         params = {}
         # merge new items with parameters dictionary from Technology class
-        params = {**params, **self.getTechParams()}
-        self.addParams(params)
+        # params = {**params, **self.getTechParams()}
+        # self.addParams(params)
 
         # %% Variables
         variables = {
@@ -48,16 +50,16 @@ class ConversionTechnology(Technology):
                              \n\t Dimensions: setOutputCarriers{tech}, setNodes, setTimeSteps. \
                              \n\t Domain: NonNegativeReals'}
         # merge new items with variables dictionary from Technology class
-        variables = {**variables, **self.getTechVars()}
-        self.addVars(variables)
+        # variables = {**variables, **self.getTechVars()}
+        # self.addVars(variables)
 
         #%% Constraints
         constr = {
             f'{tech}MaxOutput': f'maximum output of {tech} is limited by the installed capacity. \
                                 \n\t Dimensions: setOutputCarriers{tech}, setNodes, setTimeSteps'}
-        constr = {**constr, **self.getTechConstr()}
+        # constr = {**constr, **self.getTechConstr()}
         # add constraints defined in technology class
-        self.addConstr(constr, replace = [tech, 'ConversionTechnology'], passValues = [tech])
+        # self.addConstr(constr, replace = [tech, 'ConversionTechnology'], passValues = [tech])
 
         # add linear/nonlinear constraints to model capex and conversion efficiency
         for type in self.analysis['nonlinearTechnologyApproximation'].keys():
@@ -84,7 +86,7 @@ class ConversionTechnology(Technology):
 
         #%% Subsets
         subsets = {f'setSegments{type}{tech}': f'Set of support points for PWA of {type} for {tech}'}
-        self.addSets(subsets)
+        # self.addSets(subsets)
 
         #%% Parameters
         params = {f'slope{type}{tech}':     f'Parameter which specifies the slope of the {type} segment {tech}.\
@@ -95,7 +97,7 @@ class ConversionTechnology(Technology):
                                             \n\t Dimensions: setSegments{type}{tech}',
                   f'ubSegment{type}{tech}': f'Parameter which specifies the upper bound of the {type} segment {tech}.\
                                             \n\t Dimensions: setSegments{type}{tech}'}
-        self.addParams(params)
+        # self.addParams(params)
 
         #%% Variables
         variables = {
@@ -110,7 +112,7 @@ class ConversionTechnology(Technology):
             variables[f'inputAux{tech}']   = f'Auxiliary variable to model {type} of {tech} technologies. \
                                              \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setNodes, setTimeSteps.\
                                              \n\t Domain: NonNegativeReals'
-        self.addVars(variables)
+        # self.addVars(variables)
 
         #%% Constraints
         constr = dict()
@@ -137,7 +139,58 @@ class ConversionTechnology(Technology):
         constr[f'{tech}Linear{type}SegmentSelection']  = f'Segment selection for {type} of {tech}.\
                                                          \n\t Dimensions: setNodes, setTimeSteps.'
 
-        self.addConstr(constr, replace = [tech, 'ConversionTechnology'], passValues = [tech])
+        # self.addConstr(constr, replace = [tech, 'ConversionTechnology'], passValues = [tech])
+
+    ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
+    @classmethod
+    def defineSets(cls):
+        """ defines the pe.Sets of the class <ConversionTechnology> """
+        model = cls.getConcreteModel()
+        pyoDict = cls.getPyoDict()
+
+        # input carriers of technology
+        model.setInputCarriers = pe.Set(
+            initialize = [(tech,inputCarrier) for tech in pyoDict["setInputCarriers"] for inputCarrier in pyoDict["setInputCarriers"][tech]],
+            doc = "set of carriers that are an input to a specific conversion technology"
+        )
+        # output carriers of technology
+        model.setOutputCarriers = pe.Set(
+            initialize = [(tech,outputCarrier) for tech in pyoDict["setOutputCarriers"] for outputCarrier in pyoDict["setOutputCarriers"][tech]],
+            doc = "set of carriers that are an output to a specific conversion technology"
+        )
+        a=1
+        
+    @classmethod
+    def defineParams(cls):
+        """ defines the pe.Params of the class <ConversionTechnology> """
+        model = cls.getConcreteModel()
+        pyoDict = cls.getPyoDict()
+        
+        # availability of conversion technologies
+        model.availabilityConversionTechnologies = pe.Param(
+            model.setConversionTechnologies,
+            model.setNodes,
+            model.setTimeSteps,
+            initialize = cls.getAttributeOfAllElements("availability"),
+            doc = 'Parameter which specifies the availability of conversion technologies.\n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps')
+
+    @classmethod
+    def defineVars(cls):
+        """ defines the pe.Vars of the class <ConversionTechnology> """
+        model = cls.getConcreteModel()
+        pyoDict = cls.getPyoDict()
+        
+        pass
+
+    @classmethod
+    def defineConstraints(cls):
+        """ defines the pe.Constraints of the class <ConversionTechnology> """
+        model = cls.getConcreteModel()
+        pyoDict = cls.getPyoDict()
+        
+        pass
+    
+    ### --- staticmethods with constraint rules --- ###
 
     #%% Constraint rules pre-defined in Technology class
     @staticmethod
