@@ -243,6 +243,7 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, carrier, edge, time
 
 def constraintTransportTechnologyLinearCapexRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
+    # TODO: why factor 0.5? To separate for nodes? But here for edges
     return (model.capexTechnology[tech,edge, time] == 0.5 *
             model.capacityTechnology[tech,edge, time] *
             model.distance[tech,edge] *
