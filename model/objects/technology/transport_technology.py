@@ -34,75 +34,6 @@ class TransportTechnology(Technology):
         # add TransportTechnology to list
         TransportTechnology.addElement(self)
 
-        # # merge new items with sets and subsets dictionary from Technology class
-        # subsets = {
-        #     f'setTransportCarriers{tech}': f'carriers that can be transported with {tech}. Subset: setCarriers'}
-        # subsets = {**subsets, **self.getTechSubsets()}
-        # # self.addSets(subsets)
-
-        # #%% Parameters
-        # params = {
-        #     f'distance{tech}':        f'distance between two nodes for {tech}.\
-        #                               \n\t Dimensions: setNodes, setAliasNodes',
-        #     f'costPerDistance{tech}': f'capex {tech} per unit distance.\
-        #                               \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
-        #     f'minFlow{tech}':         f'minimum flow through the {tech} relative to installed capacity.',
-        #     f'maxFlow{tech}':         f'maximum flow through the {tech} relative to installed capacity.',
-        #     f'lossFlow{tech}':        f'carrier losses due to transport with {tech}.'}
-
-        # # merge new items with parameters dictionary from Technology class
-        # params = {**params, **self.getTechParams()}
-        # # self.addParams(params)
-
-        # #%% Decision variables
-        # variables = {
-        #     f'carrierFlow{tech}': f'carrier flow through {tech}. \
-        #                           \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps.\
-        #                           \n\t Domain: NonNegativeReals',
-        #     f'carrierLoss{tech}': f'carrier loss through transport with {tech}.\
-        #                           \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps.\
-        #                           \n\t Domain: NonNegativeReals',
-        #     f'capacityAux{tech}': f'auxiliary variable of the available capacity to model min and max possible flow through {tech}. \
-        #                           \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps.\
-        #                           \n\t Domain: NonNegativeReals',
-        #     f'select{tech}':      f'binary variable to model the scheduling of {tech}.\
-        #                           \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps.\
-        #                           \n\t Domain: NonNegativeReals'}
-        # # merge new items with variables dictionary from Technology class 
-        # variables = {**variables, **self.getTechVars()}
-        # # self.addVars(variables)
-
-        # #%%  Contraints in current class
-        # ## add linear constraints defined for single conversion technology: set of single technology added as dimension 0
-        # constr = {
-        #     f'{tech}Availability': f'limited availability of {tech} depending on node and time.\
-        #                            \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}MinCapacity':  f'min capacity of {tech} that can be installed.\
-        #                            \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}MaxCapacity':  f'max capacity of {tech} that can be installed.\
-        #                            \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}MinFlow':      f'min possible carrier flow through {tech}.\
-        #                            \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}MaxFlow':      f'max possible carrier flow through {tech}.\
-        #                            \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}Selection1':   f'select if {tech} is used or not Part 1.\
-        #                            \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}Selection2':   f'select if {tech} is used or not Part 2.\
-        #                            \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}AuxLBFlow':    f'LB for auxiliary variable capacityAux{tech}.\
-        #                            \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}AuxUBFlow':    f'UB for auxiliary variable capacityAux{tech}.\
-        #                            \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}LossesFlow':   f'Carrier loss due to transport with through {tech}.\
-        #                            \n\t Dimensions: setTransportCarriers{tech}, setNodes, setAliasNodes, setTimeSteps',
-        #     f'{tech}LinearCapex':  f'Capital expenditures for installing {tech}.\
-        #                            \n\t Dimensions: setNodes, setAliasNodes, setTimeSteps'}
-
-        # constr = {**constr, **self.getTechConstr()}
-        # # self.addConstr(constr, replace = [tech, 'TransportTechnology'], passValues = [tech])
-
-        # logging.info(f'added subsets, parameters, decision variables and constraints for {tech}')
-    
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod
     def defineSets(cls):
@@ -110,11 +41,16 @@ class TransportTechnology(Technology):
         model = cls.getConcreteModel()
         pyoDict = cls.getPyoDict()
 
-        # transport carriers
-        model.setTransportCarriers = pe.Set(
+        # technologies and respective transport carriers
+        model.setTransportCarriersTech = pe.Set(
             initialize = [(tech,pyoDict["setTransportCarriers"][tech]) for tech in pyoDict["setTransportCarriers"]],
-            doc='Set of technology specific transport carriers.')
-        a=1
+            doc='set of techs and their respective transport carriers.')
+
+        # transport carriers of technology
+        model.setTransportCarriers = pe.Set(
+            model.setTransportTechnologies,
+            initialize = lambda _,tech: pyoDict["setTransportCarriers"][tech],
+            doc="set of carriers that are transported in a specific transport technology")
 
     @classmethod
     def defineParams(cls):
@@ -155,19 +91,19 @@ class TransportTechnology(Technology):
         model = cls.getConcreteModel()
         # flow of carrier on edge
         model.carrierFlow = pe.Var(
-            model.setTransportCarriers,
+            model.setTransportCarriersTech,
             model.setEdges,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'carrier flow through transport technology on edge i and time t.  \n\t Dimensions: setTransportCarriers, setEdges, setTimeSteps. \n\t Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t.  \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. \n\t Domain: NonNegativeReals'
         )
         # loss of carrier on edge
         model.carrierLoss = pe.Var(
-            model.setTransportCarriers,
+            model.setTransportCarriersTech,
             model.setEdges,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'carrier flow through transport technology on edge i and time t.  \n\t Dimensions: setTransportCarriers, setEdges, setTimeSteps. \n\t Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t.  \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. \n\t Domain: NonNegativeReals'
         )
         # auxiliary variable of available capacity
         model.capacityAux = pe.Var(
@@ -192,19 +128,19 @@ class TransportTechnology(Technology):
         model = cls.getConcreteModel()
         # min flow
         model.constraintTransportTechnologyMinFlow = pe.Constraint(
-            model.setTransportCarriers,
+            model.setTransportCarriersTech,
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyMinFlowRule,
-            doc = 'min possible carrier flow through transport technology. \n\t Dimensions: setTransportCarriers, setEdges, setTimeSteps'
+            doc = 'min possible carrier flow through transport technology. \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
         )
         # max flow
         model.constraintTransportTechnologyMaxFlow = pe.Constraint(
-            model.setTransportCarriers,
+            model.setTransportCarriersTech,
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyMaxFlowRule,
-            doc = 'max possible carrier flow through transport technology. \n\t Dimensions: setTransportCarriers, setEdges, setTimeSteps'
+            doc = 'max possible carrier flow through transport technology. \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
         )
         # Selection 1
         model.constraintTransportTechnologySelection1 = pe.Constraint(
@@ -240,11 +176,11 @@ class TransportTechnology(Technology):
         )   
         # Carrier Flow Losses 
         model.constraintTransportTechnologyLossesFlow = pe.Constraint(
-            model.setTransportCarriers,
+            model.setTransportCarriersTech,
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyLossesFlowRule,
-            doc = 'Carrier loss due to transport with through transport technology. \n\t Dimensions: setTransportCarriers, setEdges, setTimeSteps'
+            doc = 'Carrier loss due to transport with through transport technology. \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
         ) 
         # Linear Capex
         model.constraintTransportTechnologyLinearCapex = pe.Constraint(

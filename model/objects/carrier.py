@@ -34,48 +34,6 @@ class Carrier(Element):
         # add carrier to list
         Carrier.addElement(self)
 
-
-        #%% Sets and subsets
-        # subsets = {
-        #     'setInputCarriers':      'Set of technology specific input carriers. \
-        #                               \n\t Dimension: setCarriers',
-        #     'setExportCarriers':     'Set of technology specific Export carriers. \
-        #                               \n\t Subset: setCarriers'}
-        # # self.addSets(subsets)
-
-        # #%% Parameters
-        # params = {
-        #     'demandCarrier':                    'Parameter which specifies the carrier demand. \
-        #                                         \n\t Dimensions: setExportCarriers, setNodes, setTimeSteps',
-        #     'availabilityCarrier':              'Parameter which specifies the maximum energy that can be imported from the grid.\
-        #                                         \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps'
-        #     # 'exportPriceCarrier': 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',
-        #     # 'importPriceCarrier': 'Parameter which specifies the import carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',               
-        #     # 'footprintCarrier': 'Parameter which specifies the carbon intensity of a carrier. \n\t Dimensions: setCarriers',s
-        #     }
-        # # self.addParams(params)
-
-        # #%% Variables
-        # variables = {
-        #     'importCarrier':                    'node- and time-dependent carrier import from the grid.\
-        #                                         \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals',
-        #     'exportCarrier':                    'node- and time-dependent carrier export from the grid. \
-        #                                         \n\t Dimensions: setExportCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'}
-        # # self.addVars(variables)
-
-        # #%% Contraints in current class
-        # constr = {
-        #     'AvailabilityCarrier':    'node- and time-dependent carrier availability.\
-        #                                \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps',
-        #     }
-        # # self.addConstr(constr)
-        
-        # logging.info('added carrier sets, parameters, decision variables and constraints')
-
-    ### --- classmethods --- ###
-    # setter/getter classmethods
-    
-
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
     def defineSets(cls):
@@ -92,7 +50,6 @@ class Carrier(Element):
             initialize = pyoDict["setExportCarriers"],
             doc='Set of technology specific Export carriers. Export defines the export over the system boundaries.')
         
-
     @classmethod
     def defineParams(cls):
         """ defines the pe.Params of the class <Carrier> """
@@ -112,6 +69,22 @@ class Carrier(Element):
             model.setTimeSteps,
             initialize = cls.getAttributeOfAllElements("availabilityCarrier"),
             doc = 'Parameter which specifies the maximum energy that can be imported from the grid. \n\t Dimensions: setImportCarriers, setNodes, setTimeSteps')
+        # import price
+        model.importPriceCarrier = pe.Param(
+            model.setCarriers,
+            model.setNodes,
+            model.setTimeSteps,
+            initialize = cls.getAttributeOfAllElements("importPriceCarrier"),
+            doc = 'Parameter which specifies the import carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps'
+        )
+        # export price
+        model.exportPriceCarrier = pe.Param(
+            model.setCarriers,
+            model.setNodes,
+            model.setTimeSteps,
+            initialize = cls.getAttributeOfAllElements("exportPriceCarrier"),
+            doc = 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeSteps'
+        )
 
     @classmethod
     def defineVars(cls):
@@ -149,8 +122,53 @@ class Carrier(Element):
             doc = 'node- and time-dependent carrier availability. \n\t Dimensions: setImportCarriers, setNodes, setTimeSteps',
         )        
         ### TODO add mass balance but move after technologies
+        # energy balance
+        model.constraintNodalEnergyBalance = pe.Constraint(
+            model.setCarriers,
+            model.setNodes,
+            model.setTimeSteps,
+            rule = constraintNodalEnergyBalanceRule,
+            doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',
+        )
+
 #%% Constraint rules defined in current class
 def constraintAvailabilityCarrierRule(model, carrier, node, time):
     """node- and time-dependent carrier availability"""
 
     return(model.importCarrierFlow[carrier, node, time] <= model.availabilityCarrier[carrier,node,time])
+
+# energy balance
+def constraintNodalEnergyBalanceRule(model, carrier, node, time):
+    """" 
+    nodal energy balance for each time step
+    """
+
+    # carrier input and output conversion technologies
+    carrierConversionIn, carrierConversionOut = 0, 0
+    if hasattr(model, 'setConversionTechnologies'):
+        for tech in model.setConversionTechnologies:
+            if carrier in model.setInputCarriers[tech]:
+                carrierConversionIn += model.inputFlow[tech,carrier,node,time]
+            if carrier in model.setOutputCarriers[tech]:
+                carrierConversionOut += model.outputFlow[tech,carrier,node,time]
+    # carrier flow transport technologies
+    carrierFlowIn, carrierFlowOut = 0, 0
+    if hasattr(model, 'setTransportTechnologies'):
+        for tech in model.setTransportTechnologies:
+            if carrier in model.setTransportCarriers[tech]:
+                carrierFlowIn += sum(model.carrierFlow[tech,carrier, edge, time]
+                                        - model.carrierLoss[tech,carrier, edge, time] for edge in model.setEdges if node == model.setNodesOnEdges[edge][2]) # second entry is node into which the flow goes
+                carrierFlowOut += sum(model.carrierFlow[tech,carrier, edge, time] for edge in model.setEdges if node == model.setNodesOnEdges[edge][1]) # first entry is node out of which the flow starts
+    # carrier import, demand and export
+    carrierImport, carrierExport, carrierDemand = 0, 0, 0
+    if carrier in model.setImportCarriers:
+        carrierImport = model.importCarrierFlow[carrier, node, time]
+    if carrier in model.setOutputCarriers:
+        carrierDemand = model.demandCarrier[carrier, node, time]
+        carrierExport = model.exportCarrierFlow[carrier, node, time]
+
+    # TODO implement storage
+
+    return (
+        carrierConversionOut - carrierConversionIn + carrierFlowIn - carrierFlowOut + carrierImport - carrierExport - carrierDemand == 0
+        )

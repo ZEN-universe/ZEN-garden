@@ -70,7 +70,6 @@ class FillPyoDict:
         technologySubset = 'setTransportTechnologies'
 
         self.pyoDict["setEdges"] = {}
-        # edge_counter = 0
         for nodeName in self.system['setNodes']:
             for nodeNameAlias in self.system['setNodes']:
                 if nodeName != nodeNameAlias:
@@ -94,7 +93,6 @@ class FillPyoDict:
                                 name = parameterName + technologyName
                                 # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                                 add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName, technologyName)
-                    # edge_counter += 1
 
         parameterName = 'distance'
         #TODO implement a method so we can choose between using the acutal distances depending on the mode of transport
@@ -104,7 +102,6 @@ class FillPyoDict:
         elif self.analysis['transportDistance'] == 'Actual':
             print('Actual distances have not been implemented, use Euclidean distance for now')
 
-        # edge_counter = 0
         for nodeName in self.system['setNodes']:
             for nodeNameAlias in self.system['setNodes']:
                 if nodeName != nodeNameAlias:
@@ -125,7 +122,6 @@ class FillPyoDict:
                         name = parameterName + technologyName
                         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
                         add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, parameterName, technologyName)
-                    # edge_counter += 1
 
     def technologyConversionStorageParameters(self):
         """
@@ -259,6 +255,8 @@ class FillPyoDict:
         # add the parameters associated to the PWA approximation
         technologySubset = 'setConversionTechnologies'
         types = self.analysis['linearTechnologyApproximation'].keys()
+        self.pyoDict["nonlinearTechnologyApproximation"] = self.analysis['nonlinearTechnologyApproximation']
+
         for technologyName in self.system[technologySubset]:
             for type in types:
                 if technologyName in self.analysis['linearTechnologyApproximation'][type]:
@@ -270,9 +268,12 @@ class FillPyoDict:
 
                 df['index'] = df.index.values
                 for parameterName in self.analysis['dataInputs']['PWA'].values():
+                    if parameterName not in self.pyoDict:
+                        self.pyoDict[parameterName] = {}
                     for supportPointPWA in df.index.values:
                         # name = f'{parameterName}{type}{technologyName}'
                         name = f'{parameterName}{type}'
+
                         # list of columns of the dataframe to use as indexes
                         dfIndexNames = ['index']
                         # index of the single cell in the dataframe to add to the dictionary
@@ -282,4 +283,4 @@ class FillPyoDict:
                         # key to use in the Pyomo dictionary
                         key = (supportPointPWA)
                         # add the paramter to the Pyomo dictionary based on the key and the dataframe value in [dfIndex,dfColumn]
-                        add_parameter(self.pyoDict, df, dfIndexNames, dfIndex, dfColumn, key, name, technologyName)
+                        add_parameter(self.pyoDict[parameterName], df, dfIndexNames, dfIndex, dfColumn, key,type, technologyName)

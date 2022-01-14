@@ -22,7 +22,7 @@ analysis['spatialResolution'] = 'Test3'
 analysis['modelFormulation'] = 'HSC'
 analysis['nonlinearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}
 analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
-analysis['objective'] = 'BasicTotalCost'
+analysis['objective'] = 'TotalCost' # choices are ["TotalCost","CarbonEmissions","Risk"]
 
 ## System - settings update compared to default values
 system['setImportCarriers'] = ['electricity']
