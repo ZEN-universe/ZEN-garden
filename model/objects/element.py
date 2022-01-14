@@ -11,7 +11,6 @@ Description:  Class defining a standard element. Contains methods to add paramet
 import logging
 import pyomo.environ as pe
 
-
 class Element:
     # empty list of elements
     listOfElements = []
@@ -19,6 +18,10 @@ class Element:
     concreteModel = None
     # input dictionary
     pyoDict = None
+    # analysis
+    analysis = None
+    # system
+    system = None
 
     subsets     = dict()
     params      = dict()
@@ -142,17 +145,21 @@ class Element:
         cls.listOfElements.append(element)
 
     @classmethod
-    def setConcreteModel(cls,concreteModel):
-        """ set concreteModel to the class <Element>. Every child class can access model and add components.
-        :param concreteModel: pe.ConcreteModel """
-        cls.concreteModel = concreteModel
-    
-    @classmethod
-    def setPyoDict(cls,pyoDict):
-        """ set pyoDict 
-        :param pyoDict: input dictionary of optimization """
+    def setOptimizationAttributes(cls,analysis, system, pyoDict,model):
+        """ set attributes of class <Element> with inputs 
+        :param analysis: dictionary defining the analysis framework
+        :param system: dictionary defining the system
+        :param pyoDict: input dictionary of optimization
+        :param model: empty pe.ConcreteModel """
+        # set analysis
+        cls.analysis = analysis
+        # set system
+        cls.system = system
+        # set input dictionary
         cls.pyoDict = pyoDict
-    
+        # set concreteModel
+        cls.concreteModel = model
+        
     @classmethod
     def getConcreteModel(cls):
         """ get concreteModel of the class <Element>. Every child class can access model and add components.
@@ -164,6 +171,18 @@ class Element:
         """ get pyoDict 
         :return pyoDict: input dictionary of optimization """
         return cls.pyoDict
+
+    @classmethod
+    def getAnalysis(cls):
+        """ get analysis of the class <Element>. 
+        :return analysis: pe.analysis """
+        return cls.analysis
+
+    @classmethod
+    def getSystem(cls):
+        """ get system 
+        :return system: input dictionary of optimization """
+        return cls.system
 
     @classmethod
     def getAllElements(cls):
@@ -275,7 +294,6 @@ class Element:
     @classmethod
     def defineParams(cls):
         """ defines the pe.Params of the class <Element> """
-        ### TODO define pe.Params of the class <Element>
         # define pe.Params of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.defineParams()
@@ -283,7 +301,6 @@ class Element:
     @classmethod
     def defineVars(cls):
         """ defines the pe.Vars of the class <Element> """
-        ### TODO define pe.Vars of the class <Element>
         # define pe.Vars of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.defineVars()
@@ -291,7 +308,6 @@ class Element:
     @classmethod
     def defineConstraints(cls):
         """ defines the pe.Constraints of the class <Element> """
-        ### TODO define pe.Constraints of the class <Element>
         # define pe.Constraints of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.defineConstraints()
@@ -299,6 +315,61 @@ class Element:
     @classmethod
     def defineObjective(cls):
         """ defines the pe.Objective of the class <Element> """
-        ### TODO define pe.Objective of the class <Element>
-        pass
+        # get model
+        model = cls.getConcreteModel()
+
+        # get selected objective rule
+        if cls.getAnalysis()["objective"] == "TotalCost":
+            objectiveRule = objectiveTotalCostRule
+        elif cls.getAnalysis()["objective"] == "CarbonEmissions":
+            logging.info("Objective of carbon emissions not yet implemented")
+            objectiveRule = objectiveCarbonEmissionsRule
+        elif cls.getAnalysis()["objective"] == "Risk":
+            logging.info("Objective of carbon emissions not yet implemented")
+            objectiveRule = objectiveRiskRule
+        else:
+            logging.error("Objective type {} not known".format(cls.getAnalysis()["objective"]))
+
+        # get selected objective sense
+        if cls.getAnalysis()["sense"] == "minimize":
+            objectiveSense = pe.minimize
+        elif cls.getAnalysis()["sense"] == "maximize":
+            objectiveSense = pe.maximize
+        else:
+            logging.error("Objective sense {} not known".format(cls.getAnalysis()["sense"]))
+
+        # define objective
+        model.objective = pe.Objective(
+            rule = objectiveRule,
+            sense = objectiveSense
+        )
+
+# different objective
+def objectiveTotalCostRule(model):
+    """objective function to minimize the total cost"""
+
+    # CARRIERS
+    carrierImport = sum(sum(sum(model.importCarrierFlow[carrier, node, time] * model.importPriceCarrier[carrier, node, time]
+                            for time in model.setTimeSteps)
+                        for node in model.setNodes)
+                    for carrier in model.setImportCarriers)
+
+    carrierExport = sum(sum(sum(model.exportCarrierFlow[carrier, node, time] * model.exportPriceCarrier[carrier, node, time]
+                            for time in model.setTimeSteps)
+                        for node in model.setNodes)
+                    for carrier in model.setExportCarriers)
+
+    return(carrierImport - carrierExport + model.capexTotalTechnology)
+
+def objectiveCarbonEmissionsRule(model):
+    """objective function to minimize total emissions"""
+
+    # TODO implement objective functions for emissions
+    return pe.Constraint.Skip
+
+def objectiveRiskRule(model):
+    """objective function to minimize total risk"""
+
+    # TODO implement objective functions for risk
+    return pe.Constraint.Skip
 
