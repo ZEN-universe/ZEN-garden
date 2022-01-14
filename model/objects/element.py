@@ -1,12 +1,13 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:        October-2021
+Authors:        Alissa Ganter (aganter@ethz.ch)
+                Jacob Mannhardt (jmannhardt@ethz.ch)
+Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class defining a standard element. Contains methods to add parameters, variables and constraints to the
-              optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
-              optimization model as an input.
+Description:    Class defining a standard element. Contains methods to add parameters, variables and constraints to the
+                optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
+                optimization model as an input.
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe

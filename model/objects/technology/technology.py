@@ -1,12 +1,13 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:        October-2021
+Authors:        Alissa Ganter (aganter@ethz.ch)
+                Jacob Mannhardt (jmannhardt@ethz.ch)
+Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class defining the parameters, variables and constraints that hold for all technologies.
-              The class takes the abstract optimization model as an input, and returns the parameters, variables and
-              constraints that hold for all technologies.
+Description:    Class defining the parameters, variables and constraints that hold for all technologies.
+                The class takes the abstract optimization model as an input, and returns the parameters, variables and
+                constraints that hold for all technologies.
 ==========================================================================================================================================================================="""
 
 import logging
@@ -18,18 +19,14 @@ class Technology(Element):
     # empty list of elements
     listOfElements = []
 
-    def __init__(self, object, technologyType, technology):
+    def __init__(self, object, technology):
         """init generic technology object
         :param object: object of the abstract optimization model
-        :param technologyType: type of technology that is added to the model
         :param technology: technology that is added to the model"""
 
         logging.info('initialize object of a generic technology')
         super().__init__(object,technology)
-        self.type = technologyType
-        self.tech = technology
-        # self.dim  = self.getDimensions()
-
+        
         # set attributes
         self.minCapacity = object.pyoDict["minCapacity"][technology]
         self.maxCapacity = object.pyoDict["maxCapacity"][technology]

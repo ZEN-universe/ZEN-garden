@@ -1,12 +1,13 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:        October-2021
+Authors:        Alissa Ganter (aganter@ethz.ch)
+                Jacob Mannhardt (jmannhardt@ethz.ch)
+Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class defining the parameters, variables and constraints that hold for all transport technologies.
-              The class takes the abstract optimization model as an input, and returns the parameters, variables and
-              constraints that hold for the transport technologies.
+Description:    Class defining the parameters, variables and constraints that hold for all transport technologies.
+                The class takes the abstract optimization model as an input, and returns the parameters, variables and
+                constraints that hold for the transport technologies.
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
@@ -22,7 +23,7 @@ class TransportTechnology(Technology):
         :param object: object of the abstract optimization model"""
 
         logging.info('initialize object of a transport technology')
-        super().__init__(object, 'Transport', tech)
+        super().__init__(object, tech)
 
         # set attributes of transport technology
         self.distance = object.pyoDict["distance"][tech]

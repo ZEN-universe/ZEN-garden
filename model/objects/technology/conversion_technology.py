@@ -1,12 +1,13 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:        October-2021
+Authors:        Alissa Ganter (aganter@ethz.ch)
+                Jacob Mannhardt (jmannhardt@ethz.ch)
+Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class defining the parameters, variables and constraints of the conversion technologies.
-              The class takes the abstract optimization model as an input, and adds parameters, variables and
-              constraints of the conversion technologies.
+Description:    Class defining the parameters, variables and constraints of the conversion technologies.
+                The class takes the abstract optimization model as an input, and adds parameters, variables and
+                constraints of the conversion technologies.
 ==========================================================================================================================================================================="""
 
 import logging
@@ -23,7 +24,7 @@ class ConversionTechnology(Technology):
         :param object: object of the abstract model"""
 
         logging.info('initialize object of a conversion technology')
-        super().__init__(object, 'Conversion', tech)
+        super().__init__(object, tech)
 
         # add ConversionTechnology to list
         ConversionTechnology.addElement(self)

@@ -23,7 +23,7 @@ if not os.path.exists('outputs/logs'):
     os.mkdir('outputs/logs')
 logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.CRITICAL, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
 # prevent double printing
-logging.propagate = False
+logging.propagate = True
 
 # CREATE INPUT FILE
 prepare = Prepare(config.analysis, config.system)

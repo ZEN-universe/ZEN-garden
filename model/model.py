@@ -36,7 +36,6 @@ class Model():
         self.addElements()
         # define and construct components of self.model
         Element.defineModelComponents()
-        a=1
 
     def addElements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -63,15 +62,12 @@ class Model():
         solverName = solver['name']
         solverOptions = solver.copy()
         solverOptions.pop('name')
-        
-        logging.info("Create model instance")
-
-        self.instance = self.model.create_instance(data=pyoDict)
 
         logging.info(f"Solve model instance using {solverName}")
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
-        self.results = self.opt.solve(self.instance, tee=True, logfile=solver['logfile'])
-        self.instance.solutions.load_from(self.results)
+        self.results = self.opt.solve(self.model, tee=True, logfile=solver['logfile'])
+        self.model.solutions.load_from(self.results)
+        a=1
 
 
 

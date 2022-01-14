@@ -1,12 +1,13 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:        October-2021
+Authors:        Alissa Ganter (aganter@ethz.ch)
+                Jacob Mannhardt (jmannhardt@ethz.ch)
+Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class defining a generic energy carrier.
-              The class takes as inputs the abstract optimization model. The class adds parameters, variables and
-              constraints of a generic carrier and returns the abstract optimization model.
+Description:    Class defining a generic energy carrier.
+                The class takes as inputs the abstract optimization model. The class adds parameters, variables and
+                constraints of a generic carrier and returns the abstract optimization model.
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
@@ -163,7 +164,7 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
     if carrier in model.setImportCarriers:
         carrierImport = model.importCarrierFlow[carrier, node, time]
-    if carrier in model.setOutputCarriers:
+    if carrier in model.setExportCarriers:
         carrierDemand = model.demandCarrier[carrier, node, time]
         carrierExport = model.exportCarrierFlow[carrier, node, time]
 
