@@ -22,18 +22,16 @@ from model.objects.carrier import Carrier
 
 class Model():
 
-    def __init__(self, analysis, system, paths, pyoDict):
+    def __init__(self, analysis, system, paths):
         """create Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system
-        :param pyoDict: input dictionary of optimization """
+        :param system: dictionary defining the system"""
         self.analysis = analysis
         self.system = system
         self.paths = paths
-        self.pyoDict = pyoDict
         self.model = pe.ConcreteModel()
         # set optimization attributes (the three set above) to class <Element>
-        Element.setOptimizationAttributes(analysis, system, pyoDict,paths,self.model)
+        Element.setOptimizationAttributes(analysis, system,paths,self.model)
         # add Elements to optimization
         self.addElements()
         # calculate and store input data
@@ -47,7 +45,7 @@ class Model():
         :param system: dictionary defining the system"""
 
         # add element to define system
-        Element(self,"grid")
+        Element("grid")
         # add carrier 
         for carrier in self.system["setCarriers"]:
             Carrier(self,carrier)
@@ -66,10 +64,9 @@ class Model():
         for element in allElements:
             element.storeInputData()
 
-    def solve(self, solver, pyoDict):
+    def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
-        :param solver: dictionary containing the solver settings
-        :param pyoDict: dictionary containing the input data"""
+        :param solver: dictionary containing the solver settings """
 
         solverName = solver['name']
         solverOptions = solver.copy()
@@ -80,9 +77,6 @@ class Model():
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels =True)
         self.results = self.opt.solve(tee=True, logfile=solver['logfile'],options_string=solver_parameters)
-        # if infeasible
-        # if self.results.Solver.termination_condition == TerminationCondition.infeasible and solverName == "gurobi_persistent":
-        #     self
         self.model.solutions.load_from(self.results)
 
         a=1
