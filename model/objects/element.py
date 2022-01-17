@@ -13,15 +13,13 @@ import logging
 import pyomo.environ as pe
 import pandas as pd
 import os
-from preprocess.functions.calculate_input_data import calculateEdgesFromNodes
+from preprocess.functions.calculate_input_data import DataInput
 
 class Element:
     # empty list of elements
     listOfElements = []
     # pe.ConcreteModel
     concreteModel = None
-    # input dictionary
-    pyoDict = None
     # analysis
     analysis = None
     # system
@@ -29,33 +27,33 @@ class Element:
     # paths
     paths = None
 
-    def __init__(self,object,element):
+    def __init__(self,element):
         """ initialization of an element
-        :param object: object of the abstract optimization model
         :param element: element that is added to the model"""
-
         # set attributes
         self.name = element
         # add element to list
         Element.addElement(self)
+        # create DataInput object
+        self.dataInput = DataInput(Element.getSystem(),Element.getAnalysis(),Element.getElement("grid"))
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """      
         system = Element.getSystem()
         # in class <Element>, all sets are defined
-        self.setNodes = system["setNodes"]
-        self.setNodesOnEdges = calculateEdgesFromNodes(self.setNodes)
-        self.setEdges = self.setNodesOnEdges.keys()
-        self.setCarriers = system["setCarriers"]
-        self.setTechnologies = system["setTechnologies"]
-        self.setTimeSteps = system["setTimeSteps"]
-        self.setScenarios = system["setScenarios"]
+        self.setNodes                   = system["setNodes"]
+        self.setNodesOnEdges            = DataInput.calculateEdgesFromNodes(self.setNodes)
+        self.setEdges                   = list(self.setNodesOnEdges.keys())
+        self.setCarriers                = system["setCarriers"]
+        self.setTechnologies            = system["setTechnologies"]
+        self.setTimeSteps               = system["setTimeSteps"]
+        self.setScenarios               = system["setScenarios"]
         # carrier-specific
-        self.setImportCarriers = system["setImportCarriers"]
-        self.setExportCarriers = system["setExportCarriers"]
+        self.setImportCarriers          = system["setImportCarriers"]
+        self.setExportCarriers          = system["setExportCarriers"]
         # technology-specific
-        self.setConversionTechnologies = system["setConversionTechnologies"]
-        self.setTransportTechnologies = system["setTransportTechnologies"]
+        self.setConversionTechnologies  = system["setConversionTechnologies"]
+        self.setTransportTechnologies   = system["setTransportTechnologies"]
         
     ### --- classmethods --- ###
     # setter/getter classmethods
@@ -66,19 +64,16 @@ class Element:
         cls.listOfElements.append(element)
 
     @classmethod
-    def setOptimizationAttributes(cls,analysis, system, pyoDict,paths,model):
+    def setOptimizationAttributes(cls,analysis, system,paths,model):
         """ set attributes of class <Element> with inputs 
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
-        :param pyoDict: input dictionary of optimization
         :param paths: paths to input folders of data
         :param model: empty pe.ConcreteModel """
         # set analysis
         cls.analysis = analysis
         # set system
         cls.system = system
-        # set input dictionary
-        cls.pyoDict = pyoDict
         # set input paths
         cls.paths = paths
         # set concreteModel
@@ -89,12 +84,6 @@ class Element:
         """ get concreteModel of the class <Element>. Every child class can access model and add components.
         :return concreteModel: pe.ConcreteModel """
         return cls.concreteModel
-
-    @classmethod
-    def getPyoDict(cls):
-        """ get pyoDict 
-        :return pyoDict: input dictionary of optimization """
-        return cls.pyoDict
 
     @classmethod
     def getAnalysis(cls):
@@ -172,67 +161,7 @@ class Element:
 
         return dictOfAttributes
 
-    @classmethod
-    def extractInputData(cls, folderPath,manualFileName=None,indexSets=[]):
-        """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files 
-        :param manualFileName: name of selected file. If only one file in folder, not used
-        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :return dataDict: dictionary with attribute values """
-        # get system attribute
-        fileFormat = cls.getAnalysis()["fileFormat"]
-        indexNames = cls.getAnalysis()['dataInputs']
-        system = cls.getSystem()
-        # select data
-        fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1]==fileFormat)]
-        assert (manualFileName in fileNames or len(fileNames) == 1), "Selection of files was ambiguous. Select folder with single input file or select specific file by name"
-        for fileName in fileNames:
-            if len(fileNames) > 1 and fileName != manualFileName:
-                continue
-            # table attributes                     
-            dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None) 
-            break 
-        # select and drop scenario
-        if indexNames["nameScenarios"] in dfInput.columns:
-            dfInput = dfInput[dfInput[indexNames["nameScenarios"]]==system['setScenarios']].drop(indexNames["nameScenarios"],axis=1)
-        # set index by indexSets
-        assert set(indexSets).intersection(set(dfInput.columns)) == set(indexSets), f"requested index sets {set(indexSets) - set(indexSets).intersection(set(dfInput.columns))} are missing from input file for {fileName}"
-        dfInput = dfInput.set_index(indexSets)
-        # check if only one column remaining
-        assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
-        # select rows
-        indexList = []
-        for index in indexSets:
-            for indexName in indexNames:
-                if index == indexNames[indexName]:
-                    indexList.append(system[indexName.replace("name","set")])
-        # create pd.MultiIndex and select data
-        indexMultiIndex = pd.MultiIndex.from_product(indexList)
-        dfInput = dfInput.loc[indexMultiIndex]
-        # convert to dict
-        dataDict = dfInput.squeeze(axis=1).to_dict()
-        return dataDict
     
-    @classmethod
-    def extractAttributeData(cls, folderPath,attributeName):
-        """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files 
-        :param attributeName: name of selected attribute
-        :return attributeValue: attribute value """
-        # get system attribute
-        indexNames = cls.getAnalysis()['dataInputs']
-        system = cls.getSystem()
-        grid = cls.getElement("grid")
-        # select data
-        fileName = "attributes.csv"
-        assert fileName in os.listdir(folderPath), f"Folder {folderPath} does not contain '{fileName}'"       
-        dfInput = pd.read_csv(folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
-        # set index by indexSets
-        assert attributeName in dfInput.index, f"Attribute '{attributeName}' not in {fileName} in {folderPath}"
-        try:
-            return float(dfInput.loc[attributeName])
-        except:
-            return dfInput.loc[attributeName]
 
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Element --- ###
     # Here, after defining Element-specific components, the components of the other classes are defined
@@ -256,7 +185,6 @@ class Element:
         # define pe.Sets of the class <Element>
         model = cls.getConcreteModel()
         grid = cls.getElement("Grid")
-        pyoDict = cls.getPyoDict()
 
         # nodes
         model.setNodes = pe.Set(

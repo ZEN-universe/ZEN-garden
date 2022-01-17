@@ -1,7 +1,8 @@
 """===========================================================================================================================================================================
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
-Authors:      Davide Tonelli (davidetonelli@outlook.com), Alissa Ganter (aganter@ethz.ch)
+Authors:      Davide Tonelli (davidetonelli@outlook.com), Alissa Ganter (aganter@ethz.ch), Jacob Mannhardt (jmannhardt@ethz.ch)
+
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class to convert the dictionary into a Pyomo compatible dictionary to be passed to the compile routine.

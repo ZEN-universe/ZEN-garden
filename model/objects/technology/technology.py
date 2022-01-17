@@ -33,26 +33,16 @@ class Technology(Element):
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get system information
-        system = Element.getSystem()   
-        paths = Element.getPaths()   
-        indexNames = Element.getAnalysis()['dataInputs']
-        technologyTypes = Element.getAnalysis()['subsets']["setTechnologies"]
+        system              = Element.getSystem()   
+        paths               = Element.getPaths()   
+        technologyTypes     = Element.getAnalysis()['subsets']["setTechnologies"]
         # set attributes of technology
-        # parameters
         for technologyType in technologyTypes:
             if self.name in system[technologyType]:
-                _inputPath = paths[technologyType][self.name]["folder"]
-                self.minCapacity = Element.extractAttributeData(_inputPath,"minCapacity")
-                self.maxCapacity = Element.extractAttributeData(_inputPath,"maxCapacity")
-                self.lifetime = Element.extractAttributeData(_inputPath,"lifetime")
-                if technologyType == "setConversionTechnologies":
-                    self.referenceCarrier = Element.extractAttributeData(_inputPath,"referenceCarrier")
-                    self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-                elif technologyType == "setTransportTechnologies":
-                    self.referenceCarrier = Element.extractAttributeData(_inputPath,"referenceCarrier")
-                    # transport data
-                    # self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-
+                _inputPath          = paths[technologyType][self.name]["folder"]
+                self.minCapacity    = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
+                self.maxCapacity    = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
+                self.lifetime       = self.dataInput.extractAttributeData(_inputPath,"lifetime")
 
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
@@ -74,7 +64,6 @@ class Technology(Element):
             initialize = technologyLocationRule,
             doc = "Combined set of technologies and locations. Conversion technologies are paired with nodes, transport technologies are paired with edges"
         )
-
         # add pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.defineSets()
@@ -82,9 +71,9 @@ class Technology(Element):
     @classmethod
     def defineParams(cls):
         """ defines the pe.Params of the class <Technology> """
-        ### define pe.Param of the class <Technology>
+        # define pe.Param of the class <Technology>
         model = cls.getConcreteModel()
-        
+
         # minimum capacity
         model.minCapacity = pe.Param(
             model.setTechnologies,
@@ -200,8 +189,7 @@ def technologyLocationRule(model):
     technologyLocationList.extend([(technology,location) for technology in model.setTransportTechnologies for location in model.setEdges])
     return technologyLocationList
 
-
-### --- staticmethods with constraint rules --- ###
+### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class
 def constraintTechnologyAvailabilityRule(model, tech, location, time):
     """limited availability of  technology"""

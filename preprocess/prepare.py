@@ -1,8 +1,9 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
-Created:      October-2021
-Authors:      Davide Tonelli (davidetonelli@outlook.com)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:        October-2021
+Authors:        Davide Tonelli (davidetonelli@outlook.com
+                Jacob Mannhardt (jmannhardt@ethz.ch)
+Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class to read the data from input files, collect them into a dictionary and convert the dictionary into a Pyomo
                 compatible dictionary to be passed to the compile routine.
@@ -36,6 +37,7 @@ class Prepare:
         # create a dictionary with the paths to access the model inputs
         self.createPaths()
         
+        # only kept for NlpDict
         # initialise a dictionary with the keys of the data to be read
         self.initDict() 
         
@@ -45,10 +47,8 @@ class Prepare:
         # update system and analysis with derived settings
         self.configUpdate()        
         
-        # create new data items from default values and input data
-        self.createData()
-        
         # convert data into a pyomo dictionary
+        # only kept for NlpDict
         self.createPyoDict()
 
     def configUpdate(self):
@@ -132,22 +132,22 @@ class Prepare:
         :return: dictionary with data based on system in Pyomo format      
         """
         
-        self.pyoDict = {}   
+        # self.pyoDict = {}   
         
-        # fill the dictionary with the sets based on system 
-        FillPyoDict.sets(self)
-        # fill the dictionary with the parameters related to the carrier
-        FillPyoDict.carrierParameters(self)
-        # fill the dictionary with the parameters related to the transport technology
-        FillPyoDict.technologyTranspParameters(self)
-        # fill the dictionary with the parameters related to the storage and the conversion technology
-        FillPyoDict.technologyConversionStorageParameters(self)
-        # fill the dictionary with the parameters attributes of a technology
-        FillPyoDict.attributes(self)
-        # fill the dictionary with the conversion coefficients of a technology
-        FillPyoDict.conversionBalanceParameters(self)
-        # fill the dictionary with the PWA input data
-        FillPyoDict.dataPWAApproximation(self)
+        # # fill the dictionary with the sets based on system 
+        # FillPyoDict.sets(self)
+        # # fill the dictionary with the parameters related to the carrier
+        # FillPyoDict.carrierParameters(self)
+        # # fill the dictionary with the parameters related to the transport technology
+        # FillPyoDict.technologyTranspParameters(self)
+        # # fill the dictionary with the parameters related to the storage and the conversion technology
+        # FillPyoDict.technologyConversionStorageParameters(self)
+        # # fill the dictionary with the parameters attributes of a technology
+        # FillPyoDict.attributes(self)
+        # # fill the dictionary with the conversion coefficients of a technology
+        # FillPyoDict.conversionBalanceParameters(self)
+        # # fill the dictionary with the PWA input data
+        # FillPyoDict.dataPWAApproximation(self)
 
         self.nlpDict = {None:{}}
         

@@ -34,25 +34,20 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths = Element.getPaths()   
-        indexNames = Element.getAnalysis()['dataInputs']
-        pyoDict = Element.getPyoDict()
+        paths       = Element.getPaths()   
+        indexNames  = Element.getAnalysis()['dataInputs']
+
         # set attributes of technology
-        # parameters
-        _inputPath = paths["setTransportTechnologies"][self.name]["folder"]
-        # transport data
-        self.referenceCarrier = [Element.extractAttributeData(_inputPath,"referenceCarrier")]
-        self.minFlow = Element.extractAttributeData(_inputPath,"minFlow")
-        self.maxFlow = Element.extractAttributeData(_inputPath,"maxFlow")
-        self.lossFlow = Element.extractAttributeData(_inputPath,"lossFlow")
-        
-
-        # # set attributes of transport technology
-        # self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-        self.availability = pyoDict["availability"][self.name]
-        self.distance = pyoDict["distance"][self.name]
-        self.costPerDistance = pyoDict["costPerDistance"][self.name]
-
+        _inputPath              = paths["setTransportTechnologies"][self.name]["folder"]
+        self.referenceCarrier   = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
+        self.minFlow            = self.dataInput.extractAttributeData(_inputPath,"minFlow")
+        self.maxFlow            = self.dataInput.extractAttributeData(_inputPath,"maxFlow")
+        self.lossFlow           = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
+        # set attributes of transport technology
+        self.availability       = self.dataInput.extractTransportInputData(_inputPath,"availability",[indexNames["nameTimeSteps"]])
+        # TODO calculate for non Euclidean distance
+        self.distance           = self.dataInput.extractTransportInputData(_inputPath,"distanceEuclidean")
+        self.costPerDistance    = self.dataInput.extractTransportInputData(_inputPath,"costPerDistance",[indexNames["nameTimeSteps"]])
 
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod

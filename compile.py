@@ -28,8 +28,8 @@ logging.propagate = False
 # CREATE INPUT FILE
 prepare = Prepare(config.analysis, config.system)
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-model = Model(config.analysis, config.system, prepare.paths, prepare.pyoDict)
-model.solve(config.solver, prepare.pyoDict)
+model = Model(config.analysis, config.system, prepare.paths)
+model.solve(config.solver)
 
 # EVALUATE RESULTS
 evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')

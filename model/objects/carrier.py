@@ -31,23 +31,20 @@ class Carrier(Element):
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get system information
-        system = Element.getSystem()   
-        paths = Element.getPaths()   
-        indexNames = Element.getAnalysis()['dataInputs']
+        system      = Element.getSystem()   
+        paths       = Element.getPaths()   
+        indexNames  = Element.getAnalysis()['dataInputs']
         # set attributes of carrier
-        # sets
-        
-        # parameters
         if self.name in system["setImportCarriers"]:
-            _inputPath = paths["setImportCarriers"][self.name]["folder"]
-            self.availabilityCarrier = Element.extractInputData(_inputPath,"availabilityCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-            self.exportPriceCarrier = Element.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-            self.importPriceCarrier = Element.extractInputData(_inputPath,"importPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            _inputPath                  = paths["setImportCarriers"][self.name]["folder"]
+            self.availabilityCarrier    = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"importPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
         elif self.name in system["setExportCarriers"]:
-            _inputPath = paths["setExportCarriers"][self.name]["folder"]
-            self.demandCarrier = Element.extractInputData(_inputPath,"demandCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-            self.exportPriceCarrier = Element.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-            self.importPriceCarrier = Element.extractInputData(_inputPath,"importPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            _inputPath                  = paths["setExportCarriers"][self.name]["folder"]
+            self.demandCarrier          = self.dataInput.extractInputData(_inputPath,"demandCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"importPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
 
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod

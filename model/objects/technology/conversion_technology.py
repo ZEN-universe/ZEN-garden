@@ -35,83 +35,89 @@ class ConversionTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths = Element.getPaths()   
-        indexNames = Element.getAnalysis()['dataInputs']
+        paths       = Element.getPaths()   
+        indexNames  = Element.getAnalysis()['dataInputs']
+
         # set attributes of technology
-        # parameters
-        _inputPath = paths["setConversionTechnologies"][self.name]["folder"]
-        self.referenceCarrier = [Element.extractAttributeData(_inputPath,"referenceCarrier")]
-        self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+        _inputPath                              = paths["setConversionTechnologies"][self.name]["folder"]
+        self.referenceCarrier                   = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
+        self.availability                       = self.dataInput.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+        # define input and output carrier
+        self.inputCarrier,self.outputCarrier    = self.dataInput.extractConversionCarriers(_inputPath,self.referenceCarrier,"conversionBalanceConstant")
+        # extract PWA parameters
+        self.PWAParameter                       = self.dataInput.extractPWAData(_inputPath,self.name)
 
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
     def defineSets(cls):
         """ defines the pe.Sets of the class <ConversionTechnology> """
         model = cls.getConcreteModel()
-        pyoDict = cls.getPyoDict()
-
-        # technologies and respective input carriers 
-        model.setInputCarriersTechs = pe.Set(
-            initialize = [(tech,inputCarrier) for tech in pyoDict["setInputCarriers"] for inputCarrier in pyoDict["setInputCarriers"][tech]],
-            doc = "set of techs and their respective input carriers"
-        )
-        # technologies and respective output carriers
-        model.setOutputCarriersTechs = pe.Set(
-            initialize = [(tech,outputCarrier) for tech in pyoDict["setOutputCarriers"] for outputCarrier in pyoDict["setOutputCarriers"][tech]],
-            doc = "set of techs and their respective output carriers"
-        )
+        # get input carriers
+        _inputCarriers      = cls.getAttributeOfAllElements("inputCarrier")
+        _outputCarriers     = cls.getAttributeOfAllElements("outputCarrier")
         # input carriers of technology
         model.setInputCarriers = pe.Set(
             model.setConversionTechnologies,
-            initialize = lambda _,tech: pyoDict["setInputCarriers"][tech],
-            doc = "set of carriers that are an input to a specific conversion technology"
+            initialize = _inputCarriers,
+            doc = "set of carriers that are an input to a specific conversion technology.\n\t Dimensions: setConversionTechnologies"
         )
         # output carriers of technology
         model.setOutputCarriers = pe.Set(
             model.setConversionTechnologies,
-            initialize = lambda _,tech: pyoDict["setOutputCarriers"][tech],
-            doc = "set of carriers that are an output to a specific conversion technology"
+            initialize = _outputCarriers,
+            doc = "set of carriers that are an output to a specific conversion technology.\n\t Dimensions: setConversionTechnologies"
         )
+        # technologies and respective input carriers 
+        model.setInputCarriersTechs = pe.Set(
+            initialize = [(tech,inputCarrier) for tech in _inputCarriers for inputCarrier in _inputCarriers[tech]],
+            doc = "set of techs and their respective input carriers"
+        )
+        # technologies and respective output carriers
+        model.setOutputCarriersTechs = pe.Set(
+            initialize = [(tech,outputCarrier) for tech in _outputCarriers for outputCarrier in _outputCarriers[tech]],
+            doc = "set of techs and their respective output carriers"
+        )
+        
         # set of PWA/NL technologies in capex/ConverEfficiency approximation
         model.setPWACapexTechs = pe.Set(
-            initialize=[tech for tech in model.setConversionTechnologies if tech not in pyoDict["nonlinearTechnologyApproximation"]["Capex"]],
+            initialize=[tech for tech in model.setConversionTechnologies if tech not in cls.getAnalysis()["nonlinearTechnologyApproximation"]["Capex"]],
             doc = "Set of conversion technologies for which the capex is PWA modeled")
         model.setNLCapexTechs = pe.Set(
-            initialize=[tech for tech in model.setConversionTechnologies if tech in pyoDict["nonlinearTechnologyApproximation"]["Capex"]],
+            initialize=model.setConversionTechnologies - model.setPWACapexTechs,
             doc = "Set of conversion technologies for which the capex is NL modeled")
         model.setPWAConverEfficiencyTechs = pe.Set(
-            initialize=[tech for tech in model.setConversionTechnologies if tech not in pyoDict["nonlinearTechnologyApproximation"]["ConverEfficiency"]],
+            initialize=[tech for tech in model.setConversionTechnologies if tech not in cls.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"]],
             doc = "Set of conversion technologies for which the ConverEfficiency is PWA modeled")
         model.setNLConverEfficiencyTechs = pe.Set(
-            initialize=[tech for tech in model.setConversionTechnologies if tech in pyoDict["nonlinearTechnologyApproximation"]["ConverEfficiency"]],
+            initialize=model.setConversionTechnologies - model.setPWAConverEfficiencyTechs,
             doc = "Set of conversion technologies for which the ConverEfficiency is NL modeled")
         # set of variable indices in capex/ConverEfficiency approximation
         model.setPWACapex = pe.Set(
             initialize = [(tech,node,timeStep)  for tech in model.setPWACapexTechs
-                                                for node in pyoDict["setNodes"]
-                                                for timeStep in pyoDict["setTimeSteps"]],
+                                                for node in model.setNodes
+                                                for timeStep in model.setTimeSteps],
             doc = "Set of capex indices for which the capex is PWA modeled"
         )
         model.setNLCapex = pe.Set(
             initialize = [(tech,node,timeStep)  for tech in model.setNLCapexTechs
-                                                for node in pyoDict["setNodes"]
-                                                for timeStep in pyoDict["setTimeSteps"]],
+                                                for node in model.setNodes
+                                                for timeStep in model.setTimeSteps],
             doc = "Set of capex indices for which the capex is nonlinearly modeled"
         )
         model.setPWAConverEfficiency = pe.Set(
             initialize = [(tech,inputCarrier,outputCarrier,node,timeStep) for tech in model.setPWAConverEfficiencyTechs 
-                                                            for inputCarrier in pyoDict["setInputCarriers"][tech] 
-                                                            for outputCarrier in pyoDict["setOutputCarriers"][tech]
-                                                            for node in pyoDict["setNodes"]
-                                                            for timeStep in pyoDict["setTimeSteps"]],
+                                                            for inputCarrier in model.setInputCarriers[tech] 
+                                                            for outputCarrier in model.setOutputCarriers[tech]
+                                                            for node in model.setNodes
+                                                            for timeStep in model.setTimeSteps],
             doc = "Set of ConverEfficiency indices for which the ConverEfficiency is PWA modeled"
         )
         model.setNLConverEfficiency = pe.Set(
             initialize = [(tech,inputCarrier,outputCarrier,node,timeStep) for tech in model.setNLConverEfficiencyTechs 
-                                                            for inputCarrier in pyoDict["setInputCarriers"][tech] 
-                                                            for outputCarrier in pyoDict["setOutputCarriers"][tech]
-                                                            for node in pyoDict["setNodes"]
-                                                            for timeStep in pyoDict["setTimeSteps"]],
+                                                            for inputCarrier in model.setInputCarriers[tech] 
+                                                            for outputCarrier in model.setOutputCarriers[tech]
+                                                            for node in model.setNodes
+                                                            for timeStep in model.setTimeSteps],
             doc = "Set of ConverEfficiency indices for which the ConverEfficiency is nonlinearly modeled"
         )
         
@@ -170,8 +176,6 @@ class ConversionTechnology(Technology):
     def defineConstraints(cls):
         """ defines the pe.Constraints of the class <ConversionTechnology> """
         model = cls.getConcreteModel()
-        pyoDict = cls.pyoDict
-
         # maximum output flow 
         model.constraintConversionTechnologyMaxOutput = pe.Constraint(
             model.setOutputCarriersTechs,
@@ -180,19 +184,18 @@ class ConversionTechnology(Technology):
             rule = constraintConversionTechnologyMaxOutputRule,
             doc = 'maximum output of conversion technology is limited by the installed capacity. \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps'
         )
-
         # add PWA constraints
         # capex
         if model.setPWACapex: 
             # if setPWACapex contains technologies:
-            PWABreakpoints,PWAValues = calculatePWABreakpointsValues(model.setPWACapex,"Capex",pyoDict)
+            PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWACapex,"Capex")
             model.constraintPWACapex = pe.Piecewise(model.setPWACapex,
                 model.capexTechnologyPWA,model.capacityTechnologyPWA,
                 pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True)
         # ConvEfficiency
         if model.setPWAConverEfficiency:
             # if setPWAConverEfficiency contains technologies:
-            PWABreakpoints,PWAValues = calculatePWABreakpointsValues(model.setPWAConverEfficiency,"ConverEfficiency",pyoDict)
+            PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWAConverEfficiency,"ConverEfficiency")
             model.constraintPWAConverEfficiency = pe.Piecewise(model.setPWAConverEfficiency,
                 model.outputFlowPWA,model.inputFlowPWA,
                 pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True)
@@ -232,36 +235,37 @@ class ConversionTechnology(Technology):
             doc = "couples the real outputFlow variables with the modeled variables. \n\t Dimension: setOutputCarriers, setNodes, setTimeSteps."
         )
     
-def calculatePWABreakpointsValues(setPWA,typePWA,pyoDict):
-    """ calculates the breakpoints and function values for piecewise affine constraint
-    :param setPWA: set of technologies, for which PWA is performed
-    :param typePWA: variable, for which PWA is performed
-    :param pyoDict: input dictionary
-    :return PWABreakpoints: dict of PWA breakpoint values
-    :return PWAValues: dict of PWA function values """
-    PWABreakpoints = {}
-    PWAValues = {}
+    @classmethod
+    def calculatePWABreakpointsValues(cls,setPWA,typePWA):
+        """ calculates the breakpoints and function values for piecewise affine constraint
+        :param setPWA: set of technologies, for which PWA is performed
+        :param typePWA: variable, for which PWA is performed
+        :return PWABreakpoints: dict of PWA breakpoint values
+        :return PWAValues: dict of PWA function values """
+        PWABreakpoints = {}
+        PWAValues = {}
 
-    # iterate through PWA technologies
-    for index in setPWA:
-        PWABreakpoints[index] = []
-        PWAValues[index] = []
-        if setPWA.dimen > 1:
-            tech = index[0]
-        else:
-            tech = index
-        # retrieve PWA variables
-        _slope = pyoDict["slope"][typePWA][tech]
-        _intercept = pyoDict["intercept"][typePWA][tech]
-        _ubSegment = pyoDict["ubSegment"][typePWA][tech]
-        _lbSegment = pyoDict["lbSegment"][typePWA][tech]
-        for _section in _slope:
-            PWABreakpoints[index].append(_lbSegment[_section])
-            PWAValues[index].append(_slope[_section]*_lbSegment[_section] + _intercept[_section])
-        # last entry
-        PWABreakpoints[index].append(_ubSegment[_section])
-        PWAValues[index].append(_slope[_section]*_ubSegment[_section] + _intercept[_section])
-    return PWABreakpoints,PWAValues
+        # iterate through PWA technologies
+        for index in setPWA:
+            PWABreakpoints[index] = []
+            PWAValues[index] = []
+            if setPWA.dimen > 1:
+                tech = index[0]
+            else:
+                tech = index
+            # retrieve PWA variables
+            PWAParameter = cls.getAttributeOfAllElements("PWAParameter")
+            _slope = PWAParameter[(tech,typePWA)]["slope"]
+            _intercept = PWAParameter[(tech,typePWA)]["intercept"]
+            _ubSegment = PWAParameter[(tech,typePWA)]["ubSegment"]
+            _lbSegment = PWAParameter[(tech,typePWA)]["lbSegment"]
+            for _section in _slope:
+                PWABreakpoints[index].append(_lbSegment[_section])
+                PWAValues[index].append(_slope[_section]*_lbSegment[_section] + _intercept[_section])
+            # last entry
+            PWABreakpoints[index].append(_ubSegment[_section])
+            PWAValues[index].append(_slope[_section]*_ubSegment[_section] + _intercept[_section])
+        return PWABreakpoints,PWAValues
 
 ### --- functions with constraint rules --- ###
 def constraintConversionTechnologyMaxOutputRule(model, tech, carrierOut, node, time):

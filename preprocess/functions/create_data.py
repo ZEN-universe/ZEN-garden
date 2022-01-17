@@ -61,7 +61,7 @@ class Create:
                     dfAvailabilityMatrix.loc[importCarrier, exportCarrier] = 1
             # change the indexing and rename it as column
             self.data[technologySubset][technologyName][newFileNameEfficiency] = dfConversionBalance.reset_index()
-            self.data[technologySubset][technologyName][newFileNameAvailability] = dfAvailabilityMatrix.reset_index()            
+            self.data[technologySubset][technologyName][newFileNameAvailability] = dfAvailabilityMatrix.reset_index()      # TODO is availability matrix used?      
             self.data[technologySubset][technologyName][newFileNameEfficiency].rename(columns={"index": self.analysis['dataInputs']['nameCarrier']}, inplace=True)
             self.data[technologySubset][technologyName][newFileNameAvailability].rename(columns={"index": self.analysis['dataInputs']['nameCarrier']}, inplace=True)
             
