@@ -12,6 +12,7 @@ Description:    Class defining a generic energy carrier.
 import logging
 import pyomo.environ as pe
 from model.objects.element import Element
+# from preprocess.functions.calculate_input_data import extractInputData
 
 class Carrier(Element):
     # empty list of elements
@@ -24,31 +25,43 @@ class Carrier(Element):
 
         logging.info('initialize object of a generic carrier')
         super().__init__(object,carrier)
-
-        # set attributes of carrier
-        if carrier in self.system["setImportCarriers"]:
-            self.availabilityCarrier = object.pyoDict["availabilityCarrier"][carrier]
-        elif carrier in self.system["setExportCarriers"]:
-            self.demandCarrier = object.pyoDict["demandCarrier"][carrier]
-        self.exportPriceCarrier = object.pyoDict["exportPriceCarrier"][carrier]
-        self.importPriceCarrier = object.pyoDict["importPriceCarrier"][carrier]
         # add carrier to list
         Carrier.addElement(self)
+
+    def storeInputData(self):
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
+        # get system information
+        system = Element.getSystem()   
+        paths = Element.getPaths()   
+        indexNames = Element.getAnalysis()['dataInputs']
+        # set attributes of carrier
+        # sets
+        
+        # parameters
+        if self.name in system["setImportCarriers"]:
+            _inputPath = paths["setImportCarriers"][self.name]["folder"]
+            self.availabilityCarrier = Element.extractInputData(_inputPath,"availabilityCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            self.exportPriceCarrier = Element.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            self.importPriceCarrier = Element.extractInputData(_inputPath,"importPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+        elif self.name in system["setExportCarriers"]:
+            _inputPath = paths["setExportCarriers"][self.name]["folder"]
+            self.demandCarrier = Element.extractInputData(_inputPath,"demandCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            self.exportPriceCarrier = Element.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+            self.importPriceCarrier = Element.extractInputData(_inputPath,"importPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
 
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
     def defineSets(cls):
         """ defines the pe.Sets of the class <Carrier> """
         model = cls.getConcreteModel()
-        pyoDict = cls.getPyoDict()
         
         # Import carriers
         model.setImportCarriers = pe.Set(
-            initialize = pyoDict["setImportCarriers"],
+            initialize = Element.getAttributeOfElement("grid","setImportCarriers"),
             doc='Set of technology specific Import carriers. Import defines the import over the system boundaries.')
         # Export carriers
         model.setExportCarriers = pe.Set(
-            initialize = pyoDict["setExportCarriers"],
+            initialize = Element.getAttributeOfElement("grid","setExportCarriers"),
             doc='Set of technology specific Export carriers. Export defines the export over the system boundaries.')
         
     @classmethod

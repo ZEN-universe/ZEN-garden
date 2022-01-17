@@ -11,6 +11,7 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 
 import logging
+import sys
 import pyomo.environ as pe
 import numpy as np
 from model.objects.element import Element
@@ -26,30 +27,47 @@ class Technology(Element):
 
         logging.info('initialize object of a generic technology')
         super().__init__(object,technology)
-        
-        # set attributes
-        self.minCapacity = object.pyoDict["minCapacity"][technology]
-        self.maxCapacity = object.pyoDict["maxCapacity"][technology]
-        self.lifetime = object.pyoDict["lifetime"][technology]
-        self.availability = object.pyoDict["availability"][technology]
         # add Technology to list
         Technology.addElement(self)
     
+    def storeInputData(self):
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
+        # get system information
+        system = Element.getSystem()   
+        paths = Element.getPaths()   
+        indexNames = Element.getAnalysis()['dataInputs']
+        technologyTypes = Element.getAnalysis()['subsets']["setTechnologies"]
+        # set attributes of technology
+        # parameters
+        for technologyType in technologyTypes:
+            if self.name in system[technologyType]:
+                _inputPath = paths[technologyType][self.name]["folder"]
+                self.minCapacity = Element.extractAttributeData(_inputPath,"minCapacity")
+                self.maxCapacity = Element.extractAttributeData(_inputPath,"maxCapacity")
+                self.lifetime = Element.extractAttributeData(_inputPath,"lifetime")
+                if technologyType == "setConversionTechnologies":
+                    self.referenceCarrier = Element.extractAttributeData(_inputPath,"referenceCarrier")
+                    self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+                elif technologyType == "setTransportTechnologies":
+                    self.referenceCarrier = Element.extractAttributeData(_inputPath,"referenceCarrier")
+                    # transport data
+                    # self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+
+
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
     def defineSets(cls):
         """ defines the pe.Sets of the class <Technology> """
         # define the pe.Sets of the class <Technology>
         model = cls.getConcreteModel()
-        pyoDict = cls.getPyoDict()
         
         # conversion technologies
         model.setConversionTechnologies = pe.Set(
-            initialize=pyoDict["setConversionTechnologies"], 
+            initialize=Element.getAttributeOfElement("grid","setConversionTechnologies"), 
             doc='Set of conversion technologies. Subset: setTechnologies')
         # transport technologies
         model.setTransportTechnologies = pe.Set(
-            initialize=pyoDict["setTransportTechnologies"], 
+            initialize=Element.getAttributeOfElement("grid","setTransportTechnologies"), 
             doc='Set of transport technologies. Subset: setTechnologies')
         # combined technology and location set
         model.setTechnologyLocation = pe.Set(
@@ -66,7 +84,7 @@ class Technology(Element):
         """ defines the pe.Params of the class <Technology> """
         ### define pe.Param of the class <Technology>
         model = cls.getConcreteModel()
-
+        
         # minimum capacity
         model.minCapacity = pe.Param(
             model.setTechnologies,

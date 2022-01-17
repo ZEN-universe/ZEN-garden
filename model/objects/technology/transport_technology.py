@@ -13,6 +13,7 @@ import logging
 import pyomo.environ as pe
 import numpy as np
 from model.objects.technology.technology import Technology
+from model.objects.element import Element
 
 class TransportTechnology(Technology):
     # empty list of elements
@@ -25,32 +26,49 @@ class TransportTechnology(Technology):
         logging.info('initialize object of a transport technology')
         super().__init__(object, tech)
 
-        # set attributes of transport technology
-        self.distance = object.pyoDict["distance"][tech]
-        self.costPerDistance = object.pyoDict["costPerDistance"][tech]
-        self.minFlow = object.pyoDict["minFlow"][tech]
-        self.maxFlow = object.pyoDict["maxFlow"][tech]
-        self.lossFlow = object.pyoDict["lossFlow"][tech]
-        
         # add TransportTechnology to list
         TransportTechnology.addElement(self)
+
+    def storeInputData(self):
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
+        # get attributes from class <Technology>
+        super().storeInputData()
+        # get system information
+        paths = Element.getPaths()   
+        indexNames = Element.getAnalysis()['dataInputs']
+        pyoDict = Element.getPyoDict()
+        # set attributes of technology
+        # parameters
+        _inputPath = paths["setTransportTechnologies"][self.name]["folder"]
+        # transport data
+        self.referenceCarrier = [Element.extractAttributeData(_inputPath,"referenceCarrier")]
+        self.minFlow = Element.extractAttributeData(_inputPath,"minFlow")
+        self.maxFlow = Element.extractAttributeData(_inputPath,"maxFlow")
+        self.lossFlow = Element.extractAttributeData(_inputPath,"lossFlow")
+        
+
+        # # set attributes of transport technology
+        # self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+        self.availability = pyoDict["availability"][self.name]
+        self.distance = pyoDict["distance"][self.name]
+        self.costPerDistance = pyoDict["costPerDistance"][self.name]
+
 
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod
     def defineSets(cls):
         """ defines the pe.Sets of the class <TransportTechnology> """
         model = cls.getConcreteModel()
-        pyoDict = cls.getPyoDict()
 
         # technologies and respective transport carriers
         model.setTransportCarriersTech = pe.Set(
-            initialize = [(tech,pyoDict["setTransportCarriers"][tech]) for tech in pyoDict["setTransportCarriers"]],
+            initialize = [(tech,cls.getAttributeOfAllElements("referenceCarrier")[tech]) for tech in cls.getAttributeOfAllElements("referenceCarrier")],
             doc='set of techs and their respective transport carriers.')
 
         # transport carriers of technology
         model.setTransportCarriers = pe.Set(
             model.setTransportTechnologies,
-            initialize = lambda _,tech: pyoDict["setTransportCarriers"][tech],
+            initialize = lambda _,tech: cls.getAttributeOfAllElements("referenceCarrier")[tech],
             doc="set of carriers that are transported in a specific transport technology")
 
     @classmethod

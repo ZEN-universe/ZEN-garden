@@ -67,7 +67,7 @@ system['folderOutput'] = 'outputs/results/'
 
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
-solver['name']      = 'gurobi'
+solver['name']      = 'gurobi_persistent'
 # optimality gap
 solver['MIPgap']    = 0.01
 # time limit in seconds

@@ -5,3 +5,4 @@ minLoad,0
 maxLoad,1
 valueCapex,700000
 lifetime,10
+referenceCarrier,hydrogen

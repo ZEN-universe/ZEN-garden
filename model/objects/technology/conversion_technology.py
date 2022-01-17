@@ -14,6 +14,7 @@ import logging
 from pyomo.core.base import initializer
 import pyomo.environ as pe
 from model.objects.technology.technology import Technology
+from model.objects.element import Element
 
 class ConversionTechnology(Technology):
     # empty list of elements
@@ -28,6 +29,19 @@ class ConversionTechnology(Technology):
 
         # add ConversionTechnology to list
         ConversionTechnology.addElement(self)
+
+    def storeInputData(self):
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
+        # get attributes from class <Technology>
+        super().storeInputData()
+        # get system information
+        paths = Element.getPaths()   
+        indexNames = Element.getAnalysis()['dataInputs']
+        # set attributes of technology
+        # parameters
+        _inputPath = paths["setConversionTechnologies"][self.name]["folder"]
+        self.referenceCarrier = [Element.extractAttributeData(_inputPath,"referenceCarrier")]
+        self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
 
     ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod

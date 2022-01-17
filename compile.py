@@ -21,14 +21,14 @@ if not os.path.exists('outputs/logs'):
     if not os.path.exists('outputs'):
         os.mkdir('outputs')
     os.mkdir('outputs/logs')
-logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.CRITICAL, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.DEBUG, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
 # prevent double printing
-logging.propagate = True
+logging.propagate = False
 
 # CREATE INPUT FILE
 prepare = Prepare(config.analysis, config.system)
 # FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-model = Model(config.analysis, config.system, prepare.pyoDict)
+model = Model(config.analysis, config.system, prepare.paths, prepare.pyoDict)
 model.solve(config.solver, prepare.pyoDict)
 
 # EVALUATE RESULTS

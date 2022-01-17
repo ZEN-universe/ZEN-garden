@@ -12,6 +12,7 @@ Description:  Class defining the Concrete optimization model.
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
+import os
 from pyomo.opt import SolverStatus, TerminationCondition
 from model.objects.element import Element
 # the order of the following classes defines the order in which they are constructed. Keep this way
@@ -21,19 +22,22 @@ from model.objects.carrier import Carrier
 
 class Model():
 
-    def __init__(self, analysis, system, pyoDict):
+    def __init__(self, analysis, system, paths, pyoDict):
         """create Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
         :param pyoDict: input dictionary of optimization """
         self.analysis = analysis
         self.system = system
+        self.paths = paths
         self.pyoDict = pyoDict
         self.model = pe.ConcreteModel()
         # set optimization attributes (the three set above) to class <Element>
-        Element.setOptimizationAttributes(analysis, system, pyoDict,self.model)
+        Element.setOptimizationAttributes(analysis, system, pyoDict,paths,self.model)
         # add Elements to optimization
         self.addElements()
+        # calculate and store input data
+        self.storeInputDataInAllElements()
         # define and construct components of self.model
         Element.defineModelComponents()
 
@@ -42,10 +46,12 @@ class Model():
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system"""
 
-        # add carrier parameters, variables, and constraints
+        # add element to define system
+        Element(self,"grid")
+        # add carrier 
         for carrier in self.system["setCarriers"]:
             Carrier(self,carrier)
-        # add technology parameters, variables, and constraints
+        # add technology 
         for conversionTech in self.system['setConversionTechnologies']:
             ConversionTechnology(self, conversionTech)
         for transportTech in self.system['setTransportTechnologies']:
@@ -53,6 +59,12 @@ class Model():
         # TODO implement storage technologies
         # for storageTech in self.system['setStorageTechnologies']:
         #     print("Storage Technologies are not yet implemented")
+    
+    def storeInputDataInAllElements(self):
+        """This method iterates through all elements and retrieves the input data. The data is stored in the attributes of the class-specific elements """
+        allElements = Element.getAllElements()
+        for element in allElements:
+            element.storeInputData()
 
     def solve(self, solver, pyoDict):
         """Create model instance by assigning parameter values and instantiating the sets
@@ -64,9 +76,15 @@ class Model():
         solverOptions.pop('name')
 
         logging.info(f"Solve model instance using {solverName}")
+        solver_parameters = f"ResultFile={os.path.dirname(solver['logfile'])}//model.ilp" # write an ILP file to print the IIS
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
-        self.results = self.opt.solve(self.model, tee=True, logfile=solver['logfile'])
+        self.opt.set_instance(self.model,symbolic_solver_labels =True)
+        self.results = self.opt.solve(tee=True, logfile=solver['logfile'],options_string=solver_parameters)
+        # if infeasible
+        # if self.results.Solver.termination_condition == TerminationCondition.infeasible and solverName == "gurobi_persistent":
+        #     self
         self.model.solutions.load_from(self.results)
+
         a=1
 
 
