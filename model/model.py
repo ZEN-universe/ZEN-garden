@@ -1,7 +1,7 @@
 """===========================================================================================================================================================================
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
+Authors:      Alissa Ganter (aganter@ethz.ch), Jacob Mannhardt (jmannhardt@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class defining the Concrete optimization model.
@@ -19,6 +19,7 @@ from model.objects.element import Element
 from model.objects.technology.conversion_technology import ConversionTechnology
 from model.objects.technology.transport_technology import TransportTechnology
 from model.objects.carrier import Carrier
+from model.objects.energy_system import EnergySystem
 
 class Model():
 
@@ -30,22 +31,20 @@ class Model():
         self.system = system
         self.paths = paths
         self.model = pe.ConcreteModel()
-        # set optimization attributes (the three set above) to class <Element>
-        Element.setOptimizationAttributes(analysis, system,paths,self.model)
+        # set optimization attributes (the three set above) to class <EnergySystem>
+        EnergySystem.setOptimizationAttributes(analysis, system, paths, self.model)
         # add Elements to optimization
         self.addElements()
-        # calculate and store input data
-        self.storeInputDataInAllElements()
         # define and construct components of self.model
-        Element.defineModelComponents()
+        Element.constructModelComponents()
 
     def addElements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system"""
 
-        # add element to define system
-        Element("grid")
+        # add energy system to define system
+        EnergySystem("energySystem")
         # add carrier 
         for carrier in self.system["setCarriers"]:
             Carrier(carrier)
@@ -58,12 +57,6 @@ class Model():
         # for storageTech in self.system['setStorageTechnologies']:
         #     print("Storage Technologies are not yet implemented")
     
-    def storeInputDataInAllElements(self):
-        """This method iterates through all elements and retrieves the input data. The data is stored in the attributes of the class-specific elements """
-        allElements = Element.getAllElements()
-        for element in allElements:
-            element.storeInputData()
-
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """

@@ -14,6 +14,7 @@ import pyomo.environ as pe
 import numpy as np
 from model.objects.technology.technology import Technology
 from model.objects.element import Element
+from model.objects.energy_system import EnergySystem
 
 class TransportTechnology(Technology):
     # empty list of elements
@@ -25,7 +26,8 @@ class TransportTechnology(Technology):
 
         logging.info('initialize object of a transport technology')
         super().__init__(tech)
-
+        # store input data
+        self.storeInputData()
         # add TransportTechnology to list
         TransportTechnology.addElement(self)
 
@@ -34,8 +36,8 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths       = Element.getPaths()   
-        indexNames  = Element.getAnalysis()['dataInputs']
+        paths       = EnergySystem.getPaths()   
+        indexNames  = EnergySystem.getAnalysis()['dataInputs']
 
         # set attributes of technology
         _inputPath              = paths["setTransportTechnologies"][self.name]["folder"]
@@ -49,11 +51,11 @@ class TransportTechnology(Technology):
         self.distance           = self.dataInput.extractTransportInputData(_inputPath,"distanceEuclidean")
         self.costPerDistance    = self.dataInput.extractTransportInputData(_inputPath,"costPerDistance",[indexNames["nameTimeSteps"]])
 
-    ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
+    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod
-    def defineSets(cls):
-        """ defines the pe.Sets of the class <TransportTechnology> """
-        model = cls.getConcreteModel()
+    def constructSets(cls):
+        """ constructs the pe.Sets of the class <TransportTechnology> """
+        model = EnergySystem.getConcreteModel()
 
         # technologies and respective transport carriers
         model.setTransportCarriersTech = pe.Set(
@@ -67,9 +69,9 @@ class TransportTechnology(Technology):
             doc="set of carriers that are transported in a specific transport technology")
 
     @classmethod
-    def defineParams(cls):
-        """ defines the pe.Params of the class <TransportTechnology> """
-        model = cls.getConcreteModel()
+    def constructParams(cls):
+        """ constructs the pe.Params of the class <TransportTechnology> """
+        model = EnergySystem.getConcreteModel()
         # distance between nodes
         model.distance = pe.Param(
             model.setTransportTechnologies,
@@ -100,9 +102,9 @@ class TransportTechnology(Technology):
             doc = 'carrier losses due to transport with transport technologies.\n\t Dimensions: setTransportTechnologies')
 
     @classmethod
-    def defineVars(cls):
-        """ defines the pe.Vars of the class <TransportTechnology> """
-        model = cls.getConcreteModel()
+    def constructVars(cls):
+        """ constructs the pe.Vars of the class <TransportTechnology> """
+        model = EnergySystem.getConcreteModel()
         # flow of carrier on edge
         model.carrierFlow = pe.Var(
             model.setTransportCarriersTech,
@@ -137,9 +139,9 @@ class TransportTechnology(Technology):
         )
         
     @classmethod
-    def defineConstraints(cls):
-        """ defines the pe.Constraints of the class <TransportTechnology> """
-        model = cls.getConcreteModel()
+    def constructConstraints(cls):
+        """ constructs the pe.Constraints of the class <TransportTechnology> """
+        model = EnergySystem.getConcreteModel()
         # min flow
         model.constraintTransportTechnologyMinFlow = pe.Constraint(
             model.setTransportCarriersTech,

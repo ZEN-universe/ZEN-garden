@@ -4,21 +4,21 @@ Created:      January-2022
 Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Functions to read and calculate the input data from the provided input files
+Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""
 
 import pandas as pd
 import os
 
 class DataInput():
-    def __init__(self,system,analysis,grid):
-        """ data input object to calculate input data
+    def __init__(self,system,analysis,energySystem):
+        """ data input object to extract input data
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
-        :param grid: instance of class <Element> to define grid """
+        :param energySystem: instance of class <EnergySystem> to define energySystem """
         self.system     = system
         self.analysis   = analysis
-        self.grid       = grid
+        self.energySystem       = energySystem
 
     def extractInputData(self, folderPath,manualFileName=None,indexSets=[]):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
@@ -82,21 +82,21 @@ class DataInput():
             break 
         # select indizes
         if indexSets:
-            indexList = [self.grid.setEdges]
+            indexList = [self.energySystem.setEdges]
             for index in indexSets:
                 for indexName in indexNames:
                     if index == indexNames[indexName]:
                         indexList.append(system[indexName.replace("name","set")])
             indexMultiIndex = pd.MultiIndex.from_product(indexList)
         else:
-            indexMultiIndex = self.grid.setEdges
+            indexMultiIndex = self.energySystem.setEdges
         # fill dict 
         dataDict = {}
         for index in indexMultiIndex:
             if isinstance(index,tuple):
-                _node,_nodeAlias = self.grid.setNodesOnEdges[index[0]]
+                _node,_nodeAlias = self.energySystem.setNodesOnEdges[index[0]]
             else:
-                _node,_nodeAlias = self.grid.setNodesOnEdges[index]
+                _node,_nodeAlias = self.energySystem.setNodesOnEdges[index]
             dataDict[index] = dfInput.loc[_node,_nodeAlias]
         
         return dataDict

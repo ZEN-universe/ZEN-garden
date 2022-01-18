@@ -15,6 +15,7 @@ from pyomo.core.base import initializer
 import pyomo.environ as pe
 from model.objects.technology.technology import Technology
 from model.objects.element import Element
+from model.objects.energy_system import EnergySystem
 
 class ConversionTechnology(Technology):
     # empty list of elements
@@ -26,7 +27,8 @@ class ConversionTechnology(Technology):
 
         logging.info('initialize object of a conversion technology')
         super().__init__(tech)
-
+        # store input data
+        self.storeInputData()
         # add ConversionTechnology to list
         ConversionTechnology.addElement(self)
 
@@ -35,8 +37,8 @@ class ConversionTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths       = Element.getPaths()   
-        indexNames  = Element.getAnalysis()['dataInputs']
+        paths       = EnergySystem.getPaths()   
+        indexNames  = EnergySystem.getAnalysis()['dataInputs']
 
         # set attributes of technology
         _inputPath                              = paths["setConversionTechnologies"][self.name]["folder"]
@@ -47,11 +49,11 @@ class ConversionTechnology(Technology):
         # extract PWA parameters
         self.PWAParameter                       = self.dataInput.extractPWAData(_inputPath,self.name)
 
-    ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
+    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
-    def defineSets(cls):
-        """ defines the pe.Sets of the class <ConversionTechnology> """
-        model = cls.getConcreteModel()
+    def constructSets(cls):
+        """ constructs the pe.Sets of the class <ConversionTechnology> """
+        model = EnergySystem.getConcreteModel()
         # get input carriers
         _inputCarriers      = cls.getAttributeOfAllElements("inputCarrier")
         _outputCarriers     = cls.getAttributeOfAllElements("outputCarrier")
@@ -80,13 +82,13 @@ class ConversionTechnology(Technology):
         
         # set of PWA/NL technologies in capex/ConverEfficiency approximation
         model.setPWACapexTechs = pe.Set(
-            initialize=[tech for tech in model.setConversionTechnologies if tech not in cls.getAnalysis()["nonlinearTechnologyApproximation"]["Capex"]],
+            initialize=[tech for tech in model.setConversionTechnologies if tech not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["Capex"]],
             doc = "Set of conversion technologies for which the capex is PWA modeled")
         model.setNLCapexTechs = pe.Set(
             initialize=model.setConversionTechnologies - model.setPWACapexTechs,
             doc = "Set of conversion technologies for which the capex is NL modeled")
         model.setPWAConverEfficiencyTechs = pe.Set(
-            initialize=[tech for tech in model.setConversionTechnologies if tech not in cls.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"]],
+            initialize=[tech for tech in model.setConversionTechnologies if tech not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"]],
             doc = "Set of conversion technologies for which the ConverEfficiency is PWA modeled")
         model.setNLConverEfficiencyTechs = pe.Set(
             initialize=model.setConversionTechnologies - model.setPWAConverEfficiencyTechs,
@@ -122,14 +124,14 @@ class ConversionTechnology(Technology):
         )
         
     @classmethod
-    def defineParams(cls):
-        """ defines the pe.Params of the class <ConversionTechnology> """
+    def constructParams(cls):
+        """ constructs the pe.Params of the class <ConversionTechnology> """
         pass 
         
     @classmethod
-    def defineVars(cls):
-        """ defines the pe.Vars of the class <ConversionTechnology> """
-        model = cls.getConcreteModel()
+    def constructVars(cls):
+        """ constructs the pe.Vars of the class <ConversionTechnology> """
+        model = EnergySystem.getConcreteModel()
         
         # input flow of carrier into technology
         model.inputFlow = pe.Var(
@@ -173,9 +175,9 @@ class ConversionTechnology(Technology):
             doc = 'PWA Carrier output of conversion technologies. \n\t Dimensions: setPWAConverEfficiency. \n\t Domain: NonNegativeReals'
         )
     @classmethod
-    def defineConstraints(cls):
-        """ defines the pe.Constraints of the class <ConversionTechnology> """
-        model = cls.getConcreteModel()
+    def constructConstraints(cls):
+        """ constructs the pe.Constraints of the class <ConversionTechnology> """
+        model = EnergySystem.getConcreteModel()
         # maximum output flow 
         model.constraintConversionTechnologyMaxOutput = pe.Constraint(
             model.setOutputCarriersTechs,

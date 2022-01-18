@@ -15,6 +15,7 @@ import sys
 import pyomo.environ as pe
 import numpy as np
 from model.objects.element import Element
+from model.objects.energy_system import EnergySystem
 
 class Technology(Element):
     # empty list of elements
@@ -27,15 +28,17 @@ class Technology(Element):
 
         logging.info('initialize object of a generic technology')
         super().__init__(technology)
+        # store input data
+        self.storeInputData()
         # add Technology to list
         Technology.addElement(self)
     
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get system information
-        system              = Element.getSystem()   
-        paths               = Element.getPaths()   
-        technologyTypes     = Element.getAnalysis()['subsets']["setTechnologies"]
+        system              = EnergySystem.getSystem()   
+        paths               = EnergySystem.getPaths()   
+        technologyTypes     = EnergySystem.getAnalysis()['subsets']["setTechnologies"]
         # set attributes of technology
         for technologyType in technologyTypes:
             if self.name in system[technologyType]:
@@ -44,20 +47,20 @@ class Technology(Element):
                 self.maxCapacity    = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
                 self.lifetime       = self.dataInput.extractAttributeData(_inputPath,"lifetime")
 
-    ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Technology --- ###
+    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
-    def defineSets(cls):
-        """ defines the pe.Sets of the class <Technology> """
-        # define the pe.Sets of the class <Technology>
-        model = cls.getConcreteModel()
+    def constructSets(cls):
+        """ constructs the pe.Sets of the class <Technology> """
+        # construct the pe.Sets of the class <Technology>
+        model = EnergySystem.getConcreteModel()
         
         # conversion technologies
         model.setConversionTechnologies = pe.Set(
-            initialize=Element.getAttributeOfElement("grid","setConversionTechnologies"), 
+            initialize=EnergySystem.getAttribute("setConversionTechnologies"), 
             doc='Set of conversion technologies. Subset: setTechnologies')
         # transport technologies
         model.setTransportTechnologies = pe.Set(
-            initialize=Element.getAttributeOfElement("grid","setTransportTechnologies"), 
+            initialize=EnergySystem.getAttribute("setTransportTechnologies"), 
             doc='Set of transport technologies. Subset: setTechnologies')
         # combined technology and location set
         model.setTechnologyLocation = pe.Set(
@@ -66,13 +69,13 @@ class Technology(Element):
         )
         # add pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.defineSets()
+            subclass.constructSets()
 
     @classmethod
-    def defineParams(cls):
-        """ defines the pe.Params of the class <Technology> """
-        # define pe.Param of the class <Technology>
-        model = cls.getConcreteModel()
+    def constructParams(cls):
+        """ constructs the pe.Params of the class <Technology> """
+        # construct pe.Param of the class <Technology>
+        model = EnergySystem.getConcreteModel()
 
         # minimum capacity
         model.minCapacity = pe.Param(
@@ -98,13 +101,13 @@ class Technology(Element):
 
         # add pe.Param of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.defineParams()
+            subclass.constructParams()
 
     @classmethod
-    def defineVars(cls):
-        """ defines the pe.Vars of the class <Technology> """
-        model = cls.getConcreteModel()
-        # define pe.Vars of the class <Technology>
+    def constructVars(cls):
+        """ constructs the pe.Vars of the class <Technology> """
+        model = EnergySystem.getConcreteModel()
+        # construct pe.Vars of the class <Technology>
         # install technology
         model.installTechnology = pe.Var(
             model.setTechnologyLocation,
@@ -136,13 +139,13 @@ class Technology(Element):
 
         # add pe.Vars of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.defineVars()
+            subclass.constructVars()
 
     @classmethod
-    def defineConstraints(cls):
-        """ defines the pe.Constraints of the class <Technology> """
-        model = cls.getConcreteModel()
-        # define pe.Constraints of the class <Technology>
+    def constructConstraints(cls):
+        """ constructs the pe.Constraints of the class <Technology> """
+        model = EnergySystem.getConcreteModel()
+        # construct pe.Constraints of the class <Technology>
         #  technology availability
         model.constraintTechnologyAvailability = pe.Constraint(
             model.setTechnologyLocation,
@@ -179,7 +182,7 @@ class Technology(Element):
         )
         # add pe.Constraints of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.defineConstraints()
+            subclass.constructConstraints()
 
 # function to combine the technologies and locations
 def technologyLocationRule(model):

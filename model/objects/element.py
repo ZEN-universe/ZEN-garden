@@ -5,7 +5,7 @@ Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
 Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:    Class defining a standard element. Contains methods to add parameters, variables and constraints to the
+Description:    Class defining a standard Element. Contains methods to add parameters, variables and constraints to the
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
                 optimization model as an input.
 ==========================================================================================================================================================================="""
@@ -13,47 +13,22 @@ import logging
 import pyomo.environ as pe
 import pandas as pd
 import os
-from preprocess.functions.calculate_input_data import DataInput
+from preprocess.functions.extract_input_data import DataInput
+from model.objects.energy_system import EnergySystem
 
 class Element:
     # empty list of elements
     listOfElements = []
-    # pe.ConcreteModel
-    concreteModel = None
-    # analysis
-    analysis = None
-    # system
-    system = None
-    # paths
-    paths = None
 
     def __init__(self,element):
         """ initialization of an element
         :param element: element that is added to the model"""
         # set attributes
         self.name = element
+        # create DataInput object
+        self.dataInput = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getEnergySystem())
         # add element to list
         Element.addElement(self)
-        # create DataInput object
-        self.dataInput = DataInput(Element.getSystem(),Element.getAnalysis(),Element.getElement("grid"))
-
-    def storeInputData(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """      
-        system = Element.getSystem()
-        # in class <Element>, all sets are defined
-        self.setNodes                   = system["setNodes"]
-        self.setNodesOnEdges            = DataInput.calculateEdgesFromNodes(self.setNodes)
-        self.setEdges                   = list(self.setNodesOnEdges.keys())
-        self.setCarriers                = system["setCarriers"]
-        self.setTechnologies            = system["setTechnologies"]
-        self.setTimeSteps               = system["setTimeSteps"]
-        self.setScenarios               = system["setScenarios"]
-        # carrier-specific
-        self.setImportCarriers          = system["setImportCarriers"]
-        self.setExportCarriers          = system["setExportCarriers"]
-        # technology-specific
-        self.setConversionTechnologies  = system["setConversionTechnologies"]
-        self.setTransportTechnologies   = system["setTransportTechnologies"]
         
     ### --- classmethods --- ###
     # setter/getter classmethods
@@ -62,46 +37,6 @@ class Element:
         """ add element to element list. Inherited by child classes.
         :param element: new element that is to be added to the list """
         cls.listOfElements.append(element)
-
-    @classmethod
-    def setOptimizationAttributes(cls,analysis, system,paths,model):
-        """ set attributes of class <Element> with inputs 
-        :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system
-        :param paths: paths to input folders of data
-        :param model: empty pe.ConcreteModel """
-        # set analysis
-        cls.analysis = analysis
-        # set system
-        cls.system = system
-        # set input paths
-        cls.paths = paths
-        # set concreteModel
-        cls.concreteModel = model
-        
-    @classmethod
-    def getConcreteModel(cls):
-        """ get concreteModel of the class <Element>. Every child class can access model and add components.
-        :return concreteModel: pe.ConcreteModel """
-        return cls.concreteModel
-
-    @classmethod
-    def getAnalysis(cls):
-        """ get analysis of the class <Element>. 
-        :return analysis: pe.analysis """
-        return cls.analysis
-
-    @classmethod
-    def getSystem(cls):
-        """ get system 
-        :return system: input dictionary of optimization """
-        return cls.system
-
-    @classmethod
-    def getPaths(cls):
-        """ get paths 
-        :return paths: paths to folders of input data """
-        return cls.paths
 
     @classmethod
     def getAllElements(cls):
@@ -124,20 +59,6 @@ class Element:
         """ get all subclasses (child classes) of cls 
         :return subclasses: subclasses of cls """
         return cls.__subclasses__()
-    
-    @classmethod
-    def getAttributeOfElement(cls,elementName:str,attributeName:str):
-        """ get attribute value of single element in this class 
-        :param elementName: str name of element
-        :param attributeName: str name of attribute
-        :return attribute: returns attribute values """
-        _element = cls.getElement(elementName)
-        assert _element,"Class {} does not have instance for element '{}'".format(cls,elementName)
-        if hasattr(_element,attributeName):
-            _attribute = getattr(_element,attributeName)
-            return _attribute
-        else:
-            raise AttributeError("Element '{}' does not have attribute '{}'".format(elementName,attributeName))
 
     @classmethod
     def getAttributeOfAllElements(cls,attributeName:str):
@@ -161,150 +82,54 @@ class Element:
 
         return dictOfAttributes
 
-    
-
-    ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Element --- ###
-    # Here, after defining Element-specific components, the components of the other classes are defined
+    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
+    # Here, after defining EnergySystem-specific components, the components of the other classes are constructed
     @classmethod
-    def defineModelComponents(cls):
-        """ defines the model components of the class <Element> """
-        # define pe.Sets
-        cls.defineSets()
-        # define pe.Params
-        cls.defineParams()
-        # define pe.Vars
-        cls.defineVars()
-        # define pe.Constraints
-        cls.defineConstraints()
-        # define pe.Objective
-        cls.defineObjective()
+    def constructModelComponents(cls):
+        """ constructs the model components of the class <Element> """
+        # construct pe.Sets
+        cls.constructSets()
+        # construct pe.Params
+        cls.constructParams()
+        # construct pe.Vars
+        cls.constructVars()
+        # construct pe.Constraints
+        cls.constructConstraints()
+        # construct pe.Objective
+        EnergySystem.constructObjective()
 
     @classmethod
-    def defineSets(cls):
-        """ defines the pe.Sets of the class <Element> """
-        # define pe.Sets of the class <Element>
-        model = cls.getConcreteModel()
-        grid = cls.getElement("grid")
-
-        # nodes
-        model.setNodes = pe.Set(
-            initialize=grid.setNodes, 
-            doc='Set of nodes')
-        # connected nodes
-        model.setAliasNodes = pe.Set(
-            initialize=grid.setNodes,
-            doc='Copy of the set of nodes to model edges. Subset: setNodes')
-        # edges
-        model.setEdges = pe.Set(
-            initialize = grid.setEdges,
-            doc = 'Set of edges'
-        )
-        # nodes on edges
-        model.setNodesOnEdges = pe.Set(
-            model.setEdges,
-            initialize = grid.setNodesOnEdges,
-            doc = 'Set of nodes that constitute an edge. Edge connects first node with second node.'
-        )
-        # carriers
-        model.setCarriers = pe.Set(
-            initialize=grid.setCarriers,
-            doc='Set of carriers')
-        # technologies
-        model.setTechnologies = pe.Set(
-            initialize=grid.setTechnologies,
-            doc='Set of technologies')
-        # time-steps
-        model.setTimeSteps = pe.Set(
-            initialize=grid.setTimeSteps,
-            doc='Set of time-steps')
-        # scenarios
-        model.setScenarios = pe.Set(
-            initialize=grid.setScenarios,
-            doc='Set of scenarios')
-
-        # define pe.Sets of the child classes
+    def constructSets(cls):
+        """ constructs the pe.Sets of the class <Element> """
+        # construct pe.Sets of energy system
+        EnergySystem.constructSets()
+        # construct pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.defineSets()
+            subclass.constructSets()
 
     @classmethod
-    def defineParams(cls):
-        """ defines the pe.Params of the class <Element> """
-        # define pe.Params of the child classes
+    def constructParams(cls):
+        """ constructs the pe.Params of the class <Element> """
+        # construct pe.Params of energy system
+        EnergySystem.constructParams()
+        # construct pe.Params of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.defineParams()
+            subclass.constructParams()
 
     @classmethod
-    def defineVars(cls):
-        """ defines the pe.Vars of the class <Element> """
-        # define pe.Vars of the child classes
+    def constructVars(cls):
+        """ constructs the pe.Vars of the class <Element> """
+        # construct pe.Vars of energy system
+        EnergySystem.constructVars()
+        # construct pe.Vars of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.defineVars()
+            subclass.constructVars()
 
     @classmethod
-    def defineConstraints(cls):
-        """ defines the pe.Constraints of the class <Element> """
-        # define pe.Constraints of the child classes
+    def constructConstraints(cls):
+        """ constructs the pe.Constraints of the class <Element> """
+        # construct pe.Constraints of energy system
+        EnergySystem.constructConstraints()
+        # construct pe.Constraints of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.defineConstraints()
-    
-    @classmethod
-    def defineObjective(cls):
-        """ defines the pe.Objective of the class <Element> """
-        # get model
-        model = cls.getConcreteModel()
-
-        # get selected objective rule
-        if cls.getAnalysis()["objective"] == "TotalCost":
-            objectiveRule = objectiveTotalCostRule
-        elif cls.getAnalysis()["objective"] == "CarbonEmissions":
-            logging.info("Objective of carbon emissions not yet implemented")
-            objectiveRule = objectiveCarbonEmissionsRule
-        elif cls.getAnalysis()["objective"] == "Risk":
-            logging.info("Objective of carbon emissions not yet implemented")
-            objectiveRule = objectiveRiskRule
-        else:
-            logging.error("Objective type {} not known".format(cls.getAnalysis()["objective"]))
-
-        # get selected objective sense
-        if cls.getAnalysis()["sense"] == "minimize":
-            objectiveSense = pe.minimize
-        elif cls.getAnalysis()["sense"] == "maximize":
-            objectiveSense = pe.maximize
-        else:
-            logging.error("Objective sense {} not known".format(cls.getAnalysis()["sense"]))
-
-        # define objective
-        model.objective = pe.Objective(
-            rule = objectiveRule,
-            sense = objectiveSense
-        )
-
-# different objective
-def objectiveTotalCostRule(model):
-    """objective function to minimize the total cost"""
-
-    # CARRIERS
-    carrierImport = sum(sum(sum(model.importCarrierFlow[carrier, node, time] * model.importPriceCarrier[carrier, node, time]
-                            for time in model.setTimeSteps)
-                        for node in model.setNodes)
-                    for carrier in model.setImportCarriers)
-
-    carrierExport = sum(sum(sum(model.exportCarrierFlow[carrier, node, time] * model.exportPriceCarrier[carrier, node, time]
-                            for time in model.setTimeSteps)
-                        for node in model.setNodes)
-                    for carrier in model.setExportCarriers)
-
-    return(carrierImport - carrierExport + model.capexTotalTechnology)
-
-def objectiveCarbonEmissionsRule(model):
-    """objective function to minimize total emissions"""
-
-    # TODO implement objective functions for emissions
-    return pe.Constraint.Skip
-
-def objectiveRiskRule(model):
-    """objective function to minimize total risk"""
-
-    # TODO implement objective functions for risk
-    return pe.Constraint.Skip
-
+            subclass.constructConstraints()

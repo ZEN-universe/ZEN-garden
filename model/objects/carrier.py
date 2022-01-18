@@ -13,6 +13,7 @@ import logging
 import pyomo.environ as pe
 from model.objects.element import Element
 # from preprocess.functions.calculate_input_data import extractInputData
+from model.objects.energy_system import EnergySystem
 
 class Carrier(Element):
     # empty list of elements
@@ -24,15 +25,17 @@ class Carrier(Element):
 
         logging.info('initialize object of a generic carrier')
         super().__init__(carrier)
+        # store input data
+        self.storeInputData()
         # add carrier to list
         Carrier.addElement(self)
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get system information
-        system      = Element.getSystem()   
-        paths       = Element.getPaths()   
-        indexNames  = Element.getAnalysis()['dataInputs']
+        system      = EnergySystem.getSystem()   
+        paths       = EnergySystem.getPaths()   
+        indexNames  = EnergySystem.getAnalysis()['dataInputs']
         # set attributes of carrier
         if self.name in system["setImportCarriers"]:
             _inputPath                  = paths["setImportCarriers"][self.name]["folder"]
@@ -45,25 +48,25 @@ class Carrier(Element):
             self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
             self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"importPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
 
-    ### --- classmethods to define sets, parameters, variables, and constraints, that correspond to Carrier --- ###
+    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
-    def defineSets(cls):
-        """ defines the pe.Sets of the class <Carrier> """
-        model = cls.getConcreteModel()
+    def constructSets(cls):
+        """ constructs the pe.Sets of the class <Carrier> """
+        model = EnergySystem.getConcreteModel()
         
         # Import carriers
         model.setImportCarriers = pe.Set(
-            initialize = Element.getAttributeOfElement("grid","setImportCarriers"),
+            initialize = EnergySystem.getAttribute("setImportCarriers"),
             doc='Set of technology specific Import carriers. Import defines the import over the system boundaries.')
         # Export carriers
         model.setExportCarriers = pe.Set(
-            initialize = Element.getAttributeOfElement("grid","setExportCarriers"),
+            initialize = EnergySystem.getAttribute("setExportCarriers"),
             doc='Set of technology specific Export carriers. Export defines the export over the system boundaries.')
         
     @classmethod
-    def defineParams(cls):
-        """ defines the pe.Params of the class <Carrier> """
-        model = cls.getConcreteModel()
+    def constructParams(cls):
+        """ constructs the pe.Params of the class <Carrier> """
+        model = EnergySystem.getConcreteModel()
 
         # demand of carrier
         model.demandCarrier = pe.Param(
@@ -97,9 +100,9 @@ class Carrier(Element):
         )
 
     @classmethod
-    def defineVars(cls):
-        """ defines the pe.Vars of the class <Carrier> """
-        model = cls.getConcreteModel()
+    def constructVars(cls):
+        """ constructs the pe.Vars of the class <Carrier> """
+        model = EnergySystem.getConcreteModel()
         
         # flow of imported carrier
         model.importCarrierFlow = pe.Var(
@@ -119,9 +122,9 @@ class Carrier(Element):
         )
 
     @classmethod
-    def defineConstraints(cls):
-        """ defines the pe.Constraints of the class <Carrier> """
-        model = cls.getConcreteModel()
+    def constructConstraints(cls):
+        """ constructs the pe.Constraints of the class <Carrier> """
+        model = EnergySystem.getConcreteModel()
 
         # limit import flow by availability
         model.constraintAvailabilityCarrier = pe.Constraint(
