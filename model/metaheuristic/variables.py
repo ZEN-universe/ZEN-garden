@@ -34,25 +34,6 @@ class Variables:
             of the metaheuristic algorithm and input to the MILP problem.
         """
 
-        if [self.analysis['nonlinearTechnologyApproximation'][type] for type
-            in self.analysis['nonlinearTechnologyApproximation'].keys()]:
-            self.dictVars['output'] = {}
-            for type in self.analysis['nonlinearTechnologyApproximation'].keys():
-                if type == 'Capex':
-                    variableName = 'capex'
-                elif type == 'ConverEfficiency':
-                    variableName = 'converEfficiency'
-
-                # if there are technologies in the list extract the dimensions and the domain from the declaration
-                # in the model instance
-                if self.analysis['nonlinearTechnologyApproximation'][type]:
-                    for technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
-                        name = variableName + technologyName
-                        _, dimensions, domain = Element(self).getProperties(getattr(self.model, name).doc)
-                        self.storeAttributes(self.dictVars['output'], name, dimensions, domain)
-        else:
-            raise ValueError('No output variables expected from master algorithm')
-
         # add the variables input to the master algorithm
         if self.analysis['variablesNonlinearModel']:
             self.dictVars['input'] = {}

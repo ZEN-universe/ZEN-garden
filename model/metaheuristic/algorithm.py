@@ -40,7 +40,7 @@ class Metaheuristic:
         for run in nlpDict['hyperparameters']['runsNumberArray']:
             # initialize the class containing all the methods for the generation and modification of solutions
             solutionsInstance = Solutions(self, run)
-            for iteration in nlpDict['iterationsNumberArray']:
+            for iteration in nlpDict['hyperparameters']['iterationsNumberArray']:
                 if iteration == 0:
                     step = ''
                     # create the solution archive with random assignment
@@ -52,25 +52,41 @@ class Metaheuristic:
 
                 for solutionIndex in solutionsIndices:
                     # input variables to the MILP model
-                    valuesContinuousVariables = SA_r[solutionIndex,:]
-                    valuesDicreteVariables = SA_o[solutionIndex, :]
+                    valuesContinuousVariables, valuesDicreteVariables = SA_r[solutionIndex,:], SA_o[solutionIndex, :]
                     # update the Pyomo dictionary with the values of the nonlinear variables at current iteration
                     pyoDict = solutionsInstance.updateMILPDict(pyoDict, valuesContinuousVariables, valuesDicreteVariables)
-
-                    # solve the slave problem based on the values of the nonlinear variables at current iteration for
-                    # values in the solution archive at row solutionIndex
+                    # solve the slave problem based on the values of the nonlinear variables at current iteration
                     model.solve(model.solver, pyoDict)
                     # update the objective function based on the results of the slave MILP problem
                     solutionsInstance.updateObjective(model.instance, solutionIndex, step)
+
                 # rank the solutions according to the computed objective function and select the best among them
                 solutionsInstance.rank(step)
 
                 # record the solution
                 performanceInstance.record(solutionsInstance)
-                if self.nlpDict['parametersMetaheuristic']['convergence']['check']:
+                if nlpDict['parametersMetaheuristic']['convergence']['check']:
                     performanceInstance.checkConvergence(iteration)
 
                 # check convergence and print variables to file
                 if performanceInstance.converged:
                     outputMaster.reportConvergence(run, iteration)
                     break
+
+            if (nlpDict['parametersMetaheuristic']['convergence']['restart'] and
+                    (iteration != nlpDict['hyperparameters']['iterationsNumberArray'][-1])):
+                # re-initialize the solution archive with memory of the optimum found
+                performanceInstance.restart(iteration, solutionsInstance)
+                #TODO: add the routines follwing restart
+
+            elif iteration != nlpDict['hyperparameters']['iterationsNumberArray'][-1]):
+                outputMaster.max_FE_achieved()
+
+            # print to file data current run
+            outputMaster.fileRun(run)
+            # initialize the performance metrics
+            performanceInstance.newRun()
+
+        # print to file data current run
+        outputMaster.fileRuns(run)
+        outputMaster.reportRuns(run)

@@ -30,15 +30,15 @@ class Performance:
             for name in self.dictVars[type]['names']:
                 self.VariablesHistoryRuns[type][name] = []
 
-        self.initialize_run()
+        self.initializeRun()
 
     def initializeRun(self):
-        """ method ot initialize lists collecting metrics at each run
+        """ method to initialize lists collecting metrics at each run
         """
 
         self.startTime = time.time()
         self.converged = False
-        self.t0 = 0
+        self.iteration0 = 0
 
         self.VariablesHistory = {}
         for type in ['R', 'O']:
@@ -56,9 +56,9 @@ class Performance:
                 idx = self.dictVars[type]['names_to_idx'][name]
                 self.VariablesHistory[type][name].append(self.solutionInstance.SA[type][0, idx])
 
-    def checkConvergence(self, t):
+    def checkConvergence(self, iteration):
 
-        optimum = np.array(self.optimum[self.t0:])
+        optimum = np.array(self.optimum[self.iteration0:])
         optimum[(optimum >= 0) & (optimum <= self.minValue)] = self.minValue
         optimum[(optimum <= 0) & (optimum >= -self.minValue)] = -self.minValue
         optimum[optimum >= self.maxValue] = self.maxValue
@@ -75,23 +75,52 @@ class Performance:
             self.delta = self.deltaAbsolute
 
         # index of convergence evaluation based on delta optimum
-        t_iter = np.arange(self.delta.size)
+        iterationArray = np.arange(self.delta.size)
 
         # iterations when stagnation occurs
-        t_stag_iter = t_iter[self.delta <= self.object.nlpDict['hyperparameters']['epsilon']]
+        iterationStagnationArray = iterationArray[self.delta <= self.object.nlpDict['hyperparameters']['epsilon']]
 
-        if t_stag_iter.size > 1:
+        if iterationStagnationArray.size > 1:
             # delta iterations between consecutive recordings
-            delta_t = (t_stag_iter[1:] - t_stag_iter[:-1])
-            indexes = np.arange(delta_t.size)
-            iter_start_stag = 0
+            deltaIterations = (iterationStagnationArray[1:] - iterationStagnationArray[:-1])
+            indexes = np.arange(deltaIterations.size)
+            iterationStartStagnation = 0
             # last index with non-consecutive iterations satisfying stagnation
-            if True in (delta_t != 1):
-                iter_start_stag = indexes[delta_t != 1][-1] + 1
+            if True in (deltaIterations != 1):
+                iterationStartStagnation = indexes[deltaIterations != 1][-1] + 1
 
             # number of iterations satisfying stagnation
-            self.stagnationIteration = delta_t[iter_start_stag:].size
+            self.stagnationIteration = deltaIterations[iterationStartStagnation:].size
 
             if self.stagnationIteration >= self.object.nlpDict['hyperparameters']['MaxStagIter']:
                 self.converged = True
-                self.t0 = t + 1
+                self.iteration0 = iteration + 1
+
+    def restart(self, iteration, solutionInstance):
+        """method to initialize the solution archive with random values while keeping memory of the
+        """
+        print(f"\n -- restart at {iteration} --\n")
+        self.converged = False
+
+        # store temporarily the optimum found before initialising the solution archive with random values
+        SAOptimum = {}
+        for type in ['R', 'O']:
+            SAOptimum[type] = solutionInstance.SA[type][0, :].copy()
+
+        solutionInstance.solutionSets()
+
+        for type in ['R', 'O']:
+            solutionInstance.SA[type][0, :] = SAOptimum[type]
+
+    def newRun(self):
+
+        self.optimumRuns.append(self.optimum[-1])
+
+        # store each variable's last iteration value
+        for type in ['R', 'O']:
+            for name in self.VariablesHistoryRuns[type].keys():
+                self.VariablesHistoryRuns[type][name].append(self.VariablesHistory[type][name][-1])
+
+        self.timeRuns.append(time.time() - self.startTime)
+
+        self.initialize_run()
