@@ -15,12 +15,11 @@ analysis = default_config.analysis
 system = default_config.system
 ## Solver - Defaul dictionary
 solver = default_config.solver   
-
+analysis['sense']
 ## Analysis - settings update compared to default values
 analysis['timeHorizon'] = 1                                                      
 analysis['spatialResolution'] = 'Test3'
 analysis['modelFormulation'] = 'HSC'
-analysis['variablesNonlinearModel'] = {'capacity':['electrolysis']}
 analysis['nonlinearTechnologyApproximation'] = {'Capex': ['electrolysis'], 'ConverEfficiency':[]}
 analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
 analysis['objective'] = 'BasicTotalCost'

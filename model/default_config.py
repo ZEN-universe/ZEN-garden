@@ -77,8 +77,11 @@ solver['logfile'] = './/outputs//logs//pyomoLogFile.log'
 # typology of model solved: MILP or MINLP
 solver['model']      = 'MILP'
 # parameters of meta-heuristic algorithm
-solver['parametersMetaheuristic'] = {'FEsMax':1e9, 'kNumber':90, 'mNumber':5, 'q':0.05099, 'xi':0.6795, 'epsilon':1e-5, 'MaxStagIter':650,
-                            'minVal':1e-6, 'maxVal':1e6,'runsNumber':5}
+solver['parametersMetaheuristic'] = {
+    'FEsMax':1e9, 'kNumber':90, 'mNumber':5, 'q':0.05099, 'xi':0.6795, 'epsilon':1e-5, 'MaxStagIter':650,
+    'minVal':1e-6, 'maxVal':1e6,'runsNumber':5,
+    'convergence':{'check': True, 'conditionDelta':'relative'} # conditionDelta: relative, absolute
+    }
 # typology of criterion for convergence when evaluating the variation of obj. function:
 # (i) absoluteDelta, (ii) relativeDelta, (iii) functionEvaluations
 solver['convergenceCriterion'] = 'relativeDelta'

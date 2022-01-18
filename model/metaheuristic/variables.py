@@ -113,4 +113,6 @@ class Variables:
                     self.dictVars[type]['UBArray'][0, idx] = self.nlpDict['data']['UB'][name]
                 elif type == 'O':
                     self.dictVars[type]['LBArray'][0, idx] = 0
-                    self.dictVars[type]['UBArray'][0, idx] = np.int(self.nlpDict['data']['UB'][name]/self.nlpDict['DS'][name])
+                    self.dictVars[type]['UBArray'][0, idx] = np.int(self.nlpDict['data']['UB'][name]/self.nlpDict['data']['DS'][name])
+                    self.dictVars[type]['values'][0, idx] = \
+                        np.arange(self.dictVars[type]['UBArray'][0, idx], dtype=np.int)*self.nlpDict['data']['DS'][name]

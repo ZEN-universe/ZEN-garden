@@ -54,6 +54,9 @@ class Prepare:
         # convert data into a pyomo dictionary
         self.createPyoDict()
 
+        # collect data for nonlienar solver
+        self.createNlpDict()
+
     def configUpdate(self):
         """
         This method creates new entries in the dictionaries of config
@@ -130,7 +133,7 @@ class Prepare:
         """
         This method reshapes the input data dictionary into a dictionary 
         with format compatible with Pyomo (pyoDict)
-        and creates the dictionary of data passed to the nonlinear solver (nlpDict)
+        and
         :param system: dictionary defining the system framework
         :param data: dictionary containing all the input data
         :return: dictionary with data based on system in Pyomo format      
@@ -152,6 +155,14 @@ class Prepare:
         FillPyoDict.conversionBalanceParameters(self)
         # fill the dictionary with the PWA input data
         FillPyoDict.dataPWAApproximation(self)
+
+    def createNlpDict(self):
+        """
+        This method creates the dictionary of data passed to the nonlinear solver (nlpDict)
+        :param system: dictionary defining the system framework
+        :param data: dictionary containing all the input data
+        :return: dictionary with data
+        """
 
         self.nlpDict = {}
 
