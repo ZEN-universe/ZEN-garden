@@ -20,12 +20,12 @@ class ConversionTechnology(Technology):
     # empty list of elements
     listOfElements = []
 
-    def __init__(self, object, tech):
+    def __init__(self, tech):
         """init generic technology object
         :param object: object of the abstract model"""
 
         logging.info('initialize object of a conversion technology')
-        super().__init__(object, tech)
+        super().__init__(tech)
 
         # add ConversionTechnology to list
         ConversionTechnology.addElement(self)

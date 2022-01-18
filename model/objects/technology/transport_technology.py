@@ -19,12 +19,12 @@ class TransportTechnology(Technology):
     # empty list of elements
     listOfElements = []
     
-    def __init__(self, object, tech):
+    def __init__(self, tech):
         """init generic technology object
         :param object: object of the abstract optimization model"""
 
         logging.info('initialize object of a transport technology')
-        super().__init__(object, tech)
+        super().__init__(tech)
 
         # add TransportTechnology to list
         TransportTechnology.addElement(self)

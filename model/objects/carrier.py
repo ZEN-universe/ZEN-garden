@@ -18,13 +18,12 @@ class Carrier(Element):
     # empty list of elements
     listOfElements = []
 
-    def __init__(self, object,carrier):
+    def __init__(self,carrier):
         """initialization of a generic carrier object
-        :param object: object of the abstract optimization model
         :param carrier: carrier that is added to the model"""
 
         logging.info('initialize object of a generic carrier')
-        super().__init__(object,carrier)
+        super().__init__(carrier)
         # add carrier to list
         Carrier.addElement(self)
 

@@ -20,13 +20,13 @@ class Technology(Element):
     # empty list of elements
     listOfElements = []
 
-    def __init__(self, object, technology):
+    def __init__(self, technology):
         """init generic technology object
         :param object: object of the abstract optimization model
         :param technology: technology that is added to the model"""
 
         logging.info('initialize object of a generic technology')
-        super().__init__(object,technology)
+        super().__init__(technology)
         # add Technology to list
         Technology.addElement(self)
     

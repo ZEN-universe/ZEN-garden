@@ -184,42 +184,42 @@ class Element:
         """ defines the pe.Sets of the class <Element> """
         # define pe.Sets of the class <Element>
         model = cls.getConcreteModel()
-        grid = cls.getElement("Grid")
+        grid = cls.getElement("grid")
 
         # nodes
         model.setNodes = pe.Set(
-            initialize=cls.getAttributeOfElement("grid","setNodes"), 
+            initialize=grid.setNodes, 
             doc='Set of nodes')
         # connected nodes
         model.setAliasNodes = pe.Set(
-            initialize=cls.getAttributeOfElement("grid","setNodes"),
+            initialize=grid.setNodes,
             doc='Copy of the set of nodes to model edges. Subset: setNodes')
         # edges
         model.setEdges = pe.Set(
-            initialize = cls.getAttributeOfElement("grid","setEdges"),
+            initialize = grid.setEdges,
             doc = 'Set of edges'
         )
         # nodes on edges
         model.setNodesOnEdges = pe.Set(
             model.setEdges,
-            initialize = cls.getAttributeOfElement("grid","setNodesOnEdges"),
+            initialize = grid.setNodesOnEdges,
             doc = 'Set of nodes that constitute an edge. Edge connects first node with second node.'
         )
         # carriers
         model.setCarriers = pe.Set(
-            initialize=cls.getAttributeOfElement("grid","setCarriers"),
+            initialize=grid.setCarriers,
             doc='Set of carriers')
         # technologies
         model.setTechnologies = pe.Set(
-            initialize=cls.getAttributeOfElement("grid","setTechnologies"),
+            initialize=grid.setTechnologies,
             doc='Set of technologies')
         # time-steps
         model.setTimeSteps = pe.Set(
-            initialize=cls.getAttributeOfElement("grid","setTimeSteps"),
+            initialize=grid.setTimeSteps,
             doc='Set of time-steps')
         # scenarios
         model.setScenarios = pe.Set(
-            initialize=cls.getAttributeOfElement("grid","setScenarios"),
+            initialize=grid.setScenarios,
             doc='Set of scenarios')
 
         # define pe.Sets of the child classes

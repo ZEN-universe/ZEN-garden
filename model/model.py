@@ -48,12 +48,12 @@ class Model():
         Element("grid")
         # add carrier 
         for carrier in self.system["setCarriers"]:
-            Carrier(self,carrier)
+            Carrier(carrier)
         # add technology 
         for conversionTech in self.system['setConversionTechnologies']:
-            ConversionTechnology(self, conversionTech)
+            ConversionTechnology(conversionTech)
         for transportTech in self.system['setTransportTechnologies']:
-            TransportTechnology(self, transportTech)
+            TransportTechnology(transportTech)
         # TODO implement storage technologies
         # for storageTech in self.system['setStorageTechnologies']:
         #     print("Storage Technologies are not yet implemented")
@@ -73,7 +73,7 @@ class Model():
         solverOptions.pop('name')
 
         logging.info(f"Solve model instance using {solverName}")
-        solver_parameters = f"ResultFile={os.path.dirname(solver['logfile'])}//model.ilp" # write an ILP file to print the IIS
+        solver_parameters = f"ResultFile={os.path.dirname(solver['logfile'])}//model.ilp" # write an ILP file to print the IIS if infeasible (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels =True)
         self.results = self.opt.solve(tee=True, logfile=solver['logfile'],options_string=solver_parameters)
