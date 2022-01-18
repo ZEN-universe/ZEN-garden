@@ -20,6 +20,8 @@ analysis['sense']
 analysis['timeHorizon'] = 1                                                      
 analysis['spatialResolution'] = 'Test3'
 analysis['modelFormulation'] = 'HSC'
+
+analysis['variablesNonlinearModel'] = {'capacity': ['electrolysis']}
 analysis['nonlinearTechnologyApproximation'] = {'Capex': ['electrolysis'], 'ConverEfficiency':[]}
 analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
 analysis['objective'] = 'BasicTotalCost'

@@ -24,6 +24,8 @@ class Solutions:
         self.q = object.nlpDict['hyperparameters']['q']
         # number of artificial ants associated to the number of new solutions created
         self.m = object.nlpDict['hyperparameters']['mNumberArray'].size
+        # hyperparameter defining the standard deviation in pdf for solution construction
+        self.xi = object.nlpDict['hyperparameters']['xi']
         # value used as substitute of zero to avoid numerical errors
         self.minValue = object.nlpDict['hyperparameters']['minVal']
 
@@ -50,13 +52,15 @@ class Solutions:
             # fill the solution archive with randomly generated solutions
             self.randomSolutions()
             solutionsIndices = self.object.nlpDict['hyperparameters']['kNumberArray']
+            SA = self.SA
 
         elif step == 'new':
             # modify the solutions according to pdf
             self.constructSolutions()
             solutionsIndices = self.object.nlpDict['hyperparameters']['mNumberArray']
+            SA = self.SA_new
 
-        return solutionsIndices
+        return solutionsIndices, SA
 
     def weight(self):
         """method to compute the probability of choice of each solution in the step of solution modification
@@ -140,7 +144,6 @@ class Solutions:
         :return: the new solution archive matrix
         """
 
-        @staticmethod
         def get_truncated_normal(mean=0, sd=1, low=0, up=10):
             """from: https://stackoverflow.com/questions/36894191/how-to-get-a-normal-distribution-within-a-range-in-numpy
             """
@@ -160,12 +163,13 @@ class Solutions:
 
         return SA_new
 
-    def updateMILPDict(self, pyoDict, solutionIndex):
+    def updateMILPDict(self, pyoDict, valuesContinuousVariables, valuesDicreteVariables):
         """method to update the Pyomo dictionary with the values in the solution archive
         :return: Pyomo dictionary with updated values from the solution archive
         """
         #TODO: create items in pyoDict and assign to them the values in the solution archive from row solutionIndex
-        pass
+
+        return pyoDict
 
     def updateObjective(self, instance, solutionIndex, step):
         """ method to assign the objective function associated ot each single solution generated
@@ -188,12 +192,12 @@ class Solutions:
 
         if step == '':
             for type in ['R', 'O']:
-                SA_temp[type] = np.zeros([self.k, self.dictVars[type]['n']])
+                SA_temp[type] = np.zeros([self.k, self.object.dictVars[type]['n']])
             f_temp = np.zeros([self.k])
 
         elif step == 'new':
             for type in ['R', 'O']:
-                SA_temp[type] = np.zeros([self.k + self.m, self.dictVars['R']['n']])
+                SA_temp[type] = np.zeros([self.k + self.m, self.object.dictVars[type]['n']])
             f_temp = np.zeros([self.k + self.m])
 
             j0 = 0
@@ -208,7 +212,7 @@ class Solutions:
                 SA_temp[type][j0:jn, :] = self.SA_new[type][:, :]
             f_temp[j0:jn] = self.f_new[:]
 
-        if self.analysis['sense'] == 'minimize':
+        if self.object.analysis['sense'] == 'minimize':
             argsort = np.argsort(f_temp)
         elif self.analysis['sense'] == 'maximize':
             argsort = np.argsort(-f_temp)

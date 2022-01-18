@@ -80,7 +80,7 @@ solver['model']      = 'MILP'
 # conditionDelta: relative, absolute
 solver['parametersMetaheuristic'] = {
     'FEsMax':1e9, 'kNumber':90, 'mNumber':5, 'q':0.05099, 'xi':0.6795, 'epsilon':1e-5, 'MaxStagIter':650,
-    'minVal':1e-6, 'maxVal':1e6,'runsNumber':5,
+    'minVal':1e-6, 'maxVal':1e6,'runsNumber':2,
     'convergence':{'check': True, 'conditionDelta':'relative', 'restart':False}
     }
 # typology of criterion for convergence when evaluating the variation of obj. function:

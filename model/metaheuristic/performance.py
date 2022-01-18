@@ -27,7 +27,7 @@ class Performance:
         self.VariablesHistoryRuns = {}
         for type in ['R', 'O']:
             self.VariablesHistoryRuns[type] = {}
-            for name in self.dictVars[type]['names']:
+            for name in self.object.dictVars[type]['names']:
                 self.VariablesHistoryRuns[type][name] = []
 
         self.initializeRun()
@@ -39,11 +39,11 @@ class Performance:
         self.startTime = time.time()
         self.converged = False
         self.iteration0 = 0
-
+        self.optimum = []
         self.VariablesHistory = {}
         for type in ['R', 'O']:
             self.VariablesHistory[type] = {}
-            for name in self.dictVars[type]['names']:
+            for name in self.object.dictVars[type]['names']:
                 self.VariablesHistory[type][name] = []
 
     def record(self, solutionInstance):
@@ -52,9 +52,9 @@ class Performance:
         self.optimum.append(solutionInstance.f[0])
         # record the solution space at the single iteration
         for type in ['R', 'O']:
-            for name in self.dictVars[type]['names']:
-                idx = self.dictVars[type]['names_to_idx'][name]
-                self.VariablesHistory[type][name].append(self.solutionInstance.SA[type][0, idx])
+            for name in self.object.dictVars[type]['names']:
+                idx = self.object.dictVars[type]['name_to_idx'][name]
+                self.VariablesHistory[type][name].append(solutionInstance.SA[type][0, idx])
 
     def checkConvergence(self, iteration):
 
@@ -123,4 +123,4 @@ class Performance:
 
         self.timeRuns.append(time.time() - self.startTime)
 
-        self.initialize_run()
+        self.initializeRun()

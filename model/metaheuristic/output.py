@@ -10,6 +10,7 @@ Description:  Class defining the methods to print the data stored in performance
 import os
 import shutil
 import pandas as pd
+import numpy as np
 
 class Output:
 
@@ -21,10 +22,10 @@ class Output:
         self.folderOut = './/outputs//'
         self.createFolder(self.folderOut)
 
-        self.folder = self.folderOut + '//Master//'
+        self.folder = self.folderOut + '//master//'
         self.createFolder(self.folder)
 
-        self.folderLog = self.folderOut + '//Log//'
+        self.folderLog = self.folder + '//log//'
         self.createFolderDeleting(self.folderLog)
 
     def createFolder(self, folderName):
@@ -46,23 +47,23 @@ class Output:
 
         text = "\n"
         text += f" -- converged at iter {iteration} --" + "\n"
-        text += "    delta " + str(self.conditionDelta) + ": " + str(self.performanceInstance.delta[-1]) + "\n"
+        text += "    delta " + str(self.performanceInstance.conditionDelta) + ": " + str(self.performanceInstance.delta[-1]) + "\n"
         text += "    stagnation iterations: " + str(self.performanceInstance.stagnationIteration) + "\n"
         text += "    optimum: " + str(self.performanceInstance.optimum[-1]) + "\n"
         text += "    R - Continuous variables " + "\n"
-        for name in self.dictVars['R']['names']:
-            idx = self.dictVars['R']['name_to_idx'][name]
+        for name in self.object.dictVars['R']['names']:
+            idx = self.object.dictVars['R']['name_to_idx'][name]
             text += "      -> " + name + ": " + str(solutionInstance.SA['R'][0, idx]) + "\n"
         text += "    O - Ordinal variables " + "\n"
-        for name in self.dictVars['O']['names']:
-            idx = self.dictVars['O']['name_to_idx'][name]
+        for name in self.object.dictVars['O']['names']:
+            idx = self.object.dictVars['O']['name_to_idx'][name]
             text += "      -> " + name + ": " + str(solutionInstance.SA['O'][0, idx]) + " " \
-                    + str(self.dictVars['O']['values'][0, idx]) + "\n"
+                    + str(self.object.dictVars['O']['values'][0, idx]) + "\n"
         # print to console
         print(text)
 
         # print to external file
-        filename = self.folder_log + "convergence_run{}_iter{}.txt".format(run, iteration)
+        filename = self.folderLog + "convergence_run{}_iter{}.txt".format(run, iteration)
         f = open(filename, "w+")
         f.write(text)
         f.close()
@@ -70,7 +71,7 @@ class Output:
     def maxFunctionEvaluationsAchieved(self):
 
         FEMax = self.object.nlpDict['hyperparameters']['FEsMax']
-        print(f"\n -- max function evaluations: FEs = {FEMax} --"
+        print(f"\n -- max function evaluations: FEs = {FEMax} --")
 
     def roundToMinValue(self, values):
         # compute order of magnitude of minimum value accepted
@@ -122,7 +123,7 @@ class Output:
 
     def fileRuns(self):
 
-        values = self.roundToMinValue(self.performanceInstance.optimum_runs)
+        values = self.roundToMinValue(self.performanceInstance.optimumRuns)
         data = {
         'folder': self.folder,
         'file_name': 'optimum',
@@ -140,7 +141,7 @@ class Output:
             for key in self.performanceInstance.VariablesHistoryRuns[type].keys():
                 values.append(self.performanceInstance.VariablesHistoryRuns[type][key])
             keys.append(key)
-            values = self.round_to_MinVal(values)
+            values = self.roundToMinValue(values)
 
             data = {
             'folder': self.folder + 'Variables//',

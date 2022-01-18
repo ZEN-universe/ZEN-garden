@@ -69,10 +69,7 @@ class ConversionTechnology(Technology):
         :param tech: conversion technology
         :param type: parameter type of the nonlinear function (capex or efficiency)"""
 
-        if type ==
-        #%% Parameters
-        params = {f'slope{type}{tech}':     f'Parameter which specifies the slope of the {type} segment {tech}.\
-                                            \n\t Dimensions: setSegments{type}{tech}'}
+        pass
 
 
     def addLinearConstraints(self, type, tech):
