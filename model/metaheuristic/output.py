@@ -152,7 +152,7 @@ class Output:
             'name': 'run'
             }
 
-            self.create_file(data)
+            self.createFile(data)
 
     def reportRuns(self):
 

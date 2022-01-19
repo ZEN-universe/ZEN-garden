@@ -22,16 +22,14 @@ class Variables:
         self.dictVars = object.dictVars
         self.nlpDict = object.nlpDict
 
-        # define the variables input and output of the master algorithm
+        # define the variables input and output of the master algorithm as declared in the slave algorithm
         self.collectVariables()
         # collect the attributes necessary to handle the solution archive
         self.createInputsSolutionArchive()
 
     def collectVariables(self):
         """"create a dictionary containing the set of variables subject to nonlinearities.
-        :return: dictionary containing two main dictionaries. ('variablesInput') dictionary with domain and name of
-            variables input to the metaheuristic algorithm. ('variablesOutput') dictionary with the variables output
-            of the metaheuristic algorithm and input to the MILP problem.
+        :return: dictionary containing the domain and name of variables handled by the metaheuristic algorithm
         """
 
         # add the variables input to the master algorithm
@@ -64,7 +62,7 @@ class Variables:
         for varType in ['R', 'O']:
             self.dictVars[varType] = {'names': []}
 
-            # split the input variables based on their domain
+        # split the input variables based on their domain
         for variableName in self.dictVars['input'].keys():
             domain = self.dictVars['input'][variableName]['domain']
             # collect all the indices

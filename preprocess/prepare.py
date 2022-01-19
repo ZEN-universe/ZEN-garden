@@ -163,7 +163,7 @@ class Prepare:
         :param data: dictionary containing all the input data
         :return: dictionary with data
         """
-
+        # TODO: MINLP-related
         self.nlpDict = {}
 
         # create input arrays based on solver configuration

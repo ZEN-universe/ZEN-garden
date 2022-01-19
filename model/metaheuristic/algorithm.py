@@ -4,10 +4,10 @@ Created:      January-2022
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class defining the metaheuristic algorithm.
+Description:  Class containing the metaheuristic algorithm.
               The algorithm takes as input the set of decision variables subject to nonlinearities and the respective domains.
               Iteratively the predicted values of the decision variables are modified and only those associated to the highest quality solutions are selected.
-              The values of the decision variables are then passed to the dictionary of the MILP solver as constant parameters in the model.
+              The values of the decision variables are then passed to the dictionary of the MILP solver as constant values in the model.
 ==========================================================================================================================================================================="""
 import logging
 from model.metaheuristic.variables import Variables
@@ -33,10 +33,13 @@ class Metaheuristic:
         # collect the properties of the decision variables handled by the metaheuristic and create a new attribute in
         # the Pyomo dictionary
         self.dictVars = {}
+        # TODO: MINLP-related - point of interface with variables declaration in the slave algorithm
         Variables(self, model)
 
     def solveMINLP(self, solver, pyoDict):
 
+        # instantiate the solver
+        self.solver = solver
         # initialize class to store algorithm performance metrics
         performanceInstance = Performance(self)
         # initialize class to print performance metrics
@@ -55,6 +58,7 @@ class Metaheuristic:
                     solutionsIndices, SA = solutionsInstance.solutionSets(step)
 
                 for solutionIndex in solutionsIndices:
+                    # TODO: MINLP-related - point of interface with Pyomo solver
                     # input variables to the MILP model
                     valuesContinuousVariables, valuesDicreteVariables = SA['R'][solutionIndex,:], SA['O'][solutionIndex, :]
                     # update the Pyomo dictionary with the values of the nonlinear variables at current iteration
@@ -69,7 +73,7 @@ class Metaheuristic:
 
                 # record the solution
                 performanceInstance.record(solutionsInstance)
-                if self.nlpDict['hyperparameters']['convergence']['check']:
+                if self.solver['convergenceCriterion']['check']:
                     performanceInstance.checkConvergence(iteration)
 
                 # check convergence and print variables to file
@@ -77,11 +81,11 @@ class Metaheuristic:
                     outputMaster.reportConvergence(run, iteration, solutionsInstance)
                     break
 
-            if (self.nlpDict['hyperparameters']['convergence']['restart'] and
+            if (self.solver['convergenceCriterion']['restart'] and
                     (iteration != self.nlpDict['hyperparameters']['iterationsNumberArray'][-1])):
                 # re-initialize the solution archive with memory of the optimum found
                 performanceInstance.restart(iteration, solutionsInstance)
-                #TODO: add the routines follwing restart
+                #TODO: add the routines following restart
 
             elif iteration != self.nlpDict['hyperparameters']['iterationsNumberArray'][-1]:
                 outputMaster.maxFunctionEvaluationsAchieved()

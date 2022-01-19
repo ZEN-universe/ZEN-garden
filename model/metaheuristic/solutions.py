@@ -167,7 +167,7 @@ class Solutions:
         """method to update the Pyomo dictionary with the values in the solution archive
         :return: Pyomo dictionary with updated values from the solution archive
         """
-        #TODO: create items in pyoDict and assign to them the values in the solution archive from row solutionIndex
+        #TODO: modify items in pyoDict and assign to them the values in the solution archive from row solutionIndex
 
         return pyoDict
 

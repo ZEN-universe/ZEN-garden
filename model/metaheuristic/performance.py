@@ -19,7 +19,7 @@ class Performance:
         self.minValue = object.nlpDict['hyperparameters']['minVal']
         self.maxValue = object.nlpDict['hyperparameters']['maxVal']
         # condition for convergence
-        self.conditionDelta = self.object.nlpDict['hyperparameters']['convergence']['conditionDelta']
+        self.conditionDelta = self.object.solver['convergenceCriterion']['conditionDelta']
 
         self.timeRuns = []
         self.optimumRuns = []
