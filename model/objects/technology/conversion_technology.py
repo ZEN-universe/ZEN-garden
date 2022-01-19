@@ -157,7 +157,7 @@ class ConversionTechnology(Technology):
             domain = pe.NonNegativeReals,
             doc = 'PWA variable for size of installed technology on edge i and time t.  \n\t Dimensions: setPWACapex.\n\t Domain: NonNegativeReals')
         # PWA capex technology
-        model.capexTechnologyPWA = pe.Var(
+        model.capexPWA = pe.Var(
             model.setPWACapex,
             domain = pe.NonNegativeReals,
             doc = 'PWA variable for capex for installing technology on edge i and time t.  \n\t Dimensions: setPWACapex.\n\t Domain: NonNegativeReals')
@@ -192,7 +192,7 @@ class ConversionTechnology(Technology):
             # if setPWACapex contains technologies:
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWACapex,"Capex")
             model.constraintPWACapex = pe.Piecewise(model.setPWACapex,
-                model.capexTechnologyPWA,model.capacityTechnologyPWA,
+                model.capexPWA,model.capacityTechnologyPWA,
                 pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True)
         # ConvEfficiency
         if model.setPWAConverEfficiency:
@@ -279,9 +279,9 @@ def constraintConversionTechnologyMaxOutputRule(model, tech, carrierOut, node, t
 def constraintCapexCouplingRule(model,tech,node,time):
     """ couples capex variables based on modeling technique"""
     if tech in model.setPWACapexTechs:
-        return(model.capexTechnology[tech,node,time] == model.capexTechnologyPWA[tech,node,time])
+        return(model.capex[tech,node,time] == model.capexPWA[tech,node,time])
     elif tech in model.setNLCapexTechs:
-        logging.info("Nonlinear approximation of Capex not yet implemented, return Constraint.Skip for model.capexTechnology")
+        logging.info("Nonlinear approximation of Capex not yet implemented, return Constraint.Skip for model.capex")
         return pe.Constraint.Skip
 
 def constraintCapacityCouplingRule(model,tech,node,time):

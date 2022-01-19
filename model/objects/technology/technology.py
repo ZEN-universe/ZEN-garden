@@ -127,13 +127,13 @@ class Technology(Element):
             domain = pe.NonNegativeReals,
             doc = 'size of built technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: NonNegativeReals')
         # capex technology
-        model.capexTechnology = pe.Var(
+        model.capex = pe.Var(
             model.setTechnologyLocation,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
             doc = 'capex for installing technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: NonNegativeReals')
         # total capex technology
-        model.capexTotalTechnology = pe.Var(
+        model.capexTotal = pe.Var(
             domain = pe.NonNegativeReals,
             doc = 'total capex for installing all technologies on all edges at all times.  \n\t Domain: NonNegativeReals')
 
@@ -176,8 +176,8 @@ class Technology(Element):
             doc = 'max capacity of  technology that can be installed. \n\t Dimensions: setTechnologyLocation, setTimeSteps'
         )
         # total capex of all technologies
-        model.constraintCapexTotalTechnology = pe.Constraint(
-            rule = constraintCapexTotalTechnologyRule,
+        model.constraintCapexTotal = pe.Constraint(
+            rule = constraintCapexTotal = p,
             doc = 'total capex of all technology that can be installed.'
         )
         # add pe.Constraints of the child classes
@@ -226,12 +226,12 @@ def constraintTechnologyLifetimeRule(model, tech, location, time):
     return (model.capacityTechnology[tech, location, time]
             == sum(model.builtCapacityTechnology[tech,location, t] for t in range(t_start, t_end)))
 
-def constraintCapexTotalTechnologyRule(model):
+def constraintCapexTotal = p(model):
     """ sums over all technologies to calculate total capex """
-    return(model.capexTotalTechnology == 
+    return(model.capexTotal = p
         sum(
             sum(
-                model.capexTechnology[tech, loc,time]
+                model.capex[tech, loc,time]
                 for tech,loc in model.setTechnologyLocation
             )
             for time in model.setTimeSteps

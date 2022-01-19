@@ -39,8 +39,8 @@ class Variables:
                 if self.analysis['nonlinearTechnologyApproximation'][type]:
                     for technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
                         name = variableName + technologyName
-                        _, dimensions, domain = Element(self).getProperties(getattr(self.model, name).doc)
-                        self.storeAttributes(self.dictVars['output'], name, dimensions, domain)
+                        variable = self.model.find_component(variableName)
+                        self.storeAttributes(self.dictVars['output'], name, variable)
         else:
             raise ValueError('No output variables expected from master algorithm')
 
@@ -50,14 +50,14 @@ class Variables:
             for variableName in self.analysis['variablesNonlinearModel']:
                 for technologyName in self.analysis['variablesNonlinearModel'][variableName]:
                     name = variableName + technologyName
-                    _, dimensions, domain = Element(self).getProperties(getattr(self.model, name).doc)
-                    self.storeAttributes(self.dictVars['input'], name, dimensions, domain)
+                    variable = self.model.find_component(variableName)
+                    self.storeAttributes(self.dictVars['input'], name, variable)
 
         else:
             raise ValueError('No input variables to master algorithm')
 
     @staticmethod
-    def storeAttributes(dictionary, name, dimensions, domain):
+    def storeAttributes(dictionary, name, variable):
         """"static method to add elements to dictionary
         :return: dictionary with additional keys
         """
