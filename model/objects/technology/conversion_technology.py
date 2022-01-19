@@ -283,9 +283,6 @@ def constraintCapexCouplingRule(model,tech,node,time):
     elif tech in model.setNLCapexTechs:
         logging.info("Nonlinear approximation of Capex not yet implemented, return Constraint.Skip for model.capexTechnology")
         return pe.Constraint.Skip
-    else:
-        logging.info("Linear approximation not of Capex yet implemented, return Constraint.Skip for model.capexTechnology")
-        return pe.Constraint.Skip
 
 def constraintCapacityCouplingRule(model,tech,node,time):
     """ couples capacity variables based on modeling technique"""
@@ -293,9 +290,6 @@ def constraintCapacityCouplingRule(model,tech,node,time):
         return(model.capacityTechnology[tech,node,time] == model.capacityTechnologyPWA[tech,node,time])
     elif tech in model.setNLCapexTechs:
         logging.info("Nonlinear approximation of Capex not yet implemented, return Constraint.Skip for model.capacityTechnology")
-        return pe.Constraint.Skip
-    else:
-        logging.info("Linear approximation of Capex not yet implemented, return Constraint.Skip for model.capacityTechnology")
         return pe.Constraint.Skip
 
 def constraintInputFlowCouplingRule(model,tech,inputCarrier,node,time):
@@ -306,9 +300,6 @@ def constraintInputFlowCouplingRule(model,tech,inputCarrier,node,time):
     elif tech in model.setNLConverEfficiencyTechs:
         logging.info("Nonlinear approximation of ConverEfficiency not yet implemented, return Constraint.Skip for model.inputFlow")
         return pe.Constraint.Skip
-    else:
-        logging.info("Linear approximation of ConverEfficiency not yet implemented, return Constraint.Skip for model.inputFlow")
-        return pe.Constraint.Skip
 
 def constraintOutputFlowCouplingRule(model,tech,outputCarrier,node,time):
     """ couples output flow variables based on modeling technique"""
@@ -318,20 +309,5 @@ def constraintOutputFlowCouplingRule(model,tech,outputCarrier,node,time):
     elif tech in model.setNLConverEfficiencyTechs:
         logging.info("Nonlinear approximation of ConverEfficiency not yet implemented, return Constraint.Skip for model.outputFlow")
         return pe.Constraint.Skip
-    else:
-        logging.info("Linear approximation of ConverEfficiency not yet implemented, return Constraint.Skip for model.outputFlow")
-        return pe.Constraint.Skip
-
-def constraintConversionTechnologyLinearCapexSegmentSelectionRule(model, tech, node, time): 
-    """only one segment can be selected at a time, and only if the technology is built (installTechnology =1)"""
-
-    # sets
-    setSegments = getattr(model, f'setSegmentsCapex{tech}')
-    # variables
-    installTechnology = getattr(model, f'install{tech}')
-    selectSegment = getattr(model, f'selectSegmentCapex{tech}')
-
-    return (sum(selectSegment[segment, node, time] for segment in setSegments)
-            <= installTechnology[node, time])
 
 #%% TODO implement conditioning for e.g. hydrogen

@@ -60,7 +60,7 @@ class Prepare:
         # create new list of sets from subsets
         UpdateConfig.createSetsFromSubsets(self)
         # create sets of support points for PWA
-        UpdateConfig.createSupportPoints(self)
+        # UpdateConfig.createSupportPoints(self)
         
     def createPaths(self):
         """

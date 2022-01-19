@@ -27,7 +27,7 @@ class UpdateConfig:
     def createSupportPoints(self):
         
         technologySubset = 'setConversionTechnologies'
-        types = self.analysis['linearTechnologyApproximation'].keys()
+        # types = self.analysis['linearTechnologyApproximation'].keys()
         for technologyName in self.system[technologySubset]:
             for type in types:
                 if technologyName in self.analysis['linearTechnologyApproximation'][type]:
