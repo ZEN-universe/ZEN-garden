@@ -9,7 +9,7 @@ Description:    Class containing the methods for the creation and modification o
                 T. Liao, K. Socha, M. Montes de Oca, T. Stuetzle - August 2014
                 The implementation is limited to continuous (R) and ordinal (O) variables tailored to application to Mixed Integer Non-Linear Programming (MINLP) Models
 ==========================================================================================================================================================================="""
-
+import pyomo.environ as pe
 import numpy as np
 from scipy import stats
 
@@ -178,10 +178,10 @@ class Solutions:
 
         # get the objective function value from the model instance and assign it to the array of the solution archive
         if step == '':
-            self.f[solutionIndex] = instance.objective_function
+            self.f[solutionIndex] = pe.value(instance.objective)
 
         elif step == 'new':
-            self.f_new[solutionIndex] = instance.objective_function
+            self.f_new[solutionIndex] = pe.value(instance.objective)
 
     def rank(self, step):
         """method to rank the solutions according to the value of the objective function.

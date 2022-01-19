@@ -32,50 +32,22 @@ class Variables:
         :return: dictionary containing the domain and name of variables handled by the metaheuristic algorithm
         """
 
-<<<<<<< HEAD
-        if [self.analysis['nonlinearTechnologyApproximation'][type] for type
-            in self.analysis['nonlinearTechnologyApproximation'].keys()]:
-            self.dictVars['output'] = {}
-            for type in self.analysis['nonlinearTechnologyApproximation'].keys():
-                if type == 'Capex':
-                    variableName = 'capex'
-                elif type == 'ConverEfficiency':
-                    variableName = 'converEfficiency'
-
-                # if there are technologies in the list extract the dimensions and the domain from the declaration
-                # in the model instance
-                if self.analysis['nonlinearTechnologyApproximation'][type]:
-                    for technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
-                        name = variableName + technologyName
-                        variable = self.model.find_component(variableName)
-                        self.storeAttributes(self.dictVars['output'], name, variable)
-        else:
-            raise ValueError('No output variables expected from master algorithm')
-
-=======
->>>>>>> development_v1_DT
         # add the variables input to the master algorithm
         if self.analysis['variablesNonlinearModel']:
             self.dictVars['input'] = {}
             for variableName in self.analysis['variablesNonlinearModel']:
                 for technologyName in self.analysis['variablesNonlinearModel'][variableName]:
-                    name = variableName + technologyName
-                    variable = self.model.find_component(variableName)
-                    self.storeAttributes(self.dictVars['input'], name, variable)
+                    indexedVariable = self.model.find_component(variableName)
+                    
+                    for index in indexedVariable:
+                        if technologyName in index:
+                            variable = indexedVariable[index]
+                            self.dictVars['input'][variableName+"_".join(map(str,index))] = {}
+                            self.dictVars['input'][variableName+"_".join(map(str,index))]['variable'] = variable
+                            self.dictVars['input'][variableName+"_".join(map(str,index))]['domain'] = variable.domain.local_name
 
         else:
             raise ValueError('No input variables to master algorithm')
-
-    @staticmethod
-    def storeAttributes(dictionary, name, variable):
-        """"static method to add elements to dictionary
-        :return: dictionary with additional keys
-        """
-        # extract the typology of domain
-        dictionary[name] = {
-            'dimensions': [dim.local_name for dim in dimensions],
-            'domain': domain.local_name
-        }
 
     def createInputsSolutionArchive(self):
         """collect inputs in the format of the solution archive concerning the variables domain.
@@ -86,19 +58,12 @@ class Variables:
 
         # split the input variables based on their domain
         for variableName in self.dictVars['input'].keys():
-            domain = self.dictVars['input'][variableName]['domain']
-            # collect all the indices
-            variableIndices = []
-            for setName in self.dictVars['input'][variableName]['dimensions']:
-                variableIndices.extend([self.system[setName]])
-            # create a new variable name per combination of indices
-            for indexTuple in itertools.product(*variableIndices):
-                name = variableName + '_' + '_'.join(map(str, indexTuple))
-                if 'Real' in domain:
-                    self.dictVars['R']['names'].append(name)
-                elif ('Integer' in domain) or ('Boolean' in domain):
-                    self.dictVars['O']['names'].append(name)
-
+            domain = self.dictVars['input'][variableName]["domain"]
+            if 'Real' in domain:
+                self.dictVars['R']['names'].append(variableName)
+            elif ('Integer' in domain) or ('Boolean' in domain):
+                self.dictVars['O']['names'].append(variableName)
+            
         # derive parameters related to the variable order, size, indices, lower and upper bounds
         for type in ['R', 'O']:
             self.dictVars[type]['n'] = len(self.dictVars[type]['names'])

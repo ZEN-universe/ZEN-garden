@@ -75,6 +75,6 @@ class FillNlpDict:
                     for setName in ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']:
                         if technologyName in self.system[setName]:
                             _inputPath = self.paths[setName][technologyName]["folder"]
-                            self.nlpDict['data']['LB'][variableName+technologyName] = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
-                            self.nlpDict['data']['UB'][variableName+technologyName] = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
+                            self.nlpDict['data']['LB'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
+                            self.nlpDict['data']['UB'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
                             self.nlpDict['data']['DS'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"deltaCapacity")

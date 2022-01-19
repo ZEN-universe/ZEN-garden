@@ -40,8 +40,8 @@ if config.solver['model'] == 'MILP':
 elif config.solver['model'] == 'MINLP':
     # BASED ON HYBRID SOLVER - MASTER METAHEURISTIC AND SLAVE MILP SOLVER
     master = Metaheuristic(model, prepare.nlpDict)
-    master.solveMINLP(config.solver, prepare.pyoDict)# TODO what to do with pyoDict
-
+    master.solveMINLP(config.solver)
+a=1
 # EVALUATE RESULTS
 # evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
 # print(evaluation)

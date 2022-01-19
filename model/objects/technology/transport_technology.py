@@ -242,14 +242,14 @@ def constraintTransportTechnologySelection2Rule(model, tech, edge, time):
 
 def constraintTransportTechnologyAuxLBFlowRule(model, tech, edge, time):
     """coupling capacity and auxiliary capacity variable of transport technology"""
-    return (model.capacityTechnology[tech,edge, time]
+    return (model.capacity[tech,edge, time]
             - model.maxCapacity[tech] * (1 - model.select[tech,edge, time])
             <= model.capacityAux[tech,edge, time])
 
 def constraintTransportTechnologyAuxUBFlowRule(model, tech, edge, time):
     """coupling capacity and auxiliary capacity variable of transport technology"""
     return (model.capacityAux[tech,edge, time]
-            <= model.capacityTechnology[tech,edge, time])
+            <= model.capacity[tech,edge, time])
 
 def constraintTransportTechnologyLossesFlowRule(model, tech, carrier, edge, time):
     """compute the flow losses for a carrier through a transport technology"""
@@ -260,7 +260,7 @@ def constraintTransportTechnologyLinearCapexRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
     # TODO: why factor 0.5? To separate for nodes? But here for edges
     return (model.capex[tech,edge, time] == 0.5 *
-            model.capacityTechnology[tech,edge, time] *
+            model.capacity[tech,edge, time] *
             model.distance[tech,edge] *
             model.costPerDistance[tech,edge, time])
 

@@ -45,6 +45,7 @@ class Technology(Element):
                 _inputPath          = paths[technologyType][self.name]["folder"]
                 self.minCapacity    = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
                 self.maxCapacity    = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
+
                 self.lifetime       = self.dataInput.extractAttributeData(_inputPath,"lifetime")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
@@ -115,13 +116,13 @@ class Technology(Element):
             domain = pe.Binary,
             doc = 'installment of a technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: Binary')
         # capacity technology
-        model.capacityTechnology = pe.Var(
+        model.capacity = pe.Var(
             model.setTechnologyLocation,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
             doc = 'size of installed technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: NonNegativeReals')
         # builtCapacity technology
-        model.builtCapacityTechnology = pe.Var(
+        model.builtCapacity = pe.Var(
             model.setTechnologyLocation,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
@@ -177,7 +178,7 @@ class Technology(Element):
         )
         # total capex of all technologies
         model.constraintCapexTotal = pe.Constraint(
-            rule = constraintCapexTotal = p,
+            rule = constraintCapexTotalRule,
             doc = 'total capex of all technology that can be installed.'
         )
         # add pe.Constraints of the child classes
@@ -205,30 +206,33 @@ def constraintTechnologyMinCapacityRule(model, tech, location, time):
     """ min capacity expansion of  technology."""
     if model.minCapacity[tech] != 0:
         return (model.minCapacity[tech] * model.installTechnology[tech, location, time]
-                <= model.capacityTechnology[tech, location, time])
+                <= model.capacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyMaxCapacityRule(model, tech, location, time):
     """max capacity expansion of  technology"""
-    if model.maxCapacity[tech] != np.inf:
+    if model.maxCapacity[tech] != np.inf and tech in model.setPWACapexTechs:
         return (model.maxCapacity[tech] * model.installTechnology[tech, location, time]
-                >= model.capacityTechnology[tech, location, time])
+                >= model.capacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyLifetimeRule(model, tech, location, time):
     """limited lifetime of the technologies"""
-    # time range
-    t_start = max(0, time - model.lifetimeTechnology[tech] + 1)
-    t_end = time + 1
+    if tech in model.setPWACapexTechs:
+        # time range
+        t_start = max(0, time - model.lifetimeTechnology[tech] + 1)
+        t_end = time + 1
 
-    return (model.capacityTechnology[tech, location, time]
-            == sum(model.builtCapacityTechnology[tech,location, t] for t in range(t_start, t_end)))
+        return (model.capacity[tech, location, time]
+                == sum(model.builtCapacity[tech,location, t] for t in range(t_start, t_end)))
+    else:
+        return pe.Constraint.Skip
 
-def constraintCapexTotal = p(model):
+def constraintCapexTotalRule(model):
     """ sums over all technologies to calculate total capex """
-    return(model.capexTotal = p
+    return(model.capexTotal == 
         sum(
             sum(
                 model.capex[tech, loc,time]
