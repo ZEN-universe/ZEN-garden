@@ -7,6 +7,7 @@ Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 Description:    Class to add to pyomo dictionary the nonlinear functions
 ==========================================================================================================================================================================="""
 from preprocess.functions.add_parameters import add_function
+from preprocess.functions.extract_input_data import DataInput
 from scipy.interpolate import interp1d
 import numpy as np
 
@@ -58,6 +59,9 @@ class FillNlpDict:
 
     def collectDomainExtremes(self):
 
+        # create DataInput object
+        self.dataInput = DataInput(self.system,self.analysis)
+        
         self.nlpDict['LB'] = {}
         self.nlpDict['UB'] = {}
 
@@ -65,7 +69,8 @@ class FillNlpDict:
             for technologyName in self.analysis['variablesNonlinearModel'][variableName]:
                 if variableName == 'capacity':
                     for setName in ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']:
-                        if technologyName in self.pyoDict[None][setName][None]:
-                            self.nlpDict['LB'][variableName+technologyName] = self.pyoDict[None]['minCapacity'+technologyName][None]
-                            self.nlpDict['UB'][variableName+technologyName] = self.pyoDict[None]['maxCapacity' + technologyName][None]
+                        if technologyName in self.system[setName]:
+                            _inputPath = self.paths[setName][technologyName]["folder"]
+                            self.nlpDict['LB'][variableName+technologyName] = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
+                            self.nlpDict['UB'][variableName+technologyName] = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
 

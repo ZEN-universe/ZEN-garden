@@ -229,7 +229,7 @@ def objectiveTotalCostRule(model):
                         for node in model.setNodes)
                     for carrier in model.setExportCarriers)
 
-    return(carrierImport - carrierExport + model.capexTotalTechnology)
+    return(carrierImport - carrierExport + model.capexTotal)
 
 def objectiveCarbonEmissionsRule(model):
     """objective function to minimize total emissions"""

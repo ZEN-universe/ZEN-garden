@@ -11,14 +11,14 @@ import pandas as pd
 import os
 
 class DataInput():
-    def __init__(self,system,analysis,energySystem):
+    def __init__(self,system,analysis,energySystem = None):
         """ data input object to extract input data
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
         :param energySystem: instance of class <EnergySystem> to define energySystem """
-        self.system     = system
-        self.analysis   = analysis
-        self.energySystem       = energySystem
+        self.system         = system
+        self.analysis       = analysis
+        self.energySystem   = energySystem
 
     def extractInputData(self, folderPath,manualFileName=None,indexSets=[]):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
@@ -164,8 +164,9 @@ class DataInput():
                     for segment in dfInput.index:
                         PWADict[type][PWAParameter][segment] = dfInput.loc[segment,PWAParameter]
             else:
+                pass
                 # model as nonlinear
-                raise NotImplementedError("the parameter extraction for the nonlinear technology approximation are not yet implemented.")
+                # raise NotImplementedError("the parameter extraction for the nonlinear technology approximation are not yet implemented.")
         
         return PWADict
 

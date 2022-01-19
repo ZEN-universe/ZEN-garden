@@ -30,17 +30,17 @@ logging.propagate = False
 prepare = Prepare(config)
 
 # FORMULATE THE OPTIMIZATION PROBLEM
-model = Model(config.analysis, config.system)
+model = Model(config.analysis, config.system, prepare.paths)
 
 # SOLVE THE OPTIMIZATION PROBLEM
 if config.solver['model'] == 'MILP':
     # BASED ON MILP SOLVER
-    model.solve(config.solver, prepare.pyoDict)
+    model.solve(config.solver)
 elif config.solver['model'] == 'MINLP':
     # BASED ON HYBRID SOLVER - MASTER METAHEURISTIC AND SLAVE MILP SOLVER
     master = Metaheuristic(model, prepare.nlpDict)
     # master.solveMINLP(prepare.pyoDict)
-
+a=1
 # EVALUATE RESULTS
 # evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
 # print(evaluation)
