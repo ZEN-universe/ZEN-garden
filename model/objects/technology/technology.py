@@ -42,14 +42,12 @@ class Technology(Element):
         for technologyType in technologyTypes:
             if self.name in system[technologyType]:
                 _inputPath = paths[technologyType][self.name]["folder"]
-                self.minCapacity = Element.extractAttributeData(_inputPath,"minCapacity")
-                self.maxCapacity = Element.extractAttributeData(_inputPath,"maxCapacity")
-                self.lifetime = Element.extractAttributeData(_inputPath,"lifetime")
+                self.referenceCarrier = Element.extractAttributeData(_inputPath, "referenceCarrier")
+                self.minCapacity      = Element.extractAttributeData(_inputPath,"minCapacity")
+                self.maxCapacity      = Element.extractAttributeData(_inputPath,"maxCapacity")
+                self.lifetime         = Element.extractAttributeData(_inputPath,"lifetime")
                 if technologyType == "setConversionTechnologies":
-                    self.referenceCarrier = Element.extractAttributeData(_inputPath,"referenceCarrier")
                     self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-                elif technologyType == "setTransportTechnologies":
-                    self.referenceCarrier = Element.extractAttributeData(_inputPath,"referenceCarrier")
                     # transport data
                     # self.availability = Element.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
 
@@ -85,27 +83,32 @@ class Technology(Element):
         ### define pe.Param of the class <Technology>
         model = cls.getConcreteModel()
         
+        # reference carrier
+        model.referenceCarrier = pe.Param(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("referenceCarrier"),
+            doc = 'Parameter which specifies the reference carrier. Dimensions: setTechnologies.')
         # minimum capacity
         model.minCapacity = pe.Param(
             model.setTechnologies,
             initialize = cls.getAttributeOfAllElements("minCapacity"),
-            doc = 'Parameter which specifies the minimum technology size that can be installed.\n\t Dimensions: setTechnologies')
+            doc = 'Parameter which specifies the minimum technology size that can be installed. Dimensions: setTechnologies')
         # maximum capacity
         model.maxCapacity = pe.Param(
             model.setTechnologies,
             initialize = cls.getAttributeOfAllElements("maxCapacity"),
-            doc = 'Parameter which specifies the maximum technology size that can be installed.\n\t Dimensions: setTechnologies')
+            doc = 'Parameter which specifies the maximum technology size that can be installed. Dimensions: setTechnologies')
         # lifetime
         model.lifetimeTechnology = pe.Param(
             model.setTechnologies,
             initialize = cls.getAttributeOfAllElements("lifetime"),
-            doc = 'Parameter which specifies the lifetime of technology.\n\t Dimensions: setTechnologies')
+            doc = 'Parameter which specifies the lifetime of technology. Dimensions: setTechnologies')
         # availability of  technologies
         model.availabilityTechnology = pe.Param(
             model.setTechnologyLocation,
             model.setTimeSteps,
             initialize = cls.getAttributeOfAllElements("availability"),
-            doc = 'Parameter which specifies the availability of technologies.\n\t Dimensions: setTechnologyLocation, setTimeSteps')
+            doc = 'Parameter which specifies the availability of technologies. Dimensions: setTechnologyLocation, setTimeSteps')
 
         # add pe.Param of the child classes
         for subclass in cls.getAllSubclasses():
@@ -121,29 +124,29 @@ class Technology(Element):
             model.setTechnologyLocation,
             model.setTimeSteps,
             domain = pe.Binary,
-            doc = 'installment of a technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: Binary')
+            doc = 'installment of a technology on edge i and time t. Dimensions: setTechnologyLocation, setTimeSteps. Domain: Binary')
         # capacity technology
         model.capacityTechnology = pe.Var(
             model.setTechnologyLocation,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'size of installed technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: NonNegativeReals')
+            doc = 'size of installed technology on edge i and time t. Dimensions: setTechnologyLocation, setTimeSteps. Domain: NonNegativeReals')
         # builtCapacity technology
         model.builtCapacityTechnology = pe.Var(
             model.setTechnologyLocation,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'size of built technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: NonNegativeReals')
+            doc = 'size of built technology on edge i and time t. Dimensions: setTechnologyLocation, setTimeSteps. Domain: NonNegativeReals')
         # capex technology
         model.capexTechnology = pe.Var(
             model.setTechnologyLocation,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'capex for installing technology on edge i and time t.  \n\t Dimensions: setTechnologyLocation, setTimeSteps.\n\t Domain: NonNegativeReals')
+            doc = 'capex for installing technology on edge i and time t. Dimensions: setTechnologyLocation, setTimeSteps. Domain: NonNegativeReals')
         # total capex technology
         model.capexTotalTechnology = pe.Var(
             domain = pe.NonNegativeReals,
-            doc = 'total capex for installing all technologies on all edges at all times.  \n\t Domain: NonNegativeReals')
+            doc = 'total capex for installing all technologies on all edges at all times. Domain: NonNegativeReals')
 
         # add pe.Vars of the child classes
         for subclass in cls.getAllSubclasses():
@@ -159,21 +162,21 @@ class Technology(Element):
             model.setTechnologyLocation,
             model.setTimeSteps,
             rule = constraintTechnologyAvailabilityRule,
-            doc = 'limited availability of  technology depending on node and time. \n\t Dimensions: setTechnologyLocation, setTimeSteps'
+            doc = 'limited availability of  technology depending on node and time. Dimensions: setTechnologyLocation, setTimeSteps'
         )
         # minimum capacity
         model.constraintTechnologyMinCapacity = pe.Constraint(
             model.setTechnologyLocation,
             model.setTimeSteps,
             rule = constraintTechnologyMinCapacityRule,
-            doc = 'min capacity of  technology that can be installed. \n\t Dimensions: setTechnologyLocation, setTimeSteps'
+            doc = 'min capacity of  technology that can be installed. Dimensions: setTechnologyLocation, setTimeSteps'
         )
         # maximum capacity
         model.constraintTechnologyMaxCapacity = pe.Constraint(
             model.setTechnologyLocation,
             model.setTimeSteps,
             rule = constraintTechnologyMaxCapacityRule,
-            doc = 'max capacity of  technology that can be installed. \n\t Dimensions: setTechnologyLocation, setTimeSteps'
+            doc = 'max capacity of  technology that can be installed. Dimensions: setTechnologyLocation, setTimeSteps'
         )
         
         # lifetime
@@ -181,7 +184,7 @@ class Technology(Element):
             model.setTechnologyLocation,
             model.setTimeSteps,
             rule = constraintTechnologyLifetimeRule,
-            doc = 'max capacity of  technology that can be installed. \n\t Dimensions: setTechnologyLocation, setTimeSteps'
+            doc = 'max capacity of  technology that can be installed. Dimensions: setTechnologyLocation, setTimeSteps'
         )
         # total capex of all technologies
         model.constraintCapexTotalTechnology = pe.Constraint(

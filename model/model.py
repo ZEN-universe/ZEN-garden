@@ -85,7 +85,5 @@ class Model():
         #     self
         self.model.solutions.load_from(self.results)
 
-        a=1
-
 
 
