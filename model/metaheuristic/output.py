@@ -116,6 +116,7 @@ class Output:
         self.createFolder(data['folder'])
 
         df = pd.DataFrame(data=data['values']).T
+        print( df.columns, data['columns'] )
         df.columns = data['columns']
         df.index.name = data['name']
 
@@ -140,7 +141,7 @@ class Output:
             keys = []
             for key in self.performanceInstance.VariablesHistoryRuns[type].keys():
                 values.append(self.performanceInstance.VariablesHistoryRuns[type][key])
-            keys.append(key)
+                keys.append(key)
             values = self.roundToMinValue(values)
 
             data = {
