@@ -76,12 +76,13 @@ solver['TimeLimit'] = 8760
 solver['logfile'] = './/outputs//logs//pyomoLogFile.log'
 # typology of model solved: MILP or MINLP
 solver['model']      = 'MILP'
-# parameters of meta-heuristic algorithm
-solver['parametersMetaheuristic'] = {'FEsMax':1e9, 'kNumber':90, 'mNumber':5, 'q':0.05099, 'xi':0.6795, 'epsilon':1e-5, 'MaxStagIter':650,
-                            'minVal':1e-6, 'maxVal':1e6,'runsNumber':5}
+
+## parameters of meta-heuristic algorithm
+# TODO: MINLP-related
+solver['parametersMetaheuristic'] = {
+    'FEsMax':1e9, 'kNumber':90, 'mNumber':5, 'q':0.05099, 'xi':0.6795, 'epsilon':1e-5, 'MaxStagIter':650,
+    'minVal':1e-6, 'maxVal':1e6,'runsNumber':2
+    }
 # typology of criterion for convergence when evaluating the variation of obj. function:
-# (i) absoluteDelta, (ii) relativeDelta, (iii) functionEvaluations
-solver['convergenceCriterion'] = 'relativeDelta'
-# possibility and number of fresh restarts to enhance the exploration of the solution space
-solver['restart'] = True
-solver['numberRestarts'] = 1
+# conditionDelta: (i) relative, (ii) absolute
+solver['convergenceCriterion'] = {'check': True, 'conditionDelta':'relative', 'restart':False}

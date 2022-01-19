@@ -1,30 +1,38 @@
+"""===========================================================================================================================================================================
+Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Created:      January-2022
+Authors:      Davide Tonelli (davidetonelli@outlook.com)
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+
+Description:  Class interfacing the declaration of variables and parameters in the slave algorithm with the master algorithm.
+==========================================================================================================================================================================="""
+
 from model.objects.element import Element
 import itertools
 import numpy as np
 
 class Variables:
 
-    def __init__(self, object, model, nlpDict):
+    def __init__(self, object, model):
 
         # inherit attributes from parent class
         self.model = model.model
         self.analysis = object.analysis
         self.system = object.system
         self.dictVars = object.dictVars
-        self.nlpDict = nlpDict
+        self.nlpDict = object.nlpDict
 
-        # define the variables input and output of the master algorithm
+        # define the variables input and output of the master algorithm as declared in the slave algorithm
         self.collectVariables()
         # collect the attributes necessary to handle the solution archive
-        self.createInputsArchive()
+        self.createInputsSolutionArchive()
 
     def collectVariables(self):
         """"create a dictionary containing the set of variables subject to nonlinearities.
-        :return: dictionary containing two main dictionaries. ('variablesInput') dictionary with domain and name of
-            variables input to the metaheuristic algorithm. ('variablesOutput') dictionary with the variables output
-            of the metaheuristic algorithm and input to the MILP problem.
+        :return: dictionary containing the domain and name of variables handled by the metaheuristic algorithm
         """
 
+<<<<<<< HEAD
         if [self.analysis['nonlinearTechnologyApproximation'][type] for type
             in self.analysis['nonlinearTechnologyApproximation'].keys()]:
             self.dictVars['output'] = {}
@@ -44,6 +52,8 @@ class Variables:
         else:
             raise ValueError('No output variables expected from master algorithm')
 
+=======
+>>>>>>> development_v1_DT
         # add the variables input to the master algorithm
         if self.analysis['variablesNonlinearModel']:
             self.dictVars['input'] = {}
@@ -67,11 +77,14 @@ class Variables:
             'domain': domain.local_name
         }
 
-    def createInputsArchive(self):
+    def createInputsSolutionArchive(self):
+        """collect inputs in the format of the solution archive concerning the variables domain.
+        :return:  dictionary with additional keys
+        """
         for varType in ['R', 'O']:
             self.dictVars[varType] = {'names': []}
 
-            # split the input variables based on their domain
+        # split the input variables based on their domain
         for variableName in self.dictVars['input'].keys():
             domain = self.dictVars['input'][variableName]['domain']
             # collect all the indices
@@ -97,8 +110,10 @@ class Variables:
             for idx in self.dictVars[type]['idxArray']:
                 name = self.dictVars[type]['idx_to_name'][idx].split('_')[0]
                 if type == 'R':
-                    self.dictVars[type]['LBArray'][0, idx] = self.nlpDict['LB'][name]
-                    self.dictVars[type]['UBArray'][0, idx] = self.nlpDict['UB'][name]
+                    self.dictVars[type]['LBArray'][0, idx] = self.nlpDict['data']['LB'][name]
+                    self.dictVars[type]['UBArray'][0, idx] = self.nlpDict['data']['UB'][name]
                 elif type == 'O':
                     self.dictVars[type]['LBArray'][0, idx] = 0
-                    self.dictVars[type]['UBArray'][0, idx] = np.int(self.nlpDict['UB'][name]/self.nlpDict['DS'][name])
+                    self.dictVars[type]['UBArray'][0, idx] = np.int(self.nlpDict['data']['UB'][name]/self.nlpDict['data']['DS'][name])
+                    self.dictVars[type]['values'][0, idx] = \
+                        np.arange(self.dictVars[type]['UBArray'][0, idx], dtype=np.int)*self.nlpDict['data']['DS'][name]

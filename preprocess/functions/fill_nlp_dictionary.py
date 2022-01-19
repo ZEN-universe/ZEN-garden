@@ -14,7 +14,8 @@ import numpy as np
 class FillNlpDict:
     
     def functionNonlinearApproximation(self):
-            
+
+        self.nlpDict['data'] = {}
         technologySubsets = ['setConversionTechnologies']
 
         for technologySubset in technologySubsets:
@@ -28,10 +29,12 @@ class FillNlpDict:
                         # key to use in the Pyomo dictionary
                         key = (technologyName)
                         # add the function to the Pyomo dictionary based on the key and the function object
-                        add_function(self.nlpDict, interp1d(x, y, kind='linear'), key, parameterName)
+                        add_function(self.nlpDict['data'], interp1d(x, y, kind='linear'), key, parameterName)
 
 
     def configSolver(self):
+
+        self.nlpDict['hyperparameters'] = {}
 
         # derive parameters from those in config.solver
         FEMax = self.solver['parametersMetaheuristic']['FEsMax']
@@ -50,20 +53,21 @@ class FillNlpDict:
                 key = parameterName
 
             # add the element to the dictionary based on the respective key
-            self.nlpDict[key] = object
+            self.nlpDict['hyperparameters'][key] = object
 
         if self.analysis['sense'] == 'minimize':
-            self.nlpDict['penalty'] = np.inf
+            self.nlpDict['hyperparameters']['penalty'] = np.inf
         elif self.analysis['sense'] == 'maximize':
-            self.nlpDict['penalty'] = -np.inf
+            self.nlpDict['hyperparameters']['penalty'] = -np.inf
 
     def collectDomainExtremes(self):
 
         # create DataInput object
         self.dataInput = DataInput(self.system,self.analysis)
         
-        self.nlpDict['LB'] = {}
-        self.nlpDict['UB'] = {}
+        self.nlpDict['data']['LB'] = {}
+        self.nlpDict['data']['UB'] = {}
+        self.nlpDict['data']['DS'] = {}
 
         for variableName in self.analysis['variablesNonlinearModel']:
             for technologyName in self.analysis['variablesNonlinearModel'][variableName]:
@@ -71,6 +75,6 @@ class FillNlpDict:
                     for setName in ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']:
                         if technologyName in self.system[setName]:
                             _inputPath = self.paths[setName][technologyName]["folder"]
-                            self.nlpDict['LB'][variableName+technologyName] = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
-                            self.nlpDict['UB'][variableName+technologyName] = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
-
+                            self.nlpDict['data']['LB'][variableName+technologyName] = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
+                            self.nlpDict['data']['UB'][variableName+technologyName] = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
+                            self.nlpDict['data']['DS'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"deltaCapacity")

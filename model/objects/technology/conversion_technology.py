@@ -26,6 +26,7 @@ class ConversionTechnology(Technology):
         :param object: object of the abstract model"""
 
         logging.info('initialize object of a conversion technology')
+<<<<<<< HEAD
         super().__init__(tech)
         # store input data
         self.storeInputData()
@@ -79,6 +80,217 @@ class ConversionTechnology(Technology):
             initialize = [(tech,outputCarrier) for tech in _outputCarriers for outputCarrier in _outputCarriers[tech]],
             doc = "set of techs and their respective output carriers"
         )
+=======
+        super().__init__(object, 'Conversion', tech)
+
+        # %% Subsets
+        subsets = {f'setInputCarriers{tech}':    f'Set of input carrier of {tech}. Subset: setInputCarriers',
+                   f'setOutputCarriers{tech}':   f'Set of output carriers of {tech}. Subset: setOutputCarriers'}
+        # merge new items with parameters dictionary from Technology class
+        subsets = {**subsets, **self.getTechSubsets()}
+        self.addSets(subsets)
+
+        # %% Parameters
+        params = {}
+        # merge new items with parameters dictionary from Technology class
+        params = {**params, **self.getTechParams()}
+        self.addParams(params)
+
+        # %% Variables
+        variables = {
+            f'input{tech}': f'Carrier input of {tech}. \
+                            \n\t Dimensions: setInputCarriers{tech}, setNodes, setTimeSteps. \
+                            \n\t Domain: NonNegativeReals',
+            f'output{tech}': f'Carrier output {tech}. \
+                             \n\t Dimensions: setOutputCarriers{tech}, setNodes, setTimeSteps. \
+                             \n\t Domain: NonNegativeReals'}
+        # merge new items with variables dictionary from Technology class
+        variables = {**variables, **self.getTechVars()}
+        self.addVars(variables)
+
+        #%% Constraints
+        constr = {
+            f'{tech}MaxOutput': f'maximum output of {tech} is limited by the installed capacity. \
+                                \n\t Dimensions: setOutputCarriers{tech}, setNodes, setTimeSteps'}
+        constr = {**constr, **self.getTechConstr()}
+        # add constraints defined in technology class
+        self.addConstr(constr, replace = [tech, 'ConversionTechnology'], passValues = [tech])
+
+        # add linear/nonlinear constraints to model capex and conversion efficiency
+        for type, nonLinearTechs in self.analysis['nonlinearTechnologyApproximation'].items():
+            if tech in nonLinearTechs:
+                self.addNonlinearConstraints(type, tech)
+            else:
+                self.addLinearConstraints(type, tech)
+
+        logging.info(f'added subsets, parameters, decision variables and constraints for {tech}')
+
+
+    def addNonlinearConstraints(self, type, tech):
+        """add subsets, parameters, variables, and constraints for nonlinear problem formulation
+        :param tech: conversion technology
+        :param type: parameter type of the nonlinear function (capex or efficiency)"""
+
+        pass
+
+
+    def addLinearConstraints(self, type, tech):
+        """add subsets, parameters, variables, and constraints for linearized problem formulation
+        :param tech: conversion technology
+        :param type: type of the function that is linearized (capex or efficiency)"""
+
+        #%% Subsets
+        subsets = {f'setSegments{type}{tech}': f'Set of support points for PWA of {type} for {tech}'}
+        self.addSets(subsets)
+
+        #%% Parameters
+        params = {f'slope{type}{tech}':     f'Parameter which specifies the slope of the {type} segment {tech}.\
+                                            \n\t Dimensions: setSegments{type}{tech}',
+                  f'intercept{type}{tech}': f'Parameter which specifies the intercept of the {type} segment {tech}.\
+                                            \n\t Dimensions: setSegments{type}{tech}',
+                  f'lbSegment{type}{tech}': f'Parameter which specifies the lower bound of the {type} segment {tech}.\
+                                            \n\t Dimensions: setSegments{type}{tech}',
+                  f'ubSegment{type}{tech}': f'Parameter which specifies the upper bound of the {type} segment {tech}.\
+                                            \n\t Dimensions: setSegments{type}{tech}'}
+        self.addParams(params)
+
+        #%% Variables
+        variables = {
+            f'selectSegment{type}{tech}': f'Binary variable to model the activation of a segment in the PWA approximation of {type} of the {tech}. \
+                                          \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps.\
+                                          \n\t Domain: Binary'}
+        if type == 'Capex':
+            variables[f'capacityAux{tech}'] = f'Auxiliary variable to model {type} of {tech} technologies. \
+                                              \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps.\
+                                              \n\t Domain: NonNegativeReals'
+        elif type == 'ConverEfficiency':
+            variables[f'inputAux{tech}']   = f'Auxiliary variable to model {type} of {tech} technologies. \
+                                             \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setNodes, setTimeSteps.\
+                                             \n\t Domain: NonNegativeReals'
+        self.addVars(variables)
+
+        #%% Constraints
+        constr = dict()
+        if type == 'Capex':
+            constr[f'{tech}Linear{type}']      = f'Linearization of {type} for {tech}.\
+                                                 \n\t Dimensions:setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}LB']    = f'lower bound of segment for {type} of {tech}.\
+                                                 \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}UB']    = f'upper bound of segment for {type} of {tech}.\
+                                                 \n\t Dimensions: setSegments{type}{tech}, setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}Aux']   = f'linking the auxiliary variable and variable for {type} of {tech}.\
+                                                 \n\t Dimensions: setNodes, setTimeSteps'
+
+        elif type == 'ConverEfficiency':
+            constr[f'{tech}Linear{type}']    = f'Linearization of {type} for {type} of {tech}.\
+                                               \n\t Dimensions: setInputCarriers{tech}, setOutputCarriers{tech}, setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}LB']  = f'lower bound of segment for {type} of {tech}.\
+                                               \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}UB']  = f'upper bound of segment for {type} of {tech}.\
+                                               \n\t Dimensions: setSegments{type}{tech}, setInputCarriers{tech}, setNodes, setTimeSteps'
+            constr[f'{tech}Linear{type}Aux'] = f'linking the auxiliary variable and variable for {type} of {tech}.\
+                                               \n\t Dimensions: setInputCarriers{tech}, setNodes, setTimeSteps'
+
+        constr[f'{tech}Linear{type}SegmentSelection']  = f'Segment selection for {type} of {tech}.\
+                                                         \n\t Dimensions: setNodes, setTimeSteps.'
+
+        self.addConstr(constr, replace = [tech, 'ConversionTechnology'], passValues = [tech])
+
+    #%% Constraint rules pre-defined in Technology class
+    @staticmethod
+    def constraintConversionTechnologyAvailabilityRule(model, tech, node, time):
+        """limited availability of conversion technology"""
+
+        # parameters
+        availabilityTechnology = getattr(model, f'availability{tech}')
+        # variables
+        installTechnology      = getattr(model, f'install{tech}')
+
+        return (availabilityTechnology[node, time] >= installTechnology[node, time])
+
+    @staticmethod
+    def constraintConversionTechnologyMinCapacityRule(model, tech, node, time):
+        """min capacity of conversion technology"""
+
+        # parameters
+        minCapacityTechnology = getattr(model, f'minCapacity{tech}')
+        # variables
+        installTechnology     = getattr(model, f'install{tech}')
+        capacityTechnology    = getattr(model, f'capacity{tech}')
+
+        return (minCapacityTechnology * installTechnology[node, time]
+                <= capacityTechnology[node, time])
+
+    @staticmethod
+    def constraintConversionTechnologyMaxCapacityRule(model, tech, node, time):
+        """max capacity of conversion technology"""
+
+        # parameters
+        maxCapacityTechnology = getattr(model, f'maxCapacity{tech}')
+        # variables
+        installTechnology  = getattr(model, f'install{tech}')
+        capacityTechnology = getattr(model, f'capacity{tech}')
+
+        return(maxCapacityTechnology * installTechnology[node, time]
+               >= capacityTechnology[node, time])
+
+    @staticmethod
+    def constraintConversionTechnologyLifetimeRule(model, tech, node, time):
+        """limited lifetime of the technology"""
+
+        # parameters
+        lifetime = getattr(model, f'lifetime{tech}')
+        # variables
+        capacityTechnology = getattr(model, f'capacity{tech}')
+
+        # time range
+        t_start = max(1, t - lifetime + 1)
+        t_end = time + 1
+
+        return (capacityTechnology[node, time]
+                == sum((capacityTechnology[node, t + 1] - capacityTechnology[node, t] for t in range(t_start, t_end))))
+
+    @staticmethod
+    def constraintConversionTechnologyMinCapacityExpansionRule(model, tech, node, time):
+        """min capacity expansion of conversion technology"""
+
+        # parameters
+        minCapacityExpansion = getattr(model, f'minCapacityExpansion{tech}')
+        # variables
+        expandTechnology   = getattr(model, f'expand{tech}')
+        capacityTechnology = getattr(model, f'capacity{tech}')
+
+        return (expandTechnology[node, t] * minCapacityExpansion
+                >= capacityTechnology[node, time] - capacityTechnology[node, time])
+
+    @staticmethod
+    def constraintConversionTechnologyMaxCapacityExpansionRule(model, tech, node, time):
+        """max capacity expnsion of conversion technology"""
+
+        # parameters
+        maxCapacityExpansion = getattr(model, f'maxCapacityExpansion{tech}')
+        # variables
+        expandTechnology = getattr(model, f'expand{tech}')
+        capacityTechnology = getattr(model, f'capacity{tech}')
+
+        return (expandTechnology[node, t] * maxCapacityExpansion
+                <= capacityTechnology[node, time] - capacityTechnology[node, time])
+
+    @staticmethod
+    def constraintConversionTechnologyLimitedCapacityExpansionRule(model, tech, node, time):
+        """technology capacity can only be expanded once over its lifetime"""
+
+        # parameters
+        lifetime = getattr(model, f'lifetime{tech}')
+        # variables
+        expandTechnology = getattr(model, f'expand{tech}')
+
+        # time range
+        t_start = max(1, t - lifetime + 1)
+        t_end = time + 1
+
+        return (sum(expandTechnology[node, t] for t in range(t_start, t_end)) <= 1)
+>>>>>>> development_v1_DT
         
         # set of PWA/NL technologies in capex/ConverEfficiency approximation
         model.setPWACapexTechs = pe.Set(
