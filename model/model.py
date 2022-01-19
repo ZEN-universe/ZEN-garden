@@ -68,6 +68,7 @@ class Model():
         logging.info(f"Solve model instance using {solverName}")
         solver_parameters = f"ResultFile={os.path.dirname(solver['logfile'])}//model.ilp" # write an ILP file to print the IIS if infeasible (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
+<<<<<<< HEAD
         self.opt.set_instance(self.model,symbolic_solver_labels =True)
         self.results = self.opt.solve(tee=True, logfile=solver['logfile'],options_string=solver_parameters)
         self.model.solutions.load_from(self.results)
@@ -76,3 +77,7 @@ class Model():
 
 
 
+=======
+        self.results = self.opt.solve(self.instance, tee=True, logfile=solver['logfile'])
+        self.instance.solutions.load_from(self.results)
+>>>>>>> origin/development_v1_DT

@@ -13,6 +13,7 @@ import logging
 import config
 from preprocess.prepare import Prepare
 from model.model import Model
+from model.metaheuristic.algorithm import Metaheuristic
 from postprocess.results import Postprocess
 
 # SETUP LOGGER
@@ -26,14 +27,20 @@ logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.DEBUG,
 logging.propagate = False
 
 # CREATE INPUT FILE
-prepare = Prepare(config.analysis, config.system)
-# FORMULATE AND SOLVE THE OPTIMIZATION PROBLEM
-model = Model(config.analysis, config.system, prepare.paths)
-model.solve(config.solver)
+prepare = Prepare(config)
+
+# FORMULATE THE OPTIMIZATION PROBLEM
+model = Model(config.analysis, config.system)
+
+# SOLVE THE OPTIMIZATION PROBLEM
+if config.solver['model'] == 'MILP':
+    # BASED ON MILP SOLVER
+    model.solve(config.solver, prepare.pyoDict)
+elif config.solver['model'] == 'MINLP':
+    # BASED ON HYBRID SOLVER - MASTER METAHEURISTIC AND SLAVE MILP SOLVER
+    master = Metaheuristic(model, prepare.nlpDict)
+    # master.solveMINLP(prepare.pyoDict)
 
 # EVALUATE RESULTS
-evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
-
-# CREATE DICTIONARY TO VISUALIZE RESULTS IN DASHBOARD
-
-
+# evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
+# print(evaluation)

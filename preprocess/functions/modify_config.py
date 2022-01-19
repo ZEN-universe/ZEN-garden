@@ -30,11 +30,12 @@ class UpdateConfig:
         # types = self.analysis['linearTechnologyApproximation'].keys()
         for technologyName in self.system[technologySubset]:
             for type in types:
-                if technologyName in self.analysis['linearTechnologyApproximation'][type]:
-                    df = self.data[technologySubset][technologyName][f'linear{type}']
-                elif technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
+                if technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
                     pass
                 else:
-                    df = self.data[technologySubset][technologyName][f'PWA{type}']
-                setName = f'setSegments{type}{technologyName}'
-                self.system[setName] = df.index.values
+                    if technologyName in self.analysis['linearTechnologyApproximation'][type]:
+                        df = self.data[technologySubset][technologyName][f'linear{type}']
+                    else:
+                        df = self.data[technologySubset][technologyName][f'PWA{type}']
+                    setName = f'setSegments{type}{technologyName}'
+                    self.system[setName] = df.index.values

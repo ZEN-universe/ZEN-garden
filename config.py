@@ -20,9 +20,10 @@ solver = default_config.solver
 analysis['timeHorizon'] = 1                                                      
 analysis['spatialResolution'] = 'Test3'
 analysis['modelFormulation'] = 'HSC'
-analysis['nonlinearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}
-# analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
-analysis['objective'] = 'TotalCost' # choices are ["TotalCost","CarbonEmissions","Risk"]
+analysis['variablesNonlinearModel'] = {'capacity':['electrolysis']}
+analysis['nonlinearTechnologyApproximation'] = {'Capex': ['electrolysis'], 'ConverEfficiency':[]}
+analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
+analysis['objective'] = 'TotalCost'
 
 ## System - settings update compared to default values
 system['setImportCarriers'] = ['electricity']
@@ -36,3 +37,4 @@ system['setNodes'] = list(string.ascii_uppercase[:3]) #TODO: define proper nomen
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01
+solver['model'] = 'MINLP'

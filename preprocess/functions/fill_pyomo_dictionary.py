@@ -260,12 +260,14 @@ class FillPyoDict:
 
         for technologyName in self.system[technologySubset]:
             for type in types:
-                if technologyName in self.analysis['linearTechnologyApproximation'][type]:
-                    df = self.data[technologySubset][technologyName][f'linear{type}']
-                elif technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
+                if technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:
                     pass
                 else:
-                    df = self.data[technologySubset][technologyName][f'PWA{type}']
+                    if technologyName in self.analysis['linearTechnologyApproximation'][type]:
+                        df = self.data[technologySubset][technologyName][f'linear{type}']
+                    else:
+                        df = self.data[technologySubset][technologyName][f'PWA{type}']
+                    df['index'] = df.index.values
 
                 df['index'] = df.index.values
                 for parameterName in self.analysis['dataInputs']['PWA'].values():
