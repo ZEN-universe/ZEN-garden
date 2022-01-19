@@ -116,7 +116,6 @@ class Output:
         self.createFolder(data['folder'])
 
         df = pd.DataFrame(data=data['values']).T
-        print( df.columns, data['columns'] )
         df.columns = data['columns']
         df.index.name = data['name']
 
