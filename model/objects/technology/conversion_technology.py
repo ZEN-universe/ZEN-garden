@@ -184,8 +184,15 @@ class ConversionTechnology(Technology):
             model.setNodes,
             model.setTimeSteps,
             rule = constraintConversionTechnologyMaxOutputRule,
-            doc = 'maximum output of conversion technology is limited by the installed capacity. \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps'
+            doc = 'maximum output of conversion technology is limited by the installed capacity. \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps'
         )
+        # link output carriers
+        model.constraintConversionTechnologyLinkOutputFlow = pe.Constraint(
+            model.setOutputCarriersTechs,
+            model.setNodes,
+            model.setTimeSteps,
+            rule = constraintConversionTechnologyLinkOutputFlowRule,
+            doc = 'link the output carrier flow if conversion technology has multiple output carriers. Dimensions: setOutputCarriersTechs, setNodes, setTimeSteps')
         # add PWA constraints
         # capex
         if model.setPWACapex: 
