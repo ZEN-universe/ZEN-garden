@@ -71,8 +71,3 @@ class Model():
         self.opt.set_instance(self.model,symbolic_solver_labels =True)
         self.results = self.opt.solve(tee=True, logfile=solver['logfile'],options_string=solver_parameters)
         self.model.solutions.load_from(self.results)
-
-        a=1
-
-
-
