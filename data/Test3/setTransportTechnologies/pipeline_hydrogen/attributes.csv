@@ -1,0 +1,9 @@
+index,attributes
+minCapacity,0
+maxCapacity,1.00E+06
+minFlow,0.1
+maxFlow,1
+lossFlow,0
+valueCapex,0
+lifetime,10
+referenceCarrier,hydrogen

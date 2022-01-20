@@ -1,0 +1,11 @@
+index,attributes
+minCapacity,0
+maxCapacity,60
+deltaCapacity,30
+minLoad,0
+maxLoad,1
+valueCapex,700000
+lifetime,10
+referenceCarrier,hydrogen
+inputCarrier,electricity water
+outputCarrier,hydrogen oxygen

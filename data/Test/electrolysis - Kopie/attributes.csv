@@ -1,0 +1,9 @@
+index,attributes
+minCapacity,0
+maxCapacity,1.00E+06
+deltaCapacity,1.00E+03
+minLoad,0
+maxLoad,1
+valueCapex,700000
+lifetime,10
+referenceCarrier,hydrogen
