@@ -37,15 +37,16 @@ class Variables:
             self.dictVars['input'] = {}
             for variableName in self.analysis['variablesNonlinearModel']:
                 for technologyName in self.analysis['variablesNonlinearModel'][variableName]:
+                    # extract variable name from model object with associated indexes
                     indexedVariable = self.model.find_component(variableName)
-                    
+
+                    # loop through all the indices of the variable to create one variable per index
                     for index in indexedVariable:
                         if technologyName in index:
                             variable = indexedVariable[index]
                             self.dictVars['input'][variableName+"_".join(map(str,index))] = {}
                             self.dictVars['input'][variableName+"_".join(map(str,index))]['variable'] = variable
                             self.dictVars['input'][variableName+"_".join(map(str,index))]['domain'] = variable.domain.local_name
-
         else:
             raise ValueError('No input variables to master algorithm')
 

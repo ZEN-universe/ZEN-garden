@@ -31,10 +31,8 @@ class Metaheuristic:
         # instantiate the model class
         self.model = model
 
-        # collect the properties of the decision variables handled by the metaheuristic and create a new attribute in
-        # the Pyomo dictionary
+        # collect the properties of the decision variables handled by the metaheuristic
         self.dictVars = {}
-        # TODO: MINLP-related - point of interface with variables declaration in the slave algorithm
         Variables(self, model)
 
     def solveMINLP(self, solver):
@@ -59,15 +57,10 @@ class Metaheuristic:
                     solutionsIndices, SA = solutionsInstance.solutionSets(step)
 
                 for solutionIndex in solutionsIndices:
-                    # TODO: MINLP-related - point of interface with Pyomo solver
                     # input variables to the MILP model
                     valuesContinuousVariables, valuesDiscreteVariables = SA['R'][solutionIndex,:], SA['O'][solutionIndex, :]
-                    # update the Pyomo dictionary with the values of the nonlinear variables at current iteration
-                    self.fixMILPVariables(valuesContinuousVariables, valuesDiscreteVariables)
-                    # solve the slave problem based on the values of the nonlinear variables at current iteration
-                    self.model.solve(solver)
-                    # update the objective function based on the results of the slave MILP problem
-                    solutionsInstance.updateObjective(self.model.model, solutionIndex, step)
+                    # update slave concrete model and solve it
+                    self.slaveAlgorithm(solutionsInstance, valuesContinuousVariables, valuesDiscreteVariables, solutionIndex, step)
 
                 # rank the solutions according to the computed objective function and select the best among them
                 solutionsInstance.rank(step)
@@ -86,7 +79,28 @@ class Metaheuristic:
                     (iteration != self.nlpDict['hyperparameters']['iterationsNumberArray'][-1])):
                 # re-initialize the solution archive with memory of the optimum found
                 performanceInstance.restart(iteration, solutionsInstance)
-                #TODO: add the routines following restart
+                for solutionIndex in solutionsIndices:
+                    # input variables to the MILP model
+                    valuesContinuousVariables, valuesDiscreteVariables = SA['R'][solutionIndex,:], SA['O'][solutionIndex, :]
+                    # update slave concrete model and solve it
+                    self.slaveAlgorithm(solutionsInstance, valuesContinuousVariables, valuesDiscreteVariables, solutionIndex, step='')
+                # rank the solutions according to the computed objective function and select the best among them
+                solutionsInstance.rank(step='')
+
+                for iteration in self.nlpDict['hyperparameters']['iterationsNumberArray'][performanceInstance.iteration0:]:
+                    # modify the solution archive according to pdf of solutions
+                    solutionsIndices, SA = solutionsInstance.solutionSets(step='new')
+
+                solutionsInstance.rank(step='new')
+                # record the solution
+                performanceInstance.record(solutionsInstance)
+                if self.solver['convergenceCriterion']['check']:
+                    performanceInstance.checkConvergence(iteration)
+
+                # check convergence and print variables to file
+                if performanceInstance.converged:
+                    outputMaster.reportConvergence(run, iteration, solutionsInstance)
+                    break
 
             elif iteration != self.nlpDict['hyperparameters']['iterationsNumberArray'][-1]:
                 outputMaster.maxFunctionEvaluationsAchieved()
@@ -99,6 +113,21 @@ class Metaheuristic:
         # print to file data current run
         outputMaster.fileRuns()
         outputMaster.reportRuns()
+
+    def slaveAlgorithm(self, solutionsInstance, valuesContinuousVariables, valuesDiscreteVariables, solutionIndex, step):
+        """ handles the interface with the slave algorithm
+        :param solutionsInstance: instance object containing elements of current solution
+        :param valuesContinuousVariables: obtained values for the continuous variables
+        :param valuesDiscreteVariables: obtained values for the discrete variables
+        :param solutionIndex: index of current solution in solution archive and objective function array
+        :param step: flag identifying the solution archive
+        """
+        # update the Pyomo dictionary with the values of the nonlinear variables at current iteration
+        self.fixMILPVariables(valuesContinuousVariables, valuesDiscreteVariables)
+        # solve the slave problem based on the values of the nonlinear variables at current iteration
+        self.model.solve(self.solver)
+        # update the objective function based on the results of the slave MILP problem
+        solutionsInstance.updateObjective(self.model.model, solutionIndex, step)
 
     def fixMILPVariables(self,valuesContinuousVariables,valuesDiscreteVariables):
         """ fixes the variables calculated by the meta-heuristics to the obtained value in the MILP 
@@ -119,6 +148,7 @@ class Metaheuristic:
                 capexVariableInModel = self.model.model.find_component("capex")[variableInModel.index()]
                 capexVariableInModel.fix(interpObject(valueContinuousVariable).item())
 
+        # discrete variables
         for idxDiscreteVariable in self.dictVars["O"]["idx_to_name"]:
             discreteVariable = self.dictVars["O"]["idx_to_name"][idxDiscreteVariable]
             valueDiscreteVariable = valuesDiscreteVariables[idxDiscreteVariable]

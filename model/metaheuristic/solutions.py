@@ -163,14 +163,6 @@ class Solutions:
 
         return SA_new
 
-    def updateMILPDict(self, pyoDict, valuesContinuousVariables, valuesDicreteVariables):
-        """method to update the Pyomo dictionary with the values in the solution archive
-        :return: Pyomo dictionary with updated values from the solution archive
-        """
-        #TODO: modify items in pyoDict and assign to them the values in the solution archive from row solutionIndex
-
-        return pyoDict
-
     def updateObjective(self, instance, solutionIndex, step):
         """ method to assign the objective function associated ot each single solution generated
         :return: scalar value of the objective function
