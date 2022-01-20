@@ -23,16 +23,19 @@ from model.objects.energy_system import EnergySystem
 
 class Model():
 
-    def __init__(self, analysis, system, paths):
+    def __init__(self, analysis, system, paths,solver):
         """create Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system"""
+        :param system: dictionary defining the system
+        :param paths: dictionary defining the paths of the model
+        :param solver: dictionary defining the solver"""
         self.analysis = analysis
         self.system = system
         self.paths = paths
+        self.solver = solver
         self.model = pe.ConcreteModel()
-        # set optimization attributes (the three set above) to class <EnergySystem>
-        EnergySystem.setOptimizationAttributes(analysis, system, paths, self.model)
+        # set optimization attributes (the five set above) to class <EnergySystem>
+        EnergySystem.setOptimizationAttributes(analysis, system, paths, solver, self.model)
         # add Elements to optimization
         self.addElements()
         # define and construct components of self.model

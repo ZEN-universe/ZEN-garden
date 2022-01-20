@@ -21,15 +21,15 @@ class FillNlpDict:
         for technologySubset in technologySubsets:
             for technologyName in self.system[technologySubset]:
                 for parameterName in self.data[technologySubset][technologyName]:
-                    
-                    if 'nonlinear' in parameterName:
-                        x = self.data[technologySubset][technologyName][parameterName]['x'].values
-                        y = self.data[technologySubset][technologyName][parameterName]['y'].values
-                                            
-                        # key to use in the Pyomo dictionary
-                        key = (technologyName)
-                        # add the function to the Pyomo dictionary based on the key and the function object
-                        add_function(self.nlpDict['data'], interp1d(x, y, kind='linear'), key, parameterName)
+                        if 'nonlinear' in parameterName:
+                            if technologyName in self.analysis["nonlinearTechnologyApproximation"][parameterName.replace("nonlinear","")]:
+                                x = self.data[technologySubset][technologyName][parameterName]['capacity'].values
+                                y = self.data[technologySubset][technologyName][parameterName]['capex'].values
+                                                    
+                                # key to use in the Pyomo dictionary
+                                key = (technologyName)
+                                # add the function to the Pyomo dictionary based on the key and the function object
+                                add_function(self.nlpDict['data'], interp1d(x, y, kind='linear'), key, parameterName)
 
 
     def configSolver(self):
@@ -63,7 +63,7 @@ class FillNlpDict:
     def collectDomainExtremes(self):
 
         # create DataInput object
-        self.dataInput = DataInput(self.system,self.analysis)
+        self.dataInput = DataInput(self.system,self.analysis,self.solver)
         
         self.nlpDict['data']['LB'] = {}
         self.nlpDict['data']['UB'] = {}

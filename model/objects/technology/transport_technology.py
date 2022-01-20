@@ -41,7 +41,6 @@ class TransportTechnology(Technology):
 
         # set attributes of technology
         _inputPath              = paths["setTransportTechnologies"][self.name]["folder"]
-        self.referenceCarrier   = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
         self.minFlow            = self.dataInput.extractAttributeData(_inputPath,"minFlow")
         self.maxFlow            = self.dataInput.extractAttributeData(_inputPath,"maxFlow")
         self.lossFlow           = self.dataInput.extractAttributeData(_inputPath,"lossFlow")

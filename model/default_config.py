@@ -47,7 +47,7 @@ analysis['fileFormat'] = 'csv'
 
 ## System - Items assignment
 # set of energy carriers
-system['setCarriers'] = ['electricity', 'gas', 'hydrogen', 'biomass', 'CO2']
+system['setCarriers'] = ['electricity', 'gas', 'hydrogen', 'biomass', 'CO2',"water","oxygen"]
 # set of energy carriers for transport
 system['setTransportCarriers'] = ['hydrogen']
 # set of conversion technologies

@@ -6,18 +6,20 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""
-
+import numpy as np
 import pandas as pd
 import os
 
 class DataInput():
-    def __init__(self,system,analysis,energySystem = None):
+    def __init__(self,system,analysis,solver,energySystem = None):
         """ data input object to extract input data
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
+        :param solver: dictionary defining the solver 
         :param energySystem: instance of class <EnergySystem> to define energySystem """
         self.system         = system
         self.analysis       = analysis
+        self.solver         = solver
         self.energySystem   = energySystem
 
     def extractInputData(self, folderPath,manualFileName=None,indexSets=[]):
@@ -118,55 +120,50 @@ class DataInput():
         except:
             return attributeValue
     
-    
-    def extractConversionCarriers(self, folderPath,referenceCarrier,manualFileName=None):
-        """ reads input data and restructures the dataframe to return (multi)indexed dict
+    def extractConversionCarriers(self, folderPath):
+        """ reads input data and extracts conversion carriers
         :param folderPath: path to input files 
-        :param referenceCarrier: name of reference carrier of technology
-        :param manualFileName: name of selected file. If only one file in folder, not used
-        :return inputCarriers: input carriers of technology
-        :return outputCarriers: output carriers of technology """
-        # get system attribute
-        fileFormat = self.analysis["fileFormat"]
-        # select data
-        fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1]==fileFormat)]
-        assert (manualFileName in fileNames or len(fileNames) == 1), "Selection of files was ambiguous. Select folder with single input file or select specific file by name"
-        for fileName in fileNames:
-            if len(fileNames) > 1 and fileName != manualFileName:
-                continue
-            # table attributes                     
-            dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None).set_index("carrier")
-            break 
-        # select inputCarriers and outputCarriers
-        # TODO: IMPORTANT: currently just referenceCarrier = outputCarriers, everything else = inputCarriers, because of error in model
-        outputCarriers = referenceCarrier
-        inputCarriers = list(set(dfInput.index)-set(referenceCarrier))
-        
-        return inputCarriers,outputCarriers
+        :return carrierDict: dictionary with input and output carriers of technology """
+        carrierDict = {}
+        # get carriers
+        for carrier in ["inputCarrier","outputCarrier"]:
+            _carrierString = self.extractAttributeData(folderPath,carrier)
+            _carrierList = _carrierString.strip().split(" ")
+            for _carrierItem in _carrierList:
+                # check if carrier in carriers of model
+                assert _carrierItem in self.system["setCarriers"], f"{carrier} '{_carrierItem}' is not in carriers of model ({self.system['setCarriers']})"
+            carrierDict[carrier] = _carrierList
 
-    def extractPWAData(self, folderPath,tech):
+        return carrierDict
+
+    def extractPWAData(self, folderPath):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files 
-        :param tech: name of technology
         :return PWADict: dictionary with PWA parameters """
         # get system attribute
         fileFormat = self.analysis["fileFormat"]
         # select data
         PWADict = {}
         for type in self.analysis["nonlinearTechnologyApproximation"]:
-            if tech not in self.analysis["nonlinearTechnologyApproximation"][type]:
-                # model as PWA/linear
-                assert f"PWA{type}.{fileFormat}" in os.listdir(folderPath), f"File 'PWA{type}.{fileFormat}' does not exist in {folderPath}"
-                PWADict[type] = {}
-                dfInput = pd.read_csv(folderPath+"PWA" + type + '.'+fileFormat, header=0, index_col=None)
-                for PWAParameter in dfInput.columns:
-                    PWADict[type][PWAParameter] = {}
-                    for segment in dfInput.index:
-                        PWADict[type][PWAParameter][segment] = dfInput.loc[segment,PWAParameter]
-            else:
-                pass
-                # model as nonlinear
-                # raise NotImplementedError("the parameter extraction for the nonlinear technology approximation are not yet implemented.")
+            # extract all data values
+            PWADict[type] = {}
+            nonlinearValues = {}
+            assert f"nonlinear{type}.{fileFormat}" in os.listdir(folderPath), f"File 'nonlinear{type}.{fileFormat}' does not exist in {folderPath}"
+            dfInputNonlinear = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
+            for column in dfInputNonlinear.columns:
+                nonlinearValues[column] = dfInputNonlinear[column].to_list()
+            # extract PWA breakpoints
+            assert f"breakpointsPWA{type}.{fileFormat}" in os.listdir(folderPath), f"File 'breakpointsPWA{type}.{fileFormat}' does not exist in {folderPath}"
+            dfInputBreakpoints = pd.read_csv(folderPath+"breakpointsPWA" + type + '.'+fileFormat, header=0, index_col=None)
+            # assert that breakpoint variable (x variable in nonlinear input)
+            assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
+            breakpointVariable = dfInputBreakpoints.columns[0]
+            breakpoints = dfInputBreakpoints[breakpointVariable].to_list()
+
+            PWADict[type][breakpointVariable] = breakpoints
+            for valueVariable in nonlinearValues:
+                if valueVariable != breakpointVariable:
+                    PWADict[type][valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
         
         return PWADict
 

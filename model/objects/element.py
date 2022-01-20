@@ -26,7 +26,7 @@ class Element:
         # set attributes
         self.name = element
         # create DataInput object
-        self.dataInput = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getEnergySystem())
+        self.dataInput = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
         # add element to list
         Element.addElement(self)
         

@@ -43,7 +43,7 @@ class Technology(Element):
         for technologyType in technologyTypes:
             if self.name in system[technologyType]:
                 _inputPath              = paths[technologyType][self.name]["folder"]
-                self.referenceCarrier   = self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")
+                self.referenceCarrier   = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
                 self.minCapacity        = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
                 self.maxCapacity        = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
                 self.lifetime           = self.dataInput.extractAttributeData(_inputPath,"lifetime")
@@ -68,6 +68,12 @@ class Technology(Element):
             initialize = technologyLocationRule,
             doc = "Combined set of technologies and locations. Conversion technologies are paired with nodes, transport technologies are paired with edges"
         )
+        # reference carriers
+        model.setReferenceCarriers = pe.Set(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("referenceCarrier"),
+            doc = "set of all reference carriers correspondent to a technology. Dimensions: setTechnologies"
+        )
         # add pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructSets()
@@ -78,11 +84,6 @@ class Technology(Element):
         # construct pe.Param of the class <Technology>
         model = EnergySystem.getConcreteModel()
     
-        # reference carrier
-        model.referenceCarrier = pe.Param(
-            model.setTechnologies,
-            initialize = cls.getAttributeOfAllElements("referenceCarrier"),
-            doc = 'Parameter which specifies the reference carrier. Dimensions: setTechnologies.')
         # minimum capacity
         model.minCapacity = pe.Param(
             model.setTechnologies,

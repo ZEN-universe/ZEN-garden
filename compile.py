@@ -30,7 +30,7 @@ logging.propagate = False
 prepare = Prepare(config)
 
 # FORMULATE THE OPTIMIZATION PROBLEM
-model = Model(config.analysis, config.system, prepare.paths)
+model = Model(config.analysis, config.system, prepare.paths, prepare.solver)
 
 # SOLVE THE OPTIMIZATION PROBLEM
 if config.solver['model'] == 'MILP':

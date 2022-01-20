@@ -25,6 +25,8 @@ class EnergySystem:
     system = None
     # paths
     paths = None
+    # solver
+    solver = None
 
     def __init__(self,nameEnergySystem):
         """ initialization of the energySystem
@@ -34,7 +36,7 @@ class EnergySystem:
         # set attributes
         self.name = nameEnergySystem
         # create DataInput object
-        self.dataInput = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getEnergySystem())
+        self.dataInput = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
         # store input data
         self.storeInputData()
         # add energySystem to list
@@ -67,11 +69,12 @@ class EnergySystem:
         cls.energySystem = energySystem
 
     @classmethod
-    def setOptimizationAttributes(cls,analysis, system,paths,model):
+    def setOptimizationAttributes(cls,analysis, system,paths,solver,model):
         """ set attributes of class <EnergySystem> with inputs 
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
         :param paths: paths to input folders of data
+        :param solver: dictionary defining the solver
         :param model: empty pe.ConcreteModel """
         # set analysis
         cls.analysis = analysis
@@ -79,6 +82,8 @@ class EnergySystem:
         cls.system = system
         # set input paths
         cls.paths = paths
+        # set solver
+        cls.solver = solver
         # set concreteModel
         cls.concreteModel = model
         
@@ -91,13 +96,13 @@ class EnergySystem:
     @classmethod
     def getAnalysis(cls):
         """ get analysis of the class <EnergySystem>. 
-        :return analysis: pe.analysis """
+        :return analysis: dictionary defining the analysis framework """
         return cls.analysis
 
     @classmethod
     def getSystem(cls):
         """ get system 
-        :return system: input dictionary of optimization """
+        :return system: dictionary defining the system """
         return cls.system
 
     @classmethod
@@ -105,6 +110,11 @@ class EnergySystem:
         """ get paths 
         :return paths: paths to folders of input data """
         return cls.paths
+    @classmethod
+    def getSolver(cls):
+        """ get solver 
+        :return solver: dictionary defining the analysis solver """
+        return cls.solver
 
     @classmethod
     def getEnergySystem(cls):
