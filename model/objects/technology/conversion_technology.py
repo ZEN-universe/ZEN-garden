@@ -134,54 +134,53 @@ class ConversionTechnology(Technology):
         """ constructs the pe.Vars of the class <ConversionTechnology> """
         model = EnergySystem.getConcreteModel()
         
+        ## Flow variables
         # input flow of carrier into technology
         model.inputFlow = pe.Var(
             model.setInputCarriersTechs,
             model.setNodes,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'Carrier input of conversion technologies. \n\t Dimensions: setInputCarriers, setNodes, setTimeSteps. \n\t Domain: NonNegativeReals'
-        )
+            doc = 'Carrier input of conversion technologies. Dimensions: setInputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals' )
         # output flow of carrier into technology
         model.outputFlow = pe.Var(
             model.setOutputCarriersTechs,
             model.setNodes,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'Carrier output of conversion technologies. \n\t Dimensions: setOutputCarriers, setNodes, setTimeSteps. \n\t Domain: NonNegativeReals'
-        )
-        # PWA Variables for PWA
-        # capex
+            doc = 'Carrier output of conversion technologies. Dimensions: setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals')
+
+        ## PWA Variables - Capex
         # PWA capacity
         model.capacityPWA = pe.Var(
             model.setPWACapex,
             domain = pe.NonNegativeReals,
-            doc = 'PWA variable for size of installed technology on edge i and time t.  \n\t Dimensions: setPWACapex.\n\t Domain: NonNegativeReals')
+            doc = 'PWA variable for size of installed technology on edge i and time t. Dimensions: setPWACapex. Domain: NonNegativeReals')
         # PWA capex technology
         model.capexPWA = pe.Var(
             model.setPWACapex,
             domain = pe.NonNegativeReals,
-            doc = 'PWA variable for capex for installing technology on edge i and time t.  \n\t Dimensions: setPWACapex.\n\t Domain: NonNegativeReals')
-        # ConvEfficiency
+            doc = 'PWA variable for capex for installing technology on edge i and time t. Dimensions: setPWACapex. Domain: NonNegativeReals')
+
+        ## PWA Variables - Conversion Efficiency
         # PWA input flow of carrier into technology
         model.inputFlowPWA = pe.Var(
             model.setPWAConverEfficiency,
             domain = pe.NonNegativeReals,
-            doc = 'PWA Carrier input of conversion technologies. \n\t Dimensions: setPWAConverEfficiency. \n\t Domain: NonNegativeReals'
-        )
+            doc = 'PWA Carrier input of conversion technologies. Dimensions: setPWAConverEfficiency. Domain: NonNegativeReals')
         # PWA output flow of carrier into technology
         model.outputFlowPWA = pe.Var(
             model.setPWAConverEfficiency,
             domain = pe.NonNegativeReals,
-            doc = 'PWA Carrier output of conversion technologies. \n\t Dimensions: setPWAConverEfficiency. \n\t Domain: NonNegativeReals'
-        )
+            doc = 'PWA Carrier output of conversion technologies. Dimensions: setPWAConverEfficiency. Domain: NonNegativeReals')
+
     @classmethod
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <ConversionTechnology> """
         model = EnergySystem.getConcreteModel()
         # maximum output flow 
         model.constraintConversionTechnologyMaxOutput = pe.Constraint(
-            model.setOutputCarriersTechs,
+            model.setConversionTechnologies,
             model.setNodes,
             model.setTimeSteps,
             rule = constraintConversionTechnologyMaxOutputRule,
@@ -195,7 +194,7 @@ class ConversionTechnology(Technology):
             model.constraintPWACapex = pe.Piecewise(model.setPWACapex,
                 model.capexPWA,model.capacityPWA,
                 pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True)
-        # ConvEfficiency
+        # Conversion Efficiency
         if model.setPWAConverEfficiency:
             # if setPWAConverEfficiency contains technologies:
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWAConverEfficiency,"ConverEfficiency")
@@ -203,40 +202,36 @@ class ConversionTechnology(Technology):
                 model.outputFlowPWA,model.inputFlowPWA,
                 pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True)
         
-        # Coupling constraints
-        # couple the real variables with the modeled variables
+        ## Coupling constraints
+        # couple the real variables with the auxiliary variables
         # capex
         model.constraintCapexCoupling = pe.Constraint(
             model.setConversionTechnologies,
             model.setNodes,
             model.setTimeSteps,
             rule = constraintCapexCouplingRule,
-            doc = "couples the real capex variables with the modeled variables. \n\t Dimension: setConversionTechnologies, setNodes, setTimeSteps."
-        )
+            doc = "couples the real capex variables with the modeled variables. Dimension: setConversionTechnologies, setNodes, setTimeSteps.")
         # capacity
         model.constraintCapacityCoupling = pe.Constraint(
             model.setConversionTechnologies,
             model.setNodes,
             model.setTimeSteps,
             rule = constraintCapacityCouplingRule,
-            doc = "couples the real capacity variables with the modeled variables. \n\t Dimension: setConversionTechnologies, setNodes, setTimeSteps."
-        )
+            doc = "couples the real capacity variables with the modeled variables. Dimension: setConversionTechnologies, setNodes, setTimeSteps.")
         # inputFlow
         model.constraintInputFlowCoupling = pe.Constraint(
             model.setInputCarriersTechs,
             model.setNodes,
             model.setTimeSteps,
             rule = constraintInputFlowCouplingRule,
-            doc = "couples the real inputFlow variables with the modeled variables. \n\t Dimension: setInputCarriers, setNodes, setTimeSteps."
-        )
+            doc = "couples the real inputFlow variables with the modeled variables. Dimension: setInputCarriers, setNodes, setTimeSteps.")
         # outputFlow
         model.constraintOutputFlowCoupling = pe.Constraint(
             model.setOutputCarriersTechs,
             model.setNodes,
             model.setTimeSteps,
             rule = constraintOutputFlowCouplingRule,
-            doc = "couples the real outputFlow variables with the modeled variables. \n\t Dimension: setOutputCarriers, setNodes, setTimeSteps."
-        )
+            doc = "couples the real outputFlow variables with the modeled variables. Dimension: setOutputCarriers, setNodes, setTimeSteps.")
     
     @classmethod
     def calculatePWABreakpointsValues(cls,setPWA,typePWA):
@@ -271,11 +266,20 @@ class ConversionTechnology(Technology):
         return PWABreakpoints,PWAValues
 
 ### --- functions with constraint rules --- ###
-def constraintConversionTechnologyMaxOutputRule(model, tech, carrierOut, node, time):
+def constraintConversionTechnologyMaxOutputRule(model, tech, node, time):
     """output is limited by the installed capacity"""
-
+    referenceCarrier = model.referenceCarrier[tech][0]
     return (model.capacity[tech, node, time]
-            >= model.outputFlow[tech,carrierOut, node, time]) # TODO: does not account for conversion efficiency of output
+            >= model.outputFlow[tech, referenceCarrier, node, time])
+
+def constraintConversionTechnologyLinkOutputFlowRule(model, tech, carrierOut, node, time):
+    """link output flow if technology has several output carriers"""
+    referenceCarrier = model.referenceCarrier[tech][0]
+    if carrierOut != referenceCarrier:
+        return (model.outputFlow[tech, referenceCarrier, node, time]
+                == model.converEfficiency[tech, referenceCarrier, carrierOut] * model.outputFlow[tech, carrierOut, node, time])
+    else:
+        return pe.Constraint.Skip
 
 def constraintCapexCouplingRule(model,tech,node,time):
     """ couples capex variables based on modeling technique"""

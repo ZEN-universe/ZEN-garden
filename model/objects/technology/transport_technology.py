@@ -77,29 +77,29 @@ class TransportTechnology(Technology):
             model.setTransportTechnologies,
             model.setEdges,
             initialize = cls.getAttributeOfAllElements("distance"),
-            doc = 'distance between two nodes for transport technologies.\n\t Dimensions: setTransportTechnologies, setEdges')
+            doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
         # cost per distance
         model.costPerDistance = pe.Param(
             model.setTransportTechnologies,
             model.setEdges,
             model.setTimeSteps,
             initialize = cls.getAttributeOfAllElements("costPerDistance"),
-            doc = 'capex per unit distance for transport technologies. \n\t Dimensions: setTransportTechnologies, setEdges, setTimeSteps')
+            doc = 'capex per unit distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeSteps')
         # minimum flow relative to capacity
         model.minFlow = pe.Param(
             model.setTransportTechnologies,
             initialize = cls.getAttributeOfAllElements("minFlow"),
-            doc = 'minimum flow through the transport technologies relative to installed capacity.\n\t Dimensions: setTransportTechnologies')
+            doc = 'minimum flow through the transport technologies relative to installed capacity. Dimensions: setTransportTechnologies')
         # maximum flow relative to capacity
         model.maxFlow = pe.Param(
             model.setTransportTechnologies,
             initialize = cls.getAttributeOfAllElements("maxFlow"),
-            doc = 'maximum flow through the transport technologies relative to installed capacity.\n\t Dimensions: setTransportTechnologies')
+            doc = 'maximum flow through the transport technologies relative to installed capacity. Dimensions: setTransportTechnologies')
         # carrier losses
         model.lossFlow = pe.Param(
             model.setTransportTechnologies,
             initialize = cls.getAttributeOfAllElements("lossFlow"),
-            doc = 'carrier losses due to transport with transport technologies.\n\t Dimensions: setTransportTechnologies')
+            doc = 'carrier losses due to transport with transport technologies. Dimensions: setTransportTechnologies')
 
     @classmethod
     def constructVars(cls):
@@ -111,7 +111,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'carrier flow through transport technology on edge i and time t.  \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. \n\t Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. Domain: NonNegativeReals'
         )
         # loss of carrier on edge
         model.carrierLoss = pe.Var(
@@ -119,7 +119,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'carrier flow through transport technology on edge i and time t.  \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. \n\t Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. Domain: NonNegativeReals'
         )
         # auxiliary variable of available capacity
         model.capacityAux = pe.Var(
@@ -127,7 +127,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'auxiliary variable of the available capacity to model min and max possible flow through transport technologies. \n\t Dimensions: setTransportTechnologies,setEdges, setTimeSteps. \n\t Domain: NonNegativeReals'
+            doc = 'auxiliary variable of the available capacity to model min and max possible flow through transport technologies. Dimensions: setTransportTechnologies,setEdges, setTimeSteps. Domain: NonNegativeReals'
         )
         # binary select variable
         model.select = pe.Var(
@@ -135,7 +135,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             domain = pe.Binary,
-            doc = 'binary variable to model the scheduling of transport technologies.  \n\t Dimensions: setTransportTechnologies, setEdges, setTimeSteps. \n\t Domain: Binary'
+            doc = 'binary variable to model the scheduling of transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeSteps. Domain: Binary'
         )
         
     @classmethod
@@ -148,7 +148,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyMinFlowRule,
-            doc = 'min possible carrier flow through transport technology. \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
+            doc = 'min possible carrier flow through transport technology. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
         )
         # max flow
         model.constraintTransportTechnologyMaxFlow = pe.Constraint(
@@ -156,7 +156,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyMaxFlowRule,
-            doc = 'max possible carrier flow through transport technology. \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
+            doc = 'max possible carrier flow through transport technology. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
         )
         # Selection 1
         model.constraintTransportTechnologySelection1 = pe.Constraint(
@@ -164,7 +164,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologySelection1Rule,
-            doc = 'select if transport technology is used or not Part 1. \n\t Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
+            doc = 'select if transport technology is used or not Part 1. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
         )     
         # Selection 2
         model.constraintTransportTechnologySelection2 = pe.Constraint(
@@ -172,7 +172,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologySelection2Rule,
-            doc = 'select if transport technology is used or not Part 2. \n\t Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
+            doc = 'select if transport technology is used or not Part 2. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
         )        
         # AuxLBFlow 
         model.constraintTransportTechnologyAuxLBFlow = pe.Constraint(
@@ -180,7 +180,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyAuxLBFlowRule,
-            doc = 'LB for auxiliary variable capacityAux. \n\t Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
+            doc = 'LB for auxiliary variable capacityAux. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
         )     
         # AuxUBFlow 
         model.constraintTransportTechnologyAuxUBFlow = pe.Constraint(
@@ -188,7 +188,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyAuxUBFlowRule,
-            doc = 'UB for auxiliary variable capacityAux. \n\t Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
+            doc = 'UB for auxiliary variable capacityAux. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
         )   
         # Carrier Flow Losses 
         model.constraintTransportTechnologyLossesFlow = pe.Constraint(
@@ -196,7 +196,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyLossesFlowRule,
-            doc = 'Carrier loss due to transport with through transport technology. \n\t Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
+            doc = 'Carrier loss due to transport with through transport technology. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
         ) 
         # Linear Capex
         model.constraintTransportTechnologyLinearCapex = pe.Constraint(
@@ -204,7 +204,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyLinearCapexRule,
-            doc = 'Capital expenditures for installing transport technology. \n\t Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
+            doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
         ) 
 
 #%% Contraint rules defined in current class - Operation
