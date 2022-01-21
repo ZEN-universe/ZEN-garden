@@ -44,7 +44,9 @@ class Metaheuristic:
         # initialize class to print performance metrics
         outputMaster = Output(self, performanceInstance)
         for run in self.nlpDict['hyperparameters']['runsNumberArray']:
-            # initialize the class containing all the methods for the generation and modification of solutions
+            if run % self.solver['performanceCheck']['printDeltaRun']  == 0:
+                print(f'run {run}')
+                # initialize the class containing all the methods for the generation and modification of solutions
             solutionsInstance = Solutions(self, run)
             for iteration in self.nlpDict['hyperparameters']['iterationsNumberArray']:
                 if iteration == 0:
@@ -65,6 +67,8 @@ class Metaheuristic:
                 # rank the solutions according to the computed objective function and select the best among them
                 solutionsInstance.rank(step)
 
+                if iteration % self.solver['performanceCheck']['printDeltaIteration'] == 0:
+                    print(f'iteration {iteration}')
                 # record the solution
                 performanceInstance.record(solutionsInstance)
                 if self.solver['convergenceCriterion']['check']:
@@ -78,7 +82,8 @@ class Metaheuristic:
             if (self.solver['convergenceCriterion']['restart'] and
                     (iteration != self.nlpDict['hyperparameters']['iterationsNumberArray'][-1])):
                 # re-initialize the solution archive with memory of the optimum found
-                performanceInstance.restart(iteration, solutionsInstance)
+                solutionsIndices, SA = performanceInstance.restart(iteration, solutionsInstance)
+
                 for solutionIndex in solutionsIndices:
                     # input variables to the MILP model
                     valuesContinuousVariables, valuesDiscreteVariables = SA['R'][solutionIndex,:], SA['O'][solutionIndex, :]
@@ -92,6 +97,8 @@ class Metaheuristic:
                     solutionsIndices, SA = solutionsInstance.solutionSets(step='new')
 
                 solutionsInstance.rank(step='new')
+                if iteration % self.solver['performanceCheck']['printDeltaIteration'] == 0:
+                    print('iteration', iteration)
                 # record the solution
                 performanceInstance.record(solutionsInstance)
                 if self.solver['convergenceCriterion']['check']:

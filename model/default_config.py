@@ -8,12 +8,12 @@ Description:  Default settings. Changes from the default values are specified in
 ==========================================================================================================================================================================="""
 
 ## Analysis - dictionary declaration
-# This dictionary contains all the settins related to the typology of analysis given a specific system configuration.
+# This dictionary contains all the settings related to the typology of analysis given a specific system configuration.
 # The dictionary also contains default settings related to the input data.
 analysis = dict()
 
 ## Solver - dictionary declaration
-# This dictionary contains all the settins related to the solver of the optimisation problem.
+# This dictionary contains all the settings related to the solver of the optimisation problem.
 solver = dict()  
 
 ## System - dictionary declaration
@@ -74,6 +74,8 @@ solver['name']      = 'gurobi_persistent'
 solver['MIPgap']    = 0.01
 # time limit in seconds
 solver['TimeLimit'] = 8760
+# verbosity
+solver['verbosity'] = False
 # log file of results
 solver['logfile'] = './/outputs//logs//pyomoLogFile.log'
 # typology of model solved: MILP or MINLP
@@ -85,3 +87,5 @@ solver['parametersMetaheuristic'] = {
     }
 # evaluation of convergence in meta-heuristic. conditionDelta: (i) relative, (ii) absolute
 solver['convergenceCriterion'] = {'check': True, 'conditionDelta':'relative', 'restart':True}
+# settings for performance check
+solver['performanceCheck'] = {'printDeltaRun':1, 'printDeltaIteration':1}

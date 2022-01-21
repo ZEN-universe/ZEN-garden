@@ -192,17 +192,17 @@ class Solutions:
                 SA_temp[type] = np.zeros([self.k + self.m, self.object.dictVars[type]['n']])
             f_temp = np.zeros([self.k + self.m])
 
-            j0 = 0
-            jn = self.k
-            for type in ['R', 'O']:
-                SA_temp[type][j0:jn, :] = self.SA[type][:, :]
-            f_temp[j0:jn] = self.f[:]
-
             j0 = self.k
             jn = self.k + self.m
             for type in ['R', 'O']:
                 SA_temp[type][j0:jn, :] = self.SA_new[type][:, :]
             f_temp[j0:jn] = self.f_new[:]
+
+        j0 = 0
+        jn = self.k
+        for type in ['R', 'O']:
+            SA_temp[type][j0:jn, :] = self.SA[type][:, :]
+        f_temp[j0:jn] = self.f[:]
 
         if self.object.analysis['sense'] == 'minimize':
             argsort = np.argsort(f_temp)

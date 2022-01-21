@@ -23,7 +23,7 @@ class Output:
         self.createFolder(self.folderOut)
 
         self.folder = self.folderOut + '//master//'
-        self.createFolder(self.folder)
+        self.createFolderDeleting(self.folder)
 
         self.folderLog = self.folder + '//log//'
         self.createFolderDeleting(self.folderLog)
@@ -40,6 +40,7 @@ class Output:
         try:
             os.makedirs(folderName)
         except OSError:
+            print(folderName)
             shutil.rmtree(folderName)
             os.makedirs(folderName)
 
@@ -87,7 +88,7 @@ class Output:
             'file_format': '.csv',
             'values': [values],
             'columns': ['optimum'],
-            'name': 'time'
+            'name': 'iteration'
         }
 
         self.createFile(data)
@@ -106,7 +107,7 @@ class Output:
                 'file_format': '.csv',
                 'values': values,
                 'columns': keys,
-                'name': 'time'
+                'name': 'iteration'
             }
 
             self.createFile(data)
@@ -173,7 +174,7 @@ class Output:
         print(text)
 
         # print to external file
-        filename = self.folderLog + "_runs.txt"
+        filename = self.folderLog + "runs.txt"
         f = open(filename, "w+")
         f.write(text)
         f.close()

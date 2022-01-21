@@ -108,11 +108,13 @@ class Performance:
             SAOptimum[type] = solutionInstance.SA[type][0, :].copy()
 
         # modify the values in the solution archive with random generation
-        solutionInstance.solutionSets(step='')
+        solutionsIndices, _ = solutionInstance.solutionSets(step='')
 
         for type in ['R', 'O']:
             # assign the optimum found and temporarily store before the random generation
             solutionInstance.SA[type][0, :] = SAOptimum[type]
+
+        return solutionsIndices, solutionInstance.SA
 
     def newRun(self):
 
