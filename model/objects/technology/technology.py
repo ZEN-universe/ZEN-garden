@@ -218,8 +218,7 @@ def constraintTechnologyMinCapacityRule(model, tech, location, time):
 
 def constraintTechnologyMaxCapacityRule(model, tech, location, time):
     """max capacity expansion of  technology"""
-    # TODO: error in the case second term in if confition is removed: check! maybe because setPWACapexTechs includes conversion technologies only
-    # if model.maxCapacity[tech] != np.inf:
+    # TODO: error in the case second term in if condition is removed: check! setPWACapexTechs includes conversion technologies only
     if model.maxCapacity[tech] != np.inf and tech in model.setPWACapexTechs:
         return (model.maxCapacity[tech] * model.installTechnology[tech, location, time]
                 >= model.capacity[tech, location, time])
@@ -232,7 +231,7 @@ def constraintTechnologyLifetimeRule(model, tech, location, time):
     if tech in model.setPWACapexTechs:
         # time range
         t_start = max(0, time - model.lifetimeTechnology[tech] + 1)
-        t_end = time
+        t_end = time + 1
 
         return (model.capacity[tech, location, time]
                 == sum(model.builtCapacity[tech,location, t] for t in range(t_start, t_end)))

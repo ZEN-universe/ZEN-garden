@@ -75,7 +75,7 @@ solver['MIPgap']    = 0.01
 # time limit in seconds
 solver['TimeLimit'] = 8760
 # verbosity
-solver['verbosity'] = False
+solver['verbosity'] = True
 # log file of results
 solver['logfile'] = './/outputs//logs//pyomoLogFile.log'
 # typology of model solved: MILP or MINLP
