@@ -153,7 +153,7 @@ class Metaheuristic:
             if tech in self.nlpDict["data"]["nonlinearCapex"] and tech in self.model.model.setNLCapexTechs:
                 interpObject = self.nlpDict["data"]["nonlinearCapex"][tech]
                 capexVariableInModel = self.model.model.find_component("capex")[variableInModel.index()]
-                capexVariableInModel.fix(interpObject(valueContinuousVariable).item())
+                capexVariableInModel.fix(interpObject(valueContinuousVariable).item()*valueContinuousVariable)
 
         # discrete variables
         for idxDiscreteVariable in self.dictVars["O"]["idx_to_name"]:
