@@ -28,8 +28,7 @@ analysis['nonlinearTechnologyApproximation'] = {'Capex': ['electrolysis'], 'Conv
 analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
 
 ## System - settings update compared to default values
-system['setImportCarriers'] = ['electricity',"water"]
-system['setExportCarriers'] = ['hydrogen',"oxygen"]
+system['setCarriers'] = ['electricity',"water",'hydrogen',"oxygen"]
 system['setStorageTechnologies'] = []
 system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setConversionTechnologies'] = ['electrolysis']
@@ -39,4 +38,4 @@ system['setNodes'] = list(string.ascii_uppercase[:3]) #TODO: define proper nomen
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01
-solver['model'] = 'MILP'
+solver['model'] = 'MINLP'

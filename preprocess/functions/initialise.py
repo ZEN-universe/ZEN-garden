@@ -17,13 +17,13 @@ class Init:
         
     def carriers(self):
         
-        for carrierSubset in self.analysis['subsets']['setCarriers']:
-            self.data[carrierSubset] = dict()
-            path = self.paths[carrierSubset]['folder']
-            
-            # read all the folders in the carriers directory
-            for carrierName in next(os.walk(path))[1]:
-                self.data[carrierSubset][carrierName] = dict()
+        # for carrierSubset in self.analysis['subsets']['setCarriers']:
+        self.data['setCarriers'] = dict()
+        path = self.paths['setCarriers']['folder']
+        
+        # read all the folders in the carriers directory
+        for carrierName in next(os.walk(path))[1]:
+            self.data['setCarriers'][carrierName] = dict()
             
     def technologies(self):
     

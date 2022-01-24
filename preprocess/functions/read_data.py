@@ -19,23 +19,21 @@ class Read:
     def carriers(self):
         
         logging.info('read data of all the carriers')   
-        
-        for carrierSubset in self.analysis['subsets']['setCarriers']:
-            
-            for carrierName in self.data[carrierSubset].keys():
-                
-                path = self.paths[carrierSubset][carrierName]['folder']
-                
-                fileNames = [fileName for fileName in os.listdir(path)\
-                             if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
-
-                for fileName in fileNames:
-                            
-                    # table attributes                     
-                    file = pd.read_csv(path+fileName, header=0, index_col=None) 
                     
-                    dataInput = fileName.split('.')[0]
-                    self.data[carrierSubset][carrierName][dataInput] = file
+        for carrierName in self.data['setCarriers'].keys():
+            
+            path = self.paths['setCarriers'][carrierName]['folder']
+            
+            fileNames = [fileName for fileName in os.listdir(path)\
+                            if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
+
+            for fileName in fileNames:
+                        
+                # table attributes                     
+                file = pd.read_csv(path+fileName, header=0, index_col=None) 
+                
+                dataInput = fileName.split('.')[0]
+                self.data['setCarriers'][carrierName][dataInput] = file
             
     def technologies(self):
         

@@ -104,7 +104,7 @@ class TransportTechnology(Technology):
     @classmethod
     def constructVars(cls):
         """ constructs the pe.Vars of the class <TransportTechnology> """
-        def carrierFlowBounds(model,tech, _,edge,time):
+        def carrierFlowBounds(model,tech, _ ,edge,time):
             """ return bounds of carrierFlow for bigM expression 
             :param model: pe.ConcreteModel
             :param tech: tech index
@@ -131,22 +131,6 @@ class TransportTechnology(Technology):
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
             doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. Domain: NonNegativeReals'
-        )
-        # auxiliary variable of available capacity
-        model.capacityAux = pe.Var(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
-            domain = pe.NonNegativeReals,
-            doc = 'auxiliary variable of the available capacity to model min and max possible flow through transport technologies. Dimensions: setTransportTechnologies,setEdges, setTimeSteps. Domain: NonNegativeReals'
-        )
-        # binary select variable
-        model.select = pe.Var(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
-            domain = pe.Binary,
-            doc = 'binary variable to model the scheduling of transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeSteps. Domain: Binary'
         )
         
     @classmethod

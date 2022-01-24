@@ -11,7 +11,6 @@ Description:    Class defining the parameters, variables and constraints of the 
 ==========================================================================================================================================================================="""
 
 import logging
-from pyomo.core.base import initializer
 import pyomo.environ as pe
 from model.objects.technology.technology import Technology
 from model.objects.element import Element

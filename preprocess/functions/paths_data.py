@@ -28,13 +28,12 @@ class Paths:
     
     def carriers(self):
         
-        # add the paths for all the directories in each carrier subset    
-        for carrierSubset in self.analysis['subsets']['setCarriers']:
-            path = self.paths[carrierSubset]['folder']
-            for carrier in next(os.walk(path))[1]:
-                self.paths[carrierSubset][carrier] = dict()
-                self.paths[carrierSubset][carrier]['folder'] = \
-                    path+'{}//'.format(carrier)       
+        # add the paths for all the directories in carrier folder
+        path = self.paths['setCarriers']['folder']
+        for carrier in next(os.walk(path))[1]:
+            self.paths['setCarriers'][carrier] = dict()
+            self.paths['setCarriers'][carrier]['folder'] = \
+                path+'{}//'.format(carrier)       
                 
     def technologies(self):
                 

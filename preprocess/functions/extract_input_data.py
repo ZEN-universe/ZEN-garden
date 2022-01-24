@@ -22,7 +22,7 @@ class DataInput():
         self.solver         = solver
         self.energySystem   = energySystem
 
-    def extractInputData(self, folderPath,manualFileName=None,indexSets=[]):
+    def extractInputData(self, folderPath,manualFileName=None,indexSets=[],column = None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files 
         :param manualFileName: name of selected file. If only one file in folder, not used
@@ -47,8 +47,6 @@ class DataInput():
         # set index by indexSets
         assert set(indexSets).intersection(set(dfInput.columns)) == set(indexSets), f"requested index sets {set(indexSets) - set(indexSets).intersection(set(dfInput.columns))} are missing from input file for {fileName}"
         dfInput = dfInput.set_index(indexSets)
-        # check if only one column remaining
-        assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
         # select rows
         indexList = []
         for index in indexSets:
@@ -57,9 +55,16 @@ class DataInput():
                     indexList.append(system[indexName.replace("name","set")])
         # create pd.MultiIndex and select data
         indexMultiIndex = pd.MultiIndex.from_product(indexList)
+        if column:
+            assert column in dfInput.columns, f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {fileName}"
+            dfInput = dfInput[column]
+        else:
+            # check if only one column remaining
+            assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
+            dfInput = dfInput.squeeze(axis=1)
         dfInput = dfInput.loc[indexMultiIndex]
         # convert to dict
-        dataDict = dfInput.squeeze(axis=1).to_dict()
+        dataDict = dfInput.to_dict()
         return dataDict
     
     def extractTransportInputData(self, folderPath,manualFileName=None,indexSets=[]):

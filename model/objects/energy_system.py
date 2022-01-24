@@ -54,8 +54,8 @@ class EnergySystem:
         self.setTimeSteps               = system["setTimeSteps"]
         self.setScenarios               = system["setScenarios"]
         # carrier-specific
-        self.setImportCarriers          = system["setImportCarriers"]
-        self.setExportCarriers          = system["setExportCarriers"]
+        # self.setImportCarriers          = system["setImportCarriers"]
+        # self.setExportCarriers          = system["setExportCarriers"]
         # technology-specific
         self.setConversionTechnologies  = system["setConversionTechnologies"]
         self.setTransportTechnologies   = system["setTransportTechnologies"]
@@ -232,12 +232,12 @@ def objectiveTotalCostRule(model):
     carrierImport = sum(sum(sum(model.importCarrierFlow[carrier, node, time] * model.importPriceCarrier[carrier, node, time]
                             for time in model.setTimeSteps)
                         for node in model.setNodes)
-                    for carrier in model.setImportCarriers)
+                    for carrier in model.setCarriers)
 
     carrierExport = sum(sum(sum(model.exportCarrierFlow[carrier, node, time] * model.exportPriceCarrier[carrier, node, time]
                             for time in model.setTimeSteps)
                         for node in model.setNodes)
-                    for carrier in model.setExportCarriers)
+                    for carrier in model.setCarriers)
 
     return(carrierImport - carrierExport + model.capexTotal)
 

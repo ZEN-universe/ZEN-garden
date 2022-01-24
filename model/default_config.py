@@ -35,7 +35,6 @@ analysis['discountRate'] = 0.06
 analysis['transportDistance'] = 'Euclidean'
 # dictionary with subsets related to set
 analysis['subsets'] = {
-    'setCarriers': ['setImportCarriers', 'setExportCarriers'], 
     'setTechnologies': ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']
     }
 # headers in input files
