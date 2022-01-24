@@ -1,5 +1,5 @@
 scenario,time,node,availability
-a,0,A,0
+a,0,A,1
 a,0,B,1
 a,0,C,1
 a,1,A,1

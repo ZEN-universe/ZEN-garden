@@ -12,6 +12,7 @@ Description:    Class defining the parameters, variables and constraints of the 
 
 import logging
 import pyomo.environ as pe
+import pyomo.gdp as pgdp
 from model.objects.technology.technology import Technology
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
@@ -58,6 +59,7 @@ class ConversionTechnology(Technology):
         _inputCarriers      = cls.getAttributeOfAllElements("inputCarrier")
         _outputCarriers     = cls.getAttributeOfAllElements("outputCarrier")
         _referenceCarrier   = cls.getAttributeOfAllElements("referenceCarrier")
+        _PWAParameter       = cls.getAttributeOfAllElements("PWAParameter")
         _dependentCarriers  = {}
         for tech in _inputCarriers:
             _dependentCarriers[tech] = _inputCarriers[tech]+_outputCarriers[tech]
@@ -108,38 +110,62 @@ class ConversionTechnology(Technology):
             doc = "Set of conversion technologies for which the ConverEfficiency is NL modeled")
         # set of variable indices in capex approximation
         model.setPWACapex = pe.Set(
-            initialize = [(tech,node,timeStep)  for tech in model.setPWACapexTechs
+            initialize = [(tech,node,timeStep)  for tech in model.setPWACapexTechs if "capex" in _PWAParameter[(tech,"Capex")]["PWAVariables"]
                                                 for node in model.setNodes
                                                 for timeStep in model.setTimeSteps],
             doc = "Set of capex indices for which the capex is PWA modeled"
+        )
+        model.setLinearCapex = pe.Set(
+            initialize = [(tech,node,timeStep)  for tech in model.setPWACapexTechs if "capex" not in _PWAParameter[(tech,"Capex")]["PWAVariables"]
+                                                for node in model.setNodes
+                                                for timeStep in model.setTimeSteps],
+            doc = "Set of capex indices for which the capex is linearly modeled"
         )
         model.setNLCapex = pe.Set(
             initialize = [(tech,node,timeStep)  for tech in model.setNLCapexTechs
                                                 for node in model.setNodes
                                                 for timeStep in model.setTimeSteps],
-            doc = "Set of capex indices for which the capex is nonlinearly modeled"
+            doc = "Set of capex indices for which the capex is NL modeled"
         )
         # set of variable indices in ConverEfficiency approximation
         model.setPWAConverEfficiency = pe.Set(
             initialize = [(tech,dependentCarrier,node,timeStep) for tech in model.setPWAConverEfficiencyTechs 
-                                                            for dependentCarrier in model.setDependentCarriers[tech] 
+                                                            for dependentCarrier in model.setDependentCarriers[tech] if dependentCarrier in _PWAParameter[(tech,"ConverEfficiency")]["PWAVariables"]
                                                             for node in model.setNodes
                                                             for timeStep in model.setTimeSteps],
             doc = "Set of ConverEfficiency indices for which the ConverEfficiency is PWA modeled"
+        )
+        model.setLinearConverEfficiency = pe.Set(
+            initialize = [(tech,dependentCarrier,node,timeStep) for tech in model.setPWAConverEfficiencyTechs 
+                                                            for dependentCarrier in model.setDependentCarriers[tech] if dependentCarrier not in _PWAParameter[(tech,"ConverEfficiency")]["PWAVariables"]
+                                                            for node in model.setNodes
+                                                            for timeStep in model.setTimeSteps],
+            doc = "Set of ConverEfficiency indices for which the ConverEfficiency is linearly modeled"
         )
         model.setNLConverEfficiency = pe.Set(
             initialize = [(tech,dependentCarrier,node,timeStep) for tech in model.setNLConverEfficiencyTechs 
                                                             for dependentCarrier in model.setDependentCarriers[tech] 
                                                             for node in model.setNodes
                                                             for timeStep in model.setTimeSteps],
-            doc = "Set of ConverEfficiency indices for which the ConverEfficiency is nonlinearly modeled"
+            doc = "Set of ConverEfficiency indices for which the ConverEfficiency is NL modeled"
         )
         
     @classmethod
     def constructParams(cls):
         """ constructs the pe.Params of the class <ConversionTechnology> """
-        pass 
-        
+        model = EnergySystem.getConcreteModel()
+        _PWAParameter       = cls.getAttributeOfAllElements("PWAParameter")
+        # slope of linearly modeled capex
+        model.slopeLinearApproximationCapex = pe.Param(
+            model.setLinearCapex,
+            initialize = lambda _,tech,*__: _PWAParameter[(tech,"Capex")]["capex"]
+        )
+        # slope of linearly modeled conversion efficiencies
+        model.slopeLinearApproximationConverEfficiency = pe.Param(
+            model.setLinearConverEfficiency,
+            initialize = lambda _,tech,carrier,*__: _PWAParameter[(tech,"ConverEfficiency")][carrier]
+        )
+
     @classmethod
     def constructVars(cls):
         """ constructs the pe.Vars of the class <ConversionTechnology> """
@@ -197,13 +223,6 @@ class ConversionTechnology(Technology):
             rule = constraintConversionTechnologyMaxOutputRule,
             doc = 'maximum output of conversion technology is limited by the installed capacity. \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps'
         )
-        # link output carriers
-        # model.constraintConversionTechnologyLinkOutputFlow = pe.Constraint(
-        #     model.setOutputCarriersTechs,
-        #     model.setNodes,
-        #     model.setTimeSteps,
-        #     rule = constraintConversionTechnologyLinkOutputFlowRule,
-        #     doc = 'link the output carrier flow if conversion technology has multiple output carriers. Dimensions: setOutputCarriersTechs, setNodes, setTimeSteps')
 
         # add PWA constraints
         # capex
@@ -212,42 +231,97 @@ class ConversionTechnology(Technology):
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWACapex,"Capex")
             model.constraintPWACapex = pe.Piecewise(model.setPWACapex,
                 model.capexPWA,model.capacityPWA,
-                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True)
+                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False)
+        if model.setLinearCapex:
+            # if setLinearCapex contains technologies:
+            model.constraintLinearCapex = pe.Constraint(
+                model.setLinearCapex,
+                rule = constraintLinearCapexRule,
+                doc = "Linear relationship in capex. Dimension: setLinearCapex."
+            )
         # Conversion Efficiency
         if model.setPWAConverEfficiency:
             # if setPWAConverEfficiency contains technologies:
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWAConverEfficiency,"ConverEfficiency")
             model.constraintPWAConverEfficiency = pe.Piecewise(model.setPWAConverEfficiency,
                 model.dependentFlowPWA,model.referenceFlowPWA,
-                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True)
+                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False)
+        
+            # model.disjunctConverEfficiencyOn = pgdp.Disjunct(
+            #     model.setPWAConverEfficiency,
+            #     rule = cls.disjunctConverEfficiencyOnRule
+            # )
+            # model.disjunctConverEfficiencyOff = pgdp.Disjunct(
+            #     model.setPWAConverEfficiency,
+            #     rule = cls.disjunctConverEfficiencyOffRule
+            # )
+            # model.disjunctionConverEfficiencyOnOff = pgdp.Disjunction(
+            #     model.setPWAConverEfficiency,
+            #     rule = cls.expressionLinkDisjunctsRule
+            # )
+        if model.setLinearConverEfficiency:
+            # if setLinearConverEfficiency contains technologies:
+            model.constraintLinearConverEfficiency = pe.Constraint(
+                model.setLinearConverEfficiency,
+                rule = constraintLinearConverEfficiencyRule,
+                doc = "Linear relationship in ConverEfficiency. Dimension: setLinearConverEfficiency."
+            )    
         
         ## Coupling constraints
         # couple the real variables with the auxiliary variables
         # capex
         model.constraintCapexCoupling = pe.Constraint(
-            model.setConversionTechnologies,
-            model.setNodes,
-            model.setTimeSteps,
+            model.setPWACapex,
             rule = constraintCapexCouplingRule,
-            doc = "couples the real capex variables with the approximated variables. Dimension: setConversionTechnologies, setNodes, setTimeSteps.")
+            doc = "couples the real capex variables with the approximated variables. Dimension: setPWACapex.")
         # capacity
         model.constraintCapacityCoupling = pe.Constraint(
-            model.setConversionTechnologies,
-            model.setNodes,
-            model.setTimeSteps,
+            model.setPWACapex,
             rule = constraintCapacityCouplingRule,
-            doc = "couples the real capacity variables with the approximated variables. Dimension: setConversionTechnologies, setNodes, setTimeSteps.")
+            doc = "couples the real capacity variables with the approximated variables. Dimension: setPWACapex.")
         # reference flow
         model.constraintReferenceFlowCoupling = pe.Constraint(
             model.setPWAConverEfficiency,
             rule = constraintReferenceFlowCouplingRule,
-            doc = "couples the real reference flow variables with the approximated variables. Dimension: setPWAConverEfficiency, setNodes, setTimeSteps.")
+            doc = "couples the real reference flow variables with the approximated variables. Dimension: setPWAConverEfficiency.")
         # dependent flow
         model.constraintDependentFlowCoupling = pe.Constraint(
             model.setPWAConverEfficiency,
             rule = constraintDependentFlowCouplingRule,
-            doc = "couples the real dependent flow variables with the approximated variables. Dimension: setPWAConverEfficiency, setNodes, setTimeSteps.")
+            doc = "couples the real dependent flow variables with the approximated variables. Dimension: setPWAConverEfficiency.")
     
+    # @classmethod
+    # def disjunctConverEfficiencyOnRule(cls,disjunct,tech,carrier,node,time):
+    #     """ sets up disjunct for conver efficiency if conversion technology is on 
+    #     :param disjunct: pgdp.Disjunct of on state"""
+    #     model = disjunct.model()
+    #     if [tech,carrier,node,time] in model.setPWAConverEfficiency: 
+    #         PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWAConverEfficiency,"ConverEfficiency")
+    #         disjunct.constraintPWAConverEfficiency = pe.Piecewise(
+    #             model.dependentFlowPWA[tech,carrier,node,time],model.referenceFlowPWA[tech,carrier,node,time],
+    #             pw_pts = PWABreakpoints[tech,carrier,node,time],pw_constr_type = "EQ", f_rule = PWAValues[tech,carrier,node,time],unbounded_domain_var = True, warn_domain_coverage =False)
+    #     if [tech,carrier,node,time] in model.setLinearConverEfficiency:
+    #         disjunct.constraintLinearConverEfficiency = pe.Constraint(
+    #             expr = model.dependentFlowPWA[tech,carrier,node,time] == model.slopeLinearApproximationConverEfficiency[tech,carrier,node,time]*model.referenceFlowPWA[tech,carrier,node,time]
+    #         )
+    
+    # @classmethod
+    # def disjunctConverEfficiencyOffRule(cls,disjunct,tech,carrier,node,time):
+    #     """ sets up disjunct for conver efficiency if conversion technology is off
+    #     :param disjunct: pgdp.Disjunct of on state"""
+    #     model = disjunct.model()
+    #     disjunct.constraintDependentFlow = pe.Constraint(
+    #             expr = model.dependentFlowPWA[tech,carrier,node,time] == 0
+    #         )
+    #     disjunct.constraintReferenceFlow = pe.Constraint(
+    #             expr = model.referenceFlowPWA[tech,carrier,node,time] == 0
+    #         )
+
+    # @classmethod
+    # def expressionLinkDisjunctsRule(cls,model,tech,carrier,node,time):
+    #     """  link disjuncts for technology is on and technology is off"""
+    #     return ([model.disjunctConverEfficiencyOn[tech,carrier,node,time],model.disjunctConverEfficiencyOff[tech,carrier,node,time]])
+            
     @classmethod
     def calculatePWABreakpointsValues(cls,setPWA,typePWA):
         """ calculates the breakpoints and function values for piecewise affine constraint
@@ -286,50 +360,44 @@ def constraintConversionTechnologyMaxOutputRule(model, tech, node, time):
     else:
         return (model.capacity[tech, node, time] >= model.outputFlow[tech, referenceCarrier, node, time])
 
-# def constraintConversionTechnologyLinkOutputFlowRule(model, tech, carrierOut, node, time):
-#     """link output flow if technology has several output carriers"""
-#     referenceCarrier = model.referenceCarrier[tech][0]
-#     if carrierOut != referenceCarrier:
-#         return (model.outputFlow[tech, referenceCarrier, node, time]
-#                 == model.converEfficiency[tech, referenceCarrier, carrierOut] * model.outputFlow[tech, carrierOut, node, time])
-#     else:
-#         return pe.Constraint.Skip
+def constraintLinearCapexRule(model,tech,node,time):
+    """ if capacity and capex have a linear relationship"""
+    return(model.capex[tech,node,time] == model.slopeLinearApproximationCapex[tech,node,time]*model.capacity[tech,node,time])
+
+def constraintLinearConverEfficiencyRule(model,tech,dependentCarrier,node,time):
+    """ if reference carrier and dependent carrier have a linear relationship"""
+    referenceCarrier = model.setReferenceCarriers[tech][1]
+    if referenceCarrier in model.setInputCarriers[tech]:
+        referenceFlow = model.inputFlow[tech,referenceCarrier,node,time]
+    else:
+        referenceFlow = model.outputFlow[tech,referenceCarrier,node,time]
+    if dependentCarrier in model.setInputCarriers[tech]:
+        dependentFlow = model.inputFlow[tech,dependentCarrier,node,time]
+    else:
+        dependentFlow = model.outputFlow[tech,dependentCarrier,node,time]
+    return(dependentFlow == model.slopeLinearApproximationConverEfficiency[tech,dependentCarrier, node,time]*referenceFlow)
 
 def constraintCapexCouplingRule(model,tech,node,time):
     """ couples capex variables based on modeling technique"""
-    if tech in model.setPWACapexTechs:
-        return(model.capex[tech,node,time] == model.capexPWA[tech,node,time])
-    elif tech in model.setNLCapexTechs:
-        logging.info("Nonlinear approximation of Capex assigned by metaheuristic, return Constraint.Skip for model.capex")
-        return pe.Constraint.Skip
+    return(model.capex[tech,node,time] == model.capexPWA[tech,node,time])
 
 def constraintCapacityCouplingRule(model,tech,node,time):
     """ couples capacity variables based on modeling technique"""
-    if tech in model.setPWACapexTechs:
-        return(model.capacity[tech,node,time] == model.capacityPWA[tech,node,time])
-    elif tech in model.setNLCapexTechs:
-        logging.info("Nonlinear approximation of Capex assigned by metaheuristic, return Constraint.Skip for model.capacity")
-        return pe.Constraint.Skip
+    return(model.capacity[tech,node,time] == model.capacityPWA[tech,node,time])
 
 def constraintReferenceFlowCouplingRule(model,tech,dependentCarrier,node,time):
     """ couples reference flow variables based on modeling technique"""
     referenceCarrier = model.setReferenceCarriers[tech][1]
-    if tech in model.setPWAConverEfficiencyTechs:
-        if referenceCarrier in model.setInputCarriers[tech]:
-            return(model.inputFlow[tech,referenceCarrier,node,time] == model.referenceFlowPWA[tech,dependentCarrier,node,time])
-        else:
-            return(model.outputFlow[tech,referenceCarrier,node,time] == model.referenceFlowPWA[tech,dependentCarrier,node,time])
-    elif tech in model.setNLConverEfficiencyTechs:
-        logging.info("Nonlinear approximation of efficiency not yet implemented, return Constraint.Skip for model.outputFlow[referenceCarrier]")
+    if referenceCarrier in model.setInputCarriers[tech]:
+        return(model.inputFlow[tech,referenceCarrier,node,time] == model.referenceFlowPWA[tech,dependentCarrier,node,time])
+    else:
+        return(model.outputFlow[tech,referenceCarrier,node,time] == model.referenceFlowPWA[tech,dependentCarrier,node,time])
 
 def constraintDependentFlowCouplingRule(model,tech,dependentCarrier,node,time):
     """ couples output flow variables based on modeling technique"""
-    if tech in model.setPWAConverEfficiencyTechs:
-        if dependentCarrier in model.setInputCarriers[tech]:
-            return(model.inputFlow[tech,dependentCarrier,node,time] == model.dependentFlowPWA[tech,dependentCarrier,node,time])
-        else:
-            return(model.outputFlow[tech,dependentCarrier,node,time] == model.dependentFlowPWA[tech,dependentCarrier,node,time])
-    elif tech in model.setNLConverEfficiencyTechs:
-        logging.info("Nonlinear approximation of efficiency not yet implemented, return Constraint.Skip for model.outputFlow[dependentCarrier]")
-
+    if dependentCarrier in model.setInputCarriers[tech]:
+        return(model.inputFlow[tech,dependentCarrier,node,time] == model.dependentFlowPWA[tech,dependentCarrier,node,time])
+    else:
+        return(model.outputFlow[tech,dependentCarrier,node,time] == model.dependentFlowPWA[tech,dependentCarrier,node,time])
+    
 #%% TODO implement conditioning for e.g. hydrogen

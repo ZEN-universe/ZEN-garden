@@ -38,4 +38,4 @@ system['setNodes'] = list(string.ascii_uppercase[:3]) #TODO: define proper nomen
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01
-solver['model'] = 'MINLP'
+solver['model'] = 'MILP'

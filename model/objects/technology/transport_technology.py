@@ -139,28 +139,28 @@ class TransportTechnology(Technology):
         model = EnergySystem.getConcreteModel()
 
         # disjunct if capacity is selected
-        model.disjunctSelectedCapacity = pgdp.Disjunct(
+        model.disjunctOnCapacity = pgdp.Disjunct(
             model.setTransportTechnologies,
             model.setEdges,
             model.setTimeSteps,
-            rule = disjunctSelectedCapacityRule,
-            doc = "disjunct to indicate that transport technology is selected. Dimensions: setTransportTechnologies, setEdges, setTimeSteps"
+            rule = disjunctOnCapacityRule,
+            doc = "disjunct to indicate that transport technology is On. Dimensions: setTransportTechnologies, setEdges, setTimeSteps"
         )
         # disjunct 
-        model.disjunctNotSelectedCapacity = pgdp.Disjunct(
+        model.disjunctOffCapacity = pgdp.Disjunct(
             model.setTransportTechnologies,
             model.setEdges,
             model.setTimeSteps,
-            rule = disjunctNotSelectedCapacityRule,
-            doc = "disjunct to indicate that transport technology is not selected. Dimensions: setTransportTechnologies, setEdges, setTimeSteps"
+            rule = disjunctOffCapacityRule,
+            doc = "disjunct to indicate that transport technology is off. Dimensions: setTransportTechnologies, setEdges, setTimeSteps"
         )
         # disjunction
-        model.disjunctionDecisionSelectedCapacity = pgdp.Disjunction(
+        model.disjunctionDecisionOnOffCapacity = pgdp.Disjunction(
             model.setTransportTechnologies,
             model.setEdges,
             model.setTimeSteps,
             rule = expressionLinkDisjunctsRule,
-            doc = "disjunction to link the selected or not selected disjuncts")
+            doc = "disjunction to link the on off disjuncts")
         # Carrier Flow Losses 
         model.constraintTransportTechnologyLossesFlow = pe.Constraint(
             model.setTransportTechnologies,
@@ -179,8 +179,8 @@ class TransportTechnology(Technology):
         ) 
 
 #%% Contraint rules defined in current class - Operation
-def disjunctSelectedCapacityRule(disjunct, tech, edge, time):
-    """definition of disjunct constraints if technology is selected"""
+def disjunctOnCapacityRule(disjunct, tech, edge, time):
+    """definition of disjunct constraints if technology is On"""
     model = disjunct.model()
     referenceCarrier = model.setReferenceCarriers[tech][1]
     # disjunct constraints min and max flow
@@ -191,8 +191,8 @@ def disjunctSelectedCapacityRule(disjunct, tech, edge, time):
         expr=model.carrierFlow[tech,referenceCarrier, edge, time] >= model.minFlow[tech] * model.capacity[tech,edge, time]
     )
 
-def disjunctNotSelectedCapacityRule(disjunct, tech, edge, time):
-    """definition of disjunct constraints if technology is selected"""
+def disjunctOffCapacityRule(disjunct, tech, edge, time):
+    """definition of disjunct constraints if technology is off"""
     model = disjunct.model()
     referenceCarrier = model.setReferenceCarriers[tech][1]
     disjunct.noFlow = pe.Constraint(
@@ -200,8 +200,8 @@ def disjunctNotSelectedCapacityRule(disjunct, tech, edge, time):
     )
 
 def expressionLinkDisjunctsRule(model, tech, edge, time):
-    """ link disjuncts for technology is selected and technology is not selected"""
-    return ([model.disjunctSelectedCapacity[tech,edge,time],model.disjunctNotSelectedCapacity[tech,edge,time]])
+    """ link disjuncts for technology is on and technology is off"""
+    return ([model.disjunctOnCapacity[tech,edge,time],model.disjunctOffCapacity[tech,edge,time]])
 
 def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
     """compute the flow losses for a carrier through a transport technology"""
@@ -211,7 +211,7 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
 
 def constraintTransportTechnologyLinearCapexRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
-    # TODO: why factor 0.5? To separate for nodes? But here for edges
+    # TODO: why factor 0.5? divide costPerDistance in input data
     return (model.capex[tech,edge, time] == 0.5 *
             model.capacity[tech,edge, time] *
             model.distance[tech,edge] *

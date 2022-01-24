@@ -7,6 +7,7 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""
 import numpy as np
+from scipy.stats import linregress
 import pandas as pd
 import os
 
@@ -169,9 +170,24 @@ class DataInput():
             breakpoints = dfInputBreakpoints[breakpointVariable].to_list()
 
             PWADict[type][breakpointVariable] = breakpoints
+            PWADict[type]["PWAVariables"] = [] # select only those variables that are modeled as PWA
             for valueVariable in nonlinearValues:
                 if valueVariable != breakpointVariable:
-                    PWADict[type][valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
+                    # conduct linear regress
+                    linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
+                    # calculate relative intercept (intercept/slope) if slope != 0
+                    if linearRegressObject.slope != 0:
+                        _relativeIntercept = np.abs(linearRegressObject.intercept/linearRegressObject.slope)
+                    else:
+                        _relativeIntercept = np.abs(linearRegressObject.intercept)
+                    # check if to a reasonable degree linear
+                    if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
+                        # model as linear function
+                        PWADict[type][valueVariable] = linearRegressObject.slope
+                    else:
+                        # model as PWA function
+                        PWADict[type][valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
+                        PWADict[type]["PWAVariables"].append(valueVariable)
         
         return PWADict
 
