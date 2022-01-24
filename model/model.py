@@ -40,6 +40,8 @@ class Model():
         self.addElements()
         # define and construct components of self.model
         Element.constructModelComponents()
+        # add transformation factory so that disjuncts are solved
+        pe.TransformationFactory("gdp.bigm").apply_to(self.model)    
 
     def addElements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -74,3 +76,4 @@ class Model():
         self.opt.set_instance(self.model,symbolic_solver_labels =True)
         self.results = self.opt.solve(tee=solver['verbosity'], logfile=solver['logfile'],options_string=solver_parameters)
         self.model.solutions.load_from(self.results)
+        a=1

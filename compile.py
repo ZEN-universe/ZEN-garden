@@ -42,6 +42,7 @@ elif config.solver['model'] == 'MINLP':
     master = Metaheuristic(model, prepare.nlpDict)
     master.solveMINLP(config.solver)
 
+a=1
 # EVALUATE RESULTS
 # evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
 # print(evaluation)

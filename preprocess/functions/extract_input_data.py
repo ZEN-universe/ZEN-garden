@@ -150,6 +150,9 @@ class DataInput():
             nonlinearValues = {}
             assert f"nonlinear{type}.{fileFormat}" in os.listdir(folderPath), f"File 'nonlinear{type}.{fileFormat}' does not exist in {folderPath}"
             dfInputNonlinear = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
+            if type == "Capex":
+                # make absolute capex
+                dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
             for column in dfInputNonlinear.columns:
                 nonlinearValues[column] = dfInputNonlinear[column].to_list()
             # extract PWA breakpoints

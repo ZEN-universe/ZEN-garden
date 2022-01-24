@@ -113,6 +113,14 @@ class Technology(Element):
     @classmethod
     def constructVars(cls):
         """ constructs the pe.Vars of the class <Technology> """
+        def capacityBounds(model,tech, *_):
+            """ return bounds of capacity for bigM expression
+            :param model: pe.ConcreteModel
+            :param tech: tech index
+            :return bounds: bounds of capacity"""
+            bounds = (0,model.maxCapacity[tech])
+            return(bounds)
+            
         model = EnergySystem.getConcreteModel()
         # construct pe.Vars of the class <Technology>
         # install technology
@@ -126,6 +134,7 @@ class Technology(Element):
             model.setTechnologyLocation,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
+            bounds = capacityBounds,
             doc = 'size of installed technology on edge i and time t. Dimensions: setTechnologyLocation, setTimeSteps. Domain: NonNegativeReals')
         # builtCapacity technology
         model.builtCapacity = pe.Var(

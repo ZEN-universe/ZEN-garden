@@ -11,6 +11,7 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
+import pyomo.gdp as pgdp
 import numpy as np
 from model.objects.technology.technology import Technology
 from model.objects.element import Element
@@ -103,6 +104,16 @@ class TransportTechnology(Technology):
     @classmethod
     def constructVars(cls):
         """ constructs the pe.Vars of the class <TransportTechnology> """
+        def carrierFlowBounds(model,tech, _,edge,time):
+            """ return bounds of carrierFlow for bigM expression 
+            :param model: pe.ConcreteModel
+            :param tech: tech index
+            :param edge: edge index
+            :param time: time index
+            :return bounds: bounds of carrierFlow"""
+            bounds = model.capacity[tech,edge,time].bounds
+            return(bounds)
+
         model = EnergySystem.getConcreteModel()
         # flow of carrier on edge
         model.carrierFlow = pe.Var(
@@ -110,6 +121,7 @@ class TransportTechnology(Technology):
             model.setEdges,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
+            bounds = carrierFlowBounds,
             doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. Domain: NonNegativeReals'
         )
         # loss of carrier on edge
@@ -141,61 +153,37 @@ class TransportTechnology(Technology):
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <TransportTechnology> """
         model = EnergySystem.getConcreteModel()
-        # min flow
-        model.constraintTransportTechnologyMinFlow = pe.Constraint(
-            model.setTransportCarriersTech,
+
+        # disjunct if capacity is selected
+        model.disjunctSelectedCapacity = pgdp.Disjunct(
+            model.setTransportTechnologies,
             model.setEdges,
             model.setTimeSteps,
-            rule = constraintTransportTechnologyMinFlowRule,
-            doc = 'min possible carrier flow through transport technology. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
+            rule = disjunctSelectedCapacityRule,
+            doc = "disjunct to indicate that transport technology is selected. Dimensions: setTransportTechnologies, setEdges, setTimeSteps"
         )
-        # max flow
-        model.constraintTransportTechnologyMaxFlow = pe.Constraint(
-            model.setTransportCarriersTech,
+        # disjunct 
+        model.disjunctNotSelectedCapacity = pgdp.Disjunct(
+            model.setTransportTechnologies,
             model.setEdges,
             model.setTimeSteps,
-            rule = constraintTransportTechnologyMaxFlowRule,
-            doc = 'max possible carrier flow through transport technology. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
+            rule = disjunctNotSelectedCapacityRule,
+            doc = "disjunct to indicate that transport technology is not selected. Dimensions: setTransportTechnologies, setEdges, setTimeSteps"
         )
-        # Selection 1
-        model.constraintTransportTechnologySelection1 = pe.Constraint(
+        # disjunction
+        model.disjunctionDecisionSelectedCapacity = pgdp.Disjunction(
             model.setTransportTechnologies,
             model.setEdges,
             model.setTimeSteps,
-            rule = constraintTransportTechnologySelection1Rule,
-            doc = 'select if transport technology is used or not Part 1. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
-        )     
-        # Selection 2
-        model.constraintTransportTechnologySelection2 = pe.Constraint(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
-            rule = constraintTransportTechnologySelection2Rule,
-            doc = 'select if transport technology is used or not Part 2. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
-        )        
-        # AuxLBFlow 
-        model.constraintTransportTechnologyAuxLBFlow = pe.Constraint(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
-            rule = constraintTransportTechnologyAuxLBFlowRule,
-            doc = 'LB for auxiliary variable capacityAux. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
-        )     
-        # AuxUBFlow 
-        model.constraintTransportTechnologyAuxUBFlow = pe.Constraint(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
-            rule = constraintTransportTechnologyAuxUBFlowRule,
-            doc = 'UB for auxiliary variable capacityAux. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
-        )   
+            rule = expressionLinkDisjunctsRule,
+            doc = "disjunction to link the selected or not selected disjuncts")
         # Carrier Flow Losses 
         model.constraintTransportTechnologyLossesFlow = pe.Constraint(
-            model.setTransportCarriersTech,
+            model.setTransportTechnologies,
             model.setEdges,
             model.setTimeSteps,
             rule = constraintTransportTechnologyLossesFlowRule,
-            doc = 'Carrier loss due to transport with through transport technology. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps'
+            doc = 'Carrier loss due to transport with through transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
         ) 
         # Linear Capex
         model.constraintTransportTechnologyLinearCapex = pe.Constraint(
@@ -207,53 +195,35 @@ class TransportTechnology(Technology):
         ) 
 
 #%% Contraint rules defined in current class - Operation
-def constraintTransportTechnologyMinFlowRule(model, tech, carrier, edge, time):
-    """min carrier flow through transport technology"""
-    if model.minFlow[tech] != 0:
-        return (model.carrierFlow[tech,carrier, edge, time]
-                >= model.minFlow[tech] * model.capacityAux[tech,edge, time])
-    else:
-        return pe.Constraint.Skip
+def disjunctSelectedCapacityRule(disjunct, tech, edge, time):
+    """definition of disjunct constraints if technology is selected"""
+    model = disjunct.model()
+    referenceCarrier = model.setReferenceCarriers[tech][1]
+    # disjunct constraints min and max flow
+    disjunct.maxFlow = pe.Constraint(
+        expr=model.carrierFlow[tech,referenceCarrier, edge, time] <= model.maxFlow[tech] * model.capacity[tech,edge, time]
+    )
+    disjunct.minFlow = pe.Constraint(
+        expr=model.carrierFlow[tech,referenceCarrier, edge, time] >= model.minFlow[tech] * model.capacity[tech,edge, time]
+    )
 
-def constraintTransportTechnologyMaxFlowRule(model, tech, carrier, edge, time):
-    """max flow carrier through  transport technology"""
-    if model.maxFlow[tech] != np.inf:
-        return (model.carrierFlow[tech,carrier, edge, time]
-                <= model.maxFlow[tech] * model.capacityAux[tech,edge, time])
-    else:
-        return pe.Constraint.Skip
+def disjunctNotSelectedCapacityRule(disjunct, tech, edge, time):
+    """definition of disjunct constraints if technology is selected"""
+    model = disjunct.model()
+    referenceCarrier = model.setReferenceCarriers[tech][1]
+    disjunct.noFlow = pe.Constraint(
+        expr=model.carrierFlow[tech,referenceCarrier, edge, time] == 0
+    )
 
-def constraintTransportTechnologySelection1Rule(model, tech, edge, time):
-    """select if transport technology is used or not"""
-    if model.minCapacity[tech] != 0:
-        return (model.capacityAux[tech,edge, time]
-                >= model.minCapacity[tech] * model.select[tech,edge, time])
-    else:
-        return pe.Constraint.Skip
+def expressionLinkDisjunctsRule(model, tech, edge, time):
+    """ link disjuncts for technology is selected and technology is not selected"""
+    return ([model.disjunctSelectedCapacity[tech,edge,time],model.disjunctNotSelectedCapacity[tech,edge,time]])
 
-def constraintTransportTechnologySelection2Rule(model, tech, edge, time):
-    """select if transport technology is used or not"""
-    if model.maxCapacity[tech] != np.inf:
-        return (model.capacityAux[tech,edge, time]
-                <= model.maxCapacity[tech] * model.select[tech,edge, time])
-    else:
-        return pe.Constraint.Skip
-
-def constraintTransportTechnologyAuxLBFlowRule(model, tech, edge, time):
-    """coupling capacity and auxiliary capacity variable of transport technology"""
-    return (model.capacity[tech,edge, time]
-            - model.maxCapacity[tech] * (1 - model.select[tech,edge, time])
-            <= model.capacityAux[tech,edge, time])
-
-def constraintTransportTechnologyAuxUBFlowRule(model, tech, edge, time):
-    """coupling capacity and auxiliary capacity variable of transport technology"""
-    return (model.capacityAux[tech,edge, time]
-            <= model.capacity[tech,edge, time])
-
-def constraintTransportTechnologyLossesFlowRule(model, tech, carrier, edge, time):
+def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
     """compute the flow losses for a carrier through a transport technology"""
-    return(model.carrierLoss[tech,carrier, edge, time]
-            == model.distance[tech,edge] * model.lossFlow[tech] * model.carrierFlow[tech,carrier, edge, time])
+    referenceCarrier = model.setReferenceCarriers[tech][1]
+    return(model.carrierLoss[tech,referenceCarrier, edge, time]
+            == model.distance[tech,edge] * model.lossFlow[tech] * model.carrierFlow[tech,referenceCarrier, edge, time])
 
 def constraintTransportTechnologyLinearCapexRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""

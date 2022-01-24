@@ -1,8 +1,8 @@
 index,attributes
 minCapacity,0
-maxCapacity,1.00E+06
+maxCapacity,1.00E+02
 minFlow,0.1
-maxFlow,1
+maxFlow,0.9
 lossFlow,0
 valueCapex,0
 lifetime,10
