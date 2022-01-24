@@ -37,31 +37,17 @@ class Carrier(Element):
         paths       = EnergySystem.getPaths()   
         indexNames  = EnergySystem.getAnalysis()['dataInputs']
         # set attributes of carrier
-        if self.name in system["setImportCarriers"]:
-            _inputPath                  = paths["setImportCarriers"][self.name]["folder"]
-            self.availabilityCarrier    = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-            self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-            self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"importPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-        elif self.name in system["setExportCarriers"]:
-            _inputPath                  = paths["setExportCarriers"][self.name]["folder"]
-            self.demandCarrier          = self.dataInput.extractInputData(_inputPath,"demandCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-            self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-            self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"importPriceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+        _inputPath                  = paths["setCarriers"][self.name]["folder"]
+        self.demandCarrier          = self.dataInput.extractInputData(_inputPath,"demandCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+        self.availabilityCarrier    = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+        self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"priceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]],"exportPriceCarrier")
+        self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"priceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]],"importPriceCarrier")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
     def constructSets(cls):
         """ constructs the pe.Sets of the class <Carrier> """
-        model = EnergySystem.getConcreteModel()
-        
-        # Import carriers
-        model.setImportCarriers = pe.Set(
-            initialize = EnergySystem.getAttribute("setImportCarriers"),
-            doc='Set of technology specific Import carriers. Import defines the import over the system boundaries.')
-        # Export carriers
-        model.setExportCarriers = pe.Set(
-            initialize = EnergySystem.getAttribute("setExportCarriers"),
-            doc='Set of technology specific Export carriers. Export defines the export over the system boundaries.')
+        pass
         
     @classmethod
     def constructParams(cls):
@@ -70,18 +56,18 @@ class Carrier(Element):
 
         # demand of carrier
         model.demandCarrier = pe.Param(
-            model.setExportCarriers,
+            model.setCarriers,
             model.setNodes,
             model.setTimeSteps,
             initialize = cls.getAttributeOfAllElements("demandCarrier"),
-            doc = 'Parameter which specifies the carrier demand.\n\t Dimensions: setExportCarriers, setNodes, setTimeSteps')
+            doc = 'Parameter which specifies the carrier demand.\n\t Dimensions: setCarriers, setNodes, setTimeSteps')
         # availability of carrier
         model.availabilityCarrier = pe.Param(
-            model.setImportCarriers,
+            model.setCarriers,
             model.setNodes,
             model.setTimeSteps,
             initialize = cls.getAttributeOfAllElements("availabilityCarrier"),
-            doc = 'Parameter which specifies the maximum energy that can be imported from the grid. \n\t Dimensions: setImportCarriers, setNodes, setTimeSteps')
+            doc = 'Parameter which specifies the maximum energy that can be imported from the grid. \n\t Dimensions: setCarriers, setNodes, setTimeSteps')
         # import price
         model.importPriceCarrier = pe.Param(
             model.setCarriers,
@@ -106,19 +92,19 @@ class Carrier(Element):
         
         # flow of imported carrier
         model.importCarrierFlow = pe.Var(
-            model.setImportCarriers,
+            model.setCarriers,
             model.setNodes,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'node- and time-dependent carrier import from the grid. \n\t Dimensions: setImportCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
+            doc = 'node- and time-dependent carrier import from the grid. \n\t Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
         )
         # flow of exported carrier
         model.exportCarrierFlow = pe.Var(
-            model.setExportCarriers,
+            model.setCarriers,
             model.setNodes,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'node- and time-dependent carrier export from the grid. \n\t Dimensions: setExportCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
+            doc = 'node- and time-dependent carrier export from the grid. \n\t Dimensions: setCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals'
         )
 
     @classmethod
@@ -128,11 +114,11 @@ class Carrier(Element):
 
         # limit import flow by availability
         model.constraintAvailabilityCarrier = pe.Constraint(
-            model.setImportCarriers,
+            model.setCarriers,
             model.setNodes,
             model.setTimeSteps,
             rule = constraintAvailabilityCarrierRule,
-            doc = 'node- and time-dependent carrier availability. \n\t Dimensions: setImportCarriers, setNodes, setTimeSteps',
+            doc = 'node- and time-dependent carrier availability. \n\t Dimensions: setCarriers, setNodes, setTimeSteps',
         )        
         ### TODO add mass balance but move after technologies
         # energy balance
@@ -174,11 +160,9 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
                 carrierFlowOut += sum(model.carrierFlow[tech,carrier, edge, time] for edge in model.setEdges if node == model.setNodesOnEdges[edge][1]) # first entry is node out of which the flow starts
     # carrier import, demand and export
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
-    if carrier in model.setImportCarriers:
-        carrierImport = model.importCarrierFlow[carrier, node, time]
-    if carrier in model.setExportCarriers:
-        carrierDemand = model.demandCarrier[carrier, node, time]
-        carrierExport = model.exportCarrierFlow[carrier, node, time]
+    carrierImport = model.importCarrierFlow[carrier, node, time]
+    carrierDemand = model.demandCarrier[carrier, node, time]
+    carrierExport = model.exportCarrierFlow[carrier, node, time]
 
     # TODO implement storage
 
