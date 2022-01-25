@@ -1,5 +1,5 @@
 index,attributes
-minCapacity,0
+minCapacity,0.1
 maxCapacity,1.00E+02
 minLoad,0
 maxLoad,0.9

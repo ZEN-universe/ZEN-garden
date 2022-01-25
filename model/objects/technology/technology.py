@@ -278,21 +278,21 @@ def technologyLocationRule(model):
 def constraintTechnologyAvailabilityRule(model, tech, location, time):
     """limited availability of  technology"""
     if model.availabilityTechnology[tech, location, time] != np.inf:
-        return (model.availabilityTechnology[tech, location, time] >= model.installTechnology[tech, location, time])
+        return (model.availabilityTechnology[tech, location, time] >= model.capacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyMinCapacityRule(model, tech, location, time):
     """ min capacity expansion of  technology."""
     if model.minCapacity[tech] != 0:
-        return (model.minCapacity[tech] * model.installTechnology[tech, location, time] <= model.capacity[tech, location, time])
+        return (model.minCapacity[tech] * model.installTechnology[tech, location, time] <= model.builtCapacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyMaxCapacityRule(model, tech, location, time):
     """max capacity expansion of  technology"""
     if model.maxCapacity[tech] != np.inf and tech not in model.setNLCapexTechs:
-        return (model.maxCapacity[tech] * model.installTechnology[tech, location, time] >= model.capacity[tech, location, time])
+        return (model.maxCapacity[tech] * model.installTechnology[tech, location, time] >= model.builtCapacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
