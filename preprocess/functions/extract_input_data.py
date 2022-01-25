@@ -142,9 +142,10 @@ class DataInput():
 
         return carrierDict
 
-    def extractPWAData(self, folderPath):
+    def extractPWAData(self, folderPath,tech):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files 
+        :param tech: technology object
         :return PWADict: dictionary with PWA parameters """
         # get system attribute
         fileFormat = self.analysis["fileFormat"]
@@ -171,8 +172,11 @@ class DataInput():
 
             PWADict[type][breakpointVariable] = breakpoints
             PWADict[type]["PWAVariables"] = [] # select only those variables that are modeled as PWA
+            PWADict[type]["bounds"] = {} # save bounds of variables
             for valueVariable in nonlinearValues:
-                if valueVariable != breakpointVariable:
+                if valueVariable == breakpointVariable:
+                    PWADict[type]["bounds"][valueVariable] = (tech.minCapacity,tech.maxCapacity)
+                else:
                     # conduct linear regress
                     linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
                     # calculate relative intercept (intercept/slope) if slope != 0
@@ -184,11 +188,16 @@ class DataInput():
                     if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
                         # model as linear function
                         PWADict[type][valueVariable] = linearRegressObject.slope
+                        # save bounds
+                        PWADict[type]["bounds"][valueVariable] = (PWADict[type][valueVariable]*tech.minCapacity,PWADict[type][valueVariable]*tech.maxCapacity)
                     else:
                         # model as PWA function
                         PWADict[type][valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
                         PWADict[type]["PWAVariables"].append(valueVariable)
-        
+                        # save bounds
+                        _valuesBetweenBounds = [PWADict[type][valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= tech.minCapacity and breakpoint <= tech.maxCapacity]
+                        _valuesBetweenBounds.extend(list(np.interp([tech.minCapacity,tech.maxCapacity],breakpoints,PWADict[type][valueVariable])))
+                        PWADict[type]["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
         return PWADict
 
     @staticmethod

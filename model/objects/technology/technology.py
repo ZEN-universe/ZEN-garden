@@ -13,6 +13,7 @@ Description:    Class defining the parameters, variables and constraints that ho
 import logging
 import sys
 import pyomo.environ as pe
+import pyomo.gdp as pgdp
 import numpy as np
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
@@ -47,6 +48,8 @@ class Technology(Element):
                 self.minCapacity        = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
                 self.maxCapacity        = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
                 self.lifetime           = self.dataInput.extractAttributeData(_inputPath,"lifetime")
+                self.minLoad            = self.dataInput.extractAttributeData(_inputPath,"minLoad")
+                self.maxLoad            = self.dataInput.extractAttributeData(_inputPath,"maxLoad")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
@@ -105,7 +108,16 @@ class Technology(Element):
             model.setTimeSteps,
             initialize = cls.getAttributeOfAllElements("availability"),
             doc = 'Parameter which specifies the availability of technologies. Dimensions: setTechnologyLocation, setTimeSteps')
-
+        # minimum load relative to capacity
+        model.minLoad = pe.Param(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("minLoad"),
+            doc = 'minimum load of technology relative to installed capacity. Dimensions: setTechnologies')
+        # maximum load relative to capacity
+        model.maxLoad = pe.Param(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("maxLoad"),
+            doc = 'maximum load of technology relative to installed capacity. Dimensions: setTechnologies')
         # add pe.Param of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructParams()
@@ -196,9 +208,60 @@ class Technology(Element):
             rule = constraintCapexTotalRule,
             doc = 'total capex of all technology that can be installed.'
         )
+        # maximum load 
+        model.constraintMaxLoad = pe.Constraint(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            rule = constraintMaxLoadRule,
+            doc = 'maximum load of technology is limited by the installed capacity. \n\t Dimensions: setTechnologyLocation, setTimeSteps'
+        )
+        # disjunct if technology is on
+        model.disjunctOnTechnology = pgdp.Disjunct(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            rule = cls.disjunctOnTechnologyRule,
+            doc = "disjunct to indicate that technology is On. Dimensions: setTechnologyLocation, setTimeSteps"
+        )
+        # disjunct if technology is off
+        model.disjunctOffTechnology = pgdp.Disjunct(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            rule = cls.disjunctOffTechnologyRule,
+            doc = "disjunct to indicate that technology is off. Dimensions: setTechnologyLocation, setTimeSteps"
+        )
+        # disjunction
+        model.disjunctionDecisionOnOffTechnology = pgdp.Disjunction(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            rule = cls.expressionLinkDisjunctsRule,
+            doc = "disjunction to link the on off disjuncts. Dimensions: setTechnologyLocation, setTimeStep")
+
         # add pe.Constraints of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructConstraints()
+
+    @classmethod
+    def disjunctOnTechnologyRule(cls,disjunct, tech, loc, time):
+        """definition of disjunct constraints if technology is On
+        iterate through all subclasses to find corresponding implementation of disjunct constraints """
+        for subclass in cls.getAllSubclasses():
+            if tech in subclass.getAllNamesOfElements():
+                subclass.disjunctOnTechnologyRule(disjunct,tech,loc,time)
+                break
+
+    @classmethod
+    def disjunctOffTechnologyRule(cls,disjunct, tech, loc, time):
+        """definition of disjunct constraints if technology is off
+        iterate through all subclasses to find corresponding implementation of disjunct constraints """
+        for subclass in cls.getAllSubclasses():
+            if tech in subclass.getAllNamesOfElements():
+                subclass.disjunctOffTechnologyRule(disjunct,tech,loc,time)
+                break
+
+    @classmethod
+    def expressionLinkDisjunctsRule(cls,model, tech, loc, time):
+        """ link disjuncts for technology is on and technology is off """
+        return ([model.disjunctOnTechnology[tech,loc,time],model.disjunctOffTechnology[tech,loc,time]])
 
 # function to combine the technologies and locations
 def technologyLocationRule(model):
@@ -258,6 +321,23 @@ def constraintCapexTotalRule(model):
             for time in model.setTimeSteps
         )
     )
+
+def constraintMaxLoadRule(model, tech, loc, time):
+    """Load is limited by the installed capacity and the maximum load factor"""
+    referenceCarrier = model.setReferenceCarriers[tech][1]
+    # conversion technology
+    if tech in model.setConversionTechnologies:
+        if referenceCarrier in model.setInputCarriers[tech]:
+            return (model.capacity[tech, loc, time]*model.maxLoad[tech] >= model.inputFlow[tech, referenceCarrier, loc, time])
+        else:
+            return (model.capacity[tech, loc, time]*model.maxLoad[tech] >= model.outputFlow[tech, referenceCarrier, loc, time])
+    # transport technology
+    elif tech in model.setTransportTechnologies:
+        return(model.capacity[tech,loc, time]*model.maxLoad[tech] >=model.carrierFlow[tech,referenceCarrier, loc, time])
+    else:
+        logging.info(f"Technology {tech} is neither a conversion nor a transport technology. Constraint constraintMaxLoad skipped.")
+        return pe.Constraint.Skip
+        
 
 ### TODO fix from here ###
 def constraintTechnologyMinCapacityExpansionRule(model, tech, location, time):

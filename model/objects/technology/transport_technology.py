@@ -42,8 +42,8 @@ class TransportTechnology(Technology):
 
         # set attributes of technology
         _inputPath              = paths["setTransportTechnologies"][self.name]["folder"]
-        self.minFlow            = self.dataInput.extractAttributeData(_inputPath,"minFlow")
-        self.maxFlow            = self.dataInput.extractAttributeData(_inputPath,"maxFlow")
+        # self.minFlow            = self.dataInput.extractAttributeData(_inputPath,"minFlow")
+        # self.maxFlow            = self.dataInput.extractAttributeData(_inputPath,"maxFlow")
         self.lossFlow           = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
         # set attributes of transport technology
         self.availability       = self.dataInput.extractTransportInputData(_inputPath,"availability",[indexNames["nameTimeSteps"]])
@@ -85,16 +85,6 @@ class TransportTechnology(Technology):
             model.setTimeSteps,
             initialize = cls.getAttributeOfAllElements("costPerDistance"),
             doc = 'capex per unit distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeSteps')
-        # minimum flow relative to capacity
-        model.minFlow = pe.Param(
-            model.setTransportTechnologies,
-            initialize = cls.getAttributeOfAllElements("minFlow"),
-            doc = 'minimum flow through the transport technologies relative to installed capacity. Dimensions: setTransportTechnologies')
-        # maximum flow relative to capacity
-        model.maxFlow = pe.Param(
-            model.setTransportTechnologies,
-            initialize = cls.getAttributeOfAllElements("maxFlow"),
-            doc = 'maximum flow through the transport technologies relative to installed capacity. Dimensions: setTransportTechnologies')
         # carrier losses
         model.lossFlow = pe.Param(
             model.setTransportTechnologies,
@@ -138,29 +128,6 @@ class TransportTechnology(Technology):
         """ constructs the pe.Constraints of the class <TransportTechnology> """
         model = EnergySystem.getConcreteModel()
 
-        # disjunct if capacity is selected
-        model.disjunctOnCapacity = pgdp.Disjunct(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
-            rule = disjunctOnCapacityRule,
-            doc = "disjunct to indicate that transport technology is On. Dimensions: setTransportTechnologies, setEdges, setTimeSteps"
-        )
-        # disjunct 
-        model.disjunctOffCapacity = pgdp.Disjunct(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
-            rule = disjunctOffCapacityRule,
-            doc = "disjunct to indicate that transport technology is off. Dimensions: setTransportTechnologies, setEdges, setTimeSteps"
-        )
-        # disjunction
-        model.disjunctionDecisionOnOffCapacity = pgdp.Disjunction(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
-            rule = expressionLinkDisjunctsRule,
-            doc = "disjunction to link the on off disjuncts")
         # Carrier Flow Losses 
         model.constraintTransportTechnologyLossesFlow = pe.Constraint(
             model.setTransportTechnologies,
@@ -178,30 +145,25 @@ class TransportTechnology(Technology):
             doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
         ) 
 
-#%% Contraint rules defined in current class - Operation
-def disjunctOnCapacityRule(disjunct, tech, edge, time):
-    """definition of disjunct constraints if technology is On"""
-    model = disjunct.model()
-    referenceCarrier = model.setReferenceCarriers[tech][1]
-    # disjunct constraints min and max flow
-    disjunct.maxFlow = pe.Constraint(
-        expr=model.carrierFlow[tech,referenceCarrier, edge, time] <= model.maxFlow[tech] * model.capacity[tech,edge, time]
-    )
-    disjunct.minFlow = pe.Constraint(
-        expr=model.carrierFlow[tech,referenceCarrier, edge, time] >= model.minFlow[tech] * model.capacity[tech,edge, time]
-    )
+    #%% Contraint rules defined in current class - Operation
+    @classmethod
+    def disjunctOnTechnologyRule(cls,disjunct, tech, edge, time):
+        """definition of disjunct constraints if technology is On"""
+        model = disjunct.model()
+        referenceCarrier = model.setReferenceCarriers[tech][1]
+        # disjunct constraints min load
+        disjunct.constraintMinLoad = pe.Constraint(
+            expr=model.carrierFlow[tech,referenceCarrier, edge, time] >= model.minLoad[tech] * model.capacity[tech,edge, time]
+        )
 
-def disjunctOffCapacityRule(disjunct, tech, edge, time):
-    """definition of disjunct constraints if technology is off"""
-    model = disjunct.model()
-    referenceCarrier = model.setReferenceCarriers[tech][1]
-    disjunct.noFlow = pe.Constraint(
-        expr=model.carrierFlow[tech,referenceCarrier, edge, time] == 0
-    )
-
-def expressionLinkDisjunctsRule(model, tech, edge, time):
-    """ link disjuncts for technology is on and technology is off"""
-    return ([model.disjunctOnCapacity[tech,edge,time],model.disjunctOffCapacity[tech,edge,time]])
+    @classmethod
+    def disjunctOffTechnologyRule(cls,disjunct, tech, edge, time):
+        """definition of disjunct constraints if technology is off"""
+        model = disjunct.model()
+        referenceCarrier = model.setReferenceCarriers[tech][1]
+        disjunct.constraintNoLoad = pe.Constraint(
+            expr=model.carrierFlow[tech,referenceCarrier, edge, time] == 0
+        )
 
 def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
     """compute the flow losses for a carrier through a transport technology"""

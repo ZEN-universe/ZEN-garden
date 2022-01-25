@@ -13,6 +13,7 @@ Description:    Class defining the parameters, variables and constraints of the 
 import logging
 import pyomo.environ as pe
 import pyomo.gdp as pgdp
+import numpy as np
 from model.objects.technology.technology import Technology
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
@@ -43,12 +44,14 @@ class ConversionTechnology(Technology):
         # set attributes of technology
         _inputPath              = paths["setConversionTechnologies"][self.name]["folder"]
         self.deltaCapacity      = self.dataInput.extractAttributeData(_inputPath,"deltaCapacity")
+        self.minLoad            = self.dataInput.extractAttributeData(_inputPath,"minLoad")
+        self.maxLoad            = self.dataInput.extractAttributeData(_inputPath,"maxLoad")
         self.availability       = self.dataInput.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
         # define input and output carrier
         self.inputCarrier       = self.dataInput.extractConversionCarriers(_inputPath)["inputCarrier"]
         self.outputCarrier      = self.dataInput.extractConversionCarriers(_inputPath)["outputCarrier"]
         # extract PWA parameters
-        self.PWAParameter       = self.dataInput.extractPWAData(_inputPath)
+        self.PWAParameter       = self.dataInput.extractPWAData(_inputPath,self)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
@@ -178,59 +181,54 @@ class ConversionTechnology(Technology):
             model.setNodes,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
-            doc = 'Carrier input of conversion technologies. Dimensions: setConversionTechnologies, setInputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals' )
+            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
+            doc = 'Carrier input of conversion technologies. Dimensions: setInputCarriersTechs, setNodes, setTimeSteps. Domain: NonNegativeReals' )
         # output flow of carrier into technology
         model.outputFlow = pe.Var(
             model.setOutputCarriersTechs,
             model.setNodes,
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
+            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
             doc = 'Carrier output of conversion technologies. Dimensions: setConversionTechnologies, setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals')
 
         ## PWA Variables - Capex
         # PWA capacity
-        model.capacityPWA = pe.Var(
-            model.setPWACapex,
+        model.capacityApproximation = pe.Var(
+            model.setPWACapex | model.setLinearCapex,
             domain = pe.NonNegativeReals,
-            doc = 'PWA variable for size of installed technology on edge i and time t. Dimensions: setPWACapexTechs, setNodes, setTimeSteps. Domain: NonNegativeReals')
+            doc = 'PWA variable for size of installed technology on edge i and time t. Dimensions: setPWACapex | setLinearCapex. Domain: NonNegativeReals')
         # PWA capex technology
-        model.capexPWA = pe.Var(
-            model.setPWACapex,
+        model.capexApproximation = pe.Var(
+            model.setPWACapex | model.setLinearCapex,
             domain = pe.NonNegativeReals,
-            doc = 'PWA variable for capex for installing technology on edge i and time t. Dimensions:  setPWACapexTechs, setNodes, setTimeSteps. Domain: NonNegativeReals')
+            doc = 'PWA variable for capex for installing technology on edge i and time t. Dimensions:  setPWACapex | setLinearCapex. Domain: NonNegativeReals')
 
         ## PWA Variables - Conversion Efficiency
         # PWA reference flow of carrier into technology
-        model.referenceFlowPWA = pe.Var(
-            model.setPWAConverEfficiency,
+        model.referenceFlowApproximation = pe.Var(
+            model.setPWAConverEfficiency | model.setLinearConverEfficiency,
             domain = pe.NonNegativeReals,
-            doc = 'PWA of flow of reference carrier of conversion technologies. Dimensions: setPWAConverEfficiencyTechs, setNodes, setTimeSteps. Domain: NonNegativeReals')
+            bounds = lambda model, tech, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][model.setReferenceCarriers[tech][1]],
+            doc = 'PWA of flow of reference carrier of conversion technologies. Dimensions: setPWAConverEfficiency | setLinearConverEfficiency. Domain: NonNegativeReals')
         # PWA dependent flow of carrier into technology
-        model.dependentFlowPWA = pe.Var(
-            model.setPWAConverEfficiency,
+        model.dependentFlowApproximation = pe.Var(
+            model.setPWAConverEfficiency | model.setLinearConverEfficiency,
             domain = pe.NonNegativeReals,
-            doc = 'PWA of flow of dependent carriers of conversion technologies. Dimensions: setPWAConverEfficiencyTechs, setNodes, setTimeSteps. Domain: NonNegativeReals')
+            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
+            doc = 'PWA of flow of dependent carriers of conversion technologies. Dimensions: setPWAConverEfficiency | setLinearConverEfficiency. Domain: NonNegativeReals')
 
     @classmethod
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <ConversionTechnology> """
         model = EnergySystem.getConcreteModel()
-        # maximum output flow 
-        model.constraintConversionTechnologyMaxOutput = pe.Constraint(
-            model.setConversionTechnologies,
-            model.setNodes,
-            model.setTimeSteps,
-            rule = constraintConversionTechnologyMaxOutputRule,
-            doc = 'maximum output of conversion technology is limited by the installed capacity. \n\t Dimensions: setConversionTechnologies, setNodes, setTimeSteps'
-        )
-
         # add PWA constraints
         # capex
         if model.setPWACapex: 
             # if setPWACapex contains technologies:
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWACapex,"Capex")
             model.constraintPWACapex = pe.Piecewise(model.setPWACapex,
-                model.capexPWA,model.capacityPWA,
+                model.capexApproximation,model.capacityApproximation,
                 pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False)
         if model.setLinearCapex:
             # if setLinearCapex contains technologies:
@@ -244,21 +242,8 @@ class ConversionTechnology(Technology):
             # if setPWAConverEfficiency contains technologies:
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWAConverEfficiency,"ConverEfficiency")
             model.constraintPWAConverEfficiency = pe.Piecewise(model.setPWAConverEfficiency,
-                model.dependentFlowPWA,model.referenceFlowPWA,
+                model.dependentFlowApproximation,model.referenceFlowApproximation,
                 pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False)
-        
-            # model.disjunctConverEfficiencyOn = pgdp.Disjunct(
-            #     model.setPWAConverEfficiency,
-            #     rule = cls.disjunctConverEfficiencyOnRule
-            # )
-            # model.disjunctConverEfficiencyOff = pgdp.Disjunct(
-            #     model.setPWAConverEfficiency,
-            #     rule = cls.disjunctConverEfficiencyOffRule
-            # )
-            # model.disjunctionConverEfficiencyOnOff = pgdp.Disjunction(
-            #     model.setPWAConverEfficiency,
-            #     rule = cls.expressionLinkDisjunctsRule
-            # )
         if model.setLinearConverEfficiency:
             # if setLinearConverEfficiency contains technologies:
             model.constraintLinearConverEfficiency = pe.Constraint(
@@ -266,7 +251,6 @@ class ConversionTechnology(Technology):
                 rule = constraintLinearConverEfficiencyRule,
                 doc = "Linear relationship in ConverEfficiency. Dimension: setLinearConverEfficiency."
             )    
-        
         ## Coupling constraints
         # couple the real variables with the auxiliary variables
         # capex
@@ -279,48 +263,47 @@ class ConversionTechnology(Technology):
             model.setPWACapex,
             rule = constraintCapacityCouplingRule,
             doc = "couples the real capacity variables with the approximated variables. Dimension: setPWACapex.")
-        # reference flow
-        model.constraintReferenceFlowCoupling = pe.Constraint(
-            model.setPWAConverEfficiency,
-            rule = constraintReferenceFlowCouplingRule,
-            doc = "couples the real reference flow variables with the approximated variables. Dimension: setPWAConverEfficiency.")
-        # dependent flow
-        model.constraintDependentFlowCoupling = pe.Constraint(
-            model.setPWAConverEfficiency,
-            rule = constraintDependentFlowCouplingRule,
-            doc = "couples the real dependent flow variables with the approximated variables. Dimension: setPWAConverEfficiency.")
-    
-    # @classmethod
-    # def disjunctConverEfficiencyOnRule(cls,disjunct,tech,carrier,node,time):
-    #     """ sets up disjunct for conver efficiency if conversion technology is on 
-    #     :param disjunct: pgdp.Disjunct of on state"""
-    #     model = disjunct.model()
-    #     if [tech,carrier,node,time] in model.setPWAConverEfficiency: 
-    #         PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(model.setPWAConverEfficiency,"ConverEfficiency")
-    #         disjunct.constraintPWAConverEfficiency = pe.Piecewise(
-    #             model.dependentFlowPWA[tech,carrier,node,time],model.referenceFlowPWA[tech,carrier,node,time],
-    #             pw_pts = PWABreakpoints[tech,carrier,node,time],pw_constr_type = "EQ", f_rule = PWAValues[tech,carrier,node,time],unbounded_domain_var = True, warn_domain_coverage =False)
-    #     if [tech,carrier,node,time] in model.setLinearConverEfficiency:
-    #         disjunct.constraintLinearConverEfficiency = pe.Constraint(
-    #             expr = model.dependentFlowPWA[tech,carrier,node,time] == model.slopeLinearApproximationConverEfficiency[tech,carrier,node,time]*model.referenceFlowPWA[tech,carrier,node,time]
-    #         )
-    
-    # @classmethod
-    # def disjunctConverEfficiencyOffRule(cls,disjunct,tech,carrier,node,time):
-    #     """ sets up disjunct for conver efficiency if conversion technology is off
-    #     :param disjunct: pgdp.Disjunct of on state"""
-    #     model = disjunct.model()
-    #     disjunct.constraintDependentFlow = pe.Constraint(
-    #             expr = model.dependentFlowPWA[tech,carrier,node,time] == 0
-    #         )
-    #     disjunct.constraintReferenceFlow = pe.Constraint(
-    #             expr = model.referenceFlowPWA[tech,carrier,node,time] == 0
-    #         )
 
-    # @classmethod
-    # def expressionLinkDisjunctsRule(cls,model,tech,carrier,node,time):
-    #     """  link disjuncts for technology is on and technology is off"""
-    #     return ([model.disjunctConverEfficiencyOn[tech,carrier,node,time],model.disjunctConverEfficiencyOff[tech,carrier,node,time]])
+    @classmethod
+    def disjunctOnTechnologyRule(cls,disjunct, tech, loc, time):
+        """definition of disjunct constraints if technology is On"""
+        model = disjunct.model()
+        referenceCarrier = model.setReferenceCarriers[tech][1]
+        if referenceCarrier in model.setInputCarriers[tech]:
+            referenceFlow = model.inputFlow[tech,referenceCarrier,loc,time]
+        else:
+            referenceFlow = model.outputFlow[tech,referenceCarrier,loc,time]
+        # disjunct constraints min load
+        disjunct.constraintMinLoad = pe.Constraint(
+            expr=referenceFlow >= model.minLoad[tech] * model.capacity[tech,loc, time]
+        )
+        # couple reference flows
+        disjunct.constraintReferenceFlowCoupling = pe.Constraint(
+            [tech],
+            model.setDependentCarriers[tech],
+            [loc],
+            [time],
+            rule = constraintReferenceFlowCouplingRule,
+            doc = "couples the real reference flow variables with the approximated variables. Dimension: setDependentCarriers[tech].")
+        # couple dependent flows
+        disjunct.constraintDependentFlowCoupling = pe.Constraint(
+            [tech],
+            model.setDependentCarriers[tech],
+            [loc],
+            [time],
+            rule = constraintDependentFlowCouplingRule,
+            doc = "couples the real dependent flow variables with the approximated variables. Dimension: setDependentCarriers[tech].")
+
+    @classmethod
+    def disjunctOffTechnologyRule(cls,disjunct, tech, loc, time):
+        """definition of disjunct constraints if technology is off"""
+        model = disjunct.model()
+        disjunct.constraintNoLoad = pe.Constraint(
+            expr=
+                sum(model.inputFlow[tech,inputCarrier,loc,time] for inputCarrier in model.setInputCarriers[tech])+
+                sum(model.outputFlow[tech,outputCarrier,loc,time] for outputCarrier in model.setOutputCarriers[tech]) 
+                == 0
+        )
             
     @classmethod
     def calculatePWABreakpointsValues(cls,setPWA,typePWA):
@@ -352,52 +335,40 @@ class ConversionTechnology(Technology):
         return PWABreakpoints,PWAValues
 
 ### --- functions with constraint rules --- ###
-def constraintConversionTechnologyMaxOutputRule(model, tech, node, time):
-    """output is limited by the installed capacity"""
-    referenceCarrier = model.setReferenceCarriers[tech][1]
-    if referenceCarrier in model.setInputCarriers[tech]:
-        return (model.capacity[tech, node, time] >= model.inputFlow[tech, referenceCarrier, node, time])
-    else:
-        return (model.capacity[tech, node, time] >= model.outputFlow[tech, referenceCarrier, node, time])
-
 def constraintLinearCapexRule(model,tech,node,time):
     """ if capacity and capex have a linear relationship"""
-    return(model.capex[tech,node,time] == model.slopeLinearApproximationCapex[tech,node,time]*model.capacity[tech,node,time])
+    return(model.capexApproximation[tech,node,time] == model.slopeLinearApproximationCapex[tech,node,time]*model.capacityApproximation[tech,node,time])
 
 def constraintLinearConverEfficiencyRule(model,tech,dependentCarrier,node,time):
     """ if reference carrier and dependent carrier have a linear relationship"""
-    referenceCarrier = model.setReferenceCarriers[tech][1]
-    if referenceCarrier in model.setInputCarriers[tech]:
-        referenceFlow = model.inputFlow[tech,referenceCarrier,node,time]
-    else:
-        referenceFlow = model.outputFlow[tech,referenceCarrier,node,time]
-    if dependentCarrier in model.setInputCarriers[tech]:
-        dependentFlow = model.inputFlow[tech,dependentCarrier,node,time]
-    else:
-        dependentFlow = model.outputFlow[tech,dependentCarrier,node,time]
-    return(dependentFlow == model.slopeLinearApproximationConverEfficiency[tech,dependentCarrier, node,time]*referenceFlow)
+    return(
+        model.dependentFlowApproximation[tech,dependentCarrier,node,time] 
+        == model.slopeLinearApproximationConverEfficiency[tech,dependentCarrier, node,time]*model.referenceFlowApproximation[tech,dependentCarrier,node,time]
+    )
 
 def constraintCapexCouplingRule(model,tech,node,time):
     """ couples capex variables based on modeling technique"""
-    return(model.capex[tech,node,time] == model.capexPWA[tech,node,time])
+    return(model.capex[tech,node,time] == model.capexApproximation[tech,node,time])
 
 def constraintCapacityCouplingRule(model,tech,node,time):
     """ couples capacity variables based on modeling technique"""
-    return(model.capacity[tech,node,time] == model.capacityPWA[tech,node,time])
+    return(model.capacity[tech,node,time] == model.capacityApproximation[tech,node,time])
 
-def constraintReferenceFlowCouplingRule(model,tech,dependentCarrier,node,time):
+def constraintReferenceFlowCouplingRule(disjunct,tech,dependentCarrier,node,time):
     """ couples reference flow variables based on modeling technique"""
+    model = disjunct.model()
     referenceCarrier = model.setReferenceCarriers[tech][1]
     if referenceCarrier in model.setInputCarriers[tech]:
-        return(model.inputFlow[tech,referenceCarrier,node,time] == model.referenceFlowPWA[tech,dependentCarrier,node,time])
+        return(model.inputFlow[tech,referenceCarrier,node,time] == model.referenceFlowApproximation[tech,dependentCarrier,node,time])
     else:
-        return(model.outputFlow[tech,referenceCarrier,node,time] == model.referenceFlowPWA[tech,dependentCarrier,node,time])
+        return(model.outputFlow[tech,referenceCarrier,node,time] == model.referenceFlowApproximation[tech,dependentCarrier,node,time])
 
-def constraintDependentFlowCouplingRule(model,tech,dependentCarrier,node,time):
+def constraintDependentFlowCouplingRule(disjunct,tech,dependentCarrier,node,time):
     """ couples output flow variables based on modeling technique"""
+    model = disjunct.model()
     if dependentCarrier in model.setInputCarriers[tech]:
-        return(model.inputFlow[tech,dependentCarrier,node,time] == model.dependentFlowPWA[tech,dependentCarrier,node,time])
+        return(model.inputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
     else:
-        return(model.outputFlow[tech,dependentCarrier,node,time] == model.dependentFlowPWA[tech,dependentCarrier,node,time])
+        return(model.outputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
     
 #%% TODO implement conditioning for e.g. hydrogen

@@ -45,6 +45,16 @@ class Element:
         return cls.listOfElements
 
     @classmethod
+    def getAllNamesOfElements(cls):
+        """ get all names of elements in class. Inherited by child classes.
+        :return namesOfElements: list of names of elements in this class """
+        _elementsInClass = cls.getAllElements()
+        namesOfElements = []
+        for _element in _elementsInClass:
+            namesOfElements.append(_element.name)
+        return namesOfElements
+        
+    @classmethod
     def getElement(cls,name:str):
         """ get single element in class by name. Inherited by child classes.
         :param name: name of element
