@@ -246,6 +246,7 @@ class Technology(Element):
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
         for subclass in cls.getAllSubclasses():
             if tech in subclass.getAllNamesOfElements():
+                # disjunct is defined in corresponding subclass
                 subclass.disjunctOnTechnologyRule(disjunct,tech,loc,time)
                 break
 
@@ -255,6 +256,7 @@ class Technology(Element):
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
         for subclass in cls.getAllSubclasses():
             if tech in subclass.getAllNamesOfElements():
+                # disjunct is defined in corresponding subclass
                 subclass.disjunctOffTechnologyRule(disjunct,tech,loc,time)
                 break
 
@@ -283,24 +285,20 @@ def constraintTechnologyAvailabilityRule(model, tech, location, time):
 def constraintTechnologyMinCapacityRule(model, tech, location, time):
     """ min capacity expansion of  technology."""
     if model.minCapacity[tech] != 0:
-        return (model.minCapacity[tech] * model.installTechnology[tech, location, time]
-                <= model.capacity[tech, location, time])
+        return (model.minCapacity[tech] * model.installTechnology[tech, location, time] <= model.capacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyMaxCapacityRule(model, tech, location, time):
     """max capacity expansion of  technology"""
-    # TODO: error in the case second term in if condition is removed: check! setPWACapexTechs includes conversion technologies only
-    if model.maxCapacity[tech] != np.inf and tech in model.setPWACapexTechs:
-        return (model.maxCapacity[tech] * model.installTechnology[tech, location, time]
-                >= model.capacity[tech, location, time])
+    if model.maxCapacity[tech] != np.inf and tech not in model.setNLCapexTechs:
+        return (model.maxCapacity[tech] * model.installTechnology[tech, location, time] >= model.capacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyLifetimeRule(model, tech, location, time):
     """limited lifetime of the technologies"""
-    #TODO: setPWACapexTechs only considers technologies from the conversion technologies
-    if tech in model.setPWACapexTechs:
+    if tech not in model.setNLCapexTechs:
         # time range
         t_start = max(0, time - model.lifetimeTechnology[tech] + 1)
         t_end = time + 1
@@ -333,7 +331,7 @@ def constraintMaxLoadRule(model, tech, loc, time):
             return (model.capacity[tech, loc, time]*model.maxLoad[tech] >= model.outputFlow[tech, referenceCarrier, loc, time])
     # transport technology
     elif tech in model.setTransportTechnologies:
-        return(model.capacity[tech,loc, time]*model.maxLoad[tech] >=model.carrierFlow[tech,referenceCarrier, loc, time])
+            return (model.capacity[tech, loc, time]*model.maxLoad[tech] >= model.carrierFlow[tech, referenceCarrier, loc, time])
     else:
         logging.info(f"Technology {tech} is neither a conversion nor a transport technology. Constraint constraintMaxLoad skipped.")
         return pe.Constraint.Skip
@@ -348,7 +346,6 @@ def constraintTechnologyMinCapacityExpansionRule(model, tech, location, time):
     # variables
     expandTechnology = getattr(model, f'expand{tech}')
     
-
     return (expandTechnology[location, t] * minCapacityExpansion #TODO what is t, fix!
             >= model.builtCapacityTechnologies[tech, location, time])
 

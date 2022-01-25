@@ -145,10 +145,10 @@ class TransportTechnology(Technology):
             doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
         ) 
 
-    #%% Contraint rules defined in current class - Operation
+    # defines disjuncts if technology on/off
     @classmethod
     def disjunctOnTechnologyRule(cls,disjunct, tech, edge, time):
-        """definition of disjunct constraints if technology is On"""
+        """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
         referenceCarrier = model.setReferenceCarriers[tech][1]
         # disjunct constraints min load
@@ -165,6 +165,7 @@ class TransportTechnology(Technology):
             expr=model.carrierFlow[tech,referenceCarrier, edge, time] == 0
         )
 
+### --- functions with constraint rules --- ###
 def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
     """compute the flow losses for a carrier through a transport technology"""
     referenceCarrier = model.setReferenceCarriers[tech][1]
@@ -175,7 +176,6 @@ def constraintTransportTechnologyLinearCapexRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
     # TODO: why factor 0.5? divide costPerDistance in input data
     return (model.capex[tech,edge, time] == 0.5 *
-            model.capacity[tech,edge, time] *
+            model.builtCapacity[tech,edge, time] *
             model.distance[tech,edge] *
             model.costPerDistance[tech,edge, time])
-

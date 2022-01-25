@@ -190,7 +190,7 @@ class ConversionTechnology(Technology):
             model.setTimeSteps,
             domain = pe.NonNegativeReals,
             bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
-            doc = 'Carrier output of conversion technologies. Dimensions: setConversionTechnologies, setOutputCarriers, setNodes, setTimeSteps. Domain: NonNegativeReals')
+            doc = 'Carrier output of conversion technologies. Dimensions: setOutputCarriersTechs, setNodes, setTimeSteps. Domain: NonNegativeReals')
 
         ## PWA Variables - Capex
         # PWA capacity
@@ -263,45 +263,46 @@ class ConversionTechnology(Technology):
             model.setPWACapex,
             rule = constraintCapacityCouplingRule,
             doc = "couples the real capacity variables with the approximated variables. Dimension: setPWACapex.")
-
+    
+    # defines disjuncts if technology on/off
     @classmethod
-    def disjunctOnTechnologyRule(cls,disjunct, tech, loc, time):
+    def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):
         """definition of disjunct constraints if technology is On"""
         model = disjunct.model()
         referenceCarrier = model.setReferenceCarriers[tech][1]
         if referenceCarrier in model.setInputCarriers[tech]:
-            referenceFlow = model.inputFlow[tech,referenceCarrier,loc,time]
+            referenceFlow = model.inputFlow[tech,referenceCarrier,node,time]
         else:
-            referenceFlow = model.outputFlow[tech,referenceCarrier,loc,time]
+            referenceFlow = model.outputFlow[tech,referenceCarrier,node,time]
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
-            expr=referenceFlow >= model.minLoad[tech] * model.capacity[tech,loc, time]
+            expr=referenceFlow >= model.minLoad[tech] * model.capacity[tech,node, time]
         )
         # couple reference flows
         disjunct.constraintReferenceFlowCoupling = pe.Constraint(
             [tech],
             model.setDependentCarriers[tech],
-            [loc],
+            [node],
             [time],
             rule = constraintReferenceFlowCouplingRule,
-            doc = "couples the real reference flow variables with the approximated variables. Dimension: setDependentCarriers[tech].")
+            doc = "couples the real reference flow variables with the approximated variables. Dimension: tech, setDependentCarriers[tech], node, time.")
         # couple dependent flows
         disjunct.constraintDependentFlowCoupling = pe.Constraint(
             [tech],
             model.setDependentCarriers[tech],
-            [loc],
+            [node],
             [time],
             rule = constraintDependentFlowCouplingRule,
-            doc = "couples the real dependent flow variables with the approximated variables. Dimension: setDependentCarriers[tech].")
+            doc = "couples the real dependent flow variables with the approximated variables. Dimension: tech, setDependentCarriers[tech], node, time.")
 
     @classmethod
-    def disjunctOffTechnologyRule(cls,disjunct, tech, loc, time):
+    def disjunctOffTechnologyRule(cls,disjunct, tech, node, time):
         """definition of disjunct constraints if technology is off"""
         model = disjunct.model()
         disjunct.constraintNoLoad = pe.Constraint(
             expr=
-                sum(model.inputFlow[tech,inputCarrier,loc,time] for inputCarrier in model.setInputCarriers[tech])+
-                sum(model.outputFlow[tech,outputCarrier,loc,time] for outputCarrier in model.setOutputCarriers[tech]) 
+                sum(model.inputFlow[tech,inputCarrier,node,time]     for inputCarrier  in model.setInputCarriers[tech]) +
+                sum(model.outputFlow[tech,outputCarrier,node,time]   for outputCarrier in model.setOutputCarriers[tech]) 
                 == 0
         )
             
@@ -352,7 +353,7 @@ def constraintCapexCouplingRule(model,tech,node,time):
 
 def constraintCapacityCouplingRule(model,tech,node,time):
     """ couples capacity variables based on modeling technique"""
-    return(model.capacity[tech,node,time] == model.capacityApproximation[tech,node,time])
+    return(model.builtCapacity[tech,node,time] == model.capacityApproximation[tech,node,time])
 
 def constraintReferenceFlowCouplingRule(disjunct,tech,dependentCarrier,node,time):
     """ couples reference flow variables based on modeling technique"""
