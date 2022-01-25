@@ -71,10 +71,10 @@ class FillNlpDict:
 
         for variableName in self.analysis['variablesNonlinearModel']:
             for technologyName in self.analysis['variablesNonlinearModel'][variableName]:
-                if variableName == 'capacity':
+                if variableName == 'builtCapacity':
                     for setName in ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']:
                         if technologyName in self.system[setName]:
                             _inputPath = self.paths[setName][technologyName]["folder"]
-                            self.nlpDict['data']['LB'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
-                            self.nlpDict['data']['UB'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
-                            self.nlpDict['data']['DS'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"deltaCapacity")
+                            self.nlpDict['data']['LB'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
+                            self.nlpDict['data']['UB'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
+                            # self.nlpDict['data']['DS'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"deltaBuiltCapacity")

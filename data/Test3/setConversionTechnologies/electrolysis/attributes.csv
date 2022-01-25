@@ -1,8 +1,7 @@
 index,attributes
-minCapacity,0.4
-maxCapacity,60
-deltaCapacity,30
-minLoad,0.1
+minBuiltCapacity,0.4
+maxBuiltCapacity,5
+minLoad,0
 maxLoad,1
 valueCapex,700000
 lifetime,10

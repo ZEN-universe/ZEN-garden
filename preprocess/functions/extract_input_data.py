@@ -173,9 +173,11 @@ class DataInput():
             PWADict[type][breakpointVariable] = breakpoints
             PWADict[type]["PWAVariables"] = [] # select only those variables that are modeled as PWA
             PWADict[type]["bounds"] = {} # save bounds of variables
+            # min and max total capacity of technology 
+            minCapacityTech,maxCapacityTech = (0,max(tech.availability.values()))
             for valueVariable in nonlinearValues:
                 if valueVariable == breakpointVariable:
-                    PWADict[type]["bounds"][valueVariable] = (tech.minCapacity,tech.maxCapacity)
+                    PWADict[type]["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
                 else:
                     # conduct linear regress
                     linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
@@ -189,14 +191,14 @@ class DataInput():
                         # model as linear function
                         PWADict[type][valueVariable] = linearRegressObject.slope
                         # save bounds
-                        PWADict[type]["bounds"][valueVariable] = (PWADict[type][valueVariable]*tech.minCapacity,PWADict[type][valueVariable]*tech.maxCapacity)
+                        PWADict[type]["bounds"][valueVariable] = (PWADict[type][valueVariable]*minCapacityTech,PWADict[type][valueVariable]*maxCapacityTech)
                     else:
                         # model as PWA function
                         PWADict[type][valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
                         PWADict[type]["PWAVariables"].append(valueVariable)
                         # save bounds
-                        _valuesBetweenBounds = [PWADict[type][valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= tech.minCapacity and breakpoint <= tech.maxCapacity]
-                        _valuesBetweenBounds.extend(list(np.interp([tech.minCapacity,tech.maxCapacity],breakpoints,PWADict[type][valueVariable])))
+                        _valuesBetweenBounds = [PWADict[type][valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= minCapacityTech and breakpoint <= maxCapacityTech]
+                        _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[type][valueVariable])))
                         PWADict[type]["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
         return PWADict
 

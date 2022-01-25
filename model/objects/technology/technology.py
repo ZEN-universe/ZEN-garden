@@ -45,8 +45,8 @@ class Technology(Element):
             if self.name in system[technologyType]:
                 _inputPath              = paths[technologyType][self.name]["folder"]
                 self.referenceCarrier   = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
-                self.minCapacity        = self.dataInput.extractAttributeData(_inputPath,"minCapacity")
-                self.maxCapacity        = self.dataInput.extractAttributeData(_inputPath,"maxCapacity")
+                self.minBuiltCapacity        = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
+                self.maxBuiltCapacity        = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
                 self.lifetime           = self.dataInput.extractAttributeData(_inputPath,"lifetime")
                 self.minLoad            = self.dataInput.extractAttributeData(_inputPath,"minLoad")
                 self.maxLoad            = self.dataInput.extractAttributeData(_inputPath,"maxLoad")
@@ -88,14 +88,14 @@ class Technology(Element):
         model = EnergySystem.getConcreteModel()
     
         # minimum capacity
-        model.minCapacity = pe.Param(
+        model.minBuiltCapacity = pe.Param(
             model.setTechnologies,
-            initialize = cls.getAttributeOfAllElements("minCapacity"),
+            initialize = cls.getAttributeOfAllElements("minBuiltCapacity"),
             doc = 'Parameter which specifies the minimum technology size that can be installed. Dimensions: setTechnologies')
         # maximum capacity
-        model.maxCapacity = pe.Param(
+        model.maxBuiltCapacity = pe.Param(
             model.setTechnologies,
-            initialize = cls.getAttributeOfAllElements("maxCapacity"),
+            initialize = cls.getAttributeOfAllElements("maxBuiltCapacity"),
             doc = 'Parameter which specifies the maximum technology size that can be installed. Dimensions: setTechnologies')
         # lifetime
         model.lifetimeTechnology = pe.Param(
@@ -125,12 +125,12 @@ class Technology(Element):
     @classmethod
     def constructVars(cls):
         """ constructs the pe.Vars of the class <Technology> """
-        def capacityBounds(model,tech, *_):
+        def capacityBounds(model,tech, loc, time):
             """ return bounds of capacity for bigM expression
             :param model: pe.ConcreteModel
             :param tech: tech index
             :return bounds: bounds of capacity"""
-            bounds = (0,model.maxCapacity[tech])
+            bounds = (0,model.availabilityTechnology[tech,loc,time])
             return(bounds)
             
         model = EnergySystem.getConcreteModel()
@@ -284,15 +284,15 @@ def constraintTechnologyAvailabilityRule(model, tech, location, time):
 
 def constraintTechnologyMinCapacityRule(model, tech, location, time):
     """ min capacity expansion of  technology."""
-    if model.minCapacity[tech] != 0:
-        return (model.minCapacity[tech] * model.installTechnology[tech, location, time] <= model.builtCapacity[tech, location, time])
+    if model.minBuiltCapacity[tech] != 0:
+        return (model.minBuiltCapacity[tech] * model.installTechnology[tech, location, time] <= model.builtCapacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyMaxCapacityRule(model, tech, location, time):
     """max capacity expansion of  technology"""
-    if model.maxCapacity[tech] != np.inf and tech not in model.setNLCapexTechs:
-        return (model.maxCapacity[tech] * model.installTechnology[tech, location, time] >= model.builtCapacity[tech, location, time])
+    if model.maxBuiltCapacity[tech] != np.inf and tech not in model.setNLCapexTechs:
+        return (model.maxBuiltCapacity[tech] * model.installTechnology[tech, location, time] >= model.builtCapacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
@@ -304,7 +304,7 @@ def constraintTechnologyLifetimeRule(model, tech, location, time):
         t_end = time + 1
 
         return (model.capacity[tech, location, time]
-                == sum(model.builtCapacity[tech,location, t] for t in range(t_start, t_end)))
+                == sum(model.builtCapacity[tech,location, previousTime] for previousTime in range(t_start, t_end)))
     else:
         return pe.Constraint.Skip
 

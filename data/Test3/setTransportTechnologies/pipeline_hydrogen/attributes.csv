@@ -1,8 +1,8 @@
 index,attributes
-minCapacity,0.1
-maxCapacity,1.00E+02
+minBuiltCapacity,0.1
+maxBuiltCapacity,1.00E+02
 minLoad,0
-maxLoad,0.9
+maxLoad,1
 lossFlow,0
 valueCapex,0
 lifetime,10
