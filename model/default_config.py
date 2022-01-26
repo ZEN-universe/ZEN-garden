@@ -38,11 +38,15 @@ analysis['subsets'] = {
     'setTechnologies': ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']
     }
 # headers in input files
-analysis['dataInputs'] = {'nameScenarios':'scenario', 'nameNodes':'node', 'nameTimeSteps':'time',
-                          'nameConversionBalance':'energy', 'nameCarrier':'carrier',
-                          'PWA':{'slope':'slope', 'intercept':'intercept', 'ubSegment':'ubSegment',
-                                 'lbSegment':'lbSegment'}
-                          }
+analysis['headerDataInputs']= {'setNodes': ['node', 'x', 'y'],
+                               'setScenarios':['scenario'],
+                               'setTimeSteps':['time'],
+                               }
+    # 'nameScenarios':'scenario', 'nameNodes':'node', 'nameTimeSteps':'time',
+    #                       'nameConversionBalance':'energy', 'nameCarrier':'carrier',
+    #                       'PWA':{'slope':'slope', 'intercept':'intercept', 'ubSegment':'ubSegment',
+    #                              'lbSegment':'lbSegment'}
+    #                       }
 # file format of input data
 analysis['fileFormat'] = 'csv'
 

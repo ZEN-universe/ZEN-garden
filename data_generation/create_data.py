@@ -1,12 +1,11 @@
 """===========================================================================================================================================================================
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
-Created:      October-2021
+Created:      January-2022
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:    This class contain auxiliary methods for the creation of a new folder of files which respect the standards of the code
+Description:  Class containing the methods for the generation of the input dataset respecting the platform's data structure.
 ==========================================================================================================================================================================="""
-
 import numpy as np
 import pandas as pd
 import os, sys
@@ -22,34 +21,20 @@ numberScenarios = 1
 numberTimeSteps = 1
  
 data = dict()
-data['mainFolder'] = 'Test'
-data['setInputCarriers'] = ['electricity']
-data['setOutputCarriers'] = ['hydrogen']
-coords = np.arange(0,81, 40)
-data['setNodes'] = {'Names': list(string.ascii_uppercase)[:9], 
-                    'XCoord': list(np.tile(coords, (3,1)).flatten()), 
-                    'YCoord': list(np.tile(coords, (3,1)).T.flatten())}
-data['setConversionTechnologies'] = ['electrolysis']
-data['setScenarios'] = list(string.ascii_lowercase)[:numberScenarios]
-data['setStorageTechnologies'] = ['carbon_storage']
-data['setTimeSteps'] = np.arange(numberTimeSteps, dtype=np.int)
-data['setTransportTechnologies'] = ['pipeline_hydrogen', 'truck_hydrogen_liquid']
+data['mainFolder'] = 'NUTS0'
+data['sourceData'] = pd.read_csv('NUTS0.csv', header=0, index_col=None)
+data['scenario'] = ['a']
+data['time'] = ['1']
+headerInSource = {'node': 'ID',
+                  'x': "('X', 'km')",
+                  'y': "('Y', 'km')",
+                  }
 
-if True:
-    Create = Create(data, analysis)
-    Create.mainFolder(data['mainFolder'])
-    Create.secondLevelFolders()
-    Create.thirdLevelFolders()
-    
-    Create.carriersInFiles()
-    Create.carriersOutFiles()
-    Create.conversionFiles()
-    Create.storageFiles()
-    Create.transportFiles()
-    
-    Create.nodesFiles()
-    Create.scenariosFiles()
-    Create.timeStepsFiles()
-    
-    Fill = Fill(data)
-    Fill.distanceMatrix()
+Create = Create(data, analysis)
+
+for name in ['Nodes', 'Scenarios', 'TimeSteps']:
+    Create.columnIndepentData(name, headerInSource)
+
+
+
+
