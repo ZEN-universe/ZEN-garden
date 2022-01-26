@@ -21,11 +21,18 @@ numberScenarios = 1
 numberTimeSteps = 1
  
 data = dict()
-data['mainFolder'] = 'NUTS0'
+data['mainFolder'] = 'NUTS2'
 data['sourceData'] = pd.read_csv('NUTS0.csv', header=0, index_col=None)
 Create = Create(data, analysis)
 
-# headerInSource:  dictionary with the columns to be picked from input file if any
+###                                                                                                                  ###
+# Data are added in the following ways:
+# 1. source data file defined in dictionary data: the script looks for the items in headerInSource among the columns
+#   of the source data file
+# 2. input data in the dictionary <data>
+# 3. Any other required input data from <analysis['headerDataInputs']> is assigned to zero
+###                                                                                                                  ###
+
 data['scenario'] = ['a']
 data['time'] = [1]
 # Nodes
@@ -38,6 +45,9 @@ Create.independentData('Scenarios', headerInSource)
 headerInSource = {}
 Create.independentData('TimeSteps', headerInSource)
 
+# compute Eucleadian matrix
+Create.distanceMatrix('eucledian')
+
 # ImportCarriers
 headerInSource = {
     'electricity': {'availabilityCarrier':"('TotalGreen_potential', 'MWh')"},
@@ -47,11 +57,78 @@ headerInSource = {
 data['importPriceCarrier_electricity'] = [1e2]
 data['availabilityCarrier_water'] = [1e9]
 
-Create.carrierDependentData('ImportCarriers', headerInSource)
+Create.indexedData('ImportCarriers', headerInSource)
 # ExportCarriers
 headerInSource = {
     'hydrogen': {'demandCarrier':"('hydrogen_demand', 'MWh')"},
     'oxygen': {}
 }
 data['importPriceCarrier_hydrogen'] = [1e2]
-Create.carrierDependentData('ExportCarriers', headerInSource)
+Create.indexedData('ExportCarriers', headerInSource)
+
+## ConversionTechnologies
+# indexed data
+headerInSource = {
+    'electrolysis': {},
+    'SMR':{}
+}
+data['availability_electrolysis'] = [1e6]
+data['availability_SMR'] = [1e6]
+Create.indexedData('ConversionTechnologies', headerInSource)
+# empty datasets
+newFiles = {
+    'attributes':{
+        'index':['minBuiltCapacity', 'maxBuiltCapacity', 'minLoad', 'maxLoad', 'lifetime',
+                 'referenceCarrier', 'inputCarrier', 'outputCarrier'],
+        'columns':['attibutes']
+                  },
+    'breakpointsPWACapex':{
+        'index':[None],
+        'columns':['capacity']
+           },
+    'breakpointsPWAConverEfficiency': {
+        'index': [None],
+        'columns': [None]
+    },
+    'nonlinearCapex': {
+        'index': [None],
+        'columns': ['capacity','capex']
+    },
+    'nonlinearConverEfficiency': {
+        'index': [None],
+        'columns': [None]
+    }
+}
+Create.newFiles('ConversionTechnologies', headerInSource, newFiles)
+
+## TransportTechnologies
+headerInSource = {
+    'pipeline_hydrogen': {},
+    'truck_hydrogen':{}
+}
+data['availability_pipeline_hydrogen'] = [1e6]
+data['availability_truck_hydrogen'] = [1e6]
+Create.indexedData('TransportTechnologies', headerInSource)
+
+# datasets based on nodes combination
+headerInSource = {
+    'pipeline_hydrogen': {},
+    'truck_hydrogen': {}
+}
+data['distanceEuclidean_pipeline_hydrogen'] = Create.eucledian_distance
+data['distanceEuclidean_truck_hydrogen'] = Create.eucledian_distance
+data['efficiencyPerDistance_pipeline_hydrogen'] = [1]
+data['efficiencyPerDistance_truck_hydrogen'] = [1]
+data['costPerDistance_pipeline_hydrogen'] = [1]
+data['costPerDistance_truck_hydrogen'] = [1]
+Create.distanceData('TransportTechnologies', headerInSource)
+
+# empty datasets
+newFiles = {
+    'attributes':{
+        'index':['minBuiltCapacity', 'maxBuiltCapacity', 'minLoad', 'maxLoad', 'lifetime',
+                 'referenceCarrier'],
+        'columns':['attibutes']
+                  },
+}
+Create.newFiles('TransportTechnologies', headerInSource, newFiles)

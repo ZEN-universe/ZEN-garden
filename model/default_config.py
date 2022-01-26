@@ -37,18 +37,16 @@ analysis['transportDistance'] = 'Euclidean'
 analysis['subsets'] = {
     'setTechnologies': ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']
     }
-# headers in input files
+# headers for the generation of input files
 analysis['headerDataInputs']= {'setNodes': ['node', 'x', 'y'],
                                'setScenarios':['scenario'],
                                'setTimeSteps':['time'],
                                'setExportCarriers':['demandCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
-                               'setImportCarriers':['availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier']
+                               'setImportCarriers':['availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
+                               'setConversionTechnologies':['availability'],
+                               'setTransportTechnologies':['availability',
+                                                           'costPerDistance', 'distanceEuclidean', 'efficiencyPerDistance'],
                                }
-    # 'nameScenarios':'scenario', 'nameNodes':'node', 'nameTimeSteps':'time',
-    #                       'nameConversionBalance':'energy', 'nameCarrier':'carrier',
-    #                       'PWA':{'slope':'slope', 'intercept':'intercept', 'ubSegment':'ubSegment',
-    #                              'lbSegment':'lbSegment'}
-    #                       }
 # file format of input data
 analysis['fileFormat'] = 'csv'
 
