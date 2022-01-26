@@ -22,7 +22,7 @@ numberTimeSteps = 1
  
 data = dict()
 data['mainFolder'] = 'NUTS2'
-data['sourceData'] = pd.read_csv('NUTS0.csv', header=0, index_col=None)
+data['sourceData'] = pd.read_csv('{}.csv'.format(data['mainFolder']), header=0, index_col=None)
 Create = Create(data, analysis)
 
 ###                                                                                                                  ###
