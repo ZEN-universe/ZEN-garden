@@ -40,7 +40,7 @@ class Create:
         except OSError:
             pass
 
-    def columnIndepentData(self, name, headerInSource):
+    def independentData(self, name, headerInSource):
 
         setName = 'set'+name
         folder = self.mainFolder+setName+'//'
@@ -51,12 +51,52 @@ class Create:
         data = pd.DataFrame()
         for header in headerNames:
             if header in self.dictionary:
-                setattr(self, setName, self.dictionary[header])
+                setattr(self, header, self.dictionary[header])
             elif header in headerInSource:
-                setattr(self, setName, self.dictionary['sourceData'].loc[:, headerInSource[header]])
+                setattr(self, header, self.dictionary['sourceData'].loc[:, headerInSource[header]].values)
             else:
-                print(f'No input {setName} - none assigned')
-                setattr(self, setName, None)
-            data[header] = getattr(self, setName)
+                print(f'No input {setName} - 0 assigned')
+                setattr(self, header, [0])
+            data[header] = getattr(self, header)
 
         data.to_csv(folder+setName+'.csv', header=True, index=None)
+
+    def carrierDependentData(self, name, headerInSource):
+
+        setName = 'set'+name
+        folder = self.mainFolder+setName+'//'
+        self.newFolder(folder)
+
+        scenarioHeader = self.analysis['headerDataInputs']['setScenarios'][0]
+        nodeHeader = self.analysis['headerDataInputs']['setNodes'][0]
+        timeHeader = self.analysis['headerDataInputs']['setTimeSteps'][0]
+
+        headerNames = self.analysis['headerDataInputs'][setName]
+        for header in headerNames:
+            for carrier in headerInSource:
+                # create carrier folder
+                folder = self.mainFolder + setName + '//' + carrier + '//'
+                self.newFolder(folder)
+                # name in fixed input dictionary
+                fixedInputKey = header+'_'+carrier
+                if fixedInputKey in self.dictionary:
+                    values = self.dictionary[fixedInputKey]
+                elif header in headerInSource[carrier]:
+                    values = self.dictionary['sourceData'].loc[:, headerInSource[carrier][header]]
+                else:
+                    print(f'No input {fixedInputKey} - 0 assigned')
+                    values = [0]
+
+                data = pd.DataFrame(columns=[scenarioHeader, timeHeader, nodeHeader, header])
+                for scenario in getattr(self, self.analysis['headerDataInputs']['setScenarios'][0]):
+                    for timeStep in getattr(self, self.analysis['headerDataInputs']['setTimeSteps'][0]):
+                        for node in getattr(self, self.analysis['headerDataInputs']['setNodes'][0]):
+                            if len(values) == 1:
+                                valuesToAdd = {scenarioHeader: scenario, timeHeader: timeStep, nodeHeader:node,
+                                               header:values[0]}
+                            else:
+                                valuesToAdd = {scenarioHeader: scenario, timeHeader: timeStep, nodeHeader:node,
+                                               header:values[list(getattr(self, nodeHeader)).index(node)]}
+                            data = data.append(valuesToAdd, ignore_index=True)
+
+                data.to_csv(folder+header+'.csv', header=True, index=None)

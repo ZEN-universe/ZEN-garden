@@ -23,18 +23,35 @@ numberTimeSteps = 1
 data = dict()
 data['mainFolder'] = 'NUTS0'
 data['sourceData'] = pd.read_csv('NUTS0.csv', header=0, index_col=None)
-data['scenario'] = ['a']
-data['time'] = ['1']
-headerInSource = {'node': 'ID',
-                  'x': "('X', 'km')",
-                  'y': "('Y', 'km')",
-                  }
-
 Create = Create(data, analysis)
 
-for name in ['Nodes', 'Scenarios', 'TimeSteps']:
-    Create.columnIndepentData(name, headerInSource)
+# headerInSource:  dictionary with the columns to be picked from input file if any
+data['scenario'] = ['a']
+data['time'] = [1]
+# Nodes
+headerInSource = {'node': 'ID', 'x': "('X', 'km')", 'y': "('Y', 'km')"}
+Create.independentData('Nodes', headerInSource)
+# Scenarios
+headerInSource = {}
+Create.independentData('Scenarios', headerInSource)
+# TimeSteps
+headerInSource = {}
+Create.independentData('TimeSteps', headerInSource)
 
+# ImportCarriers
+headerInSource = {
+    'electricity': {'availabilityCarrier':"('TotalGreen_potential', 'MWh')"},
+    'water': {},
+    'biomass': {'availabilityCarrier':"('Biomass_potential', 'MWh')"}
+    }
+data['importPriceCarrier_electricity'] = [1e2]
+data['availabilityCarrier_water'] = [1e9]
 
-
-
+Create.carrierDependentData('ImportCarriers', headerInSource)
+# ExportCarriers
+headerInSource = {
+    'hydrogen': {'demandCarrier':"('hydrogen_demand', 'MWh')"},
+    'oxygen': {}
+}
+data['importPriceCarrier_hydrogen'] = [1e2]
+Create.carrierDependentData('ExportCarriers', headerInSource)

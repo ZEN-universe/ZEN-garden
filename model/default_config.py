@@ -41,6 +41,8 @@ analysis['subsets'] = {
 analysis['headerDataInputs']= {'setNodes': ['node', 'x', 'y'],
                                'setScenarios':['scenario'],
                                'setTimeSteps':['time'],
+                               'setExportCarriers':['demandCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
+                               'setImportCarriers':['availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier']
                                }
     # 'nameScenarios':'scenario', 'nameNodes':'node', 'nameTimeSteps':'time',
     #                       'nameConversionBalance':'energy', 'nameCarrier':'carrier',
