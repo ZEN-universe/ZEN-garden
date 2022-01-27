@@ -14,14 +14,13 @@ main_directory = os.path.abspath('..//..')
 sys.path.insert(1, main_directory)
 from config import analysis
 from functions.create import Create
-from functions.fill import Fill
 
 # inputs for the creation of a the new data folder
 numberScenarios = 1
 numberTimeSteps = 1
  
 data = dict()
-data['mainFolder'] = 'NUTSO'
+data['mainFolder'] = 'NUTS2'
 data['sourceData'] = pd.read_csv('{}.csv'.format(data['mainFolder']), header=0, index_col=None)
 data['PWAData'] = pd.read_csv('PWA.csv', header=0, index_col=None)
 data['NLData'] = pd.read_csv('NL.csv', header=0, index_col=None)
@@ -191,7 +190,8 @@ data['distanceEuclidean_pipeline_hydrogen'] = Create.eucledian_distance
 data['distanceEuclidean_truck_hydrogen'] = Create.eucledian_distance
 data['efficiencyPerDistance_pipeline_hydrogen'] = [1]
 data['efficiencyPerDistance_truck_hydrogen'] = [1]
-data['costPerDistance_pipeline_hydrogen'] = [8.2*10**3] # EUR/km/MW, value fixed cost from Gabrielli et al.
+# cost per distance dependent on the way the total capex is computed: 1/2 factor to avoid accounting a connection twice
+data['costPerDistance_pipeline_hydrogen'] = [(8.2*10**3)/2] # EUR/km/MW, value fixed cost from Gabrielli et al.
 Create.distanceData('TransportTechnologies', headerInSource)
 
 # attributes
