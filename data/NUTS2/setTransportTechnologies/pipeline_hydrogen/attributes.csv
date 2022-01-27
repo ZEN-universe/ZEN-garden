@@ -1,7 +1,8 @@
-,attibutes
-minBuiltCapacity,
-maxBuiltCapacity,
-minLoad,
-maxLoad,
-lifetime,
-referenceCarrier,
+index,attributes
+minBuiltCapacity,1.6
+maxBuiltCapacity,1000000000000.0
+minLoad,0
+lifetime,438000
+costVariable,1.6e-06
+lossCoefficient,0.00012
+referenceCarrier,hydrogen

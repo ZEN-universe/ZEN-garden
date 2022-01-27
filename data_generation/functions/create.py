@@ -10,6 +10,7 @@ Description:  Collection of methods to generate dataset respecting the platform'
 import pandas as pd
 import numpy as np
 import os
+import shutil
 
 def createFolder(path, folderName):
     """
@@ -110,6 +111,35 @@ class Create:
 
                 data.to_csv(folder+header+'.csv', header=True, index=None)
 
+    def attributesDataFrame(self, name, inputDataFrame):
+
+        setName = 'set' + name
+        folder = self.mainFolder + setName + '//'
+        self.newFolder(folder)
+
+        for element in inputDataFrame:
+            folder = self.mainFolder + setName + '//' + element + '//'
+
+            data = pd.DataFrame(list(inputDataFrame[element].items()), columns=['index', 'attributes'], index=None)
+            data.to_csv(folder + 'attributes' + '.csv', header=True, index=None)
+
+    def generalDataFrame(self, name, inputDataFrame):
+
+        setName = 'set' + name
+        folder = self.mainFolder + setName + '//'
+        self.newFolder(folder)
+
+        for element in inputDataFrame:
+            folder = self.mainFolder + setName + '//' + element + '//'
+
+            for attribute in inputDataFrame[element]:
+
+                data = pd.DataFrame(inputDataFrame[element][attribute]['values'],
+                                    columns=inputDataFrame[element][attribute]['columns'],
+                                    index=None
+                                    )
+                data.to_csv(folder + attribute + '.csv', header=True, index=None)
+
     def distanceData(self, name, headerInSource):
         """
         Method to fill the datasets of the parameters related to the distance between two nodes.
@@ -147,22 +177,6 @@ class Create:
                         data.loc[:,:] = values
 
                     data.to_csv(folder+header+'.csv')
-
-    def newFiles(self, name, headerInSource, newFiles):
-        """
-        Method to generate new empty files with indexqes and columns specified in the input dictionary.
-        """
-
-        setName = 'set'+name
-        folder = self.mainFolder+setName+'//'
-        self.newFolder(folder)
-
-        for element in headerInSource:
-            folder = self.mainFolder + setName + '//' + element + '//'
-            for fileName in newFiles:
-                data = pd.DataFrame(columns = newFiles[fileName]['columns'],
-                                    index = newFiles[fileName]['index'])
-                data.to_csv(folder + fileName + '.csv')
 
     def distanceMatrix(self, distanceType='eucledian'):
         """

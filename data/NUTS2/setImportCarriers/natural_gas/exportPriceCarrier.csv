@@ -1,4 +1,4 @@
-scenario,time,node,importPriceCarrier
+scenario,time,node,exportPriceCarrier
 a,1,AL01,0
 a,1,ALO2,0
 a,1,ALO3,0

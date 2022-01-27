@@ -21,8 +21,10 @@ numberScenarios = 1
 numberTimeSteps = 1
  
 data = dict()
-data['mainFolder'] = 'NUTS2'
+data['mainFolder'] = 'NUTSO'
 data['sourceData'] = pd.read_csv('{}.csv'.format(data['mainFolder']), header=0, index_col=None)
+data['PWAData'] = pd.read_csv('PWA.csv', header=0, index_col=None)
+data['NLData'] = pd.read_csv('NL.csv', header=0, index_col=None)
 Create = Create(data, analysis)
 
 ###                                                                                                                  ###
@@ -35,36 +37,68 @@ Create = Create(data, analysis)
 
 data['scenario'] = ['a']
 data['time'] = [1]
-# Nodes
+## Nodes
 headerInSource = {'node': 'ID', 'x': "('X', 'km')", 'y': "('Y', 'km')"}
 Create.independentData('Nodes', headerInSource)
-# Scenarios
+## Scenarios
 headerInSource = {}
 Create.independentData('Scenarios', headerInSource)
-# TimeSteps
+## TimeSteps
 headerInSource = {}
 Create.independentData('TimeSteps', headerInSource)
 
-# compute Eucleadian matrix
+# compute Euclidean matrix
 Create.distanceMatrix('eucledian')
 
-# ImportCarriers
+## ImportCarriers
+# Inputs from file
 headerInSource = {
     'electricity': {'availabilityCarrier':"('TotalGreen_potential', 'MWh')"},
     'water': {},
-    'biomass': {'availabilityCarrier':"('Biomass_potential', 'MWh')"}
+    'biomass': {'availabilityCarrier':"('Biomass_potential', 'MWh')"},
+    'natural_gas': {}
     }
-data['importPriceCarrier_electricity'] = [1e2]
-data['availabilityCarrier_water'] = [1e9]
-
+# Manual inputs
+# biomass
+data['importPriceCarrier_biomass'] = [0.07*1000] # EUR/MWh, value from Gabrielli et al. - dry biomass
+# electricity
+data['exportPriceCarrier_electricity'] = [0.05*1000] # EUR/MWh, value from Gabrielli et al.
+data['importPriceCarrier_electricity'] = [0.12*1000] # EUR/MWh, value from Gabrielli et al.
+# natural gas
+data['importPriceCarrier_natural_gas'] = [0.06*1000] # EUR/MWh, value from Gabrielli et al.
+# water
+data['availabilityCarrier_water'] = [1e12] # unlimited availability
 Create.indexedData('ImportCarriers', headerInSource)
-# ExportCarriers
+
+# attributes - customised dataframe
+inputDataFrame = {
+    'biomass':
+        {'carbon_intensity': 13/1000 # tonCO2/MWh, value from Gabrielli et al. - dry biomass
+         },
+    'electricity':
+        {'carbon_intensity': 127/1000  # tonCO2/MWh, value from Gabrielli et al.
+         },
+    'natural_gas':
+        {'carbon_intensity': 237/1000  # tonCO2/MWh, value from Gabrielli et al.
+         },
+}
+Create.attributesDataFrame('ImportCarriers', inputDataFrame)
+
+## ExportCarriers
 headerInSource = {
     'hydrogen': {'demandCarrier':"('hydrogen_demand', 'MWh')"},
     'oxygen': {}
 }
-data['importPriceCarrier_hydrogen'] = [1e2]
 Create.indexedData('ExportCarriers', headerInSource)
+inputDataFrame = {
+    'oxygen':
+        {'carbon_intensity': 0
+         },
+    'hydrogen':
+        {'carbon_intensity': 0
+         },
+}
+Create.attributesDataFrame('ExportCarriers', inputDataFrame)
 
 ## ConversionTechnologies
 # indexed data
@@ -72,42 +106,80 @@ headerInSource = {
     'electrolysis': {},
     'SMR':{}
 }
-data['availability_electrolysis'] = [1e6]
-data['availability_SMR'] = [1e6]
+data['availability_electrolysis'] = [1e5]   # MW, value from Gabrielli et al
+data['availability_SMR'] = [1e5]            # MW, value from Gabrielli et al
 Create.indexedData('ConversionTechnologies', headerInSource)
-# empty datasets
-newFiles = {
-    'attributes':{
-        'index':['minBuiltCapacity', 'maxBuiltCapacity', 'minLoad', 'maxLoad', 'lifetime',
-                 'referenceCarrier', 'inputCarrier', 'outputCarrier'],
-        'columns':['attibutes']
-                  },
-    'breakpointsPWACapex':{
-        'index':[None],
-        'columns':['capacity']
-           },
-    'breakpointsPWAConverEfficiency': {
-        'index': [None],
-        'columns': [None]
-    },
-    'nonlinearCapex': {
-        'index': [None],
-        'columns': ['capacity','capex']
-    },
-    'nonlinearConverEfficiency': {
-        'index': [None],
-        'columns': [None]
-    }
+# attributes
+inputDataFrame = {
+    'electrolysis': {
+        'minBuiltCapacity':0,
+        'maxBuiltCapacity':1,
+        'minLoad':0.07,
+        'lifetime':8760*10, # h, value from Gabrielli et al
+        'costVariable':10*10**6,
+        'referenceCarrier':'hydrogen',
+        'inputCarrier':'electricity water',
+        'outputCarrier':'hydrogen oxygen'},
+    'SMR': {
+        'minBuiltCapacity':1, # MW, value from Gabrielli et al
+        'maxBuiltCapacity':1,
+        'lifetime': 8760*20, # h, value from Gabrielli et al
+        'minLoad':0.1,
+        'maxLoad':1,
+     'referenceCarrier':'hydrogen', 'inputCarrier':'natural_gas', 'outputCarrier':'hydrogen carbon_dioxide'},
 }
-Create.newFiles('ConversionTechnologies', headerInSource, newFiles)
+Create.attributesDataFrame('ConversionTechnologies', inputDataFrame)
+
+# files variable approximation
+inputDataFrame = {
+    'electrolysis': {
+        'breakpointsPWACapex':{
+            'columns':['capacity'],
+            'values':data['PWAData']['breakpoints_capex_electrolysis'].dropna().values
+        },
+        'breakpointsPWAConverEfficiency':{
+            'columns':['hydrogen'],
+            'values':data['PWAData']['breakpoints_efficiency_electrolysis'].dropna().values
+        },
+        'nonlinearCapex':{
+            'columns':['capacity', 'capex'],
+            'values':data['NLData'][['capacity_capex_electrolysis', 'capex_capex_electrolysis']].dropna().values
+        },
+        'nonlinearConverEfficiency':{
+            'columns':['hydrogen','oxygen','electricity', 'water'],
+            'values':data['NLData'][['hydrogen_efficiency_electrolysis', 'hydrogen_efficiency_electrolysis',
+                                     'electricity_efficiency_electrolysis', 'water_efficiency_electrolysis']].dropna().values
+        }
+    },
+    'SMR': {
+        'breakpointsPWACapex':{
+            'columns':['capacity'],
+            'values':data['PWAData']['breakpoints_capex_SMR'].dropna().values
+        },
+        'breakpointsPWAConverEfficiency':{
+            'columns':['hydrogen'],
+            'values':data['PWAData']['breakpoints_efficiency_SMR'].dropna().values
+        },
+        'nonlinearCapex':{
+            'columns':['capacity', 'capex'],
+            'values':data['NLData'][['capacity_capex_SMR', 'capex_capex_SMR']].dropna().values
+        },
+        'nonlinearConverEfficiency':{
+            'columns':['hydrogen','natural_gas','carbon_dioxide',],
+            'values':data['NLData'][['hydrogen_efficiency_SMR', 'natural_gas_efficiency_SMR',
+                                     'carbon_dioxide_efficiency_SMR']].dropna().values
+        }
+    },
+}
+Create.generalDataFrame('ConversionTechnologies', inputDataFrame)
 
 ## TransportTechnologies
 headerInSource = {
     'pipeline_hydrogen': {},
     'truck_hydrogen':{}
 }
-data['availability_pipeline_hydrogen'] = [1e6]
-data['availability_truck_hydrogen'] = [1e6]
+data['availability_pipeline_hydrogen'] = [85] # MW, value from Gabrielli et al.
+data['availability_truck_hydrogen'] = [38] # MW, value from Gabrielli et al.
 Create.indexedData('TransportTechnologies', headerInSource)
 
 # datasets based on nodes combination
@@ -119,16 +191,28 @@ data['distanceEuclidean_pipeline_hydrogen'] = Create.eucledian_distance
 data['distanceEuclidean_truck_hydrogen'] = Create.eucledian_distance
 data['efficiencyPerDistance_pipeline_hydrogen'] = [1]
 data['efficiencyPerDistance_truck_hydrogen'] = [1]
-data['costPerDistance_pipeline_hydrogen'] = [1]
-data['costPerDistance_truck_hydrogen'] = [1]
+data['costPerDistance_pipeline_hydrogen'] = [8.2*10**3] # EUR/km/MW, value fixed cost from Gabrielli et al.
 Create.distanceData('TransportTechnologies', headerInSource)
 
-# empty datasets
-newFiles = {
-    'attributes':{
-        'index':['minBuiltCapacity', 'maxBuiltCapacity', 'minLoad', 'maxLoad', 'lifetime',
-                 'referenceCarrier'],
-        'columns':['attibutes']
-                  },
+# attributes
+inputDataFrame = {
+    'pipeline_hydrogen': {
+        'minBuiltCapacity':1.6, # MW, value from Gabrielli et al.
+        'maxBuiltCapacity':1e12,
+        'minLoad':0,
+        'lifetime':8760*50, # h, value from Gabrielli et al.
+        'costVariable':1.6*10**(-6), # EUR/MW, value from Gabrielli et al.
+        'lossCoefficient':0.00012, # 1/km, value from Gabrielli et al.
+        'referenceCarrier':'hydrogen'},
+    'truck_hydrogen': {
+        'minBuiltCapacity': 1.6,  # MW, value from Gabrielli et al.
+        'maxBuiltCapacity': 1e12,
+        'minLoad': 0,
+        'lifetime': 8760*10,  # h, value from Gabrielli et al.
+        'carbon_intensity': 4.2*10**(-6),  # tonCO2eq/km/MWh, value from Gabrielli et al.
+        'costVariable':1.6*10**(-5),  # EUR/MW, value from Gabrielli et al.
+        'costFixed': 13*10**3,  # EUR/MW, value from Gabrielli et al.
+        'lossCoefficient': 0.00012,  # 1/km, value from Gabrielli et al.
+        'referenceCarrier': 'hydrogen'},
 }
-Create.newFiles('TransportTechnologies', headerInSource, newFiles)
+Create.attributesDataFrame('TransportTechnologies', inputDataFrame)
