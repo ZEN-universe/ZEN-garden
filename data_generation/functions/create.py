@@ -68,7 +68,7 @@ class Create:
 
         data.to_csv(folder+setName+'.csv', header=True, index=None)
 
-    def indexedData(self, name, headerInSource):
+    def nodalData(self, name, headerInSource):
         """
         Method to create dataframe composed by a set of columns which determine the index of the last column.
         """
@@ -80,8 +80,7 @@ class Create:
         nodeHeader = self.analysis['headerDataInputs']['setNodes'][0]
         timeHeader = self.analysis['headerDataInputs']['setTimeSteps'][0]
 
-        # list of file names also appearing in the column of the file - exclude parameters related to a distance
-        headerNames = [name for name in self.analysis['headerDataInputs'][setName] if 'distance' not in name.lower()]
+        headerNames = self.analysis['headerDataInputs'][setName]
         for header in headerNames:
             for element in headerInSource:
                 # create subfolder
@@ -108,7 +107,6 @@ class Create:
                                 valuesToAdd = {scenarioHeader: scenario, timeHeader: timeStep, nodeHeader:node,
                                                header:values[list(getattr(self, nodeHeader)).index(node)]}
                             data = data.append(valuesToAdd, ignore_index=True)
-
                 data.to_csv(folder+header+'.csv', header=True, index=None)
 
     def attributesDataFrame(self, name, inputDataFrame):
@@ -140,7 +138,7 @@ class Create:
                                     )
                 data.to_csv(folder + attribute + '.csv', header=True, index=None)
 
-    def distanceData(self, name, headerInSource):
+    def edgesData(self, name, headerInSource):
         """
         Method to fill the datasets of the parameters related to the distance between two nodes.
         """
@@ -154,8 +152,8 @@ class Create:
             folder = self.mainFolder + setName + '//' + element + '//'
             data = pd.DataFrame(columns=nodes, index=nodes)
 
-            # list of file names also appearing in the column of the file - consider only parameters related to a distance
-            headerNames = [name for name in self.analysis['headerDataInputs'][setName] if 'distance' in name.lower()]
+            # list of file names also appearing in the column of the file
+            headerNames = self.analysis['headerDataInputs'][setName]
             for header in headerNames:
                 for element in headerInSource:
                     # create subfolder
@@ -176,9 +174,10 @@ class Create:
                     else:
                         data.loc[:,:] = values
 
+                    data.index.name = self.analysis['headerDataInputs']['setNodes'][0]
                     data.to_csv(folder+header+'.csv')
 
-    def distanceMatrix(self, distanceType='eucledian'):
+    def distanceMatrix(self, distanceType='euclidean'):
         """
         Compute a matrix containing the distance between any two points in the domain based on the Euclidean distance
         """
@@ -199,7 +198,7 @@ class Create:
                 P0 = (xArr[idx0], yArr[idx0])
                 P1 = (xArr[idx1], yArr[idx1])
 
-                if distanceType == 'eucledian':
+                if distanceType == 'euclidean':
                     dist[idx0, idx1] = f_eucl_dist(P0, P1)
                 else:
                     raise "Distance type not implemented"

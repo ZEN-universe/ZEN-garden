@@ -38,7 +38,7 @@ class TransportTechnology(Technology):
         super().storeInputData()
         # get system information
         paths       = EnergySystem.getPaths()   
-        indexNames  = EnergySystem.getAnalysis()['dataInputs']
+        indexNames  = {indexName: EnergySystem.getAnalysis() ['headerDataInputs'][indexName][0] for indexName in ['setNodes', 'setTimeSteps', 'setScenarios']}
 
         # set attributes of technology
         _inputPath              = paths["setTransportTechnologies"][self.name]["folder"]
@@ -46,10 +46,10 @@ class TransportTechnology(Technology):
         # self.maxFlow            = self.dataInput.extractAttributeData(_inputPath,"maxFlow")
         self.lossFlow           = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
         # set attributes of transport technology
-        self.availability       = self.dataInput.extractTransportInputData(_inputPath,"availability",[indexNames["nameTimeSteps"]])
+        self.availability       = self.dataInput.extractTransportInputData(_inputPath,"availability",[indexNames["setTimeSteps"]])
         # TODO calculate for non Euclidean distance
         self.distance           = self.dataInput.extractTransportInputData(_inputPath,"distanceEuclidean")
-        self.costPerDistance    = self.dataInput.extractTransportInputData(_inputPath,"costPerDistance",[indexNames["nameTimeSteps"]])
+        self.costPerDistance    = self.dataInput.extractTransportInputData(_inputPath,"costPerDistance",[indexNames["setTimeSteps"]])
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod

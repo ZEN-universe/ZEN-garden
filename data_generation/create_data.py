@@ -15,7 +15,7 @@ sys.path.insert(1, main_directory)
 from config import analysis
 from functions.create import Create
 
-# inputs for the creation of a the new data folder
+# inputs for the creation of the new data folder
 numberScenarios = 1
 numberTimeSteps = 1
  
@@ -35,29 +35,31 @@ Create = Create(data, analysis)
 ###                                                                                                                  ###
 
 data['scenario'] = ['a']
-data['time'] = [1]
-## Nodes
+data['time'] = [0]
+### Nodes
 headerInSource = {'node': 'ID', 'x': "('X', 'km')", 'y': "('Y', 'km')"}
 Create.independentData('Nodes', headerInSource)
-## Scenarios
+### Scenarios
 headerInSource = {}
 Create.independentData('Scenarios', headerInSource)
-## TimeSteps
+### TimeSteps
 headerInSource = {}
 Create.independentData('TimeSteps', headerInSource)
 
 # compute Euclidean matrix
-Create.distanceMatrix('eucledian')
+Create.distanceMatrix('euclidean')
 
-## ImportCarriers
+### Carriers
 # Inputs from file
 headerInSource = {
     'electricity': {'availabilityCarrier':"('TotalGreen_potential', 'MWh')"},
     'water': {},
     'biomass': {'availabilityCarrier':"('Biomass_potential', 'MWh')"},
-    'natural_gas': {}
+    'natural_gas': {},
+    'hydrogen': {'demandCarrier': "('hydrogen_demand', 'MWh')"},
+    'oxygen': {}
     }
-# Manual inputs
+## Manual inputs
 # biomass
 data['importPriceCarrier_biomass'] = [0.07*1000] # EUR/MWh, value from Gabrielli et al. - dry biomass
 # electricity
@@ -67,12 +69,13 @@ data['importPriceCarrier_electricity'] = [0.12*1000] # EUR/MWh, value from Gabri
 data['importPriceCarrier_natural_gas'] = [0.06*1000] # EUR/MWh, value from Gabrielli et al.
 # water
 data['availabilityCarrier_water'] = [1e12] # unlimited availability
-Create.indexedData('ImportCarriers', headerInSource)
+## create datasets
+Create.nodalData('Carriers', headerInSource)
 
-# attributes - customised dataframe
+## attributes - customised dataframe
 inputDataFrame = {
     'biomass':
-        {'carbon_intensity': 13/1000 # tonCO2/MWh, value from Gabrielli et al. - dry biomass
+        {'carbon_intensity': 13/1000   # tonCO2/MWh, value from Gabrielli et al. - dry biomass
          },
     'electricity':
         {'carbon_intensity': 127/1000  # tonCO2/MWh, value from Gabrielli et al.
@@ -80,16 +83,6 @@ inputDataFrame = {
     'natural_gas':
         {'carbon_intensity': 237/1000  # tonCO2/MWh, value from Gabrielli et al.
          },
-}
-Create.attributesDataFrame('ImportCarriers', inputDataFrame)
-
-## ExportCarriers
-headerInSource = {
-    'hydrogen': {'demandCarrier':"('hydrogen_demand', 'MWh')"},
-    'oxygen': {}
-}
-Create.indexedData('ExportCarriers', headerInSource)
-inputDataFrame = {
     'oxygen':
         {'carbon_intensity': 0
          },
@@ -97,17 +90,18 @@ inputDataFrame = {
         {'carbon_intensity': 0
          },
 }
-Create.attributesDataFrame('ExportCarriers', inputDataFrame)
+## create datasets
+Create.attributesDataFrame('Carriers', inputDataFrame)
 
 ## ConversionTechnologies
-# indexed data
+# nodal data
 headerInSource = {
     'electrolysis': {},
     'SMR':{}
 }
 data['availability_electrolysis'] = [1e5]   # MW, value from Gabrielli et al
 data['availability_SMR'] = [1e5]            # MW, value from Gabrielli et al
-Create.indexedData('ConversionTechnologies', headerInSource)
+Create.nodalData('ConversionTechnologies', headerInSource)
 # attributes
 inputDataFrame = {
     'electrolysis': {
@@ -173,26 +167,20 @@ inputDataFrame = {
 Create.generalDataFrame('ConversionTechnologies', inputDataFrame)
 
 ## TransportTechnologies
-headerInSource = {
-    'pipeline_hydrogen': {},
-    'truck_hydrogen':{}
-}
-data['availability_pipeline_hydrogen'] = [85] # MW, value from Gabrielli et al.
-data['availability_truck_hydrogen'] = [38] # MW, value from Gabrielli et al.
-Create.indexedData('TransportTechnologies', headerInSource)
-
 # datasets based on nodes combination
 headerInSource = {
     'pipeline_hydrogen': {},
     'truck_hydrogen': {}
 }
+data['availability_pipeline_hydrogen'] = [85] # MW, value from Gabrielli et al.
+data['availability_truck_hydrogen'] = [38] # MW, value from Gabrielli et al.
 data['distanceEuclidean_pipeline_hydrogen'] = Create.eucledian_distance
 data['distanceEuclidean_truck_hydrogen'] = Create.eucledian_distance
 data['efficiencyPerDistance_pipeline_hydrogen'] = [1]
 data['efficiencyPerDistance_truck_hydrogen'] = [1]
 # cost per distance dependent on the way the total capex is computed: 1/2 factor to avoid accounting a connection twice
 data['costPerDistance_pipeline_hydrogen'] = [(8.2*10**3)/2] # EUR/km/MW, value fixed cost from Gabrielli et al.
-Create.distanceData('TransportTechnologies', headerInSource)
+Create.edgesData('TransportTechnologies', headerInSource)
 
 # attributes
 inputDataFrame = {
@@ -202,7 +190,7 @@ inputDataFrame = {
         'minLoad':0,
         'lifetime':8760*50, # h, value from Gabrielli et al.
         'costVariable':1.6*10**(-6), # EUR/MW, value from Gabrielli et al.
-        'lossCoefficient':0.00012, # 1/km, value from Gabrielli et al.
+        'lossFlow':0.00012, # 1/km, value from Gabrielli et al.
         'referenceCarrier':'hydrogen'},
     'truck_hydrogen': {
         'minBuiltCapacity': 1.6,  # MW, value from Gabrielli et al.
@@ -212,7 +200,7 @@ inputDataFrame = {
         'carbon_intensity': 4.2*10**(-6),  # tonCO2eq/km/MWh, value from Gabrielli et al.
         'costVariable':1.6*10**(-5),  # EUR/MW, value from Gabrielli et al.
         'costFixed': 13*10**3,  # EUR/MW, value from Gabrielli et al.
-        'lossCoefficient': 0.00012,  # 1/km, value from Gabrielli et al.
+        'lossFlow': 0.00012,  # 1/km, value from Gabrielli et al.
         'referenceCarrier': 'hydrogen'},
 }
 Create.attributesDataFrame('TransportTechnologies', inputDataFrame)

@@ -35,18 +35,17 @@ analysis['discountRate'] = 0.06
 analysis['transportDistance'] = 'Euclidean'
 # dictionary with subsets related to set
 analysis['subsets'] = {
-    'setTechnologies': ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']
+    'setTechnologies': ['setConversionTechnologies', 'setTransportTechnologies']
     }
 # headers for the generation of input files
 analysis['headerDataInputs']= {'setNodes': ['node', 'x', 'y'],
                                'setScenarios':['scenario'],
                                'setTimeSteps':['time'],
-                               'setExportCarriers':['demandCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
-                               'setImportCarriers':['availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
+                               'setCarriers':['demandCarrier', 'availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
                                'setConversionTechnologies':['availability'],
-                               'setTransportTechnologies':['availability',
-                                                           'costPerDistance', 'distanceEuclidean', 'efficiencyPerDistance'],
+                               'setTransportTechnologies':['availability', 'costPerDistance', 'distanceEuclidean', 'efficiencyPerDistance'],
                                }
+
 # file format of input data
 analysis['fileFormat'] = 'csv'
 

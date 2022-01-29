@@ -18,8 +18,8 @@ solver = default_config.solver
 analysis['sense']
 
 ## Analysis - settings update compared to default values
-analysis['timeHorizon'] = 1                                                      
-analysis['spatialResolution'] = 'Test3'
+analysis['timeHorizon'] = 1
+analysis['spatialResolution'] = 'NUTS2'
 analysis['modelFormulation'] = 'HSC'
 analysis['objective'] = 'TotalCost'
 # definition of the approximation
@@ -28,13 +28,13 @@ analysis['nonlinearTechnologyApproximation'] = {'Capex': ['electrolysis'], 'Conv
 analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
 
 ## System - settings update compared to default values
-system['setCarriers'] = ['electricity',"water",'hydrogen',"oxygen"]
+system['setCarriers'] = ['electricity','hydrogen','water', 'oxygen']
 system['setStorageTechnologies'] = []
 system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setConversionTechnologies'] = ['electrolysis']
 system['setScenarios'] = 'a'
-system['setTimeSteps'] = [0,1]
-system['setNodes'] = list(string.ascii_uppercase[:3]) #TODO: define proper nomenclature for nodes
+system['setTimeSteps'] = [0]
+system['setNodes'] = ['BE10', 'BE24', 'BE31']
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01

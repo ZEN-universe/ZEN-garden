@@ -31,7 +31,7 @@ class DataInput():
         :return dataDict: dictionary with attribute values """
         # get system attribute
         fileFormat  = self.analysis["fileFormat"]
-        indexNames  = self.analysis['dataInputs']
+        indexNames  = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in ['setNodes', 'setTimeSteps', 'setScenarios']}
         system      = self.system
         # select data
         fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1]==fileFormat)]
@@ -43,8 +43,8 @@ class DataInput():
             dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None) 
             break 
         # select and drop scenario
-        if indexNames["nameScenarios"] in dfInput.columns:
-            dfInput = dfInput[dfInput[indexNames["nameScenarios"]]==system['setScenarios']].drop(indexNames["nameScenarios"],axis=1)
+        if indexNames["setScenarios"] in dfInput.columns:
+            dfInput = dfInput[dfInput[indexNames["setScenarios"]]==system['setScenarios']].drop(indexNames["setScenarios"],axis=1)
         # set index by indexSets
         assert set(indexSets).intersection(set(dfInput.columns)) == set(indexSets), f"requested index sets {set(indexSets) - set(indexSets).intersection(set(dfInput.columns))} are missing from input file for {fileName}"
         dfInput = dfInput.set_index(indexSets)
@@ -53,7 +53,7 @@ class DataInput():
         for index in indexSets:
             for indexName in indexNames:
                 if index == indexNames[indexName]:
-                    indexList.append(system[indexName.replace("name","set")])
+                    indexList.append(system[indexName])
         # create pd.MultiIndex and select data
         indexMultiIndex = pd.MultiIndex.from_product(indexList)
         if column:
@@ -76,7 +76,7 @@ class DataInput():
         :return dataDict: dictionary with attribute values  """
         # get system attribute
         fileFormat  = self.analysis["fileFormat"]
-        indexNames  = self.analysis['dataInputs']
+        indexNames  = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in ['setNodes', 'setTimeSteps', 'setScenarios']}
         system      = self.system
         
         # select data
@@ -86,7 +86,7 @@ class DataInput():
             if len(fileNames) > 1 and fileName != manualFileName:
                 continue
             # table attributes                     
-            dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None).set_index("node")
+            dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None).set_index(indexNames['setNodes'])
             break 
         # select indizes
         if indexSets:
@@ -94,7 +94,7 @@ class DataInput():
             for index in indexSets:
                 for indexName in indexNames:
                     if index == indexNames[indexName]:
-                        indexList.append(system[indexName.replace("name","set")])
+                        indexList.append(system[indexName])
             indexMultiIndex = pd.MultiIndex.from_product(indexList)
         else:
             indexMultiIndex = self.energySystem.setEdges
