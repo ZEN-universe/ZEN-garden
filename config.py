@@ -18,7 +18,6 @@ solver = default_config.solver
 analysis['sense']
 
 ## Analysis - settings update compared to default values
-analysis['timeHorizon'] = 1
 analysis['spatialResolution'] = 'NUTS2'
 analysis['modelFormulation'] = 'HSC'
 analysis['objective'] = 'TotalCost'
@@ -34,8 +33,10 @@ system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setConversionTechnologies'] = ['electrolysis']
 system['setScenarios'] = 'a'
 system['setTimeSteps'] = [0]
-system['setNodes'] = ['BE10', 'BE24', 'BE31']
+system['setNodes'] = ['BE10', 'BE24', 'BE31'] # for zero demand: 'BE21', 'BE23', 'BE24'
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01
 solver['model'] = 'MINLP'
+solver['verbosity'] = False
+solver['performanceCheck']['printDeltaIteration'] = 50

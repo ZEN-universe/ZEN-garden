@@ -43,5 +43,5 @@ elif config.solver['model'] == 'MINLP':
     master.solveMINLP(config.solver)
 
 # EVALUATE RESULTS
-# evaluation = Postprocess(model, prepare.pyoDict, modelName = 'test')
+# evaluation = Postprocess(model, modelName = 'test')
 # print(evaluation)

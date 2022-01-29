@@ -42,6 +42,8 @@ class Solutions:
         self.matrixConstruction()
         # initialize solution archives and the objective function array
         self.initializeSA()
+        # define penalty objective function based on sense
+        self.definePenalty()
 
     def solutionSets(self, step=''):
         """modify values in the solution archive either as random assignment or based on pdf in the solution domain.
@@ -70,6 +72,18 @@ class Solutions:
         omega = self.gaussRankingWeights()
         # discrete probability distribution over the k solutions in archive
         self.probability = omega/omega.sum()
+
+    def definePenalty(self):
+        """define the value of penalty if the objective function in the case of infeasibility.
+        Currently death penalty method.
+        :param: analysis
+        :return: self.penalty
+        """
+
+        if self.object.analysis['sense'] == 'minimize':
+            self.penalty = np.inf
+        elif self.analysis['sense'] == 'maximize':
+            self.penalty = -np.inf
 
     def gaussRankingWeights(self):
         """
@@ -169,11 +183,15 @@ class Solutions:
         """
 
         # get the objective function value from the model instance and assign it to the array of the solution archive
-        if step == '':
-            self.f[solutionIndex] = pe.value(instance.objective)
+        try:
+            valueObjectiveFunction = pe.value(instance.objective)
+        except:
+            valueObjectiveFunction = self.penalty
 
+        if step == '':
+            self.f[solutionIndex] = valueObjectiveFunction
         elif step == 'new':
-            self.f_new[solutionIndex] = pe.value(instance.objective)
+            self.f_new[solutionIndex] = valueObjectiveFunction
 
     def rank(self, step):
         """method to rank the solutions according to the value of the objective function.

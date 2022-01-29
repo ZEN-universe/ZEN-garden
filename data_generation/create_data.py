@@ -106,7 +106,7 @@ Create.nodalData('ConversionTechnologies', headerInSource)
 inputDataFrame = {
     'electrolysis': {
         'minBuiltCapacity':0,
-        'maxBuiltCapacity':1,
+        'maxBuiltCapacity':data['NLData'][['capacity_capex_electrolysis']].dropna().values[-1][0],
         'minLoad':0.07,
         'lifetime':8760*10, # h, value from Gabrielli et al
         'costVariable':10*10**6,
