@@ -174,7 +174,7 @@ class DataInput():
             PWADict[type]["PWAVariables"] = [] # select only those variables that are modeled as PWA
             PWADict[type]["bounds"] = {} # save bounds of variables
             # min and max total capacity of technology 
-            minCapacityTech,maxCapacityTech = (0,max(tech.availability.values()))
+            minCapacityTech,maxCapacityTech = (0,min(max(tech.availability.values()),max(breakpoints)))
             for valueVariable in nonlinearValues:
                 if valueVariable == breakpointVariable:
                     PWADict[type]["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)

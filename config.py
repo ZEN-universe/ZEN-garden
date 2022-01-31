@@ -18,7 +18,7 @@ solver = default_config.solver
 analysis['sense']
 
 ## Analysis - settings update compared to default values
-analysis['spatialResolution'] = 'NUTS2'
+analysis['spatialResolution'] = 'NUTS0'
 analysis['modelFormulation'] = 'HSC'
 analysis['objective'] = 'TotalCost'
 # definition of the approximation
@@ -33,10 +33,13 @@ system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setConversionTechnologies'] = ['electrolysis']
 system['setScenarios'] = 'a'
 system['setTimeSteps'] = [0]
-system['setNodes'] = ['BE21', 'BE23', 'BE24'] # for zero demand: 'BE10', 'BE24', 'BE31'
+if analysis['spatialResolution'] == 'NUTS0':
+    system['setNodes'] = ['DE', 'AT', 'CH'] 
+elif analysis['spatialResolution'] == 'NUTS2':
+    system['setNodes'] = ['BE21', 'BE23', 'BE24'] # for zero demand: 'BE10', 'BE24', 'BE31'
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01
-solver['model'] = 'MINLP'
-solver['verbosity'] = False
+solver['model'] = 'MILP'
+solver['verbosity'] = True
 solver['performanceCheck']['printDeltaIteration'] = 50

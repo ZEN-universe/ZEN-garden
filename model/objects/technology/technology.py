@@ -129,7 +129,12 @@ class Technology(Element):
             :param model: pe.ConcreteModel
             :param tech: tech index
             :return bounds: bounds of capacity"""
-            bounds = (0,model.availabilityTechnology[tech,loc,time])
+            ### TODO: if existing capacity, add existing capacity
+            existingCapacity = 0
+            maxBuiltCapacity = len(model.setTimeSteps)*model.maxBuiltCapacity[tech]
+            maxAvailabilityTechnology = model.availabilityTechnology[tech,loc,time]
+            boundCapacity = min(maxBuiltCapacity + existingCapacity,maxAvailabilityTechnology)
+            bounds = (0,boundCapacity)
             return(bounds)
             
         model = EnergySystem.getConcreteModel()
