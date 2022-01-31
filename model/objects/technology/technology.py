@@ -49,7 +49,6 @@ class Technology(Element):
                 self.maxBuiltCapacity        = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
                 self.lifetime           = self.dataInput.extractAttributeData(_inputPath,"lifetime")
                 self.minLoad            = self.dataInput.extractAttributeData(_inputPath,"minLoad")
-                self.maxLoad            = self.dataInput.extractAttributeData(_inputPath,"maxLoad")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
@@ -102,7 +101,7 @@ class Technology(Element):
             model.setTechnologies,
             initialize = cls.getAttributeOfAllElements("lifetime"),
             doc = 'Parameter which specifies the lifetime of technology. Dimensions: setTechnologies')
-        # availability of  technologies
+        # availability of technologies
         model.availabilityTechnology = pe.Param(
             model.setTechnologyLocation,
             model.setTimeSteps,
@@ -207,13 +206,6 @@ class Technology(Element):
         model.constraintCapexTotal = pe.Constraint(
             rule = constraintCapexTotalRule,
             doc = 'total capex of all technology that can be installed.'
-        )
-        # maximum load 
-        model.constraintMaxLoad = pe.Constraint(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
-            rule = constraintMaxLoadRule,
-            doc = 'maximum load of technology is limited by the installed capacity. \n\t Dimensions: setTechnologyLocation, setTimeSteps'
         )
         # disjunct if technology is on
         model.disjunctOnTechnology = pgdp.Disjunct(

@@ -55,11 +55,6 @@ class FillNlpDict:
             # add the element to the dictionary based on the respective key
             self.nlpDict['hyperparameters'][key] = object
 
-        if self.analysis['sense'] == 'minimize':
-            self.nlpDict['hyperparameters']['penalty'] = np.inf
-        elif self.analysis['sense'] == 'maximize':
-            self.nlpDict['hyperparameters']['penalty'] = -np.inf
-
     def collectDomainExtremes(self):
 
         # create DataInput object

@@ -35,13 +35,13 @@ class Carrier(Element):
         # get system information
         system      = EnergySystem.getSystem()   
         paths       = EnergySystem.getPaths()   
-        indexNames  = EnergySystem.getAnalysis()['dataInputs']
+        indexNames  = {indexName: EnergySystem.getAnalysis() ['headerDataInputs'][indexName][0] for indexName in ['setNodes', 'setTimeSteps', 'setScenarios']}
         # set attributes of carrier
         _inputPath                  = paths["setCarriers"][self.name]["folder"]
-        self.demandCarrier          = self.dataInput.extractInputData(_inputPath,"demandCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-        self.availabilityCarrier    = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
-        self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"priceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]],"exportPriceCarrier")
-        self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"priceCarrier",[indexNames["nameNodes"],indexNames["nameTimeSteps"]],"importPriceCarrier")
+        self.demandCarrier          = self.dataInput.extractInputData(_inputPath,"demandCarrier",[indexNames["setNodes"],indexNames["setTimeSteps"]])
+        self.availabilityCarrier    = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",[indexNames["setNodes"],indexNames["setTimeSteps"]])
+        self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["setNodes"],indexNames["setTimeSteps"]],"exportPriceCarrier")
+        self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"importPriceCarrier",[indexNames["setNodes"],indexNames["setTimeSteps"]],"importPriceCarrier")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod

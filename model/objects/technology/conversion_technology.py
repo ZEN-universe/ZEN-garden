@@ -39,13 +39,12 @@ class ConversionTechnology(Technology):
         super().storeInputData()
         # get system information
         paths       = EnergySystem.getPaths()   
-        indexNames  = EnergySystem.getAnalysis()['dataInputs']
+        indexNames  = {indexName: EnergySystem.getAnalysis() ['headerDataInputs'][indexName][0] for indexName in ['setNodes', 'setTimeSteps', 'setScenarios']}
 
         # set attributes of technology
         _inputPath              = paths["setConversionTechnologies"][self.name]["folder"]
         self.minLoad            = self.dataInput.extractAttributeData(_inputPath,"minLoad")
-        self.maxLoad            = self.dataInput.extractAttributeData(_inputPath,"maxLoad")
-        self.availability       = self.dataInput.extractInputData(_inputPath,"availability",[indexNames["nameNodes"],indexNames["nameTimeSteps"]])
+        self.availability       = self.dataInput.extractInputData(_inputPath,"availability",[indexNames["setNodes"],indexNames["setTimeSteps"]])
         # define input and output carrier
         self.inputCarrier       = self.dataInput.extractConversionCarriers(_inputPath)["inputCarrier"]
         self.outputCarrier      = self.dataInput.extractConversionCarriers(_inputPath)["outputCarrier"]

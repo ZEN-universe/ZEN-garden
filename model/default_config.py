@@ -35,14 +35,17 @@ analysis['discountRate'] = 0.06
 analysis['transportDistance'] = 'Euclidean'
 # dictionary with subsets related to set
 analysis['subsets'] = {
-    'setTechnologies': ['setConversionTechnologies', 'setStorageTechnologies', 'setTransportTechnologies']
+    'setTechnologies': ['setConversionTechnologies', 'setTransportTechnologies']
     }
-# headers in input files
-analysis['dataInputs'] = {'nameScenarios':'scenario', 'nameNodes':'node', 'nameTimeSteps':'time',
-                          'nameConversionBalance':'energy', 'nameCarrier':'carrier',
-                          'PWA':{'slope':'slope', 'intercept':'intercept', 'ubSegment':'ubSegment',
-                                 'lbSegment':'lbSegment'}
-                          }
+# headers for the generation of input files
+analysis['headerDataInputs']= {'setNodes': ['node', 'x', 'y'],
+                               'setScenarios':['scenario'],
+                               'setTimeSteps':['time'],
+                               'setCarriers':['demandCarrier', 'availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
+                               'setConversionTechnologies':['availability'],
+                               'setTransportTechnologies':['availability', 'costPerDistance', 'distanceEuclidean', 'efficiencyPerDistance'],
+                               }
+
 # file format of input data
 analysis['fileFormat'] = 'csv'
 
@@ -81,7 +84,7 @@ solver['logfile'] = './/outputs//logs//pyomoLogFile.log'
 solver['model']      = 'MILP'
 # parameters of meta-heuristic algorithm
 solver['parametersMetaheuristic'] = {
-    'FEsMax':20, 'kNumber':2, 'mNumber':2, 'q':0.05099, 'xi':0.6795, 'epsilon':1e-5, 'MaxStagIter':2,
+    'FEsMax':1e12, 'kNumber':90, 'mNumber':5, 'q':0.05099, 'xi':0.6795, 'epsilon':1e-5, 'MaxStagIter':650,
     'minVal':1e-6, 'maxVal':1e6,'runsNumber':1
     }
 # evaluation of convergence in meta-heuristic. conditionDelta: (i) relative, (ii) absolute
