@@ -20,7 +20,7 @@ numberScenarios = 1
 numberTimeSteps = 1
  
 data = dict()
-data['mainFolder'] = 'NUTS0'
+data['mainFolder'] = 'NUTS2'
 data['sourceData'] = pd.read_csv('{}.csv'.format(data['mainFolder']), header=0, index_col=None)
 data['PWAData'] = pd.read_csv('PWA.csv', header=0, index_col=None)
 data['NLData'] = pd.read_csv('NL.csv', header=0, index_col=None)
