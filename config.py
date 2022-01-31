@@ -37,6 +37,6 @@ system['setNodes'] = ['BE10', 'BE24', 'BE31'] # 'BE21', 'BE23', 'BE24'
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01
-solver['model'] = 'MILP'
+solver['model'] = 'MINLP'
 solver['verbosity'] = False
 solver['performanceCheck']['printDeltaIteration'] = 50
