@@ -95,27 +95,35 @@ class Metaheuristic:
                 for iteration in self.nlpDict['hyperparameters']['iterationsNumberArray'][performanceInstance.iteration0:]:
                     # modify the solution archive according to pdf of solutions
                     solutionsIndices, SA = solutionsInstance.solutionSets(step='new')
+                    for solutionIndex in solutionsIndices:
+                        # input variables to the MILP model
+                        valuesContinuousVariables, valuesDiscreteVariables = SA['R'][solutionIndex, :], SA['O'][solutionIndex,:]
+                        # update slave concrete model and solve it
+                        self.slaveAlgorithm(solutionsInstance, valuesContinuousVariables, valuesDiscreteVariables,
+                                            solutionIndex, step='new')
 
-                solutionsInstance.rank(step='new')
-                if iteration % self.solver['performanceCheck']['printDeltaIteration'] == 0:
-                    print('iteration', iteration)
-                # record the solution
-                performanceInstance.record(solutionsInstance)
-                if self.solver['convergenceCriterion']['check']:
-                    performanceInstance.checkConvergence(iteration)
+                    solutionsInstance.rank(step='new')
+                    if iteration % self.solver['performanceCheck']['printDeltaIteration'] == 0:
+                        print('iteration', iteration)
+                    # record the solution
+                    performanceInstance.record(solutionsInstance)
+                    if self.solver['convergenceCriterion']['check']:
+                        performanceInstance.checkConvergence(iteration)
 
-                # check convergence and print variables to file
-                if performanceInstance.converged:
-                    outputMaster.reportConvergence(run, iteration, solutionsInstance)
-                    break
+                    # check convergence and print variables to file
+                    if performanceInstance.converged:
+                        outputMaster.reportConvergence(run, iteration, solutionsInstance)
+                        break
 
-            elif iteration != self.nlpDict['hyperparameters']['iterationsNumberArray'][-1]:
+            elif iteration == self.nlpDict['hyperparameters']['iterationsNumberArray'][-1]:
                 outputMaster.maxFunctionEvaluationsAchieved()
 
             # print to file data current run
             outputMaster.fileRun(run)
-            # initialize the performance metrics
+            # store solution current run and initialize the performance metrics
             performanceInstance.newRun()
+
+            #TODO: add storage of solution instance from run
 
         # print to file data current run
         outputMaster.fileRuns()

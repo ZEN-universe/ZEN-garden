@@ -1,5 +1,5 @@
 ﻿breakpoints_capex_electrolysis,breakpoints_efficiency_electrolysis,breakpoints_capex_SMR,breakpoints_efficiency_SMR
 0,0,0,0
 0.01,500,0.01,500
-16.46429654,1000,16.46429654,1000
-60,,60,
+16.46429602,1000,16.46429654,1000
+1E+12,,60,

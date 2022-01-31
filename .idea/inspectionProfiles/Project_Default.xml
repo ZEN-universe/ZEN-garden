@@ -1,0 +1,27 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="7">
+            <item index="0" class="java.lang.String" itemvalue="mkl-fft" />
+            <item index="1" class="java.lang.String" itemvalue="mkl-service" />
+            <item index="2" class="java.lang.String" itemvalue="wincertstore" />
+            <item index="3" class="java.lang.String" itemvalue="certifi" />
+            <item index="4" class="java.lang.String" itemvalue="pytz" />
+            <item index="5" class="java.lang.String" itemvalue="mkl-random" />
+            <item index="6" class="java.lang.String" itemvalue="deepdiff" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="model.model_instance.objects.technology.conversion_technology.capexTechnologyValue" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
