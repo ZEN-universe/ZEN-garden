@@ -33,10 +33,10 @@ system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setConversionTechnologies'] = ['electrolysis']
 system['setScenarios'] = 'a'
 system['setTimeSteps'] = [0]
-system['setNodes'] = ['BE21', 'BE23', 'BE24'] # for zero demand: 'BE10', 'BE24', 'BE31'
+system['setNodes'] = ['BE10', 'BE24', 'BE31'] # 'BE21', 'BE23', 'BE24'
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01
-solver['model'] = 'MINLP'
+solver['model'] = 'MILP'
 solver['verbosity'] = False
 solver['performanceCheck']['printDeltaIteration'] = 50
