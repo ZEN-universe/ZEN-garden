@@ -1,8 +1,9 @@
 index,attributes
 minBuiltCapacity,0
-maxBuiltCapacity,1000.0
+maxBuiltCapacity,1000
 minLoad,0.07
-lifetime,87600
+maxLoad,1
+lifetime,10
 costVariable,10000000
 referenceCarrier,hydrogen
 inputCarrier,electricity water

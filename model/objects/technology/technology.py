@@ -33,12 +33,12 @@ class Technology(Element):
         self.storeInputData()
         # add Technology to list
         Technology.addElement(self)
-    
+
     def storeInputData(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # get system information
-        system              = EnergySystem.getSystem()   
-        paths               = EnergySystem.getPaths()   
+        system              = EnergySystem.getSystem()
+        paths               = EnergySystem.getPaths()
         technologyTypes     = EnergySystem.getAnalysis()['subsets']["setTechnologies"]
         # set attributes of technology
         for technologyType in technologyTypes:
@@ -49,6 +49,7 @@ class Technology(Element):
                 self.maxBuiltCapacity        = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
                 self.lifetime           = self.dataInput.extractAttributeData(_inputPath,"lifetime")
                 self.minLoad            = self.dataInput.extractAttributeData(_inputPath,"minLoad")
+                self.maxLoad            = self.dataInput.extractAttributeData(_inputPath, "maxLoad")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
@@ -56,14 +57,14 @@ class Technology(Element):
         """ constructs the pe.Sets of the class <Technology> """
         # construct the pe.Sets of the class <Technology>
         model = EnergySystem.getConcreteModel()
-        
+
         # conversion technologies
         model.setConversionTechnologies = pe.Set(
-            initialize=EnergySystem.getAttribute("setConversionTechnologies"), 
+            initialize=EnergySystem.getAttribute("setConversionTechnologies"),
             doc='Set of conversion technologies. Subset: setTechnologies')
         # transport technologies
         model.setTransportTechnologies = pe.Set(
-            initialize=EnergySystem.getAttribute("setTransportTechnologies"), 
+            initialize=EnergySystem.getAttribute("setTransportTechnologies"),
             doc='Set of transport technologies. Subset: setTechnologies')
         # combined technology and location set
         model.setTechnologyLocation = pe.Set(
@@ -85,7 +86,7 @@ class Technology(Element):
         """ constructs the pe.Params of the class <Technology> """
         # construct pe.Param of the class <Technology>
         model = EnergySystem.getConcreteModel()
-    
+
         # minimum capacity
         model.minBuiltCapacity = pe.Param(
             model.setTechnologies,
@@ -136,7 +137,7 @@ class Technology(Element):
             boundCapacity = min(maxBuiltCapacity + existingCapacity,maxAvailabilityTechnology)
             bounds = (0,boundCapacity)
             return(bounds)
-            
+
         model = EnergySystem.getConcreteModel()
         # construct pe.Vars of the class <Technology>
         # install technology
@@ -199,7 +200,7 @@ class Technology(Element):
             rule = constraintTechnologyMaxCapacityRule,
             doc = 'max capacity of  technology that can be installed. Dimensions: setTechnologyLocation, setTimeSteps'
         )
-        
+
         # lifetime
         model.constraintTechnologyLifetime = pe.Constraint(
             model.setTechnologyLocation,
@@ -211,6 +212,13 @@ class Technology(Element):
         model.constraintCapexTotal = pe.Constraint(
             rule = constraintCapexTotalRule,
             doc = 'total capex of all technology that can be installed.'
+        )
+        # limit max load by installed capacity
+        model.constraintMaxLoad = pe.Constraint(
+            model.setTechnologyLocation,
+            model.setTimeSteps,
+            rule = constraintMaxLoadRule,
+            doc = 'limit max load by installed capacity. Dimensions: setTechnologyLocation, setTimeSteps'
         )
         # disjunct if technology is on
         model.disjunctOnTechnology = pgdp.Disjunct(
@@ -307,7 +315,7 @@ def constraintTechnologyLifetimeRule(model, tech, location, time):
 
 def constraintCapexTotalRule(model):
     """ sums over all technologies to calculate total capex """
-    return(model.capexTotal == 
+    return(model.capexTotal ==
         sum(
             sum(
                 model.capex[tech, loc, time]
