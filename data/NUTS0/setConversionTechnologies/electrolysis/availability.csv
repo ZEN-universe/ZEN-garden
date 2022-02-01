@@ -1,11 +1,11 @@
 scenario,time,node,availability
-a,0,AT,inf
+a,0,AT,0
 a,0,BE,inf
 a,0,BG,inf
 a,0,CH,inf
 a,0,CY,inf
 a,0,CZ,inf
-a,0,DE,inf
+a,0,DE,40
 a,0,DK,inf
 a,0,EE,inf
 a,0,EL,inf
