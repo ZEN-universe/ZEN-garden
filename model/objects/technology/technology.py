@@ -45,8 +45,8 @@ class Technology(Element):
             if self.name in system[technologyType]:
                 _inputPath              = paths[technologyType][self.name]["folder"]
                 self.referenceCarrier   = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
-                self.minBuiltCapacity        = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
-                self.maxBuiltCapacity        = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
+                self.minBuiltCapacity   = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
+                self.maxBuiltCapacity   = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
                 self.lifetime           = self.dataInput.extractAttributeData(_inputPath,"lifetime")
                 self.minLoad            = self.dataInput.extractAttributeData(_inputPath,"minLoad")
                 self.maxLoad            = self.dataInput.extractAttributeData(_inputPath, "maxLoad")

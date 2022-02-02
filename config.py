@@ -15,25 +15,23 @@ analysis = default_config.analysis
 system = default_config.system
 ## Solver - Defaul dictionary
 solver = default_config.solver   
-analysis['sense']
 
 ## Analysis - settings update compared to default values
-analysis['spatialResolution'] = 'NUTS0'
+analysis['spatialResolution'] = 'NUTS0_Test_TSA'
 analysis['modelFormulation'] = 'HSC'
 analysis['objective'] = 'TotalCost'
 # definition of the approximation
-analysis['variablesNonlinearModel'] = {'builtCapacity': ['electrolysis']}
-analysis['nonlinearTechnologyApproximation'] = {'Capex': ['electrolysis'], 'ConverEfficiency':[]}
-analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
+analysis['variablesNonlinearModel'] = {'builtCapacity': []}
+analysis['nonlinearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}
 
 ## System - settings update compared to default values
-system['setCarriers'] = ['electricity','hydrogen','water', 'oxygen']
+system['setCarriers'] = ['electricity','natural_gas',"irradiation"]
 system['setStorageTechnologies'] = []
-system['setTransportTechnologies'] = ['pipeline_hydrogen']
-system['setConversionTechnologies'] = ['electrolysis']
+system['setTransportTechnologies'] = ['power_line']
+system['setConversionTechnologies'] = ['photovoltaics',"natural_gas_turbine"]
 system['setScenarios'] = 'a'
 system['setTimeSteps'] = [0]
-system['setNodes'] = ['BE10', 'BE24', 'BE31'] # 'BE21', 'BE23', 'BE24'
+system['setNodes'] = ['CH', 'DE'] 
 
 
 ## Solver - settings update compared to default values
