@@ -50,7 +50,7 @@ class EnergySystem:
         self.setNodesOnEdges            = self.dataInput.calculateEdgesFromNodes(self.setNodes)
         self.setEdges                   = list(self.setNodesOnEdges.keys())
         self.setCarriers                = system["setCarriers"]
-        self.setTechnologies            = system["setTechnologies"]
+        self.setTechnologies            = system["setConversionTechnologies"]+system["setTransportTechnologies"]+system["setStorageTechnologies"]
         self.setTimeSteps               = system["setTimeSteps"]
         self.setScenarios               = system["setScenarios"]
         # carrier-specific

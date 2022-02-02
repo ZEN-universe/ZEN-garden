@@ -59,6 +59,7 @@ headerInSource = {
     'hydrogen': {'demandCarrier': "('hydrogen_demand', 'MWh')"},
     'oxygen': {}
     }
+
 ## Manual inputs
 # biomass
 data['importPriceCarrier_biomass'] = [0.07*1000] # EUR/MWh, value from Gabrielli et al. - dry biomass
@@ -108,7 +109,7 @@ inputDataFrame = {
         'minBuiltCapacity':0,
         'maxBuiltCapacity':data['NLData'][['capacity_capex_electrolysis']].dropna().values[-1][0],
         'minLoad':0.07,
-        'lifetime':8760*10, # h, value from Gabrielli et al
+        'lifetime':10, # h, value from Gabrielli et al
         'costVariable':10*10**6,
         'referenceCarrier':'hydrogen',
         'inputCarrier':'electricity water',
@@ -116,7 +117,7 @@ inputDataFrame = {
     'SMR': {
         'minBuiltCapacity':1, # MW, value from Gabrielli et al
         'maxBuiltCapacity':1,
-        'lifetime': 8760*20, # h, value from Gabrielli et al
+        'lifetime': 20, # h, value from Gabrielli et al
         'minLoad':0.1,
         'maxLoad':1,
      'referenceCarrier':'hydrogen', 'inputCarrier':'natural_gas', 'outputCarrier':'hydrogen carbon_dioxide'},

@@ -38,18 +38,19 @@ class Prepare:
         # create a dictionary with the paths to access the model inputs
         self.createPaths()
         
-        # only kept for NlpDict
-        # initialise a dictionary with the keys of the data to be read
-        self.initDict()
+        if self.solver["model"] == "MINLP":
+            # only kept for NlpDict
+            # initialise a dictionary with the keys of the data to be read
+            self.initDict()
 
-        # read data and store in the initialised dictionary
-        self.readData()
+            # read data and store in the initialised dictionary
+            self.readData()
 
-        # update system and analysis with derived settings
-        self.configUpdate()
+            # update system and analysis with derived settings
+            self.configUpdate()
 
-        # collect data for nonlinear solver
-        self.createNlpDict()
+            # collect data for nonlinear solver
+            self.createNlpDict()
 
     def configUpdate(self):
         """
