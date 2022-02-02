@@ -1,6 +1,6 @@
 index,attributes
 minBuiltCapacity,0
-maxBuiltCapacity,1000
+maxBuiltCapacity,250000.0
 minLoad,0.07
 maxLoad,1
 lifetime,10
