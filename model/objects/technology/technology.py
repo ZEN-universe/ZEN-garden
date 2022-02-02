@@ -49,7 +49,7 @@ class Technology(Element):
                 self.maxBuiltCapacity   = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
                 self.lifetime           = self.dataInput.extractAttributeData(_inputPath,"lifetime")
                 self.minLoad            = self.dataInput.extractAttributeData(_inputPath,"minLoad")
-                self.maxLoad            = self.dataInput.extractAttributeData(_inputPath, "maxLoad")
+                self.maxLoad            = self.dataInput.extractAttributeData(_inputPath,"maxLoad")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
