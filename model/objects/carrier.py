@@ -32,16 +32,15 @@ class Carrier(Element):
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
-        # get system information
-        system      = EnergySystem.getSystem()   
-        paths       = EnergySystem.getPaths()   
-        indexNames  = {indexName: EnergySystem.getAnalysis() ['headerDataInputs'][indexName][0] for indexName in ['setNodes', 'setTimeSteps', 'setScenarios']}
+        # get paths
+        paths                       = EnergySystem.getPaths()   
         # set attributes of carrier
         _inputPath                  = paths["setCarriers"][self.name]["folder"]
-        self.demandCarrier          = self.dataInput.extractInputData(_inputPath,"demandCarrier",[indexNames["setNodes"],indexNames["setTimeSteps"]])
-        self.availabilityCarrier    = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",[indexNames["setNodes"],indexNames["setTimeSteps"]])
-        self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"exportPriceCarrier",[indexNames["setNodes"],indexNames["setTimeSteps"]],"exportPriceCarrier")
-        self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"importPriceCarrier",[indexNames["setNodes"],indexNames["setTimeSteps"]],"importPriceCarrier")
+        self.setTimeSteps           = self.dataInput.extractTimeSteps(_inputPath)
+        self.demandCarrier          = self.dataInput.extractInputData(_inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=self.setTimeSteps)
+        self.availabilityCarrier    = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],timeSteps=self.setTimeSteps)
+        self.exportPriceCarrier     = self.dataInput.extractInputData(_inputPath,"exportPriceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=self.setTimeSteps)
+        self.importPriceCarrier     = self.dataInput.extractInputData(_inputPath,"importPriceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=self.setTimeSteps)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod

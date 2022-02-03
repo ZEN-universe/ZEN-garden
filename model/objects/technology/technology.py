@@ -43,13 +43,13 @@ class Technology(Element):
         # set attributes of technology
         for technologyType in technologyTypes:
             if self.name in system[technologyType]:
-                _inputPath              = paths[technologyType][self.name]["folder"]
-                self.referenceCarrier   = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
-                self.minBuiltCapacity   = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
-                self.maxBuiltCapacity   = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
-                self.lifetime           = self.dataInput.extractAttributeData(_inputPath,"lifetime")
-                self.minLoad            = self.dataInput.extractAttributeData(_inputPath,"minLoad")
-                self.maxLoad            = self.dataInput.extractAttributeData(_inputPath,"maxLoad")
+                _inputPath                  = paths[technologyType][self.name]["folder"]
+                self.setTimeStepsInvest     = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="invest")
+                self.setTimeStepsOperation  = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="operation")
+                self.referenceCarrier       = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
+                self.minBuiltCapacity       = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
+                self.maxBuiltCapacity       = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
+                self.lifetime               = self.dataInput.extractAttributeData(_inputPath,"lifetime")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
@@ -102,6 +102,12 @@ class Technology(Element):
             model.setTechnologies,
             initialize = cls.getAttributeOfAllElements("lifetime"),
             doc = 'Parameter which specifies the lifetime of technology. Dimensions: setTechnologies')
+        
+        # availability of technologies
+        model.availabilityTechnology = pe.Param(
+            cls.createCustomSet(["tech","loc","time"]),
+            initialize = cls.getAttributeOfAllElements("availability"),
+            doc = 'Parameter which specifies the availability of technologies. Dimensions: setTechnologyLocation, setTimeSteps')
         # availability of technologies
         model.availabilityTechnology = pe.Param(
             model.setTechnologyLocation,

@@ -53,9 +53,6 @@ class EnergySystem:
         self.setTechnologies            = system["setConversionTechnologies"]+system["setTransportTechnologies"]+system["setStorageTechnologies"]
         self.setTimeSteps               = system["setTimeSteps"]
         self.setScenarios               = system["setScenarios"]
-        # carrier-specific
-        # self.setImportCarriers          = system["setImportCarriers"]
-        # self.setExportCarriers          = system["setExportCarriers"]
         # technology-specific
         self.setConversionTechnologies  = system["setConversionTechnologies"]
         self.setTransportTechnologies   = system["setTransportTechnologies"]
@@ -130,7 +127,8 @@ class EnergySystem:
         energySystem = cls.getEnergySystem()
         assert hasattr(energySystem,attributeName), f"The energy system does not have attribute '{attributeName}"
         return getattr(energySystem,attributeName)
-        
+    
+
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
     @classmethod
     def constructSets(cls):
