@@ -37,19 +37,18 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths       = EnergySystem.getPaths()   
-        indexNames  = {indexName: EnergySystem.getAnalysis() ['headerDataInputs'][indexName][0] for indexName in ['setNodes', 'setTimeSteps', 'setScenarios']}
-
+        paths                       = EnergySystem.getPaths()   
         # set attributes of technology
-        _inputPath              = paths["setTransportTechnologies"][self.name]["folder"]
-        # self.minFlow            = self.dataInput.extractAttributeData(_inputPath,"minFlow")
-        # self.maxFlow            = self.dataInput.extractAttributeData(_inputPath,"maxFlow")
-        self.lossFlow           = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
+        _inputPath                  = paths["setTransportTechnologies"][self.name]["folder"]
+        self.lossFlow               = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
         # set attributes of transport technology
-        self.availability       = self.dataInput.extractTransportInputData(_inputPath,"availability",[indexNames["setTimeSteps"]])
+        self.availability           = self.dataInput.extractInputData(_inputPath,"availability",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsInvest,transportTechnology=True)
         # TODO calculate for non Euclidean distance
-        self.distance           = self.dataInput.extractTransportInputData(_inputPath,"distanceEuclidean")
-        self.costPerDistance    = self.dataInput.extractTransportInputData(_inputPath,"costPerDistance",[indexNames["setTimeSteps"]])
+        self.distance               = self.dataInput.extractInputData(_inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
+        self.costPerDistance        = self.dataInput.extractInputData(_inputPath,"costPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+        self.minLoad                = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
+        self.maxLoad                = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
+        a=1
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod

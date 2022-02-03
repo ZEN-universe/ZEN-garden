@@ -143,3 +143,11 @@ class Element:
         # construct pe.Constraints of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructConstraints()
+
+    @classmethod
+    def createCustomSet(cls,listIndex):
+        """ creates custom set for model component 
+        :param listIndex: list of names of indices
+        :return customSet: custom pe.Set """
+        model = EnergySystem.getConcreteModel()
+        a=1

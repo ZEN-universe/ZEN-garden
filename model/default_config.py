@@ -38,13 +38,14 @@ analysis['subsets'] = {
     'setTechnologies': ['setConversionTechnologies', 'setTransportTechnologies']
     }
 # headers for the generation of input files
-analysis['headerDataInputs']= {'setNodes': ['node', 'x', 'y'],
-                               'setScenarios':['scenario'],
-                               'setTimeSteps':['time'],
-                               'setCarriers':['demandCarrier', 'availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
-                               'setConversionTechnologies':['availability'],
-                               'setTransportTechnologies':['availability', 'costPerDistance', 'distanceEuclidean', 'efficiencyPerDistance'],
-                               }
+analysis['headerDataInputs']=   {'setNodes': ['node', 'x', 'y'],
+                                "setEdges": ["edge"],
+                                'setScenarios':['scenario'],
+                                'setTimeSteps':['time'],
+                                'setCarriers':['demandCarrier', 'availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
+                                'setConversionTechnologies':['availability'],
+                                'setTransportTechnologies':['availability', 'costPerDistance', 'distanceEuclidean', 'efficiencyPerDistance'],
+                                }
 
 # file format of input data
 analysis['fileFormat'] = 'csv'
