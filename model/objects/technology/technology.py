@@ -305,7 +305,8 @@ def constraintTechnologyLifetimeRule(model, tech, location, time):
     """limited lifetime of the technologies"""
     if tech not in model.setNLCapexTechs:
         # time range
-        t_start = max(0, time - model.lifetimeTechnology[tech] + 1)
+        # TODO decide on time index
+        t_start = max(min(model.setTimeSteps), time - model.lifetimeTechnology[tech] + 1)
         t_end = time + 1
 
         return (model.capacity[tech, location, time]

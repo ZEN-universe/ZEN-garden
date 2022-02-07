@@ -18,22 +18,22 @@ solver = default_config.solver
 analysis['sense']
 
 ## Analysis - settings update compared to default values
-analysis['spatialResolution'] = 'NUTS0'
+analysis['spatialResolution'] = 'NUTS0_Test_TSA'
 analysis['modelFormulation'] = 'HSC'
 analysis['objective'] = 'TotalCost'
 # definition of the approximation
-analysis['variablesNonlinearModel'] = {'builtCapacity': ['electrolysis']}
-analysis['nonlinearTechnologyApproximation'] = {'Capex': ['electrolysis'], 'ConverEfficiency':[]}
-analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
+analysis['variablesNonlinearModel'] = {'builtCapacity': []}
+analysis['nonlinearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}
+analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}
 
 ## System - settings update compared to default values
-system['setCarriers'] = ['electricity','hydrogen','water', 'oxygen']
+system['setCarriers'] = ['electricity','irradiation','natural_gas']
 system['setStorageTechnologies'] = []
-system['setTransportTechnologies'] = ['pipeline_hydrogen']
-system['setConversionTechnologies'] = ['electrolysis']
+system['setTransportTechnologies'] = ['power_line']
+system['setConversionTechnologies'] = ['photovoltaics',"natural_gas_turbine"]
 system['setScenarios'] = 'a'
-system['setTimeSteps'] = [0]
-system['setNodes'] = ['CH', 'DE', 'AT'] # 'BE21', 'BE23', 'BE24'
+system['setTimeSteps'] = [1]
+system['setNodes'] = ['CH', 'DE'] # 'BE21', 'BE23', 'BE24'
 
 
 ## Solver - settings update compared to default values
