@@ -135,6 +135,11 @@ class TransportTechnology(Technology):
             rule = constraintTransportTechnologyLinearCapexRule,
             doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
         ) 
+        # TODO only for debug
+        model.constraintMinLoadTransport = pe.Constraint(
+            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
+            rule = constraintMinLoadTransportRule
+        )
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -173,3 +178,14 @@ def constraintTransportTechnologyLinearCapexRule(model, tech, edge, time):
             model.builtCapacity[tech,edge, time] *
             model.distance[tech,edge] *
             model.costPerDistance[tech,edge, time])
+
+### TODO only for test
+def constraintMinLoadTransportRule(model,tech,edge,time):
+    if model.minLoad[tech,edge,time] != 0:
+        referenceCarrier = model.setReferenceCarriers[tech][1]
+        # get invest time step
+        baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
+        investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+        return (model.carrierFlow[tech,referenceCarrier, edge, time] >= model.minLoad[tech,edge,time] * model.capacity[tech,edge, investTimeStep])
+    else:
+        return pe.Constraint.Skip
