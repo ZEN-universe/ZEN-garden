@@ -48,7 +48,6 @@ class TransportTechnology(Technology):
         self.costPerDistance        = self.dataInput.extractInputData(_inputPath,"costPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
         self.minLoad                = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
         self.maxLoad                = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
-        a=1
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod
@@ -71,19 +70,17 @@ class TransportTechnology(Technology):
     def constructParams(cls):
         """ constructs the pe.Params of the class <TransportTechnology> """
         model = EnergySystem.getConcreteModel()
+        
         # distance between nodes
         model.distance = pe.Param(
-            model.setTransportTechnologies,
-            model.setEdges,
+            cls.createCustomSet(["setTransportTechnologies","setEdges"]),
             initialize = cls.getAttributeOfAllElements("distance"),
             doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
         # cost per distance
         model.costPerDistance = pe.Param(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
             initialize = cls.getAttributeOfAllElements("costPerDistance"),
-            doc = 'capex per unit distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeSteps')
+            doc = 'capex per unit distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
         # carrier losses
         model.lossFlow = pe.Param(
             model.setTransportTechnologies,
@@ -100,26 +97,25 @@ class TransportTechnology(Technology):
             :param edge: edge index
             :param time: time index
             :return bounds: bounds of carrierFlow"""
-            bounds = model.capacity[tech,edge,time].bounds
+            # convert operationTimeStep to investTimeStep: operationTimeStep -> baseTimeStep -> investTimeStep
+            baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
+            investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+            bounds = model.capacity[tech,edge,investTimeStep].bounds
             return(bounds)
 
         model = EnergySystem.getConcreteModel()
         # flow of carrier on edge
         model.carrierFlow = pe.Var(
-            model.setTransportCarriersTech,
-            model.setEdges,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTransportTechnologies","setReferenceCarriers","setEdges","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             bounds = carrierFlowBounds,
-            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportTechnologies, setReferenceCarriers, setEdges, setTimeStepsOperation. Domain: NonNegativeReals'
         )
         # loss of carrier on edge
         model.carrierLoss = pe.Var(
-            model.setTransportCarriersTech,
-            model.setEdges,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTransportTechnologies","setReferenceCarriers","setEdges","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportCarriersTech, setEdges, setTimeSteps. Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportTechnologies, setReferenceCarriers, setEdges, setTimeStepsOperation. Domain: NonNegativeReals'
         )
         
     @classmethod
@@ -129,19 +125,15 @@ class TransportTechnology(Technology):
 
         # Carrier Flow Losses 
         model.constraintTransportTechnologyLossesFlow = pe.Constraint(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
             rule = constraintTransportTechnologyLossesFlowRule,
-            doc = 'Carrier loss due to transport with through transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
+            doc = 'Carrier loss due to transport with through transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsOperation'
         ) 
         # Linear Capex
         model.constraintTransportTechnologyLinearCapex = pe.Constraint(
-            model.setTransportTechnologies,
-            model.setEdges,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
             rule = constraintTransportTechnologyLinearCapexRule,
-            doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeSteps'
+            doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
         ) 
 
     # defines disjuncts if technology on/off
@@ -150,9 +142,12 @@ class TransportTechnology(Technology):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
         referenceCarrier = model.setReferenceCarriers[tech][1]
+        # get invest time step
+        baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
+        investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
-            expr=model.carrierFlow[tech,referenceCarrier, edge, time] >= model.minLoad[tech] * model.capacity[tech,edge, time]
+            expr=model.carrierFlow[tech,referenceCarrier, edge, time] >= model.minLoad[tech,edge,time] * model.capacity[tech,edge, investTimeStep]
         )
 
     @classmethod

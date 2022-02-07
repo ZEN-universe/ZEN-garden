@@ -30,7 +30,7 @@ system['setStorageTechnologies'] = []
 system['setTransportTechnologies'] = ['power_line']
 system['setConversionTechnologies'] = ['photovoltaics',"natural_gas_turbine"]
 system['setScenarios'] = 'a'
-system['setTimeSteps'] = [0]
+system['setTimeSteps'] = list(range(1,20+1))
 system['setNodes'] = ['CH', 'DE'] 
 
 

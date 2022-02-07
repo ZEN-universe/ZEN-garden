@@ -51,11 +51,12 @@ class EnergySystem:
         self.setEdges                   = list(self.setNodesOnEdges.keys())
         self.setCarriers                = system["setCarriers"]
         self.setTechnologies            = system["setConversionTechnologies"]+system["setTransportTechnologies"]+system["setStorageTechnologies"]
-        self.setTimeSteps               = system["setTimeSteps"]
+        self.setBaseTimeSteps           = system["setTimeSteps"]
         self.setScenarios               = system["setScenarios"]
         # technology-specific
         self.setConversionTechnologies  = system["setConversionTechnologies"]
         self.setTransportTechnologies   = system["setTransportTechnologies"]
+        self.setStorageTechnologies     = system["setStorageTechnologies"]
         
     ### --- classmethods --- ###
     # setter/getter classmethods
@@ -128,6 +129,66 @@ class EnergySystem:
         assert hasattr(energySystem,attributeName), f"The energy system does not have attribute '{attributeName}"
         return getattr(energySystem,attributeName)
     
+    @classmethod
+    def calculateTimeStepDuration(cls,inputTimeSteps):
+        """ calculates (equidistant) time step durations for input time steps
+        :param inputTimeSteps: input time steps
+        :return timeStepDurationDict: dict with duration of each time step """
+        baseTimeSteps = cls.getEnergySystem().setBaseTimeSteps
+        durationInputTimeSteps = len(baseTimeSteps)/len(inputTimeSteps)
+        timeStepDurationDict = {timeStep: durationInputTimeSteps for timeStep in inputTimeSteps}
+        return timeStepDurationDict
+
+    @classmethod
+    def decodeTimeStep(cls,element:str,elementTimeStep:int,timeStepType:str = None):
+        """ decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variablTimeStep of a element.
+        timeStep of element --> baseTimeStep of model 
+        :param element: element of model, i.e., carrier or technology
+        :param elementTimeStep: time step of element
+        :param timeStepType: invest or operation. Only relevant for technologies, None for carrier
+        :return baseTimeStep: baseTimeStep of model """
+        model = cls.getConcreteModel()
+        # get time step duration
+        if not timeStepType:
+            timeStepDuration = model.timeStepsCarrierDuration
+        elif timeStepType == "invest":
+            timeStepDuration = model.timeStepsInvestDuration
+        elif timeStepType == "operation":
+            timeStepDuration = model.timeStepsOperationDuration
+        else:
+            raise KeyError(f"time step type {timeStepType} is invalid. Only 'invest', 'operation', or None accepted.")
+        # calculate timeSteps from the beginning
+        baseTimeStep = sum([timeStepDuration[element,timeStep] for timeStep in range(1,elementTimeStep+1)])
+        # mainly for debugging, check if baseTimeStep is integer
+        assert baseTimeStep.is_integer(),f"The element time step {elementTimeStep} of element {element} does not correspond to an integer baseTimeStep ({baseTimeStep})"
+        return(int(baseTimeStep))
+
+    @classmethod
+    def encodeTimeStep(cls,element:str,baseTimeStep:int,timeStepType:str = None):
+        """ encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
+        baseTimeStep of model --> timeStep of element 
+        :param element: element of model, i.e., carrier or technology
+        :param baseTimeStep: base time step of model for which the corresponding time index is extracted
+        :param timeStepType: invest or operation. Only relevant for technologies
+        :return outputTimeStep: time step of element"""
+        model = cls.getConcreteModel()
+        # get time step duration
+        if not timeStepType:
+            timeStepDuration = model.timeStepsCarrierDuration
+        elif timeStepType == "invest":
+            timeStepDuration = model.timeStepsInvestDuration
+        elif timeStepType == "operation":
+            timeStepDuration = model.timeStepsOperationDuration
+        else:
+            raise KeyError(f"time step type {timeStepType} is invalid. Only 'invest', 'operation', or None accepted.")
+        # calculate summed elementTimeStep
+        elementTimeStep = 0
+        summedDuration = 0
+        # sum the time step durations until summedDuration >= baseTimeStep
+        while summedDuration < baseTimeStep:
+            elementTimeStep += 1
+            summedDuration += timeStepDuration[element,elementTimeStep]
+        return(elementTimeStep)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
     @classmethod
@@ -165,9 +226,9 @@ class EnergySystem:
             initialize=energySystem.setTechnologies,
             doc='Set of technologies')
         # time-steps
-        model.setTimeSteps = pe.Set(
-            initialize=energySystem.setTimeSteps,
-            doc='Set of time-steps')
+        model.setBaseTimeSteps = pe.Set(
+            initialize=energySystem.setBaseTimeSteps,
+            doc='Set of base time-steps')
         # scenarios
         model.setScenarios = pe.Set(
             initialize=energySystem.setScenarios,
@@ -227,13 +288,17 @@ class EnergySystem:
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
     # CARRIERS
-    carrierImport = sum(sum(sum(model.importCarrierFlow[carrier, node, time] * model.importPriceCarrier[carrier, node, time]
-                            for time in model.setTimeSteps)
+    carrierImport = sum(
+                        sum(
+                            sum(model.importCarrierFlow[carrier, node, time] * model.importPriceCarrier[carrier, node, time] * model.timeStepsCarrierDuration[carrier, time]
+                            for time in model.setTimeStepsCarrier[carrier])
                         for node in model.setNodes)
                     for carrier in model.setCarriers)
 
-    carrierExport = sum(sum(sum(model.exportCarrierFlow[carrier, node, time] * model.exportPriceCarrier[carrier, node, time]
-                            for time in model.setTimeSteps)
+    carrierExport = sum(
+                        sum(
+                            sum(model.exportCarrierFlow[carrier, node, time] * model.exportPriceCarrier[carrier, node, time] * model.timeStepsCarrierDuration[carrier, time]
+                            for time in model.setTimeStepsCarrier[carrier])
                         for node in model.setNodes)
                     for carrier in model.setCarriers)
 
