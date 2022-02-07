@@ -33,7 +33,7 @@ system['setTransportTechnologies'] = ['pipeline_hydrogen']
 system['setConversionTechnologies'] = ['electrolysis']
 system['setScenarios'] = 'a'
 system['setTimeSteps'] = [0]
-system['setNodes'] = ['BE10', 'BE24', 'BE31'] # 'BE21', 'BE23', 'BE24'
+system['setNodes'] = ['CH', 'DE', 'AT'] # 'BE21', 'BE23', 'BE24'
 
 
 ## Solver - settings update compared to default values
