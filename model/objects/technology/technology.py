@@ -43,13 +43,15 @@ class Technology(Element):
         # set attributes of technology
         for technologyType in technologyTypes:
             if self.name in system[technologyType]:
-                _inputPath                  = paths[technologyType][self.name]["folder"]
-                self.setTimeStepsInvest     = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="invest")
-                self.setTimeStepsOperation  = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="operation")
-                self.referenceCarrier       = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
-                self.minBuiltCapacity       = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
-                self.maxBuiltCapacity       = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
-                self.lifetime               = self.dataInput.extractAttributeData(_inputPath,"lifetime")
+                _inputPath                      = paths[technologyType][self.name]["folder"]
+                self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="invest")
+                self.setTimeStepsOperation      = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="operation")
+                self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
+                self.timeStepsOperationDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsOperation)
+                self.referenceCarrier           = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
+                self.minBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
+                self.maxBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
+                self.lifetime                   = self.dataInput.extractAttributeData(_inputPath,"lifetime")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
@@ -66,11 +68,27 @@ class Technology(Element):
         model.setTransportTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setTransportTechnologies"),
             doc='Set of transport technologies. Subset: setTechnologies')
-        # combined technology and location set
-        model.setTechnologyLocation = pe.Set(
-            initialize = technologyLocationRule,
-            doc = "Combined set of technologies and locations. Conversion technologies are paired with nodes, transport technologies are paired with edges"
+        # storage technologies
+        model.setStorageTechnologies = pe.Set(
+            initialize=EnergySystem.getAttribute("setStorageTechnologies"),
+            doc='Set of storage technologies. Subset: setTechnologies')
+        # invest time steps
+        model.setTimeStepsInvest = pe.Set(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("setTimeStepsInvest"),
+            doc="Set of time steps in investment for all technologies. Dimensions: setTechnologies"
         )
+        # operational time steps
+        model.setTimeStepsOperation = pe.Set(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("setTimeStepsOperation"),
+            doc="Set of time steps in operation for all technologies. Dimensions: setTechnologies"
+        )
+        # combined technology and location set
+        # model.setTechnologyLocation = pe.Set(
+        #     initialize = technologyLocationRule,
+        #     doc = "Combined set of technologies and locations. Conversion technologies are paired with nodes, transport technologies are paired with edges"
+        # )
         # reference carriers
         model.setReferenceCarriers = pe.Set(
             model.setTechnologies,
@@ -87,6 +105,18 @@ class Technology(Element):
         # construct pe.Param of the class <Technology>
         model = EnergySystem.getConcreteModel()
 
+        # invest time step duration
+        model.timeStepsInvestDuration = pe.Param(
+            cls.createCustomSet(["setTechnologies","setTimeStepsInvest"]),
+            initialize = cls.getAttributeOfAllElements("timeStepsInvestDuration"),
+            doc="Parameter which specifies the time step duration in investment for all technologies. Dimensions: setTechnologies, setTimeStepsInvest"
+        )
+        # operational time step duration
+        model.timeStepsOperationDuration = pe.Param(
+            cls.createCustomSet(["setTechnologies","setTimeStepsOperation"]),
+            initialize = cls.getAttributeOfAllElements("timeStepsOperationDuration"),
+            doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setTechnologies, setTimeStepsInvest"
+        )
         # minimum capacity
         model.minBuiltCapacity = pe.Param(
             model.setTechnologies,
@@ -105,25 +135,20 @@ class Technology(Element):
         
         # availability of technologies
         model.availabilityTechnology = pe.Param(
-            cls.createCustomSet(["tech","loc","time"]),
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             initialize = cls.getAttributeOfAllElements("availability"),
-            doc = 'Parameter which specifies the availability of technologies. Dimensions: setTechnologyLocation, setTimeSteps')
-        # availability of technologies
-        model.availabilityTechnology = pe.Param(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
-            initialize = cls.getAttributeOfAllElements("availability"),
-            doc = 'Parameter which specifies the availability of technologies. Dimensions: setTechnologyLocation, setTimeSteps')
+            doc = 'Parameter which specifies the availability of technologies. Dimensions: setTechnologies, setLocation, setTimeStepsInvest')
+        
         # minimum load relative to capacity
         model.minLoad = pe.Param(
-            model.setTechnologies,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             initialize = cls.getAttributeOfAllElements("minLoad"),
-            doc = 'minimum load of technology relative to installed capacity. Dimensions: setTechnologies')
+            doc = 'Parameter which specifies the minimum load of technology relative to installed capacity. Dimensions:setTechnologies, setLocation, setTimeStepsOperation')
         # maximum load relative to capacity
         model.maxLoad = pe.Param(
-            model.setTechnologies,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             initialize = cls.getAttributeOfAllElements("maxLoad"),
-            doc = 'maximum load of technology relative to installed capacity. Dimensions: setTechnologies')
+            doc = 'Parameter which specifies the maximum load of technology relative to installed capacity. Dimensions:setTechnologies, setLocation, setTimeStepsOperation')
         # add pe.Param of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructParams()
@@ -138,7 +163,7 @@ class Technology(Element):
             :return bounds: bounds of capacity"""
             ### TODO: if existing capacity, add existing capacity
             existingCapacity = 0
-            maxBuiltCapacity = len(model.setTimeSteps)*model.maxBuiltCapacity[tech]
+            maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
             maxAvailabilityTechnology = model.availabilityTechnology[tech,loc,time]
             boundCapacity = min(maxBuiltCapacity + existingCapacity,maxAvailabilityTechnology)
             bounds = (0,boundCapacity)
@@ -148,29 +173,25 @@ class Technology(Element):
         # construct pe.Vars of the class <Technology>
         # install technology
         model.installTechnology = pe.Var(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             domain = pe.Binary,
-            doc = 'installment of a technology on edge i and time t. Dimensions: setTechnologyLocation, setTimeSteps. Domain: Binary')
+            doc = 'installment of a technology on edge i and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: Binary')
         # capacity technology
         model.capacity = pe.Var(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             domain = pe.NonNegativeReals,
             bounds = capacityBounds,
-            doc = 'size of installed technology on edge i and time t. Dimensions: setTechnologyLocation, setTimeSteps. Domain: NonNegativeReals')
+            doc = 'size of installed technology on edge i and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
         # builtCapacity technology
         model.builtCapacity = pe.Var(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             domain = pe.NonNegativeReals,
-            doc = 'size of built technology on edge i and time t. Dimensions: setTechnologyLocation, setTimeSteps. Domain: NonNegativeReals')
+            doc = 'size of built technology on edge i and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
         # capex technology
         model.capex = pe.Var(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             domain = pe.NonNegativeReals,
-            doc = 'capex for installing technology on edge i and time t. Dimensions: setTechnologyLocation, setTimeSteps. Domain: NonNegativeReals')
+            doc = 'capex for installing technology on edge i and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
         # total capex technology
         model.capexTotal = pe.Var(
             domain = pe.NonNegativeReals,
@@ -187,32 +208,28 @@ class Technology(Element):
         # construct pe.Constraints of the class <Technology>
         #  technology availability
         model.constraintTechnologyAvailability = pe.Constraint(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             rule = constraintTechnologyAvailabilityRule,
-            doc = 'limited availability of  technology depending on node and time. Dimensions: setTechnologyLocation, setTimeSteps'
+            doc = 'limited availability of  technology depending on node and time. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
         # minimum capacity
         model.constraintTechnologyMinCapacity = pe.Constraint(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             rule = constraintTechnologyMinCapacityRule,
-            doc = 'min capacity of  technology that can be installed. Dimensions: setTechnologyLocation, setTimeSteps'
+            doc = 'min capacity of technology that can be installed. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
         # maximum capacity
         model.constraintTechnologyMaxCapacity = pe.Constraint(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             rule = constraintTechnologyMaxCapacityRule,
-            doc = 'max capacity of  technology that can be installed. Dimensions: setTechnologyLocation, setTimeSteps'
+            doc = 'max capacity of technology that can be installed. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
 
         # lifetime
         model.constraintTechnologyLifetime = pe.Constraint(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             rule = constraintTechnologyLifetimeRule,
-            doc = 'max capacity of  technology that can be installed. Dimensions: setTechnologyLocation, setTimeSteps'
+            doc = 'max capacity of  technology that can be installed. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
         # total capex of all technologies
         model.constraintCapexTotal = pe.Constraint(
@@ -221,29 +238,26 @@ class Technology(Element):
         )
         # limit max load by installed capacity
         model.constraintMaxLoad = pe.Constraint(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             rule = constraintMaxLoadRule,
-            doc = 'limit max load by installed capacity. Dimensions: setTechnologyLocation, setTimeSteps'
+            doc = 'limit max load by installed capacity. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
         )
+        
         # disjunct if technology is on
         model.disjunctOnTechnology = pgdp.Disjunct(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOnTechnologyRule,
-            doc = "disjunct to indicate that technology is On. Dimensions: setTechnologyLocation, setTimeSteps"
+            doc = "disjunct to indicate that technology is On. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
         )
         # disjunct if technology is off
         model.disjunctOffTechnology = pgdp.Disjunct(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOffTechnologyRule,
-            doc = "disjunct to indicate that technology is off. Dimensions: setTechnologyLocation, setTimeSteps"
+            doc = "disjunct to indicate that technology is off. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
         )
         # disjunction
         model.disjunctionDecisionOnOffTechnology = pgdp.Disjunction(
-            model.setTechnologyLocation,
-            model.setTimeSteps,
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             rule = cls.expressionLinkDisjunctsRule,
             doc = "disjunction to link the on off disjuncts. Dimensions: setTechnologyLocation, setTimeStep")
 
@@ -311,8 +325,7 @@ def constraintTechnologyLifetimeRule(model, tech, location, time):
     """limited lifetime of the technologies"""
     if tech not in model.setNLCapexTechs:
         # time range
-        # TODO decide on time index
-        t_start = max(min(model.setTimeSteps), time - model.lifetimeTechnology[tech] + 1)
+        t_start = int(max(1, time - model.lifetimeTechnology[tech] + 1))
         t_end = time + 1
 
         return (model.capacity[tech, location, time]
@@ -326,24 +339,27 @@ def constraintCapexTotalRule(model):
         sum(
             sum(
                 model.capex[tech, loc, time]
-                for tech,loc in model.setTechnologyLocation
+                for time in model.setTimeStepsInvest[tech]
             )
-            for time in model.setTimeSteps
+            for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])
         )
     )
 
 def constraintMaxLoadRule(model, tech, loc, time):
     """Load is limited by the installed capacity and the maximum load factor"""
     referenceCarrier = model.setReferenceCarriers[tech][1]
+    # get invest time step
+    baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
+    investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
     # conversion technology
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:
-            return (model.capacity[tech, loc, time]*model.maxLoad[tech] >= model.inputFlow[tech, referenceCarrier, loc, time])
+            return (model.capacity[tech, loc, investTimeStep]*model.maxLoad[tech, loc, time] >= model.inputFlow[tech, referenceCarrier, loc, time])
         else:
-            return (model.capacity[tech, loc, time]*model.maxLoad[tech] >= model.outputFlow[tech, referenceCarrier, loc, time])
+            return (model.capacity[tech, loc, investTimeStep]*model.maxLoad[tech, loc, time] >= model.outputFlow[tech, referenceCarrier, loc, time])
     # transport technology
     elif tech in model.setTransportTechnologies:
-            return (model.capacity[tech, loc, time]*model.maxLoad[tech] >= model.carrierFlow[tech, referenceCarrier, loc, time])
+            return (model.capacity[tech, loc, investTimeStep]*model.maxLoad[tech, loc, time] >= model.carrierFlow[tech, referenceCarrier, loc, time])
     else:
         logging.info(f"Technology {tech} is neither a conversion nor a transport technology. Constraint constraintMaxLoad skipped.")
         return pe.Constraint.Skip

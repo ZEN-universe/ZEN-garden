@@ -135,11 +135,11 @@ class TransportTechnology(Technology):
             rule = constraintTransportTechnologyLinearCapexRule,
             doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
         ) 
-        # TODO only for debug
-        model.constraintMinLoadTransport = pe.Constraint(
-            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
-            rule = constraintMinLoadTransportRule
-        )
+        # # TODO only for debug
+        # model.constraintMinLoadTransport = pe.Constraint(
+        #     cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
+        #     rule = constraintMinLoadTransportRule
+        # )
 
     # defines disjuncts if technology on/off
     @classmethod

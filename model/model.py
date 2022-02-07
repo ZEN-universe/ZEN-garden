@@ -41,7 +41,7 @@ class Model():
         # define and construct components of self.model
         Element.constructModelComponents()
         # add transformation factory so that disjuncts are solved
-        # pe.TransformationFactory("gdp.bigm").apply_to(self.model)  
+        pe.TransformationFactory("gdp.bigm").apply_to(self.model)  
         # pe.TransformationFactory("core.logical_to_linear").apply_to(self.model)  
         a=1
 
