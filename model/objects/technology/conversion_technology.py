@@ -241,27 +241,15 @@ class ConversionTechnology(Technology):
         # couple the real variables with the auxiliary variables
         # capex
         model.constraintCapexCoupling = pe.Constraint(
-            setPWACapex,
+            cls.createCustomSet(["setPWACapexTechs","setNodes","setTimeStepsInvest"]),
             rule = constraintCapexCouplingRule,
-            doc = "couples the real capex variables with the approximated variables. Dimension: setPWACapex.")
+            doc = "couples the real capex variables with the approximated variables. Dimension: setPWACapexTechs,setNodes,setTimeStepsInvest.")
         # capacity
         model.constraintCapacityCoupling = pe.Constraint(
-            setPWACapex,
+            cls.createCustomSet(["setPWACapexTechs","setNodes","setTimeStepsInvest"]),
             rule = constraintCapacityCouplingRule,
-            doc = "couples the real capacity variables with the approximated variables. Dimension: setPWACapex.")
-        ### TODO
-        model.constraintMinLoadConversion = pe.Constraint(
-            cls.createCustomSet(["setConversionTechnologies","setNodes","setTimeStepsOperation"]),
-            rule = constraintMinLoadConversionRule
-        )
-        model.constraintReferenceFlowCoupling = pe.Constraint(
-            cls.createCustomSet(["setConversionTechnologies","setDependentCarriers","setNodes","setTimeStepsOperation"]),
-            rule = constraintReferenceFlowCouplingRule
-        )
-        model.constraintDependentFlowCoupling = pe.Constraint(
-            cls.createCustomSet(["setConversionTechnologies","setDependentCarriers","setNodes","setTimeStepsOperation"]),
-            rule = constraintDependentFlowCouplingRule
-        )
+            doc = "couples the real capacity variables with the approximated variables. Dimension: setPWACapexTechs,setNodes,setTimeStepsInvest.")
+        
     # defines disjuncts if technology on/off
     @classmethod
     def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):

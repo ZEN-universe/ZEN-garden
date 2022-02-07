@@ -243,23 +243,23 @@ class Technology(Element):
             doc = 'limit max load by installed capacity. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
         )
         
-        # # disjunct if technology is on
-        # model.disjunctOnTechnology = pgdp.Disjunct(
-        #     cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
-        #     rule = cls.disjunctOnTechnologyRule,
-        #     doc = "disjunct to indicate that technology is On. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
-        # )
-        # # disjunct if technology is off
-        # model.disjunctOffTechnology = pgdp.Disjunct(
-        #     cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
-        #     rule = cls.disjunctOffTechnologyRule,
-        #     doc = "disjunct to indicate that technology is off. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
-        # )
-        # # disjunction
-        # model.disjunctionDecisionOnOffTechnology = pgdp.Disjunction(
-        #     cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
-        #     rule = cls.expressionLinkDisjunctsRule,
-        #     doc = "disjunction to link the on off disjuncts. Dimensions: setTechnologyLocation, setTimeStep")
+        # disjunct if technology is on
+        model.disjunctOnTechnology = pgdp.Disjunct(
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            rule = cls.disjunctOnTechnologyRule,
+            doc = "disjunct to indicate that technology is On. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
+        )
+        # disjunct if technology is off
+        model.disjunctOffTechnology = pgdp.Disjunct(
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            rule = cls.disjunctOffTechnologyRule,
+            doc = "disjunct to indicate that technology is off. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
+        )
+        # disjunction
+        model.disjunctionDecisionOnOffTechnology = pgdp.Disjunction(
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            rule = cls.expressionLinkDisjunctsRule,
+            doc = "disjunction to link the on off disjuncts. Dimensions: setTechnologyLocation, setTimeStep")
 
         # add pe.Constraints of the child classes
         for subclass in cls.getAllSubclasses():

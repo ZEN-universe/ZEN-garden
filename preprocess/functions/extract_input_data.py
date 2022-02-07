@@ -150,7 +150,7 @@ class DataInput():
                 _node,_nodeAlias = self.energySystem.setNodesOnEdges[index[0]]
             else:
                 _node,_nodeAlias = self.energySystem.setNodesOnEdges[index]
-            if (_node,_nodeAlias) in dfInput.index:
+            if _node in dfInput.index and _nodeAlias in dfInput.columns:
                 dfOutput.loc[index] = dfInput.loc[_node,_nodeAlias]
         return dfOutput
 
