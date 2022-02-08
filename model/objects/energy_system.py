@@ -268,14 +268,26 @@ class EnergySystem:
     @classmethod
     def constructVars(cls):
         """ constructs the pe.Vars of the class <EnergySystem> """
-        # currently no pe.Vars in the class <EnergySystem>
-        pass
+        # get model
+        model = cls.getConcreteModel()
+
+        # carbon emissions
+        model.carbonEmissionsTotal = pe.Var(
+            domain = pe.NonNegativeReals,
+            doc = "total carbon emissions of energy system. Domain: NonNegativeReals"
+        )
 
     @classmethod
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <EnergySystem> """
-        # currently no pe.Constraints in the class <EnergySystem>
-        pass
+        # get model
+        model = cls.getConcreteModel()
+
+        # carbon emissions
+        model.constraintCarbonEmissionsTotal = pe.Constraint(
+            rule = constraintCarbonEmissionsTotalRule,
+            doc = "total carbon emissions of energy system"
+        )
     
     @classmethod
     def constructObjective(cls):
@@ -286,9 +298,8 @@ class EnergySystem:
         # get selected objective rule
         if cls.getAnalysis()["objective"] == "TotalCost":
             objectiveRule = objectiveTotalCostRule
-        elif cls.getAnalysis()["objective"] == "CarbonEmissions":
-            logging.info("Objective of carbon emissions not yet implemented")
-            objectiveRule = objectiveCarbonEmissionsRule
+        elif cls.getAnalysis()["objective"] == "TotalCarbonEmissions":
+            objectiveRule = objectiveTotalCarbonEmissionsRule
         elif cls.getAnalysis()["objective"] == "Risk":
             logging.info("Objective of carbon emissions not yet implemented")
             objectiveRule = objectiveRiskRule
@@ -309,30 +320,26 @@ class EnergySystem:
             sense = objectiveSense
         )
 
-# different objective
+def constraintCarbonEmissionsTotalRule(model):
+    """ add up all carbon emissions from technologies and carriers """
+    return(
+        model.carbonEmissionsTotal ==
+        # technologies
+        model.carbonEmissionsTechnologyTotal
+        + 
+        # carriers
+        model.carbonEmissionsCarrierTotal
+    )
+
+# objective rules
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
-    carrierImportCost = sum(
-                        sum(
-                            sum(model.importCarrierFlow[carrier, node, time] * model.importPriceCarrier[carrier, node, time] * model.timeStepsCarrierDuration[carrier, time]
-                            for time in model.setTimeStepsCarrier[carrier])
-                        for node in model.setNodes)
-                    for carrier in model.setCarriers)
+    return(model.capexTotal + model.opexTotal + model.costCarrierTotal)
 
-    carrierExportCost = sum(
-                        sum(
-                            sum(model.exportCarrierFlow[carrier, node, time] * model.exportPriceCarrier[carrier, node, time] * model.timeStepsCarrierDuration[carrier, time]
-                            for time in model.setTimeStepsCarrier[carrier])
-                        for node in model.setNodes)
-                    for carrier in model.setCarriers)
-
-    return(carrierImportCost - carrierExportCost + model.capexTotal + model.opexTotal)
-
-def objectiveCarbonEmissionsRule(model):
+def objectiveTotalCarbonEmissionsRule(model):
     """objective function to minimize total emissions"""
 
-    # TODO implement objective functions for emissions
-    return pe.Constraint.Skip
+    return(model.carbonEmissionsTotal)
 
 def objectiveRiskRule(model):
     """objective function to minimize total risk"""
