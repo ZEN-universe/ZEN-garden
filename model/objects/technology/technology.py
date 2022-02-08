@@ -363,14 +363,14 @@ def constraintTechnologyMinCapacityRule(model, tech, location, time):
 
 def constraintTechnologyMaxCapacityRule(model, tech, location, time):
     """max capacity expansion of  technology"""
-    if model.maxBuiltCapacity[tech] != np.inf and tech not in model.setNLCapexTechs:
+    if model.maxBuiltCapacity[tech] != np.inf and tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
         return (model.maxBuiltCapacity[tech] * model.installTechnology[tech, location, time] >= model.builtCapacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyLifetimeRule(model, tech, location, time):
     """limited lifetime of the technologies"""
-    if tech not in model.setNLCapexTechs:
+    if tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
         # time range
         # TODO convert lifetime into tech-specific time indexed lifetime?
         t_start = int(max(min(model.setTimeStepsInvest[tech]), time - model.lifetimeTechnology[tech] + 1))
@@ -385,11 +385,8 @@ def constraintCapexTotalRule(model):
     """ sums over all technologies to calculate total capex """
     return(model.capexTotal ==
         sum(
-            sum(
-                model.capex[tech, loc, time]
-                for time in model.setTimeStepsInvest[tech]
-            )
-            for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])
+            model.capex[tech, loc, time]
+            for tech,loc,time in Element.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"])
         )
     )
 
@@ -431,12 +428,9 @@ def constraintOpexTotalRule(model):
     """ sums over all technologies to calculate total opex """
     return(model.opexTotal ==
         sum(
-            sum(
-                model.opex[tech, loc, time]*
-                model.timeStepsOperationDuration[tech,time]
-                for time in model.setTimeStepsOperation[tech]
-            )
-            for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])
+            model.opex[tech, loc, time]*
+            model.timeStepsOperationDuration[tech,time]
+            for tech,loc,time in Element.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"])
         )
     )
 

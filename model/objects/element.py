@@ -162,7 +162,8 @@ class Element:
         :param listIndex: list of names of indices
         :return customSet: custom set index """
         model = EnergySystem.getConcreteModel()
-        indexingSets = ["setTechnologies", "setConversionTechnologies", "setTransportTechnologies", "setCarriers","setPWACapexTechs","setNLCapexTechs","setPWAConverEfficiencyTechs","setNLConverEfficiencyTechs"]
+        # indexingSets = ["setTechnologies", "setConversionTechnologies", "setTransportTechnologies", "setCarriers","setPWACapexTechs","setNLCapexTechs","setPWAConverEfficiencyTechs","setNLConverEfficiencyTechs"]
+        indexingSets = EnergySystem.getIndexingSets()
         # check if all index sets are already defined in model and no set is indexed
         if all([(hasattr(model,index) and not model.find_component(index).is_indexed()) for index in listIndex]):
             # check if no set is indexed
@@ -184,6 +185,8 @@ class Element:
                 customSet = []
                 # iterate through
                 for element in model.find_component(listIndex[0]):
+                    # default: append element
+                    appendElement = True
                     # create empty list of sets
                     listSets = []
                     # iterate through indices without first index
@@ -208,27 +211,67 @@ class Element:
                                 listSets.append(model.setEdges)
                         # if set is built for PWA capex:
                         elif "setCapex" in index:
-                            _PWAParameter = cls.getAttributeOfAllElements("PWAParameter")
-                            # if technology is modeled as PWA, break for Linear index
-                            if "Linear" in index and "capex" in _PWAParameter[(element,"Capex")]["PWAVariables"]:
-                                break
-                            # if technology is not modeled as PWA, break for PWA index
-                            elif "PWA" in index and "capex" not in _PWAParameter[(element,"Capex")]["PWAVariables"]:
+                            if element in model.setConversionTechnologies or element in model.setStorageTechnologies:
+                                # if technology is approximated (by either PWA or Linear)
+                                if element not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["Capex"] or EnergySystem.getSolver()["model"] == "MILP":
+                                    _PWAParameter = cls.getAttributeOfSpecificElement(element,"PWAParameter")
+                                    # if technology is modeled as PWA, break for Linear index
+                                    if "Linear" in index and "capex" in _PWAParameter["Capex"]["PWAVariables"]:
+                                        appendElement = False
+                                        break
+                                    # if technology is not modeled as PWA, break for PWA index
+                                    elif "PWA" in index and "capex" not in _PWAParameter["Capex"]["PWAVariables"]:
+                                        appendElement = False
+                                        break
+                                    # if NL
+                                    elif "NL" in index:
+                                        appendElement = False
+                                        break
+                                # if technology is not approximated (i.e., modeled as NL), break for approximated index 
+                                else:
+                                    if "NL" not in index:
+                                        appendElement = False
+                                        break
+                            # Transport technology
+                            else:
+                                appendElement = False
                                 break
                         # if set is built for PWA converEfficiency:
                         elif "setConverEfficiency" in index:
-                            _PWAParameter = cls.getAttributeOfAllElements("PWAParameter")
-                            dependentCarrier = model.setDependentCarriers[element]
-                            dependentCarrierPWA = _PWAParameter[(element,"ConverEfficiency")]["PWAVariables"]
-                            if "Linear" in index:
-                                listSets.append(dependentCarrier-dependentCarrierPWA)
-                            elif "PWA" in index:
-                                listSets.append(dependentCarrierPWA)
+                            if element in model.setConversionTechnologies or element in model.setStorageTechnologies:
+                                # if technology is approximated (by either PWA or Linear)
+                                if element not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"] or EnergySystem.getSolver()["model"] == "MILP":
+                                    _PWAParameter = cls.getAttributeOfSpecificElement(element,"PWAParameter")
+                                    dependentCarrier = model.setDependentCarriers[element]
+                                    dependentCarrierPWA = _PWAParameter["ConverEfficiency"]["PWAVariables"]
+                                    if "Linear" in index:
+                                        listSets.append(dependentCarrier-dependentCarrierPWA)
+                                    elif "PWA" in index:
+                                        listSets.append(dependentCarrierPWA)
+                                    # if NL
+                                    elif "NL" in index:
+                                        appendElement = False
+                                        break  
+                                    # if approximated, either PWA or Linear
+                                    else:
+                                        listSets.append(dependentCarrier)
+                                # if technology is not approximated (hence modeled as NL), break for approximated index 
+                                else:
+                                    if "NL" not in index:
+                                        appendElement = False
+                                        break
+                            # Transport technology
+                            else:
+                                appendElement = False
+                                break
                         else:
                             raise NotImplementedError
-                    # append indices to customSet
-                    if listSets:
-                        customSet.extend(list(itertools.product([element],*listSets)))
+                    # append indices to customSet if element is supposed to be appended
+                    if appendElement:
+                        if listSets:
+                            customSet.extend(list(itertools.product([element],*listSets)))
+                        else:
+                            customSet.extend([element])
                 return customSet
             else:
                 raise NotImplementedError
