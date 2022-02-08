@@ -10,8 +10,6 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
-import pandas as pd
-import os
 from preprocess.functions.extract_input_data import DataInput
 
 class EnergySystem:
@@ -47,17 +45,27 @@ class EnergySystem:
         system = EnergySystem.getSystem()
         # in class <EnergySystem>, all sets are constructd
         self.setNodes                   = system["setNodes"]
-        self.setNodesOnEdges            = self.dataInput.calculateEdgesFromNodes(self.setNodes)
+        self.setNodesOnEdges            = self.calculateEdgesFromNodes()
         self.setEdges                   = list(self.setNodesOnEdges.keys())
         self.setCarriers                = system["setCarriers"]
-        self.setTechnologies            = system["setConversionTechnologies"]+system["setTransportTechnologies"]+system["setStorageTechnologies"]
+        self.setTechnologies            = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
         self.setBaseTimeSteps           = system["setTimeSteps"]
         self.setScenarios               = system["setScenarios"]
         # technology-specific
         self.setConversionTechnologies  = system["setConversionTechnologies"]
         self.setTransportTechnologies   = system["setTransportTechnologies"]
         self.setStorageTechnologies     = system["setStorageTechnologies"]
-        
+    
+    def calculateEdgesFromNodes(self):
+        """ calculates setNodesOnEdges from setNodes
+        :return setNodesOnEdges: dict with edges and corresponding nodes """
+        setNodesOnEdges = {}
+        for node in self.setNodes:
+            for nodeAlias in self.setNodes:
+                if node != nodeAlias:
+                    setNodesOnEdges[node+"-"+nodeAlias] = (node,nodeAlias)
+        return setNodesOnEdges
+
     ### --- classmethods --- ###
     # setter/getter classmethods
     @classmethod
@@ -129,6 +137,23 @@ class EnergySystem:
         assert hasattr(energySystem,attributeName), f"The energy system does not have attribute '{attributeName}"
         return getattr(energySystem,attributeName)
     
+    @classmethod
+    def calculateConnectedEdges(cls,node,direction:str):
+        """ calculates connected edges going in (direction = 'in') or going out (direction = 'out') 
+        :param node: current node, connected by edges 
+        :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
+        :return setConnectedEdges: list of connected edges """
+        energySystem = cls.getEnergySystem()
+        if direction == "in":
+            # second entry is node into which the flow goes
+            setConnectedEdges = [edge for edge in energySystem.setNodesOnEdges if energySystem.setNodesOnEdges[edge][1]==node]
+        elif direction == "out":
+            # first entry is node out of which the flow starts
+            setConnectedEdges = [edge for edge in energySystem.setNodesOnEdges if energySystem.setNodesOnEdges[edge][0]==node]
+        else:
+            raise KeyError(f"invalid direction '{direction}'")
+        return setConnectedEdges
+
     @classmethod
     def calculateTimeStepDuration(cls,inputTimeSteps):
         """ calculates (equidistant) time step durations for input time steps
@@ -287,22 +312,21 @@ class EnergySystem:
 # different objective
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
-    # CARRIERS
-    carrierImport = sum(
+    carrierImportCost = sum(
                         sum(
                             sum(model.importCarrierFlow[carrier, node, time] * model.importPriceCarrier[carrier, node, time] * model.timeStepsCarrierDuration[carrier, time]
                             for time in model.setTimeStepsCarrier[carrier])
                         for node in model.setNodes)
                     for carrier in model.setCarriers)
 
-    carrierExport = sum(
+    carrierExportCost = sum(
                         sum(
                             sum(model.exportCarrierFlow[carrier, node, time] * model.exportPriceCarrier[carrier, node, time] * model.timeStepsCarrierDuration[carrier, time]
                             for time in model.setTimeStepsCarrier[carrier])
                         for node in model.setNodes)
                     for carrier in model.setCarriers)
 
-    return(carrierImport - carrierExport + model.capexTotal)
+    return(carrierImportCost - carrierExportCost + model.capexTotal + model.opexTotal)
 
 def objectiveCarbonEmissionsRule(model):
     """objective function to minimize total emissions"""

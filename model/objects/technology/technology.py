@@ -11,7 +11,6 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 
 import logging
-import sys
 import pyomo.environ as pe
 import pyomo.gdp as pgdp
 import numpy as np
@@ -84,11 +83,6 @@ class Technology(Element):
             initialize = cls.getAttributeOfAllElements("setTimeStepsOperation"),
             doc="Set of time steps in operation for all technologies. Dimensions: setTechnologies"
         )
-        # combined technology and location set
-        # model.setTechnologyLocation = pe.Set(
-        #     initialize = technologyLocationRule,
-        #     doc = "Combined set of technologies and locations. Conversion technologies are paired with nodes, transport technologies are paired with edges"
-        # )
         # reference carriers
         model.setReferenceCarriers = pe.Set(
             model.setTechnologies,
@@ -132,13 +126,11 @@ class Technology(Element):
             model.setTechnologies,
             initialize = cls.getAttributeOfAllElements("lifetime"),
             doc = 'Parameter which specifies the lifetime of technology. Dimensions: setTechnologies')
-        
-        # availability of technologies
-        model.availabilityTechnology = pe.Param(
+        # capacityLimit of technologies
+        model.capacityLimitTechnology = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
-            initialize = cls.getAttributeOfAllElements("availability"),
-            doc = 'Parameter which specifies the availability of technologies. Dimensions: setTechnologies, setLocation, setTimeStepsInvest')
-        
+            initialize = cls.getAttributeOfAllElements("capacityLimit"),
+            doc = 'Parameter which specifies the capacity limit of technologies. Dimensions: setTechnologies, setLocation, setTimeStepsInvest')
         # minimum load relative to capacity
         model.minLoad = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
@@ -149,6 +141,12 @@ class Technology(Element):
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             initialize = cls.getAttributeOfAllElements("maxLoad"),
             doc = 'Parameter which specifies the maximum load of technology relative to installed capacity. Dimensions:setTechnologies, setLocation, setTimeStepsOperation')
+        # specific opex
+        model.opexSpecific = pe.Param(
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            initialize = cls.getAttributeOfAllElements("opexSpecific"),
+            doc = 'Parameter which specifies the specific opex. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
+        )
         # add pe.Param of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructParams()
@@ -164,8 +162,8 @@ class Technology(Element):
             ### TODO: if existing capacity, add existing capacity
             existingCapacity = 0
             maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
-            maxAvailabilityTechnology = model.availabilityTechnology[tech,loc,time]
-            boundCapacity = min(maxBuiltCapacity + existingCapacity,maxAvailabilityTechnology)
+            maxcapacityLimitTechnology = model.capacityLimitTechnology[tech,loc,time]
+            boundCapacity = min(maxBuiltCapacity + existingCapacity,maxcapacityLimitTechnology)
             bounds = (0,boundCapacity)
             return(bounds)
 
@@ -175,27 +173,38 @@ class Technology(Element):
         model.installTechnology = pe.Var(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             domain = pe.Binary,
-            doc = 'installment of a technology on edge i and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: Binary')
+            doc = 'installment of a technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: Binary')
         # capacity technology
         model.capacity = pe.Var(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             domain = pe.NonNegativeReals,
             bounds = capacityBounds,
-            doc = 'size of installed technology on edge i and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
+            doc = 'size of installed technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
         # builtCapacity technology
         model.builtCapacity = pe.Var(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             domain = pe.NonNegativeReals,
-            doc = 'size of built technology on edge i and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
+            doc = 'size of built technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
         # capex technology
         model.capex = pe.Var(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             domain = pe.NonNegativeReals,
-            doc = 'capex for installing technology on edge i and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
+            doc = 'capex for installing technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
         # total capex technology
         model.capexTotal = pe.Var(
             domain = pe.NonNegativeReals,
-            doc = 'total capex for installing all technologies on all edges at all times. Domain: NonNegativeReals')
+            doc = 'total capex for installing all technologies in all locations at all times. Domain: NonNegativeReals')
+        # opex
+        model.opex = pe.Var(
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            domain = pe.NonNegativeReals,
+            doc = "opex for operating technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsOperation. Domain: NonNegativeReals"
+        )
+        # total opex
+        model.opexTotal = pe.Var(
+            domain = pe.NonNegativeReals,
+            doc = "total opex for operating technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsOperation. Domain: NonNegativeReals"
+        )
 
         # add pe.Vars of the child classes
         for subclass in cls.getAllSubclasses():
@@ -206,11 +215,11 @@ class Technology(Element):
         """ constructs the pe.Constraints of the class <Technology> """
         model = EnergySystem.getConcreteModel()
         # construct pe.Constraints of the class <Technology>
-        #  technology availability
-        model.constraintTechnologyAvailability = pe.Constraint(
+        #  technology capacityLimit
+        model.constraintTechnologycapacityLimit = pe.Constraint(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
-            rule = constraintTechnologyAvailabilityRule,
-            doc = 'limited availability of  technology depending on node and time. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
+            rule = constraintTechnologycapacityLimitRule,
+            doc = 'limited capacityLimit of  technology depending on loc and time. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
         # minimum capacity
         model.constraintTechnologyMinCapacity = pe.Constraint(
@@ -235,6 +244,17 @@ class Technology(Element):
         model.constraintCapexTotal = pe.Constraint(
             rule = constraintCapexTotalRule,
             doc = 'total capex of all technology that can be installed.'
+        )
+        # calculate opex
+        model.constraintOpexTechnology = pe.Constraint(
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            rule = constraintOpexTechnologyRule,
+            doc = "calculates the opex for each technology at each location and time step"
+        )
+        # total opex of all technologies
+        model.constraintOpexTotal = pe.Constraint(
+            rule = constraintOpexTotalRule,
+            doc = 'total opex of all technology that are operated.'
         )
         # limit max load by installed capacity
         model.constraintMaxLoad = pe.Constraint(
@@ -300,10 +320,10 @@ def technologyLocationRule(model):
 
 ### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class
-def constraintTechnologyAvailabilityRule(model, tech, location, time):
-    """limited availability of  technology"""
-    if model.availabilityTechnology[tech, location, time] != np.inf:
-        return (model.availabilityTechnology[tech, location, time] >= model.capacity[tech, location, time])
+def constraintTechnologycapacityLimitRule(model, tech, location, time):
+    """limited capacityLimit of  technology"""
+    if model.capacityLimitTechnology[tech, location, time] != np.inf:
+        return (model.capacityLimitTechnology[tech, location, time] >= model.capacity[tech, location, time])
     else:
         return pe.Constraint.Skip
 
@@ -325,11 +345,11 @@ def constraintTechnologyLifetimeRule(model, tech, location, time):
     """limited lifetime of the technologies"""
     if tech not in model.setNLCapexTechs:
         # time range
-        t_start = int(max(1, time - model.lifetimeTechnology[tech] + 1))
+        t_start = int(max(min(model.setTimeStepsInvest[tech]), time - model.lifetimeTechnology[tech] + 1))
         t_end = time + 1
 
-        return (model.capacity[tech, location, time]
-                == sum(model.builtCapacity[tech,location, previousTime] for previousTime in range(t_start, t_end)))
+        return (model.capacity[tech, location, time] 
+            == sum(model.builtCapacity[tech,location, previousTime] for previousTime in range(t_start, t_end)))
     else:
         return pe.Constraint.Skip
 
@@ -345,12 +365,38 @@ def constraintCapexTotalRule(model):
         )
     )
 
+def constraintOpexTechnologyRule(model,tech,loc,time):
+    """ calculate opex of each conversion technology"""
+    referenceCarrier = model.setReferenceCarriers[tech][1]
+    if tech in model.setConversionTechnologies:
+        if referenceCarrier in model.setInputCarriers[tech]:
+            referenceFlow = model.inputFlow[tech,referenceCarrier,loc,time]
+        else:
+            referenceFlow = model.outputFlow[tech,referenceCarrier,loc,time]
+    else:
+        referenceFlow = model.carrierFlow[tech, referenceCarrier, loc, time]
+    return(model.opex[tech,loc,time] == model.opexSpecific[tech,loc,time]*referenceFlow)
+
+
+def constraintOpexTotalRule(model):
+    """ sums over all technologies to calculate total opex """
+    return(model.opexTotal ==
+        sum(
+            sum(
+                model.opex[tech, loc, time]*
+                model.timeStepsOperationDuration[tech,time]
+                for time in model.setTimeStepsOperation[tech]
+            )
+            for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])
+        )
+    )
+
 def constraintMaxLoadRule(model, tech, loc, time):
     """Load is limited by the installed capacity and the maximum load factor"""
     referenceCarrier = model.setReferenceCarriers[tech][1]
     # get invest time step
-    baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
-    investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+    baseTimeStep    = EnergySystem.decodeTimeStep(tech,time,"operation")
+    investTimeStep  = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
     # conversion technology
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:

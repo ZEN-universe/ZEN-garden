@@ -10,7 +10,6 @@ import numpy as np
 from scipy.stats import linregress
 import pandas as pd
 import os
-import logging
 
 class DataInput():
     def __init__(self,system,analysis,solver,energySystem = None):
@@ -58,10 +57,6 @@ class DataInput():
         """
         indexList = []
         indexNameList = []
-        # add edges
-        # if transportTechnology:
-        #     indexList.append(self.energySystem.setEdges)
-        #     indexNameList.append(self.indexNames["setEdges"])
         # add rest of indices
         for index in indexSets:
             indexNameList.append(self.indexNames[index])
@@ -86,9 +81,13 @@ class DataInput():
         if not timeSteps:
             timeSteps = self.system["setTimeSteps"]
         # check if default value exists in attributes.csv, with or without "Default" Suffix
-        defaultValue = self.extractAttributeData(folderPath,manualFileName)
+        if column:
+            defaultName = column
+        else:
+            defaultName = manualFileName
+        defaultValue = self.extractAttributeData(folderPath,defaultName)
         if defaultValue is None:
-            defaultValue = self.extractAttributeData(folderPath,manualFileName+"Default")
+            defaultValue = self.extractAttributeData(folderPath,defaultName+"Default")
         # select index
         indexList,indexNameList = self.constructIndexList(indexSets,timeSteps)
         # create pd.MultiIndex and select data
@@ -144,7 +143,6 @@ class DataInput():
         :return dfOutput: filled output dataframe """
         dfInput = dfInput.set_index(self.indexNames['setNodes']) 
         # fill dfOutput
-        # TODO: extract subset as for non transport technology values
         for index in indexMultiIndex:
             if isinstance(index,tuple):
                 _node,_nodeAlias = self.energySystem.setNodesOnEdges[index[0]]
@@ -197,10 +195,13 @@ class DataInput():
         # get carriers
         for carrier in ["inputCarrier","outputCarrier"]:
             _carrierString = self.extractAttributeData(folderPath,carrier)
-            _carrierList = _carrierString.strip().split(" ")
-            for _carrierItem in _carrierList:
-                # check if carrier in carriers of model
-                assert _carrierItem in self.system["setCarriers"], f"{carrier} '{_carrierItem}' is not in carriers of model ({self.system['setCarriers']})"
+            if str(_carrierString) != "nan":
+                _carrierList = _carrierString.strip().split(" ")
+                for _carrierItem in _carrierList:
+                    # check if carrier in carriers of model
+                    assert _carrierItem in self.system["setCarriers"], f"{carrier} '{_carrierItem}' is not in carriers of model ({self.system['setCarriers']})"
+            else:
+                _carrierList = []
             carrierDict[carrier] = _carrierList
 
         return carrierDict
@@ -237,7 +238,7 @@ class DataInput():
             PWADict[type]["PWAVariables"] = [] # select only those variables that are modeled as PWA
             PWADict[type]["bounds"] = {} # save bounds of variables
             # min and max total capacity of technology 
-            minCapacityTech,maxCapacityTech = (0,min(max(tech.availability.values()),max(breakpoints)))
+            minCapacityTech,maxCapacityTech = (0,min(max(tech.capacityLimit.values()),max(breakpoints)))
             for valueVariable in nonlinearValues:
                 if valueVariable == breakpointVariable:
                     PWADict[type]["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
@@ -264,15 +265,3 @@ class DataInput():
                         _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[type][valueVariable])))
                         PWADict[type]["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
         return PWADict
-
-    @staticmethod
-    def calculateEdgesFromNodes(setNodes):
-        """ calculates setNodesOnEdges from setNodes
-        :param setNodes: list of nodes in model 
-        :return setNodesOnEdges: dict with edges and corresponding nodes """
-        setNodesOnEdges = {}
-        for node in setNodes:
-            for nodeAlias in setNodes:
-                if node != nodeAlias:
-                    setNodesOnEdges[node+"-"+nodeAlias] = (node,nodeAlias)
-        return setNodesOnEdges
