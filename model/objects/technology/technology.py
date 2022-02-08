@@ -147,6 +147,12 @@ class Technology(Element):
             initialize = cls.getAttributeOfAllElements("opexSpecific"),
             doc = 'Parameter which specifies the specific opex. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
         )
+        # carbon intensity
+        model.carbonIntensityTechnology = pe.Param(
+            cls.createCustomSet(["setTechnologies","setLocation"]),
+            initialize = cls.getAttributeOfAllElements("carbonIntensityTechnology"),
+            doc = 'Parameter which specifies the carbon intensity of each technology. Dimensions: setTechnologies, setLocation'
+        )
         # add pe.Param of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructParams()
@@ -205,7 +211,18 @@ class Technology(Element):
             domain = pe.NonNegativeReals,
             doc = "total opex for operating technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsOperation. Domain: NonNegativeReals"
         )
-
+        # carbon emissions
+        model.carbonEmissionsTechnology = pe.Var(
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            domain = pe.NonNegativeReals,
+            doc = "carbon emissions for operating technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsOperation. Domain: NonNegativeReals"
+        )
+        # total carbon emissions
+        model.carbonEmissionsTechnologyTotal = pe.Var(
+            domain = pe.NonNegativeReals,
+            doc = "total carbon emissions for operating technology at location l and time t. Domain: NonNegativeReals"
+        )
+        
         # add pe.Vars of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructVars()
@@ -233,12 +250,17 @@ class Technology(Element):
             rule = constraintTechnologyMaxCapacityRule,
             doc = 'max capacity of technology that can be installed. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
-
         # lifetime
         model.constraintTechnologyLifetime = pe.Constraint(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             rule = constraintTechnologyLifetimeRule,
             doc = 'max capacity of  technology that can be installed. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
+        )
+        # limit max load by installed capacity
+        model.constraintMaxLoad = pe.Constraint(
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            rule = constraintMaxLoadRule,
+            doc = 'limit max load by installed capacity. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
         )
         # total capex of all technologies
         model.constraintCapexTotal = pe.Constraint(
@@ -249,18 +271,23 @@ class Technology(Element):
         model.constraintOpexTechnology = pe.Constraint(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             rule = constraintOpexTechnologyRule,
-            doc = "calculates the opex for each technology at each location and time step"
+            doc = "opex for each technology at each location and time step"
         )
         # total opex of all technologies
         model.constraintOpexTotal = pe.Constraint(
             rule = constraintOpexTotalRule,
             doc = 'total opex of all technology that are operated.'
         )
-        # limit max load by installed capacity
-        model.constraintMaxLoad = pe.Constraint(
+        # carbon emissions of technologies
+        model.constraintCarbonEmissionsTechnology = pe.Constraint(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
-            rule = constraintMaxLoadRule,
-            doc = 'limit max load by installed capacity. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
+            rule = constraintCarbonEmissionsTechnologyRule,
+            doc = "carbon emissions for each technology at each location and time step"
+        )
+        # carbon emissions of technologies
+        model.constraintCarbonEmissionsTechnologyTotal = pe.Constraint(
+            rule = constraintCarbonEmissionsTechnologyTotalRule,
+            doc = "total carbon emissions for each technology at each location and time step"
         )
         
         # disjunct if technology is on
@@ -310,13 +337,13 @@ class Technology(Element):
         """ link disjuncts for technology is on and technology is off """
         return ([model.disjunctOnTechnology[tech,loc,time],model.disjunctOffTechnology[tech,loc,time]])
 
-# function to combine the technologies and locations
-def technologyLocationRule(model):
-    """ creates list for setTechnologyLocation, where ConversionTechnologies are paired with the nodes and TransportTechnologies are paired with edges
-    :return technologyLocationList: list of 2-tuple with (technology, location)"""
-    technologyLocationList = [(technology,location) for technology in model.setConversionTechnologies for location in model.setNodes]
-    technologyLocationList.extend([(technology,location) for technology in model.setTransportTechnologies for location in model.setEdges])
-    return technologyLocationList
+# # function to combine the technologies and locations
+# def technologyLocationRule(model):
+#     """ creates list for setTechnologyLocation, where ConversionTechnologies are paired with the nodes and TransportTechnologies are paired with edges
+#     :return technologyLocationList: list of 2-tuple with (technology, location)"""
+#     technologyLocationList = [(technology,location) for technology in model.setConversionTechnologies for location in model.setNodes]
+#     technologyLocationList.extend([(technology,location) for technology in model.setTransportTechnologies for location in model.setEdges])
+#     return technologyLocationList
 
 ### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class
@@ -345,6 +372,7 @@ def constraintTechnologyLifetimeRule(model, tech, location, time):
     """limited lifetime of the technologies"""
     if tech not in model.setNLCapexTechs:
         # time range
+        # TODO convert lifetime into tech-specific time indexed lifetime?
         t_start = int(max(min(model.setTimeStepsInvest[tech]), time - model.lifetimeTechnology[tech] + 1))
         t_end = time + 1
 
@@ -366,7 +394,7 @@ def constraintCapexTotalRule(model):
     )
 
 def constraintOpexTechnologyRule(model,tech,loc,time):
-    """ calculate opex of each conversion technology"""
+    """ calculate opex of each technology"""
     referenceCarrier = model.setReferenceCarriers[tech][1]
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:
@@ -377,6 +405,27 @@ def constraintOpexTechnologyRule(model,tech,loc,time):
         referenceFlow = model.carrierFlow[tech, referenceCarrier, loc, time]
     return(model.opex[tech,loc,time] == model.opexSpecific[tech,loc,time]*referenceFlow)
 
+def constraintCarbonEmissionsTechnologyRule(model,tech,loc,time):
+    """ calculate carbon emissions of each technology"""
+    referenceCarrier = model.setReferenceCarriers[tech][1]
+    if tech in model.setConversionTechnologies:
+        if referenceCarrier in model.setInputCarriers[tech]:
+            referenceFlow = model.inputFlow[tech,referenceCarrier,loc,time]
+        else:
+            referenceFlow = model.outputFlow[tech,referenceCarrier,loc,time]
+    else:
+        referenceFlow = model.carrierFlow[tech, referenceCarrier, loc, time]
+    return(model.carbonEmissionsTechnology[tech,loc,time] == model.carbonIntensityTechnology[tech,loc]*referenceFlow)
+
+def constraintCarbonEmissionsTechnologyTotalRule(model):
+    """ calculate total carbon emissions of each technology"""
+    return(
+        model.carbonEmissionsTechnologyTotal ==
+        sum(
+            model.carbonEmissionsTechnology[tech,loc,time]*model.timeStepsOperationDuration[tech, time]
+            for tech,loc,time in Element.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"])
+        )
+    )
 
 def constraintOpexTotalRule(model):
     """ sums over all technologies to calculate total opex """

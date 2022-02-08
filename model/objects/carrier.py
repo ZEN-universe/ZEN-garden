@@ -42,6 +42,7 @@ class Carrier(Element):
         self.availabilityCarrierExport  = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=self.setTimeStepsCarrier)
         self.exportPriceCarrier         = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=self.setTimeStepsCarrier)
         self.importPriceCarrier         = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=self.setTimeStepsCarrier)
+        self.carbonIntensityCarrier     = self.dataInput.extractInputData(_inputPath,"carbonIntensity",["setNodes"])
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
@@ -92,6 +93,12 @@ class Carrier(Element):
             initialize = cls.getAttributeOfAllElements("exportPriceCarrier"),
             doc = 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier'
         )
+        # carbon intensity
+        model.carbonIntensityCarrier = pe.Param(
+            cls.createCustomSet(["setCarriers","setNodes"]),
+            initialize = cls.getAttributeOfAllElements("carbonIntensityCarrier"),
+            doc = 'Parameter which specifies the carbon intensity of carrier. \n\t Dimensions: setCarriers, setNodes'
+        )
 
     @classmethod
     def constructVars(cls):
@@ -109,6 +116,28 @@ class Carrier(Element):
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent carrier export from the grid. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
+        )
+        # carrier import/export cost
+        model.costCarrier = pe.Var(
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            domain = pe.NonNegativeReals,
+            doc = 'node- and time-dependent carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
+        )
+        # total carrier import/export cost
+        model.costCarrierTotal = pe.Var(
+            domain = pe.NonNegativeReals,
+            doc = 'total carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
+        )
+        # carbon emissions
+        model.carbonEmissionsCarrier = pe.Var(
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            domain = pe.NonNegativeReals,
+            doc = "carbon emissions of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals"
+        )
+        # total carbon emissions
+        model.carbonEmissionsCarrierTotal = pe.Var(
+            domain = pe.NonNegativeReals,
+            doc = "total carbon emissions of importing/exporting carrier. Domain: NonNegativeReals"
         )
 
     @classmethod
@@ -128,12 +157,35 @@ class Carrier(Element):
             rule = constraintAvailabilityCarrierExportRule,
             doc = 'node- and time-dependent carrier availability to export to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
         )        
+        # cost for carrier 
+        model.constraintCostCarrier = pe.Constraint(
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            rule = constraintCostCarrierRule,
+            doc = "cost of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsCarrier."
+        )
+        # total cost for carriers
+        model.constraintCostCarrierTotal = pe.Constraint(
+            rule = constraintCostCarrierTotalRule,
+            doc = "total cost of importing/exporting carriers. ."
+        )
+        # carbon emissions
+        model.constraintCarbonEmissionsCarrier = pe.Constraint(
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            rule = constraintCarbonEmissionsCarrierRule,
+            doc = "carbon emissions of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsCarrier."
+        )
+        # total carbon emissions
+        model.constraintCarbonEmissionsCarrierTotal = pe.Constraint(
+            rule = constraintCarbonEmissionsCarrierTotalRule,
+            doc = "total carbon emissions of importing/exporting carriers."
+        )
         # energy balance
         model.constraintNodalEnergyBalance = pe.Constraint(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
             rule = constraintNodalEnergyBalanceRule,
             doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
         )
+
 
 #%% Constraint rules defined in current class
 def constraintAvailabilityCarrierImportRule(model, carrier, node, time):
@@ -146,7 +198,41 @@ def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
 
     return(model.exportCarrierFlow[carrier, node, time] <= model.availabilityCarrierExport[carrier,node,time])
 
-# energy balance
+def constraintCostCarrierRule(model, carrier, node, time):
+    """ carbon emissions of importing/exporting carrier"""
+    return(model.costCarrier[carrier,node, time] == 
+        model.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] - 
+        model.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
+    )
+
+def constraintCostCarrierTotalRule(model):
+    """ total carbon emissions of importing/exporting carrier"""
+    return(model.costCarrierTotal == 
+        sum(
+            model.costCarrier[carrier,node,time]*model.timeStepsCarrierDuration[carrier, time]
+            for carrier,node,time in Element.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"])
+        )
+    )
+
+def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
+    """ carbon emissions of importing/exporting carrier"""
+
+    return(model.carbonEmissionsCarrier[carrier,node, time] == 
+        model.carbonIntensityCarrier[carrier,node]*
+        (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
+    )
+
+def constraintCarbonEmissionsCarrierTotalRule(model):
+    """ total carbon emissions of importing/exporting carrier"""
+
+    return(model.carbonEmissionsCarrierTotal == 
+        sum(
+            model.carbonEmissionsCarrier[carrier,node,time]*model.timeStepsCarrierDuration[carrier, time]
+            for carrier,node,time in Element.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"])
+        )
+    )
+    
+
 def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     """" 
     nodal energy balance for each time step

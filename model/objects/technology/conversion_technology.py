@@ -35,18 +35,19 @@ class ConversionTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths       = EnergySystem.getPaths()   
+        paths                           = EnergySystem.getPaths()   
         # set attributes of technology
-        _inputPath                  = paths["setConversionTechnologies"][self.name]["folder"]
-        self.capacityLimit          = self.dataInput.extractInputData(_inputPath,"capacityLimit",["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)
-        self.minLoad                = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
-        self.maxLoad                = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
-        self.opexSpecific           = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
+        _inputPath                      = paths["setConversionTechnologies"][self.name]["folder"]
+        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)
+        self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
+        self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
+        self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
+        self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setNodes"])
         # define input and output carrier
-        self.inputCarrier           = self.dataInput.extractConversionCarriers(_inputPath)["inputCarrier"]
-        self.outputCarrier          = self.dataInput.extractConversionCarriers(_inputPath)["outputCarrier"]
+        self.inputCarrier               = self.dataInput.extractConversionCarriers(_inputPath)["inputCarrier"]
+        self.outputCarrier              = self.dataInput.extractConversionCarriers(_inputPath)["outputCarrier"]
         # extract PWA parameters
-        self.PWAParameter           = self.dataInput.extractPWAData(_inputPath,self)
+        self.PWAParameter               = self.dataInput.extractPWAData(_inputPath,self)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod

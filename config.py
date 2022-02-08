@@ -19,7 +19,7 @@ solver = default_config.solver
 ## Analysis - settings update compared to default values
 analysis['spatialResolution'] = 'NUTS0_Test_TSA'
 analysis['modelFormulation'] = 'HSC'
-analysis['objective'] = 'TotalCost'
+analysis['objective'] = 'TotalCarbonEmissions' # options are TotalCost, TotalCarbonEmissions, Risk
 # definition of the approximation
 analysis['variablesNonlinearModel'] = {'builtCapacity': []}
 analysis['nonlinearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}

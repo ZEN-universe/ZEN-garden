@@ -34,19 +34,19 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths                       = EnergySystem.getPaths()   
+        paths                           = EnergySystem.getPaths()   
         # set attributes of technology
-        _inputPath                  = paths["setTransportTechnologies"][self.name]["folder"]
-        self.lossFlow               = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
+        _inputPath                      = paths["setTransportTechnologies"][self.name]["folder"]
+        self.lossFlow                   = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
         # set attributes of transport technology
-        self.capacityLimit          = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsInvest,transportTechnology=True)
+        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsInvest,transportTechnology=True)
         # TODO calculate for non Euclidean distance
-        self.distance               = self.dataInput.extractInputData(_inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
-        self.capexPerDistance       = self.dataInput.extractInputData(_inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
-        self.opexSpecific           = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsOperation,transportTechnology=True)
-        self.minLoad                = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
-        self.maxLoad                = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
-
+        self.distance                   = self.dataInput.extractInputData(_inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
+        self.capexPerDistance           = self.dataInput.extractInputData(_inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+        self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsOperation,transportTechnology=True)
+        self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
+        self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
+        self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setEdges"])
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod
     def constructSets(cls):
