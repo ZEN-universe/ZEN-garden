@@ -25,7 +25,7 @@ analysis['variablesNonlinearModel'] = {'builtCapacity': []}
 analysis['nonlinearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}
 
 ## System - settings update compared to default values
-system['setCarriers'] = ['electricity','natural_gas',"irradiation"]
+system['setCarriers'] = ['electricity','natural_gas']
 system['setStorageTechnologies'] = []
 system['setTransportTechnologies'] = ['power_line']
 system['setConversionTechnologies'] = ['photovoltaics',"natural_gas_turbine"]

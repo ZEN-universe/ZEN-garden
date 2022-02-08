@@ -9,10 +9,7 @@ Description:    Class defining a standard Element. Contains methods to add param
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
                 optimization model as an input.
 ==========================================================================================================================================================================="""
-import logging
-import pyomo.environ as pe
-import pandas as pd
-import os
+
 from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
 import itertools 
@@ -235,6 +232,3 @@ class Element:
                 return customSet
             else:
                 raise NotImplementedError
-                pass
-            a=1
-        a=1

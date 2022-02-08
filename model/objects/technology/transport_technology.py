@@ -11,10 +11,7 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
-import pyomo.gdp as pgdp
-import numpy as np
 from model.objects.technology.technology import Technology
-from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 
 class TransportTechnology(Technology):
@@ -42,10 +39,11 @@ class TransportTechnology(Technology):
         _inputPath                  = paths["setTransportTechnologies"][self.name]["folder"]
         self.lossFlow               = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
         # set attributes of transport technology
-        self.availability           = self.dataInput.extractInputData(_inputPath,"availability",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsInvest,transportTechnology=True)
+        self.capacityLimit          = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsInvest,transportTechnology=True)
         # TODO calculate for non Euclidean distance
         self.distance               = self.dataInput.extractInputData(_inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
-        self.costPerDistance        = self.dataInput.extractInputData(_inputPath,"costPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+        self.capexPerDistance       = self.dataInput.extractInputData(_inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+        self.opexSpecific           = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsOperation,transportTechnology=True)
         self.minLoad                = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
         self.maxLoad                = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
 
@@ -53,18 +51,7 @@ class TransportTechnology(Technology):
     @classmethod
     def constructSets(cls):
         """ constructs the pe.Sets of the class <TransportTechnology> """
-        model = EnergySystem.getConcreteModel()
-
-        # technologies and respective transport carriers
-        model.setTransportCarriersTech = pe.Set(
-            initialize = [(tech,cls.getAttributeOfAllElements("referenceCarrier")[tech]) for tech in cls.getAttributeOfAllElements("referenceCarrier")],
-            doc='set of techs and their respective transport carriers.')
-
-        # transport carriers of technology
-        model.setTransportCarriers = pe.Set(
-            model.setTransportTechnologies,
-            initialize = lambda _,tech: cls.getAttributeOfAllElements("referenceCarrier")[tech],
-            doc="set of carriers that are transported in a specific transport technology")
+        pass
 
     @classmethod
     def constructParams(cls):
@@ -77,9 +64,9 @@ class TransportTechnology(Technology):
             initialize = cls.getAttributeOfAllElements("distance"),
             doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
         # cost per distance
-        model.costPerDistance = pe.Param(
+        model.capexPerDistance = pe.Param(
             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
-            initialize = cls.getAttributeOfAllElements("costPerDistance"),
+            initialize = cls.getAttributeOfAllElements("capexPerDistance"),
             doc = 'capex per unit distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
         # carrier losses
         model.lossFlow = pe.Param(
@@ -132,14 +119,9 @@ class TransportTechnology(Technology):
         # Linear Capex
         model.constraintTransportTechnologyLinearCapex = pe.Constraint(
             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
-            rule = constraintTransportTechnologyLinearCapexRule,
+            rule = constraintCapexTransportTechnologyRule,
             doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
         ) 
-        # # TODO only for debug
-        # model.constraintMinLoadTransport = pe.Constraint(
-        #     cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
-        #     rule = constraintMinLoadTransportRule
-        # )
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -171,21 +153,18 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
     return(model.carrierLoss[tech,referenceCarrier, edge, time]
             == model.distance[tech,edge] * model.lossFlow[tech] * model.carrierFlow[tech,referenceCarrier, edge, time])
 
-def constraintTransportTechnologyLinearCapexRule(model, tech, edge, time):
+def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
-    # TODO: why factor 0.5? divide costPerDistance in input data
+    # TODO: why factor 0.5? divide capexPerDistance in input data
     return (model.capex[tech,edge, time] == 0.5 *
             model.builtCapacity[tech,edge, time] *
             model.distance[tech,edge] *
-            model.costPerDistance[tech,edge, time])
+            model.capexPerDistance[tech,edge, time])
 
-### TODO only for test
-def constraintMinLoadTransportRule(model,tech,edge,time):
-    if model.minLoad[tech,edge,time] != 0:
-        referenceCarrier = model.setReferenceCarriers[tech][1]
-        # get invest time step
-        baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
-        investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
-        return (model.carrierFlow[tech,referenceCarrier, edge, time] >= model.minLoad[tech,edge,time] * model.capacity[tech,edge, investTimeStep])
-    else:
-        return pe.Constraint.Skip
+def constraintOpexTransportTechnologyRule(model, tech, edge, time):
+    """ definition of the opex for the transport technology"""
+    # TODO: why factor 0.5? divide capexPerDistance in input data
+    return (model.opex[tech,edge, time] == 0.5 *
+            model.builtCapacity[tech,edge, time] *
+            model.distance[tech,edge] *
+            model.capexPerDistance[tech,edge, time])

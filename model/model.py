@@ -13,7 +13,6 @@ Description:  Class defining the Concrete optimization model.
 import logging
 import pyomo.environ as pe
 import os
-from pyomo.opt import SolverStatus, TerminationCondition
 from model.objects.element import Element
 # the order of the following classes defines the order in which they are constructed. Keep this way
 from model.objects.technology.conversion_technology import ConversionTechnology
@@ -29,11 +28,11 @@ class Model():
         :param system: dictionary defining the system
         :param paths: dictionary defining the paths of the model
         :param solver: dictionary defining the solver"""
-        self.analysis = analysis
-        self.system = system
-        self.paths = paths
-        self.solver = solver
-        self.model = pe.ConcreteModel()
+        self.analysis   = analysis
+        self.system     = system
+        self.paths      = paths
+        self.solver     = solver
+        self.model      = pe.ConcreteModel()
         # set optimization attributes (the five set above) to class <EnergySystem>
         EnergySystem.setOptimizationAttributes(analysis, system, paths, solver, self.model)
         # add Elements to optimization
@@ -42,8 +41,6 @@ class Model():
         Element.constructModelComponents()
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)  
-        # pe.TransformationFactory("core.logical_to_linear").apply_to(self.model)  
-        a=1
 
     def addElements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -61,8 +58,8 @@ class Model():
         for transportTech in self.system['setTransportTechnologies']:
             TransportTechnology(transportTech)
         # TODO implement storage technologies
-        # for storageTech in self.system['setStorageTechnologies']:
-        #     print("Storage Technologies are not yet implemented")
+        for storageTech in self.system['setStorageTechnologies']:
+            print("Storage Technologies are not yet implemented")
     
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets

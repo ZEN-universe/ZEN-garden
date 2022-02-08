@@ -12,7 +12,6 @@ Description:    Class defining a generic energy carrier.
 import logging
 import pyomo.environ as pe
 from model.objects.element import Element
-# from preprocess.functions.calculate_input_data import extractInputData
 from model.objects.energy_system import EnergySystem
 
 class Carrier(Element):
@@ -39,9 +38,10 @@ class Carrier(Element):
         self.setTimeStepsCarrier        = self.dataInput.extractTimeSteps(_inputPath)
         self.timeStepsCarrierDuration   = EnergySystem.calculateTimeStepDuration(self.setTimeStepsCarrier)
         self.demandCarrier              = self.dataInput.extractInputData(_inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsCarrier)
-        self.availabilityCarrier        = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsCarrier)
-        self.exportPriceCarrier         = self.dataInput.extractInputData(_inputPath,"exportPriceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=self.setTimeStepsCarrier)
-        self.importPriceCarrier         = self.dataInput.extractInputData(_inputPath,"importPriceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=self.setTimeStepsCarrier)
+        self.availabilityCarrierImport  = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=self.setTimeStepsCarrier)
+        self.availabilityCarrierExport  = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=self.setTimeStepsCarrier)
+        self.exportPriceCarrier         = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=self.setTimeStepsCarrier)
+        self.importPriceCarrier         = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=self.setTimeStepsCarrier)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
@@ -71,10 +71,15 @@ class Carrier(Element):
             initialize = cls.getAttributeOfAllElements("demandCarrier"),
             doc = 'Parameter which specifies the carrier demand.\n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier')
         # availability of carrier
-        model.availabilityCarrier = pe.Param(
+        model.availabilityCarrierImport = pe.Param(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            initialize = cls.getAttributeOfAllElements("availabilityCarrier"),
-            doc = 'Parameter which specifies the maximum energy that can be imported from the grid. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier')
+            initialize = cls.getAttributeOfAllElements("availabilityCarrierImport"),
+            doc = 'Parameter which specifies the maximum energy that can be imported from outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier')
+        # availability of carrier
+        model.availabilityCarrierExport = pe.Param(
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            initialize = cls.getAttributeOfAllElements("availabilityCarrierExport"),
+            doc = 'Parameter which specifies the maximum energy that can be exported to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier')
         # import price
         model.importPriceCarrier = pe.Param(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
@@ -112,12 +117,17 @@ class Carrier(Element):
         model = EnergySystem.getConcreteModel()
 
         # limit import flow by availability
-        model.constraintAvailabilityCarrier = pe.Constraint(
+        model.constraintAvailabilityCarrierImport = pe.Constraint(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            rule = constraintAvailabilityCarrierRule,
-            doc = 'node- and time-dependent carrier availability. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
+            rule = constraintAvailabilityCarrierImportRule,
+            doc = 'node- and time-dependent carrier availability to import from outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
         )        
-        ### TODO add mass balance but move after technologies
+        # limit export flow by availability
+        model.constraintAvailabilityCarrierExport = pe.Constraint(
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            rule = constraintAvailabilityCarrierExportRule,
+            doc = 'node- and time-dependent carrier availability to export to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
+        )        
         # energy balance
         model.constraintNodalEnergyBalance = pe.Constraint(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
@@ -126,10 +136,15 @@ class Carrier(Element):
         )
 
 #%% Constraint rules defined in current class
-def constraintAvailabilityCarrierRule(model, carrier, node, time):
-    """node- and time-dependent carrier availability"""
+def constraintAvailabilityCarrierImportRule(model, carrier, node, time):
+    """node- and time-dependent carrier availability to import from outside the system boundaries"""
 
-    return(model.importCarrierFlow[carrier, node, time] <= model.availabilityCarrier[carrier,node,time])
+    return(model.importCarrierFlow[carrier, node, time] <= model.availabilityCarrierImport[carrier,node,time])
+
+def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
+    """node- and time-dependent carrier availability to export to outside the system boundaries"""
+
+    return(model.exportCarrierFlow[carrier, node, time] <= model.availabilityCarrierExport[carrier,node,time])
 
 # energy balance
 def constraintNodalEnergyBalanceRule(model, carrier, node, time):
@@ -140,22 +155,22 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     baseTimeStep = EnergySystem.decodeTimeStep(carrier,time)
     # carrier input and output conversion technologies
     carrierConversionIn, carrierConversionOut = 0, 0
-    if hasattr(model, 'setConversionTechnologies'):
-        for tech in model.setConversionTechnologies:
-            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            if carrier in model.setInputCarriers[tech]:
-                carrierConversionIn += model.inputFlow[tech,carrier,node,operationTimeStep]
-            if carrier in model.setOutputCarriers[tech]:
-                carrierConversionOut += model.outputFlow[tech,carrier,node,operationTimeStep]
+    for tech in model.setConversionTechnologies:
+        operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+        if carrier in model.setInputCarriers[tech]:
+            carrierConversionIn += model.inputFlow[tech,carrier,node,operationTimeStep]
+        if carrier in model.setOutputCarriers[tech]:
+            carrierConversionOut += model.outputFlow[tech,carrier,node,operationTimeStep]
     # carrier flow transport technologies
     carrierFlowIn, carrierFlowOut = 0, 0
-    if hasattr(model, 'setTransportTechnologies'):
-        for tech in model.setTransportTechnologies:
-            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            if carrier in model.setTransportCarriers[tech]:
-                carrierFlowIn += sum(model.carrierFlow[tech,carrier, edge, operationTimeStep]
-                                    - model.carrierLoss[tech,carrier, edge, operationTimeStep] for edge in model.setEdges if node == model.setNodesOnEdges[edge][2]) # second entry is node into which the flow goes
-                carrierFlowOut += sum(model.carrierFlow[tech,carrier, edge, operationTimeStep] for edge in model.setEdges if node == model.setNodesOnEdges[edge][1]) # first entry is node out of which the flow starts
+    setEdgesIn = EnergySystem.calculateConnectedEdges(node,"in")
+    setEdgesOut = EnergySystem.calculateConnectedEdges(node,"out")
+    for tech in model.setTransportTechnologies:
+        operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+        if carrier in model.setReferenceCarriers[tech]:
+            carrierFlowIn   += sum(model.carrierFlow[tech,carrier, edge, operationTimeStep]
+                            - model.carrierLoss[tech,carrier, edge, operationTimeStep] for edge in setEdgesIn) 
+            carrierFlowOut  += sum(model.carrierFlow[tech,carrier, edge, operationTimeStep] for edge in setEdgesOut) 
     # carrier import, demand and export
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
     carrierImport = model.importCarrierFlow[carrier, node, time]
