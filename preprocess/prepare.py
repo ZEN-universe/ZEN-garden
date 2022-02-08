@@ -15,6 +15,8 @@ from preprocess.functions.initialise import Init
 from preprocess.functions.read_data import Read
 from preprocess.functions.create_data import Create
 from preprocess.functions.fill_nlp_dictionary import FillNlpDict
+from copy import deepcopy
+import logging
 
 class Prepare:
     
@@ -138,4 +140,20 @@ class Prepare:
         FillNlpDict.functionNonlinearApproximation(self)
         # collect data concerning the variables' domain
         FillNlpDict.collectDomainExtremes(self)
-        
+    
+    def checkExistingInputData(self):
+        """ this method checks the existing input data and only regards those elements for which folders exist"""
+        system = deepcopy(self.system)
+        # check if carriers exist
+        for carrier in system["setCarriers"]:
+            if carrier not in self.paths["setCarriers"].keys():
+                logging.warning(f"Carrier {carrier} selected in config does not exist in input data, excluded from model.")
+                system["setCarriers"].remove(carrier)
+        # check if technologies exist
+        for technologySubset in self.analysis["subsets"]["setTechnologies"]:
+            for technology in system[technologySubset]:
+                if technology not in self.paths[technologySubset].keys():
+                    logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
+                    system[technologySubset].remove(technology)
+        # return system
+        return system

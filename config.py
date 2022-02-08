@@ -7,7 +7,6 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Model settings. Overwrite default values defined in default_config.py here.
 ==========================================================================================================================================================================="""
 from model import default_config
-import string
 
 ## Analysis - Defaul dictionary
 analysis = default_config.analysis
@@ -19,21 +18,19 @@ solver = default_config.solver
 ## Analysis - settings update compared to default values
 analysis['spatialResolution'] = 'NUTS0_Test_TSA'
 analysis['modelFormulation'] = 'HSC'
-analysis['objective'] = 'TotalCarbonEmissions' # options are TotalCost, TotalCarbonEmissions, Risk
+analysis['objective'] = 'TotalCost' # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
 # definition of the approximation
 analysis['variablesNonlinearModel'] = {'builtCapacity': []}
 analysis['nonlinearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}
 
 ## System - settings update compared to default values
-system['setCarriers'] = ['electricity','natural_gas']
+system['setCarriers'] = ['electricity','natural_gas','irradiation']
 system['setStorageTechnologies'] = []
 system['setTransportTechnologies'] = ['power_line']
-system['setConversionTechnologies'] = ['photovoltaics',"natural_gas_turbine"]
+system['setConversionTechnologies'] = ['photovoltaics',"natural_gas_turbine","wind_turbine"]
 system['setScenarios'] = 'a'
 system['setTimeSteps'] = list(range(1,20+1))
-# system['setTimeSteps'] = [1]
 system['setNodes'] = ['CH', 'DE'] 
-
 
 ## Solver - settings update compared to default values
 solver['gap'] = 0.01

@@ -35,7 +35,7 @@ analysis['discountRate'] = 0.06
 analysis['transportDistance'] = 'Euclidean'
 # dictionary with subsets related to set
 analysis['subsets'] = {
-    'setTechnologies': ['setConversionTechnologies', 'setTransportTechnologies']
+    'setTechnologies': ['setConversionTechnologies', 'setTransportTechnologies',"setStorageTechnologies"]
     }
 # headers for the generation of input files
 analysis['headerDataInputs']=   {'setNodes': ['node', 'x', 'y'],
@@ -53,8 +53,8 @@ analysis['fileFormat'] = 'csv'
 ## System - Items assignment
 # set of energy carriers
 system['setCarriers'] = ['electricity', 'gas', 'hydrogen', 'biomass', 'CO2',"water","oxygen"]
-# set of energy carriers for transport
-system['setTransportCarriers'] = ['hydrogen']
+# # set of energy carriers for transport
+# system['setTransportCarriers'] = ['hydrogen']
 # set of conversion technologies
 system['setConversionTechnologies'] = ['electrolysis', 'SMR', 'b_SMR', 'b_Gasification']
 # set of storage technologies
