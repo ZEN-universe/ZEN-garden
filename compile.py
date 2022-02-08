@@ -22,15 +22,16 @@ if not os.path.exists('outputs/logs'):
     if not os.path.exists('outputs'):
         os.mkdir('outputs')
     os.mkdir('outputs/logs')
-logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.DEBUG, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
 # prevent double printing
-logging.propagate = False
-
+logging.propagate = True
 # CREATE INPUT FILE
 prepare = Prepare(config)
 
+# check if all data input exist and remove non existent
+system = prepare.checkExistingInputData()
 # FORMULATE THE OPTIMIZATION PROBLEM
-model = Model(config.analysis, config.system, prepare.paths, prepare.solver)
+model = Model(config.analysis, system, prepare.paths, prepare.solver)
 
 # SOLVE THE OPTIMIZATION PROBLEM
 if config.solver['model'] == 'MILP':

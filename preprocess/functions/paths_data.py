@@ -8,6 +8,7 @@ Description:    Class to create the paths to read the data from input files.
 ==========================================================================================================================================================================="""
 
 import os
+import logging
 
 class Paths:
     
@@ -18,7 +19,7 @@ class Paths:
         
         # define path to access dataset related to the current analysis
         self.pathData = './/data//{}//'.format(self.analysis['spatialResolution'])    
-        
+        assert os.path.exists(self.pathData),f"Folder for input data {self.analysis['spatialResolution']} does not exist!"
         self.paths = dict()
         # create a dictionary with the keys based on the folders in pathData
         for folderName in next(os.walk(self.pathData))[1]:
