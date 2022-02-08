@@ -25,6 +25,8 @@ class EnergySystem:
     paths = None
     # solver
     solver = None
+    # empty list of indexing sets
+    indexingSets = []
 
     def __init__(self,nameEnergySystem):
         """ initialization of the energySystem
@@ -92,7 +94,18 @@ class EnergySystem:
         cls.solver = solver
         # set concreteModel
         cls.concreteModel = model
-        
+        # set indexing sets
+        cls.setIndexingSets()
+    
+    @classmethod
+    def setIndexingSets(cls):
+        """ set sets that serve as an index for other sets """
+        system = cls.getSystem()
+        # iterate over sets
+        for key in system:
+            if "set" in key:
+                cls.indexingSets.append(key)
+
     @classmethod
     def getConcreteModel(cls):
         """ get concreteModel of the class <EnergySystem>. Every child class can access model and add components.
@@ -136,7 +149,13 @@ class EnergySystem:
         energySystem = cls.getEnergySystem()
         assert hasattr(energySystem,attributeName), f"The energy system does not have attribute '{attributeName}"
         return getattr(energySystem,attributeName)
-    
+
+    @classmethod
+    def getIndexingSets(cls):
+        """ set sets that serve as an index for other sets 
+        :return cls.indexingSets: list of sets that serve as an index for other sets"""
+        return cls.indexingSets
+
     @classmethod
     def calculateConnectedEdges(cls,node,direction:str):
         """ calculates connected edges going in (direction = 'in') or going out (direction = 'out') 

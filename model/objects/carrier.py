@@ -54,7 +54,7 @@ class Carrier(Element):
             model.setCarriers,
             initialize=cls.getAttributeOfAllElements("setTimeStepsCarrier"),
             doc='Set of time steps of carriers')
-        
+
     @classmethod
     def constructParams(cls):
         """ constructs the pe.Params of the class <Carrier> """

@@ -150,10 +150,13 @@ class Prepare:
                 logging.warning(f"Carrier {carrier} selected in config does not exist in input data, excluded from model.")
                 system["setCarriers"].remove(carrier)
         # check if technologies exist
+        system["setTechnologies"] = []
         for technologySubset in self.analysis["subsets"]["setTechnologies"]:
             for technology in system[technologySubset]:
                 if technology not in self.paths[technologySubset].keys():
                     logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
                     system[technologySubset].remove(technology)
+            system["setTechnologies"].extend(system[technologySubset])
+        
         # return system
         return system
