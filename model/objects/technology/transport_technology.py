@@ -160,11 +160,3 @@ def constraintCapexTransportTechnologyRule(model, tech, edge, time):
             model.builtCapacity[tech,edge, time] *
             model.distance[tech,edge] *
             model.capexPerDistance[tech,edge, time])
-
-def constraintOpexTransportTechnologyRule(model, tech, edge, time):
-    """ definition of the opex for the transport technology"""
-    # TODO: why factor 0.5? divide capexPerDistance in input data
-    return (model.opex[tech,edge, time] == 0.5 *
-            model.builtCapacity[tech,edge, time] *
-            model.distance[tech,edge] *
-            model.capexPerDistance[tech,edge, time])

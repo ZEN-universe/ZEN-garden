@@ -337,14 +337,6 @@ class Technology(Element):
         """ link disjuncts for technology is on and technology is off """
         return ([model.disjunctOnTechnology[tech,loc,time],model.disjunctOffTechnology[tech,loc,time]])
 
-# # function to combine the technologies and locations
-# def technologyLocationRule(model):
-#     """ creates list for setTechnologyLocation, where ConversionTechnologies are paired with the nodes and TransportTechnologies are paired with edges
-#     :return technologyLocationList: list of 2-tuple with (technology, location)"""
-#     technologyLocationList = [(technology,location) for technology in model.setConversionTechnologies for location in model.setNodes]
-#     technologyLocationList.extend([(technology,location) for technology in model.setTransportTechnologies for location in model.setEdges])
-#     return technologyLocationList
-
 ### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class
 def constraintTechnologycapacityLimitRule(model, tech, location, time):
@@ -453,5 +445,6 @@ def constraintMaxLoadRule(model, tech, loc, time):
     # transport technology
     elif tech in model.setTransportTechnologies:
             return (model.capacity[tech, loc, investTimeStep]*model.maxLoad[tech, loc, time] >= model.carrierFlow[tech, loc, time])
-    else:
-        return pe.Constraint.Skip
+    # storage technology
+    elif tech in model.setStorageTechnologies:
+            return (model.capacity[tech, loc, investTimeStep]*model.maxLoad[tech, loc, time] >= model.carrierFlowCharge[tech, loc, time] + model.carrierFlowDischarge[tech, loc, time])

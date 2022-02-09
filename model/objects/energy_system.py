@@ -341,6 +341,7 @@ class EnergySystem:
     @classmethod
     def constructObjective(cls):
         """ constructs the pe.Objective of the class <EnergySystem> """
+        logging.info("Construct pe.Objective")
         # get model
         model = cls.getConcreteModel()
 

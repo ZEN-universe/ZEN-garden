@@ -13,6 +13,8 @@ Description:  Class defining the Concrete optimization model.
 import logging
 import pyomo.environ as pe
 import os
+# import matplotlib.pyplot as plt
+# import pandas as pd
 from model.objects.element import Element
 # the order of the following classes defines the order in which they are constructed. Keep this way
 from model.objects.technology.conversion_technology import ConversionTechnology

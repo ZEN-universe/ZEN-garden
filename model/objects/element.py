@@ -124,6 +124,7 @@ class Element:
     @classmethod
     def constructSets(cls):
         """ constructs the pe.Sets of the class <Element> """
+        logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
         EnergySystem.constructSets()
         # construct pe.Sets of the child classes
@@ -133,6 +134,7 @@ class Element:
     @classmethod
     def constructParams(cls):
         """ constructs the pe.Params of the class <Element> """
+        logging.info("Construct pe.Params")
         # construct pe.Params of energy system
         EnergySystem.constructParams()
         # construct pe.Params of the child classes
@@ -142,6 +144,7 @@ class Element:
     @classmethod
     def constructVars(cls):
         """ constructs the pe.Vars of the class <Element> """
+        logging.info("Construct pe.Vars")
         # construct pe.Vars of energy system
         EnergySystem.constructVars()
         # construct pe.Vars of the child classes
@@ -151,6 +154,7 @@ class Element:
     @classmethod
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <Element> """
+        logging.info("Construct pe.Constraints")
         # construct pe.Constraints of energy system
         EnergySystem.constructConstraints()
         # construct pe.Constraints of the child classes
