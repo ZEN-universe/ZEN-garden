@@ -13,6 +13,7 @@ import logging
 import pyomo.environ as pe
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
+from model.objects.technology.technology import Technology
 
 class Carrier(Element):
     # empty list of elements
@@ -35,14 +36,41 @@ class Carrier(Element):
         paths                           = EnergySystem.getPaths()   
         # set attributes of carrier
         _inputPath                      = paths["setCarriers"][self.name]["folder"]
-        self.setTimeStepsCarrier        = self.dataInput.extractTimeSteps(_inputPath)
-        self.timeStepsCarrierDuration   = EnergySystem.calculateTimeStepDuration(self.setTimeStepsCarrier)
+        # get raw time steps of carrier
+        setTimeStepsRaw                 = self.dataInput.extractTimeSteps(_inputPath)
+        self.calculateTimeStepsCarrier(setTimeStepsRaw)
         self.demandCarrier              = self.dataInput.extractInputData(_inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsCarrier)
         self.availabilityCarrierImport  = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=self.setTimeStepsCarrier)
         self.availabilityCarrierExport  = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=self.setTimeStepsCarrier)
         self.exportPriceCarrier         = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=self.setTimeStepsCarrier)
         self.importPriceCarrier         = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=self.setTimeStepsCarrier)
         self.carbonIntensityCarrier     = self.dataInput.extractInputData(_inputPath,"carbonIntensity",["setNodes"])
+
+    def calculateTimeStepsCarrier(self,setTimeStepsRaw):
+        """ calculates the necessary time steps of carrier. Carrier must always have highest resolution of all connected technologies. 
+        Can have even higher resolution (to integrate extreme period behavior)
+        :param setTimeStepsRaw: time steps of carrier itself """        
+        # get technologies of carrier
+        technologiesCarrier = EnergySystem.getTechnologyOfCarrier(self.name)
+        # if setTimeStepsRaw not None
+        if setTimeStepsRaw:
+            timeStepsDurationRaw = EnergySystem.calculateTimeStepDuration(setTimeStepsRaw)
+            timeStepsDurationRaw = {(self.name,timeStep):timeStepsDurationRaw[timeStep] for timeStep in timeStepsDurationRaw}
+            setBaseTimeSteps = set(EnergySystem.decodeTimeStep(self.name,setTimeStepsRaw,manualTimeStepDuration=timeStepsDurationRaw))
+        else:
+            setBaseTimeSteps = set()
+        # iterate through technologies and extend setBaseTimeSteps
+        for technology in technologiesCarrier:
+            timeStepsTechnology = Technology.getAttributeOfSpecificElement(technology,"setTimeStepsOperation")
+            timeStepsDurationTechnology = Technology.getAttributeOfSpecificElement(technology,"timeStepsOperationDuration")
+            timeStepsDurationTechnology = {(technology,timeStep):timeStepsDurationTechnology[timeStep] for timeStep in timeStepsDurationTechnology}
+            baseTimeStepsTechnology = EnergySystem.decodeTimeStep(technology,timeStepsTechnology,manualTimeStepDuration=timeStepsDurationTechnology)
+            # create union of base time steps of all technologies
+            setBaseTimeSteps = set.union(setBaseTimeSteps,baseTimeStepsTechnology)
+        # sort set
+        setBaseTimeSteps = sorted(setBaseTimeSteps)
+        self.setTimeStepsCarrier = list(range(1,len(setBaseTimeSteps)+1))
+        self.timeStepsCarrierDuration = {timeStep+1:setBaseTimeSteps[timeStep] - setBaseTimeSteps[timeStep-1] if timeStep != 0 else setBaseTimeSteps[timeStep] for timeStep,_ in enumerate(setBaseTimeSteps)}
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
@@ -254,9 +282,9 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     for tech in model.setTransportTechnologies:
         operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
         if carrier in model.setReferenceCarriers[tech]:
-            carrierFlowIn   += sum(model.carrierFlow[tech,carrier, edge, operationTimeStep]
-                            - model.carrierLoss[tech,carrier, edge, operationTimeStep] for edge in setEdgesIn) 
-            carrierFlowOut  += sum(model.carrierFlow[tech,carrier, edge, operationTimeStep] for edge in setEdgesOut) 
+            carrierFlowIn   += sum(model.carrierFlow[tech, edge, operationTimeStep]
+                            - model.carrierLoss[tech, edge, operationTimeStep] for edge in setEdgesIn) 
+            carrierFlowOut  += sum(model.carrierFlow[tech, edge, operationTimeStep] for edge in setEdgesOut) 
     # carrier import, demand and export
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
     carrierImport = model.importCarrierFlow[carrier, node, time]

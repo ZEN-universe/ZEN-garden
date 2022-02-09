@@ -24,12 +24,12 @@ analysis['variablesNonlinearModel']                 = {'builtCapacity': []}
 analysis['nonlinearTechnologyApproximation']        = {'Capex': [], 'ConverEfficiency':[]}
 
 ## System - settings update compared to default values
-system['setCarriers']                               = ['electricity','natural_gas','irradiation']
-system['setStorageTechnologies']                    = []
+system['setCarriers']                               = ['electricity','natural_gas']
+system['setStorageTechnologies']                    = ["battery"]
 system['setTransportTechnologies']                  = ['power_line']
-system['setConversionTechnologies']                 = ['photovoltaics',"natural_gas_turbine","wind_turbine"]
+system['setConversionTechnologies']                 = ['photovoltaics',"natural_gas_turbine","slow_natural_gas_turbine"]
 system['setScenarios']                              = 'a'
-system['setTimeSteps']                              = list(range(1,20+1))
+system['setTimeSteps']                              = list(range(1,24+1))
 system['setNodes']                                  = ['CH', 'DE'] 
 
 ## Solver - settings update compared to default values
