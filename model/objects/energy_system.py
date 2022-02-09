@@ -27,6 +27,8 @@ class EnergySystem:
     solver = None
     # empty list of indexing sets
     indexingSets = []
+    # empty dict of technologies of carrier
+    dictTechnologyOfCarrier = {}
 
     def __init__(self,nameEnergySystem):
         """ initialization of the energySystem
@@ -107,6 +109,17 @@ class EnergySystem:
                 cls.indexingSets.append(key)
 
     @classmethod
+    def setTechnologyOfCarrier(cls,technology,listTechnologyOfCarrier):
+        """ appends technology to carrier in dictTechnologyOfCarrier
+        :param technology: name of technology in model
+        :param listTechnologyOfCarrier: list of carriers correspondent to technology"""
+        for carrier in listTechnologyOfCarrier:
+            if carrier not in cls.dictTechnologyOfCarrier:
+                cls.dictTechnologyOfCarrier[carrier] = [technology]
+            elif technology not in cls.dictTechnologyOfCarrier[carrier]:
+                cls.dictTechnologyOfCarrier[carrier].append(technology)
+
+    @classmethod
     def getConcreteModel(cls):
         """ get concreteModel of the class <EnergySystem>. Every child class can access model and add components.
         :return concreteModel: pe.ConcreteModel """
@@ -157,6 +170,14 @@ class EnergySystem:
         return cls.indexingSets
 
     @classmethod
+    def getTechnologyOfCarrier(cls,carrier):
+        """ gets technologies which are connected by carrier 
+        :param carrier: carrier which connects technologies
+        :return listOfTechnologies: list of technologies connected by carrier"""
+        assert carrier in cls.dictTechnologyOfCarrier, f"carrier {carrier} not in dictTechnologyOfCarrier"
+        return cls.dictTechnologyOfCarrier[carrier]
+
+    @classmethod
     def calculateConnectedEdges(cls,node,direction:str):
         """ calculates connected edges going in (direction = 'in') or going out (direction = 'out') 
         :param node: current node, connected by edges 
@@ -180,11 +201,12 @@ class EnergySystem:
         :return timeStepDurationDict: dict with duration of each time step """
         baseTimeSteps = cls.getEnergySystem().setBaseTimeSteps
         durationInputTimeSteps = len(baseTimeSteps)/len(inputTimeSteps)
-        timeStepDurationDict = {timeStep: durationInputTimeSteps for timeStep in inputTimeSteps}
+        assert durationInputTimeSteps.is_integer(),f"The duration of each time step {durationInputTimeSteps} of input time steps {inputTimeSteps} does not evaluate to an integer"
+        timeStepDurationDict = {timeStep: int(durationInputTimeSteps) for timeStep in inputTimeSteps}
         return timeStepDurationDict
 
     @classmethod
-    def decodeTimeStep(cls,element:str,elementTimeStep:int,timeStepType:str = None):
+    def decodeTimeStep(cls,element:str,elementTimeStep,timeStepType:str = None, manualTimeStepDuration = None):
         """ decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variablTimeStep of a element.
         timeStep of element --> baseTimeStep of model 
         :param element: element of model, i.e., carrier or technology
@@ -193,7 +215,9 @@ class EnergySystem:
         :return baseTimeStep: baseTimeStep of model """
         model = cls.getConcreteModel()
         # get time step duration
-        if not timeStepType:
+        if manualTimeStepDuration:
+            timeStepDuration = manualTimeStepDuration
+        elif not timeStepType:
             timeStepDuration = model.timeStepsCarrierDuration
         elif timeStepType == "invest":
             timeStepDuration = model.timeStepsInvestDuration
@@ -201,11 +225,17 @@ class EnergySystem:
             timeStepDuration = model.timeStepsOperationDuration
         else:
             raise KeyError(f"time step type {timeStepType} is invalid. Only 'invest', 'operation', or None accepted.")
-        # calculate timeSteps from the beginning
-        baseTimeStep = sum([timeStepDuration[element,timeStep] for timeStep in range(1,elementTimeStep+1)])
-        # mainly for debugging, check if baseTimeStep is integer
-        assert baseTimeStep.is_integer(),f"The element time step {elementTimeStep} of element {element} does not correspond to an integer baseTimeStep ({baseTimeStep})"
-        return(int(baseTimeStep))
+        if type(elementTimeStep) == int:
+            # calculate timeSteps from the beginning
+            baseTimeStep = sum([timeStepDuration[element,timeStep] for timeStep in range(1,elementTimeStep+1)])
+            return(int(baseTimeStep))
+        elif type(elementTimeStep) == list:
+            listBaseTimeSteps = []
+            for singleTimeStep in elementTimeStep:
+                # calculate timeSteps from the beginning
+                singleBaseTimeStep = sum([timeStepDuration[element,timeStep] for timeStep in range(1,singleTimeStep+1)])
+                listBaseTimeSteps.append(int(singleBaseTimeStep))
+            return listBaseTimeSteps
 
     @classmethod
     def encodeTimeStep(cls,element:str,baseTimeStep:int,timeStepType:str = None):

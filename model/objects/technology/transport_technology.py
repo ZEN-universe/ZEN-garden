@@ -35,18 +35,21 @@ class TransportTechnology(Technology):
         super().storeInputData()
         # get system information
         paths                           = EnergySystem.getPaths()   
-        # set attributes of technology
+        # set attributes for parameters of parent class <Technology>
         _inputPath                      = paths["setTransportTechnologies"][self.name]["folder"]
-        self.lossFlow                   = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
-        # set attributes of transport technology
         self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsInvest,transportTechnology=True)
+        self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
+        self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
+        self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsOperation,transportTechnology=True)
+        self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setEdges"])
+        # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
         self.distance                   = self.dataInput.extractInputData(_inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
         self.capexPerDistance           = self.dataInput.extractInputData(_inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
-        self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsOperation,transportTechnology=True)
-        self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
-        self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
-        self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setEdges"])
+        self.lossFlow                   = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
+        # set technology to correspondent reference carrier
+        EnergySystem.setTechnologyOfCarrier(self.name,self.referenceCarrier)
+
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod
     def constructSets(cls):
@@ -77,7 +80,7 @@ class TransportTechnology(Technology):
     @classmethod
     def constructVars(cls):
         """ constructs the pe.Vars of the class <TransportTechnology> """
-        def carrierFlowBounds(model,tech, _ ,edge,time):
+        def carrierFlowBounds(model,tech ,edge,time):
             """ return bounds of carrierFlow for bigM expression 
             :param model: pe.ConcreteModel
             :param tech: tech index
@@ -93,16 +96,16 @@ class TransportTechnology(Technology):
         model = EnergySystem.getConcreteModel()
         # flow of carrier on edge
         model.carrierFlow = pe.Var(
-            cls.createCustomSet(["setTransportTechnologies","setReferenceCarriers","setEdges","setTimeStepsOperation"]),
+            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             bounds = carrierFlowBounds,
-            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportTechnologies, setReferenceCarriers, setEdges, setTimeStepsOperation. Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportTechnologies, setEdges, setTimeStepsOperation. Domain: NonNegativeReals'
         )
         # loss of carrier on edge
         model.carrierLoss = pe.Var(
-            cls.createCustomSet(["setTransportTechnologies","setReferenceCarriers","setEdges","setTimeStepsOperation"]),
+            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportTechnologies, setReferenceCarriers, setEdges, setTimeStepsOperation. Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportTechnologies, setEdges, setTimeStepsOperation. Domain: NonNegativeReals'
         )
         
     @classmethod
@@ -128,30 +131,27 @@ class TransportTechnology(Technology):
     def disjunctOnTechnologyRule(cls,disjunct, tech, edge, time):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
-        referenceCarrier = model.setReferenceCarriers[tech][1]
         # get invest time step
         baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
         investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
-            expr=model.carrierFlow[tech,referenceCarrier, edge, time] >= model.minLoad[tech,edge,time] * model.capacity[tech,edge, investTimeStep]
+            expr=model.carrierFlow[tech, edge, time] >= model.minLoad[tech,edge,time] * model.capacity[tech,edge, investTimeStep]
         )
 
     @classmethod
     def disjunctOffTechnologyRule(cls,disjunct, tech, edge, time):
         """definition of disjunct constraints if technology is off"""
         model = disjunct.model()
-        referenceCarrier = model.setReferenceCarriers[tech][1]
         disjunct.constraintNoLoad = pe.Constraint(
-            expr=model.carrierFlow[tech,referenceCarrier, edge, time] == 0
+            expr=model.carrierFlow[tech, edge, time] == 0
         )
 
 ### --- functions with constraint rules --- ###
 def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
     """compute the flow losses for a carrier through a transport technology"""
-    referenceCarrier = model.setReferenceCarriers[tech][1]
-    return(model.carrierLoss[tech,referenceCarrier, edge, time]
-            == model.distance[tech,edge] * model.lossFlow[tech] * model.carrierFlow[tech,referenceCarrier, edge, time])
+    return(model.carrierLoss[tech, edge, time]
+            == model.distance[tech,edge] * model.lossFlow[tech] * model.carrierFlow[tech, edge, time])
 
 def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""

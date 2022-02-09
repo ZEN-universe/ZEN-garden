@@ -16,6 +16,7 @@ import os
 from model.objects.element import Element
 # the order of the following classes defines the order in which they are constructed. Keep this way
 from model.objects.technology.conversion_technology import ConversionTechnology
+from model.objects.technology.storage_technology import StorageTechnology
 from model.objects.technology.transport_technology import TransportTechnology
 from model.objects.carrier import Carrier
 from model.objects.energy_system import EnergySystem
@@ -49,18 +50,17 @@ class Model():
 
         # add energy system to define system
         EnergySystem("energySystem")
-        # add carrier 
-        for carrier in self.system["setCarriers"]:
-            Carrier(carrier)
         # add technology 
         for conversionTech in self.system['setConversionTechnologies']:
             ConversionTechnology(conversionTech)
         for transportTech in self.system['setTransportTechnologies']:
             TransportTechnology(transportTech)
-        # TODO implement storage technologies
         for storageTech in self.system['setStorageTechnologies']:
-            print("Storage Technologies are not yet implemented")
-    
+            StorageTechnology(storageTech)
+        # add carrier 
+        for carrier in self.system["setCarriers"]:
+            Carrier(carrier)
+
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """

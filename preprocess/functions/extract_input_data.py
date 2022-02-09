@@ -160,11 +160,21 @@ class DataInput():
         # select data
         fileName = "setTimeSteps"
         dfInput,_ = self.readInputData(folderPath,fileName)
-        if typeOfTimeSteps:
-            dfInput = dfInput.set_index("type").loc[typeOfTimeSteps]
+        if len(dfInput.index) != 0:
+            if typeOfTimeSteps:
+                dfInput = dfInput.set_index("type").loc[typeOfTimeSteps]
+            else:
+                dfInput = dfInput.loc[0]
         else:
-            dfInput = dfInput.squeeze()
-        numberOfTimeSteps = dfInput["numberTypicalPeriods"]*dfInput["numberTimeStepsPerPeriod"]
+            return None
+        # if separated in numberTypicalPeriods and numberTimeStepsPerPeriod
+        if isinstance(dfInput,pd.Series):
+            if "numberTypicalPeriods" in dfInput and "numberTimeStepsPerPeriod" in dfInput:
+                numberOfTimeSteps = dfInput["numberTypicalPeriods"]*dfInput["numberTimeStepsPerPeriod"]
+            else:
+                numberOfTimeSteps = dfInput["numberTimeSteps"]
+        else:
+            numberOfTimeSteps = dfInput
         listOfTimeSteps = list(range(1,numberOfTimeSteps+1))
         return listOfTimeSteps
 
@@ -193,16 +203,16 @@ class DataInput():
         :return carrierDict: dictionary with input and output carriers of technology """
         carrierDict = {}
         # get carriers
-        for carrier in ["inputCarrier","outputCarrier"]:
-            _carrierString = self.extractAttributeData(folderPath,carrier)
+        for _carrierType in ["inputCarrier","outputCarrier"]:
+            _carrierString = self.extractAttributeData(folderPath,_carrierType)
             if str(_carrierString) != "nan":
                 _carrierList = _carrierString.strip().split(" ")
                 for _carrierItem in _carrierList:
                     # check if carrier in carriers of model
-                    assert _carrierItem in self.system["setCarriers"], f"{carrier} '{_carrierItem}' is not in carriers of model ({self.system['setCarriers']})"
+                    assert _carrierItem in self.system["setCarriers"], f"Carrier '{_carrierItem}' is not in carriers of model ({self.system['setCarriers']})"
             else:
                 _carrierList = []
-            carrierDict[carrier] = _carrierList
+            carrierDict[_carrierType] = _carrierList
 
         return carrierDict
 

@@ -45,6 +45,7 @@ class Technology(Element):
                 _inputPath                      = paths[technologyType][self.name]["folder"]
                 self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="invest")
                 self.setTimeStepsOperation      = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="operation")
+                assert self.setTimeStepsInvest and self.setTimeStepsOperation, f"investment or operational time steps of technology {self.name} not specified."
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
                 self.timeStepsOperationDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsOperation)
                 self.referenceCarrier           = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
@@ -398,8 +399,10 @@ def constraintOpexTechnologyRule(model,tech,loc,time):
             referenceFlow = model.inputFlow[tech,referenceCarrier,loc,time]
         else:
             referenceFlow = model.outputFlow[tech,referenceCarrier,loc,time]
+    elif tech in model.setTransportTechnologies:
+        referenceFlow = model.carrierFlow[tech, loc, time]
     else:
-        referenceFlow = model.carrierFlow[tech, referenceCarrier, loc, time]
+        referenceFlow = model.carrierFlowCharge[tech,loc,time] + model.carrierFlowDischarge[tech,loc,time]
     return(model.opex[tech,loc,time] == model.opexSpecific[tech,loc,time]*referenceFlow)
 
 def constraintCarbonEmissionsTechnologyRule(model,tech,loc,time):
@@ -410,8 +413,10 @@ def constraintCarbonEmissionsTechnologyRule(model,tech,loc,time):
             referenceFlow = model.inputFlow[tech,referenceCarrier,loc,time]
         else:
             referenceFlow = model.outputFlow[tech,referenceCarrier,loc,time]
+    elif tech in model.setTransportTechnologies:
+        referenceFlow = model.carrierFlow[tech, loc, time]
     else:
-        referenceFlow = model.carrierFlow[tech, referenceCarrier, loc, time]
+        referenceFlow = model.carrierFlowCharge[tech,loc,time] + model.carrierFlowDischarge[tech,loc,time]
     return(model.carbonEmissionsTechnology[tech,loc,time] == model.carbonIntensityTechnology[tech,loc]*referenceFlow)
 
 def constraintCarbonEmissionsTechnologyTotalRule(model):
@@ -448,7 +453,7 @@ def constraintMaxLoadRule(model, tech, loc, time):
             return (model.capacity[tech, loc, investTimeStep]*model.maxLoad[tech, loc, time] >= model.outputFlow[tech, referenceCarrier, loc, time])
     # transport technology
     elif tech in model.setTransportTechnologies:
-            return (model.capacity[tech, loc, investTimeStep]*model.maxLoad[tech, loc, time] >= model.carrierFlow[tech, referenceCarrier, loc, time])
+            return (model.capacity[tech, loc, investTimeStep]*model.maxLoad[tech, loc, time] >= model.carrierFlow[tech, loc, time])
     else:
         logging.info(f"Technology {tech} is neither a conversion nor a transport technology. Constraint constraintMaxLoad skipped.")
         return pe.Constraint.Skip

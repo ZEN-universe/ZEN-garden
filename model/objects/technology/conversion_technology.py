@@ -36,18 +36,22 @@ class ConversionTechnology(Technology):
         super().storeInputData()
         # get system information
         paths                           = EnergySystem.getPaths()   
-        # set attributes of technology
+        #  set attributes for parameters of parent class <Technology>
         _inputPath                      = paths["setConversionTechnologies"][self.name]["folder"]
         self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)
         self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
         self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
         self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
         self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setNodes"])
+        # set attributes for parameters of child class <ConversionTechnology>
         # define input and output carrier
         self.inputCarrier               = self.dataInput.extractConversionCarriers(_inputPath)["inputCarrier"]
         self.outputCarrier              = self.dataInput.extractConversionCarriers(_inputPath)["outputCarrier"]
         # extract PWA parameters
         self.PWAParameter               = self.dataInput.extractPWAData(_inputPath,self)
+        # check if reference carrier in input and output carriers and set technology to correspondent carrier
+        assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
+        EnergySystem.setTechnologyOfCarrier(self.name,self.inputCarrier + self.outputCarrier)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod

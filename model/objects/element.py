@@ -211,7 +211,7 @@ class Element:
                                 listSets.append(model.setEdges)
                         # if set is built for PWA capex:
                         elif "setCapex" in index:
-                            if element in model.setConversionTechnologies or element in model.setStorageTechnologies:
+                            if element in model.setConversionTechnologies: # TODO or element in model.setStorageTechnologies:
                                 # if technology is approximated (by either PWA or Linear)
                                 if element not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["Capex"] or EnergySystem.getSolver()["model"] == "MILP":
                                     _PWAParameter = cls.getAttributeOfSpecificElement(element,"PWAParameter")
@@ -238,7 +238,7 @@ class Element:
                                 break
                         # if set is built for PWA converEfficiency:
                         elif "setConverEfficiency" in index:
-                            if element in model.setConversionTechnologies or element in model.setStorageTechnologies:
+                            if element in model.setConversionTechnologies: # or element in model.setStorageTechnologies:
                                 # if technology is approximated (by either PWA or Linear)
                                 if element not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"] or EnergySystem.getSolver()["model"] == "MILP":
                                     _PWAParameter = cls.getAttributeOfSpecificElement(element,"PWAParameter")
