@@ -26,7 +26,6 @@ class Technology(Element):
         :param object: object of the abstract optimization model
         :param technology: technology that is added to the model"""
 
-        logging.info('initialize object of a generic technology')
         super().__init__(technology)
         # store input data
         self.storeInputData()
@@ -393,7 +392,7 @@ def constraintCapexTotalRule(model):
 
 def constraintOpexTechnologyRule(model,tech,loc,time):
     """ calculate opex of each technology"""
-    referenceCarrier = model.setReferenceCarriers[tech][1]
+    referenceCarrier = model.setReferenceCarriers[tech].at(1)
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:
             referenceFlow = model.inputFlow[tech,referenceCarrier,loc,time]
@@ -407,7 +406,7 @@ def constraintOpexTechnologyRule(model,tech,loc,time):
 
 def constraintCarbonEmissionsTechnologyRule(model,tech,loc,time):
     """ calculate carbon emissions of each technology"""
-    referenceCarrier = model.setReferenceCarriers[tech][1]
+    referenceCarrier = model.setReferenceCarriers[tech].at(1)
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:
             referenceFlow = model.inputFlow[tech,referenceCarrier,loc,time]
@@ -441,7 +440,7 @@ def constraintOpexTotalRule(model):
 
 def constraintMaxLoadRule(model, tech, loc, time):
     """Load is limited by the installed capacity and the maximum load factor"""
-    referenceCarrier = model.setReferenceCarriers[tech][1]
+    referenceCarrier = model.setReferenceCarriers[tech].at(1)
     # get invest time step
     baseTimeStep    = EnergySystem.decodeTimeStep(tech,time,"operation")
     investTimeStep  = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
@@ -455,5 +454,4 @@ def constraintMaxLoadRule(model, tech, loc, time):
     elif tech in model.setTransportTechnologies:
             return (model.capacity[tech, loc, investTimeStep]*model.maxLoad[tech, loc, time] >= model.carrierFlow[tech, loc, time])
     else:
-        logging.info(f"Technology {tech} is neither a conversion nor a transport technology. Constraint constraintMaxLoad skipped.")
         return pe.Constraint.Skip

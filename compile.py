@@ -11,6 +11,7 @@ Description:  Compilation  of the optimization problem.
 import os
 import logging
 import config
+import sys
 from preprocess.prepare import Prepare
 from model.model import Model
 from model.metaheuristic.algorithm import Metaheuristic
@@ -22,9 +23,14 @@ if not os.path.exists('outputs/logs'):
     if not os.path.exists('outputs'):
         os.mkdir('outputs')
     os.mkdir('outputs/logs')
-logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.DEBUG, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# handler.setFormatter(formatter)
+logging.getLogger().addHandler(handler)
 # prevent double printing
-logging.propagate = True
+logging.propagate = False
 # CREATE INPUT FILE
 prepare = Prepare(config)
 

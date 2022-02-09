@@ -47,7 +47,7 @@ class Model():
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system"""
-
+        logging.info("\n--- Add elements to model--- \n")
         # add energy system to define system
         EnergySystem("energySystem")
         # add technology 
@@ -66,14 +66,17 @@ class Model():
         :param solver: dictionary containing the solver settings """
 
         solverName = solver['name']
-        solverOptions = solver.copy()
-        solverOptions.pop('name')
+        solverOptions = solver["solverOptions"]
 
-        logging.info(f"Solve model instance using {solverName}")
+        logging.info(f"\n--- Solve model instance using {solverName} ---\n")
+        # disable logger temporarily
+        logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
         # (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
-        solver_parameters = f"ResultFile={os.path.dirname(solver['logfile'])}//infeasibleModelIIS.ilp"
+        solver_parameters = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels =True)
-        self.results = self.opt.solve(tee=solver['verbosity'], logfile=solver['logfile'],options_string=solver_parameters)
+        self.results = self.opt.solve(tee=solver['verbosity'], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
+        # enable logger 
+        logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)

@@ -9,7 +9,6 @@ Description:    Class defining the parameters, variables and constraints of the 
                 The class takes the abstract optimization model as an input, and adds parameters, variables and
                 constraints of the conversion technologies.
 ==========================================================================================================================================================================="""
-
 import logging
 import pyomo.environ as pe
 from model.objects.technology.technology import Technology
@@ -20,10 +19,10 @@ class ConversionTechnology(Technology):
     listOfElements = []
 
     def __init__(self, tech):
-        """init generic technology object
-        :param object: object of the abstract model"""
+        """init conversion technology object
+        :param tech: name of added technology"""
 
-        logging.info('initialize object of a conversion technology')
+        logging.info(f'Initialize conversion technology {tech}')
         super().__init__(tech)
         # store input data
         self.storeInputData()
@@ -139,7 +138,7 @@ class ConversionTechnology(Technology):
         model.referenceFlowApproximation = pe.Var(
             cls.createCustomSet(["setConversionTechnologies","setConverEfficiency","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            bounds = lambda model, tech, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][model.setReferenceCarriers[tech][1]],
+            bounds = lambda model, tech, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][model.setReferenceCarriers[tech].at(1)],
             doc = 'PWA of flow of reference carrier of conversion technologies. Dimensions: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals')
         # PWA dependent flow of carrier into technology
         model.dependentFlowApproximation = pe.Var(
@@ -204,7 +203,7 @@ class ConversionTechnology(Technology):
     def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):
         """definition of disjunct constraints if technology is On"""
         model = disjunct.model()
-        referenceCarrier = model.setReferenceCarriers[tech][1]
+        referenceCarrier = model.setReferenceCarriers[tech].at(1)
         if referenceCarrier in model.setInputCarriers[tech]:
             referenceFlow = model.inputFlow[tech,referenceCarrier,node,time]
         else:
@@ -296,7 +295,7 @@ def constraintCapacityCouplingRule(model,tech,node,time):
 def constraintReferenceFlowCouplingRule(disjunct,tech,dependentCarrier,node,time):
     """ couples reference flow variables based on modeling technique"""
     model = disjunct.model()
-    referenceCarrier = model.setReferenceCarriers[tech][1]
+    referenceCarrier = model.setReferenceCarriers[tech].at(1)
     if referenceCarrier in model.setInputCarriers[tech]:
         return(model.inputFlow[tech,referenceCarrier,node,time] == model.referenceFlowApproximation[tech,dependentCarrier,node,time])
     else:
