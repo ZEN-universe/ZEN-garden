@@ -9,10 +9,10 @@ Description:    Class defining a standard Element. Contains methods to add param
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
                 optimization model as an input.
 ==========================================================================================================================================================================="""
-
+import itertools 
+import logging
 from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
-import itertools 
 
 class Element:
     # empty list of elements
@@ -109,6 +109,7 @@ class Element:
     @classmethod
     def constructModelComponents(cls):
         """ constructs the model components of the class <Element> """
+        logging.info("\n--- Construct model components ---\n")
         # construct pe.Sets
         cls.constructSets()
         # construct pe.Params

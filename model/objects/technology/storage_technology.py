@@ -19,10 +19,10 @@ class StorageTechnology(Technology):
     listOfElements = []
     
     def __init__(self, tech):
-        """init generic technology object
-        :param object: object of the abstract optimization model"""
+        """init storage technology object
+        :param tech: name of added technology"""
 
-        logging.info('initialize object of a storage technology')
+        logging.info(f'Initialize storage technology {tech}')
         super().__init__(tech)
         # store input data
         self.storeInputData()

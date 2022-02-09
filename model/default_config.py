@@ -73,14 +73,16 @@ system['folderOutput'] = 'outputs/results/'
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
 solver['name']      = 'gurobi_persistent'
+# gurobi options
+solver["solverOptions"] = {}
 # optimality gap
-solver['MIPgap']    = 0.01
+solver["solverOptions"]['MIPgap']    = 0.01
 # time limit in seconds
-solver['TimeLimit'] = 8760
+solver["solverOptions"]['TimeLimit'] = 8760
+# log file of results
+solver["solverOptions"]['logfile'] = './/outputs//logs//pyomoLogFile.log'
 # verbosity
 solver['verbosity'] = True
-# log file of results
-solver['logfile'] = './/outputs//logs//pyomoLogFile.log'
 # typology of model solved: MILP or MINLP
 solver['model']      = 'MILP'
 # parameters of meta-heuristic algorithm

@@ -23,7 +23,7 @@ class Carrier(Element):
         """initialization of a generic carrier object
         :param carrier: carrier that is added to the model"""
 
-        logging.info('initialize object of a generic carrier')
+        logging.info(f'Initialize generic carrier {carrier}')
         super().__init__(carrier)
         # store input data
         self.storeInputData()
