@@ -38,13 +38,14 @@ class StorageTechnology(Technology):
         # set attributes for parameters of parent class <Technology>
         _inputPath                      = paths["setStorageTechnologies"][self.name]["folder"]
         self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)
-        self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
-        self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
+        self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation) # TODO maybe rename: minLoad = minimum specific power to charge/discharge, probably 0
+        self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation) # TODO maybe rename: maxLoad = maximum specific power to charge/discharge, i.e., 1/(hours until entirely charged/discharged)
         self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsOperation)
         self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setNodes"])
         # set attributes for parameters of child class <StorageTechnology>
         self.efficiencyCharge           = self.dataInput.extractInputData(_inputPath,"efficiencyCharge",indexSets=["setNodes"])
         self.efficiencyDischarge        = self.dataInput.extractInputData(_inputPath,"efficiencyDischarge",indexSets=["setNodes"])
+        self.selfDischarge              = self.dataInput.extractInputData(_inputPath,"selfDischarge",indexSets=["setNodes"]) 
         self.capexSpecific              = self.dataInput.extractInputData(_inputPath,"capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
         # set technology to correspondent reference carrier
         EnergySystem.setTechnologyOfCarrier(self.name,self.referenceCarrier)
@@ -71,6 +72,12 @@ class StorageTechnology(Technology):
             cls.createCustomSet(["setStorageTechnologies","setNodes"]),
             initialize = cls.getAttributeOfAllElements("efficiencyDischarge"),
             doc = 'efficiency during discharging for storage technologies. Dimensions: setStorageTechnologies, setNodes'
+        )
+        # self discharge
+        model.selfDischarge = pe.Param(
+            cls.createCustomSet(["setStorageTechnologies","setNodes"]),
+            initialize = cls.getAttributeOfAllElements("selfDischarge"),
+            doc = 'self discharge of storage technologies. Dimensions: setStorageTechnologies, setNodes'
         )
         # capex specific
         model.capexSpecific = pe.Param(
@@ -121,13 +128,18 @@ class StorageTechnology(Technology):
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <StorageTechnology> """
         model = EnergySystem.getConcreteModel()
-        return
-        # Carrier Flow Losses 
-        model.constraintStorageTechnologyLossesFlow = pe.Constraint(
+        # Limit storage level
+        model.constraintStorageLevelMax = pe.Constraint(
             cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
-            rule = constraintStorageTechnologyLossesFlowRule,
-            doc = 'Carrier loss due to storage with through storage technology. Dimensions: setStorageTechnologies, setNodes, setTimeStepsOperation'
+            rule = constraintStorageLevelMaxRule,
+            doc = 'limit maximum storage level to capacity. Dimensions: setStorageTechnologies, setNodes, setTimeStepsOperation'
         ) 
+        # couple storage levels
+        model.constraintCoupleStorageLevel = pe.Constraint(
+            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
+            rule = constraintCoupleStorageLevelRule,
+            doc = 'couple subsequent storage levels (time coupling constraints). Dimensions: setStorageTechnologies, setNodes, setTimeStepsOperation'
+        )
         # Linear Capex
         model.constraintStorageTechnologyLinearCapex = pe.Constraint(
             cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
@@ -139,46 +151,66 @@ class StorageTechnology(Technology):
     @classmethod
     def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):
         """definition of disjunct constraints if technology is on"""
-        return
         model = disjunct.model()
-        referenceCarrier = model.setReferenceCarriers[tech][1]
         # get invest time step
         baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
         investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
-        # disjunct constraints min load
-        disjunct.constraintMinLoad = pe.Constraint(
-            expr=model.carrierFlow[tech,referenceCarrier, node, time] >= model.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
+        # disjunct constraints min load charge
+        disjunct.constraintMinLoadCharge = pe.Constraint(
+            expr=model.carrierFlowCharge[tech, node, time] >= model.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
+        )
+        # disjunct constraints min load discharge
+        disjunct.constraintMinLoadDischarge = pe.Constraint(
+            expr=model.carrierFlowDischarge[tech, node, time] >= model.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
         )
 
     @classmethod
     def disjunctOffTechnologyRule(cls,disjunct, tech, node, time):
         """definition of disjunct constraints if technology is off"""
-        return
         model = disjunct.model()
-        referenceCarrier = model.setReferenceCarriers[tech][1]
-        disjunct.constraintNoLoad = pe.Constraint(
-            expr=model.carrierFlow[tech,referenceCarrier, node, time] == 0
+        # off charging
+        disjunct.constraintNoLoadCharge = pe.Constraint(
+            expr=model.carrierFlowCharge[tech, node, time] == 0
+        )
+        # off discharging
+        disjunct.constraintNoLoadDischarge = pe.Constraint(
+            expr=model.carrierFlowDischarge[tech, node, time] == 0
         )
 
+    @classmethod
+    def getPreviousTimeStep(cls,tech,time):
+        """ gets previous time step of storage technology """
+        timeSteps = cls.getAttributeOfSpecificElement(tech,"setTimeStepsOperation")
+        indexCurrentTimeStep = timeSteps.index(time)
+        # if first time step
+        if indexCurrentTimeStep == 0:
+            return timeSteps[-1]
+        # if any other time step
+        else:
+            return timeSteps[indexCurrentTimeStep-1]
+
 ### --- functions with constraint rules --- ###
-def constraintStorageTechnologyLossesFlowRule(model, tech, node, time):
-    """compute the flow losses for a carrier through a storage technology"""
-    referenceCarrier = model.setReferenceCarriers[tech][1]
-    return(model.carrierLoss[tech,referenceCarrier, node, time]
-            == model.distance[tech,node] * model.lossFlow[tech] * model.carrierFlow[tech,referenceCarrier, node, time])
+def constraintStorageLevelMaxRule(model, tech, node, time):
+    """limit maximum storage level to capacity"""
+    # get invest time step
+    baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
+    investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+    return(model.levelCharge[tech, node, time] <= model.capacity[tech, node, investTimeStep])
+
+def constraintCoupleStorageLevelRule(model, tech, node, time):
+    """couple subsequent storage levels (time coupling constraints)"""
+    # get previous time step
+    previousTime = StorageTechnology.getPreviousTimeStep(tech,time)
+
+    return(
+        model.levelCharge[tech, node, time] == 
+        model.levelCharge[tech, node, previousTime]*(1-model.selfDischarge[tech,node]*model.timeStepsOperationDuration[tech,time]) + 
+        model.carrierFlowCharge[tech, node, time]*model.efficiencyCharge[tech,node] - 
+        model.carrierFlowDischarge[tech, node, time]/model.efficiencyDischarge[tech,node]
+    )
 
 def constraintCapexStorageTechnologyRule(model, tech, node, time):
     """ definition of the capital expenditures for the storage technology"""
-    # TODO: why factor 0.5? divide capexPerDistance in input data
-    return (model.capex[tech,node, time] == 0.5 *
+    return (model.capex[tech,node, time] == 
             model.builtCapacity[tech,node, time] *
-            model.distance[tech,node] *
-            model.capexPerDistance[tech,node, time])
-
-def constraintOpexStorageTechnologyRule(model, tech, node, time):
-    """ definition of the opex for the storage technology"""
-    # TODO: why factor 0.5? divide capexPerDistance in input data
-    return (model.opex[tech,node, time] == 0.5 *
-            model.builtCapacity[tech,node, time] *
-            model.distance[tech,node] *
-            model.capexPerDistance[tech,node, time])
+            model.capexSpecific[tech,node, time])

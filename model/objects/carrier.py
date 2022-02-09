@@ -285,14 +285,31 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
             carrierFlowIn   += sum(model.carrierFlow[tech, edge, operationTimeStep]
                             - model.carrierLoss[tech, edge, operationTimeStep] for edge in setEdgesIn) 
             carrierFlowOut  += sum(model.carrierFlow[tech, edge, operationTimeStep] for edge in setEdgesOut) 
+    # carrier flow storage technologies
+    carrierFlowDischarge, carrierFlowCharge = 0, 0
+    for tech in model.setStorageTechnologies:
+        operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+        if carrier in model.setReferenceCarriers[tech]:
+            carrierFlowDischarge += model.carrierFlowDischarge[tech,node,operationTimeStep]
+            carrierFlowCharge += model.carrierFlowCharge[tech,node,operationTimeStep]
     # carrier import, demand and export
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
     carrierImport = model.importCarrierFlow[carrier, node, time]
-    carrierDemand = model.demandCarrier[carrier, node, time]
     carrierExport = model.exportCarrierFlow[carrier, node, time]
-
+    carrierDemand = model.demandCarrier[carrier, node, time]
+    
     # TODO implement storage
 
     return (
-        carrierConversionOut - carrierConversionIn + carrierFlowIn - carrierFlowOut + carrierImport - carrierExport - carrierDemand == 0
+        # conversion technologies
+        carrierConversionOut - carrierConversionIn 
+        # transport technologies
+        + carrierFlowIn - carrierFlowOut
+        # storage technologies
+        + carrierFlowDischarge - carrierFlowCharge
+        # import and export 
+        + carrierImport - carrierExport 
+        # demand
+        - carrierDemand 
+        == 0
         )
