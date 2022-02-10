@@ -185,9 +185,8 @@ class ConversionTechnology(Technology):
                 rule = constraintLinearConverEfficiencyRule,
                 doc = "Linear relationship in ConverEfficiency. Dimension: setLinearConverEfficiency."
             )    
-        ## Coupling constraints
+        # Coupling constraints
         # couple the real variables with the auxiliary variables
-        # capex
         model.constraintCapexCoupling = pe.Constraint(
             cls.createCustomSet(["setConversionTechnologies","setCapex","setNodes","setTimeStepsInvest"]),
             rule = constraintCapexCouplingRule,
@@ -197,6 +196,18 @@ class ConversionTechnology(Technology):
             cls.createCustomSet(["setConversionTechnologies","setCapex","setNodes","setTimeStepsInvest"]),
             rule = constraintCapacityCouplingRule,
             doc = "couples the real capacity variables with the approximated variables. Dimension: setConversionTechnologies,setNodes,setTimeStepsInvest.")
+        
+        # flow coupling constraints for technologies, which are not modeled with an on-off-behavior
+        # reference flow coupling
+        model.constraintReferenceFlowCoupling = pe.Constraint(
+            cls.createCustomSet(["setConversionTechnologies","setNoOnOff","setDependentCarriers","setLocation","setTimeStepsOperation"]),
+            rule = constraintReferenceFlowCouplingRule,
+            doc = "couples the real reference flow variables with the approximated variables. Dimension: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation.")
+        # dependent flow coupling
+        model.constraintDependentFlowCoupling = pe.Constraint(
+            cls.createCustomSet(["setConversionTechnologies","setNoOnOff","setDependentCarriers","setLocation","setTimeStepsOperation"]),
+            rule = constraintDependentFlowCouplingRule,
+            doc = "couples the real dependent flow variables with the approximated variables. Dimension: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation.")
         
     # defines disjuncts if technology on/off
     @classmethod
@@ -253,11 +264,11 @@ class ConversionTechnology(Technology):
         PWABreakpoints = {}
         PWAValues = {}
 
-        # iterate through PWA variable's indexes
+        # iterate through PWA variable's indices
         for index in setPWA:
             PWABreakpoints[index] = []
             PWAValues[index] = []
-            if setPWA.dimen > 1:
+            if len(index) > 1:
                 tech = index[0]
             else:
                 tech = index

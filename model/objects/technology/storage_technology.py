@@ -229,8 +229,8 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
     return(
         model.levelCharge[tech, node, currentLevelTimeStep] == 
         model.levelCharge[tech, node, previousLevelTimeStep]*(1-model.selfDischarge[tech,node]*model.timeStepsOperationDuration[tech,time]) + 
-        model.carrierFlowCharge[tech, node, time]*model.efficiencyCharge[tech,node] - 
-        model.carrierFlowDischarge[tech, node, time]/model.efficiencyDischarge[tech,node]
+        (model.carrierFlowCharge[tech, node, time]*model.efficiencyCharge[tech,node] - 
+        model.carrierFlowDischarge[tech, node, time]/model.efficiencyDischarge[tech,node])*model.timeStepsOperationDuration[tech,time]
     )
 
 def constraintCapexStorageTechnologyRule(model, tech, node, time):

@@ -11,6 +11,7 @@ Description:    Class defining a standard Element. Contains methods to add param
 ==========================================================================================================================================================================="""
 import itertools 
 import logging
+import numpy as np
 from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
 
@@ -269,6 +270,20 @@ class Element:
                             else:
                                 appendElement = False
                                 break
+                        # if set is used to determine if on-off behavior is modeled
+                        # exclude technologies which have no minLoad and dependentCarrierFlow at referenceCarrierFlow = 0 is also equal to 0
+                        elif "OnOff" in index:
+                            modelOnOff = cls.checkOnOffModeled(element)
+                            if "setNoOnOff" in index:
+                                # if modeled as on off, do not append to setNoOnOff
+                                if modelOnOff:
+                                    appendElement = False
+                                    break
+                            else:
+                                # if not modeled as on off, do not append to setOnOff
+                                if not modelOnOff:
+                                    appendElement = False
+                                    break
                         else:
                             raise NotImplementedError
                     # append indices to customSet if element is supposed to be appended
@@ -280,3 +295,39 @@ class Element:
                 return customSet
             else:
                 raise NotImplementedError
+
+    @classmethod
+    def checkOnOffModeled(cls,tech):
+        """ this classmethod checks if the on-off-behavior of a technology needs to be modeled.
+        If the technology has a minimum load of 0 for all nodes and time steps, 
+        and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as PWA), 
+        then on-off-behavior is not necessary to model 
+        :param tech: technology in model 
+        :returns modelOnOff: boolean to indicate that on-off-behavior modeled """
+        model = EnergySystem.getConcreteModel()
+
+        modelOnOff = True
+        # check if any min
+        _uniqueMinLoad = list(set(cls.getAttributeOfSpecificElement(tech,"minLoad").values()))
+        # if only one unique minLoad which is zero
+        if len(_uniqueMinLoad) == 1 and _uniqueMinLoad[0] == 0:
+            # if not a conversion technology, break for current technology
+            if tech not in model.setConversionTechnologies:
+                modelOnOff = False
+            # if a conversion technology, check if all dependentCarrierFlow at referenceCarrierFlow = 0 equal to 0
+            else:
+                # if technology is approximated (by either PWA or Linear)
+                if tech not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"] or EnergySystem.getSolver()["model"] == "MILP":
+                    _PWAParameter = cls.getAttributeOfSpecificElement(tech,"PWAParameter")["ConverEfficiency"]
+                    # if not modeled as PWA
+                    if not _PWAParameter["PWAVariables"]:
+                        modelOnOff = False
+                    # iterate through all dependent carriers and check if all lower bounds are equal to 0
+                    _onlyZeroDependentBound = True
+                    for PWAVariable in _PWAParameter["PWAVariables"]:
+                        if _PWAParameter["bounds"][PWAVariable][0] != 0:
+                            _onlyZeroDependentBound = False
+                    if _onlyZeroDependentBound:
+                        modelOnOff = False
+        # return
+        return modelOnOff
