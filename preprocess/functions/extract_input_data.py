@@ -96,7 +96,7 @@ class DataInput():
         dfOutput = pd.Series(index=indexMultiIndex,data=defaultValue)
         # read input file
         dfInput,fileName = self.readInputData(folderPath,manualFileName)
-        assert(dfInput is not None or defaultValue is not None), f"input file for attribute {fileName} could not be imported and no default value is given."
+        assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None:
             # if not extracted for transport technology
             if not transportTechnology:
@@ -120,15 +120,27 @@ class DataInput():
         if self.indexNames["setScenarios"] in dfInput.columns:
             dfInput = dfInput[dfInput[self.indexNames["setScenarios"]]==self.system['setScenarios']].drop(self.indexNames["setScenarios"],axis=1)
         # set index by indexNameList
-        assert set(indexNameList).intersection(set(dfInput.columns)) == set(indexNameList), f"requested index sets {set(indexNameList) - set(indexNameList).intersection(set(dfInput.columns))} are missing from input file for {fileName}"
-        dfInput = dfInput.set_index(indexNameList)
-        if column:
-            assert column in dfInput.columns, f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {fileName}"
-            dfInput = dfInput[column]
+        missingIndex = list(set(indexNameList) - set(indexNameList).intersection(set(dfInput.columns)))
+        assert len(missingIndex)<=1, f"Some of the requested index sets {missingIndex} are missing from input file for {fileName}"
+        # no indices missing
+        if len(missingIndex) == 0:
+            dfInput = dfInput.set_index(indexNameList)
+            if column:
+                assert column in dfInput.columns, f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {fileName}"
+                dfInput = dfInput[column]
+            else:
+                # check if only one column remaining
+                assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
+                dfInput = dfInput.squeeze(axis=1)
+        # check if requested values for missing index are columns of dfInput 
         else:
-            # check if only one column remaining
-            assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
-            dfInput = dfInput.squeeze(axis=1)
+            indexNameList.remove(missingIndex[0])
+            dfInput = dfInput.set_index(indexNameList)
+            requestedIndexValues = set(dfOutput.index.get_level_values(missingIndex[0]))
+            assert requestedIndexValues.issubset(dfInput.columns), f"The index values {list(requestedIndexValues-set(dfInput.columns))} for index {missingIndex[0]} are missing from {fileName}"
+            dfInput.columns = dfInput.columns.set_names(missingIndex[0])
+            dfInput = dfInput[requestedIndexValues].stack()
+            dfInput = dfInput.reorder_levels(dfOutput.index.names)
         # get common index of dfOutput and dfInput
         commonIndex = dfOutput.index.intersection(dfInput.index)
         assert defaultValue is not None or len(commonIndex) == len(dfOutput.index), f"Input for {fileName} does not provide entire dataset and no default given in attributes.csv"
