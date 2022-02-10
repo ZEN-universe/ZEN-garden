@@ -292,19 +292,19 @@ class Technology(Element):
         
         # disjunct if technology is on
         model.disjunctOnTechnology = pgdp.Disjunct(
-            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            cls.createCustomSet(["setTechnologies","setOnOff","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOnTechnologyRule,
             doc = "disjunct to indicate that technology is On. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
         )
         # disjunct if technology is off
         model.disjunctOffTechnology = pgdp.Disjunct(
-            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            cls.createCustomSet(["setTechnologies","setOnOff","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOffTechnologyRule,
             doc = "disjunct to indicate that technology is off. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
         )
         # disjunction
         model.disjunctionDecisionOnOffTechnology = pgdp.Disjunction(
-            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
+            cls.createCustomSet(["setTechnologies","setOnOff","setLocation","setTimeStepsOperation"]),
             rule = cls.expressionLinkDisjunctsRule,
             doc = "disjunction to link the on off disjuncts. Dimensions: setTechnologyLocation, setTimeStep")
 
