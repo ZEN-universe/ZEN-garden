@@ -34,7 +34,7 @@ logging.propagate = False
 # CREATE INPUT FILE
 prepare = Prepare(config)
 
-# check if all data input exist and remove non existent
+# check if all data inputs exist and remove non-existent
 system = prepare.checkExistingInputData()
 # FORMULATE THE OPTIMIZATION PROBLEM
 model = Model(config.analysis, system, prepare.paths, prepare.solver)

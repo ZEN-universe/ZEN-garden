@@ -11,6 +11,7 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
+import numpy as np
 from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
 
@@ -47,14 +48,34 @@ class StorageTechnology(Technology):
         self.efficiencyDischarge        = self.dataInput.extractInputData(_inputPath,"efficiencyDischarge",indexSets=["setNodes"])
         self.selfDischarge              = self.dataInput.extractInputData(_inputPath,"selfDischarge",indexSets=["setNodes"]) 
         self.capexSpecific              = self.dataInput.extractInputData(_inputPath,"capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+        # calculate time steps of storage levels
+        self.calculateTimeStepsStorageLevel(_inputPath)
         # set technology to correspondent reference carrier
         EnergySystem.setTechnologyOfCarrier(self.name,self.referenceCarrier)
+
+    def calculateTimeStepsStorageLevel(self,_inputPath):
+        """ this method calculates the number of time steps on the storage level, and the order in which the storage levels are connected """
+        setTimeStepsOperationFlow           = self.setTimeStepsOperation
+        timeStepsOperationDurationFlow      = self.timeStepsOperationDuration
+        # time steps of storage level
+        storageLevelRepetition              = int(self.dataInput.extractAttributeData(_inputPath,"storageLevelRepetition"))
+        # calculate number of time steps
+        numberTimeStepsStorageLevel         = int(np.ceil(len(setTimeStepsOperationFlow)/storageLevelRepetition))
+        self.setTimeStepsStorageLevel       = list(range(1,numberTimeStepsStorageLevel+1))
+        # get sequence of storage levels
+        self.sequenceStorageLevel           = list(np.concatenate([self.setTimeStepsStorageLevel]*int(storageLevelRepetition))[0:len(setTimeStepsOperationFlow)])
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to StorageTechnology --- ###
     @classmethod
     def constructSets(cls):
         """ constructs the pe.Sets of the class <StorageTechnology> """
-        pass
+        model = EnergySystem.getConcreteModel()
+        # time steps of storage levels
+        model.setTimeStepsStorageLevel = pe.Set(
+            model.setStorageTechnologies,
+            initialize = cls.getAttributeOfAllElements("setTimeStepsStorageLevel"),
+            doc="Set of time steps of storage levels for all storage technologies. Dimensions: setStorageTechnologies"
+        )
 
     @classmethod
     def constructParams(cls):
@@ -119,9 +140,9 @@ class StorageTechnology(Technology):
         )
         # loss of carrier on node
         model.levelCharge = pe.Var(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
+            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             domain = pe.NonNegativeReals,
-            doc = 'carrier flow through storage technology on node i and time t. Dimensions: setStorageTechnologies, setNodes, setTimeStepsOperation. Domain: NonNegativeReals'
+            doc = 'carrier flow through storage technology on node i and time t. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel. Domain: NonNegativeReals'
         )
         
     @classmethod
@@ -130,9 +151,9 @@ class StorageTechnology(Technology):
         model = EnergySystem.getConcreteModel()
         # Limit storage level
         model.constraintStorageLevelMax = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
+            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             rule = constraintStorageLevelMaxRule,
-            doc = 'limit maximum storage level to capacity. Dimensions: setStorageTechnologies, setNodes, setTimeStepsOperation'
+            doc = 'limit maximum storage level to capacity. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel'
         ) 
         # couple storage levels
         model.constraintCoupleStorageLevel = pe.Constraint(
@@ -178,16 +199,19 @@ class StorageTechnology(Technology):
         )
 
     @classmethod
-    def getPreviousTimeStep(cls,tech,time):
-        """ gets previous time step of storage technology """
-        timeSteps = cls.getAttributeOfSpecificElement(tech,"setTimeStepsOperation")
-        indexCurrentTimeStep = timeSteps.index(time)
+    def getStorageLevelTimeStep(cls,tech,time):
+        """ gets current and previous time step of storage level """
+        sequenceStorageLevel    = cls.getAttributeOfSpecificElement(tech,"sequenceStorageLevel")
+        setTimeStepsOperation   = cls.getAttributeOfSpecificElement(tech,"setTimeStepsOperation")
+        indexCurrentTimeStep    = setTimeStepsOperation.index(time)
+        currentLevelTimeStep    = sequenceStorageLevel[indexCurrentTimeStep]
         # if first time step
         if indexCurrentTimeStep == 0:
-            return timeSteps[-1]
+            previousLevelTimeStep = sequenceStorageLevel[-1]
         # if any other time step
         else:
-            return timeSteps[indexCurrentTimeStep-1]
+            previousLevelTimeStep = sequenceStorageLevel[indexCurrentTimeStep-1]
+        return currentLevelTimeStep,previousLevelTimeStep
 
 ### --- functions with constraint rules --- ###
 def constraintStorageLevelMaxRule(model, tech, node, time):
@@ -199,12 +223,12 @@ def constraintStorageLevelMaxRule(model, tech, node, time):
 
 def constraintCoupleStorageLevelRule(model, tech, node, time):
     """couple subsequent storage levels (time coupling constraints)"""
-    # get previous time step
-    previousTime = StorageTechnology.getPreviousTimeStep(tech,time)
+    # get current and previous time step of storage level
+    currentLevelTimeStep,previousLevelTimeStep = StorageTechnology.getStorageLevelTimeStep(tech,time)
 
     return(
-        model.levelCharge[tech, node, time] == 
-        model.levelCharge[tech, node, previousTime]*(1-model.selfDischarge[tech,node]*model.timeStepsOperationDuration[tech,time]) + 
+        model.levelCharge[tech, node, currentLevelTimeStep] == 
+        model.levelCharge[tech, node, previousLevelTimeStep]*(1-model.selfDischarge[tech,node]*model.timeStepsOperationDuration[tech,time]) + 
         model.carrierFlowCharge[tech, node, time]*model.efficiencyCharge[tech,node] - 
         model.carrierFlowDischarge[tech, node, time]/model.efficiencyDischarge[tech,node]
     )
