@@ -37,7 +37,7 @@ class ConversionTechnology(Technology):
         paths                           = EnergySystem.getPaths()   
         #  set attributes for parameters of parent class <Technology>
         _inputPath                      = paths["setConversionTechnologies"][self.name]["folder"]
-        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)
+        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",["setNodes"])
         self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
         self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
         self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
