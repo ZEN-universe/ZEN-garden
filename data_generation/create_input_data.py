@@ -41,7 +41,8 @@ class DataCreation():
 
     def createInputData(self):
         """ extracts input data structure from input """
-        self.carriersInModel = []
+        self.carriersInModel        = []
+        self.carbonIntensityCarrier = {}
         # create nodes
         self.createNodes()
         # create time steps
@@ -59,10 +60,21 @@ class DataCreation():
 
     def createNodes(self):
         """ fills the setNodes folder"""
-        pass
+        assert os.path.exists(self.folderPath / "setNodes" / "setNodes.csv"), "setNodes not yet created! Implement!"
+        self.setNodes = pd.read_csv(self.folderPath / "setNodes" / "setNodes.csv")
 
-    def createTimeSteps(self):
-        """ fills the setTimeSteps folder"""
+    def createTimeSteps(self,setName = None,elementName = None):
+        """ fills the setTimeSteps folder and creates the time steps for each element in each set """
+        if setName == "setConversionTechnologies":
+            pass
+        elif setName == "setTransportTechnologies":
+            pass
+        elif setName == "setStorageTechnologies":
+            pass
+        elif setName == "setCarriers":
+            pass
+        else:
+            pass
         pass
 
     def createConversionTechnologies(self):
@@ -82,6 +94,10 @@ class DataCreation():
             self.createNewElementFolder("setConversionTechnologies",conversionTechnology)
             # create attribute file
             self.createDefaultAttributeDataFrame("setConversionTechnologies",conversionTechnology)
+            # create PWA files
+            self.createPWAfiles(conversionTechnology)
+            # create PV and wind onshore maxLoad files
+            self.createMaxLoadFiles(conversionTechnology)
     
     def createTransportTechnologies(self):
         """ fills the setTransportTechnologies folder"""
@@ -90,6 +106,8 @@ class DataCreation():
             self.createNewElementFolder("setTransportTechnologies",transportTechnology)
             # create attribute file
             self.createDefaultAttributeDataFrame("setTransportTechnologies",transportTechnology)
+            # create distance matrix
+            self.createDistanceMatrix(transportTechnology)
     
     def createStorageTechnologies(self):
         """ fills the setStorageTechnologies folder"""
@@ -101,8 +119,25 @@ class DataCreation():
 
     def createCarriers(self):
         """ fills the setCarriers folder"""
-        a=1
-        pass
+        # load fuel prices 
+        # source: POTEnCIA energy model, 2018 EU28 Fuel Prices
+        if not os.path.exists(self.sourcePath / "technologyAttributes" / "fuelPricesPotencia.pickle"):
+            self.fuelPricesPotencia = pd.read_excel(self.sourcePath / "technologyAttributes" / "PG_technology_Central_2018.xlsx", sheet_name = "fuel_costs").set_index("International fuel prices (€2010/toe)")[2018]
+            with open(self.sourcePath / "technologyAttributes" / "fuelPricesPotencia.pickle","wb") as inputFile:
+                pickle.dump(self.fuelPricesPotencia,inputFile)
+        else:
+            with open(self.sourcePath / "technologyAttributes" / "fuelPricesPotencia.pickle","rb") as inputFile:
+                self.fuelPricesPotencia = pickle.load(inputFile)
+        # load European demand
+        # source: ENTSOE, MHLV_data-2015-2017_demand_hourly for 2017 (2015 incomplete, 2016 leap year)
+        self.electricityDemand = helpers.getDemandDataframe(self.sourcePath / "demand")
+
+        for carrier in self.carriersInModel:
+            self.createNewElementFolder("setCarriers",carrier)
+            # create attribute file
+            self.createDefaultAttributeDataFrame("setCarriers",carrier)
+            # create demand
+            self.createDemand(carrier)
     
     def createNewElementFolder(self,setName,elementName):
         """ this method creates a new folder for an element 
@@ -121,21 +156,31 @@ class DataCreation():
         dfAttribute["attributes"]                   = dfAttribute.index.map(lambda index: helpers.getDefaultValue(index))
         if setName == "setConversionTechnologies":
             # input and output carrier
-            dfAttribute.loc["inputCarrier"],dfAttribute.loc["outputCarrier"] = self.getInputOutputCarrier(elementName)
+            _inputCarrier,_outputCarrier            = self.getInputOutputCarrier(elementName)
+            dfAttribute.loc["inputCarrier"],dfAttribute.loc["outputCarrier"] = _inputCarrier,_outputCarrier
             # Potencia assumptions
-            _potenciaAssumptions                    = self.technologyPotenciaAssumption.loc[helpers.getCostIndex(self.conversionTechnologiesPotencia[elementName])]
+            _potenciaAssumptions                    = self.technologyPotenciaAssumption.loc[helpers.getAttributeIndex(self.conversionTechnologiesPotencia[elementName])]
             dfAttribute.loc["lifetime"]             = _potenciaAssumptions["Technical lifetime (years)"]
             _maximumNumberNewPlants                 = helpers.getNumberOfNewPlants(elementName) # TODO choose sensible number
-            dfAttribute.loc["maxBuiltCapacity"]     = _potenciaAssumptions["Typical unit size of a new power plant (kW)"]/1000*_maximumNumberNewPlants
-            dfAttribute.loc["opexSpecificDefault"]  = _potenciaAssumptions["Variable O&M  costs €2010/MWh"]
-            # dfAttribute["carbonIntensityDefault"]   = (_potenciaAssumptions["Default emissions factor (t of CO2 / toe input)"] #tCO2/MWh output
-            #                                         /_potenciaAssumptions["Net efficiency"]
-            #                                         *helpers.getConstants("MWh2toe"))
+            dfAttribute.loc["maxBuiltCapacity"]     = _potenciaAssumptions["Typical unit size of a new power plant (kW)"]/1e6*_maximumNumberNewPlants   # GW
+            dfAttribute.loc["opexSpecificDefault"]  = _potenciaAssumptions["Variable O&M  costs €2010/MWh"]                                             # kEUR/GWh
+            # save carbon intensity of input carrier
+            if _inputCarrier:
+                self.carbonIntensityCarrier[_inputCarrier] = _potenciaAssumptions["Default emissions factor (t of CO2 / toe input)"]*helpers.getConstants("MWh2toe") #ktCO2/GWh
+
         elif setName == "setTransportTechnologies":
             dfAttribute = helpers.setManualAttributesTransport(elementName,dfAttribute)
         elif setName == "setStorageTechnologies":
             dfAttribute = helpers.setManualAttributesStorage(elementName,dfAttribute)
         elif setName == "setCarriers":
+            # set fuel prices
+            _carrierIdentifier = helpers.getCarrierIdentifier(elementName)
+            if _carrierIdentifier:
+                dfAttribute.loc["importPriceCarrierDefault"]    = self.fuelPricesPotencia[_carrierIdentifier]*helpers.getConstants("MWh2toe")           # kEUR/GWh
+            # carbon intensity
+            if elementName in self.carbonIntensityCarrier:  
+                dfAttribute.loc["carbonIntensityDefault"]       = self.carbonIntensityCarrier[elementName]                                              # ktCO2/GWh
+            # manual attributes
             dfAttribute = helpers.setManualAttributesCarriers(elementName,dfAttribute)
         # write csv
         dfAttribute.to_csv(self.folderPath / setName / elementName / "attributes.csv")
@@ -154,7 +199,103 @@ class DataCreation():
                 if _carrier not in self.carriersInModel:
                     self.carriersInModel.append(_carrier)
         return _inputCarrier,_outputCarrier
-        
+    
+    def createDemand(self,carrier):
+        """ creates demand file for selected carriers 
+        :param carrier: carrier in model """
+        if carrier == "electricity":
+            commonCountries = set(self.electricityDemand.columns).intersection(self.setNodes["node"])
+            missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
+            if missingCountries:
+                print(f"electricity demand missing for countries {missingCountries}. Default demand is used.")
+            electricityDemandSelection = self.electricityDemand[sorted(commonCountries)]
+            electricityDemandSelection.index.name = "time"
+            electricityDemandSelection.to_csv(self.folderPath / "setCarriers" / carrier / "demandCarrier.csv")
+
+    def createPWAfiles(self,elementName):
+        """ creates PWA for conversion technologies """
+        _potenciaAssumptions            = self.technologyPotenciaAssumption.loc[helpers.getAttributeIndex(self.conversionTechnologiesPotencia[elementName])]
+        minCapacity                     = 0
+        _maximumNumberNewPlants         = helpers.getNumberOfNewPlants(elementName) # TODO choose sensible number
+        maxBuiltCapacity                = _potenciaAssumptions["Typical unit size of a new power plant (kW)"]/1e6*_maximumNumberNewPlants   # GW
+        maxTotalCapacity                = maxBuiltCapacity*helpers.getConstants("maximumInvestYears")
+        # carriers
+        _inputCarrier                   = helpers.setInputOutputCarriers(elementName,"input")
+        _outputCarrier                  = helpers.setInputOutputCarriers(elementName,"output")
+        _referenceCarrier               = helpers.setInputOutputCarriers(elementName,"reference")
+        _carriers                       = set()
+        if _inputCarrier:
+            _carriers                   = _carriers.union(set([_inputCarrier]))
+        if _outputCarrier:
+            _carriers                   = _carriers.union(set([_outputCarrier]))
+        _dependentCarrier               = list(_carriers-set([_referenceCarrier]))
+        assert len(_dependentCarrier) <= 1, f"Not yet implemented for technologies ({elementName}) with more than 1 dependent carrier {_dependentCarrier}"
+        # create csv
+        # capex
+        dfCapex                         = pd.DataFrame([minCapacity,maxBuiltCapacity],columns=["capacity"])
+        dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWACapex.csv",index = False)
+        dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"]*1000 # kEUR/GWh                       
+        dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearCapex.csv",index = False)
+        # converEfficiency
+        dfConverEfficiency              = pd.DataFrame([minCapacity,maxTotalCapacity],columns=[_referenceCarrier])
+        dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWAConverEfficiency.csv",index = False)
+        if len(_dependentCarrier) == 1:
+            dfConverEfficiency[_dependentCarrier[0]] = dfConverEfficiency[_referenceCarrier]/_potenciaAssumptions["Net efficiency"]
+        dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearConverEfficiency.csv",index = False)
+
+    def createMaxLoadFiles(self,elementName):
+        """ creates maxLoad files for photovoltaics and wind onshore conversion technologies """
+        if elementName == "photovoltaics" or elementName == "wind_onshore":
+            # if already converted
+            if os.path.exists(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle"):
+                with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "rb") as input_file:
+                    maxLoad = pickle.load(input_file)
+            else:
+                # elementName specific
+                if elementName == "photovoltaics":
+                    # from EMHIRESPV_TSh_CF_Country_only2015, reduced version 
+                    maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRESPV_TSh_CF_Country_only2015.xlsx").set_index("Date")
+                elif elementName == "wind_onshore":
+                    # from EMHIRES_WIND_COUNTRY_only2015_June2019, reduced version 
+                    maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRES_WIND_COUNTRY_only2015_June2019.xlsx").set_index("Date")
+                # only select specific countries
+                commonCountries = set(maxLoad.columns).intersection(self.setNodes["node"])
+                missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
+                if missingCountries:
+                    print(f"MaxLoad for {elementName} missing for countries {missingCountries}. Default maxLoad is used.")
+                maxLoad = maxLoad[sorted(commonCountries)]
+                # dump pickle
+                with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "wb") as input_file:
+                    pickle.dump(maxLoad , input_file)
+            # do not use datetime index but (for the time being) range from 1-8760
+            maxLoad        = maxLoad.reset_index(drop=True)
+            maxLoad.index  = maxLoad.index.map(lambda index: index+1) # start with 1
+            # create csv
+            maxLoad.index.name = "time"
+            maxLoad.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "maxLoad.csv")
+
+    def createDistanceMatrix(self,elementName):
+        """
+        Compute a matrix containing the distance between any two points in the domain based on the Euclidean distance
+        """
+
+        def f_eucl_dist(P0, P1):
+            """
+                Compute the Eucledian distance of two points in 2D
+            """
+            return ((P0[0] - P1[0]) ** 2 + (P0[1] - P1[1]) ** 2) ** 0.5
+
+        setNodes    = self.setNodes.set_index("node")
+        nodes       = setNodes.index
+        xArr        = setNodes["x"]
+        yArr        = setNodes["y"]
+        # create empty distance matrix
+        distanceMatrix              = pd.DataFrame(index = nodes, columns= nodes)
+        distanceMatrix.index.name   = "node"
+        # calculate distance
+        distanceMatrix = distanceMatrix.apply(lambda column: f_eucl_dist((xArr[column.name], yArr[column.name]),(xArr[column.index], yArr[column.index])))
+        distanceMatrix.to_csv(self.folderPath / "setTransportTechnologies" / elementName / "distanceEuclidean.csv")
+
 def main():
     """ This is the main function to create NUTS0 """
     # set folder name
@@ -165,191 +306,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-####       
-data = dict()
-data['mainFolder'] = 'NUTS2'
-data['sourceData'] = pd.read_csv('{}.csv'.format(data['mainFolder']), header=0, index_col=None)
-data['PWAData'] = pd.read_csv('PWA.csv', header=0, index_col=None)
-data['NLData'] = pd.read_csv('NL.csv', header=0, index_col=None)
-Create = Create(data, analysis)
-
-###                                                                                                                  ###
-# Data are added in the following ways:
-# 1. source data file defined in dictionary data: the script looks for the items in headerInSource among the columns
-#   of the source data file
-# 2. input data in the dictionary <data>
-# 3. Any other required input data from <analysis['headerDataInputs']> is assigned to zero
-###                                                                                                                  ###
-
-data['scenario'] = ['a']
-data['time'] = [0]
-### Nodes
-headerInSource = {'node': 'ID', 'x': "('X', 'km')", 'y': "('Y', 'km')"}
-Create.independentData('Nodes', headerInSource)
-### Scenarios
-headerInSource = {}
-Create.independentData('Scenarios', headerInSource)
-### TimeSteps
-headerInSource = {}
-Create.independentData('TimeSteps', headerInSource)
-
-# compute Euclidean matrix
-Create.distanceMatrix('euclidean')
-
-### Carriers
-# Inputs from file
-headerInSource = {
-    'electricity': {'availabilityCarrier':"('TotalGreen_potential', 'MWh')"},
-    'water': {},
-    'biomass': {'availabilityCarrier':"('Biomass_potential', 'MWh')"},
-    'natural_gas': {},
-    'hydrogen': {'demandCarrier': "('hydrogen_demand', 'MWh')"},
-    'oxygen': {}
-    }
-
-## Manual inputs
-# biomass
-data['importPriceCarrier_biomass'] = [0.07*1000] # EUR/MWh, value from Gabrielli et al. - dry biomass
-# electricity
-data['exportPriceCarrier_electricity'] = [0.05*1000] # EUR/MWh, value from Gabrielli et al.
-data['importPriceCarrier_electricity'] = [0.12*1000] # EUR/MWh, value from Gabrielli et al.
-# natural gas
-data['importPriceCarrier_natural_gas'] = [0.06*1000] # EUR/MWh, value from Gabrielli et al.
-# water
-data['availabilityCarrier_water'] = [1e12] # unlimited availability
-## create datasets
-Create.nodalData('Carriers', headerInSource)
-
-## attributes - customised dataframe
-inputDataFrame = {
-    'biomass':
-        {'carbon_intensity': 13/1000   # tonCO2/MWh, value from Gabrielli et al. - dry biomass
-         },
-    'electricity':
-        {'carbon_intensity': 127/1000  # tonCO2/MWh, value from Gabrielli et al.
-         },
-    'natural_gas':
-        {'carbon_intensity': 237/1000  # tonCO2/MWh, value from Gabrielli et al.
-         },
-    'oxygen':
-        {'carbon_intensity': 0
-         },
-    'hydrogen':
-        {'carbon_intensity': 0
-         },
-}
-## create datasets
-Create.attributesDataFrame('Carriers', inputDataFrame)
-
-## ConversionTechnologies
-# nodal data
-headerInSource = {
-    'electrolysis': {},
-    'SMR':{}
-}
-data['availability_electrolysis'] = [1e5]   # MW, value from Gabrielli et al
-data['availability_SMR'] = [1e5]            # MW, value from Gabrielli et al
-Create.nodalData('ConversionTechnologies', headerInSource)
-# attributes
-inputDataFrame = {
-    'electrolysis': {
-        'minBuiltCapacity':0,
-        'maxBuiltCapacity':data['NLData'][['capacity_capex_electrolysis']].dropna().values[-1][0],
-        'minLoad':0.07,
-        'lifetime':10, # h, value from Gabrielli et al
-        'costVariable':10*10**6,
-        'referenceCarrier':'hydrogen',
-        'inputCarrier':'electricity water',
-        'outputCarrier':'hydrogen oxygen'},
-    'SMR': {
-        'minBuiltCapacity':1, # MW, value from Gabrielli et al
-        'maxBuiltCapacity':1,
-        'lifetime': 20, # h, value from Gabrielli et al
-        'minLoad':0.1,
-        'maxLoad':1,
-     'referenceCarrier':'hydrogen', 'inputCarrier':'natural_gas', 'outputCarrier':'hydrogen carbon_dioxide'},
-}
-Create.attributesDataFrame('ConversionTechnologies', inputDataFrame)
-
-# files variable approximation
-inputDataFrame = {
-    'electrolysis': {
-        'breakpointsPWACapex':{
-            'columns':['capacity'],
-            'values':data['PWAData']['breakpoints_capex_electrolysis'].dropna().values
-        },
-        'breakpointsPWAConverEfficiency':{
-            'columns':['hydrogen'],
-            'values':data['PWAData']['breakpoints_efficiency_electrolysis'].dropna().values
-        },
-        'nonlinearCapex':{
-            'columns':['capacity', 'capex'],
-            'values':data['NLData'][['capacity_capex_electrolysis', 'capex_capex_electrolysis']].dropna().values
-        },
-        'nonlinearConverEfficiency':{
-            'columns':['hydrogen','oxygen','electricity', 'water'],
-            'values':data['NLData'][['hydrogen_efficiency_electrolysis', 'hydrogen_efficiency_electrolysis',
-                                     'electricity_efficiency_electrolysis', 'water_efficiency_electrolysis']].dropna().values
-        }
-    },
-    'SMR': {
-        'breakpointsPWACapex':{
-            'columns':['capacity'],
-            'values':data['PWAData']['breakpoints_capex_SMR'].dropna().values
-        },
-        'breakpointsPWAConverEfficiency':{
-            'columns':['hydrogen'],
-            'values':data['PWAData']['breakpoints_efficiency_SMR'].dropna().values
-        },
-        'nonlinearCapex':{
-            'columns':['capacity', 'capex'],
-            'values':data['NLData'][['capacity_capex_SMR', 'capex_capex_SMR']].dropna().values
-        },
-        'nonlinearConverEfficiency':{
-            'columns':['hydrogen','natural_gas','carbon_dioxide',],
-            'values':data['NLData'][['hydrogen_efficiency_SMR', 'natural_gas_efficiency_SMR',
-                                     'carbon_dioxide_efficiency_SMR']].dropna().values
-        }
-    },
-}
-Create.generalDataFrame('ConversionTechnologies', inputDataFrame)
-
-## TransportTechnologies
-# datasets based on nodes combination
-headerInSource = {
-    'pipeline_hydrogen': {},
-    'truck_hydrogen': {}
-}
-data['availability_pipeline_hydrogen'] = [85] # MW, value from Gabrielli et al.
-data['availability_truck_hydrogen'] = [38] # MW, value from Gabrielli et al.
-data['distanceEuclidean_pipeline_hydrogen'] = Create.eucledian_distance
-data['distanceEuclidean_truck_hydrogen'] = Create.eucledian_distance
-data['efficiencyPerDistance_pipeline_hydrogen'] = [1]
-data['efficiencyPerDistance_truck_hydrogen'] = [1]
-# cost per distance dependent on the way the total capex is computed: 1/2 factor to avoid accounting a connection twice
-data['costPerDistance_pipeline_hydrogen'] = [(8.2*10**3)/2] # EUR/km/MW, value fixed cost from Gabrielli et al.
-Create.edgesData('TransportTechnologies', headerInSource)
-
-# attributes
-inputDataFrame = {
-    'pipeline_hydrogen': {
-        'minBuiltCapacity':1.6, # MW, value from Gabrielli et al.
-        'maxBuiltCapacity':1e12,
-        'minLoad':0,
-        'lifetime':8760*50, # h, value from Gabrielli et al.
-        'costVariable':1.6*10**(-6), # EUR/MW, value from Gabrielli et al.
-        'lossFlow':0.00012, # 1/km, value from Gabrielli et al.
-        'referenceCarrier':'hydrogen'},
-    'truck_hydrogen': {
-        'minBuiltCapacity': 1.6,  # MW, value from Gabrielli et al.
-        'maxBuiltCapacity': 1e12,
-        'minLoad': 0,
-        'lifetime': 8760*10,  # h, value from Gabrielli et al.
-        'carbon_intensity': 4.2*10**(-6),  # tonCO2eq/km/MWh, value from Gabrielli et al.
-        'costVariable':1.6*10**(-5),  # EUR/MW, value from Gabrielli et al.
-        'costFixed': 13*10**3,  # EUR/MW, value from Gabrielli et al.
-        'lossFlow': 0.00012,  # 1/km, value from Gabrielli et al.
-        'referenceCarrier': 'hydrogen'},
-}
-Create.attributesDataFrame('TransportTechnologies', inputDataFrame)

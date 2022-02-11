@@ -16,7 +16,7 @@ system = default_config.system
 solver = default_config.solver   
 
 ## Analysis - settings update compared to default values
-analysis['spatialResolution']                       = 'NUTS0_Test_TSA'
+analysis['spatialResolution']                       = 'NUTS0_electricity'
 analysis['modelFormulation']                        = 'HSC'
 analysis['objective']                               = 'TotalCost' # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
 # definition of the approximation
@@ -24,13 +24,13 @@ analysis['variablesNonlinearModel']                 = {'builtCapacity': []}
 analysis['nonlinearTechnologyApproximation']        = {'Capex': [], 'ConverEfficiency':[]}
 
 ## System - settings update compared to default values
-system['setCarriers']                               = ['electricity','natural_gas']
-system['setStorageTechnologies']                    = ["battery"]
+system['setCarriers']                               = ['electricity','natural_gas',"hard_coal","uranium"]
+system['setStorageTechnologies']                    = ["battery","pumped_hydro"]
 system['setTransportTechnologies']                  = ['power_line']
-system['setConversionTechnologies']                 = ['photovoltaics',"natural_gas_turbine","slow_natural_gas_turbine"]
+system['setConversionTechnologies']                 = ['photovoltaics',"natural_gas_turbine","wind_onshore","hard_coal","nuclear","run-of-river_hydro"]
 system['setScenarios']                              = 'a'
-system['setTimeSteps']                              = list(range(1,48+1))
-system['setNodes']                                  = ['CH', 'DE'] 
+system['setTimeSteps']                              = list(range(1,120+1))
+system['setNodes']                                  = ['CH','DE',"AT","IT","FR"] 
 
 ## Solver - settings update compared to default values
 solver['gap']                                       = 0.01

@@ -187,6 +187,10 @@ class DataInput():
                 numberOfTimeSteps = dfInput["numberTimeSteps"]
         else:
             numberOfTimeSteps = dfInput
+        # if more time steps than in system, limit to system time steps
+        if numberOfTimeSteps > len(self.system["setTimeSteps"]):
+            numberOfTimeSteps = len(self.system["setTimeSteps"])
+        # create range of time steps
         listOfTimeSteps = list(range(1,numberOfTimeSteps+1))
         return listOfTimeSteps
 
