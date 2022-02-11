@@ -128,9 +128,9 @@ class Technology(Element):
             doc = 'Parameter which specifies the lifetime of technology. Dimensions: setTechnologies')
         # capacityLimit of technologies
         model.capacityLimitTechnology = pe.Param(
-            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
+            cls.createCustomSet(["setTechnologies","setLocation"]),
             initialize = cls.getAttributeOfAllElements("capacityLimit"),
-            doc = 'Parameter which specifies the capacity limit of technologies. Dimensions: setTechnologies, setLocation, setTimeStepsInvest')
+            doc = 'Parameter which specifies the capacity limit of technologies. Dimensions: setTechnologies, setLocation')
         # minimum load relative to capacity
         model.minLoad = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
@@ -168,7 +168,7 @@ class Technology(Element):
             ### TODO: if existing capacity, add existing capacity
             existingCapacity = 0
             maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
-            maxcapacityLimitTechnology = model.capacityLimitTechnology[tech,loc,time]
+            maxcapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
             boundCapacity = min(maxBuiltCapacity + existingCapacity,maxcapacityLimitTechnology)
             bounds = (0,boundCapacity)
             return(bounds)
@@ -339,28 +339,28 @@ class Technology(Element):
 
 ### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class
-def constraintTechnologycapacityLimitRule(model, tech, location, time):
+def constraintTechnologycapacityLimitRule(model, tech, loc, time):
     """limited capacityLimit of  technology"""
-    if model.capacityLimitTechnology[tech, location, time] != np.inf:
-        return (model.capacityLimitTechnology[tech, location, time] >= model.capacity[tech, location, time])
+    if model.capacityLimitTechnology[tech, loc] != np.inf:
+        return (model.capacityLimitTechnology[tech, loc] >= model.capacity[tech, loc, time])
     else:
         return pe.Constraint.Skip
 
-def constraintTechnologyMinCapacityRule(model, tech, location, time):
+def constraintTechnologyMinCapacityRule(model, tech, loc, time):
     """ min capacity expansion of  technology."""
     if model.minBuiltCapacity[tech] != 0:
-        return (model.minBuiltCapacity[tech] * model.installTechnology[tech, location, time] <= model.builtCapacity[tech, location, time])
+        return (model.minBuiltCapacity[tech] * model.installTechnology[tech, loc, time] <= model.builtCapacity[tech, loc, time])
     else:
         return pe.Constraint.Skip
 
-def constraintTechnologyMaxCapacityRule(model, tech, location, time):
+def constraintTechnologyMaxCapacityRule(model, tech, loc, time):
     """max capacity expansion of  technology"""
     if model.maxBuiltCapacity[tech] != np.inf and tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
-        return (model.maxBuiltCapacity[tech] * model.installTechnology[tech, location, time] >= model.builtCapacity[tech, location, time])
+        return (model.maxBuiltCapacity[tech] * model.installTechnology[tech, loc, time] >= model.builtCapacity[tech, loc, time])
     else:
         return pe.Constraint.Skip
 
-def constraintTechnologyLifetimeRule(model, tech, location, time):
+def constraintTechnologyLifetimeRule(model, tech, loc, time):
     """limited lifetime of the technologies"""
     if tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
         # time range
@@ -368,8 +368,8 @@ def constraintTechnologyLifetimeRule(model, tech, location, time):
         t_start = int(max(min(model.setTimeStepsInvest[tech]), time - model.lifetimeTechnology[tech] + 1))
         t_end = time + 1
 
-        return (model.capacity[tech, location, time] 
-            == sum(model.builtCapacity[tech,location, previousTime] for previousTime in range(t_start, t_end)))
+        return (model.capacity[tech, loc, time] 
+            == sum(model.builtCapacity[tech,loc, previousTime] for previousTime in range(t_start, t_end)))
     else:
         return pe.Constraint.Skip
 

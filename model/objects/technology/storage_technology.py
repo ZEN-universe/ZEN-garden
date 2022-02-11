@@ -38,7 +38,7 @@ class StorageTechnology(Technology):
         paths                           = EnergySystem.getPaths()   
         # set attributes for parameters of parent class <Technology>
         _inputPath                      = paths["setStorageTechnologies"][self.name]["folder"]
-        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)
+        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setNodes"])
         self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation) # TODO maybe rename: minLoad = minimum specific power to charge/discharge, probably 0
         self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation) # TODO maybe rename: maxLoad = maximum specific power to charge/discharge, i.e., 1/(hours until entirely charged/discharged)
         self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsOperation)

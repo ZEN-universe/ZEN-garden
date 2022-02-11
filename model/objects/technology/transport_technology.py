@@ -37,7 +37,7 @@ class TransportTechnology(Technology):
         paths                           = EnergySystem.getPaths()   
         # set attributes for parameters of parent class <Technology>
         _inputPath                      = paths["setTransportTechnologies"][self.name]["folder"]
-        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsInvest,transportTechnology=True)
+        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setEdges"],transportTechnology=True)
         self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
         self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
         self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsOperation,transportTechnology=True)
@@ -155,8 +155,7 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
 
 def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
-    # TODO: why factor 0.5? divide capexPerDistance in input data
-    return (model.capex[tech,edge, time] == 0.5 *
+    return (model.capex[tech,edge, time] == 
             model.builtCapacity[tech,edge, time] *
             model.distance[tech,edge] *
             model.capexPerDistance[tech,edge, time])
