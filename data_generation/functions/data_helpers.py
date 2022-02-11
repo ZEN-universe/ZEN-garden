@@ -8,7 +8,8 @@ Description:  Helper functions for data creation to keep create_inputd_data.py c
 ==========================================================================================================================================================================="""
 from cmath import inf
 import pandas as pd
-from sympy import source
+import pickle 
+import os
 
 def getFolderNames():
     """ this function returns the necessary folders in a input data structure """
@@ -51,19 +52,19 @@ def getDefaultValue(attribute):
     :param attribute: attribute for which default value is returned
     :return defaultValue: default value of attribute """
     defaultValues={                                 # unit
-        "minBuiltCapacity"          : 0,            # MW,MWh
-        "maxBuiltCapacity"          : 100,          # MW,MWh
+        "minBuiltCapacity"          : 0,            # GW,GWh
+        "maxBuiltCapacity"          : 1,           # GW,GWh
         "minLoad"                   : 0,            # -
         "maxLoad"                   : 1,            # -
         "lifetime"                  : 20,           # a
-        "opexSpecific"              : 0,            # EUR/MWh
-        "capacityLimit"             : inf,          # MW
-        "carbonIntensity"           : 0,            # tCO2/MWh
-        "demandCarrier"             : 0,            # MW
-        "availabilityCarrierImport" : inf,          # MW
-        "availabilityCarrierExport" : inf,          # MW
-        "exportPriceCarrier"        : 0,            # EUR/MWh
-        "importPriceCarrier"        : 0,            # EUR/MWh
+        "opexSpecific"              : 0,            # kEUR/GWh
+        "capacityLimit"             : inf,          # GW
+        "carbonIntensity"           : 0,            # ktCO2/GWh
+        "demandCarrier"             : 0,            # GW
+        "availabilityCarrierImport" : inf,          # GW
+        "availabilityCarrierExport" : inf,          # GW
+        "exportPriceCarrier"        : 0,            # kEUR/GWh
+        "importPriceCarrier"        : 0,            # kEUR/GWh
         "referenceCarrier"          : "electricity",# -     
         "storageLevelRepetition"    : 1             # -    
     }
@@ -102,7 +103,8 @@ def getAttributesOfSet(setName):
             "efficiencyCharge",
             "efficiencyDischarge",
             "selfDischarge",
-            "capexSpecificDefault"
+            "capexSpecificDefault",
+            "storageLevelRepetition"
         ],
         "setCarriers": [
             "carbonIntensityDefault",
@@ -137,8 +139,8 @@ def setManualAttributesTransport(elementName,dfAttribute):
     if elementName == "power_line":
         dfAttribute.loc["lossFlow"]                 = 5E-5  # 1/km 
         dfAttribute.loc["lifetime"]                 = 60    # a
-        dfAttribute.loc["capexPerDistanceDefault"]  = 900/2 # EUR/km/MW
-        dfAttribute.loc["capacityLimitDefault"]     = 6000  # MW (loosely chosen from highest capacity in ENTSO-E TYNDP)
+        dfAttribute.loc["capexPerDistanceDefault"]  = 900/2 # kEUR/km/GW
+        dfAttribute.loc["capacityLimitDefault"]     = 6     # GW (loosely chosen from highest capacity in ENTSO-E TYNDP)
     return dfAttribute
 
 def setManualAttributesStorage(elementName,dfAttribute):
@@ -152,15 +154,15 @@ def setManualAttributesStorage(elementName,dfAttribute):
         dfAttribute.loc["efficiencyDischarge"]  = 0.95
         dfAttribute.loc["selfDischarge"]        = 0.1/100                           # ESM_Final_Report_05-Nov-2019
         dfAttribute.loc["maxLoad"]              = 1/2                               # 1/(typical discharge time)
-        dfAttribute.loc["maxBuiltCapacity"]     = 100/dfAttribute.loc["maxLoad"]    # MWh, discharge in 1/maxLoad --> E_max = P_rated/maxLoad
-        dfAttribute.loc["capexSpecificDefault"] = 3000*dfAttribute.loc["maxLoad"]   # EUR/MWh, 
+        dfAttribute.loc["maxBuiltCapacity"]     = 0.1/dfAttribute.loc["maxLoad"]    # GWh, discharge in 1/maxLoad --> E_max = P_rated/maxLoad
+        dfAttribute.loc["capexSpecificDefault"] = 3000*dfAttribute.loc["maxLoad"]   # kEUR/GWh, 
     elif elementName == "pumped_hydro":
         dfAttribute.loc["efficiencyCharge"]     = 0.9
         dfAttribute.loc["efficiencyDischarge"]  = 0.9
         dfAttribute.loc["selfDischarge"]        = 0                                 # ESM_Final_Report_05-Nov-2019
         dfAttribute.loc["maxLoad"]              = 1/16                              # 1/(typical discharge time)
-        dfAttribute.loc["maxBuiltCapacity"]     = 3000/dfAttribute.loc["maxLoad"]   # MWh, discharge in 1/maxLoad --> E_max = P_rated*maxLoad
-        dfAttribute.loc["capexSpecificDefault"] = 2700*dfAttribute.loc["maxLoad"]   # EUR/MWh, 
+        dfAttribute.loc["maxBuiltCapacity"]     = 3/dfAttribute.loc["maxLoad"]      # GWh, discharge in 1/maxLoad --> E_max = P_rated*maxLoad
+        dfAttribute.loc["capexSpecificDefault"] = 2700*dfAttribute.loc["maxLoad"]   # kEUR/GWh, 
     return dfAttribute
 
 def setManualAttributesCarriers(elementName,dfAttribute):
@@ -168,35 +170,43 @@ def setManualAttributesCarriers(elementName,dfAttribute):
     :param elementName: name of carrier
     :param dfAttribute: attribute dataframe
     :return dfAttribute: attribute dataframe """
-
+    if elementName == "electricity":
+        dfAttribute.loc["importPriceCarrierDefault"]    = 3000  # kEUR/GWh, current maximum market clearing price at coupled European Power Exchange 
+        dfAttribute.loc["carbonIntensityDefault"]       = 0.127 # kt_CO2/GWh, value from Gabrielli et al.
     return dfAttribute
 
 def setInputOutputCarriers(elementName,inputOutputType):
     """ returns input output carriers for conversion technology """
     carriers = {
         "photovoltaics": {
-            "input":    None,
-            "output":   "electricity",
+            "input"     : None,
+            "output"    : "electricity",
+            "reference" : "electricity",
         },
         "wind_onshore": {
-            "input":    None,
-            "output":   "electricity",
+            "input"     : None,
+            "output"    : "electricity",
+            "reference" : "electricity",
         },
         "hard_coal": {
-            "input":    "hard_coal",
-            "output":   "electricity",
+            "input"     : "hard_coal",
+            "output"    : "electricity",
+            "reference" : "electricity",
         },
         "natural_gas_turbine": {
-            "input":    "natural_gas",
-            "output":   "electricity",
+            "input"     : "natural_gas",
+            "output"    : "electricity",
+            "reference" : "electricity",
         },
         "nuclear": {
-            "input":    "uranium",
-            "output":   "electricity",
+            "input"     : "uranium",
+            "output"    : "electricity",
+            "reference" : "electricity",
         },
         "run-of-river_hydro": {
-            "input":    None,
-            "output":   "electricity",
+            "input"     : None,
+            "output"    : "electricity",
+            "reference" : "electricity",
         },
     }
     assert elementName in carriers, f"Technology {elementName} not in list of technologies {list(carriers.keys())}"
@@ -205,69 +215,117 @@ def setInputOutputCarriers(elementName,inputOutputType):
 def getNumberOfNewPlants(elementName):
     """ define arbitrary maximum number of new plants"""
     numberOfNewPlants = {
-        "photovoltaics":        1000,
-        "wind_onshore":         1000,
-        "hard_coal":            55,
-        "natural_gas_turbine":  200,
-        "nuclear":              50,
-        "run-of-river_hydro":   500,
+        "photovoltaics":        100000,
+        "wind_onshore":         100000,
+        "hard_coal":            200,
+        "natural_gas_turbine":  50000,
+        "nuclear":              100,
+        "run-of-river_hydro":   200000,
     }
     assert elementName in numberOfNewPlants, f"Technology {elementName} not in list of technologies {list(numberOfNewPlants.keys())}"
     return numberOfNewPlants[elementName]
 
-def getCostIndex(technology):
-    """ this method returns the index to look up cost data in Potencia Assumption """
+def getAttributeIndex(technology):
+    """ this method returns the index to look up attributes in Potencia Assumption """
     size = "M"
     cogeneration = "Electricity only"
     # Nuclear
     if technology == "Nuclear":
-        type_proc = "Nuclear power plants"
+        typeTech = "Nuclear power plants"
         technology = "Nuclear - current"
     # coal
     elif technology == "Coal fired":
-        type_proc = "Coal fired power plants"
+        typeTech = "Coal fired power plants"
         technology = "Steam turbine" 
     # lignite
     elif technology == "Lignite fired":
-        type_proc = "Lignite fired power plants"
+        typeTech = "Lignite fired power plants"
         technology = "Steam turbine" 
     # gas
     elif technology == "Gas fired":
-        type_proc = "Gas fired power plants (Natural gas, biogas)"
+        typeTech = "Gas fired power plants (Natural gas, biogas)"
         technology = "Gas turbine combined cycle" 
     # onshore
     elif technology == "Onshore":
-        type_proc = "Wind power plants"
+        typeTech = "Wind power plants"
         technology = "Onshore" 
     # offshore
     elif technology == "Offshore":
-        type_proc = "Wind power plants"
+        typeTech = "Wind power plants"
         technology = "Offshore" 
     # run-of-river
     elif technology == "Run-of-river":
-        type_proc = "Hydro plants"
+        typeTech = "Hydro plants"
         technology = "Run-of-river" 
     # geothermal
     elif technology == "Geothermal":
-        type_proc = "Geothermal power plants"
+        typeTech = "Geothermal power plants"
         technology = "Geothermal power plants"
     # pv 
     elif technology == "Solar photovoltaics":
-        type_proc = "Solar PV power plants"
+        typeTech = "Solar PV power plants"
         technology = "Solar PV power plants" 
     # solarthermal
     elif technology == "Solar thermal":
-        type_proc = "Solar thermal power plants"
+        typeTech = "Solar thermal power plants"
         technology = "Solar thermal power plants" 
     else:
-        type_proc = "-1"
+        typeTech = "-1"
         technology = "-1"
     
-    return(type_proc,technology,cogeneration,size)
+    return(typeTech,technology,cogeneration,size)
 
+def getCarrierIdentifier(carrier):
+    """ this method returns the index to look up the carrier in Potencia fuel costs """
+    if carrier == "hard_coal":
+        carrierIdentifier = "Coal fired power plants"
+    elif carrier == "natural_gas":
+        carrierIdentifier = "Gas fired power plants (Natural gas, biogas)"
+    elif carrier == "uranium":
+        carrierIdentifier = "Nuclear power plants"
+    elif carrier == "lignite":
+        carrierIdentifier = "Lignite fired power plants"
+    else:
+        print("carrier {} not known. Skip cost calculation.".format(carrier))
+        carrierIdentifier = None
+    return carrierIdentifier
+    
 def getConstants(constant):
     """ returns constant value """
     constants = {
-        "MWh2toe": 0.0859845
+        "MWh2toe"           : 0.0859845,
+        "yearFirstDemand"   : 2017,
+        "maximumInvestYears": 5
     }
     return constants[constant]
+
+def getDemandDataframe(demandPath):
+    """ either load pickle or load xlxs 
+    :param demandPath: path where raw demand data is found
+    :return demandHourly: hourly load profiles """
+    # load European electricity demand
+    # source: ENTSOE, MHLV_data-2015-2017_demand_hourly for 2017 (2015 incomplete, 2016 leap year)
+    if not os.path.exists(demandPath / "demandHourly.pickle"):
+        demandRawData = pd.read_excel(demandPath / "MHLV_data-2015-2017_demand_hourly.xlsx",sheet_name = "2015-2017")
+        # correct time stamp
+        correct_dateformat = "%d.%m.%Y %H:%M"
+        demandRawData["DateUTC"] = demandRawData["DateUTC"].dt.strftime(correct_dateformat)
+        demandHourly = demandRawData[pd.to_datetime(demandRawData["DateUTC"]).dt.year==getConstants("yearFirstDemand")]
+        demandHourly.drop(["MeasureItem","DateShort","TimeFrom","TimeTo","Value","Cov_ratio"],axis=1,inplace=True)
+        # rearrange index and drop duplicate indices
+        demandHourly.set_index(["DateUTC","CountryCode"],inplace=True)
+        demandHourly = demandHourly[~demandHourly.index.duplicated()]
+        demandHourly = demandHourly.unstack()
+        demandHourly.columns = demandHourly.columns.droplevel(0)
+        with open(demandPath / "demandHourly.pickle","wb") as inputFile:
+            pickle.dump(demandHourly,inputFile)
+    else:
+        with open(demandPath / "demandHourly.pickle","rb") as inputFile:
+            demandHourly = pickle.load(inputFile)
+    # do not use datetime index but (for the time being) range from 1-8760
+    demandHourly        = demandHourly.reset_index(drop=True)
+    demandHourly.index  = demandHourly.index.map(lambda index: index+1) # start with 1
+    # change Greece (GR) in (EL)
+    demandHourly        = demandHourly.rename(columns={"GR":"EL","GB":"UK"})
+    demandHourly        = demandHourly/1000 # GW
+    return demandHourly
