@@ -51,7 +51,7 @@ class Carrier(Element):
         # apply time series aggregation
         TimeSeriesAggregation(self,_inputPath)
         # calculate time steps of carrier
-        self.calculateTimeStepsCarrier()
+        # self.calculateTimeStepsCarrier()
 
     def calculateTimeStepsCarrier(self):
         """ calculates the necessary time steps of carrier. Carrier must always have highest resolution of all connected technologies. 
