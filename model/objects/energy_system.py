@@ -30,6 +30,10 @@ class EnergySystem:
     indexingSets = []
     # empty dict of technologies of carrier
     dictTechnologyOfCarrier = {}
+    # empty dict of order of time steps operation
+    dictOrderTimeStepsOperation = {}
+    # empty dict of order of time steps invest
+    dictOrderTimeStepsInvest = {}
 
     def __init__(self,nameEnergySystem):
         """ initialization of the energySystem
@@ -124,6 +128,22 @@ class EnergySystem:
                 cls.dictTechnologyOfCarrier[carrier].append(technology)
 
     @classmethod
+    def setOrderTimeSteps(cls,element,orderTimeSteps,timeStepType = None):
+        """ sets order of time steps, either of operation or invest
+        :param element: name of element in model
+        :param orderTimeSteps: list of time steps correpsponding to base time step
+        :param timeStepType: type of time step (operation or invest)"""
+        if not timeStepType:
+            timeStepType = "operation"
+
+        if timeStepType == "operation":
+            cls.dictOrderTimeStepsOperation[element] = orderTimeSteps
+        elif timeStepType == "invest":
+            cls.dictOrderTimeStepsInvest[element] = orderTimeSteps
+        else:
+            raise KeyError(f"Time step type {timeStepType} is incorrect")
+
+    @classmethod
     def getConcreteModel(cls):
         """ get concreteModel of the class <EnergySystem>. Every child class can access model and add components.
         :return concreteModel: pe.ConcreteModel """
@@ -182,6 +202,22 @@ class EnergySystem:
         return cls.dictTechnologyOfCarrier[carrier]
 
     @classmethod
+    def getOrderTimeSteps(cls,element,timeStepType = None):
+        """ get order ot time steps of element
+        :param element: name of element in model
+        :param timeStepType: type of time step (operation or invest)
+        :return orderTimeSteps: list of time steps correpsponding to base time step"""
+        if not timeStepType:
+            timeStepType = "operation"
+
+        if timeStepType == "operation":
+            return cls.dictOrderTimeStepsOperation[element]
+        elif timeStepType == "invest":
+            return cls.dictOrderTimeStepsInvest[element]
+        else:
+            raise KeyError(f"Time step type {timeStepType} is incorrect")
+
+    @classmethod
     def calculateConnectedEdges(cls,node,direction:str):
         """ calculates connected edges going in (direction = 'in') or going out (direction = 'out') 
         :param node: current node, connected by edges 
@@ -210,67 +246,68 @@ class EnergySystem:
         return timeStepDurationDict
 
     @classmethod
-    def decodeTimeStep(cls,element:str,elementTimeStep,timeStepType:str = None, manualTimeStepDuration = None):
+    def decodeTimeStep(cls,element:str,elementTimeStep,timeStepType:str = None):
         """ decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variablTimeStep of a element.
         timeStep of element --> baseTimeStep of model 
         :param element: element of model, i.e., carrier or technology
         :param elementTimeStep: time step of element
         :param timeStepType: invest or operation. Only relevant for technologies, None for carrier
         :return baseTimeStep: baseTimeStep of model """
-        model = cls.getConcreteModel()
-        # get time step duration
-        if manualTimeStepDuration:
-            timeStepDuration    = manualTimeStepDuration
-        elif not timeStepType:
-            timeStepDuration    = model.timeStepsCarrierDuration
-            orderTimeStep       = model.orderTimeStepsCarrier
-        elif timeStepType == "invest":
-            timeStepDuration    = model.timeStepsInvestDuration
-        elif timeStepType == "operation":
-            timeStepDuration    = model.timeStepsOperationDuration
-            orderTimeStep       = model.orderTimeStepsOperation
-        else:
-            raise KeyError(f"time step type {timeStepType} is invalid. Only 'invest', 'operation', or None accepted.")
-        if type(elementTimeStep) == int:
-            # calculate timeSteps from the beginning
-            baseTimeStep = sum([timeStepDuration[element,timeStep] for timeStep in range(1,elementTimeStep+1)])
-            return(int(baseTimeStep))
-        elif type(elementTimeStep) == list:
-            listBaseTimeSteps = []
-            for singleTimeStep in elementTimeStep:
-                # calculate timeSteps from the beginning
-                singleBaseTimeStep = sum([timeStepDuration[element,timeStep] for timeStep in range(1,singleTimeStep+1)])
-                listBaseTimeSteps.append(int(singleBaseTimeStep))
-            return listBaseTimeSteps
+        orderTimeSteps = cls.getOrderTimeSteps(element,timeStepType)
+        # find where elementTimeStep in order of element time steps
+        baseTimeSteps = np.where(orderTimeSteps == elementTimeStep)[0]
+        return baseTimeSteps
 
     @classmethod
-    def encodeTimeStep(cls,element:str,baseTimeStep:int,timeStepType:str = None):
+    def encodeTimeStep(cls,element:str,baseTimeSteps,timeStepType:str = None):
         """ encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
         baseTimeStep of model --> timeStep of element 
         :param element: element of model, i.e., carrier or technology
         :param baseTimeStep: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
-        model = cls.getConcreteModel()
+        # model = cls.getConcreteModel()
+        orderTimeSteps = cls.getOrderTimeSteps(element,timeStepType)
         # get time step duration
-        if not timeStepType:
-            timeStepDuration    = model.timeStepsCarrierDuration
-            orderTimeStep       = model.orderTimeStepsCarrier
-        elif timeStepType == "invest":
-            timeStepDuration    = model.timeStepsInvestDuration
-        elif timeStepType == "operation":
-            timeStepDuration    = model.timeStepsOperationDuration
-            orderTimeStep       = model.orderTimeStepsOperation
+        if len(baseTimeSteps) == 1:
+            elementTimeStep = orderTimeSteps[baseTimeSteps]
+            return(elementTimeStep[0])
         else:
-            raise KeyError(f"time step type {timeStepType} is invalid. Only 'invest', 'operation', or None accepted.")
-        # calculate summed elementTimeStep
-        elementTimeStep = 0
-        summedDuration = 0
-        # sum the time step durations until summedDuration >= baseTimeStep
-        while summedDuration < baseTimeStep:
-            elementTimeStep += 1
-            summedDuration += timeStepDuration[element,elementTimeStep]
-        return(elementTimeStep)
+            raise LookupError(f"Currently only implemented for a single base time step, not {baseTimeSteps}")
+
+    @classmethod
+    def convertTechnologyTimeStepType(cls,element,elementTimeStep,direction = "operation2invest"):
+        """ converts type of technology time step from operation to invest or from invest to operation.
+        Carrier has no invest, so irrelevant for carrier
+        :param element: element of model (here technology)
+        :param elementTimeStep: time step of element
+        :param direction: conversion direction (operation2invest or invest2operation)
+        :return convertedTimeStep: time of second type """
+        model = cls.getConcreteModel()
+        setTimeStepsInvest = model.setTimeStepsInvest[element]
+        setTimeStepsOperation = model.setTimeStepsOperation[element]
+        # if only one investment step
+        if len(setTimeStepsInvest) == 1:
+            if direction ==  "operation2invest":
+                return setTimeStepsInvest.at(1)
+            elif direction == "invest2operation":
+                return setTimeStepsOperation.data()
+            else:
+                raise KeyError(f"Direction for time step conversion {direction} is incorrect")
+        # if more than one invest step
+        else:
+            if direction ==  "operation2invest":
+                orderTimeStepsIn        = cls.getOrderTimeSteps(element,"operation")
+                orderTimeStepsOut       = cls.getOrderTimeSteps(element,"invest")
+            elif direction == "invest2operation":
+                orderTimeStepsOut       = cls.getOrderTimeSteps(element,"operation")
+                orderTimeStepsIn        = cls.getOrderTimeSteps(element,"invest")
+            else:
+                raise KeyError(f"Direction for time step conversion {direction} is incorrect")
+            # convert time steps
+            convertedTimeSteps = np.unique(orderTimeStepsOut[orderTimeStepsIn == elementTimeStep])
+            assert len(convertedTimeSteps) == 1, f"more than one converted time step, not yet implemented"
+            return convertedTimeSteps[0]
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
     @classmethod
@@ -402,9 +439,12 @@ def constraintCarbonEmissionsTotalRule(model):
 
 def constraintCarbonEmissionsLimitRule(model):
     """ limit all carbon emissions from technologies and carriers """
-    return(
-        model.carbonEmissionsTotal <= model.carbonEmissionsLimit
-    )
+    if model.carbonEmissionsLimit != np.inf:
+        return(
+            model.carbonEmissionsTotal <= model.carbonEmissionsLimit
+        )
+    else:
+        return pe.Constraint.Skip
 
 # objective rules
 def objectiveTotalCostRule(model):

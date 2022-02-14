@@ -313,7 +313,7 @@ class Element:
 
         modelOnOff = True
         # check if any min
-        _uniqueMinLoad = list(set(cls.getAttributeOfSpecificElement(tech,"minLoad").values()))
+        _uniqueMinLoad = list(set(cls.getAttributeOfSpecificElement(tech,"minLoad").values))
         # if only one unique minLoad which is zero
         if len(_uniqueMinLoad) == 1 and _uniqueMinLoad[0] == 0:
             # if not a conversion technology, break for current technology

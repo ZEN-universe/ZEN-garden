@@ -46,6 +46,8 @@ class Technology(Element):
                 # self.setTimeStepsOperation      = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="operation")
                 # assert self.setTimeStepsInvest and self.setTimeStepsOperation, f"investment or operational time steps of technology {self.name} not specified."
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
+                self.orderTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
+                EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest") 
                 # self.timeStepsOperationDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsOperation)
                 self.referenceCarrier           = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
                 self.minBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
@@ -83,12 +85,6 @@ class Technology(Element):
             initialize = cls.getAttributeOfAllElements("setTimeStepsOperation"),
             doc="Set of time steps in operation for all technologies. Dimensions: setTechnologies"
         )
-        # order of time steps operation
-        model.orderTimeStepsOperation = pe.Set(
-            model.setTechnologies,
-            initialize = cls.getAttributeOfAllElements("orderTimeSteps"),
-            doc="Set of the order of time steps for all technologies. Dimensions: setTechnologies"
-        )
         # reference carriers
         model.setReferenceCarriers = pe.Set(
             model.setTechnologies,
@@ -117,7 +113,6 @@ class Technology(Element):
             initialize = cls.getAttributeOfAllElements("timeStepsOperationDuration"),
             doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setTechnologies, setTimeStepsOperation"
         )
-        
         # minimum capacity
         model.minBuiltCapacity = pe.Param(
             model.setTechnologies,
@@ -442,8 +437,7 @@ def constraintMaxLoadRule(model, tech, loc, time):
     """Load is limited by the installed capacity and the maximum load factor"""
     referenceCarrier = model.setReferenceCarriers[tech].at(1)
     # get invest time step
-    baseTimeStep    = EnergySystem.decodeTimeStep(tech,time,"operation")
-    investTimeStep  = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+    investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
     # conversion technology
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:

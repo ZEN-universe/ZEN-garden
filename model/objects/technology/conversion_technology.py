@@ -228,8 +228,7 @@ class ConversionTechnology(Technology):
         else:
             referenceFlow = model.outputFlow[tech,referenceCarrier,node,time]
         # get invest time step
-        baseTimeStep    = EnergySystem.decodeTimeStep(tech,time,"operation")
-        investTimeStep  = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+        investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
             expr=referenceFlow >= model.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]

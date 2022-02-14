@@ -125,8 +125,7 @@ class StorageTechnology(Technology):
             :param time: time index
             :return bounds: bounds of carrierFlow"""
             # convert operationTimeStep to investTimeStep: operationTimeStep -> baseTimeStep -> investTimeStep
-            baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
-            investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+            investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
             bounds = model.capacity[tech,node,investTimeStep].bounds
             return(bounds)
 
@@ -224,8 +223,7 @@ class StorageTechnology(Technology):
 def constraintStorageLevelMaxRule(model, tech, node, time):
     """limit maximum storage level to capacity"""
     # get invest time step
-    baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
-    investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+    investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
     return(model.levelCharge[tech, node, time] <= model.capacity[tech, node, investTimeStep])
 
 def constraintCoupleStorageLevelRule(model, tech, node, time):

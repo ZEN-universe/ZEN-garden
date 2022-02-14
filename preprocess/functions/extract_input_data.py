@@ -194,7 +194,7 @@ class DataInput():
         # if more time steps than in system, limit to system time steps
         if numberTypicalPeriods*numberTimeStepsPerPeriod > len(self.system["setTimeSteps"]):
             if len(self.system["setTimeSteps"])%numberTimeStepsPerPeriod == 0:
-                numberTypicalPeriods        = int(len(self.system["setTimeSteps"]/numberTimeStepsPerPeriod))
+                numberTypicalPeriods        = int(len(self.system["setTimeSteps"])/numberTimeStepsPerPeriod)
             else:
                 numberTypicalPeriods        = len(self.system["setTimeSteps"]) 
                 numberTimeStepsPerPeriod    = 1

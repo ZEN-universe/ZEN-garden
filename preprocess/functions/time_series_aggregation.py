@@ -38,6 +38,8 @@ class TimeSeriesAggregation():
             self.substituteColumnNames(direction="raise")
         # set aggregated time series
         self.setAggregatedTimeSeries()
+        # add order of time steps to Energy System
+        EnergySystem.setOrderTimeSteps(self.element.name,self.element.orderTimeSteps,timeStepType="operation") 
 
     def getNumberOfTimeSteps(self):
         """ this method extracts number of time steps for time series aggregation """
