@@ -95,8 +95,7 @@ class TransportTechnology(Technology):
             :param time: time index
             :return bounds: bounds of carrierFlow"""
             # convert operationTimeStep to investTimeStep: operationTimeStep -> baseTimeStep -> investTimeStep
-            baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
-            investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+            investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
             bounds = model.capacity[tech,edge,investTimeStep].bounds
             return(bounds)
 
@@ -139,8 +138,7 @@ class TransportTechnology(Technology):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
         # get invest time step
-        baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
-        investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+        investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
             expr=model.carrierFlow[tech, edge, time] >= model.minLoad[tech,edge,time] * model.capacity[tech,edge, investTimeStep]

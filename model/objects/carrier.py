@@ -11,6 +11,7 @@ Description:    Class defining a generic energy carrier.
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
+import numpy as np
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 from model.objects.technology.technology import Technology
@@ -24,7 +25,7 @@ class Carrier(Element):
         """initialization of a generic carrier object
         :param carrier: carrier that is added to the model"""
 
-        logging.info(f'Initialize generic carrier {carrier}')
+        logging.info(f'Initialize carrier {carrier}')
         super().__init__(carrier)
         # store input data
         self.storeInputData()
@@ -50,33 +51,31 @@ class Carrier(Element):
         # apply time series aggregation
         TimeSeriesAggregation(self,_inputPath)
         # calculate time steps of carrier
-        # self.calculateTimeStepsCarrier(setTimeStepsRaw)
+        self.calculateTimeStepsCarrier()
 
-    def calculateTimeStepsCarrier(self,setTimeStepsRaw):
+    def calculateTimeStepsCarrier(self):
         """ calculates the necessary time steps of carrier. Carrier must always have highest resolution of all connected technologies. 
-        Can have even higher resolution (to integrate extreme period behavior)
-        :param setTimeStepsRaw: time steps of carrier itself """        
+        Can have even higher resolution"""
+        orderTimeStepsRaw = self.orderTimeSteps
         # get technologies of carrier
         technologiesCarrier = EnergySystem.getTechnologyOfCarrier(self.name)
-        # if setTimeStepsRaw not None
-        if setTimeStepsRaw:
-            timeStepsDurationRaw = EnergySystem.calculateTimeStepDuration(setTimeStepsRaw)
-            timeStepsDurationRaw = {(self.name,timeStep):timeStepsDurationRaw[timeStep] for timeStep in timeStepsDurationRaw}
-            setBaseTimeSteps = set(EnergySystem.decodeTimeStep(self.name,setTimeStepsRaw,manualTimeStepDuration=timeStepsDurationRaw))
-        else:
-            setBaseTimeSteps = set()
-        # iterate through technologies and extend setBaseTimeSteps
+        # if orderTimeStepsRaw not None
+        listOrderTimeSteps = [orderTimeStepsRaw]
+        # iterate through technologies and extend listOrderTimeSteps
         for technology in technologiesCarrier:
-            timeStepsTechnology = Technology.getAttributeOfSpecificElement(technology,"setTimeStepsOperation")
-            timeStepsDurationTechnology = Technology.getAttributeOfSpecificElement(technology,"timeStepsOperationDuration")
-            timeStepsDurationTechnology = {(technology,timeStep):timeStepsDurationTechnology[timeStep] for timeStep in timeStepsDurationTechnology}
-            baseTimeStepsTechnology = EnergySystem.decodeTimeStep(technology,timeStepsTechnology,manualTimeStepDuration=timeStepsDurationTechnology)
-            # create union of base time steps of all technologies
-            setBaseTimeSteps = set.union(setBaseTimeSteps,baseTimeStepsTechnology)
-        # sort set
-        setBaseTimeSteps = sorted(setBaseTimeSteps)
-        self.setTimeStepsCarrier = list(range(1,len(setBaseTimeSteps)+1))
-        self.timeStepsCarrierDuration = {timeStep+1:setBaseTimeSteps[timeStep] - setBaseTimeSteps[timeStep-1] if timeStep != 0 else setBaseTimeSteps[timeStep] for timeStep,_ in enumerate(setBaseTimeSteps)}
+            listOrderTimeSteps.append(Technology.getAttributeOfSpecificElement(technology,"orderTimeSteps"))
+        combinedOrderTimeSteps = np.vstack(listOrderTimeSteps)
+        uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedOrderTimeSteps,axis=1,return_counts=True)
+        setTimeStepsCarrier = []
+        timeStepDurationCarrier = {}
+        for idxUniqueTimeStep, countUniqueTimeStep in enumerate(countCombinedTimeSteps):
+            setTimeStepsCarrier.append(idxUniqueTimeStep)
+            timeStepDurationCarrier[idxUniqueTimeStep] = countUniqueTimeStep
+            uniqueTimeStep = uniqueCombinedTimeSteps[:,idxUniqueTimeStep]
+            idxInInput = np.argwhere(np.all(combinedOrderTimeSteps.T == uniqueTimeStep, axis=1))[0]
+            
+            a=1
+        
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
@@ -88,12 +87,6 @@ class Carrier(Element):
             model.setCarriers,
             initialize=cls.getAttributeOfAllElements("setTimeStepsCarrier"),
             doc='Set of time steps of carriers. Dimensions: setCarriers')
-        # order of time steps operation
-        model.orderTimeStepsCarrier = pe.Set(
-            model.setCarriers,
-            initialize = cls.getAttributeOfAllElements("orderTimeSteps"),
-            doc="Parameter which specifies the order of time steps for all technologies. Dimensions: setCarriers"
-        )
 
     @classmethod
     def constructParams(cls):
