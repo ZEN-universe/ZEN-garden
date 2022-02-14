@@ -14,6 +14,7 @@ import pyomo.environ as pe
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 from model.objects.technology.technology import Technology
+from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class Carrier(Element):
     # empty list of elements
@@ -34,17 +35,22 @@ class Carrier(Element):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get paths
         paths                           = EnergySystem.getPaths()   
+        setBaseTimeSteps                = EnergySystem.getEnergySystem().setBaseTimeSteps
         # set attributes of carrier
         _inputPath                      = paths["setCarriers"][self.name]["folder"]
-        # get raw time steps of carrier
-        setTimeStepsRaw                 = self.dataInput.extractTimeSteps(_inputPath)
-        self.calculateTimeStepsCarrier(setTimeStepsRaw)
-        self.demandCarrier              = self.dataInput.extractInputData(_inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsCarrier)
-        self.availabilityCarrierImport  = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=self.setTimeStepsCarrier)
-        self.availabilityCarrierExport  = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=self.setTimeStepsCarrier)
-        self.exportPriceCarrier         = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=self.setTimeStepsCarrier)
-        self.importPriceCarrier         = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=self.setTimeStepsCarrier)
-        self.carbonIntensityCarrier     = self.dataInput.extractInputData(_inputPath,"carbonIntensity",["setNodes"])
+        # raw import
+        self.rawTimeSeries                              = {}
+        self.rawTimeSeries["demandCarrier"]             = self.dataInput.extractInputData(_inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["availabilityCarrierImport"] = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["availabilityCarrierExport"] = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeSteps)
+        # non-time series input data
+        self.carbonIntensityCarrier                     = self.dataInput.extractInputData(_inputPath,"carbonIntensity",["setNodes"])
+        # apply time series aggregation
+        TimeSeriesAggregation(self,_inputPath)
+        # calculate time steps of carrier
+        # self.calculateTimeStepsCarrier(setTimeStepsRaw)
 
     def calculateTimeStepsCarrier(self,setTimeStepsRaw):
         """ calculates the necessary time steps of carrier. Carrier must always have highest resolution of all connected technologies. 
@@ -81,7 +87,13 @@ class Carrier(Element):
         model.setTimeStepsCarrier = pe.Set(
             model.setCarriers,
             initialize=cls.getAttributeOfAllElements("setTimeStepsCarrier"),
-            doc='Set of time steps of carriers')
+            doc='Set of time steps of carriers. Dimensions: setCarriers')
+        # order of time steps operation
+        model.orderTimeStepsCarrier = pe.Set(
+            model.setCarriers,
+            initialize = cls.getAttributeOfAllElements("orderTimeSteps"),
+            doc="Parameter which specifies the order of time steps for all technologies. Dimensions: setCarriers"
+        )
 
     @classmethod
     def constructParams(cls):

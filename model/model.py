@@ -13,8 +13,8 @@ Description:  Class defining the Concrete optimization model.
 import logging
 import pyomo.environ as pe
 import os
-# import matplotlib.pyplot as plt
-# import pandas as pd
+import cProfile, pstats
+
 from model.objects.element import Element
 # the order of the following classes defines the order in which they are constructed. Keep this way
 from model.objects.technology.conversion_technology import ConversionTechnology
@@ -41,7 +41,13 @@ class Model():
         # add Elements to optimization
         self.addElements()
         # define and construct components of self.model
+        # pr = cProfile.Profile()
+        # pr.enable()
         Element.constructModelComponents()
+        # pr.disable()
+        # ps = pstats.Stats(pr).sort_stats("cumtime")
+        # ps.print_stats()
+        
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)  
 

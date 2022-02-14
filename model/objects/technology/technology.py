@@ -43,10 +43,10 @@ class Technology(Element):
             if self.name in system[technologyType]:
                 _inputPath                      = paths[technologyType][self.name]["folder"]
                 self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="invest")
-                self.setTimeStepsOperation      = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="operation")
-                assert self.setTimeStepsInvest and self.setTimeStepsOperation, f"investment or operational time steps of technology {self.name} not specified."
+                # self.setTimeStepsOperation      = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="operation")
+                # assert self.setTimeStepsInvest and self.setTimeStepsOperation, f"investment or operational time steps of technology {self.name} not specified."
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
-                self.timeStepsOperationDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsOperation)
+                # self.timeStepsOperationDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsOperation)
                 self.referenceCarrier           = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
                 self.minBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
                 self.maxBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
@@ -83,6 +83,12 @@ class Technology(Element):
             initialize = cls.getAttributeOfAllElements("setTimeStepsOperation"),
             doc="Set of time steps in operation for all technologies. Dimensions: setTechnologies"
         )
+        # order of time steps operation
+        model.orderTimeStepsOperation = pe.Set(
+            model.setTechnologies,
+            initialize = cls.getAttributeOfAllElements("orderTimeSteps"),
+            doc="Set of the order of time steps for all technologies. Dimensions: setTechnologies"
+        )
         # reference carriers
         model.setReferenceCarriers = pe.Set(
             model.setTechnologies,
@@ -109,8 +115,9 @@ class Technology(Element):
         model.timeStepsOperationDuration = pe.Param(
             cls.createCustomSet(["setTechnologies","setTimeStepsOperation"]),
             initialize = cls.getAttributeOfAllElements("timeStepsOperationDuration"),
-            doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setTechnologies, setTimeStepsInvest"
+            doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setTechnologies, setTimeStepsOperation"
         )
+        
         # minimum capacity
         model.minBuiltCapacity = pe.Param(
             model.setTechnologies,
@@ -153,6 +160,7 @@ class Technology(Element):
             initialize = cls.getAttributeOfAllElements("carbonIntensityTechnology"),
             doc = 'Parameter which specifies the carbon intensity of each technology. Dimensions: setTechnologies, setLocation'
         )
+
         # add pe.Param of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructParams()

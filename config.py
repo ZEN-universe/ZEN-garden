@@ -27,9 +27,9 @@ analysis['nonlinearTechnologyApproximation']        = {'Capex': [], 'ConverEffic
 system['setCarriers']                               = ['electricity','natural_gas',"hard_coal","uranium"]
 system['setStorageTechnologies']                    = ["battery","pumped_hydro"]
 system['setTransportTechnologies']                  = ['power_line']
-system['setConversionTechnologies']                 = ['photovoltaics',"natural_gas_turbine","wind_onshore","hard_coal","nuclear","run-of-river_hydro"]
+system['setConversionTechnologies']                 = ['photovoltaics',"natural_gas_turbine","wind_onshore","hard_coal_plant","nuclear","run-of-river_hydro"]
 system['setScenarios']                              = 'a'
-system['setTimeSteps']                              = list(range(1,120+1))
+system['setTimeSteps']                              = list(range(0,240))
 system['setNodes']                                  = ['CH','DE',"AT","IT","FR"] 
 
 ## Solver - settings update compared to default values

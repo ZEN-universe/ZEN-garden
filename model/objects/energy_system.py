@@ -10,6 +10,7 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
+import numpy as np
 from preprocess.functions.extract_input_data import DataInput
 
 class EnergySystem:
@@ -46,7 +47,8 @@ class EnergySystem:
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """      
-        system = EnergySystem.getSystem()
+        system                          = EnergySystem.getSystem()
+        paths                           = EnergySystem.getPaths() 
         # in class <EnergySystem>, all sets are constructd
         self.setNodes                   = system["setNodes"]
         self.setNodesOnEdges            = self.calculateEdgesFromNodes()
@@ -59,6 +61,8 @@ class EnergySystem:
         self.setConversionTechnologies  = system["setConversionTechnologies"]
         self.setTransportTechnologies   = system["setTransportTechnologies"]
         self.setStorageTechnologies     = system["setStorageTechnologies"]
+        # carbon emissions limit
+        self.carbonEmissionsLimit       = self.dataInput.extractAttributeData(paths["setScenarios"]["folder"],"carbonEmissionsLimit")
     
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
@@ -216,13 +220,15 @@ class EnergySystem:
         model = cls.getConcreteModel()
         # get time step duration
         if manualTimeStepDuration:
-            timeStepDuration = manualTimeStepDuration
+            timeStepDuration    = manualTimeStepDuration
         elif not timeStepType:
-            timeStepDuration = model.timeStepsCarrierDuration
+            timeStepDuration    = model.timeStepsCarrierDuration
+            orderTimeStep       = model.orderTimeStepsCarrier
         elif timeStepType == "invest":
-            timeStepDuration = model.timeStepsInvestDuration
+            timeStepDuration    = model.timeStepsInvestDuration
         elif timeStepType == "operation":
-            timeStepDuration = model.timeStepsOperationDuration
+            timeStepDuration    = model.timeStepsOperationDuration
+            orderTimeStep       = model.orderTimeStepsOperation
         else:
             raise KeyError(f"time step type {timeStepType} is invalid. Only 'invest', 'operation', or None accepted.")
         if type(elementTimeStep) == int:
@@ -248,11 +254,13 @@ class EnergySystem:
         model = cls.getConcreteModel()
         # get time step duration
         if not timeStepType:
-            timeStepDuration = model.timeStepsCarrierDuration
+            timeStepDuration    = model.timeStepsCarrierDuration
+            orderTimeStep       = model.orderTimeStepsCarrier
         elif timeStepType == "invest":
-            timeStepDuration = model.timeStepsInvestDuration
+            timeStepDuration    = model.timeStepsInvestDuration
         elif timeStepType == "operation":
-            timeStepDuration = model.timeStepsOperationDuration
+            timeStepDuration    = model.timeStepsOperationDuration
+            orderTimeStep       = model.orderTimeStepsOperation
         else:
             raise KeyError(f"time step type {timeStepType} is invalid. Only 'invest', 'operation', or None accepted.")
         # calculate summed elementTimeStep
@@ -311,8 +319,14 @@ class EnergySystem:
     @classmethod
     def constructParams(cls):
         """ constructs the pe.Params of the class <EnergySystem> """
-        # currently no pe.Params in the class <EnergySystem>
-        pass
+        # get model
+        model = cls.getConcreteModel()
+
+        # carbon emissions limit
+        model.carbonEmissionsLimit = pe.Param(
+            initialize = cls.getEnergySystem().carbonEmissionsLimit,
+            doc = 'Parameter which specifies the total limit on carbon emissions'
+        )
 
     @classmethod
     def constructVars(cls):
@@ -336,6 +350,11 @@ class EnergySystem:
         model.constraintCarbonEmissionsTotal = pe.Constraint(
             rule = constraintCarbonEmissionsTotalRule,
             doc = "total carbon emissions of energy system"
+        )
+        # carbon emissions
+        model.constraintCarbonEmissionsLimit = pe.Constraint(
+            rule = constraintCarbonEmissionsLimitRule,
+            doc = "limit of total carbon emissions of energy system"
         )
     
     @classmethod
@@ -379,6 +398,12 @@ def constraintCarbonEmissionsTotalRule(model):
         + 
         # carriers
         model.carbonEmissionsCarrierTotal
+    )
+
+def constraintCarbonEmissionsLimitRule(model):
+    """ limit all carbon emissions from technologies and carriers """
+    return(
+        model.carbonEmissionsTotal <= model.carbonEmissionsLimit
     )
 
 # objective rules

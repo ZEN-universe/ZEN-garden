@@ -322,9 +322,8 @@ def getDemandDataframe(demandPath):
     else:
         with open(demandPath / "demandHourly.pickle","rb") as inputFile:
             demandHourly = pickle.load(inputFile)
-    # do not use datetime index but (for the time being) range from 1-8760
+    # do not use datetime index but (for the time being) range from 0-8759
     demandHourly        = demandHourly.reset_index(drop=True)
-    demandHourly.index  = demandHourly.index.map(lambda index: index+1) # start with 1
     # change Greece (GR) in (EL)
     demandHourly        = demandHourly.rename(columns={"GR":"EL","GB":"UK"})
     demandHourly        = demandHourly/1000 # GW

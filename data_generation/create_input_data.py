@@ -267,9 +267,8 @@ class DataCreation():
                 # dump pickle
                 with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "wb") as input_file:
                     pickle.dump(maxLoad , input_file)
-            # do not use datetime index but (for the time being) range from 1-8760
+            # do not use datetime index but (for the time being) range from 0-8759
             maxLoad        = maxLoad.reset_index(drop=True)
-            maxLoad.index  = maxLoad.index.map(lambda index: index+1) # start with 1
             # create csv
             maxLoad.index.name = "time"
             maxLoad.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "maxLoad.csv")
