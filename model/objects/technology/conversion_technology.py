@@ -13,6 +13,8 @@ import logging
 import pyomo.environ as pe
 from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
+from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
+
 
 class ConversionTechnology(Technology):
     # empty list of elements
@@ -34,13 +36,17 @@ class ConversionTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths                           = EnergySystem.getPaths()   
+        paths               = EnergySystem.getPaths()   
+        setBaseTimeSteps    = EnergySystem.getEnergySystem().setBaseTimeSteps
         #  set attributes for parameters of parent class <Technology>
-        _inputPath                      = paths["setConversionTechnologies"][self.name]["folder"]
+        _inputPath          = paths["setConversionTechnologies"][self.name]["folder"]
+        # add all raw time series to dict
+        self.rawTimeSeries                  = {}
+        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
+        # non-time series input data
         self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",["setNodes"])
-        self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
-        self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
-        self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation)
         self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setNodes"])
         # set attributes for parameters of child class <ConversionTechnology>
         # define input and output carrier
@@ -51,6 +57,8 @@ class ConversionTechnology(Technology):
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
         EnergySystem.setTechnologyOfCarrier(self.name,self.inputCarrier + self.outputCarrier)
+        # apply time series aggregation
+        TimeSeriesAggregation(self,_inputPath)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod

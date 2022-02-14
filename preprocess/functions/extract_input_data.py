@@ -10,6 +10,7 @@ import numpy as np
 from scipy.stats import linregress
 import pandas as pd
 import os
+import logging
 
 class DataInput():
     def __init__(self,system,analysis,solver,energySystem = None):
@@ -105,7 +106,7 @@ class DataInput():
                 dfOutput = self.extractTransportInputData(dfInput,dfOutput,indexMultiIndex)
         # convert to dict
         dataDict = dfOutput.to_dict()
-        return dataDict
+        return dfOutput # TODO return dict?
     
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
         """ fills dfOutput with data from dfInput with no new index creation (no transport technologies)
@@ -164,11 +165,11 @@ class DataInput():
                 dfOutput.loc[index] = dfInput.loc[_node,_nodeAlias]
         return dfOutput
 
-    def extractTimeSteps(self,folderPath,typeOfTimeSteps=None):
-        """ reads input data and returns range of time steps 
+    def extractNumberOfTimeSteps(self,folderPath,typeOfTimeSteps = None):
+        """ reads input data and returns number of typical periods and time steps per period
         :param folderPath: path to input files 
         :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
-        :return listOfTimeSteps: list of time steps """
+        :return numberTypicalPeriods,numberTimeStepsPerPeriod: number of typical periods and time steps per period """
         # select data
         fileName = "setTimeSteps"
         dfInput,_ = self.readInputData(folderPath,fileName)
@@ -182,16 +183,34 @@ class DataInput():
         # if separated in numberTypicalPeriods and numberTimeStepsPerPeriod
         if isinstance(dfInput,pd.Series):
             if "numberTypicalPeriods" in dfInput and "numberTimeStepsPerPeriod" in dfInput:
-                numberOfTimeSteps = dfInput["numberTypicalPeriods"]*dfInput["numberTimeStepsPerPeriod"]
+                numberTypicalPeriods        = dfInput["numberTypicalPeriods"]
+                numberTimeStepsPerPeriod    = dfInput["numberTimeStepsPerPeriod"]
             else:
-                numberOfTimeSteps = dfInput["numberTimeSteps"]
+                numberTypicalPeriods        = dfInput["numberTimeSteps"]
+                numberTimeStepsPerPeriod    = 1
         else:
-            numberOfTimeSteps = dfInput
+            numberTypicalPeriods            = dfInput
+            numberTimeStepsPerPeriod        = 1
         # if more time steps than in system, limit to system time steps
-        if numberOfTimeSteps > len(self.system["setTimeSteps"]):
-            numberOfTimeSteps = len(self.system["setTimeSteps"])
-        # create range of time steps
-        listOfTimeSteps = list(range(1,numberOfTimeSteps+1))
+        if numberTypicalPeriods*numberTimeStepsPerPeriod > len(self.system["setTimeSteps"]):
+            if len(self.system["setTimeSteps"])%numberTimeStepsPerPeriod == 0:
+                numberTypicalPeriods        = int(len(self.system["setTimeSteps"]/numberTimeStepsPerPeriod))
+            else:
+                numberTypicalPeriods        = len(self.system["setTimeSteps"]) 
+                numberTimeStepsPerPeriod    = 1
+        return int(numberTypicalPeriods),int(numberTimeStepsPerPeriod)
+
+    def extractTimeSteps(self,folderPath,typeOfTimeSteps=None):
+        """ reads input data and returns range of time steps 
+        :param folderPath: path to input files 
+        :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
+        :return listOfTimeSteps: list of time steps """
+        numberTypicalPeriods,numberTimeStepsPerPeriod = self.extractNumberOfTimeSteps(folderPath,typeOfTimeSteps)
+        # multiply number typical periods and number time steps per period
+        numberOfTimeSteps = numberTypicalPeriods*numberTimeStepsPerPeriod
+    
+        # create range of time steps #TODO define starting point
+        listOfTimeSteps = list(range(0,numberOfTimeSteps))
         return listOfTimeSteps
 
     def extractAttributeData(self, folderPath,attributeName):
@@ -201,7 +220,8 @@ class DataInput():
         :return attributeValue: attribute value """
         # select data
         fileName = "attributes.csv"
-        assert fileName in os.listdir(folderPath), f"Folder {folderPath} does not contain '{fileName}'"       
+        if fileName not in os.listdir(folderPath):
+            return None
         dfInput = pd.read_csv(folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
         # check if attribute in index
         if attributeName in dfInput.index:
@@ -264,7 +284,7 @@ class DataInput():
             PWADict[type]["PWAVariables"] = [] # select only those variables that are modeled as PWA
             PWADict[type]["bounds"] = {} # save bounds of variables
             # min and max total capacity of technology 
-            minCapacityTech,maxCapacityTech = (0,min(max(tech.capacityLimit.values()),max(breakpoints)))
+            minCapacityTech,maxCapacityTech = (0,min(max(tech.capacityLimit.values),max(breakpoints)))
             for valueVariable in nonlinearValues:
                 if valueVariable == breakpointVariable:
                     PWADict[type]["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)

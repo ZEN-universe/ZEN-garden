@@ -12,6 +12,7 @@ Description:    Class defining a standard Element. Contains methods to add param
 import itertools 
 import logging
 import numpy as np
+import pandas as pd
 from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
 
@@ -79,6 +80,10 @@ class Element:
         for _element in _classElements:
             assert hasattr(_element,attributeName),f"Element {_element} does not have attribute {attributeName}"
             _attribute = getattr(_element,attributeName)
+            if isinstance(_attribute,pd.Series):
+                _attribute = _attribute.to_dict()
+            elif isinstance(_attribute,pd.DataFrame):
+                raise TypeError ("Not yet implemented for pd.DataDrames")
             if isinstance(_attribute,dict):
                 # if attribute is dict
                 for _key in _attribute:

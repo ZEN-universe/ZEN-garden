@@ -13,6 +13,7 @@ import logging
 import pyomo.environ as pe
 from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
+from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class TransportTechnology(Technology):
     # empty list of elements
@@ -34,21 +35,27 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths                           = EnergySystem.getPaths()   
+        paths               = EnergySystem.getPaths()   
+        setBaseTimeSteps    = EnergySystem.getEnergySystem().setBaseTimeSteps
         # set attributes for parameters of parent class <Technology>
-        _inputPath                      = paths["setTransportTechnologies"][self.name]["folder"]
-        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setEdges"],transportTechnology=True)
-        self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
-        self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=self.setTimeStepsOperation,transportTechnology=True)
-        self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsOperation,transportTechnology=True)
-        self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setEdges"])
+        _inputPath          = paths["setTransportTechnologies"][self.name]["folder"]
+        # add all raw time series to dict
+        self.rawTimeSeries                  = {}
+        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=setBaseTimeSteps,transportTechnology=True)
+        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=setBaseTimeSteps,transportTechnology=True)
+        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= setBaseTimeSteps,transportTechnology=True)
+        # non-time series input data
+        self.capacityLimit                  = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setEdges"],transportTechnology=True)
+        self.carbonIntensityTechnology      = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setEdges"])
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
-        self.distance                   = self.dataInput.extractInputData(_inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
-        self.capexPerDistance           = self.dataInput.extractInputData(_inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
-        self.lossFlow                   = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
+        self.distance                       = self.dataInput.extractInputData(_inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
+        self.capexPerDistance               = self.dataInput.extractInputData(_inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+        self.lossFlow                       = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
         # set technology to correspondent reference carrier
         EnergySystem.setTechnologyOfCarrier(self.name,self.referenceCarrier)
+        # apply time series aggregation
+        TimeSeriesAggregation(self,_inputPath)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod

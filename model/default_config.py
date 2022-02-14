@@ -49,6 +49,13 @@ analysis['headerDataInputs']=   {'setNodes': ['node', 'x', 'y'],
 
 # file format of input data
 analysis['fileFormat'] = 'csv'
+# time series aggregation
+analysis["timeSeriesAggregation"] = {
+    "clusterMethod"         : "k_means",
+    "solver"                : "gurobi",
+    "extremePeriodMethod"   : "None",
+    "resolution"            : 1
+}
 
 ## System - Items assignment
 # set of energy carriers

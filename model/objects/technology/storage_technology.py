@@ -14,6 +14,7 @@ import pyomo.environ as pe
 import numpy as np
 from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
+from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class StorageTechnology(Technology):
     # empty list of elements
@@ -35,23 +36,29 @@ class StorageTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths                           = EnergySystem.getPaths()   
+        paths               = EnergySystem.getPaths()   
         # set attributes for parameters of parent class <Technology>
-        _inputPath                      = paths["setStorageTechnologies"][self.name]["folder"]
-        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setNodes"])
-        self.minLoad                    = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation) # TODO maybe rename: minLoad = minimum specific power to charge/discharge, probably 0
-        self.maxLoad                    = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsOperation) # TODO maybe rename: maxLoad = maximum specific power to charge/discharge, i.e., 1/(hours until entirely charged/discharged)
-        self.opexSpecific               = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsOperation)
-        self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setNodes"])
+        _inputPath          = paths["setStorageTechnologies"][self.name]["folder"]
+        setBaseTimeSteps    = EnergySystem.getEnergySystem().setBaseTimeSteps
+        # add all raw time series to dict
+        self.rawTimeSeries                  = {}
+        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps) # TODO maybe rename: minLoad = minimum specific power to charge/discharge, probably 0
+        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps) # TODO maybe rename: maxLoad = maximum specific power to charge/discharge, i.e., 1/(hours until entirely charged/discharged)
+        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= setBaseTimeSteps)
+        # non-time series input data
+        self.capacityLimit                  = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setNodes"])
+        self.carbonIntensityTechnology      = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setNodes"])
         # set attributes for parameters of child class <StorageTechnology>
-        self.efficiencyCharge           = self.dataInput.extractInputData(_inputPath,"efficiencyCharge",indexSets=["setNodes"])
-        self.efficiencyDischarge        = self.dataInput.extractInputData(_inputPath,"efficiencyDischarge",indexSets=["setNodes"])
-        self.selfDischarge              = self.dataInput.extractInputData(_inputPath,"selfDischarge",indexSets=["setNodes"]) 
-        self.capexSpecific              = self.dataInput.extractInputData(_inputPath,"capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
-        # calculate time steps of storage levels
-        self.calculateTimeStepsStorageLevel(_inputPath)
+        self.efficiencyCharge               = self.dataInput.extractInputData(_inputPath,"efficiencyCharge",indexSets=["setNodes"])
+        self.efficiencyDischarge            = self.dataInput.extractInputData(_inputPath,"efficiencyDischarge",indexSets=["setNodes"])
+        self.selfDischarge                  = self.dataInput.extractInputData(_inputPath,"selfDischarge",indexSets=["setNodes"]) 
+        self.capexSpecific                  = self.dataInput.extractInputData(_inputPath,"capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
         # set technology to correspondent reference carrier
         EnergySystem.setTechnologyOfCarrier(self.name,self.referenceCarrier)
+        # apply time series aggregation
+        TimeSeriesAggregation(self,_inputPath)
+        # calculate time steps of storage levels
+        self.calculateTimeStepsStorageLevel(_inputPath)
 
     def calculateTimeStepsStorageLevel(self,_inputPath):
         """ this method calculates the number of time steps on the storage level, and the order in which the storage levels are connected """
