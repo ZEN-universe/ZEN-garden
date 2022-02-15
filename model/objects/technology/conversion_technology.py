@@ -56,7 +56,7 @@ class ConversionTechnology(Technology):
         self.PWAParameter               = self.dataInput.extractPWAData(_inputPath,self)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
-        EnergySystem.setTechnologyOfCarrier(self.name,self.inputCarrier + self.outputCarrier)
+        
         # apply time series aggregation
         TimeSeriesAggregation(self,_inputPath)
 

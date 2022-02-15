@@ -12,6 +12,7 @@ Description:    Class defining a generic energy carrier.
 import logging
 import pyomo.environ as pe
 import numpy as np
+import pandas as pd
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 from model.objects.technology.technology import Technology
@@ -49,34 +50,10 @@ class Carrier(Element):
         # non-time series input data
         self.carbonIntensityCarrier                     = self.dataInput.extractInputData(_inputPath,"carbonIntensity",["setNodes"])
         # apply time series aggregation
-        TimeSeriesAggregation(self,_inputPath)
+        timeSeriesAggregationObject = TimeSeriesAggregation(self,_inputPath)
         # calculate time steps of carrier
-        # self.calculateTimeStepsCarrier()
-
-    def calculateTimeStepsCarrier(self):
-        """ calculates the necessary time steps of carrier. Carrier must always have highest resolution of all connected technologies. 
-        Can have even higher resolution"""
-        orderTimeStepsRaw = self.orderTimeSteps
-        # get technologies of carrier
-        technologiesCarrier = EnergySystem.getTechnologyOfCarrier(self.name)
-        # if orderTimeStepsRaw not None
-        listOrderTimeSteps = [orderTimeStepsRaw]
-        # iterate through technologies and extend listOrderTimeSteps
-        for technology in technologiesCarrier:
-            listOrderTimeSteps.append(Technology.getAttributeOfSpecificElement(technology,"orderTimeSteps"))
-        combinedOrderTimeSteps = np.vstack(listOrderTimeSteps)
-        uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedOrderTimeSteps,axis=1,return_counts=True)
-        setTimeStepsCarrier = []
-        timeStepDurationCarrier = {}
-        for idxUniqueTimeStep, countUniqueTimeStep in enumerate(countCombinedTimeSteps):
-            setTimeStepsCarrier.append(idxUniqueTimeStep)
-            timeStepDurationCarrier[idxUniqueTimeStep] = countUniqueTimeStep
-            uniqueTimeStep = uniqueCombinedTimeSteps[:,idxUniqueTimeStep]
-            idxInInput = np.argwhere(np.all(combinedOrderTimeSteps.T == uniqueTimeStep, axis=1))[0]
-            
-            a=1
-        
-
+        timeSeriesAggregationObject.calculateTimeStepsCarrier()
+    
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
     def constructSets(cls):
@@ -275,26 +252,27 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     # carrier input and output conversion technologies
     carrierConversionIn, carrierConversionOut = 0, 0
     for tech in model.setConversionTechnologies:
-        operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
         if carrier in model.setInputCarriers[tech]:
+            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
             carrierConversionIn += model.inputFlow[tech,carrier,node,operationTimeStep]
         if carrier in model.setOutputCarriers[tech]:
+            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
             carrierConversionOut += model.outputFlow[tech,carrier,node,operationTimeStep]
     # carrier flow transport technologies
     carrierFlowIn, carrierFlowOut = 0, 0
     setEdgesIn = EnergySystem.calculateConnectedEdges(node,"in")
     setEdgesOut = EnergySystem.calculateConnectedEdges(node,"out")
     for tech in model.setTransportTechnologies:
-        operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
         if carrier in model.setReferenceCarriers[tech]:
+            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
             carrierFlowIn   += sum(model.carrierFlow[tech, edge, operationTimeStep]
                             - model.carrierLoss[tech, edge, operationTimeStep] for edge in setEdgesIn) 
             carrierFlowOut  += sum(model.carrierFlow[tech, edge, operationTimeStep] for edge in setEdgesOut) 
     # carrier flow storage technologies
     carrierFlowDischarge, carrierFlowCharge = 0, 0
     for tech in model.setStorageTechnologies:
-        operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
         if carrier in model.setReferenceCarriers[tech]:
+            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
             carrierFlowDischarge += model.carrierFlowDischarge[tech,node,operationTimeStep]
             carrierFlowCharge += model.carrierFlowCharge[tech,node,operationTimeStep]
     # carrier import, demand and export
@@ -303,8 +281,6 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     carrierExport = model.exportCarrierFlow[carrier, node, time]
     carrierDemand = model.demandCarrier[carrier, node, time]
     
-    # TODO implement storage
-
     return (
         # conversion technologies
         carrierConversionOut - carrierConversionIn 

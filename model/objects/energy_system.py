@@ -28,6 +28,8 @@ class EnergySystem:
     solver = None
     # empty list of indexing sets
     indexingSets = []
+    # aggregationObjects of element
+    aggregationObjectsOfElements = {}
     # empty dict of technologies of carrier
     dictTechnologyOfCarrier = {}
     # empty dict of order of time steps operation
@@ -144,6 +146,13 @@ class EnergySystem:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
 
     @classmethod
+    def setAggregationObjects(cls,element,aggregationObject):
+        """ append aggregation object of element
+        :param element: element in model 
+        :param aggregationObject: object of TimeSeriesAggregation"""
+        cls.aggregationObjectsOfElements[element] = aggregationObject
+
+    @classmethod
     def getConcreteModel(cls):
         """ get concreteModel of the class <EnergySystem>. Every child class can access model and add components.
         :return concreteModel: pe.ConcreteModel """
@@ -198,8 +207,10 @@ class EnergySystem:
         """ gets technologies which are connected by carrier 
         :param carrier: carrier which connects technologies
         :return listOfTechnologies: list of technologies connected by carrier"""
-        assert carrier in cls.dictTechnologyOfCarrier, f"carrier {carrier} not in dictTechnologyOfCarrier"
-        return cls.dictTechnologyOfCarrier[carrier]
+        if carrier in cls.dictTechnologyOfCarrier:
+            return cls.dictTechnologyOfCarrier[carrier]
+        else:
+            return None
 
     @classmethod
     def getOrderTimeSteps(cls,element,timeStepType = None):
@@ -216,6 +227,12 @@ class EnergySystem:
             return cls.dictOrderTimeStepsInvest[element]
         else:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
+
+    @classmethod
+    def getAggregationObjects(cls,element):
+        """ get aggregation object of element
+        :param element: element in model """
+        return cls.aggregationObjectsOfElements[element] 
 
     @classmethod
     def calculateConnectedEdges(cls,node,direction:str):
@@ -255,7 +272,7 @@ class EnergySystem:
         :return baseTimeStep: baseTimeStep of model """
         orderTimeSteps = cls.getOrderTimeSteps(element,timeStepType)
         # find where elementTimeStep in order of element time steps
-        baseTimeSteps = np.where(orderTimeSteps == elementTimeStep)[0]
+        baseTimeSteps = np.argwhere(orderTimeSteps == elementTimeStep)
         return baseTimeSteps
 
     @classmethod
@@ -269,11 +286,11 @@ class EnergySystem:
         # model = cls.getConcreteModel()
         orderTimeSteps = cls.getOrderTimeSteps(element,timeStepType)
         # get time step duration
-        if len(baseTimeSteps) == 1:
-            elementTimeStep = orderTimeSteps[baseTimeSteps]
+        elementTimeStep = np.unique(orderTimeSteps[baseTimeSteps])
+        if len(elementTimeStep) == 1:
             return(elementTimeStep[0])
         else:
-            raise LookupError(f"Currently only implemented for a single base time step, not {baseTimeSteps}")
+            raise LookupError(f"Currently only implemented for a single element time step, not {elementTimeStep}")
 
     @classmethod
     def convertTechnologyTimeStepType(cls,element,elementTimeStep,direction = "operation2invest"):

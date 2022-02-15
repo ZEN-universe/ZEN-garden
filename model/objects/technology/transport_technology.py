@@ -52,8 +52,6 @@ class TransportTechnology(Technology):
         self.distance                       = self.dataInput.extractInputData(_inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
         self.capexPerDistance               = self.dataInput.extractInputData(_inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
         self.lossFlow                       = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
-        # set technology to correspondent reference carrier
-        EnergySystem.setTechnologyOfCarrier(self.name,self.referenceCarrier)
         # apply time series aggregation
         TimeSeriesAggregation(self,_inputPath)
 

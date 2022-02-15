@@ -234,7 +234,7 @@ class DataCreation():
         # capex
         dfCapex                         = pd.DataFrame([minCapacity,maxBuiltCapacity],columns=["capacity"])
         dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWACapex.csv",index = False)
-        dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"]*1000 # kEUR/GWh                       
+        dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"]*1000 # kEUR/GW                       
         dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearCapex.csv",index = False)
         # converEfficiency
         dfConverEfficiency              = pd.DataFrame([minCapacity,maxTotalCapacity],columns=[_referenceCarrier])
