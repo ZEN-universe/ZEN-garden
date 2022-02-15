@@ -53,12 +53,8 @@ class StorageTechnology(Technology):
         self.efficiencyDischarge            = self.dataInput.extractInputData(_inputPath,"efficiencyDischarge",indexSets=["setNodes"])
         self.selfDischarge                  = self.dataInput.extractInputData(_inputPath,"selfDischarge",indexSets=["setNodes"]) 
         self.capexSpecific                  = self.dataInput.extractInputData(_inputPath,"capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
-        # set technology to correspondent reference carrier
-        EnergySystem.setTechnologyOfCarrier(self.name,self.referenceCarrier)
         # apply time series aggregation
         TimeSeriesAggregation(self,_inputPath)
-        # calculate time steps of storage levels
-        self.calculateTimeStepsStorageLevel(_inputPath)
 
     def calculateTimeStepsStorageLevel(self,_inputPath):
         """ this method calculates the number of time steps on the storage level, and the order in which the storage levels are connected """
@@ -68,7 +64,7 @@ class StorageTechnology(Technology):
         storageLevelRepetition              = int(self.dataInput.extractAttributeData(_inputPath,"storageLevelRepetition"))
         # calculate number of time steps
         numberTimeStepsStorageLevel         = int(np.ceil(len(setTimeStepsOperationFlow)/storageLevelRepetition))
-        self.setTimeStepsStorageLevel       = list(range(1,numberTimeStepsStorageLevel+1))
+        self.setTimeStepsStorageLevel       = list(range(0,numberTimeStepsStorageLevel))
         # get sequence of storage levels
         self.sequenceStorageLevel           = list(np.concatenate([self.setTimeStepsStorageLevel]*int(storageLevelRepetition))[0:len(setTimeStepsOperationFlow)])
 

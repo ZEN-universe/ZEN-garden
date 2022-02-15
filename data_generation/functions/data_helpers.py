@@ -217,9 +217,9 @@ def getNumberOfNewPlants(elementName):
     numberOfNewPlants = {
         "photovoltaics":        100000,
         "wind_onshore":         100000,
-        "hard_coal":            200,
+        "hard_coal":            2000,
         "natural_gas_turbine":  50000,
-        "nuclear":              100,
+        "nuclear":              2000,
         "run-of-river_hydro":   200000,
     }
     assert elementName in numberOfNewPlants, f"Technology {elementName} not in list of technologies {list(numberOfNewPlants.keys())}"

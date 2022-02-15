@@ -43,8 +43,6 @@ class Technology(Element):
             if self.name in system[technologyType]:
                 _inputPath                      = paths[technologyType][self.name]["folder"]
                 self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="invest")
-                # self.setTimeStepsOperation      = self.dataInput.extractTimeSteps(_inputPath,typeOfTimeSteps="operation")
-                # assert self.setTimeStepsInvest and self.setTimeStepsOperation, f"investment or operational time steps of technology {self.name} not specified."
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
                 self.orderTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
                 EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest") 

@@ -25,10 +25,20 @@ class Element:
         :param element: element that is added to the model"""
         # set attributes
         self.name = element
+        # set if aggregated
+        self.aggregated = False
         # create DataInput object
         self.dataInput = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
         # add element to list
         Element.addElement(self)
+        
+    def setAggregated(self):
+        """ this method sets self.aggregated to True """
+        self.aggregated = True
+    
+    def isAggregated(self):
+        """ this method returns the aggregation status """
+        return self.aggregated
         
     ### --- classmethods --- ###
     # setter/getter classmethods

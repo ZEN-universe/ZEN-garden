@@ -22,6 +22,7 @@ from model.objects.technology.storage_technology import StorageTechnology
 from model.objects.technology.transport_technology import TransportTechnology
 from model.objects.carrier import Carrier
 from model.objects.energy_system import EnergySystem
+from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class Model():
 
@@ -68,6 +69,11 @@ class Model():
         # add carrier 
         for carrier in self.system["setCarriers"]:
             Carrier(carrier)
+        # conduct time series aggregation for elements that have not yet been aggregated
+        logging.info("Aggregate remaining elements")
+        for element in Element.getAllElements():
+            if not element.isAggregated():
+                EnergySystem.getAggregationObjects(element).manuallyAggregateElement()
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
