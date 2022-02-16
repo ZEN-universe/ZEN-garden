@@ -165,53 +165,119 @@ class DataInput():
                 dfOutput.loc[index] = dfInput.loc[_node,_nodeAlias]
         return dfOutput
 
-    def extractNumberOfTimeSteps(self,folderPath,typeOfTimeSteps = None):
-        """ reads input data and returns number of typical periods and time steps per period
+    def extractNumberTimeSteps(self):
+        """ reads input data and returns number of typical periods and time steps per period for each technology and carrier
         :param folderPath: path to input files 
-        :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
-        :return numberTypicalPeriods,numberTimeStepsPerPeriod: number of typical periods and time steps per period """
+        :return dictNumberOfTimeSteps: number of typical periods and time steps per period """
         # select data
+        folderName = "setTimeSteps"
         fileName = "setTimeSteps"
-        dfInput,_ = self.readInputData(folderPath,fileName)
-        if len(dfInput.index) != 0:
-            if typeOfTimeSteps:
-                dfInput = dfInput.set_index("type").loc[typeOfTimeSteps]
-            else:
-                dfInput = dfInput.loc[0]
-        else:
-            return None
-        # if separated in numberTypicalPeriods and numberTimeStepsPerPeriod
-        if isinstance(dfInput,pd.Series):
-            if "numberTypicalPeriods" in dfInput and "numberTimeStepsPerPeriod" in dfInput:
-                numberTypicalPeriods        = dfInput["numberTypicalPeriods"]
-                numberTimeStepsPerPeriod    = dfInput["numberTimeStepsPerPeriod"]
-            else:
-                numberTypicalPeriods        = dfInput["numberTimeSteps"]
-                numberTimeStepsPerPeriod    = 1
-        else:
-            numberTypicalPeriods            = dfInput
-            numberTimeStepsPerPeriod        = 1
-        # if more time steps than in system, limit to system time steps
-        if numberTypicalPeriods*numberTimeStepsPerPeriod > len(self.system["setTimeSteps"]):
-            if len(self.system["setTimeSteps"])%numberTimeStepsPerPeriod == 0:
-                numberTypicalPeriods        = int(len(self.system["setTimeSteps"])/numberTimeStepsPerPeriod)
-            else:
-                numberTypicalPeriods        = len(self.system["setTimeSteps"]) 
-                numberTimeStepsPerPeriod    = 1
-        return int(numberTypicalPeriods),int(numberTimeStepsPerPeriod)
+        dfInput,_ = self.readInputData(self.energySystem.paths[folderName]["folder"],fileName)
+        dfInput = dfInput.set_index(["element","typeTimeStep"])
+        # default numberTimeStepsPerPeriod
+        # TODO time steps per period necessary?
+        numberTimeStepsPerPeriod = 1
+        # create empty dictNumberOfTimeSteps
+        dictNumberOfTimeSteps = {}
+        # iterate through technologies
+        for technology in self.energySystem.setTechnologies:
+            assert technology in dfInput.index.get_level_values("element"), f"Technology {technology} is not in {fileName}.{self.analysis['fileFormat']}"
+            dictNumberOfTimeSteps[technology] = {}
+            for typeTimeStep in self.energySystem.typesTimeSteps:
+                assert (technology,typeTimeStep) in dfInput.index, f"Type of time step <{typeTimeStep} for technology {technology} is not in {fileName}.{self.analysis['fileFormat']}"
+                dictNumberOfTimeSteps[technology][typeTimeStep] = (dfInput.loc[(technology,typeTimeStep)].squeeze(),numberTimeStepsPerPeriod)
+        # iterate through carriers 
+        for carrier in self.energySystem.setCarriers:
+            assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.{self.analysis['fileFormat']}"
+            dictNumberOfTimeSteps[carrier] = {None: (dfInput.loc[carrier].squeeze(),numberTimeStepsPerPeriod)}
+        # limit number of periods to base time steps of system 
+        for element in dictNumberOfTimeSteps:
+            for typeTimeStep in dictNumberOfTimeSteps[element]:
+                numberTypicalPeriods,numberTimeStepsPerPeriod = dictNumberOfTimeSteps[element][typeTimeStep]
+                if numberTypicalPeriods*numberTimeStepsPerPeriod > len(self.system["setTimeSteps"]):
+                    if len(self.system["setTimeSteps"])%numberTimeStepsPerPeriod == 0:
+                        numberTypicalPeriods        = int(len(self.system["setTimeSteps"])/numberTimeStepsPerPeriod)
+                    else:
+                        numberTypicalPeriods        = len(self.system["setTimeSteps"]) 
+                        numberTimeStepsPerPeriod    = 1
+                dictNumberOfTimeSteps[element][typeTimeStep] = (int(numberTypicalPeriods),int(numberTimeStepsPerPeriod))
+        return dictNumberOfTimeSteps
 
-    def extractTimeSteps(self,folderPath,typeOfTimeSteps=None):
+        # if len(dfInput.index) != 0:
+        #     if typeOfTimeSteps:
+        #         dfInput = dfInput.set_index("type").loc[typeOfTimeSteps]
+        #     else:
+        #         dfInput = dfInput.loc[0]
+        # else:
+        #     return None
+        # # if separated in numberTypicalPeriods and numberTimeStepsPerPeriod
+        # if isinstance(dfInput,pd.Series):
+        #     if "numberTypicalPeriods" in dfInput and "numberTimeStepsPerPeriod" in dfInput:
+        #         numberTypicalPeriods        = dfInput["numberTypicalPeriods"]
+        #         numberTimeStepsPerPeriod    = dfInput["numberTimeStepsPerPeriod"]
+        #     else:
+        #         numberTypicalPeriods        = dfInput["numberTimeSteps"]
+        #         numberTimeStepsPerPeriod    = 1
+        # else:
+        #     numberTypicalPeriods            = dfInput
+        #     numberTimeStepsPerPeriod        = 1
+        # # if more time steps than in system, limit to system time steps
+        # if numberTypicalPeriods*numberTimeStepsPerPeriod > len(self.system["setTimeSteps"]):
+        #     if len(self.system["setTimeSteps"])%numberTimeStepsPerPeriod == 0:
+        #         numberTypicalPeriods        = int(len(self.system["setTimeSteps"])/numberTimeStepsPerPeriod)
+        #     else:
+        #         numberTypicalPeriods        = len(self.system["setTimeSteps"]) 
+        #         numberTimeStepsPerPeriod    = 1
+        # return int(numberTypicalPeriods),int(numberTimeStepsPerPeriod)
+
+    # def extractNumberOfTimeSteps(self,folderPath,typeOfTimeSteps = None):
+    #     """ reads input data and returns number of typical periods and time steps per period
+    #     :param folderPath: path to input files 
+    #     :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
+    #     :return numberTypicalPeriods,numberTimeStepsPerPeriod: number of typical periods and time steps per period """
+    #     # select data
+    #     fileName = "setTimeSteps"
+    #     dfInput,_ = self.readInputData(folderPath,fileName)
+    #     if len(dfInput.index) != 0:
+    #         if typeOfTimeSteps:
+    #             dfInput = dfInput.set_index("type").loc[typeOfTimeSteps]
+    #         else:
+    #             dfInput = dfInput.loc[0]
+    #     else:
+    #         return None
+    #     # if separated in numberTypicalPeriods and numberTimeStepsPerPeriod
+    #     if isinstance(dfInput,pd.Series):
+    #         if "numberTypicalPeriods" in dfInput and "numberTimeStepsPerPeriod" in dfInput:
+    #             numberTypicalPeriods        = dfInput["numberTypicalPeriods"]
+    #             numberTimeStepsPerPeriod    = dfInput["numberTimeStepsPerPeriod"]
+    #         else:
+    #             numberTypicalPeriods        = dfInput["numberTimeSteps"]
+    #             numberTimeStepsPerPeriod    = 1
+    #     else:
+    #         numberTypicalPeriods            = dfInput
+    #         numberTimeStepsPerPeriod        = 1
+    #     # if more time steps than in system, limit to system time steps
+    #     if numberTypicalPeriods*numberTimeStepsPerPeriod > len(self.system["setTimeSteps"]):
+    #         if len(self.system["setTimeSteps"])%numberTimeStepsPerPeriod == 0:
+    #             numberTypicalPeriods        = int(len(self.system["setTimeSteps"])/numberTimeStepsPerPeriod)
+    #         else:
+    #             numberTypicalPeriods        = len(self.system["setTimeSteps"]) 
+    #             numberTimeStepsPerPeriod    = 1
+    #     return int(numberTypicalPeriods),int(numberTimeStepsPerPeriod)
+
+    def extractTimeSteps(self,elementName,typeOfTimeSteps=None,getListOfTimeSteps=True):
         """ reads input data and returns range of time steps 
         :param folderPath: path to input files 
         :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
         :return listOfTimeSteps: list of time steps """
-        numberTypicalPeriods,numberTimeStepsPerPeriod = self.extractNumberOfTimeSteps(folderPath,typeOfTimeSteps)
-        # multiply number typical periods and number time steps per period
-        numberOfTimeSteps = numberTypicalPeriods*numberTimeStepsPerPeriod
-    
-        # create range of time steps #TODO define starting point
-        listOfTimeSteps = list(range(0,numberOfTimeSteps))
-        return listOfTimeSteps
+        numberTypicalPeriods,numberTimeStepsPerPeriod = self.energySystem.dictNumberOfTimeSteps[elementName][typeOfTimeSteps]
+        if getListOfTimeSteps:
+            # create range of time steps 
+            #TODO define starting point
+            listOfTimeSteps = list(range(0,numberTypicalPeriods*numberTimeStepsPerPeriod))
+            return listOfTimeSteps
+        else:
+            return numberTypicalPeriods,numberTimeStepsPerPeriod
 
     def extractAttributeData(self, folderPath,attributeName):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
