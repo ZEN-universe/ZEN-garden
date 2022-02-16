@@ -69,11 +69,19 @@ class Model():
         # add carrier 
         for carrier in self.system["setCarriers"]:
             Carrier(carrier)
-        # conduct time series aggregation for elements that have not yet been aggregated
-        logging.info("Aggregate remaining elements")
-        for element in Element.getAllElements():
-            if not element.isAggregated():
-                EnergySystem.getAggregationObjects(element).manuallyAggregateElement()
+        # if multi time grid approach
+        if self.system["multiGridTimeIndex"]:
+            # conduct time series aggregation for elements that have not yet been aggregated
+            logging.info("Aggregate remaining elements")
+            for element in Element.getAllElements():
+                if not element.isAggregated():
+                    EnergySystem.getAggregationObjects(element).manuallyAggregateElement()
+        # if single time grid approach
+        else:
+            TimeSeriesAggregation(TSAOfSingleElement=False)
+            for carrier in Carrier.getAllElements():
+                EnergySystem.getAggregationObjects(carrier).manuallyAggregateElement()
+        a=1
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets

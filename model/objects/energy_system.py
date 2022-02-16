@@ -36,6 +36,8 @@ class EnergySystem:
     dictOrderTimeStepsOperation = {}
     # empty dict of order of time steps invest
     dictOrderTimeStepsInvest = {}
+    # empty dict of raw time series, only necessary for single time grid approach
+    dictTimeSeriesRaw = {}
 
     def __init__(self,nameEnergySystem):
         """ initialization of the energySystem
@@ -44,17 +46,17 @@ class EnergySystem:
         assert not EnergySystem.getEnergySystem(), "Only one energy system can be defined."
         # set attributes
         self.name = nameEnergySystem
+        # add energySystem to list
+        EnergySystem.setEnergySystem(self)
         # create DataInput object
         self.dataInput = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
         # store input data
         self.storeInputData()
-        # add energySystem to list
-        EnergySystem.setEnergySystem(self)
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """      
         system                          = EnergySystem.getSystem()
-        paths                           = EnergySystem.getPaths() 
+        self.paths                      = EnergySystem.getPaths() 
         # in class <EnergySystem>, all sets are constructd
         self.setNodes                   = system["setNodes"]
         self.setNodesOnEdges            = self.calculateEdgesFromNodes()
@@ -68,7 +70,10 @@ class EnergySystem:
         self.setTransportTechnologies   = system["setTransportTechnologies"]
         self.setStorageTechnologies     = system["setStorageTechnologies"]
         # carbon emissions limit
-        self.carbonEmissionsLimit       = self.dataInput.extractAttributeData(paths["setScenarios"]["folder"],"carbonEmissionsLimit")
+        self.carbonEmissionsLimit       = self.dataInput.extractAttributeData(self.paths["setScenarios"]["folder"],"carbonEmissionsLimit")
+        # extract number of time steps for elements
+        self.typesTimeSteps             = ["invest","operation"]
+        self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
     
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
@@ -153,6 +158,12 @@ class EnergySystem:
         cls.aggregationObjectsOfElements[element] = aggregationObject
 
     @classmethod
+    def setTimeSeriesRaw(cls,aggregationObject):
+        """ appends the raw time series of elements
+        :param aggregationObject: object of TimeSeriesAggregation """
+        cls.dictTimeSeriesRaw[aggregationObject.element] = aggregationObject.dfTimeSeriesRaw
+
+    @classmethod
     def getConcreteModel(cls):
         """ get concreteModel of the class <EnergySystem>. Every child class can access model and add components.
         :return concreteModel: pe.ConcreteModel """
@@ -231,8 +242,19 @@ class EnergySystem:
     @classmethod
     def getAggregationObjects(cls,element):
         """ get aggregation object of element
-        :param element: element in model """
+        :param element: element in model 
+        :return aggregationObject: object of TimeSeriesAggregation """
         return cls.aggregationObjectsOfElements[element] 
+
+    @classmethod
+    def getTimeSeriesRaw(cls,element):
+        """ get the raw time series of element
+        :param element: element in model 
+        :return dfTimeSeriesRaw: raw time series of element """
+        if element in cls.dictTimeSeriesRaw:
+            return cls.dictTimeSeriesRaw[element]
+        else:
+            return None
 
     @classmethod
     def calculateConnectedEdges(cls,node,direction:str):

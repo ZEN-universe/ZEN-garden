@@ -11,38 +11,62 @@ from scipy.stats import linregress
 import pandas as pd
 import os
 import logging
+from sympy import true
 import tsam.timeseriesaggregation as tsam
 
 from model.objects.energy_system import EnergySystem
 from model.objects.element import Element
 
 class TimeSeriesAggregation():
-    def __init__(self,element,inputPath):
-        self.element            = element
-        self.inputPath          = inputPath
-        self.dataInput          = element.dataInput
+    def __init__(self,element=None,inputPath=None,TSAOfSingleElement = True):
         self.setBaseTimeSteps   = EnergySystem.getEnergySystem().setBaseTimeSteps
         self.system             = EnergySystem.getSystem()
         self.analysis           = EnergySystem.getAnalysis()
         self.headerSetTimeSteps = self.analysis['headerDataInputs']["setTimeSteps"][0]
-        # set aggregation object
-        EnergySystem.setAggregationObjects(self.element,self)
-        # get number of time steps
-        self.getNumberOfTimeSteps()
-        # select time series
-        self.selectTimeSeries()
-        # if raw nonconstant time series exist --> conduct time series aggregation
-        if not self.dfTimeSeriesRaw.empty:
-            # substitute column names
-            self.substituteColumnNames(direction="flatten")
-            # run time series aggregation to create typical periods
-            self.runTimeSeriesAggregation()
-            # resubstitute column names
-            self.substituteColumnNames(direction="raise")
-            # set aggregated time series
-            self.setAggregatedTimeSeries()
-            # set aggregator indicators
-            self.setAggregationIndicators()
+        if TSAOfSingleElement:
+            self.element            = element
+            self.inputPath          = inputPath
+            self.dataInput          = element.dataInput
+            # set aggregation object
+            EnergySystem.setAggregationObjects(self.element,self)
+            # get number of time steps
+            self.getNumberOfTimeSteps()
+            # select time series
+            self.selectTimeSeries()
+            # if raw nonconstant time series exist 
+            if not self.dfTimeSeriesRaw.empty:
+                # use multi time grid approach
+                if self.system["multiGridTimeIndex"]:
+                    # conduct time series aggregation
+                    # substitute column names
+                    self.substituteColumnNames(direction="flatten")
+                    # run time series aggregation to create typical periods
+                    self.runTimeSeriesAggregation()
+                    # resubstitute column names
+                    self.substituteColumnNames(direction="raise")
+                    # set aggregated time series
+                    self.setAggregatedTimeSeries()
+                    # set aggregator indicators
+                    self.setAggregationIndicators()
+                else:
+                    EnergySystem.setTimeSeriesRaw(self)
+        # time series aggregation of entire input data set
+        else:
+            self.numberTypicalPeriods       = self.system["numberTimeStepsDefault"]
+            self.numberTimeStepsPerPeriod   = 1
+            # select time series
+            self.selectTimeSeriesOfAllElements()
+            if not self.dfTimeSeriesRaw.empty:
+                # conduct time series aggregation
+                # substitute column names
+                self.substituteColumnNames(direction="flatten")
+                # run time series aggregation to create typical periods
+                self.runTimeSeriesAggregation()
+                # resubstitute column names
+                self.substituteColumnNames(direction="raise")
+                # set aggregated time series
+                self.setAggregatedTimeSeriesOfAllElements()
+                
 
     def getNumberOfTimeSteps(self):
         """ this method extracts number of time steps for time series aggregation """
@@ -52,8 +76,8 @@ class TimeSeriesAggregation():
             typeOfTimeSteps = "operation"
         else:
             raise KeyError(f"{self.element.name} neither in setCarriers nor setTechnologies")
-        self.numberTypicalPeriods,self.numberTimeStepsPerPeriod = self.dataInput.extractNumberOfTimeSteps(self.inputPath,typeOfTimeSteps)
-    
+        self.numberTypicalPeriods,self.numberTimeStepsPerPeriod = self.dataInput.extractTimeSteps(self.element.name,typeOfTimeSteps,getListOfTimeSteps=False)
+
     def selectTimeSeries(self):
         """ this method selects the time series of the input element and creates a common dataframe"""
         dictRawtimeSeries   = {}
@@ -68,6 +92,15 @@ class TimeSeriesAggregation():
             dictRawtimeSeries[timeSeries]   = dfTimeSeriesNonConstant
         self.dfTimeSeriesRaw = pd.concat(dictRawtimeSeries.values(),axis=1,keys=dictRawtimeSeries.keys())
 
+    def selectTimeSeriesOfAllElements(self):
+        """ this method retrieves the raw time series for the aggregation of all input data sets. Only in single time grid approach! """
+        _dictRawTimeSeries              = {}
+        for element in Element.getAllElements():
+            _rawTimeSeries = EnergySystem.getTimeSeriesRaw(element)
+            if _rawTimeSeries is not None:
+                _dictRawTimeSeries[element.name] = _rawTimeSeries
+        self.dfTimeSeriesRaw = pd.concat(_dictRawTimeSeries.values(),axis=1,keys=_dictRawTimeSeries.keys())
+
     def substituteColumnNames(self,direction = "flatten"):
         """ this method substitutes the column names to have flat columns names (otherwise sklearn warning) """
         if direction == "flatten":
@@ -80,33 +113,45 @@ class TimeSeriesAggregation():
          
     def runTimeSeriesAggregation(self):
         """ this method runs the time series aggregation """
-        # create aggregation object
-        self.aggregation = tsam.TimeSeriesAggregation(
-            timeSeries          = self.dfTimeSeriesRaw,
-            noTypicalPeriods    = self.numberTypicalPeriods,
-            hoursPerPeriod      = self.numberTimeStepsPerPeriod,
-            resolution          = self.analysis["timeSeriesAggregation"]["resolution"],
-            clusterMethod       = self.analysis["timeSeriesAggregation"]["clusterMethod"],
-            solver              = self.analysis["timeSeriesAggregation"]["solver"],
-            extremePeriodMethod = self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
-        )
-        # create typical periods
-        self.typicalPeriods     = self.aggregation.createTypicalPeriods().reset_index(drop=True)
+        # if not full time series
+        if self.numberTypicalPeriods*self.numberTimeStepsPerPeriod != np.size(self.system["setTimeSteps"]):
+            # create aggregation object
+            self.aggregation = tsam.TimeSeriesAggregation(
+                timeSeries          = self.dfTimeSeriesRaw,
+                noTypicalPeriods    = self.numberTypicalPeriods,
+                hoursPerPeriod      = self.numberTimeStepsPerPeriod,
+                resolution          = self.analysis["timeSeriesAggregation"]["resolution"],
+                clusterMethod       = self.analysis["timeSeriesAggregation"]["clusterMethod"],
+                solver              = self.analysis["timeSeriesAggregation"]["solver"],
+                extremePeriodMethod = self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
+            )
+            # create typical periods
+            self.typicalPeriods     = self.aggregation.createTypicalPeriods().reset_index(drop=True)
+            self.setTimeSteps       = self.aggregation.clusterPeriodIdx
+            self.timeStepsDuration  = self.aggregation.clusterPeriodNoOccur
+            self.orderTimeSteps     = self.aggregation.clusterOrder
+        # if full time series, use input values 
+        else:
+            self.typicalPeriods     = self.dfTimeSeriesRaw
+            if self.element.name in self.system["setTechnologies"]:
+                self.setTimeSteps   = self.element.dataInput.extractTimeSteps(self.element.name,"operation")
+            else:
+                self.setTimeSteps   = self.element.dataInput.extractTimeSteps(self.element.name)
+            self.timeStepsDuration  = EnergySystem.calculateTimeStepDuration(self.setTimeSteps)
+            self.orderTimeSteps     = np.concatenate([[timeStep]*self.timeStepsDuration[timeStep] for timeStep in self.timeStepsDuration])
     
     def setAggregatedTimeSeries(self):
         """ this method sets the aggregated time series and sets the necessary attributes"""
         rawTimeSeries       = getattr(self.element,"rawTimeSeries")
-        # if time series were aggregated
-        # if not self.dfTimeSeriesRaw.empty:
         # setTimeSteps and duration
         if self.element.name in self.system["setCarriers"]: 
-            self.element.setTimeStepsCarrier        = list(self.aggregation.clusterPeriodIdx)
-            self.element.timeStepsCarrierDuration   = self.aggregation.clusterPeriodNoOccur
-            self.element.orderTimeSteps             = self.aggregation.clusterOrder
+            self.element.setTimeStepsCarrier        = list(self.setTimeSteps)
+            self.element.timeStepsCarrierDuration   = self.timeStepsDuration
+            self.element.orderTimeSteps             = self.orderTimeSteps
         elif self.element.name in self.system["setTechnologies"]:
-            self.element.setTimeStepsOperation      = list(self.aggregation.clusterPeriodIdx)
-            self.element.timeStepsOperationDuration = self.aggregation.clusterPeriodNoOccur
-            self.element.orderTimeSteps             = self.aggregation.clusterOrder
+            self.element.setTimeStepsOperation      = list(self.setTimeSteps)
+            self.element.timeStepsOperationDuration = self.timeStepsDuration
+            self.element.orderTimeSteps             = self.orderTimeSteps
         else:
             raise KeyError(f"{self.element.name} neither in setCarriers nor setTechnologies")
         # iterate through raw time series
@@ -115,7 +160,7 @@ class TimeSeriesAggregation():
             _indexNames.remove(self.headerSetTimeSteps)
             dfTimeSeries = rawTimeSeries[timeSeries].unstack(level = _indexNames)
             
-            dfAggregatedTimeSeries = pd.DataFrame(index=self.aggregation.clusterPeriodIdx,columns=dfTimeSeries.columns)
+            dfAggregatedTimeSeries = pd.DataFrame(index=self.setTimeSteps,columns=dfTimeSeries.columns)
             # columns which are in aggregated time series and which are not
             if timeSeries in self.typicalPeriods:
                 dfTypicalPeriods = self.typicalPeriods[timeSeries]
@@ -132,7 +177,50 @@ class TimeSeriesAggregation():
             dfAggregatedTimeSeries.columns.names            = _indexNames
             dfAggregatedTimeSeries                          = dfAggregatedTimeSeries.stack(_indexNames)
             dfAggregatedTimeSeries.index                    = dfAggregatedTimeSeries.index.reorder_levels(_indexNames + [self.headerSetTimeSteps])
-            setattr(self.element,timeSeries,dfAggregatedTimeSeries)   
+            setattr(self.element,timeSeries,dfAggregatedTimeSeries)  
+
+    def setAggregatedTimeSeriesOfAllElements(self):
+        """ this method sets the aggregated time series and sets the necessary attributes after the aggregation to a single time grid """
+
+        for element in Element.getAllElements():
+            rawTimeSeries = getattr(element,"rawTimeSeries")
+            # setTimeSteps and duration
+            if element.name in self.system["setCarriers"]: 
+                element.setTimeStepsCarrier        = list(self.setTimeSteps)
+                element.timeStepsCarrierDuration   = self.timeStepsDuration
+                element.orderTimeSteps             = self.orderTimeSteps
+            elif element.name in self.system["setTechnologies"]:
+                element.setTimeStepsOperation      = list(self.setTimeSteps)
+                element.timeStepsOperationDuration = self.timeStepsDuration
+                element.orderTimeSteps             = self.orderTimeSteps
+            else:
+                raise KeyError(f"{element.name} neither in setCarriers nor setTechnologies")
+            # iterate through raw time series
+            for timeSeries in rawTimeSeries:
+                _indexNames = list(rawTimeSeries[timeSeries].index.names)
+                _indexNames.remove(self.headerSetTimeSteps)
+                dfTimeSeries = rawTimeSeries[timeSeries].unstack(level = _indexNames)
+                
+                dfAggregatedTimeSeries = pd.DataFrame(index=self.setTimeSteps,columns=dfTimeSeries.columns)
+                # columns which are in aggregated time series and which are not
+                if element.name in self.typicalPeriods and timeSeries in self.typicalPeriods[element.name]:
+                    dfTypicalPeriods = self.typicalPeriods[element.name,timeSeries]
+                    AggregatedColumns = dfTimeSeries.columns.intersection(dfTypicalPeriods.columns)
+                    NotAggregatedColumns = dfTimeSeries.columns.difference(dfTypicalPeriods.columns)
+                    # aggregated columns
+                    dfAggregatedTimeSeries[AggregatedColumns]       = self.typicalPeriods[element.name,timeSeries][AggregatedColumns]
+                else:
+                    NotAggregatedColumns = dfTimeSeries.columns
+                # not aggregated columns
+                dfAggregatedTimeSeries[NotAggregatedColumns]    = dfTimeSeries.iloc[0][NotAggregatedColumns]
+                # reorder
+                dfAggregatedTimeSeries.index.names              = [self.headerSetTimeSteps]
+                dfAggregatedTimeSeries.columns.names            = _indexNames
+                dfAggregatedTimeSeries                          = dfAggregatedTimeSeries.stack(_indexNames)
+                dfAggregatedTimeSeries.index                    = dfAggregatedTimeSeries.index.reorder_levels(_indexNames + [self.headerSetTimeSteps])
+                setattr(element,timeSeries,dfAggregatedTimeSeries)   
+                # set aggregator indicators
+                self.setAggregationIndicators(manualElement=element)
 
     def manuallyAggregateElement(self):
         """ this method manually aggregates elements which are not aggregated by the automatic aggregation method above """
@@ -154,7 +242,8 @@ class TimeSeriesAggregation():
                 setTimeStepsRaw, timeStepsDurationRaw, orderTimeStepsRaw = self.uniqueTimeStepsInMultigrid(listOrderAggregatedCarriers)   
                 # if more timesteps demanded in not aggregated technology than combined in carriers
                 if self.numberTimeStepsPerPeriod*self.numberTypicalPeriods >= len(setTimeStepsRaw):
-                    logging.warning(f"Requested number of time steps ({self.numberTypicalPeriods}/{self.numberTimeStepsPerPeriod}) of unaggregated technology {self.element.name} is greater than aggregated time steps in carriers ({len(setTimeStepsRaw)}). Restrict to time steps of carrier")
+                    if self.numberTimeStepsPerPeriod*self.numberTypicalPeriods > len(setTimeStepsRaw):
+                        logging.warning(f"Requested number of time steps ({self.numberTypicalPeriods}/{self.numberTimeStepsPerPeriod}) of unaggregated technology {self.element.name} is greater than aggregated time steps in carriers ({len(setTimeStepsRaw)}). Restrict to time steps of carrier")
                     self.element.setTimeStepsOperation      = setTimeStepsRaw
                     self.element.timeStepsOperationDuration = timeStepsDurationRaw
                     self.element.orderTimeSteps             = orderTimeStepsRaw
@@ -175,7 +264,7 @@ class TimeSeriesAggregation():
                     # initialize attributes
                     setClusters         = []
                     clusterDuration     = {}
-                    orderTimeSteps      = np.zeros(np.size(EnergySystem.getSystem()["setTimeSteps"])).astype(int)
+                    orderTimeSteps      = np.zeros(np.size(self.system["setTimeSteps"])).astype(int)
                     for cluster in range(0,numberClusters):
                         # append cluster to attribute
                         setClusters.append(cluster)
@@ -236,32 +325,26 @@ class TimeSeriesAggregation():
                 listOrderTimeSteps.append(Element.getAttributeOfSpecificElement(technology,"orderTimeSteps"))
             # get combined time steps, duration and order
             setTimeStepsCarrier, timeStepsCarrierDuration, orderTimeStepsCarrier = self.uniqueTimeStepsInMultigrid(listOrderTimeSteps)
-            # iterate through raw time series data and conduct "manual" time series aggregation
-            for timeSeries in self.element.rawTimeSeries:
-                dfTimeSeriesRaw                     = self.element.rawTimeSeries[timeSeries]
-                _otherIndices                       = list(set(dfTimeSeriesRaw.index.names).difference(setTimeHeaders))
-                dfTimeSeriesRaw                     = dfTimeSeriesRaw.unstack(_otherIndices)
-                dfTimeSeriesRaw["aggregatedIndex"]  = orderTimeStepsCarrier
-                # mean original data in new cluster
-                try:
-                    dfTimeSeries                    = dfTimeSeriesRaw.groupby("aggregatedIndex").mean().stack()
-                    dfTimeSeries.index.rename(setTimeHeaders[0],level="aggregatedIndex",inplace=True)
-                    dfTimeSeries.index              = dfTimeSeries.index.reorder_levels(self.element.rawTimeSeries[timeSeries].index.names)
-                # if infinity
-                except:
-                    dfTimeSeries                    = self.element.rawTimeSeries[timeSeries].loc[(slice(None),setTimeStepsCarrier)]
-                # save attribute
-                setattr(self.element,timeSeries,dfTimeSeries)
             # set attributes
-            self.element.setTimeStepsCarrier        = setTimeStepsCarrier
-            self.element.timeStepsCarrierDuration   = timeStepsCarrierDuration
-            self.element.orderTimeSteps             = orderTimeStepsCarrier
-            # set aggregatio indicator
-            self.setAggregationIndicators()
+            self.element.setTimeStepsEnergyBalance      = setTimeStepsCarrier
+            self.element.timeStepsEnergyBalanceDuration = timeStepsCarrierDuration
+            self.element.orderTimeStepsEnergyBalance    = orderTimeStepsCarrier
+            # if carrier previously not aggregated
+            if not self.element.isAggregated():
+                # iterate through raw time series data and conduct "manual" time series aggregation
+                for timeSeries in self.element.rawTimeSeries:
+                    dfTimeSeries                        = self.element.rawTimeSeries[timeSeries].loc[(slice(None),setTimeStepsCarrier)]
+                    # save attribute
+                    setattr(self.element,timeSeries,dfTimeSeries)
+                self.element.setTimeStepsCarrier        = setTimeStepsCarrier
+                self.element.timeStepsCarrierDuration   = timeStepsCarrierDuration
+                self.element.orderTimeSteps             = orderTimeStepsCarrier
+            # set aggregation indicator
+            self.setAggregationIndicators(setEnergyBalanceIndicator=True)
 
     def uniqueTimeStepsInMultigrid(self,listOrderTimeSteps):
         """ this method returns the unique time steps of multiple time grids """
-        orderTimeSteps              = np.zeros(np.size(EnergySystem.getSystem()["setTimeSteps"])).astype(int)
+        orderTimeSteps              = np.zeros(np.size(self.system["setTimeSteps"])).astype(int)
         combinedOrderTimeSteps      = np.vstack(listOrderTimeSteps)
         uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedOrderTimeSteps,axis=1,return_counts=True)
         setTimeSteps                = []
@@ -275,18 +358,25 @@ class TimeSeriesAggregation():
             orderTimeSteps[idxInInput]          = idxUniqueTimeStep
         return setTimeSteps, timeStepsDuration, orderTimeSteps
 
-    def setAggregationIndicators(self):
-        """ this method sets the indicators that technology is aggregated """
+    def setAggregationIndicators(self,setEnergyBalanceIndicator = False,manualElement = None):
+        """ this method sets the indicators that element is aggregated """
+        if manualElement:
+            element = manualElement
+        else:
+            element = self.element
         # add order of time steps to Energy System
-        EnergySystem.setOrderTimeSteps(self.element.name,self.element.orderTimeSteps,timeStepType="operation") 
+        EnergySystem.setOrderTimeSteps(element.name,element.orderTimeSteps,timeStepType="operation") 
+        # if energy balance indicator is set as well, save order of time steps in energy balance as well
+        if setEnergyBalanceIndicator:
+            EnergySystem.setOrderTimeSteps(element.name+"EnergyBalance",element.orderTimeStepsEnergyBalance,timeStepType="operation") 
         # if technology, add to technologyOfCarrier list
-        if self.element.name in self.system["setTechnologies"]:
-            if self.element.name in self.system["setConversionTechnologies"]:
-                EnergySystem.setTechnologyOfCarrier(self.element.name,self.element.inputCarrier + self.element.outputCarrier)
+        if element.name in self.system["setTechnologies"]:
+            if element.name in self.system["setConversionTechnologies"]:
+                EnergySystem.setTechnologyOfCarrier(element.name,element.inputCarrier + element.outputCarrier)
             else:
-                EnergySystem.setTechnologyOfCarrier(self.element.name,self.element.referenceCarrier)
-                if self.element.name in self.system["setStorageTechnologies"]:
+                EnergySystem.setTechnologyOfCarrier(element.name,element.referenceCarrier)
+                if element.name in self.system["setStorageTechnologies"]:
                     # calculate time steps of storage levels
-                    self.element.calculateTimeStepsStorageLevel(self.inputPath)
+                    element.calculateTimeStepsStorageLevel(EnergySystem.getPaths()["setStorageTechnologies"][element.name]["folder"])
         # set the aggregation status of element to true
-        self.element.setAggregated()
+        element.setAggregated()

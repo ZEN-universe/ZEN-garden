@@ -59,10 +59,15 @@ class Carrier(Element):
     def constructSets(cls):
         """ constructs the pe.Sets of the class <Carrier> """
         model = EnergySystem.getConcreteModel()
-        # time-steps
+        # time-steps of carrier
         model.setTimeStepsCarrier = pe.Set(
             model.setCarriers,
             initialize=cls.getAttributeOfAllElements("setTimeStepsCarrier"),
+            doc='Set of time steps of carriers. Dimensions: setCarriers')
+        # time-steps of energy balance
+        model.setTimeStepsEnergyBalance = pe.Set(
+            model.setCarriers,
+            initialize=cls.getAttributeOfAllElements("setTimeStepsEnergyBalance"),
             doc='Set of time steps of carriers. Dimensions: setCarriers')
 
     @classmethod
@@ -70,11 +75,17 @@ class Carrier(Element):
         """ constructs the pe.Params of the class <Carrier> """
         model = EnergySystem.getConcreteModel()
 
-        # invest time step duration
+        # time step duration carrier
         model.timeStepsCarrierDuration = pe.Param(
             cls.createCustomSet(["setCarriers","setTimeStepsCarrier"]),
             initialize = cls.getAttributeOfAllElements("timeStepsCarrierDuration"),
             doc="Parameter which specifies the time step duration for all carriers. Dimensions: setCarriers, setTimeStepsCarrier"
+        )
+        # time step duration energy balance
+        model.timeStepsEnergyBalanceDuration = pe.Param(
+            cls.createCustomSet(["setCarriers","setTimeStepsEnergyBalance"]),
+            initialize = cls.getAttributeOfAllElements("timeStepsEnergyBalanceDuration"),
+            doc="Parameter which specifies the time step duration for all carriers. Dimensions: setCarriers, setTimeStepsEnergyBalance"
         )
         # demand of carrier
         model.demandCarrier = pe.Param(
@@ -191,9 +202,9 @@ class Carrier(Element):
         )
         # energy balance
         model.constraintNodalEnergyBalance = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsEnergyBalance"]),
             rule = constraintNodalEnergyBalanceRule,
-            doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
+            doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsEnergyBalance',
         )
 
 
@@ -245,41 +256,44 @@ def constraintCarbonEmissionsCarrierTotalRule(model):
 
 def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     """" 
-    nodal energy balance for each time step
+    nodal energy balance for each time step. 
+    The constraint is indexed by setTimeStepsEnergyBalance, which is union of time step sequences of all corresponding technologies and carriers
+    timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
     """
     # decode to baseTimeStep
-    baseTimeStep = EnergySystem.decodeTimeStep(carrier,time)
+    baseTimeStep = EnergySystem.decodeTimeStep(carrier+"EnergyBalance",time)
     # carrier input and output conversion technologies
     carrierConversionIn, carrierConversionOut = 0, 0
     for tech in model.setConversionTechnologies:
         if carrier in model.setInputCarriers[tech]:
-            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierConversionIn += model.inputFlow[tech,carrier,node,operationTimeStep]
+            elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+            carrierConversionIn += model.inputFlow[tech,carrier,node,elementTimeStep]
         if carrier in model.setOutputCarriers[tech]:
-            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierConversionOut += model.outputFlow[tech,carrier,node,operationTimeStep]
+            elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+            carrierConversionOut += model.outputFlow[tech,carrier,node,elementTimeStep]
     # carrier flow transport technologies
     carrierFlowIn, carrierFlowOut = 0, 0
     setEdgesIn = EnergySystem.calculateConnectedEdges(node,"in")
     setEdgesOut = EnergySystem.calculateConnectedEdges(node,"out")
     for tech in model.setTransportTechnologies:
         if carrier in model.setReferenceCarriers[tech]:
-            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierFlowIn   += sum(model.carrierFlow[tech, edge, operationTimeStep]
-                            - model.carrierLoss[tech, edge, operationTimeStep] for edge in setEdgesIn) 
-            carrierFlowOut  += sum(model.carrierFlow[tech, edge, operationTimeStep] for edge in setEdgesOut) 
+            elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+            carrierFlowIn   += sum(model.carrierFlow[tech, edge, elementTimeStep]
+                            - model.carrierLoss[tech, edge, elementTimeStep] for edge in setEdgesIn) 
+            carrierFlowOut  += sum(model.carrierFlow[tech, edge, elementTimeStep] for edge in setEdgesOut) 
     # carrier flow storage technologies
     carrierFlowDischarge, carrierFlowCharge = 0, 0
     for tech in model.setStorageTechnologies:
         if carrier in model.setReferenceCarriers[tech]:
-            operationTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierFlowDischarge += model.carrierFlowDischarge[tech,node,operationTimeStep]
-            carrierFlowCharge += model.carrierFlowCharge[tech,node,operationTimeStep]
+            elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+            carrierFlowDischarge += model.carrierFlowDischarge[tech,node,elementTimeStep]
+            carrierFlowCharge += model.carrierFlowCharge[tech,node,elementTimeStep]
     # carrier import, demand and export
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
-    carrierImport = model.importCarrierFlow[carrier, node, time]
-    carrierExport = model.exportCarrierFlow[carrier, node, time]
-    carrierDemand = model.demandCarrier[carrier, node, time]
+    elementTimeStep = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
+    carrierImport = model.importCarrierFlow[carrier, node, elementTimeStep]
+    carrierExport = model.exportCarrierFlow[carrier, node, elementTimeStep]
+    carrierDemand = model.demandCarrier[carrier, node, elementTimeStep]
     
     return (
         # conversion technologies
