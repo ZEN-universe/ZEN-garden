@@ -52,7 +52,7 @@ class TimeSeriesAggregation():
                     EnergySystem.setTimeSeriesRaw(self)
         # time series aggregation of entire input data set
         else:
-            self.numberTypicalPeriods       = self.system["numberTimeStepsDefault"]
+            self.numberTypicalPeriods       = min(self.system["numberTimeStepsDefault"],np.size(self.system["setTimeSteps"]))
             self.numberTimeStepsPerPeriod   = 1
             # select time series
             self.selectTimeSeriesOfAllElements()

@@ -76,9 +76,6 @@ system['setTimeSteps'] = [1,2,3]
 system['setNodes'] = ['Berlin', 'Zurich', 'Rome']
 # folder output
 system['folderOutput'] = 'outputs/results/'
-# default number of operational time steps, only used in single-grid time series aggregation
-# TODO number of time steps per period = 1 
-system["numberTimeStepsDefault"] = 12 
 
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
