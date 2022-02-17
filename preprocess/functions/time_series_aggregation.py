@@ -133,10 +133,13 @@ class TimeSeriesAggregation():
         # if full time series, use input values 
         else:
             self.typicalPeriods     = self.dfTimeSeriesRaw
-            if self.element.name in self.system["setTechnologies"]:
-                self.setTimeSteps   = self.element.dataInput.extractTimeSteps(self.element.name,"operation")
+            if self.system["multiGridTimeIndex"]:
+                if self.element.name in self.system["setTechnologies"]:
+                    self.setTimeSteps   = self.element.dataInput.extractTimeSteps(self.element.name,"operation")
+                else:
+                    self.setTimeSteps   = self.element.dataInput.extractTimeSteps(self.element.name)
             else:
-                self.setTimeSteps   = self.element.dataInput.extractTimeSteps(self.element.name)
+                self.setTimeSteps       = self.system["setTimeSteps"]
             self.timeStepsDuration  = EnergySystem.calculateTimeStepDuration(self.setTimeSteps)
             self.orderTimeSteps     = np.concatenate([[timeStep]*self.timeStepsDuration[timeStep] for timeStep in self.timeStepsDuration])
     

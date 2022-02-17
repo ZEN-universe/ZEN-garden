@@ -54,6 +54,7 @@ class ConversionTechnology(Technology):
         self.outputCarrier              = self.dataInput.extractConversionCarriers(_inputPath)["outputCarrier"]
         # extract PWA parameters
         self.PWAParameter               = self.dataInput.extractPWAData(_inputPath,self)
+        self.convertToAnnualizedCapex()
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
         

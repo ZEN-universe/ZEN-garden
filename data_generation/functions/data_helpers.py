@@ -152,17 +152,17 @@ def setManualAttributesStorage(elementName,dfAttribute):
     if elementName == "battery":
         dfAttribute.loc["efficiencyCharge"]     = 0.95
         dfAttribute.loc["efficiencyDischarge"]  = 0.95
-        dfAttribute.loc["selfDischarge"]        = 0.1/100                           # ESM_Final_Report_05-Nov-2019
-        dfAttribute.loc["maxLoad"]              = 1/2                               # 1/(typical discharge time)
-        dfAttribute.loc["maxBuiltCapacity"]     = 0.1/dfAttribute.loc["maxLoad"]    # GWh, discharge in 1/maxLoad --> E_max = P_rated/maxLoad
-        dfAttribute.loc["capexSpecificDefault"] = 3000*dfAttribute.loc["maxLoad"]   # kEUR/GWh, 
+        dfAttribute.loc["selfDischarge"]        = 0.1/100                               # ESM_Final_Report_05-Nov-2019
+        dfAttribute.loc["maxLoad"]              = 1/2                                   # 1/(typical discharge time)
+        dfAttribute.loc["maxBuiltCapacity"]     = 0.1/dfAttribute.loc["maxLoad"]        # GWh, discharge in 1/maxLoad --> E_max = P_rated/maxLoad
+        dfAttribute.loc["capexSpecificDefault"] = 3000*dfAttribute.loc["maxLoad"]*1000  # kEUR/GWh, 
     elif elementName == "pumped_hydro":
         dfAttribute.loc["efficiencyCharge"]     = 0.9
         dfAttribute.loc["efficiencyDischarge"]  = 0.9
-        dfAttribute.loc["selfDischarge"]        = 0                                 # ESM_Final_Report_05-Nov-2019
-        dfAttribute.loc["maxLoad"]              = 1/16                              # 1/(typical discharge time)
-        dfAttribute.loc["maxBuiltCapacity"]     = 3/dfAttribute.loc["maxLoad"]      # GWh, discharge in 1/maxLoad --> E_max = P_rated*maxLoad
-        dfAttribute.loc["capexSpecificDefault"] = 2700*dfAttribute.loc["maxLoad"]   # kEUR/GWh, 
+        dfAttribute.loc["selfDischarge"]        = 0                                     # ESM_Final_Report_05-Nov-2019
+        dfAttribute.loc["maxLoad"]              = 1/16                                  # 1/(typical discharge time)
+        dfAttribute.loc["maxBuiltCapacity"]     = 3/dfAttribute.loc["maxLoad"]          # GWh, discharge in 1/maxLoad --> E_max = P_rated*maxLoad
+        dfAttribute.loc["capexSpecificDefault"] = 2700*dfAttribute.loc["maxLoad"]*1000  # kEUR/GWh, 
     return dfAttribute
 
 def setManualAttributesCarriers(elementName,dfAttribute):
