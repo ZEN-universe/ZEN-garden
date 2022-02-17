@@ -11,6 +11,7 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 
 import logging
+import sys
 import pyomo.environ as pe
 import pyomo.gdp as pgdp
 import numpy as np
@@ -52,6 +53,27 @@ class Technology(Element):
                 self.maxBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
                 self.lifetime                   = self.dataInput.extractAttributeData(_inputPath,"lifetime")
 
+    def convertToAnnualizedCapex(self):
+        """ this method converts the total capex to annualized capex """
+        system              = EnergySystem.getSystem()
+        discountRate        = EnergySystem.getAnalysis()["discountRate"]
+        
+        lifetime            = self.lifetime
+        presentValueFactor  = ((1+discountRate)**lifetime - 1)/(((1+discountRate)**lifetime)*discountRate)
+        # only account for fraction of year
+        fractionOfYear      = len(system["setTimeSteps"])/system["hoursPerYear"]
+        # annualize capex
+        if self.name in system["setConversionTechnologies"]:
+            # set bounds
+            self.PWAParameter["Capex"]["bounds"]["capex"] = tuple([bound/presentValueFactor*fractionOfYear for bound in self.PWAParameter["Capex"]["bounds"]["capex"]])
+            if not self.PWAParameter["Capex"]["PWAVariables"]:
+                self.PWAParameter["Capex"]["capex"] = self.PWAParameter["Capex"]["capex"]/presentValueFactor*fractionOfYear
+            else:
+                self.PWAParameter["Capex"]["capex"] = [value/presentValueFactor*fractionOfYear for value in self.PWAParameter["Capex"]["capex"]]
+        elif self.name in system["setTransportTechnologies"]:
+            self.capexPerDistance = self.capexPerDistance/presentValueFactor*fractionOfYear
+        elif self.name in system["setStorageTechnologies"]:
+            self.capexSpecific = self.capexSpecific/presentValueFactor*fractionOfYear
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
     def constructSets(cls):
@@ -425,8 +447,7 @@ def constraintOpexTotalRule(model):
     """ sums over all technologies to calculate total opex """
     return(model.opexTotal ==
         sum(
-            model.opex[tech, loc, time]*
-            model.timeStepsOperationDuration[tech,time]
+            model.opex[tech, loc, time]*model.timeStepsOperationDuration[tech,time]
             for tech,loc,time in Element.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"])
         )
     )

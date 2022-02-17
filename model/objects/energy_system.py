@@ -71,6 +71,8 @@ class EnergySystem:
         self.setStorageTechnologies     = system["setStorageTechnologies"]
         # carbon emissions limit
         self.carbonEmissionsLimit       = self.dataInput.extractAttributeData(self.paths["setScenarios"]["folder"],"carbonEmissionsLimit")
+        _fractionOfYear                 = len(system["setTimeSteps"])/system["hoursPerYear"]
+        self.carbonEmissionsLimit       = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
         # extract number of time steps for elements
         self.typesTimeSteps             = ["invest","operation"]
         self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()

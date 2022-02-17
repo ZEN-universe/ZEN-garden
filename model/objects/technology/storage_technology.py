@@ -53,6 +53,7 @@ class StorageTechnology(Technology):
         self.efficiencyDischarge            = self.dataInput.extractInputData(_inputPath,"efficiencyDischarge",indexSets=["setNodes"])
         self.selfDischarge                  = self.dataInput.extractInputData(_inputPath,"selfDischarge",indexSets=["setNodes"]) 
         self.capexSpecific                  = self.dataInput.extractInputData(_inputPath,"capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+        self.convertToAnnualizedCapex()
         # apply time series aggregation
         TimeSeriesAggregation(self,_inputPath)
 

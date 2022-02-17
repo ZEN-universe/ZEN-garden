@@ -72,6 +72,7 @@ system['setTransportTechnologies'] = ['pipeline_hydrogen', 'truck_hydrogen_gas',
 system['setScenarios'] = 'a'
 # set of time steps
 system['setTimeSteps'] = [1,2,3]
+system["hoursPerYear"] = 8760
 # set of nodes
 system['setNodes'] = ['Berlin', 'Zurich', 'Rome']
 # folder output
