@@ -88,7 +88,7 @@ class Element:
         _classElements = cls.getAllElements()
         dictOfAttributes = {}
         for _element in _classElements:
-            assert hasattr(_element,attributeName),f"Element {_element} does not have attribute {attributeName}"
+            assert hasattr(_element,attributeName),f"Element {_element.name} does not have attribute {attributeName}"
             _attribute = getattr(_element,attributeName)
             if isinstance(_attribute,pd.Series):
                 _attribute = _attribute.to_dict()

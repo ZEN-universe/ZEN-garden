@@ -38,23 +38,21 @@ class TransportTechnology(Technology):
         paths               = EnergySystem.getPaths()   
         setBaseTimeSteps    = EnergySystem.getEnergySystem().setBaseTimeSteps
         # set attributes for parameters of parent class <Technology>
-        _inputPath          = paths["setTransportTechnologies"][self.name]["folder"]
+        self.inputPath                     = paths["setTransportTechnologies"][self.name]["folder"]
         # add all raw time series to dict
         self.rawTimeSeries                  = {}
-        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=setBaseTimeSteps,transportTechnology=True)
-        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=setBaseTimeSteps,transportTechnology=True)
-        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= setBaseTimeSteps,transportTechnology=True)
+        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(self.inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=setBaseTimeSteps,transportTechnology=True)
+        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(self.inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=setBaseTimeSteps,transportTechnology=True)
+        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(self.inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= setBaseTimeSteps,transportTechnology=True)
         # non-time series input data
-        self.capacityLimit                  = self.dataInput.extractInputData(_inputPath,"capacityLimit",indexSets=["setEdges"],transportTechnology=True)
-        self.carbonIntensityTechnology      = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setEdges"])
+        self.capacityLimit                  = self.dataInput.extractInputData(self.inputPath,"capacityLimit",indexSets=["setEdges"],transportTechnology=True)
+        self.carbonIntensityTechnology      = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",indexSets=["setEdges"])
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
-        self.distance                       = self.dataInput.extractInputData(_inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
-        self.capexPerDistance               = self.dataInput.extractInputData(_inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
-        self.lossFlow                       = self.dataInput.extractAttributeData(_inputPath,"lossFlow")
+        self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
+        self.capexPerDistance               = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+        self.lossFlow                       = self.dataInput.extractAttributeData(self.inputPath,"lossFlow")
         self.convertToAnnualizedCapex()
-        # apply time series aggregation
-        TimeSeriesAggregation(self,_inputPath)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod

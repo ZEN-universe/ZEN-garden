@@ -13,7 +13,7 @@ import logging
 import config
 import sys
 from preprocess.prepare import Prepare
-from model.model import Model
+from model.optimization_setup import OptimizationSetup
 from model.metaheuristic.algorithm import Metaheuristic
 from postprocess.results import Postprocess
 
@@ -37,18 +37,18 @@ prepare = Prepare(config)
 # check if all data inputs exist and remove non-existent
 system = prepare.checkExistingInputData()
 # FORMULATE THE OPTIMIZATION PROBLEM
-model = Model(config.analysis, system, prepare.paths, prepare.solver)
+optimizationSetup = OptimizationSetup(config.analysis, system, prepare.paths, prepare.solver)
 
 # SOLVE THE OPTIMIZATION PROBLEM
 if config.solver['model'] == 'MILP':
     # BASED ON MILP SOLVER
-    model.solve(config.solver)
+    optimizationSetup.solve(config.solver)
 
 elif config.solver['model'] == 'MINLP':
     # BASED ON HYBRID SOLVER - MASTER METAHEURISTIC AND SLAVE MILP SOLVER
-    master = Metaheuristic(model, prepare.nlpDict)
+    master = Metaheuristic(optimizationSetup, prepare.nlpDict)
     master.solveMINLP(config.solver)
 
 # EVALUATE RESULTS
-evaluation = Postprocess(model, modelName = 'test')
+evaluation = Postprocess(optimizationSetup, modelName = 'test')
 # print(evaluation)
