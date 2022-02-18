@@ -16,7 +16,6 @@ import pandas as pd
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 from model.objects.technology.technology import Technology
-from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class Carrier(Element):
     # empty list of elements
@@ -39,20 +38,17 @@ class Carrier(Element):
         paths                           = EnergySystem.getPaths()   
         setBaseTimeSteps                = EnergySystem.getEnergySystem().setBaseTimeSteps
         # set attributes of carrier
-        _inputPath                      = paths["setCarriers"][self.name]["folder"]
+        self.inputPath                  = paths["setCarriers"][self.name]["folder"]
         # raw import
         self.rawTimeSeries                              = {}
-        self.rawTimeSeries["demandCarrier"]             = self.dataInput.extractInputData(_inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["availabilityCarrierImport"] = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["availabilityCarrierExport"] = self.dataInput.extractInputData(_inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData(_inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["demandCarrier"]             = self.dataInput.extractInputData(self.inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["availabilityCarrierImport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["availabilityCarrierExport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeSteps)
         # non-time series input data
-        self.carbonIntensityCarrier                     = self.dataInput.extractInputData(_inputPath,"carbonIntensity",["setNodes"])
-        # apply time series aggregation
-        timeSeriesAggregationObject = TimeSeriesAggregation(self,_inputPath)
-        # calculate time steps of carrier
-        timeSeriesAggregationObject.calculateTimeStepsCarrier()
+        self.carbonIntensityCarrier                     = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",["setNodes"])
+        
     
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod

@@ -13,19 +13,20 @@ import os
 import logging
 from sympy import true
 import tsam.timeseriesaggregation as tsam
+from model.objects.carrier import Carrier
 
 from model.objects.energy_system import EnergySystem
 from model.objects.element import Element
 
 class TimeSeriesAggregation():
-    def __init__(self,element=None,inputPath=None,TSAOfSingleElement = True):
+    def __init__(self,element=None,TSAOfSingleElement = True):
         self.setBaseTimeSteps   = EnergySystem.getEnergySystem().setBaseTimeSteps
         self.system             = EnergySystem.getSystem()
         self.analysis           = EnergySystem.getAnalysis()
         self.headerSetTimeSteps = self.analysis['headerDataInputs']["setTimeSteps"][0]
         if TSAOfSingleElement:
             self.element            = element
-            self.inputPath          = inputPath
+            self.inputPath          = element.inputPath
             self.dataInput          = element.dataInput
             # set aggregation object
             EnergySystem.setAggregationObjects(self.element,self)
@@ -36,7 +37,7 @@ class TimeSeriesAggregation():
             # if raw nonconstant time series exist 
             if not self.dfTimeSeriesRaw.empty:
                 # use multi time grid approach
-                if self.system["multiGridTimeIndex"]:
+                if self.system["nonAlignedTimeIndex"]:
                     # conduct time series aggregation
                     # substitute column names
                     self.substituteColumnNames(direction="flatten")
@@ -47,7 +48,7 @@ class TimeSeriesAggregation():
                     # set aggregated time series
                     self.setAggregatedTimeSeries()
                     # set aggregator indicators
-                    self.setAggregationIndicators()
+                    TimeSeriesAggregation.setAggregationIndicators()
                 else:
                     EnergySystem.setTimeSeriesRaw(self)
         # time series aggregation of entire input data set
@@ -67,7 +68,6 @@ class TimeSeriesAggregation():
                 # set aggregated time series
                 self.setAggregatedTimeSeriesOfAllElements()
                 
-
     def getNumberOfTimeSteps(self):
         """ this method extracts number of time steps for time series aggregation """
         if self.element.name in self.system["setCarriers"]: 
@@ -80,25 +80,16 @@ class TimeSeriesAggregation():
 
     def selectTimeSeries(self):
         """ this method selects the time series of the input element and creates a common dataframe"""
-        dictRawtimeSeries   = {}
-        rawTimeSeries       = getattr(self.element,"rawTimeSeries")
-        for timeSeries in rawTimeSeries:
-            rawTimeSeries[timeSeries].name  = timeSeries
-            _indexNames                     = list(rawTimeSeries[timeSeries].index.names)
-            _indexNames.remove(self.headerSetTimeSteps)
-            dfTimeSeries                    = rawTimeSeries[timeSeries].unstack(level = _indexNames)
-            # select time series that are not constant (rows have more than 1 unique entries)
-            dfTimeSeriesNonConstant         = dfTimeSeries[dfTimeSeries.columns[dfTimeSeries.apply(lambda column: len(np.unique(column))!=1)]]
-            dictRawtimeSeries[timeSeries]   = dfTimeSeriesNonConstant
-        self.dfTimeSeriesRaw = pd.concat(dictRawtimeSeries.values(),axis=1,keys=dictRawtimeSeries.keys())
+        self.dfTimeSeriesRaw = TimeSeriesAggregation.extractRawTimeSeries(self.element,self.headerSetTimeSteps)
 
     def selectTimeSeriesOfAllElements(self):
-        """ this method retrieves the raw time series for the aggregation of all input data sets. Only in single time grid approach! """
+        """ this method retrieves the raw time series for the aggregation of all input data sets. Only in aligned time grid approach! """
+        _dictRawTimeSeriesElements              = {}
         _dictRawTimeSeries              = {}
         for element in Element.getAllElements():
-            _rawTimeSeries = EnergySystem.getTimeSeriesRaw(element)
-            if _rawTimeSeries is not None:
-                _dictRawTimeSeries[element.name] = _rawTimeSeries
+            dfTimeSeriesRaw = TimeSeriesAggregation.extractRawTimeSeries(element,self.headerSetTimeSteps)
+            if not dfTimeSeriesRaw.empty:
+                _dictRawTimeSeries[element.name] = dfTimeSeriesRaw
         self.dfTimeSeriesRaw = pd.concat(_dictRawTimeSeries.values(),axis=1,keys=_dictRawTimeSeries.keys())
 
     def substituteColumnNames(self,direction = "flatten"):
@@ -133,7 +124,7 @@ class TimeSeriesAggregation():
         # if full time series, use input values 
         else:
             self.typicalPeriods     = self.dfTimeSeriesRaw
-            if self.system["multiGridTimeIndex"]:
+            if self.system["nonAlignedTimeIndex"]:
                 if self.element.name in self.system["setTechnologies"]:
                     self.setTimeSteps   = self.element.dataInput.extractTimeSteps(self.element.name,"operation")
                 else:
@@ -223,7 +214,7 @@ class TimeSeriesAggregation():
                 dfAggregatedTimeSeries.index                    = dfAggregatedTimeSeries.index.reorder_levels(_indexNames + [self.headerSetTimeSteps])
                 setattr(element,timeSeries,dfAggregatedTimeSeries)   
                 # set aggregator indicators
-                self.setAggregationIndicators(manualElement=element)
+                TimeSeriesAggregation.setAggregationIndicators(element)
 
     def manuallyAggregateElement(self):
         """ this method manually aggregates elements which are not aggregated by the automatic aggregation method above """
@@ -302,52 +293,95 @@ class TimeSeriesAggregation():
                 raise NotImplementedError("Manual aggregation of technologies where no related carrier is aggregated is not yet implemented!")
 
             # set aggregator indicators
-            self.setAggregationIndicators()
+            TimeSeriesAggregation.setAggregationIndicators()
         # carrier that is not yet aggregated
         else:
             # conduct calculation of carrier time steps as before
-            self.calculateTimeStepsCarrier()
+            TimeSeriesAggregation.calculateTimeStepsEnergyBalance(self.element)
 
-    def calculateTimeStepsCarrier(self):
+    @classmethod
+    def extractRawTimeSeries(cls,element,headerSetTimeSteps):
+        """ extract the time series from an element and concatenates the non-constant time series to a pd.DataFrame
+        :param element: element of the optimization 
+        :param headerSetTimeSteps: name of setTimeSteps
+        :return dfTimeSeriesRaw: pd.DataFrame with non-constant time series"""
+        _dictRawTimeSeries   = {}
+        rawTimeSeries       = getattr(element,"rawTimeSeries")
+        for timeSeries in rawTimeSeries:
+            rawTimeSeries[timeSeries].name  = timeSeries
+            _indexNames                     = list(rawTimeSeries[timeSeries].index.names)
+            _indexNames.remove(headerSetTimeSteps)
+            dfTimeSeries                    = rawTimeSeries[timeSeries].unstack(level = _indexNames)
+            # select time series that are not constant (rows have more than 1 unique entries)
+            dfTimeSeriesNonConstant         = dfTimeSeries[dfTimeSeries.columns[dfTimeSeries.apply(lambda column: len(np.unique(column))!=1)]]
+            _dictRawTimeSeries[timeSeries]   = dfTimeSeriesNonConstant
+        dfTimeSeriesRaw = pd.concat(_dictRawTimeSeries.values(),axis=1,keys=_dictRawTimeSeries.keys())
+        return dfTimeSeriesRaw
+
+    @classmethod
+    def calculateTimeStepsEnergyBalance(cls,element):
         """ calculates the necessary time steps of carrier. Carrier must always have highest resolution of all connected technologies. 
-        Can have even higher resolution"""
-        setTimeHeaders          = EnergySystem.getAnalysis()["headerDataInputs"]["setTimeSteps"]
+        Can have higher resolution
+        :param element: element of the optimization """
         # if carrier is already aggregated
-        if self.element.isAggregated():
-            orderTimeStepsRaw    = self.element.orderTimeSteps
+        if element.isAggregated():
+            orderTimeStepsRaw    = element.orderTimeSteps
             # if orderTimeStepsRaw not None
             listOrderTimeSteps  = [orderTimeStepsRaw]
         else:
             listOrderTimeSteps  = []
         # get technologies of carrier
-        technologiesCarrier     = EnergySystem.getTechnologyOfCarrier(self.element.name)
+        technologiesCarrier     = EnergySystem.getTechnologyOfCarrier(element.name)
         # if any technologies of carriers are aggregated 
         if technologiesCarrier: 
             # iterate through technologies and extend listOrderTimeSteps
             for technology in technologiesCarrier:
                 listOrderTimeSteps.append(Element.getAttributeOfSpecificElement(technology,"orderTimeSteps"))
             # get combined time steps, duration and order
-            setTimeStepsCarrier, timeStepsCarrierDuration, orderTimeStepsCarrier = self.uniqueTimeStepsInMultigrid(listOrderTimeSteps)
+            setTimeStepsCarrier, timeStepsCarrierDuration, orderTimeStepsCarrier = TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listOrderTimeSteps)
             # set attributes
-            self.element.setTimeStepsEnergyBalance      = setTimeStepsCarrier
-            self.element.timeStepsEnergyBalanceDuration = timeStepsCarrierDuration
-            self.element.orderTimeStepsEnergyBalance    = orderTimeStepsCarrier
+            element.setTimeStepsEnergyBalance      = setTimeStepsCarrier
+            element.timeStepsEnergyBalanceDuration = timeStepsCarrierDuration
+            element.orderTimeStepsEnergyBalance    = orderTimeStepsCarrier
             # if carrier previously not aggregated
-            if not self.element.isAggregated():
+            if not element.isAggregated():
                 # iterate through raw time series data and conduct "manual" time series aggregation
-                for timeSeries in self.element.rawTimeSeries:
-                    dfTimeSeries                        = self.element.rawTimeSeries[timeSeries].loc[(slice(None),setTimeStepsCarrier)]
+                for timeSeries in element.rawTimeSeries:
+                    dfTimeSeries                        = element.rawTimeSeries[timeSeries].loc[(slice(None),setTimeStepsCarrier)]
                     # save attribute
-                    setattr(self.element,timeSeries,dfTimeSeries)
-                self.element.setTimeStepsCarrier        = setTimeStepsCarrier
-                self.element.timeStepsCarrierDuration   = timeStepsCarrierDuration
-                self.element.orderTimeSteps             = orderTimeStepsCarrier
+                    setattr(element,timeSeries,dfTimeSeries)
+                element.setTimeStepsCarrier        = setTimeStepsCarrier
+                element.timeStepsCarrierDuration   = timeStepsCarrierDuration
+                element.orderTimeSteps             = orderTimeStepsCarrier
             # set aggregation indicator
-            self.setAggregationIndicators(setEnergyBalanceIndicator=True)
+            TimeSeriesAggregation.setAggregationIndicators(element,setEnergyBalanceIndicator=True)
 
-    def uniqueTimeStepsInMultigrid(self,listOrderTimeSteps):
+    @classmethod
+    def setAggregationIndicators(cls,element,setEnergyBalanceIndicator = False):
+        """ this method sets the indicators that element is aggregated """
+        system = EnergySystem.getSystem()
+        # add order of time steps to Energy System
+        EnergySystem.setOrderTimeSteps(element.name,element.orderTimeSteps,timeStepType="operation") 
+        # if energy balance indicator is set as well, save order of time steps in energy balance as well
+        if setEnergyBalanceIndicator:
+            EnergySystem.setOrderTimeSteps(element.name+"EnergyBalance",element.orderTimeStepsEnergyBalance,timeStepType="operation") 
+        # if technology, add to technologyOfCarrier list
+        if element.name in system["setTechnologies"]:
+            if element.name in system["setConversionTechnologies"]:
+                EnergySystem.setTechnologyOfCarrier(element.name,element.inputCarrier + element.outputCarrier)
+            else:
+                EnergySystem.setTechnologyOfCarrier(element.name,element.referenceCarrier)
+                if element.name in system["setStorageTechnologies"]:
+                    # calculate time steps of storage levels
+                    element.calculateTimeStepsStorageLevel()
+        # set the aggregation status of element to true
+        element.setAggregated()
+    
+    @classmethod
+    def uniqueTimeStepsInMultigrid(cls,listOrderTimeSteps):
         """ this method returns the unique time steps of multiple time grids """
-        orderTimeSteps              = np.zeros(np.size(self.system["setTimeSteps"])).astype(int)
+        system                      = EnergySystem.getSystem()
+        orderTimeSteps              = np.zeros(np.size(system["setTimeSteps"])).astype(int)
         combinedOrderTimeSteps      = np.vstack(listOrderTimeSteps)
         uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedOrderTimeSteps,axis=1,return_counts=True)
         setTimeSteps                = []
@@ -361,25 +395,37 @@ class TimeSeriesAggregation():
             orderTimeSteps[idxInInput]          = idxUniqueTimeStep
         return setTimeSteps, timeStepsDuration, orderTimeSteps
 
-    def setAggregationIndicators(self,setEnergyBalanceIndicator = False,manualElement = None):
-        """ this method sets the indicators that element is aggregated """
-        if manualElement:
-            element = manualElement
+    @classmethod
+    def conductFurtherTimeSeriesAggregation(cls):
+        """ this method conducts further time series aggregations, based on the selection of the time grid structure:
+        non-aligned time index: if nonAlignedTimeIndex == True, each element runs on an individual time index, which are not necessarily aligned among the elements. 
+            Here, we define alignment as that there exists an element which has a time grid, on which every other element runs as well.
+            nonAlignedTimeIndex = True is necessarily a multiGridTimeIndex
+        multi-grid time index:  if multiGridTimeIndex == True, each element runs on an individual time index, not necessarily aligned or not
+        single-grid time index: if multiGridTimeIndex == False, all elements share the same time index, necessarily aligned """
+        system = EnergySystem.getSystem()
+        # if non-aligned time index
+        if system["nonAlignedTimeIndex"]:
+            # TODO optimize structure
+            # conduct time series aggregation for the first time (check if each element can be automatically aggregated)
+            for element in Element.getAllElements():
+                # apply time series aggregation
+                TimeSeriesAggregation(element)
+                if element.name in system["setCarriers"]:
+                    # calculate time steps of energy balance
+                    TimeSeriesAggregation.calculateTimeStepsEnergyBalance(element)
+            # conduct time series aggregation for elements that have not yet been aggregated
+            for element in Element.getAllElements():
+                if not element.isAggregated():
+                    EnergySystem.getAggregationObjects(element).manuallyAggregateElement()
+        # if aligned time index
         else:
-            element = self.element
-        # add order of time steps to Energy System
-        EnergySystem.setOrderTimeSteps(element.name,element.orderTimeSteps,timeStepType="operation") 
-        # if energy balance indicator is set as well, save order of time steps in energy balance as well
-        if setEnergyBalanceIndicator:
-            EnergySystem.setOrderTimeSteps(element.name+"EnergyBalance",element.orderTimeStepsEnergyBalance,timeStepType="operation") 
-        # if technology, add to technologyOfCarrier list
-        if element.name in self.system["setTechnologies"]:
-            if element.name in self.system["setConversionTechnologies"]:
-                EnergySystem.setTechnologyOfCarrier(element.name,element.inputCarrier + element.outputCarrier)
-            else:
-                EnergySystem.setTechnologyOfCarrier(element.name,element.referenceCarrier)
-                if element.name in self.system["setStorageTechnologies"]:
-                    # calculate time steps of storage levels
-                    element.calculateTimeStepsStorageLevel(EnergySystem.getPaths()["setStorageTechnologies"][element.name]["folder"])
-        # set the aggregation status of element to true
-        element.setAggregated()
+            TimeSeriesAggregation(TSAOfSingleElement=False)
+            for element in Element.getAllElements():
+                # if multi-grid time index 
+                if system["multiGridTimeIndex"]:
+                    pass
+                # if single-grid time index
+                elif element.name in system["setCarriers"]:
+                    TimeSeriesAggregation.calculateTimeStepsEnergyBalance(element)
+        a=1

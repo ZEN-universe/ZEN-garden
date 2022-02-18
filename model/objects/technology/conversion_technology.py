@@ -39,27 +39,24 @@ class ConversionTechnology(Technology):
         paths               = EnergySystem.getPaths()   
         setBaseTimeSteps    = EnergySystem.getEnergySystem().setBaseTimeSteps
         #  set attributes for parameters of parent class <Technology>
-        _inputPath          = paths["setConversionTechnologies"][self.name]["folder"]
+        self.inputPath      = paths["setConversionTechnologies"][self.name]["folder"]
         # add all raw time series to dict
         self.rawTimeSeries                  = {}
-        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(_inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(_inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(_inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(self.inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(self.inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(self.inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
         # non-time series input data
-        self.capacityLimit              = self.dataInput.extractInputData(_inputPath,"capacityLimit",["setNodes"])
-        self.carbonIntensityTechnology  = self.dataInput.extractInputData(_inputPath,"carbonIntensity",indexSets=["setNodes"])
+        self.capacityLimit              = self.dataInput.extractInputData(self.inputPath,"capacityLimit",["setNodes"])
+        self.carbonIntensityTechnology  = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",indexSets=["setNodes"])
         # set attributes for parameters of child class <ConversionTechnology>
         # define input and output carrier
-        self.inputCarrier               = self.dataInput.extractConversionCarriers(_inputPath)["inputCarrier"]
-        self.outputCarrier              = self.dataInput.extractConversionCarriers(_inputPath)["outputCarrier"]
+        self.inputCarrier               = self.dataInput.extractConversionCarriers(self.inputPath)["inputCarrier"]
+        self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
         # extract PWA parameters
-        self.PWAParameter               = self.dataInput.extractPWAData(_inputPath,self)
+        self.PWAParameter               = self.dataInput.extractPWAData(self.inputPath,self)
         self.convertToAnnualizedCapex()
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
-        
-        # apply time series aggregation
-        TimeSeriesAggregation(self,_inputPath)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
