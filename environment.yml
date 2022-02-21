@@ -1,0 +1,10 @@
+name: eco_platform
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - pandas
+  - pyomo=6.2
+  - python=3.8.8
+  - scipy
