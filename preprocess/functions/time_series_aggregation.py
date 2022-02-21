@@ -9,7 +9,7 @@ Description:  Functions to apply time series aggregation to time series
 import numpy as np
 from scipy.stats import linregress
 import pandas as pd
-import os
+import copy
 import logging
 from sympy import true
 import tsam.timeseriesaggregation as tsam
@@ -19,11 +19,17 @@ from model.objects.energy_system import EnergySystem
 from model.objects.element import Element
 
 class TimeSeriesAggregation():
-    def __init__(self,element=None,TSAOfSingleElement = True):
-        self.setBaseTimeSteps   = EnergySystem.getEnergySystem().setBaseTimeSteps
+    def __init__(self,element=None,TSAOfSingleElement = True, setBaseTimeSteps = None):
+        # self.setBaseTimeSteps   = EnergySystem.getEnergySystem().setBaseTimeSteps
         self.system             = EnergySystem.getSystem()
         self.analysis           = EnergySystem.getAnalysis()
         self.headerSetTimeSteps = self.analysis['headerDataInputs']["setTimeSteps"][0]
+        # if setTimeSteps as input (because already aggregated), use this as base time step, otherwise self.setBaseTimeSteps
+        if setBaseTimeSteps is not None:
+            self.setBaseTimeSteps = setBaseTimeSteps
+        else:
+            self.setBaseTimeSteps = self.system["setTimeSteps"]
+        # if each element is aggregated individually
         if TSAOfSingleElement:
             self.element            = element
             self.inputPath          = element.inputPath
@@ -36,24 +42,24 @@ class TimeSeriesAggregation():
             self.selectTimeSeries()
             # if raw nonconstant time series exist 
             if not self.dfTimeSeriesRaw.empty:
-                # use multi time grid approach
-                if self.system["nonAlignedTimeIndex"]:
-                    # conduct time series aggregation
-                    # substitute column names
-                    self.substituteColumnNames(direction="flatten")
-                    # run time series aggregation to create typical periods
-                    self.runTimeSeriesAggregation()
-                    # resubstitute column names
-                    self.substituteColumnNames(direction="raise")
-                    # set aggregated time series
-                    self.setAggregatedTimeSeries()
-                    # set aggregator indicators
-                    TimeSeriesAggregation.setAggregationIndicators()
-                else:
-                    EnergySystem.setTimeSeriesRaw(self)
+                # # use multi time grid approach
+                # if self.system["nonAlignedTimeIndex"]:
+                # conduct time series aggregation
+                # substitute column names
+                self.substituteColumnNames(direction="flatten")
+                # run time series aggregation to create typical periods
+                self.runTimeSeriesAggregation()
+                # resubstitute column names
+                self.substituteColumnNames(direction="raise")
+                # set aggregated time series
+                self.setAggregatedTimeSeries()
+                # set aggregator indicators
+                TimeSeriesAggregation.setAggregationIndicators(self.element)
+                # else:
+                #     EnergySystem.setTimeSeriesRaw(self)
         # time series aggregation of entire input data set
         else:
-            self.numberTypicalPeriods       = min(self.system["numberTimeStepsDefault"],np.size(self.system["setTimeSteps"]))
+            self.numberTypicalPeriods       = min(self.system["numberTimeStepsDefault"],np.size(self.setBaseTimeSteps))
             self.numberTimeStepsPerPeriod   = 1
             # select time series
             self.selectTimeSeriesOfAllElements()
@@ -84,7 +90,6 @@ class TimeSeriesAggregation():
 
     def selectTimeSeriesOfAllElements(self):
         """ this method retrieves the raw time series for the aggregation of all input data sets. Only in aligned time grid approach! """
-        _dictRawTimeSeriesElements              = {}
         _dictRawTimeSeries              = {}
         for element in Element.getAllElements():
             dfTimeSeriesRaw = TimeSeriesAggregation.extractRawTimeSeries(element,self.headerSetTimeSteps)
@@ -105,7 +110,7 @@ class TimeSeriesAggregation():
     def runTimeSeriesAggregation(self):
         """ this method runs the time series aggregation """
         # if not full time series
-        if self.numberTypicalPeriods*self.numberTimeStepsPerPeriod != np.size(self.system["setTimeSteps"]):
+        if self.numberTypicalPeriods*self.numberTimeStepsPerPeriod < np.size(self.setBaseTimeSteps):
             # create aggregation object
             self.aggregation = tsam.TimeSeriesAggregation(
                 timeSeries          = self.dfTimeSeriesRaw,
@@ -130,8 +135,8 @@ class TimeSeriesAggregation():
                 else:
                     self.setTimeSteps   = self.element.dataInput.extractTimeSteps(self.element.name)
             else:
-                self.setTimeSteps       = self.system["setTimeSteps"]
-            self.timeStepsDuration  = EnergySystem.calculateTimeStepDuration(self.setTimeSteps)
+                self.setTimeSteps       = self.setBaseTimeSteps
+            self.timeStepsDuration  = EnergySystem.calculateTimeStepDuration(self.setTimeSteps,self.setBaseTimeSteps)
             self.orderTimeSteps     = np.concatenate([[timeStep]*self.timeStepsDuration[timeStep] for timeStep in self.timeStepsDuration])
     
     def setAggregatedTimeSeries(self):
@@ -175,7 +180,6 @@ class TimeSeriesAggregation():
 
     def setAggregatedTimeSeriesOfAllElements(self):
         """ this method sets the aggregated time series and sets the necessary attributes after the aggregation to a single time grid """
-
         for element in Element.getAllElements():
             rawTimeSeries = getattr(element,"rawTimeSeries")
             # setTimeSteps and duration
@@ -213,8 +217,9 @@ class TimeSeriesAggregation():
                 dfAggregatedTimeSeries                          = dfAggregatedTimeSeries.stack(_indexNames)
                 dfAggregatedTimeSeries.index                    = dfAggregatedTimeSeries.index.reorder_levels(_indexNames + [self.headerSetTimeSteps])
                 setattr(element,timeSeries,dfAggregatedTimeSeries)   
-                # set aggregator indicators
-                TimeSeriesAggregation.setAggregationIndicators(element)
+                # set aggregator indicators, if single grid
+                if not self.system["multiGridTimeIndex"]:
+                    TimeSeriesAggregation.setAggregationIndicators(element)
 
     def manuallyAggregateElement(self):
         """ this method manually aggregates elements which are not aggregated by the automatic aggregation method above """
@@ -258,7 +263,7 @@ class TimeSeriesAggregation():
                     # initialize attributes
                     setClusters         = []
                     clusterDuration     = {}
-                    orderTimeSteps      = np.zeros(np.size(self.system["setTimeSteps"])).astype(int)
+                    orderTimeSteps      = np.zeros(np.size(self.setBaseTimeSteps)).astype(int)
                     for cluster in range(0,numberClusters):
                         # append cluster to attribute
                         setClusters.append(cluster)
@@ -293,7 +298,7 @@ class TimeSeriesAggregation():
                 raise NotImplementedError("Manual aggregation of technologies where no related carrier is aggregated is not yet implemented!")
 
             # set aggregator indicators
-            TimeSeriesAggregation.setAggregationIndicators()
+            TimeSeriesAggregation.setAggregationIndicators(self.element)
         # carrier that is not yet aggregated
         else:
             # conduct calculation of carrier time steps as before
@@ -381,7 +386,7 @@ class TimeSeriesAggregation():
     def uniqueTimeStepsInMultigrid(cls,listOrderTimeSteps):
         """ this method returns the unique time steps of multiple time grids """
         system                      = EnergySystem.getSystem()
-        orderTimeSteps              = np.zeros(np.size(system["setTimeSteps"])).astype(int)
+        orderTimeSteps              = np.zeros(np.size(listOrderTimeSteps,axis=1)).astype(int)
         combinedOrderTimeSteps      = np.vstack(listOrderTimeSteps)
         uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedOrderTimeSteps,axis=1,return_counts=True)
         setTimeSteps                = []
@@ -396,36 +401,104 @@ class TimeSeriesAggregation():
         return setTimeSteps, timeStepsDuration, orderTimeSteps
 
     @classmethod
-    def conductFurtherTimeSeriesAggregation(cls):
-        """ this method conducts further time series aggregations, based on the selection of the time grid structure:
+    def overwriteRawTimeSeries(cls,element):
+        """ this method overwrites the raw time series to the already once aggregated time series """
+        for timeSeries in element.rawTimeSeries:
+            element.rawTimeSeries[timeSeries] = getattr(element,timeSeries)
+
+    @classmethod
+    def iterativelyAggregateElements(cls,setBaseTimeSteps=None):
+        """ this method iterates through the elements and aggregates the time indices based on their raw time series data. 
+        If already once aggregated, overwrite raw time series data with aggregated data """
+        system = EnergySystem.getSystem()
+        # TODO optimize structure
+        # conduct time series aggregation for the first time (check if each element can be automatically aggregated)
+        for element in Element.getAllElements():
+            # if aligned time index --> already once aggregated, thus overwritten
+            if not system["nonAlignedTimeIndex"]:
+                # overwrite raw time series
+                TimeSeriesAggregation.overwriteRawTimeSeries(element)
+            # apply time series aggregation
+            TimeSeriesAggregation(element,setBaseTimeSteps=setBaseTimeSteps)
+            if element.name in system["setCarriers"]:
+                # calculate time steps of energy balance
+                TimeSeriesAggregation.calculateTimeStepsEnergyBalance(element)
+        # conduct time series aggregation for elements that have not yet been aggregated
+        for element in Element.getAllElements():
+            if not element.isAggregated():
+                EnergySystem.getAggregationObjects(element).manuallyAggregateElement()
+
+    @classmethod
+    def adaptDurationOrderTimeSteps(cls,aggregationObjectEnergySystem):
+        """ this method subsitutes the duration and the order of each element to match the previous aggregation of all elements 
+        :param aggregationObjectEnergySystem: aggregation object of previous aggregation """
+        system = EnergySystem.getSystem()
+        for element in Element.getAllElements():
+            baseTimeStepsOrder      = copy.deepcopy(aggregationObjectEnergySystem.orderTimeSteps)
+            if element.name in system["setTechnologies"]:
+                setTimeSteps        = element.setTimeStepsOperation
+                timeStepsDuration   = element.timeStepsOperationDuration
+                # iterate through time steps and extract number of base time steps
+                for timeStep in setTimeSteps:
+                    correspondingBaseTimeSteps                      = np.argwhere(aggregationObjectEnergySystem.orderTimeSteps == np.argwhere(element.orderTimeSteps==timeStep))[:,1]
+                    timeStepsDuration[timeStep]                     = len(correspondingBaseTimeSteps)
+                    baseTimeStepsOrder[correspondingBaseTimeSteps]  = timeStep
+                # overwrite element attributes
+                element.orderTimeSteps  = baseTimeStepsOrder
+                cls.setAggregationIndicators(element)
+            else:
+                setTimeSteps            = element.setTimeStepsCarrier
+                timeStepsDuration       = element.timeStepsCarrierDuration
+                # iterate through time steps and extract number of base time steps
+                for timeStep in setTimeSteps:
+                    correspondingBaseTimeSteps                      = np.argwhere(aggregationObjectEnergySystem.orderTimeSteps == np.argwhere(element.orderTimeSteps==timeStep))[:,1]
+                    timeStepsDuration[timeStep]                     = len(correspondingBaseTimeSteps)
+                    baseTimeStepsOrder[correspondingBaseTimeSteps]  = timeStep
+                # overwrite element attributes
+                element.orderTimeSteps = baseTimeStepsOrder
+                # do the same for the energy balance index
+                if element.setTimeStepsEnergyBalance == element.setTimeStepsCarrier:
+                    element.timeStepsEnergyBalanceDuration  = timeStepsDuration
+                    element.orderTimeStepsEnergyBalance     = baseTimeStepsOrder
+                else:
+                    setTimeSteps        = element.setTimeStepsEnergyBalance
+                    timeStepsDuration   = element.timeStepsEnergyBalanceDuration
+                    # iterate through time steps and extract number of base time steps
+                    for timeStep in setTimeSteps:
+                        correspondingBaseTimeSteps                      = np.argwhere(aggregationObjectEnergySystem.orderTimeSteps == np.argwhere(element.orderTimeSteps==timeStep))[:,1]
+                        timeStepsDuration[timeStep]                     = len(correspondingBaseTimeSteps)
+                        baseTimeStepsOrder[correspondingBaseTimeSteps]  = timeStep
+                    # overwrite element attributes
+                    element.orderTimeStepsEnergyBalance     = baseTimeStepsOrder
+                cls.setAggregationIndicators(element,setEnergyBalanceIndicator=True)
+
+    @classmethod
+    def conductTimeSeriesAggregation(cls):
+        """ this method conducts time series aggregations, based on the selection of the time grid structure:
         non-aligned time index: if nonAlignedTimeIndex == True, each element runs on an individual time index, which are not necessarily aligned among the elements. 
             Here, we define alignment as that there exists an element which has a time grid, on which every other element runs as well.
             nonAlignedTimeIndex = True is necessarily a multiGridTimeIndex
         multi-grid time index:  if multiGridTimeIndex == True, each element runs on an individual time index, not necessarily aligned or not
         single-grid time index: if multiGridTimeIndex == False, all elements share the same time index, necessarily aligned """
         system = EnergySystem.getSystem()
+        if system["nonAlignedTimeIndex"]:
+            logging.info("\nConduct time series aggregation for non-aligned multi-grid time indices\n")
+        elif system["multiGridTimeIndex"]:
+            logging.info("\nConduct time series aggregation for aligned multi-grid time indices\n")
+        else:
+            logging.info("\nConduct time series aggregation for single-grid time indices\n")
         # if non-aligned time index
         if system["nonAlignedTimeIndex"]:
-            # TODO optimize structure
-            # conduct time series aggregation for the first time (check if each element can be automatically aggregated)
-            for element in Element.getAllElements():
-                # apply time series aggregation
-                TimeSeriesAggregation(element)
-                if element.name in system["setCarriers"]:
-                    # calculate time steps of energy balance
-                    TimeSeriesAggregation.calculateTimeStepsEnergyBalance(element)
-            # conduct time series aggregation for elements that have not yet been aggregated
-            for element in Element.getAllElements():
-                if not element.isAggregated():
-                    EnergySystem.getAggregationObjects(element).manuallyAggregateElement()
+            cls.iterativelyAggregateElements()
         # if aligned time index
         else:
-            TimeSeriesAggregation(TSAOfSingleElement=False)
-            for element in Element.getAllElements():
-                # if multi-grid time index 
-                if system["multiGridTimeIndex"]:
-                    pass
+            aggregationObjectEnergySystem = TimeSeriesAggregation(TSAOfSingleElement=False)
+            if system["multiGridTimeIndex"]:
+                # aggregate individual elements
+                cls.iterativelyAggregateElements(setBaseTimeSteps = aggregationObjectEnergySystem.setTimeSteps)
+                # adapt duration and order of time steps to first iteration
+                cls.adaptDurationOrderTimeSteps(aggregationObjectEnergySystem)
+            else:
+                for carrier in Carrier.getAllElements():        
                 # if single-grid time index
-                elif element.name in system["setCarriers"]:
-                    TimeSeriesAggregation.calculateTimeStepsEnergyBalance(element)
-        a=1
+                    TimeSeriesAggregation.calculateTimeStepsEnergyBalance(carrier)
