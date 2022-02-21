@@ -276,13 +276,17 @@ class EnergySystem:
         return setConnectedEdges
 
     @classmethod
-    def calculateTimeStepDuration(cls,inputTimeSteps):
+    def calculateTimeStepDuration(cls,inputTimeSteps,manualBaseTimeSteps = None):
         """ calculates (equidistant) time step durations for input time steps
         :param inputTimeSteps: input time steps
+        :param manualBaseTimeSteps: manual list of base time steps
         :return timeStepDurationDict: dict with duration of each time step """
-        baseTimeSteps = cls.getEnergySystem().setBaseTimeSteps
+        if manualBaseTimeSteps is not None:
+            baseTimeSteps = manualBaseTimeSteps
+        else:
+            baseTimeSteps = cls.getEnergySystem().setBaseTimeSteps
         durationInputTimeSteps = len(baseTimeSteps)/len(inputTimeSteps)
-        assert durationInputTimeSteps.is_integer(),f"The duration of each time step {durationInputTimeSteps} of input time steps {inputTimeSteps} does not evaluate to an integer"
+        # assert durationInputTimeSteps.is_integer(),f"The duration of each time step {durationInputTimeSteps} of input time steps {inputTimeSteps} does not evaluate to an integer"
         timeStepDurationDict = {timeStep: int(durationInputTimeSteps) for timeStep in inputTimeSteps}
         return timeStepDurationDict
 

@@ -104,9 +104,7 @@ class DataInput():
                 dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
             else:
                 dfOutput = self.extractTransportInputData(dfInput,dfOutput,indexMultiIndex)
-        # convert to dict
-        dataDict = dfOutput.to_dict()
-        return dfOutput # TODO return dict?
+        return dfOutput 
     
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
         """ fills dfOutput with data from dfInput with no new index creation (no transport technologies)

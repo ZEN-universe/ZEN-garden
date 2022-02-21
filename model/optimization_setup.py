@@ -69,8 +69,8 @@ class OptimizationSetup():
         # add carrier 
         for carrier in self.system["setCarriers"]:
             Carrier(carrier)
-        # conduct further time series aggregation
-        TimeSeriesAggregation.conductFurtherTimeSeriesAggregation()
+        # conduct  time series aggregation
+        TimeSeriesAggregation.conductTimeSeriesAggregation()
         
 
     def solve(self, solver):
