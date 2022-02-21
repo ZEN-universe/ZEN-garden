@@ -181,10 +181,10 @@ class Element:
     def createCustomSet(cls,listIndex):
         """ creates custom set for model component 
         :param listIndex: list of names of indices
+        :param elementName: name of element for which index is created
         :return customSet: custom set index """
-        model = EnergySystem.getConcreteModel()
-        # indexingSets = ["setTechnologies", "setConversionTechnologies", "setTransportTechnologies", "setCarriers","setPWACapexTechs","setNLCapexTechs","setPWAConverEfficiencyTechs","setNLConverEfficiencyTechs"]
-        indexingSets = EnergySystem.getIndexingSets()
+        model           = EnergySystem.getConcreteModel()
+        indexingSets    = EnergySystem.getIndexingSets()
         # check if all index sets are already defined in model and no set is indexed
         if all([(hasattr(model,index) and not model.find_component(index).is_indexed()) for index in listIndex]):
             # check if no set is indexed
