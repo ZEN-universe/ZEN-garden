@@ -17,6 +17,7 @@ from model.objects.carrier import Carrier
 
 from model.objects.energy_system import EnergySystem
 from model.objects.element import Element
+from model.objects.technology.storage_technology import StorageTechnology
 
 class TimeSeriesAggregation():
     def __init__(self,element=None,TSAOfSingleElement = True, setBaseTimeSteps = None):
@@ -252,39 +253,7 @@ class TimeSeriesAggregation():
                         setattr(self.element,timeSeries,dfTimeSeries)
                 # select subset of time steps, try to gather raw time steps to equal portions (cluster)
                 else:
-                    numberClusters      = self.numberTimeStepsPerPeriod*self.numberTypicalPeriods
-                    # sort raw time steps by duration
-                    sortedTimeStepsRaw  = dict(sorted(timeStepsDurationRaw.items(), key=lambda item: item[1],reverse=True))
-                    idxSortedTimeSteps  = list(sortedTimeStepsRaw.keys())
-                    counterTimeSteps    = 0
-                    # current average duration per cluster, subsequently reduced
-                    durationPerCluster  = sum(sortedTimeStepsRaw.values())/numberClusters
-                    timeStepsInCluster  = {}
-                    # initialize attributes
-                    setClusters         = []
-                    clusterDuration     = {}
-                    orderTimeSteps      = np.zeros(np.size(self.setBaseTimeSteps)).astype(int)
-                    for cluster in range(0,numberClusters):
-                        # append cluster to attribute
-                        setClusters.append(cluster)
-                        _durationCurrentCluster         = 0
-                        timeStepsInCluster[cluster]     = []
-                        # iterate through time steps until duration of cluster exceeds average duration or no time steps left
-                        while _durationCurrentCluster <= durationPerCluster and counterTimeSteps < len(setTimeStepsRaw):
-                            timeStepsInCluster[cluster].append(idxSortedTimeSteps[counterTimeSteps])
-                            # add to duration of current cluster
-                            _durationCurrentCluster     += sortedTimeStepsRaw[idxSortedTimeSteps[counterTimeSteps]]
-                            # remove time step from sorted dict
-                            sortedTimeStepsRaw.pop(idxSortedTimeSteps[counterTimeSteps])
-                            counterTimeSteps            += 1
-                        clusterDuration[cluster]        = _durationCurrentCluster
-                        numberClusters                  -= 1
-                        if numberClusters != 0:
-                            durationPerCluster  = sum(sortedTimeStepsRaw.values())/numberClusters
-                        else:
-                            durationPerCluster  = sum(sortedTimeStepsRaw.values())
-                        # set index of time steps in order to cluster
-                        orderTimeSteps[np.argwhere(np.isin(orderTimeStepsRaw,timeStepsInCluster[cluster]))] = cluster
+                    setClusters,clusterDuration,orderTimeSteps,timeStepsInCluster = self.aggregateTimeStepsToEqualClusters(listOrderAggregatedCarriers)
                     # set attributes
                     self.element.setTimeStepsOperation      = setClusters
                     self.element.timeStepsOperationDuration = clusterDuration
@@ -304,6 +273,46 @@ class TimeSeriesAggregation():
             # conduct calculation of carrier time steps as before
             TimeSeriesAggregation.calculateTimeStepsEnergyBalance(self.element)
 
+    def aggregateTimeStepsToEqualClusters(self,listOrderAggregatedCarriers):
+        """ this method gathers time steps to equal clusters"""
+        # get combined time steps, duration and order
+        setTimeStepsRaw, timeStepsDurationRaw, orderTimeStepsRaw = self.uniqueTimeStepsInMultigrid(listOrderAggregatedCarriers)   
+        numberClusters      = self.numberTimeStepsPerPeriod*self.numberTypicalPeriods
+        # sort raw time steps by duration
+        sortedTimeStepsRaw  = dict(sorted(timeStepsDurationRaw.items(), key=lambda item: item[1],reverse=True))
+        idxSortedTimeSteps  = list(sortedTimeStepsRaw.keys())
+        counterTimeSteps    = 0
+        # current average duration per cluster, subsequently reduced
+        durationPerCluster  = sum(sortedTimeStepsRaw.values())/numberClusters
+        timeStepsInCluster  = {}
+        # initialize attributes
+        setClusters         = []
+        clusterDuration     = {}
+        orderTimeSteps      = np.zeros(np.size(self.setBaseTimeSteps)).astype(int)
+        for cluster in range(0,numberClusters):
+            # append cluster to attribute
+            setClusters.append(cluster)
+            _durationCurrentCluster         = 0
+            timeStepsInCluster[cluster]     = []
+            # iterate through time steps until duration of cluster exceeds average duration or no time steps left
+            while _durationCurrentCluster <= durationPerCluster and counterTimeSteps < len(setTimeStepsRaw):
+                timeStepsInCluster[cluster].append(idxSortedTimeSteps[counterTimeSteps])
+                # add to duration of current cluster
+                _durationCurrentCluster     += sortedTimeStepsRaw[idxSortedTimeSteps[counterTimeSteps]]
+                # remove time step from sorted dict
+                sortedTimeStepsRaw.pop(idxSortedTimeSteps[counterTimeSteps])
+                counterTimeSteps            += 1
+            clusterDuration[cluster]        = _durationCurrentCluster
+            numberClusters                  -= 1
+            if numberClusters != 0:
+                durationPerCluster  = sum(sortedTimeStepsRaw.values())/numberClusters
+            else:
+                durationPerCluster  = sum(sortedTimeStepsRaw.values())
+            # set index of time steps in order to cluster
+            orderTimeSteps[np.argwhere(np.isin(orderTimeStepsRaw,timeStepsInCluster[cluster]))] = cluster
+        # return
+        return setClusters,clusterDuration,orderTimeSteps,timeStepsInCluster
+
     @classmethod
     def extractRawTimeSeries(cls,element,headerSetTimeSteps):
         """ extract the time series from an element and concatenates the non-constant time series to a pd.DataFrame
@@ -319,7 +328,7 @@ class TimeSeriesAggregation():
             dfTimeSeries                    = rawTimeSeries[timeSeries].unstack(level = _indexNames)
             # select time series that are not constant (rows have more than 1 unique entries)
             dfTimeSeriesNonConstant         = dfTimeSeries[dfTimeSeries.columns[dfTimeSeries.apply(lambda column: len(np.unique(column))!=1)]]
-            _dictRawTimeSeries[timeSeries]   = dfTimeSeriesNonConstant
+            _dictRawTimeSeries[timeSeries]  = dfTimeSeriesNonConstant
         dfTimeSeriesRaw = pd.concat(_dictRawTimeSeries.values(),axis=1,keys=_dictRawTimeSeries.keys())
         return dfTimeSeriesRaw
 
@@ -376,9 +385,6 @@ class TimeSeriesAggregation():
                 EnergySystem.setTechnologyOfCarrier(element.name,element.inputCarrier + element.outputCarrier)
             else:
                 EnergySystem.setTechnologyOfCarrier(element.name,element.referenceCarrier)
-                if element.name in system["setStorageTechnologies"]:
-                    # calculate time steps of storage levels
-                    element.calculateTimeStepsStorageLevel()
         # set the aggregation status of element to true
         element.setAggregated()
     
@@ -502,3 +508,8 @@ class TimeSeriesAggregation():
                 for carrier in Carrier.getAllElements():        
                 # if single-grid time index
                     TimeSeriesAggregation.calculateTimeStepsEnergyBalance(carrier)
+
+        # calculate storage level time steps
+        for tech in StorageTechnology.getAllElements():
+            # calculate time steps of storage levels
+            tech.calculateTimeStepsStorageLevel()

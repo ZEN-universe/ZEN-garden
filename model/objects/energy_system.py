@@ -11,6 +11,7 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
 import logging
 import pyomo.environ as pe
 import numpy as np
+import pandas as pd
 from preprocess.functions.extract_input_data import DataInput
 
 class EnergySystem:
@@ -233,7 +234,6 @@ class EnergySystem:
         :return orderTimeSteps: list of time steps correpsponding to base time step"""
         if not timeStepType:
             timeStepType = "operation"
-
         if timeStepType == "operation":
             return cls.dictOrderTimeStepsOperation[element]
         elif timeStepType == "invest":
@@ -353,6 +353,26 @@ class EnergySystem:
             convertedTimeSteps = np.unique(orderTimeStepsOut[orderTimeStepsIn == elementTimeStep])
             assert len(convertedTimeSteps) == 1, f"more than one converted time step, not yet implemented"
             return convertedTimeSteps[0]
+
+    @classmethod
+    def getFullTimeSeriesOfComponent(cls,component,indexSubsets:tuple,manualOrderName = None):
+        """ returns full time series of result component 
+        :param component: component (parameter or variable) of optimization model 
+        :param indexSubsets: dict of index subsets {<levelOfSubset>:<value(s)OfSubset>} 
+        :return fullTimeSeries: full time series """
+        # TODO quick fix
+        if manualOrderName:
+            orderName   = manualOrderName
+        else:
+            orderName   = indexSubsets[0]
+        _componentData  = component.extract_values()
+        dfData          = pd.Series(_componentData,index=_componentData.keys())
+        dfReducedData   = dfData.loc[indexSubsets]
+        orderElement    = EnergySystem.getOrderTimeSteps(orderName)
+        fullTimeSeries  = np.zeros(np.size(orderElement))
+        for timeStep in dfReducedData.index:
+            fullTimeSeries[orderElement==timeStep] = dfReducedData[timeStep]
+        return fullTimeSeries
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
     @classmethod

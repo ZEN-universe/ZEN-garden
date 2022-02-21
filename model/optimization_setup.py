@@ -14,6 +14,7 @@ import logging
 import pyomo.environ as pe
 import os
 import cProfile, pstats
+import pandas as pd
 
 from model.objects.element import Element
 # the order of the following classes defines the order in which they are constructed. Keep this way
@@ -92,3 +93,4 @@ class OptimizationSetup():
         # enable logger 
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)
+        a=1
