@@ -156,7 +156,7 @@ class StorageTechnology(Technology):
         )
         # loss of carrier on node
         model.levelCharge = pe.Var(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
+            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]), #setTimeStepsStorageLevel setBaseTimeSteps
             domain = pe.NonNegativeReals,
             doc = 'carrier flow through storage technology on node i and time t. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel. Domain: NonNegativeReals'
         )
@@ -167,13 +167,13 @@ class StorageTechnology(Technology):
         model = EnergySystem.getConcreteModel()
         # Limit storage level
         model.constraintStorageLevelMax = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
+            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]), #setTimeStepsStorageLevel setBaseTimeSteps 
             rule = constraintStorageLevelMaxRule,
             doc = 'limit maximum storage level to capacity. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel'
         ) 
         # couple storage levels
         model.constraintCoupleStorageLevel = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
+            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]), #setTimeStepsStorageLevel setBaseTimeSteps
             rule = constraintCoupleStorageLevelRule,
             doc = 'couple subsequent storage levels (time coupling constraints). Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel'
         )
@@ -248,15 +248,38 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
         previousLevelTimeStep   = time-1
     else:
         previousLevelTimeStep   = model.setTimeStepsStorageLevel[tech].at(-1)
-    # get current and previous time step of storage level
-    # currentLevelTimeStep,previousLevelTimeStep = StorageTechnology.getStorageLevelTimeStep(tech,time)
-    a=1
     return(
         model.levelCharge[tech, node, currentLevelTimeStep] == 
-        model.levelCharge[tech, node, previousLevelTimeStep]*(1-model.selfDischarge[tech,node]*model.timeStepsStorageLevelDuration[tech,time]) + 
+        model.levelCharge[tech, node, previousLevelTimeStep]*(1-model.selfDischarge[tech,node])**model.timeStepsStorageLevelDuration[tech,time] + 
         (model.carrierFlowCharge[tech, node, elementTimeStep]*model.efficiencyCharge[tech,node] - 
-        model.carrierFlowDischarge[tech, node, elementTimeStep]/model.efficiencyDischarge[tech,node]*model.timeStepsStorageLevelDuration[tech,time])
+        model.carrierFlowDischarge[tech, node, elementTimeStep]/model.efficiencyDischarge[tech,node])*sum((1-model.selfDischarge[tech,node])**interimTimeStep for interimTimeStep in range(0,model.timeStepsStorageLevelDuration[tech,time]))
     )
+
+# full time series
+# def constraintStorageLevelMaxRule(model, tech, node, time):
+#     """limit maximum storage level to capacity"""
+#     # get invest time step
+#     # baseTimeStep    = EnergySystem.decodeTimeStep(tech+"StorageLevel",time)
+#     elementTimeStep = EnergySystem.encodeTimeStep(tech,time)
+#     investTimeStep  = EnergySystem.convertTechnologyTimeStepType(tech,elementTimeStep,"operation2invest")
+#     # investTimeStep = EnergySystem.encodeTimeStep(tech,time,"invest")
+#     return(model.levelCharge[tech, node, time] <= model.capacity[tech, node, investTimeStep])
+
+# def constraintCoupleStorageLevelRule(model, tech, node, time):
+#     """couple subsequent storage levels (time coupling constraints)"""
+#     # baseTimeStep                = EnergySystem.decodeTimeStep(tech+"StorageLevel",time)
+#     elementTimeStep             = EnergySystem.encodeTimeStep(tech,time)
+#     currentLevelTimeStep        = time
+#     if time != 0:
+#         previousLevelTimeStep   = time-1
+#     else:
+#         previousLevelTimeStep   = model.setBaseTimeSteps.at(-1)
+#     return(
+#         model.levelCharge[tech, node, currentLevelTimeStep] == 
+#         model.levelCharge[tech, node, previousLevelTimeStep]*(1-model.selfDischarge[tech,node])+#**model.timeStepsStorageLevelDuration[tech,time] + 
+#         (model.carrierFlowCharge[tech, node, elementTimeStep]*model.efficiencyCharge[tech,node] - 
+#         model.carrierFlowDischarge[tech, node, elementTimeStep]/model.efficiencyDischarge[tech,node])#*model.timeStepsStorageLevelDuration[tech,time]
+#     )
 
 def constraintCapexStorageTechnologyRule(model, tech, node, time):
     """ definition of the capital expenditures for the storage technology"""
