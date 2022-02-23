@@ -7,11 +7,9 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Functions to apply time series aggregation to time series
 ==========================================================================================================================================================================="""
 import numpy as np
-from scipy.stats import linregress
 import pandas as pd
 import copy
 import logging
-from sympy import true
 import tsam.timeseriesaggregation as tsam
 from model.objects.carrier import Carrier
 
