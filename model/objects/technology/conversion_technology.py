@@ -249,7 +249,19 @@ class ConversionTechnology(Technology):
             setPWACapex,
             rule = constraintCapacityCouplingRule,
             doc = "couples the real capacity variables with the approximated variables. Dimension: setPWACapex.")
-    
+        ### TODO
+        model.constraintMinLoadConversion = pe.Constraint(
+            cls.createCustomSet(["setConversionTechnologies","setNodes","setTimeStepsOperation"]),
+            rule = constraintMinLoadConversionRule
+        )
+        model.constraintReferenceFlowCoupling = pe.Constraint(
+            cls.createCustomSet(["setConversionTechnologies","setDependentCarriers","setNodes","setTimeStepsOperation"]),
+            rule = constraintReferenceFlowCouplingRule
+        )
+        model.constraintDependentFlowCoupling = pe.Constraint(
+            cls.createCustomSet(["setConversionTechnologies","setDependentCarriers","setNodes","setTimeStepsOperation"]),
+            rule = constraintDependentFlowCouplingRule
+        )
     # defines disjuncts if technology on/off
     @classmethod
     def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):
@@ -360,5 +372,19 @@ def constraintDependentFlowCouplingRule(disjunct,tech,dependentCarrier,node,time
         return(model.inputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
     else:
         return(model.outputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
-    
+
+## TODO only for test
+def constraintMinLoadConversionRule(model,tech,node,time):
+    if model.minLoad[tech,node,time] != 0:
+        referenceCarrier = model.setReferenceCarriers[tech][1]
+        if referenceCarrier in model.setInputCarriers[tech]:
+            referenceFlow = model.inputFlow[tech,referenceCarrier,node,time]
+        else:
+            referenceFlow = model.outputFlow[tech,referenceCarrier,node,time]
+        # get invest time step
+        baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
+        investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+        return (referenceFlow >= model.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep])
+    else:
+        return pe.Constraint.Skip
 #%% TODO implement conditioning for e.g. hydrogen

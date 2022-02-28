@@ -15,7 +15,6 @@ analysis = default_config.analysis
 system = default_config.system
 ## Solver - Defaul dictionary
 solver = default_config.solver   
-analysis['sense']
 
 ## Analysis - settings update compared to default values
 analysis['spatialResolution'] = 'NUTS0_Test_TSA'
@@ -24,16 +23,16 @@ analysis['objective'] = 'TotalCost'
 # definition of the approximation
 analysis['variablesNonlinearModel'] = {'builtCapacity': []}
 analysis['nonlinearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}
-analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':[]}
 
 ## System - settings update compared to default values
-system['setCarriers'] = ['electricity','irradiation','natural_gas']
+system['setCarriers'] = ['electricity','natural_gas',"irradiation"]
 system['setStorageTechnologies'] = []
 system['setTransportTechnologies'] = ['power_line']
 system['setConversionTechnologies'] = ['photovoltaics',"natural_gas_turbine"]
 system['setScenarios'] = 'a'
+system['setTimeSteps'] = list(range(1,20+1))
 system['setTimeSteps'] = [1]
-system['setNodes'] = ['CH', 'DE'] # 'BE21', 'BE23', 'BE24'
+system['setNodes'] = ['CH', 'DE'] 
 
 
 ## Solver - settings update compared to default values
