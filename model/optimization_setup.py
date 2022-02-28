@@ -43,12 +43,7 @@ class OptimizationSetup():
         # add Elements to optimization
         self.addElements()
         # define and construct components of self.model
-        # pr = cProfile.Profile()
-        # pr.enable()
         Element.constructModelComponents()
-        # pr.disable()
-        # ps = pstats.Stats(pr).sort_stats("cumtime")
-        # ps.print_stats()
         
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)  

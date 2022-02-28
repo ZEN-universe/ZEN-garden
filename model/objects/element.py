@@ -93,7 +93,7 @@ class Element:
             if isinstance(_attribute,pd.Series):
                 _attribute = _attribute.to_dict()
             elif isinstance(_attribute,pd.DataFrame):
-                raise TypeError ("Not yet implemented for pd.DataDrames")
+                raise TypeError("Not yet implemented for pd.DataFrames")
             if isinstance(_attribute,dict):
                 # if attribute is dict
                 for _key in _attribute:
@@ -300,7 +300,7 @@ class Element:
                                     appendElement = False
                                     break
                         else:
-                            raise NotImplementedError
+                            raise NotImplementedError(f"Index <{index}> not known")
                     # append indices to customSet if element is supposed to be appended
                     if appendElement:
                         if listSets:

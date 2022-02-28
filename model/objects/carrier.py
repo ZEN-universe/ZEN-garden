@@ -60,11 +60,6 @@ class Carrier(Element):
             model.setCarriers,
             initialize=cls.getAttributeOfAllElements("setTimeStepsCarrier"),
             doc='Set of time steps of carriers. Dimensions: setCarriers')
-        # time-steps of energy balance
-        model.setTimeStepsEnergyBalance = pe.Set(
-            model.setCarriers,
-            initialize=cls.getAttributeOfAllElements("setTimeStepsEnergyBalance"),
-            doc='Set of time steps of carriers. Dimensions: setCarriers')
 
     @classmethod
     def constructParams(cls):
@@ -76,12 +71,6 @@ class Carrier(Element):
             cls.createCustomSet(["setCarriers","setTimeStepsCarrier"]),
             initialize = cls.getAttributeOfAllElements("timeStepsCarrierDuration"),
             doc="Parameter which specifies the time step duration for all carriers. Dimensions: setCarriers, setTimeStepsCarrier"
-        )
-        # time step duration energy balance
-        model.timeStepsEnergyBalanceDuration = pe.Param(
-            cls.createCustomSet(["setCarriers","setTimeStepsEnergyBalance"]),
-            initialize = cls.getAttributeOfAllElements("timeStepsEnergyBalanceDuration"),
-            doc="Parameter which specifies the time step duration for all carriers. Dimensions: setCarriers, setTimeStepsEnergyBalance"
         )
         # demand of carrier
         model.demandCarrier = pe.Param(
@@ -198,9 +187,9 @@ class Carrier(Element):
         )
         # energy balance
         model.constraintNodalEnergyBalance = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsEnergyBalance"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
             rule = constraintNodalEnergyBalanceRule,
-            doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsEnergyBalance',
+            doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
         )
 
 
@@ -253,11 +242,11 @@ def constraintCarbonEmissionsCarrierTotalRule(model):
 def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     """" 
     nodal energy balance for each time step. 
-    The constraint is indexed by setTimeStepsEnergyBalance, which is union of time step sequences of all corresponding technologies and carriers
+    The constraint is indexed by setTimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
     timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
     """
     # decode to baseTimeStep
-    baseTimeStep = EnergySystem.decodeTimeStep(carrier+"EnergyBalance",time)
+    baseTimeStep = EnergySystem.decodeTimeStep(carrier,time)
     # carrier input and output conversion technologies
     carrierConversionIn, carrierConversionOut = 0, 0
     for tech in model.setConversionTechnologies:
