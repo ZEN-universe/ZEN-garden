@@ -32,7 +32,8 @@ system['setScenarios']                              = 'a'
 system['setTimeSteps']                              = list(range(0,2190))
 system['multiGridTimeIndex']                        = True # if True, each element has its own time index; if False, use single time grid approach
 system['nonAlignedTimeIndex']                       = False # if True, each element runs on a different, not-aligned time grid, by default then also multiGridTimeIndex; if False, use aligned time grid
-system["numberTimeStepsDefault"]                    = 876 # default number of operational time steps, only used in single-grid time series aggregation # TODO number of time steps per period = 1 
+system["numberTimeStepsDefault"]                    = 288 # default number of operational time steps, only used in single-grid time series aggregation
+# TODO number of time steps per period = 1
 system['setNodes']                                  = ['CH','DE']#,"AT","IT","FR"] 
 
 ## Solver - settings update compared to default values

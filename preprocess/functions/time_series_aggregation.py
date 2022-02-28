@@ -88,7 +88,9 @@ class TimeSeriesAggregation():
         self.dfTimeSeriesRaw = TimeSeriesAggregation.extractRawTimeSeries(self.element,self.headerSetTimeSteps)
 
     def selectTimeSeriesOfAllElements(self):
-        """ this method retrieves the raw time series for the aggregation of all input data sets. Only in aligned time grid approach! """
+        """ this method retrieves the raw time series for the aggregation of all input data sets.
+        Only in aligned time grid approach! """
+
         _dictRawTimeSeries              = {}
         for element in Element.getAllElements():
             dfTimeSeriesRaw = TimeSeriesAggregation.extractRawTimeSeries(element,self.headerSetTimeSteps)

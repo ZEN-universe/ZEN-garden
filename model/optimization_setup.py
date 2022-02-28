@@ -88,7 +88,7 @@ class OptimizationSetup():
         # (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
         solver_parameters = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt = pe.SolverFactory(solverName, options=solverOptions)
-        self.opt.set_instance(self.model,symbolic_solver_labels =True)
+        self.opt.set_instance(self.model,symbolic_solver_labels=True)
         self.results = self.opt.solve(tee=solver['verbosity'], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
         # enable logger 
         logging.disable(logging.NOTSET)
