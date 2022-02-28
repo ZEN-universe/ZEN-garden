@@ -16,8 +16,7 @@ system = default_config.system
 solver = default_config.solver   
 
 ## Analysis - settings update compared to default values
-analysis['spatialResolution']                       = 'NUTS0_electricity'
-analysis['modelFormulation']                        = 'HSC'
+analysis['dataset']                                 = 'NUTS0_electricity'
 analysis['objective']                               = 'TotalCost' # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
 # definition of the approximation
 analysis['variablesNonlinearModel']                 = {'builtCapacity': []}
