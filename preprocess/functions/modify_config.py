@@ -8,24 +8,25 @@ Description:    Class to modify the config dictionary based on existing inputs f
 ==========================================================================================================================================================================="""
 import numpy as np
 
+
 class UpdateConfig:
-    
+
     def __init__(self):
         pass
-    
+
     def createSetsFromSubsets(self):
-        
+
         # create a new list per set name
         for setName in self.analysis['subsets'].keys():
             self.system[setName] = []
-        
+
         # extend the list of elements in the set with all the items of the single subset
         for setName in self.analysis['subsets'].keys():
             for subsetName in self.analysis['subsets'][setName]:
                 self.system[setName].extend(self.system[subsetName])
-                
+
     def createSupportPoints(self):
-        
+
         technologySubset = 'setConversionTechnologies'
         # types = self.analysis['linearTechnologyApproximation'].keys()
         for technologyName in self.system[technologySubset]:
