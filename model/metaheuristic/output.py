@@ -83,7 +83,7 @@ class Output:
     def fileRun(self, run):
         values = self.roundToMinValue(self.performanceInstance.optimum)
         data = {
-            'folder': self.folder + 'Runs//',
+            'folder': self.folder + 'runs//',
             'file_name': '{}-optimum'.format(run),
             'file_format': '.csv',
             'values': [values],
@@ -102,7 +102,7 @@ class Output:
             values = self.roundToMinValue(values)
 
             data = {
-                'folder': self.folder + 'Runs//Variables//',
+                'folder': self.folder + 'runs//variables//',
                 'file_name': f'{run}-{type}',
                 'file_format': '.csv',
                 'values': values,

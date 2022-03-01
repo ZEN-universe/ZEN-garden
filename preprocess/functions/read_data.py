@@ -62,7 +62,7 @@ class Read:
           
         path = self.paths['setNodes']['folder']        
         
-        nameNodes = self.analysis['dataInputs']['nameNodes']
+        nameNodes = self.analysis['headerDataInputs']['setNodes'][0]
         
         fileNames = [fileName for fileName in os.listdir(path)\
                      if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
@@ -80,7 +80,7 @@ class Read:
         
         path = self.paths['setTimeSteps']['folder']
         
-        nameTimeSteps = self.analysis['dataInputs']['nameTimeSteps']
+        nameTimeSteps = self.analysis['headerDataInputs']['setTimeSteps'][0]
         
         fileNames = [fileName for fileName in os.listdir(path)\
                      if (fileName.split('.')[-1]==self.analysis['fileFormat'])]
@@ -98,7 +98,7 @@ class Read:
          
         path = self.paths['setScenarios']['folder']
         
-        nameScenarios = self.analysis['dataInputs']['nameScenarios']
+        nameScenarios = self.analysis['headerDataInputs']['setScenarios'][0]
         
         fileNames = [fileName for fileName in os.listdir(path)\
                      if (fileName.split('.')[-1]==self.analysis['fileFormat'])]

@@ -7,7 +7,6 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Model settings. Overwrite default values defined in default_config.py here.
 ==========================================================================================================================================================================="""
 from model import default_config
-import string
 
 ## Analysis - Defaul dictionary
 analysis = default_config.analysis
@@ -15,27 +14,27 @@ analysis = default_config.analysis
 system = default_config.system
 ## Solver - Defaul dictionary
 solver = default_config.solver   
-analysis['sense']
 
 ## Analysis - settings update compared to default values
-analysis['timeHorizon'] = 1                                                      
-analysis['spatialResolution'] = 'Test3'
-analysis['modelFormulation'] = 'HSC'
-analysis['objective'] = 'TotalCost'
+analysis['dataset']                                 = 'NUTS0_electricity'
+analysis['objective']                               = 'TotalCost' # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
 # definition of the approximation
-analysis['variablesNonlinearModel'] = {'builtCapacity': ['electrolysis']}
-analysis['nonlinearTechnologyApproximation'] = {'Capex': ['electrolysis'], 'ConverEfficiency':[]}
-analysis['linearTechnologyApproximation'] = {'Capex': [], 'ConverEfficiency':['electrolysis']}
+analysis['variablesNonlinearModel']                 = {'builtCapacity': []}
+analysis['nonlinearTechnologyApproximation']        = {'Capex': [], 'ConverEfficiency':[]}
 
 ## System - settings update compared to default values
-system['setCarriers'] = ['electricity',"water",'hydrogen',"oxygen"]
-system['setStorageTechnologies'] = []
-system['setTransportTechnologies'] = ['pipeline_hydrogen']
-system['setConversionTechnologies'] = ['electrolysis']
-system['setScenarios'] = 'a'
-system['setTimeSteps'] = [0,1]
-system['setNodes'] = list(string.ascii_uppercase[:3]) #TODO: define proper nomenclature for nodes
+system['setCarriers']                               = ['electricity','natural_gas',"hard_coal"]#,"uranium"]
+system['setStorageTechnologies']                    = []#"battery"]
+system['setTransportTechnologies']                  = ['power_line']
+system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant"]#,"nuclear"]#,"run-of-river_hydro"]
+system['setScenarios']                              = 'a'
+system['setTimeSteps']                              = list(range(0,2190))
+system["numberTimeStepsDefault"]                    = 288 # default number of operational time steps, only used in single-grid time series aggregation
+# TODO number of time steps per period = 1
+system['setNodes']                                  = ['CH','DE']#,"AT","IT","FR"] 
 
 ## Solver - settings update compared to default values
-solver['gap'] = 0.01
-solver['model'] = 'MINLP'
+solver['gap']                                       = 0.01
+solver['model']                                     = 'MILP'
+solver['verbosity']                                 = True
+solver['performanceCheck']['printDeltaIteration']   = 50

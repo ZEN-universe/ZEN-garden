@@ -1,3 +1,5 @@
+/.vscode
+/data/
 /outputs/
 *.pyc
 *.DS_Store

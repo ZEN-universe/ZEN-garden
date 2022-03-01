@@ -1,0 +1,9 @@
+index,attributes
+minBuiltCapacity,1
+maxBuiltCapacity,1
+lifetime,20
+minLoad,0.1
+maxLoad,1
+referenceCarrier,hydrogen
+inputCarrier,natural_gas
+outputCarrier,hydrogen
