@@ -10,7 +10,7 @@ Description:  Compilation  of the optimization problem.
 
 import os
 import logging
-import config_HSC
+import config
 import sys
 from preprocess.prepare import Prepare
 from model.optimization_setup import OptimizationSetup
@@ -32,7 +32,6 @@ logging.getLogger().addHandler(handler)
 # prevent double printing
 logging.propagate = False
 # CREATE INPUT FILE
-config = config_HSC
 prepare = Prepare(config)
 
 # check if all data inputs exist and remove non-existent
