@@ -36,7 +36,7 @@ class DataInput():
         fileFormat  = self.analysis["fileFormat"]
         # select data
         fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1]==fileFormat)]
-        if manualFileName in fileNames or len(fileNames) == 1:
+        if manualFileName in fileNames:
             assert (manualFileName in fileNames or len(fileNames) == 1), "Selection of files was ambiguous. Select folder with single input file or select specific file by name"
             for fileName in fileNames:
                 if len(fileNames) > 1 and fileName != manualFileName:
