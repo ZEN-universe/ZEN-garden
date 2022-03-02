@@ -234,7 +234,33 @@ class DataInput():
                 return attributeValue
         else:
             return None
-    
+
+    def ifAttributeExists(self, folderPath, manualFileName, column=None):
+        """ checks if default value or timeseries of an attribute exists in the input data
+        :param folderPath: path to input files
+        :param manualFileName: name of selected file. If only one file in folder, not used
+        :param column: select specific column
+        """
+
+        # check if default value exists
+        if column:
+            defaultName = column
+        else:
+            defaultName = manualFileName
+        defaultValue = self.extractAttributeData(folderPath, defaultName)
+        if defaultValue is None:
+            defaultValue = self.extractAttributeData(folderPath,defaultName+"Default")
+
+        # check if input file exists
+        inputData = None
+        if defaultValue is None:
+            inputData, _ = self.readInputData(folderPath, manualFileName)
+
+        if defaultValue is None and inputData is None:
+            return False
+        else:
+            return True
+
     def extractConversionCarriers(self, folderPath):
         """ reads input data and extracts conversion carriers
         :param folderPath: path to input files 
