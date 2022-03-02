@@ -60,7 +60,10 @@ class TimeSeriesAggregation():
             dfTimeSeriesRaw = TimeSeriesAggregation.extractRawTimeSeries(element, self.headerSetTimeSteps)
             if not dfTimeSeriesRaw.empty:
                 _dictRawTimeSeries[element.name] = dfTimeSeriesRaw
-        self.dfTimeSeriesRaw = pd.concat(_dictRawTimeSeries.values(), axis=1, keys=_dictRawTimeSeries.keys())
+        if _dictRawTimeSeries:
+            self.dfTimeSeriesRaw = pd.concat(_dictRawTimeSeries.values(), axis=1, keys=_dictRawTimeSeries.keys())
+        else:
+            self.dfTimeSeriesRaw = pd.Series()
 
     def substituteColumnNames(self, direction="flatten"):
         """ this method substitutes the column names to have flat columns names (otherwise sklearn warning) """

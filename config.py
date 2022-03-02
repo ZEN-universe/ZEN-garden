@@ -16,25 +16,28 @@ system = default_config.system
 solver = default_config.solver   
 
 ## Analysis - settings update compared to default values
-analysis['dataset']                                 = 'NUTS0_electricity'
-analysis['objective']                               = 'TotalCost' # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
+analysis["dataset"]                                 = "NUTS0_HSC"
+analysis["modelFormulation"]                        = "HSC"
+analysis["objective"]                               = "TotalCost" # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
 # definition of the approximation
-analysis['variablesNonlinearModel']                 = {'builtCapacity': []}
-analysis['nonlinearTechnologyApproximation']        = {'Capex': [], 'ConverEfficiency':[]}
+analysis["variablesNonlinearModel"]                 = {"builtCapacity": []}
+analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEfficiency":[]}
 
 ## System - settings update compared to default values
-system['setCarriers']                               = ['electricity','natural_gas',"hard_coal"]#,"uranium"]
-system['setStorageTechnologies']                    = []#"battery"]
-system['setTransportTechnologies']                  = ['power_line']
-system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant"]#,"nuclear"]#,"run-of-river_hydro"]
-system['setScenarios']                              = 'a'
-system['setTimeSteps']                              = list(range(0,2190))
-system["numberTimeStepsDefault"]                    = 288 # default number of operational time steps, only used in single-grid time series aggregation
-# TODO number of time steps per period = 1
-system['setNodes']                                  = ['CH','DE']#,"AT","IT","FR"] 
+system["setCarriers"]                               = ["electricity", "hydrogen", "biomass", "natural_gas"] # ,
+system["setStorageTechnologies"]                    = []
+system["setTransportTechnologies"]                  = ["hydrogen_pipeline", "hydrogen_truck_gas","hydrogen_train", "hydrogen_ship"] # hydrogen_truck_liquid ##, ,
+system["setConversionTechnologies"]                 = ["electrolysis", "biomass_SMR", "SMR", "biomass_gasification"] # ,
+system["setTimeSteps"]                              = list(range(0,15))
+system["multiGridTimeIndex"]                        = False # if True, each element has its own time index; if False, use single time grid approach
+system["numberTimeStepsDefault"]                    = 16 # default number of operational time steps, only used in single-grid time series aggregation # TODO number of time steps per period = 1
+#system["setNodes"]                                  = ["IT","DE","AT"]#, "IT","FR"]
+system["setNodes"]                                  = ["AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "EL", "ES",
+                                                       "FI", "FR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK",
+                                                       "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "UK"]
 
 ## Solver - settings update compared to default values
-solver['gap']                                       = 0.01
-solver['model']                                     = 'MILP'
-solver['verbosity']                                 = True
-solver['performanceCheck']['printDeltaIteration']   = 50
+solver["gap"]                                       = 0.01
+solver["model"]                                     = "MILP"
+solver["verbosity"]                                 = True
+solver["performanceCheck"]["printDeltaIteration"]   = 50
