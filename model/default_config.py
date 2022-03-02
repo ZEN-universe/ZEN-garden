@@ -35,25 +35,33 @@ analysis['discountRate'] = 0.06
 analysis['transportDistance'] = 'Euclidean'
 # dictionary with subsets related to set
 analysis['subsets'] = {
-    'setTechnologies': ['setConversionTechnologies', 'setTransportTechnologies']
+    'setTechnologies': ['setConversionTechnologies', 'setTransportTechnologies',"setStorageTechnologies"]
     }
 # headers for the generation of input files
-analysis['headerDataInputs']= {'setNodes': ['node', 'x', 'y'],
-                               'setScenarios':['scenario'],
-                               'setTimeSteps':['time'],
-                               'setCarriers':['demandCarrier', 'availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
-                               'setConversionTechnologies':['availability'],
-                               'setTransportTechnologies':['availability', 'costPerDistance', 'distanceEuclidean', 'efficiencyPerDistance'],
-                               }
+analysis['headerDataInputs']=   {'setNodes': ['node', 'x', 'y'],
+                                "setEdges": ["edge"],
+                                'setScenarios':['scenario'],
+                                'setTimeSteps':['time'],
+                                'setCarriers':['demandCarrier', 'availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],
+                                'setConversionTechnologies':['availability'],
+                                'setTransportTechnologies':['availability', 'costPerDistance', 'distanceEuclidean', 'efficiencyPerDistance'],
+                                }
 
 # file format of input data
 analysis['fileFormat'] = 'csv'
+# time series aggregation
+analysis["timeSeriesAggregation"] = {
+    "clusterMethod"         : "k_means",
+    "solver"                : "gurobi",
+    "extremePeriodMethod"   : "None",
+    "resolution"            : 1
+}
 
 ## System - Items assignment
 # set of energy carriers
 system['setCarriers'] = ['electricity', 'gas', 'hydrogen', 'biomass', 'CO2',"water","oxygen"]
-# set of energy carriers for transport
-system['setTransportCarriers'] = ['hydrogen']
+# # set of energy carriers for transport
+# system['setTransportCarriers'] = ['hydrogen']
 # set of conversion technologies
 system['setConversionTechnologies'] = ['electrolysis', 'SMR', 'b_SMR', 'b_Gasification']
 # set of storage technologies
@@ -64,6 +72,7 @@ system['setTransportTechnologies'] = ['pipeline_hydrogen', 'truck_hydrogen_gas',
 system['setScenarios'] = 'a'
 # set of time steps
 system['setTimeSteps'] = [1,2,3]
+system["hoursPerYear"] = 8760
 # set of nodes
 system['setNodes'] = ['Berlin', 'Zurich', 'Rome']
 # folder output
@@ -72,14 +81,16 @@ system['folderOutput'] = 'outputs/results/'
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
 solver['name']      = 'gurobi_persistent'
+# gurobi options
+solver["solverOptions"] = {}
 # optimality gap
-solver['MIPgap']    = 0.01
+solver["solverOptions"]['MIPgap']    = 0.01
 # time limit in seconds
-solver['TimeLimit'] = 8760
+solver["solverOptions"]['TimeLimit'] = 8760
+# log file of results
+solver["solverOptions"]['logfile'] = './/outputs//logs//pyomoLogFile.log'
 # verbosity
 solver['verbosity'] = True
-# log file of results
-solver['logfile'] = './/outputs//logs//pyomoLogFile.log'
 # typology of model solved: MILP or MINLP
 solver['model']      = 'MILP'
 # parameters of meta-heuristic algorithm
