@@ -141,6 +141,13 @@ class DataInput():
             dfInput = dfInput[requestedIndexValues].stack()
             dfInput = dfInput.reorder_levels(dfOutput.index.names)
         # get common index of dfOutput and dfInput
+        if not isinstance(dfInput.index, pd.MultiIndex):
+            indexList     = dfInput.index.to_list()
+            if len(indexList) == 1:
+                indexMultiIndex = pd.MultiIndex.from_tuples([(indexList[0],)], names=[dfInput.index.name])
+            else:
+                indexMultiIndex = pd.MultiIndex.from_product(indexList, names=[dfInput.index.name])
+            dfInput = pd.Series(index=indexMultiIndex, data=dfInput.to_list())
         commonIndex = dfOutput.index.intersection(dfInput.index)
         assert defaultValue is not None or len(commonIndex) == len(dfOutput.index), f"Input for {fileName} does not provide entire dataset and no default given in attributes.csv"
         dfOutput.loc[commonIndex] = dfInput.loc[commonIndex]
