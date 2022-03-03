@@ -31,10 +31,10 @@ system["setConversionTechnologies"]                 = ["electrolysis", "biomass_
 system["setTimeSteps"]                              = list(range(0,15))
 system["multiGridTimeIndex"]                        = False # if True, each element has its own time index; if False, use single time grid approach
 system["numberTimeStepsDefault"]                    = 16 # default number of operational time steps, only used in single-grid time series aggregation # TODO number of time steps per period = 1
-#system["setNodes"]                                  = ["IT","DE","AT"]#, "IT","FR"]
-system["setNodes"]                                  = ["AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "EL", "ES",
-                                                       "FI", "FR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK",
-                                                       "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "UK"]
+system["setNodes"]                                  = ["IT","DE","AT"]#, "IT","FR"]
+#system["setNodes"]                                  = ["AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "EL", "ES",
+                                                       #"FI", "FR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK",
+                                                       #"MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "UK"]
 
 ## Solver - settings update compared to default values
 solver["gap"]                                       = 0.01

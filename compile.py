@@ -50,5 +50,5 @@ elif config.solver['model'] == 'MINLP':
     master.solveMINLP(config.solver)
 
 # EVALUATE RESULTS
-evaluation = Postprocess(optimizationSetup, modelName = 'test')
-# print(evaluation)
+evaluation = Postprocess(optimizationSetup, modelName = 'test_elo_3mars')
+print(evaluation)
