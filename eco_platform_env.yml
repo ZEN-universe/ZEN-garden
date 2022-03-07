@@ -14,6 +14,7 @@ dependencies:
   - ipython
   - matplotlib
   - mpmath
+  - pint
   - pip:
       - tsam
 

@@ -53,7 +53,7 @@ def getDefaultValue(attribute):
     :return defaultValue: default value of attribute """
     defaultValues={                                 # unit
         "minBuiltCapacity"          : 0,            # GW,GWh
-        "maxBuiltCapacity"          : 1,           # GW,GWh
+        "maxBuiltCapacity"          : 1,            # GW,GWh
         "minLoad"                   : 0,            # -
         "maxLoad"                   : 1,            # -
         "lifetime"                  : 20,           # a
@@ -72,6 +72,34 @@ def getDefaultValue(attribute):
     attribute = attribute.replace("Default","")
     if attribute in defaultValues:
         return defaultValues[attribute]
+    else:
+        return None
+
+def getDefaultUnit(attribute):
+    """ this function returns the default unit of an attribute.
+    :param attribute: attribute for which default unit is returned
+    :return defaultUnit: default value of attribute """
+    defaultUnits={                                 # unit
+        "minBuiltCapacity"          : "GW",            # GW,GWh
+        "maxBuiltCapacity"          : "GW",            # GW,GWh
+        "minLoad"                   : "",            # -
+        "maxLoad"                   : "",            # -
+        "lifetime"                  : "year",           # a
+        "opexSpecific"              : "kiloEuro/GWh",            # kEUR/GWh
+        "capacityLimit"             : "GW",          # GW
+        "carbonIntensity"           : "kilotons/GWh",            # ktCO2/GWh
+        "demandCarrier"             : "GW",            # GW
+        "availabilityCarrierImport" : "GW",          # GW
+        "availabilityCarrierExport" : "GW",          # GW
+        "exportPriceCarrier"        : "kiloEuro/GWh",            # kEUR/GWh
+        "importPriceCarrier"        : "kiloEuro/GWh",            # kEUR/GWh
+        "referenceCarrier"          : "GW",# -
+        "storageLevelRepetition"    : ""             # -
+    }
+    # remove "Default" from attribute name
+    attribute = attribute.replace("Default","")
+    if attribute in defaultUnits:
+        return defaultUnits[attribute]
     else:
         return None
 
@@ -137,10 +165,12 @@ def setManualAttributesTransport(elementName,dfAttribute):
     :return dfAttribute: attribute dataframe """
     # source: link-techs in euro-calliope
     if elementName == "power_line":
-        dfAttribute.loc["lossFlow"]                 = 5E-5  # 1/km 
-        dfAttribute.loc["lifetime"]                 = 60    # a
-        dfAttribute.loc["capexPerDistanceDefault"]  = 900/2 # kEUR/km/GW
-        dfAttribute.loc["capacityLimitDefault"]     = 6     # GW (loosely chosen from highest capacity in ENTSO-E TYNDP)
+        dfAttribute.loc["lossFlow","value"]                 = 5E-5  # 1/km
+        dfAttribute.loc["lifetime","value"]                 = 60    # a
+        dfAttribute.loc["capexPerDistanceDefault","value"]  = 900/2 # kEUR/km/GW
+        dfAttribute.loc["capacityLimitDefault","value"]     = 6     # GW (loosely chosen from highest capacity in ENTSO-E TYNDP)
+        dfAttribute.loc["lossFlow", "unit"]                 = "1/km"
+        dfAttribute.loc["capexPerDistanceDefault", "unit"]  = "kiloEuro/km/GW"
     return dfAttribute
 
 def setManualAttributesStorage(elementName,dfAttribute):
@@ -150,19 +180,25 @@ def setManualAttributesStorage(elementName,dfAttribute):
     :return dfAttribute: attribute dataframe """
     # source is FactSheet_Energy_Storage_0219
     if elementName == "battery":
-        dfAttribute.loc["efficiencyCharge"]     = 0.95
-        dfAttribute.loc["efficiencyDischarge"]  = 0.95
-        dfAttribute.loc["selfDischarge"]        = 0.1/100                               # ESM_Final_Report_05-Nov-2019
-        dfAttribute.loc["maxLoad"]              = 1/2                                   # 1/(typical discharge time)
-        dfAttribute.loc["maxBuiltCapacity"]     = 0.1/dfAttribute.loc["maxLoad"]        # GWh, discharge in 1/maxLoad --> E_max = P_rated/maxLoad
-        dfAttribute.loc["capexSpecificDefault"] = 3000*dfAttribute.loc["maxLoad"]*1000  # kEUR/GWh, 
+        dfAttribute.loc["efficiencyCharge","value"]     = 0.95
+        dfAttribute.loc["efficiencyDischarge","value"]  = 0.95
+        dfAttribute.loc["selfDischarge","value"]        = 0.1/100                               # ESM_Final_Report_05-Nov-2019
+        dfAttribute.loc["maxLoad","value"]              = 1/2                                   # 1/(typical discharge time)
+        dfAttribute.loc["maxBuiltCapacity","value"]     = 0.1/dfAttribute.loc["maxLoad","value"]        # GWh, discharge in 1/maxLoad --> E_max = P_rated/maxLoad
+        dfAttribute.loc["capexSpecificDefault","value"] = 3000*dfAttribute.loc["maxLoad","value"]*1000  # kEUR/GWh,
     elif elementName == "pumped_hydro":
-        dfAttribute.loc["efficiencyCharge"]     = 0.9
-        dfAttribute.loc["efficiencyDischarge"]  = 0.9
-        dfAttribute.loc["selfDischarge"]        = 0                                     # ESM_Final_Report_05-Nov-2019
-        dfAttribute.loc["maxLoad"]              = 1/16                                  # 1/(typical discharge time)
-        dfAttribute.loc["maxBuiltCapacity"]     = 3/dfAttribute.loc["maxLoad"]          # GWh, discharge in 1/maxLoad --> E_max = P_rated*maxLoad
-        dfAttribute.loc["capexSpecificDefault"] = 2700*dfAttribute.loc["maxLoad"]*1000  # kEUR/GWh, 
+        dfAttribute.loc["efficiencyCharge","value"]     = 0.9
+        dfAttribute.loc["efficiencyDischarge","value"]  = 0.9
+        dfAttribute.loc["selfDischarge","value"]        = 0                                     # ESM_Final_Report_05-Nov-2019
+        dfAttribute.loc["maxLoad","value"]              = 1/16                                  # 1/(typical discharge time)
+        dfAttribute.loc["maxBuiltCapacity","value"]     = 3/dfAttribute.loc["maxLoad","value"]          # GWh, discharge in 1/maxLoad --> E_max = P_rated*maxLoad
+        dfAttribute.loc["capexSpecificDefault","value"] = 2700*dfAttribute.loc["maxLoad","value"]*1000  # kEUR/GWh,
+    dfAttribute.loc["efficiencyCharge", "unit"]         = ""
+    dfAttribute.loc["efficiencyDischarge", "unit"]      = ""
+    dfAttribute.loc["selfDischarge", "unit"]            = ""
+    dfAttribute.loc["maxLoad", "unit"]                  = "GW/GWh"
+    dfAttribute.loc["maxBuiltCapacity", "unit"]         = "GWh"
+    dfAttribute.loc["capexSpecificDefault", "unit"]     = "kiloEuro/GWh"
     return dfAttribute
 
 def setManualAttributesCarriers(elementName,dfAttribute):
@@ -171,8 +207,8 @@ def setManualAttributesCarriers(elementName,dfAttribute):
     :param dfAttribute: attribute dataframe
     :return dfAttribute: attribute dataframe """
     if elementName == "electricity":
-        dfAttribute.loc["importPriceCarrierDefault"]    = 3000  # kEUR/GWh, current maximum market clearing price at coupled European Power Exchange 
-        dfAttribute.loc["carbonIntensityDefault"]       = 0.127 # kt_CO2/GWh, value from Gabrielli et al.
+        dfAttribute.loc["importPriceCarrierDefault","value"]    = 3000  # kEUR/GWh, current maximum market clearing price at coupled European Power Exchange
+        dfAttribute.loc["carbonIntensityDefault","value"]       = 0.127 # kt_CO2/GWh, value from Gabrielli et al.
     return dfAttribute
 
 def setInputOutputCarriers(elementName,inputOutputType):
@@ -188,7 +224,7 @@ def setInputOutputCarriers(elementName,inputOutputType):
             "output"    : "electricity",
             "reference" : "electricity",
         },
-        "hard_coal": {
+        "hard_coal_plant": {
             "input"     : "hard_coal",
             "output"    : "electricity",
             "reference" : "electricity",
@@ -212,12 +248,27 @@ def setInputOutputCarriers(elementName,inputOutputType):
     assert elementName in carriers, f"Technology {elementName} not in list of technologies {list(carriers.keys())}"
     return carriers[elementName][inputOutputType]
 
+def getCarrierUnits(carrier):
+    """ get units of carrier flows """
+    carrierUnits = {
+        "electricity"   : "GW",
+        "hard_coal"     : "GW",
+        "natural_gas"   : "GW",
+        "uranium"       : "GW",
+        "lignite"       : "GW"
+    }
+    if carrier:
+        assert carrier in carrierUnits, f"Technology {carrier} not in list of technologies {list(carrierUnits.keys())}"
+        return carrierUnits[carrier]
+    else:
+        return None
+
 def getNumberOfNewPlants(elementName):
     """ define arbitrary maximum number of new plants"""
     numberOfNewPlants = {
         "photovoltaics":        100000,
         "wind_onshore":         100000,
-        "hard_coal":            2000,
+        "hard_coal_plant":      2000,
         "natural_gas_turbine":  50000,
         "nuclear":              2000,
         "run-of-river_hydro":   200000,

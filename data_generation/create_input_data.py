@@ -151,19 +151,21 @@ class DataCreation():
         """ this method creates a default attribute DataFrame
         :param setName: name of set to which element belongs
         :param elementName: name of element """
-        dfAttribute                                 = pd.DataFrame(index = helpers.getAttributesOfSet(setName),columns=["attributes"])
-        dfAttribute.index.name                      = "index"
-        dfAttribute["attributes"]                   = dfAttribute.index.map(lambda index: helpers.getDefaultValue(index))
+        dfAttribute             = pd.DataFrame(index = helpers.getAttributesOfSet(setName),columns=["value","unit"])
+        dfAttribute.index.name  = "index"
+        dfAttribute["value"]    = dfAttribute.index.map(lambda index: helpers.getDefaultValue(index))
+        dfAttribute["unit"]     = dfAttribute.index.map(lambda index: helpers.getDefaultUnit(index))
         if setName == "setConversionTechnologies":
             # input and output carrier
-            _inputCarrier,_outputCarrier            = self.getInputOutputCarrier(elementName)
-            dfAttribute.loc["inputCarrier"],dfAttribute.loc["outputCarrier"] = _inputCarrier,_outputCarrier
+            _inputCarrier,_outputCarrier                    = self.getInputOutputCarrier(elementName)
+            dfAttribute.loc["inputCarrier","value"],dfAttribute.loc["outputCarrier","value"]    = _inputCarrier,_outputCarrier
+            dfAttribute.loc["inputCarrier","unit"],dfAttribute.loc["outputCarrier", "unit"]     = helpers.getCarrierUnits(_inputCarrier), helpers.getCarrierUnits(_outputCarrier)
             # Potencia assumptions
-            _potenciaAssumptions                    = self.technologyPotenciaAssumption.loc[helpers.getAttributeIndex(self.conversionTechnologiesPotencia[elementName])]
-            dfAttribute.loc["lifetime"]             = _potenciaAssumptions["Technical lifetime (years)"]
-            _maximumNumberNewPlants                 = helpers.getNumberOfNewPlants(elementName) # TODO choose sensible number
-            dfAttribute.loc["maxBuiltCapacity"]     = _potenciaAssumptions["Typical unit size of a new power plant (kW)"]/1e6*_maximumNumberNewPlants   # GW
-            dfAttribute.loc["opexSpecificDefault"]  = _potenciaAssumptions["Variable O&M  costs €2010/MWh"]                                             # kEUR/GWh
+            _potenciaAssumptions                            = self.technologyPotenciaAssumption.loc[helpers.getAttributeIndex(self.conversionTechnologiesPotencia[elementName])]
+            dfAttribute.loc["lifetime","value"]             = _potenciaAssumptions["Technical lifetime (years)"]
+            _maximumNumberNewPlants                         = helpers.getNumberOfNewPlants(elementName) # TODO choose sensible number
+            dfAttribute.loc["maxBuiltCapacity","value"]     = _potenciaAssumptions["Typical unit size of a new power plant (kW)"]/1e6*_maximumNumberNewPlants   # GW
+            dfAttribute.loc["opexSpecificDefault","value"]  = _potenciaAssumptions["Variable O&M  costs €2010/MWh"]                                             # kEUR/GWh
             # save carbon intensity of input carrier
             if _inputCarrier:
                 self.carbonIntensityCarrier[_inputCarrier] = _potenciaAssumptions["Default emissions factor (t of CO2 / toe input)"]*helpers.getConstants("MWh2toe") #ktCO2/GWh
@@ -176,10 +178,10 @@ class DataCreation():
             # set fuel prices
             _carrierIdentifier = helpers.getCarrierIdentifier(elementName)
             if _carrierIdentifier:
-                dfAttribute.loc["importPriceCarrierDefault"]    = self.fuelPricesPotencia[_carrierIdentifier]*helpers.getConstants("MWh2toe")           # kEUR/GWh
+                dfAttribute.loc["importPriceCarrierDefault","value"]    = self.fuelPricesPotencia[_carrierIdentifier]*helpers.getConstants("MWh2toe")           # kEUR/GWh
             # carbon intensity
             if elementName in self.carbonIntensityCarrier:  
-                dfAttribute.loc["carbonIntensityDefault"]       = self.carbonIntensityCarrier[elementName]                                              # ktCO2/GWh
+                dfAttribute.loc["carbonIntensityDefault","value"]       = self.carbonIntensityCarrier[elementName]                                              # ktCO2/GWh
             # manual attributes
             dfAttribute = helpers.setManualAttributesCarriers(elementName,dfAttribute)
         # write csv
@@ -232,15 +234,16 @@ class DataCreation():
         assert len(_dependentCarrier) <= 1, f"Not yet implemented for technologies ({elementName}) with more than 1 dependent carrier {_dependentCarrier}"
         # create csv
         # capex
-        dfCapex                         = pd.DataFrame([minCapacity,maxBuiltCapacity],columns=["capacity"])
+        dfCapex                         = pd.DataFrame([helpers.getDefaultUnit("capacityLimit"),minCapacity,maxBuiltCapacity],columns=["capacity"])
         dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWACapex.csv",index = False)
-        dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"]*1000 # kEUR/GW                       
+        dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"]*1000 # kEUR/GW
+        dfCapex.loc[helpers.getDefaultUnit("capacityLimit"),"capex"] = "kiloEuro/GW"
         dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearCapex.csv",index = False)
         # converEfficiency
-        dfConverEfficiency              = pd.DataFrame([minCapacity,maxTotalCapacity],columns=[_referenceCarrier])
+        dfConverEfficiency              = pd.DataFrame([helpers.getCarrierUnits(_referenceCarrier),minCapacity,maxTotalCapacity],columns=[_referenceCarrier])
         dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWAConverEfficiency.csv",index = False)
         if len(_dependentCarrier) == 1:
-            dfConverEfficiency[_dependentCarrier[0]] = dfConverEfficiency[_referenceCarrier]/_potenciaAssumptions["Net efficiency"]
+            dfConverEfficiency[_referenceCarrier].apply(lambda row: row/_potenciaAssumptions["Net efficiency"] if type(row) != str else helpers.getCarrierUnits(_dependentCarrier[0]))
         dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearConverEfficiency.csv",index = False)
 
     def createMaxLoadFiles(self,elementName):

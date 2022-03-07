@@ -12,7 +12,6 @@ Description:    Class defining the parameters, variables and constraints that ho
 import logging
 import pyomo.environ as pe
 import numpy as np
-from sympy import E
 from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
 

@@ -234,7 +234,7 @@ class DataInput():
         dfInput = pd.read_csv(folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
         # check if attribute in index
         if attributeName in dfInput.index:
-            attributeValue = dfInput.loc[attributeName]
+            attributeValue = dfInput.loc[attributeName,"value"]
             try:
                 return float(attributeValue)
             except:
