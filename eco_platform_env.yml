@@ -15,6 +15,7 @@ dependencies:
   - matplotlib
   - mpmath
   - pint
+  - entsoe-py
   - pip:
       - tsam
 
