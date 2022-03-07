@@ -1,9 +1,0 @@
-index,attributes
-minBuiltCapacity,0.1
-maxBuiltCapacity,1.00E+02
-minLoad,0
-maxLoad,1
-lossFlow,0
-valueCapex,0
-lifetime,10
-referenceCarrier,hydrogen

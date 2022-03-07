@@ -117,7 +117,7 @@ class StorageTechnology(Technology):
             doc = 'self discharge of storage technologies. Dimensions: setStorageTechnologies, setNodes'
         )
         # capex specific
-        model.capexSpecific = pe.Param(
+        model.capexSpecificStorage = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
             initialize = cls.getAttributeOfAllElements("capexSpecific"),
             doc = 'specific capex of storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
@@ -285,4 +285,4 @@ def constraintCapexStorageTechnologyRule(model, tech, node, time):
     """ definition of the capital expenditures for the storage technology"""
     return (model.capex[tech,node, time] == 
             model.builtCapacity[tech,node, time] *
-            model.capexSpecific[tech,node, time])
+            model.capexSpecificStorage[tech,node, time])

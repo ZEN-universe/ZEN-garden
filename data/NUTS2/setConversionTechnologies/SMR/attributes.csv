@@ -1,9 +1,0 @@
-index,attributes
-minBuiltCapacity,1
-maxBuiltCapacity,1
-lifetime,175200
-minLoad,0.1
-maxLoad,1
-referenceCarrier,hydrogen
-inputCarrier,natural_gas
-outputCarrier,hydrogen carbon_dioxide

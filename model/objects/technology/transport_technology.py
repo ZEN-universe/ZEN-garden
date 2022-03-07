@@ -50,8 +50,12 @@ class TransportTechnology(Technology):
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
         self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
-        self.capexPerDistance               = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
         self.lossFlow                       = self.dataInput.extractAttributeData(self.inputPath,"lossFlow")
+        if self.dataInput.ifAttributeExists(self.inputPath,"capexPerDistance"):
+            self.capexPerDistance = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+            self.capexSpecific    = self.capexPerDistance * self.distance
+        else:
+            self.capexSpecific = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
         self.convertToAnnualizedCapex()
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
@@ -71,10 +75,14 @@ class TransportTechnology(Technology):
             initialize = cls.getAttributeOfAllElements("distance"),
             doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
         # cost per distance
-        model.capexPerDistance = pe.Param(
-            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
-            initialize = cls.getAttributeOfAllElements("capexPerDistance"),
-            doc = 'capex per unit distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
+        # model.capexPerDistance = pe.Param(
+        #     cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
+        #     initialize = cls.getAttributeOfAllElements("capexPerDistance"),
+        #     doc = 'capex per unit distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
+        model.capexSpecificTransport = pe.Param(
+             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
+             initialize = cls.getAttributeOfAllElements("capexSpecific"),
+             doc = 'capex per unit for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
         # carrier losses
         model.lossFlow = pe.Param(
             model.setTransportTechnologies,
@@ -158,6 +166,4 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
 def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
     return (model.capex[tech,edge, time] == 
-            model.builtCapacity[tech,edge, time] *
-            model.distance[tech,edge] *
-            model.capexPerDistance[tech,edge, time])
+            model.builtCapacity[tech,edge, time] * model.capexSpecificTransport[tech,edge, time])

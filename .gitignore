@@ -1,5 +1,7 @@
+/.idea
 /.vscode
 /data/
 /outputs/
 *.pyc
 *.DS_Store
+config.py

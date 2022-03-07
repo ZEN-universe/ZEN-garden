@@ -36,7 +36,7 @@ class DataInput():
         fileFormat  = self.analysis["fileFormat"]
         # select data
         fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1]==fileFormat)]
-        if manualFileName in fileNames or len(fileNames) == 1:
+        if manualFileName in fileNames:
             assert (manualFileName in fileNames or len(fileNames) == 1), "Selection of files was ambiguous. Select folder with single input file or select specific file by name"
             for fileName in fileNames:
                 if len(fileNames) > 1 and fileName != manualFileName:
@@ -141,6 +141,13 @@ class DataInput():
             dfInput = dfInput[requestedIndexValues].stack()
             dfInput = dfInput.reorder_levels(dfOutput.index.names)
         # get common index of dfOutput and dfInput
+        if not isinstance(dfInput.index, pd.MultiIndex):
+            indexList     = dfInput.index.to_list()
+            if len(indexList) == 1:
+                indexMultiIndex = pd.MultiIndex.from_tuples([(indexList[0],)], names=[dfInput.index.name])
+            else:
+                indexMultiIndex = pd.MultiIndex.from_product(indexList, names=[dfInput.index.name])
+            dfInput = pd.Series(index=indexMultiIndex, data=dfInput.to_list())
         commonIndex = dfOutput.index.intersection(dfInput.index)
         assert defaultValue is not None or len(commonIndex) == len(dfOutput.index), f"Input for {fileName} does not provide entire dataset and no default given in attributes.csv"
         dfOutput.loc[commonIndex] = dfInput.loc[commonIndex]
@@ -234,7 +241,33 @@ class DataInput():
                 return attributeValue
         else:
             return None
-    
+
+    def ifAttributeExists(self, folderPath, manualFileName, column=None):
+        """ checks if default value or timeseries of an attribute exists in the input data
+        :param folderPath: path to input files
+        :param manualFileName: name of selected file. If only one file in folder, not used
+        :param column: select specific column
+        """
+
+        # check if default value exists
+        if column:
+            defaultName = column
+        else:
+            defaultName = manualFileName
+        defaultValue = self.extractAttributeData(folderPath, defaultName)
+        if defaultValue is None:
+            defaultValue = self.extractAttributeData(folderPath,defaultName+"Default")
+
+        # check if input file exists
+        inputData = None
+        if defaultValue is None:
+            inputData, _ = self.readInputData(folderPath, manualFileName)
+
+        if defaultValue is None and inputData is None:
+            return False
+        else:
+            return True
+
     def extractConversionCarriers(self, folderPath):
         """ reads input data and extracts conversion carriers
         :param folderPath: path to input files 

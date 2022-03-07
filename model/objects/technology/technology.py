@@ -70,10 +70,9 @@ class Technology(Element):
                 self.PWAParameter["Capex"]["capex"] = self.PWAParameter["Capex"]["capex"]/presentValueFactor*fractionOfYear
             else:
                 self.PWAParameter["Capex"]["capex"] = [value/presentValueFactor*fractionOfYear for value in self.PWAParameter["Capex"]["capex"]]
-        elif self.name in system["setTransportTechnologies"]:
-            self.capexPerDistance = self.capexPerDistance/presentValueFactor*fractionOfYear
-        elif self.name in system["setStorageTechnologies"]:
+        elif self.name in system["setTransportTechnologies"] or self.name in system["setStorageTechnologies"]:
             self.capexSpecific = self.capexSpecific/presentValueFactor*fractionOfYear
+
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
     def constructSets(cls):
@@ -259,7 +258,7 @@ class Technology(Element):
         model.constraintTechnologycapacityLimit = pe.Constraint(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             rule = constraintTechnologycapacityLimitRule,
-            doc = 'limited capacityLimit of  technology depending on loc and time. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
+            doc = 'limited capacity of  technology depending on loc and time. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
         # minimum capacity
         model.constraintTechnologyMinCapacity = pe.Constraint(
