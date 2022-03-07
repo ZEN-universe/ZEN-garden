@@ -58,7 +58,7 @@ class EnergySystem:
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """      
         system                          = EnergySystem.getSystem()
         self.paths                      = EnergySystem.getPaths() 
-        # in class <EnergySystem>, all sets are constructd
+        # in class <EnergySystem>, all sets are constructed
         self.setNodes                   = system["setNodes"]
         self.setNodesOnEdges            = self.calculateEdgesFromNodes()
         self.setEdges                   = list(self.setNodesOnEdges.keys())
