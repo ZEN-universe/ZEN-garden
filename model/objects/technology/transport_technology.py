@@ -31,7 +31,8 @@ class TransportTechnology(Technology):
         TransportTechnology.addElement(self)
 
     def storeInputData(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
+        """ retrieves and stores input data for element as attributes.
+        Each Child class overwrites method to store different attributes """
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information

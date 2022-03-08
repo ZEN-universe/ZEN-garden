@@ -34,7 +34,8 @@ class Technology(Element):
         Technology.addElement(self)
 
     def storeInputData(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
+        """ retrieves and stores input data for element as attributes.
+        Each Child class overwrites method to store different attributes """
         # get system information
         system              = EnergySystem.getSystem()
         paths               = EnergySystem.getPaths()
