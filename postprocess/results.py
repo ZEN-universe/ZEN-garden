@@ -77,22 +77,38 @@ class Postprocess:
                 for index in var:
                     self.varDict[var.name][index] = pe.value(var[index])
                 # save vars in a DataFrame
+                # print(var)
                 self.createDataframe(var, self.varDict, self.varDf)
 
     def createDataframe(self, obj, dict, df):
         """ save data in dataframe"""
-
+        # print("obj")
+        # print(obj.name)
+        # print("dictionary")
+        # # print(dict[obj.name].keys())
+        # print(dict[obj.name])
+        # print("df")
+        # print(df)
         if dict[obj.name]:
             #TODO add names to columns in DF
             if list(dict[obj.name].keys())[0] == None:
                 df[obj.name] = pd.DataFrame(dict[obj.name].values())
+                # print(obj.name)
+                # print(df[obj.name])
+                # print(dict[obj.name].keys())
 
             elif type(list(dict[obj.name].keys())[0]) == int:
                 df[obj.name] = pd.DataFrame(dict[obj.name].values(),
                                             index=list(dict[obj.name].keys()))
+                # print(obj.name)
+                # print(df[obj.name])
+                # print(dict[obj.name].keys())
             else:
                 df[obj.name] = pd.DataFrame(dict[obj.name].values(),
                                             index=pd.MultiIndex.from_tuples(dict[obj.name].keys()))
+                # print(obj.name)
+                # print(df[obj.name])
+                # print(dict[obj.name].keys())
         else:
             print(f'{obj.name} not evaluated in results.py')
 
