@@ -94,11 +94,11 @@ class DataInput():
         # create pd.MultiIndex and select data
         indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
         # create output Series filled with default value
-        dfOutput = pd.Series(index=indexMultiIndex,data=defaultValue)
+        dfOutput = pd.Series(index=indexMultiIndex,data=defaultValue,dtype=float)
         # read input file
         dfInput,fileName = self.readInputData(folderPath,manualFileName)
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
-        if dfInput is not None:
+        if dfInput is not None and not dfInput.empty:
             # if not extracted for transport technology
             if not transportTechnology:
                 dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
@@ -138,7 +138,7 @@ class DataInput():
             requestedIndexValues = set(dfOutput.index.get_level_values(missingIndex[0]))
             assert requestedIndexValues.issubset(dfInput.columns), f"The index values {list(requestedIndexValues-set(dfInput.columns))} for index {missingIndex[0]} are missing from {fileName}"
             dfInput.columns = dfInput.columns.set_names(missingIndex[0])
-            dfInput = dfInput[requestedIndexValues].stack()
+            dfInput = dfInput[list(requestedIndexValues)].stack()
             dfInput = dfInput.reorder_levels(dfOutput.index.names)
         # get common index of dfOutput and dfInput
         if not isinstance(dfInput.index, pd.MultiIndex):
@@ -235,6 +235,7 @@ class DataInput():
         # check if attribute in index
         if attributeName in dfInput.index:
             attributeValue = dfInput.loc[attributeName,"value"]
+            multiplicator = self.getUnitMultiplicationFactor(dfInput.loc[attributeName,"unit"])
             try:
                 return float(attributeValue)
             except:
@@ -346,3 +347,46 @@ class DataInput():
                         _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[type][valueVariable])))
                         PWADict[type]["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
         return PWADict
+
+    def extractBaseUnits(self,folderPath):
+        """ extracts base units of energy system
+        :param folderPath: path to input files
+        :return listBaseUnits: list of base units """
+        listBaseUnits = pd.read_csv(folderPath +"/baseUnits.csv").squeeze().values.tolist()
+        return listBaseUnits
+
+    def getUnitMultiplicationFactor(self,inputUnit):
+        """ calculates the multiplication factor for converting an inputUnit to the base units
+        :param inputUnit: string of input unit
+        :return multiplicator: multiplication factor """
+        ureg        = self.energySystem.ureg
+        baseUnits   = self.energySystem.baseUnits
+
+        # if input unit is already in base units --> the input unit is base unit, multiplicator = 1
+        if inputUnit in baseUnits:
+            return 1
+        # if input unit is nan --> dimensionless
+        elif type(inputUnit) != str and np.isnan(inputUnit):
+            return 1
+        else:
+            # combine units
+            listUnits               = dict(baseUnits)
+            listUnits.update({inputUnit:ureg(inputUnit).dimensionality})
+            # calculate combination of units to dimensionless parameter (cf. Buckingham pi theorem)
+            listPiTheorem           = ureg.pi_theorem(listUnits)
+            # get combinations of units which contains input unit
+            listInputCombinations   = [unitDict for unitDict in listPiTheorem if inputUnit in unitDict]
+            # assert that combination of units with input unit is unique
+            if len(listInputCombinations) > 1:
+                raise AssertionError(f"Multiple combinations of input unit {inputUnit} with base units {baseUnits} possible")
+            elif len(listInputCombinations) == 0:
+                raise AssertionError(f"Input unit {inputUnit} cannot be represented by base units {baseUnits}")
+            inputCombination        = listInputCombinations[0]
+            # calculate dimensionless combined unit
+            combinedUnit            = ureg(inputUnit)
+            for unit in inputCombination:
+                if unit != inputUnit:
+                    combinedUnit    *= ureg(unit)**(inputCombination[unit]/inputCombination[inputUnit])
+            # magnitude of combined unit is multiplicator
+            multiplicator           = combinedUnit.to_base_units().magnitude
+            return multiplicator

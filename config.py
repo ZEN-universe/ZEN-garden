@@ -29,7 +29,7 @@ system['setTransportTechnologies']                  = ['power_line']
 system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant","nuclear"]#,"run-of-river_hydro"]
 system['setScenarios']                              = 'a'
 system['setTimeSteps']                              = list(range(0,2190))
-system["numberTimeStepsDefault"]                    = 2190 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
+system["numberTimeStepsDefault"]                    = 200 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
 system['setNodes']                                  = ['CH','DE',"AT","IT","FR"]
 
 ## Solver - settings update compared to default values

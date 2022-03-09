@@ -54,7 +54,7 @@ def getDefaultValue(attribute):
     defaultValues={                                 # unit
         "minBuiltCapacity"          : 0,            # GW,GWh
         "maxBuiltCapacity"          : 1,            # GW,GWh
-        "minLoad"                   : 0,            # -
+        "minLoad"                   : 0.1,          # -
         "maxLoad"                   : 1,            # -
         "lifetime"                  : 20,           # a
         "opexSpecific"              : 0,            # kEUR/GWh
@@ -84,7 +84,7 @@ def getDefaultUnit(attribute):
         "maxBuiltCapacity"          : "GW",            # GW,GWh
         "minLoad"                   : "",            # -
         "maxLoad"                   : "",            # -
-        "lifetime"                  : "year",           # a
+        "lifetime"                  : "",           # a
         "opexSpecific"              : "kiloEuro/GWh",            # kEUR/GWh
         "capacityLimit"             : "GW",          # GW
         "carbonIntensity"           : "kilotons/GWh",            # ktCO2/GWh
@@ -207,7 +207,7 @@ def setManualAttributesCarriers(elementName,dfAttribute):
     :param dfAttribute: attribute dataframe
     :return dfAttribute: attribute dataframe """
     if elementName == "electricity":
-        dfAttribute.loc["importPriceCarrierDefault","value"]    = 3000  # kEUR/GWh, current maximum market clearing price at coupled European Power Exchange
+        dfAttribute.loc["importPriceCarrierDefault","value"]    = 30000  # kEUR/GWh, current maximum market clearing price at coupled European Power Exchange
         dfAttribute.loc["carbonIntensityDefault","value"]       = 0.127 # kt_CO2/GWh, value from Gabrielli et al.
     return dfAttribute
 
@@ -326,6 +326,18 @@ def getAttributeIndex(technology):
     
     return(typeTech,technology,cogeneration,size)
 
+def getEntsoeTechnologyIdentifier(technology):
+    """ this method returns the PSR technology identifier to get the generation profile of the technology from the entsoe database """
+    entsoeTechnologies = {
+        "photovoltaics":        "B16",
+        "wind_onshore":         "B19",
+        "hard_coal_plant":      "B05",
+        "natural_gas_turbine":  "B04",
+        "nuclear":              "B14",
+        "run-of-river_hydro":   "B11"
+    }
+    return entsoeTechnologies[technology]
+
 def getCarrierIdentifier(carrier):
     """ this method returns the index to look up the carrier in Potencia fuel costs """
     if carrier == "hard_coal":
@@ -346,7 +358,8 @@ def getConstants(constant):
     constants = {
         "MWh2toe"           : 0.0859845,
         "yearFirstDemand"   : 2017,
-        "maximumInvestYears": 5
+        "maximumInvestYears": 5,
+        "apiYear"           : 2019 # if EMHIRES database used, use year 2015
     }
     return constants[constant]
 

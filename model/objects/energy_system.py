@@ -12,6 +12,7 @@ import logging
 import pyomo.environ as pe
 import numpy as np
 import pandas as pd
+from pint import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
 
 class EnergySystem:
@@ -27,6 +28,8 @@ class EnergySystem:
     paths = None
     # solver
     solver = None
+    # unit registry
+    ureg = UnitRegistry()
     # empty list of indexing sets
     indexingSets = []
     # aggregationObjects of element
@@ -57,7 +60,8 @@ class EnergySystem:
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """      
         system                          = EnergySystem.getSystem()
-        self.paths                      = EnergySystem.getPaths() 
+        self.paths                      = EnergySystem.getPaths()
+        self.getBaseUnits()
         # in class <EnergySystem>, all sets are constructed
         self.setNodes                   = system["setNodes"]
         self.setNodesOnEdges            = self.calculateEdgesFromNodes()
@@ -77,7 +81,15 @@ class EnergySystem:
         # extract number of time steps for elements
         self.typesTimeSteps             = ["invest","operation"]
         self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
-    
+
+    def getBaseUnits(self):
+        """ gets base units of energy system """
+        _listBaseUnits                  = self.dataInput.extractBaseUnits(self.paths["setScenarios"]["folder"])
+        ureg                           = EnergySystem.getUnitRegistry()
+        # define additional units
+        ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
+        self.baseUnits                  = {_baseUnit:ureg(_baseUnit).dimensionality for _baseUnit in _listBaseUnits}
+
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
         :return setNodesOnEdges: dict with edges and corresponding nodes """
@@ -200,7 +212,13 @@ class EnergySystem:
         """ get energySystem.
         :return energySystem: return energySystem  """
         return cls.energySystem
-    
+
+    @classmethod
+    def getUnitRegistry(cls):
+        """ get the unit registry
+        :return units: unit registry """
+        return cls.ureg
+
     @classmethod
     def getAttribute(cls,attributeName:str):
         """ get attribute value of energySystem

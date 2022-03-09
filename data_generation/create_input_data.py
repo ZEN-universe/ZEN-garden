@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import os, sys
 import functions.data_helpers as helpers
+import functions.query_api_data as queryApi
 from pathlib import Path
 import pickle
 
@@ -18,13 +19,16 @@ class DataCreation():
     def __init__(self,folderName,sourceName):
         self.folderName = folderName
         self.sourceName = sourceName
-        self.cwd = Path(os.getcwd())
+        self.cwd        = Path(os.getcwd())
         self.folderPath = self.cwd / "data" / self.folderName
         # create new folder structure if it does not exist yet
         self.createNewFolder()
         # check if source path exists
         self.sourcePath = self.cwd.parent / self.sourceName
-        assert os.path.exists(self.sourcePath), f"Source data folder {self.sourceName} does not exist in {self.cwd.parent}" 
+        assert os.path.exists(self.sourcePath), f"Source data folder {self.sourceName} does not exist in {self.cwd.parent}"
+        # initialize extraction from ENTSO-E transparency platform
+        self.useApiData = True
+        self.apiData    = queryApi.ExtractApis(self,helpers)
         # create input data
         self.createInputData()
 
@@ -55,13 +59,12 @@ class DataCreation():
         self.createStorageTechnologies()
         # create carriers
         self.createCarriers()
-        
-        a=1
 
     def createNodes(self):
         """ fills the setNodes folder"""
         assert os.path.exists(self.folderPath / "setNodes" / "setNodes.csv"), "setNodes not yet created! Implement!"
         self.setNodes = pd.read_csv(self.folderPath / "setNodes" / "setNodes.csv")
+        self.apiData.setNodes(self.setNodes)
 
     def createTimeSteps(self,setName = None,elementName = None):
         """ fills the setTimeSteps folder and creates the time steps for each element in each set """
@@ -98,7 +101,9 @@ class DataCreation():
             self.createPWAfiles(conversionTechnology)
             # create PV and wind onshore maxLoad files
             self.createMaxLoadFiles(conversionTechnology)
-    
+            # extract historic generation profile
+            self.extractHistoricGeneration(conversionTechnology)
+
     def createTransportTechnologies(self):
         """ fills the setTransportTechnologies folder"""
         transportTechnologies = helpers.getTechnologies(self.sourcePath,"transport")
@@ -156,6 +161,9 @@ class DataCreation():
         dfAttribute["value"]    = dfAttribute.index.map(lambda index: helpers.getDefaultValue(index))
         dfAttribute["unit"]     = dfAttribute.index.map(lambda index: helpers.getDefaultUnit(index))
         if setName == "setConversionTechnologies":
+            # overwrite minLoad, if no min load, set to 0
+            if not helpers.getTechnologies(self.sourcePath,"conversion","minLoad")[elementName]:
+                dfAttribute.loc["minLoad","value"]          = 0
             # input and output carrier
             _inputCarrier,_outputCarrier                    = self.getInputOutputCarrier(elementName)
             dfAttribute.loc["inputCarrier","value"],dfAttribute.loc["outputCarrier","value"]    = _inputCarrier,_outputCarrier
@@ -206,12 +214,15 @@ class DataCreation():
         """ creates demand file for selected carriers 
         :param carrier: carrier in model """
         if carrier == "electricity":
-            commonCountries = set(self.electricityDemand.columns).intersection(self.setNodes["node"])
-            missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
-            if missingCountries:
-                print(f"electricity demand missing for countries {missingCountries}. Default demand is used.")
-            electricityDemandSelection = self.electricityDemand[sorted(commonCountries)]
-            electricityDemandSelection.index.name = "time"
+            if self.useApiData:
+                electricityDemandSelection = self.apiData.getEntsoeDemand()
+            else:
+                commonCountries = set(self.electricityDemand.columns).intersection(self.setNodes["node"])
+                missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
+                if missingCountries:
+                    print(f"electricity demand missing for countries {missingCountries}. Default demand is used.")
+                electricityDemandSelection = self.electricityDemand[sorted(commonCountries)]
+                electricityDemandSelection.index.name = "time"
             electricityDemandSelection.to_csv(self.folderPath / "setCarriers" / carrier / "demandCarrier.csv")
 
     def createPWAfiles(self,elementName):
@@ -234,47 +245,54 @@ class DataCreation():
         assert len(_dependentCarrier) <= 1, f"Not yet implemented for technologies ({elementName}) with more than 1 dependent carrier {_dependentCarrier}"
         # create csv
         # capex
-        dfCapex                         = pd.DataFrame([helpers.getDefaultUnit("capacityLimit"),minCapacity,maxBuiltCapacity],columns=["capacity"])
+        dfCapex                         = pd.DataFrame([minCapacity,maxBuiltCapacity],columns=["capacity"])
         dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWACapex.csv",index = False)
         dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"]*1000 # kEUR/GW
-        dfCapex.loc[helpers.getDefaultUnit("capacityLimit"),"capex"] = "kiloEuro/GW"
         dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearCapex.csv",index = False)
         # converEfficiency
-        dfConverEfficiency              = pd.DataFrame([helpers.getCarrierUnits(_referenceCarrier),minCapacity,maxTotalCapacity],columns=[_referenceCarrier])
+        dfConverEfficiency              = pd.DataFrame([minCapacity,maxTotalCapacity],columns=[_referenceCarrier])
         dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWAConverEfficiency.csv",index = False)
         if len(_dependentCarrier) == 1:
-            dfConverEfficiency[_referenceCarrier].apply(lambda row: row/_potenciaAssumptions["Net efficiency"] if type(row) != str else helpers.getCarrierUnits(_dependentCarrier[0]))
+            dfConverEfficiency[_dependentCarrier[0]] = dfConverEfficiency[_referenceCarrier]/_potenciaAssumptions["Net efficiency"]
         dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearConverEfficiency.csv",index = False)
 
     def createMaxLoadFiles(self,elementName):
         """ creates maxLoad files for photovoltaics and wind onshore conversion technologies """
         if elementName == "photovoltaics" or elementName == "wind_onshore":
-            # if already converted
-            if os.path.exists(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle"):
-                with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "rb") as input_file:
-                    maxLoad = pickle.load(input_file)
+            if self.useApiData:
+                maxLoad = self.apiData.getRenewableNinjaData(elementName)
             else:
-                # elementName specific
-                if elementName == "photovoltaics":
-                    # from EMHIRESPV_TSh_CF_Country_only2015, reduced version 
-                    maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRESPV_TSh_CF_Country_only2015.xlsx").set_index("Date")
-                elif elementName == "wind_onshore":
-                    # from EMHIRES_WIND_COUNTRY_only2015_June2019, reduced version 
-                    maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRES_WIND_COUNTRY_only2015_June2019.xlsx").set_index("Date")
-                # only select specific countries
-                commonCountries = set(maxLoad.columns).intersection(self.setNodes["node"])
-                missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
-                if missingCountries:
-                    print(f"MaxLoad for {elementName} missing for countries {missingCountries}. Default maxLoad is used.")
-                maxLoad = maxLoad[sorted(commonCountries)]
-                # dump pickle
-                with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "wb") as input_file:
-                    pickle.dump(maxLoad , input_file)
+                # if already converted
+                if os.path.exists(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle"):
+                    with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "rb") as input_file:
+                        maxLoad = pickle.load(input_file)
+                else:
+                    # elementName specific
+                    if elementName == "photovoltaics":
+                        # from EMHIRESPV_TSh_CF_Country_only2015, reduced version
+                        maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRESPV_TSh_CF_Country_only2015.xlsx").set_index("Date")
+                    elif elementName == "wind_onshore":
+                        # from EMHIRES_WIND_COUNTRY_only2015_June2019, reduced version
+                        maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRES_WIND_COUNTRY_only2015_June2019.xlsx").set_index("Date")
+                    # only select specific countries
+                    commonCountries = set(maxLoad.columns).intersection(self.setNodes["node"])
+                    missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
+                    if missingCountries:
+                        print(f"MaxLoad for {elementName} missing for countries {missingCountries}. Default maxLoad is used.")
+                    maxLoad = maxLoad[sorted(commonCountries)]
+                    # dump pickle
+                    with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "wb") as input_file:
+                        pickle.dump(maxLoad , input_file)
             # do not use datetime index but (for the time being) range from 0-8759
-            maxLoad        = maxLoad.reset_index(drop=True)
+            maxLoad             = maxLoad.reset_index(drop=True)
             # create csv
-            maxLoad.index.name = "time"
+            maxLoad.index.name  = "time"
             maxLoad.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "maxLoad.csv")
+
+    def extractHistoricGeneration(self,elementName):
+        """ extracts historic entsoe generation profiles """
+        historicGeneration = self.apiData.getEntsoeGeneration(elementName)
+        historicGeneration.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "historicGeneration.csv")
 
     def createDistanceMatrix(self,elementName):
         """
@@ -303,7 +321,7 @@ def main():
     # set folder name
     folderName = "NUTS0_electricity"
     sourceName = "NUTS0_Source_Data"
-    # enable or disable creation scripts. 
+    # enable or disable creation scripts.
     DataCreation(folderName = folderName,sourceName = sourceName)
 
 if __name__ == "__main__":
