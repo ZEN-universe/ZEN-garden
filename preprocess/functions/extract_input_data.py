@@ -89,12 +89,16 @@ class DataInput():
         defaultValue = self.extractAttributeData(folderPath,defaultName)
         if defaultValue is None:
             defaultValue = self.extractAttributeData(folderPath,defaultName+"Default")
+
         # select index
         indexList,indexNameList = self.constructIndexList(indexSets,timeSteps)
         # create pd.MultiIndex and select data
         indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
         # create output Series filled with default value
-        dfOutput = pd.Series(index=indexMultiIndex,data=defaultValue,dtype=float)
+        if defaultValue is None:
+            dfOutput = pd.Series(index=indexMultiIndex, dtype=float)
+        else:
+            dfOutput = pd.Series(index=indexMultiIndex,data=defaultValue["value"],dtype=float)
         # read input file
         dfInput,fileName = self.readInputData(folderPath,manualFileName)
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
@@ -103,7 +107,7 @@ class DataInput():
             if not transportTechnology:
                 dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
             else:
-                dfOutput = self.extractTransportInputData(dfInput,dfOutput,indexMultiIndex)
+                dfOutput = self.extractTransportInputData(dfInput,dfOutput,indexMultiIndex,defaultValue)
         return dfOutput 
     
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
@@ -140,6 +144,8 @@ class DataInput():
             dfInput.columns = dfInput.columns.set_names(missingIndex[0])
             dfInput = dfInput[list(requestedIndexValues)].stack()
             dfInput = dfInput.reorder_levels(dfOutput.index.names)
+        # apply multiplier to input data
+        dfInput = dfInput * defaultValue["multiplier"]
         # get common index of dfOutput and dfInput
         if not isinstance(dfInput.index, pd.MultiIndex):
             indexList     = dfInput.index.to_list()
@@ -153,13 +159,16 @@ class DataInput():
         dfOutput.loc[commonIndex] = dfInput.loc[commonIndex]
         return dfOutput
 
-    def extractTransportInputData(self, dfInput,dfOutput,indexMultiIndex):
+    def extractTransportInputData(self, dfInput,dfOutput,indexMultiIndex,defaultValue):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param dfInput: raw input dataframe
         :param dfOutput: empty output dataframe, only filled with defaultValue 
         :param indexMultiIndex: multiIndex of dfOutput
+        :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
-        dfInput = dfInput.set_index(self.indexNames['setNodes']) 
+        dfInput = dfInput.set_index(self.indexNames['setNodes'])
+        # apply multiplier to input data
+        dfInput = dfInput * defaultValue["multiplier"]
         # fill dfOutput
         for index in indexMultiIndex:
             if isinstance(index,tuple):
@@ -235,9 +244,10 @@ class DataInput():
         # check if attribute in index
         if attributeName in dfInput.index:
             attributeValue = dfInput.loc[attributeName,"value"]
-            multiplicator = self.getUnitMultiplicationFactor(dfInput.loc[attributeName,"unit"])
+            multiplier = self.getUnitMultiplier(dfInput.loc[attributeName,"unit"])
             try:
-                return float(attributeValue)
+                attribute = {"value":float(attributeValue)*multiplier,"multiplier":multiplier}
+                return attribute
             except:
                 return attributeValue
         else:
@@ -276,8 +286,9 @@ class DataInput():
         carrierDict = {}
         # get carriers
         for _carrierType in ["inputCarrier","outputCarrier"]:
+            # TODO implement for multiple carriers
             _carrierString = self.extractAttributeData(folderPath,_carrierType)
-            if str(_carrierString) != "nan":
+            if type(_carrierString) == str:
                 _carrierList = _carrierString.strip().split(" ")
                 for _carrierItem in _carrierList:
                     # check if carrier in carriers of model
@@ -299,10 +310,14 @@ class DataInput():
         PWADict = {}
         for type in self.analysis["nonlinearTechnologyApproximation"]:
             # extract all data values
-            PWADict[type] = {}
-            nonlinearValues = {}
+            PWADict[type]       = {}
+            nonlinearValues     = {}
             assert f"nonlinear{type}.{fileFormat}" in os.listdir(folderPath), f"File 'nonlinear{type}.{fileFormat}' does not exist in {folderPath}"
-            dfInputNonlinear = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
+            dfInputNonlinear    = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
+            dfInputUnits        = dfInputNonlinear.iloc[-1]
+            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.getUnitMultiplier(unit))
+            dfInputNonlinear    = dfInputNonlinear.iloc[:-1].astype(float)
+            dfInputNonlinear    = dfInputNonlinear*dfInputMultiplier
             if type == "Capex":
                 # make absolute capex
                 dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
@@ -310,7 +325,12 @@ class DataInput():
                 nonlinearValues[column] = dfInputNonlinear[column].to_list()
             # extract PWA breakpoints
             assert f"breakpointsPWA{type}.{fileFormat}" in os.listdir(folderPath), f"File 'breakpointsPWA{type}.{fileFormat}' does not exist in {folderPath}"
-            dfInputBreakpoints = pd.read_csv(folderPath+"breakpointsPWA" + type + '.'+fileFormat, header=0, index_col=None)
+            # TODO devise better way to split string units
+            dfInputBreakpoints          = pd.read_csv(folderPath+"breakpointsPWA" + type + '.'+fileFormat, header=0, index_col=None)
+            dfInputBreakpointsUnits     = dfInputBreakpoints.iloc[-1]
+            dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.getUnitMultiplier(unit))
+            dfInputBreakpoints          = dfInputBreakpoints.iloc[:-1].astype(float)
+            dfInputBreakpoints          = dfInputBreakpoints*dfInputMultiplier
             # assert that breakpoint variable (x variable in nonlinear input)
             assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
             breakpointVariable = dfInputBreakpoints.columns[0]
@@ -355,14 +375,14 @@ class DataInput():
         listBaseUnits = pd.read_csv(folderPath +"/baseUnits.csv").squeeze().values.tolist()
         return listBaseUnits
 
-    def getUnitMultiplicationFactor(self,inputUnit):
-        """ calculates the multiplication factor for converting an inputUnit to the base units
+    def getUnitMultiplier(self,inputUnit):
+        """ calculates the multiplier for converting an inputUnit to the base units
         :param inputUnit: string of input unit
-        :return multiplicator: multiplication factor """
+        :return multiplier: multiplication factor """
         ureg        = self.energySystem.ureg
         baseUnits   = self.energySystem.baseUnits
 
-        # if input unit is already in base units --> the input unit is base unit, multiplicator = 1
+        # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if inputUnit in baseUnits:
             return 1
         # if input unit is nan --> dimensionless
@@ -383,10 +403,10 @@ class DataInput():
                 raise AssertionError(f"Input unit {inputUnit} cannot be represented by base units {baseUnits}")
             inputCombination        = listInputCombinations[0]
             # calculate dimensionless combined unit
-            combinedUnit            = ureg(inputUnit)
+            combinedUnit            = ureg(inputUnit).units
             for unit in inputCombination:
                 if unit != inputUnit:
                     combinedUnit    *= ureg(unit)**(inputCombination[unit]/inputCombination[inputUnit])
-            # magnitude of combined unit is multiplicator
-            multiplicator           = combinedUnit.to_base_units().magnitude
-            return multiplicator
+            # magnitude of combined unit is multiplier
+            multiplier           = combinedUnit.to_base_units().magnitude
+            return round(multiplier,self.solver["roundingDecimalPoints"])

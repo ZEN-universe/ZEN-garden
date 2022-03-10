@@ -246,14 +246,20 @@ class DataCreation():
         # create csv
         # capex
         dfCapex                         = pd.DataFrame([minCapacity,maxBuiltCapacity],columns=["capacity"])
-        dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWACapex.csv",index = False)
-        dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"]*1000 # kEUR/GW
+        dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"] * 1000  # kEUR/GW
+        # append units
+        dfCapex.loc[len(dfCapex.index)] = ["GW","kiloEuro/GW"]
+        # save as csv
+        dfCapex["capacity"].to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWACapex.csv",index = False)
         dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearCapex.csv",index = False)
         # converEfficiency
         dfConverEfficiency              = pd.DataFrame([minCapacity,maxTotalCapacity],columns=[_referenceCarrier])
-        dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWAConverEfficiency.csv",index = False)
         if len(_dependentCarrier) == 1:
-            dfConverEfficiency[_dependentCarrier[0]] = dfConverEfficiency[_referenceCarrier]/_potenciaAssumptions["Net efficiency"]
+            dfConverEfficiency[_dependentCarrier[0]]            = dfConverEfficiency[_referenceCarrier]/_potenciaAssumptions["Net efficiency"]
+        # append units
+        dfConverEfficiency.loc[len(dfConverEfficiency.index)]   = "GW"
+        # save as csv
+        dfConverEfficiency[_referenceCarrier].to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWAConverEfficiency.csv",index = False)
         dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearConverEfficiency.csv",index = False)
 
     def createMaxLoadFiles(self,elementName):

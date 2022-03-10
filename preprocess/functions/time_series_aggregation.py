@@ -242,6 +242,7 @@ class TimeSeriesAggregation():
     @classmethod
     def conductTimeSeriesAggregation(cls):
         """ this method conducts time series aggregation """
+        logging.info("\n--- Time series aggregation ---")
         TimeSeriesAggregation()
 
         # calculate storage level time steps

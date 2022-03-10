@@ -66,7 +66,8 @@ def getDefaultValue(attribute):
         "exportPriceCarrier"        : 0,            # kEUR/GWh
         "importPriceCarrier"        : 0,            # kEUR/GWh
         "referenceCarrier"          : "electricity",# -     
-        "storageLevelRepetition"    : 1             # -    
+        "storageLevelRepetition"    : 1,             # -
+        "distanceEuclidean"         : inf
     }
     # remove "Default" from attribute name
     attribute = attribute.replace("Default","")
@@ -94,7 +95,8 @@ def getDefaultUnit(attribute):
         "exportPriceCarrier"        : "kiloEuro/GWh",            # kEUR/GWh
         "importPriceCarrier"        : "kiloEuro/GWh",            # kEUR/GWh
         "referenceCarrier"          : "GW",# -
-        "storageLevelRepetition"    : ""             # -
+        "storageLevelRepetition"    : "",             # -
+        "distanceEuclidean"         : "km"
     }
     # remove "Default" from attribute name
     attribute = attribute.replace("Default","")
@@ -126,6 +128,7 @@ def getAttributesOfSet(setName):
         "setTransportTechnologies": [
             "lossFlow",
             "capexPerDistanceDefault",
+            "distanceEuclideanDefault"
         ],
         "setStorageTechnologies": [
             "efficiencyCharge",

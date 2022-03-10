@@ -105,3 +105,5 @@ solver['performanceCheck'] = {'printDeltaRun':1, 'printDeltaIteration':1}
 # settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly: 
 # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
 solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
+# rounding to number of decimal points
+solver["roundingDecimalPoints"] = 10

@@ -50,7 +50,7 @@ class TransportTechnology(Technology):
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
         self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
-        self.lossFlow                       = self.dataInput.extractAttributeData(self.inputPath,"lossFlow")
+        self.lossFlow                       = self.dataInput.extractAttributeData(self.inputPath,"lossFlow")["value"]
         if self.dataInput.ifAttributeExists(self.inputPath,"capexPerDistance"):
             self.capexPerDistance = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
             self.capexSpecific    = self.capexPerDistance * self.distance

@@ -49,9 +49,9 @@ class Technology(Element):
                 EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest") 
                 # self.timeStepsOperationDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsOperation)
                 self.referenceCarrier           = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
-                self.minBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
-                self.maxBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
-                self.lifetime                   = self.dataInput.extractAttributeData(_inputPath,"lifetime")
+                self.minBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")["value"]
+                self.maxBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")["value"]
+                self.lifetime                   = self.dataInput.extractAttributeData(_inputPath,"lifetime")["value"]
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """

@@ -24,7 +24,7 @@ analysis['nonlinearTechnologyApproximation']        = {'Capex': [], 'ConverEffic
 
 ## System - settings update compared to default values
 system['setCarriers']                               = ['electricity','natural_gas',"hard_coal","uranium"]
-system['setStorageTechnologies']                    = []#"battery"]
+system['setStorageTechnologies']                    = ["battery"]
 system['setTransportTechnologies']                  = ['power_line']
 system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant","nuclear"]#,"run-of-river_hydro"]
 system['setScenarios']                              = 'a'
