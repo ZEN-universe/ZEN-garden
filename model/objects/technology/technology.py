@@ -258,7 +258,7 @@ class Technology(Element):
         model.constraintTechnologycapacityLimit = pe.Constraint(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
             rule = constraintTechnologycapacityLimitRule,
-            doc = 'limited capacityLimit of  technology depending on loc and time. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
+            doc = 'limited capacity of  technology depending on loc and time. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
         # minimum capacity
         model.constraintTechnologyMinCapacity = pe.Constraint(

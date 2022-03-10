@@ -12,6 +12,7 @@ import os
 import logging
 import config
 import sys
+from datetime import datetime
 from preprocess.prepare import Prepare
 from model.optimization_setup import OptimizationSetup
 from model.metaheuristic.algorithm import Metaheuristic
@@ -50,5 +51,12 @@ elif config.solver['model'] == 'MINLP':
     master.solveMINLP(config.solver)
 
 # EVALUATE RESULTS
+<<<<<<< HEAD
 evaluation = Postprocess(optimizationSetup, modelName = 'test_AxpoDummy')
 # print(evaluation)
+=======
+today      = datetime.now()
+modelName  = "model_" + today.strftime("%Y-%m-%d")
+evaluation = Postprocess(optimizationSetup, modelName = modelName)
+
+>>>>>>> master

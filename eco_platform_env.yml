@@ -9,9 +9,14 @@ dependencies:
   - pandas
   - pip
   - pyomo=6.2
-  - python=3.8.8
+  - python=3.*
   - scipy
-  - mpmath 
+  - sympy
   - ipython
+  - matplotlib
+  - mpmath
   - pip:
       - tsam
+
+# conda env create -f eco_platform_env.yml
+# conda remove --name eco_platform --all
