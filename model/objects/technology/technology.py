@@ -42,16 +42,44 @@ class Technology(Element):
         # set attributes of technology
         for technologyType in technologyTypes:
             if self.name in system[technologyType]:
-                _inputPath                      = paths[technologyType][self.name]["folder"]
+                if technologyType == "setTransportTechnologies":
+                    _setLocation            = "setEdges"
+                    _isTransportTechnology  = True
+                else:
+                    _setLocation            = "setNodes"
+                    _isTransportTechnology  = False
+                self.inputPath                  = paths[technologyType][self.name]["folder"]
+                setBaseTimeSteps                = EnergySystem.getEnergySystem().setBaseTimeSteps
+
                 self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(self.name,typeOfTimeSteps="invest")
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
                 self.orderTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
-                EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest") 
+                EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest")
                 # self.timeStepsOperationDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsOperation)
-                self.referenceCarrier           = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
-                self.minBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")["value"]
-                self.maxBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")["value"]
-                self.lifetime                   = self.dataInput.extractAttributeData(_inputPath,"lifetime")["value"]
+                self.referenceCarrier           = [self.dataInput.extractAttributeData(self.inputPath,"referenceCarrier")]
+                self.minBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"minBuiltCapacity")["value"]
+                self.maxBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"maxBuiltCapacity")["value"]
+                self.lifetime                   = self.dataInput.extractAttributeData(self.inputPath,"lifetime")["value"]
+                # add all raw time series to dict
+                self.rawTimeSeries = {}
+                self.rawTimeSeries["minLoad"]   = self.dataInput.extractInputData(self.inputPath, "minLoad",
+                                                                                indexSets=[_setLocation, "setTimeSteps"],
+                                                                                timeSteps=setBaseTimeSteps,
+                                                                                transportTechnology=_isTransportTechnology)
+                self.rawTimeSeries["maxLoad"]   = self.dataInput.extractInputData(self.inputPath, "maxLoad",
+                                                                                indexSets=[_setLocation, "setTimeSteps"],
+                                                                                timeSteps=setBaseTimeSteps,
+                                                                                transportTechnology=_isTransportTechnology)
+                self.rawTimeSeries["opexSpecific"] = self.dataInput.extractInputData(self.inputPath, "opexSpecific",
+                                                                                indexSets=[_setLocation,"setTimeSteps"],
+                                                                                timeSteps=setBaseTimeSteps,
+                                                                                transportTechnology=_isTransportTechnology)
+                # non-time series input data
+                self.capacityLimit              = self.dataInput.extractInputData(self.inputPath, "capacityLimit",
+                                                                                indexSets=[_setLocation],
+                                                                                transportTechnology=_isTransportTechnology)
+                self.carbonIntensityTechnology  = self.dataInput.extractInputData(self.inputPath, "carbonIntensity",
+                                                                                indexSets=[_setLocation])
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
@@ -190,8 +218,8 @@ class Technology(Element):
             ### TODO: if existing capacity, add existing capacity
             existingCapacity = 0
             maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
-            maxcapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
-            boundCapacity = min(maxBuiltCapacity + existingCapacity,maxcapacityLimitTechnology)
+            maxCapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
+            boundCapacity = min(maxBuiltCapacity + existingCapacity,maxCapacityLimitTechnology)
             bounds = (0,boundCapacity)
             return(bounds)
 
@@ -255,9 +283,9 @@ class Technology(Element):
         model = EnergySystem.getConcreteModel()
         # construct pe.Constraints of the class <Technology>
         #  technology capacityLimit
-        model.constraintTechnologycapacityLimit = pe.Constraint(
+        model.constraintTechnologyCapacityLimit = pe.Constraint(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
-            rule = constraintTechnologycapacityLimitRule,
+            rule = constraintTechnologyCapacityLimitRule,
             doc = 'limited capacity of  technology depending on loc and time. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
         # minimum capacity
@@ -361,7 +389,7 @@ class Technology(Element):
 
 ### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class
-def constraintTechnologycapacityLimitRule(model, tech, loc, time):
+def constraintTechnologyCapacityLimitRule(model, tech, loc, time):
     """limited capacityLimit of  technology"""
     if model.capacityLimitTechnology[tech, loc] != np.inf:
         return (model.capacityLimitTechnology[tech, loc] >= model.capacity[tech, loc, time])

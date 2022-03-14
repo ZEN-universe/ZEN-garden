@@ -310,7 +310,7 @@ class EnergySystem:
 
     @classmethod
     def decodeTimeStep(cls,element:str,elementTimeStep,timeStepType:str = None):
-        """ decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variablTimeStep of a element.
+        """ decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variable TimeStep of an element.
         timeStep of element --> baseTimeStep of model 
         :param element: element of model, i.e., carrier or technology
         :param elementTimeStep: time step of element
@@ -346,9 +346,9 @@ class EnergySystem:
         :param elementTimeStep: time step of element
         :param direction: conversion direction (operation2invest or invest2operation)
         :return convertedTimeStep: time of second type """
-        model = cls.getConcreteModel()
-        setTimeStepsInvest = model.setTimeStepsInvest[element]
-        setTimeStepsOperation = model.setTimeStepsOperation[element]
+        model                   = cls.getConcreteModel()
+        setTimeStepsInvest      = model.setTimeStepsInvest[element]
+        setTimeStepsOperation   = model.setTimeStepsOperation[element]
         # if only one investment step
         if len(setTimeStepsInvest) == 1:
             if direction ==  "operation2invest":
