@@ -10,6 +10,7 @@ import numpy as np
 from scipy.stats import linregress
 import pandas as pd
 import os
+from pint.util import column_echelon_form
 import logging
 
 class DataInput():
@@ -379,9 +380,9 @@ class DataInput():
         """ calculates the multiplier for converting an inputUnit to the base units
         :param inputUnit: string of input unit
         :return multiplier: multiplication factor """
-        ureg        = self.energySystem.ureg
-        baseUnits   = self.energySystem.baseUnits
-
+        ureg                    = self.energySystem.ureg
+        baseUnits               = self.energySystem.baseUnits
+        # dimensionalityMatrix    = self.energySystem.dimensionalityMatrix
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if inputUnit in baseUnits:
             return 1
@@ -389,6 +390,10 @@ class DataInput():
         elif type(inputUnit) != str and np.isnan(inputUnit):
             return 1
         else:
+            # create dimensionality vector for inputUnit
+            # inputDimensionality     = ureg.get_dimensionality(ureg(inputUnit))
+            # dimensionalityVector    = pd.Series(index=dimensionalityMatrix.index, data=0)
+            # dimensionalityVector[list(inputDimensionality.keys())] = list(inputDimensionality.values())
             # combine units
             listUnits               = dict(baseUnits)
             listUnits.update({inputUnit:ureg(inputUnit).dimensionality})
@@ -397,13 +402,17 @@ class DataInput():
             # get combinations of units which contains input unit
             listInputCombinations   = [unitDict for unitDict in listPiTheorem if inputUnit in unitDict]
             # assert that combination of units with input unit is unique
-            if len(listInputCombinations) > 1:
-                raise AssertionError(f"Multiple combinations of input unit {inputUnit} with base units {baseUnits} possible")
-            elif len(listInputCombinations) == 0:
+            if len(listInputCombinations) == 0:
                 raise AssertionError(f"Input unit {inputUnit} cannot be represented by base units {baseUnits}")
             inputCombination        = listInputCombinations[0]
+            # if input unit not to the power 1
+            if inputCombination[inputUnit] == 1:
+                listPiTheorem = [inputCombination]
+            else:
+                a=1
             # calculate dimensionless combined unit
             combinedUnit            = ureg(inputUnit).units
+            # for piCombination in listPiTheorem:
             for unit in inputCombination:
                 if unit != inputUnit:
                     combinedUnit    *= ureg(unit)**(inputCombination[unit]/inputCombination[inputUnit])
