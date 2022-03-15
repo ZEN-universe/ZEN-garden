@@ -60,6 +60,11 @@ class Carrier(Element):
             model.setCarriers,
             initialize=cls.getAttributeOfAllElements("setTimeStepsCarrier"),
             doc='Set of time steps of carriers. Dimensions: setCarriers')
+        # time-steps of energy balance of carrier
+        model.setTimeStepsEnergyBalance = pe.Set(
+            model.setCarriers,
+            initialize=cls.getAttributeOfAllElements("setTimeStepsEnergyBalance"),
+            doc='Set of time steps of carriers. Dimensions: setCarriers')
 
     @classmethod
     def constructParams(cls):
@@ -187,9 +192,9 @@ class Carrier(Element):
         )
         # energy balance
         model.constraintNodalEnergyBalance = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsEnergyBalance"]),
             rule = constraintNodalEnergyBalanceRule,
-            doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
+            doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsEnergyBalance',
         )
 
 
@@ -246,7 +251,7 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
     """
     # decode to baseTimeStep
-    baseTimeStep = EnergySystem.decodeTimeStep(carrier,time)
+    baseTimeStep = EnergySystem.decodeTimeStep(carrier+"EnergyBalance",time)
     # carrier input and output conversion technologies
     carrierConversionIn, carrierConversionOut = 0, 0
     for tech in model.setConversionTechnologies:

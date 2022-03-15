@@ -85,10 +85,11 @@ class EnergySystem:
     def getBaseUnits(self):
         """ gets base units of energy system """
         _listBaseUnits                  = self.dataInput.extractBaseUnits(self.paths["setScenarios"]["folder"])
-        ureg                           = EnergySystem.getUnitRegistry()
+        ureg                            = EnergySystem.getUnitRegistry()
         # define additional units
         ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
         self.baseUnits                  = {_baseUnit:ureg(_baseUnit).dimensionality for _baseUnit in _listBaseUnits}
+        a=1
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
