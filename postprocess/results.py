@@ -100,8 +100,12 @@ class Postprocess:
             if list(dict[obj.name].keys())[0] == None:
                 # [index, capacity]
                 # type 2, and 4 comes in here
-                df[obj.name] = pd.DataFrame(dict[obj.name].values())
-                self.trimZeros(obj, self.varDf)
+                if obj.name=='capexTotal' or obj.name=='costCarrierTotal' or obj.name=='opexTotal':
+                    df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=['capacity[k€]'])
+                else:   # obj.name=='carbonEmissionsCarrierTotal' or obj.name=='carbonEmissionsTechnologyTotal' or obj.name=='carbonEmissionsTotal'
+                    df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=['capacity[GWh]'])
+
+                self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
                 # print(obj.name)
                 # print(df[obj.name])
                 # print(dict[obj.name].keys())
@@ -131,12 +135,16 @@ class Postprocess:
         else:
             print(f'{obj.name} not evaluated in results.py')
 
-        print(df)
+        # print(df)
 
-    def trimZeros(self, obj, df):
+    def trimZeros(self, obj, df, c=[0]):
         """ Trims out the zero rows in the dataframe """
-        df[obj.name] = df[obj.name].loc[~(df[obj.name][0]==0)]
+        # print(c)
+        df[obj.name] = df[obj.name].loc[~(df[obj.name][c[-1]]==0)]
+
         # TODO: handle the case where you are left with an empty dataframe
+        # --> maybe put the check in saveResults() and either have no csv for
+        #   empty dataframe or create a list to keep track of which variables are empty
 
     def saveResults(self):
         """save the input data (paramDict, paramDf) and the results (varDict, varDf)"""
@@ -149,7 +157,7 @@ class Postprocess:
         with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for varName, df in self.varDf.items():
-            print(df)
+            # print(df)
             df.to_csv(f'{self.nameDir}vars/{varName}.csv')
 
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
