@@ -239,12 +239,13 @@ class Technology(Element):
             domain = pe.NonNegativeReals,
             doc = "carbon emissions for operating technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsOperation. Domain: NonNegativeReals"
         )
-        # total carbon emissions
+        # total carbon emissions technology
         model.carbonEmissionsTechnologyTotal = pe.Var(
-            domain = pe.NonNegativeReals,
-            doc = "total carbon emissions for operating technology at location l and time t. Domain: NonNegativeReals"
+            model.setTimeStepsYearly,
+            domain=pe.NonNegativeReals,
+            doc="total carbon emissions for operating technology at location l and time t. Domain: NonNegativeReals"
         )
-        
+
         # add pe.Vars of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructVars()
@@ -255,9 +256,9 @@ class Technology(Element):
         model = EnergySystem.getConcreteModel()
         # construct pe.Constraints of the class <Technology>
         #  technology capacityLimit
-        model.constraintTechnologycapacityLimit = pe.Constraint(
+        model.constraintTechnologyCapacityLimit = pe.Constraint(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsInvest"]),
-            rule = constraintTechnologycapacityLimitRule,
+            rule = constraintTechnologyCapacityLimitRule,
             doc = 'limited capacity of  technology depending on loc and time. Dimensions: setTechnologies, setLocation, setTimeStepsInvest'
         )
         # minimum capacity
@@ -306,12 +307,13 @@ class Technology(Element):
             rule = constraintCarbonEmissionsTechnologyRule,
             doc = "carbon emissions for each technology at each location and time step"
         )
-        # carbon emissions of technologies
+        # total carbon emissions of technologies
         model.constraintCarbonEmissionsTechnologyTotal = pe.Constraint(
-            rule = constraintCarbonEmissionsTechnologyTotalRule,
-            doc = "total carbon emissions for each technology at each location and time step"
+            model.setTimeStepsYearly,
+            rule=constraintCarbonEmissionsTechnologyTotalRule,
+            doc="total carbon emissions for each technology at each location and time step"
         )
-        
+
         # disjunct if technology is on
         model.disjunctOnTechnology = pgdp.Disjunct(
             cls.createCustomSet(["setTechnologies","setOnOff","setLocation","setTimeStepsOperation"]),
@@ -361,7 +363,7 @@ class Technology(Element):
 
 ### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class
-def constraintTechnologycapacityLimitRule(model, tech, loc, time):
+def constraintTechnologyCapacityLimitRule(model, tech, loc, time):
     """limited capacityLimit of  technology"""
     if model.capacityLimitTechnology[tech, loc] != np.inf:
         return (model.capacityLimitTechnology[tech, loc] >= model.capacity[tech, loc, time])
@@ -432,13 +434,17 @@ def constraintCarbonEmissionsTechnologyRule(model,tech,loc,time):
         referenceFlow = model.carrierFlowCharge[tech,loc,time] + model.carrierFlowDischarge[tech,loc,time]
     return(model.carbonEmissionsTechnology[tech,loc,time] == model.carbonIntensityTechnology[tech,loc]*referenceFlow)
 
-def constraintCarbonEmissionsTechnologyTotalRule(model):
+def constraintCarbonEmissionsTechnologyTotalRule(model, year):
     """ calculate total carbon emissions of each technology"""
+    baseTimeStep = EnergySystem.decodeTimeStep(None,year,"yearly")
     return(
-        model.carbonEmissionsTechnologyTotal ==
+        model.carbonEmissionsTechnologyTotal[year] ==
         sum(
-            model.carbonEmissionsTechnology[tech,loc,time]*model.timeStepsOperationDuration[tech, time]
-            for tech,loc,time in Element.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"])
+            sum(
+                model.carbonEmissionsTechnology[tech,loc,time]*model.timeStepsOperationDuration[tech, time]
+                for time in EnergySystem.encodeTimeStep(tech, baseTimeStep, "operation", yearly = True)
+            )
+            for tech, loc in Element.createCustomSet(["setTechnologies", "setLocation"])
         )
     )
 

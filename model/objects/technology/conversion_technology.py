@@ -46,7 +46,7 @@ class ConversionTechnology(Technology):
         self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(self.inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
         self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(self.inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
         # non-time series input data
-        self.capacityLimit              = self.dataInput.extractInputData(self.inputPath,"capacityLimit",["setNodes"])
+        self.capacityLimit              = self.dataInput.extractInputData(self.inputPath,"capacityLimit",indexSets=["setNodes"])
         self.carbonIntensityTechnology  = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",indexSets=["setNodes"])
         # set attributes for parameters of child class <ConversionTechnology>
         # define input and output carrier

@@ -2,6 +2,7 @@
 Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
 Created:      January-2022
 Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
+              Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Functions to extract the input data from the provided input files
@@ -172,7 +173,6 @@ class DataInput():
 
     def extractNumberTimeSteps(self):
         """ reads input data and returns number of typical periods and time steps per period for each technology and carrier
-        :param folderPath: path to input files 
         :return dictNumberOfTimeSteps: number of typical periods and time steps per period """
         # select data
         folderName = "setTimeSteps"
@@ -185,16 +185,21 @@ class DataInput():
         # create empty dictNumberOfTimeSteps
         dictNumberOfTimeSteps = {}
         # iterate through technologies
+        typesTimeStepsTechnologies = self.energySystem.typesTimeSteps.copy()
+        typesTimeStepsTechnologies.remove("yearly")
         for technology in self.energySystem.setTechnologies:
             assert technology in dfInput.index.get_level_values("element"), f"Technology {technology} is not in {fileName}.{self.analysis['fileFormat']}"
             dictNumberOfTimeSteps[technology] = {}
-            for typeTimeStep in self.energySystem.typesTimeSteps:
+            for typeTimeStep in typesTimeStepsTechnologies:
                 assert (technology,typeTimeStep) in dfInput.index, f"Type of time step <{typeTimeStep} for technology {technology} is not in {fileName}.{self.analysis['fileFormat']}"
                 dictNumberOfTimeSteps[technology][typeTimeStep] = (dfInput.loc[(technology,typeTimeStep)].squeeze(),numberTimeStepsPerPeriod)
         # iterate through carriers 
         for carrier in self.energySystem.setCarriers:
             assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.{self.analysis['fileFormat']}"
             dictNumberOfTimeSteps[carrier] = {None: (dfInput.loc[carrier].squeeze(),numberTimeStepsPerPeriod)}
+        # add yearly time steps
+        dictNumberOfTimeSteps[None] = {"yearly": (self.extractAttributeData(self.energySystem.paths["setScenarios"]["folder"], "timeStepsYearly"),numberTimeStepsPerPeriod)}
+
         # limit number of periods to base time steps of system 
         for element in dictNumberOfTimeSteps:
             for typeTimeStep in dictNumberOfTimeSteps[element]:
@@ -208,7 +213,9 @@ class DataInput():
                 dictNumberOfTimeSteps[element][typeTimeStep] = (int(numberTypicalPeriods),int(numberTimeStepsPerPeriod))
         return dictNumberOfTimeSteps
 
-    def extractTimeSteps(self,elementName,typeOfTimeSteps=None,getListOfTimeSteps=True):
+
+
+    def extractTimeSteps(self,elementName=None,typeOfTimeSteps=None,getListOfTimeSteps=True):
         """ reads input data and returns range of time steps 
         :param folderPath: path to input files 
         :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
