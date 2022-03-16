@@ -90,12 +90,12 @@ class EnergySystem:
         ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
         # empty base units and dimensionality matrix
         self.baseUnits                  = {}
-        # self.dimensionalityMatrix       = pd.DataFrame(index=_listBaseUnits).astype(int)
+        self.dimensionalityMatrix       = pd.DataFrame(index=_listBaseUnits).astype(int)
         for _baseUnit in _listBaseUnits:
-            # unitDimensionality          = ureg.get_dimensionality(ureg(_baseUnit))
+            unitDimensionality          = ureg.get_dimensionality(ureg(_baseUnit))
             self.baseUnits[_baseUnit]   = ureg(_baseUnit).dimensionality
-        #     self.dimensionalityMatrix.loc[_baseUnit, list(unitDimensionality.keys())] = list(unitDimensionality.values())
-        # self.dimensionalityMatrix       = self.dimensionalityMatrix.fillna(0).astype(int).T
+            self.dimensionalityMatrix.loc[_baseUnit, list(unitDimensionality.keys())] = list(unitDimensionality.values())
+        self.dimensionalityMatrix       = self.dimensionalityMatrix.fillna(0).astype(int).T
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes

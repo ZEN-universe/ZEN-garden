@@ -382,7 +382,7 @@ class DataInput():
         :return multiplier: multiplication factor """
         ureg                    = self.energySystem.ureg
         baseUnits               = self.energySystem.baseUnits
-        # dimensionalityMatrix    = self.energySystem.dimensionalityMatrix
+        dimensionalityMatrix    = self.energySystem.dimensionalityMatrix
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if inputUnit in baseUnits:
             return 1
@@ -391,9 +391,26 @@ class DataInput():
             return 1
         else:
             # create dimensionality vector for inputUnit
-            # inputDimensionality     = ureg.get_dimensionality(ureg(inputUnit))
-            # dimensionalityVector    = pd.Series(index=dimensionalityMatrix.index, data=0)
-            # dimensionalityVector[list(inputDimensionality.keys())] = list(inputDimensionality.values())
+            inputDimensionality     = ureg.get_dimensionality(ureg(inputUnit))
+            dimensionalityVector    = pd.Series(index=dimensionalityMatrix.index, data=0)
+            dimensionalityVector[list(inputDimensionality.keys())] = list(inputDimensionality.values())
+            # calculate dimensionless combined unit (e.g., tons and kilotons)
+            combinedUnit = ureg(inputUnit).units
+            # if unit (with a different multiplier) is already in base units
+            if dimensionalityMatrix.isin(dimensionalityVector).all(axis=0).any():
+                _baseUnit       = ureg(dimensionalityMatrix.columns[dimensionalityMatrix.isin(dimensionalityVector).all(axis=0)][0])
+                combinedUnit    *= _baseUnit**(-1)
+                multiplier      = combinedUnit.to_base_units().magnitude
+                return round(multiplier, self.solver["roundingDecimalPoints"])
+            # if inverse of unit (with a different multiplier) is already in base units (e.g. 1/km and km)
+            elif (dimensionalityMatrix*-1).isin(dimensionalityVector).all(axis=0).any():
+                _baseUnit       = ureg(dimensionalityMatrix.columns[(dimensionalityMatrix*-1).isin(dimensionalityVector).all(axis=0)][0])
+                combinedUnit    *= _baseUnit
+                multiplier      = combinedUnit.to_base_units().magnitude
+                return round(multiplier, self.solver["roundingDecimalPoints"])
+            else:
+                return 1
+            M, I, pivot             = column_echelon_form(np.array(dimensionalityMatrix),ntype=float)
             # combine units
             listUnits               = dict(baseUnits)
             listUnits.update({inputUnit:ureg(inputUnit).dimensionality})
