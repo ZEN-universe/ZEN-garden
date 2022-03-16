@@ -72,30 +72,16 @@ class Postprocess:
 
         for var in self.model.component_objects(pe.Var, active=True):
             if 'constraint' not in var.name and 'gdp' not in var.name:
-                # if var.name=='builtCapacity':
                 # save vars in a dict
                 self.varDict[var.name] = dict()
-                # print(len(var))
                 for index in var:
                     self.varDict[var.name][index] = pe.value(var[index])
                 # save vars in a DataFrame
-                # print(var)
-                # print(self.varDict)
                 self.createDataframe(var, self.varDict, self.varDf)
 
     def createDataframe(self, obj, dict, df):
         """ save data in dataframe"""
-        # print("obj")
-        # print(obj.name)
-        # print("dictionary")
-        # # print(dict[obj.name].keys())
-        # print(dict[obj.name])
-        # print("df")
-        # print(df)
         if dict[obj.name]:
-            #TODO add names to columns in DF
-            # df[obj.name] = pd.DataFrame(dict[obj.name].values())
-            # print(df)
 
             if list(dict[obj.name].keys())[0] == None:
                 # [index, capacity]
@@ -106,20 +92,13 @@ class Postprocess:
                     df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=['capacity[GWh]'])
 
                 self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
-                # print(obj.name)
-                # print(df[obj.name])
-                # print(dict[obj.name].keys())
-                # print("inside 1")
 
             elif type(list(dict[obj.name].keys())[0]) == int:
                 # seems like we never come in here
+                print("DID SOMETHING COME IN HERE??")
                 df[obj.name] = pd.DataFrame(dict[obj.name].values(),
                                             index=list(dict[obj.name].keys()))
                 self.trimZeros(obj, self.varDf)
-                # print(obj.name)
-                # print("inside 2")
-                # print(list(dict[obj.name].keys()))
-                # print(dict[obj.name].keys())
             else:
                 # [tech, node, time, capacity]
                 # both type 1, 3 and 5 come in here
@@ -143,22 +122,13 @@ class Postprocess:
                     df[obj.name] = pd.DataFrame(dict[obj.name].values(),
                                             index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
                     df[obj.name].columns=['conv_tech','node','time','capacity[GWh]']
-                    # print(df[obj.name])
-                # print(obj.name)
-                # print(df[obj.name])
-                # print(dict[obj.name].keys())
-                # print("inside 3")
-                # print(pd.MultiIndex.from_tuples(dict[obj.name].keys()))
+
                 self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
-                # print(df[obj.name])
         else:
             print(f'{obj.name} not evaluated in results.py')
 
-        # print(df)
-
     def trimZeros(self, obj, df, c=[0]):
         """ Trims out the zero rows in the dataframe """
-        # print(c)
         df[obj.name] = df[obj.name].loc[~(df[obj.name][c[-1]]==0)]
 
         # TODO: handle the case where you are left with an empty dataframe
@@ -168,15 +138,16 @@ class Postprocess:
     def saveResults(self):
         """save the input data (paramDict, paramDf) and the results (varDict, varDf)"""
 
+        # Save parameter data
         with open(f'{self.nameDir}params/paramDict.pickle', 'wb') as file:
             pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for paramName, df in self.paramDf.items():
             df.to_csv(f'{self.nameDir}params/{paramName}.csv')
 
+        # Save variable data
         with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for varName, df in self.varDf.items():
-            # print(df)
             df.to_csv(f'{self.nameDir}vars/{varName}.csv', index=False)
 
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
