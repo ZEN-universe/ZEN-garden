@@ -6,6 +6,7 @@ channels:
 dependencies:
   - numpy
   - gurobi
+  - geopandas
   - pandas
   - pip
   - pyomo=6.2

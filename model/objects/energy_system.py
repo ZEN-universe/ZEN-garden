@@ -341,7 +341,7 @@ class EnergySystem:
                 raise KeyError(f"Direction for time step conversion {direction} is incorrect")
         # if more than one invest step
         else:
-            if direction ==  "operation2invest":
+            if direction == "operation2invest":
                 orderTimeStepsIn        = cls.getOrderTimeSteps(element,"operation")
                 orderTimeStepsOut       = cls.getOrderTimeSteps(element,"invest")
             elif direction == "invest2operation":
