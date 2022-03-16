@@ -102,7 +102,7 @@ class Postprocess:
                 # type 2, and 4 comes in here
                 if obj.name=='capexTotal' or obj.name=='costCarrierTotal' or obj.name=='opexTotal':
                     df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=['capacity[k€]'])
-                else:   # obj.name=='carbonEmissionsCarrierTotal' or obj.name=='carbonEmissionsTechnologyTotal' or obj.name=='carbonEmissionsTotal'
+                else:   # obj.name=='carbonEmissionsCarrierTotal' or obj.name=='carbonEmissionsTechnologyTotal' or obj.name=='carbonEmissionsgTotal'
                     df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=['capacity[GWh]'])
 
                 self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
@@ -123,14 +123,33 @@ class Postprocess:
             else:
                 # [tech, node, time, capacity]
                 # both type 1, 3 and 5 come in here
-                df[obj.name] = pd.DataFrame(dict[obj.name].values(),
-                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys()))
+                if obj.name=='carbonEmissionsCarrier' or obj.name=='costCarrier' or obj.name=='exportCarrierFlow' or obj.name=='importCarrierFlow':
+                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
+                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
+                    df[obj.name].columns = ['carrier','node','time','capacity[GWh]']
+                elif obj.name=='carrierFlow' or obj.name=='carrierLoss':
+                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
+                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
+                    df[obj.name].columns=['trans_tech','n1->n2','time','capacity[GWh]']
+                elif obj.name=='dependentFlowApproximation' or obj.name=='inputFlow' or obj.name=='outputFlow' or obj.name=='referenceFlowApproximation':
+                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
+                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
+                    df[obj.name].columns=['conv_tech','carrier','node','time','capacity[GWh]']
+                elif obj.name=='installTechnology':
+                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
+                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
+                    df[obj.name].columns=['conv_tech','node','time','T/F']
+                else:
+                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
+                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
+                    df[obj.name].columns=['conv_tech','node','time','capacity[GWh]']
+                    # print(df[obj.name])
                 # print(obj.name)
                 # print(df[obj.name])
                 # print(dict[obj.name].keys())
                 # print("inside 3")
                 # print(pd.MultiIndex.from_tuples(dict[obj.name].keys()))
-                self.trimZeros(obj, self.varDf)
+                self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
                 # print(df[obj.name])
         else:
             print(f'{obj.name} not evaluated in results.py')
@@ -158,7 +177,7 @@ class Postprocess:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for varName, df in self.varDf.items():
             # print(df)
-            df.to_csv(f'{self.nameDir}vars/{varName}.csv')
+            df.to_csv(f'{self.nameDir}vars/{varName}.csv', index=False)
 
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
     # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))
