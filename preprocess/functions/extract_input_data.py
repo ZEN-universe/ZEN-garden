@@ -10,7 +10,6 @@ import numpy as np
 from scipy.stats import linregress
 import pandas as pd
 import os
-from pint.util import column_echelon_form
 import logging
 
 class DataInput():
@@ -380,9 +379,9 @@ class DataInput():
         """ calculates the multiplier for converting an inputUnit to the base units
         :param inputUnit: string of input unit
         :return multiplier: multiplication factor """
-        ureg                    = self.energySystem.ureg
-        baseUnits               = self.energySystem.baseUnits
-        dimensionalityMatrix    = self.energySystem.dimensionalityMatrix
+        ureg        = self.energySystem.ureg
+        baseUnits   = self.energySystem.baseUnits
+        dimMatrix   = self.energySystem.dimMatrix
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if inputUnit in baseUnits:
             return 1
@@ -391,48 +390,59 @@ class DataInput():
             return 1
         else:
             # create dimensionality vector for inputUnit
-            inputDimensionality     = ureg.get_dimensionality(ureg(inputUnit))
-            dimensionalityVector    = pd.Series(index=dimensionalityMatrix.index, data=0)
-            dimensionalityVector[list(inputDimensionality.keys())] = list(inputDimensionality.values())
+            dimInput    = ureg.get_dimensionality(ureg(inputUnit))
+            dimVector   = pd.Series(index=dimMatrix.index, data=0)
+            _missingDim = set(dimInput.keys()).difference(dimVector.keys())
+            assert len(_missingDim) == 0, f"No base unit defined for dimensionalities <{_missingDim}>"
+            dimVector[list(dimInput.keys())] = list(dimInput.values())
             # calculate dimensionless combined unit (e.g., tons and kilotons)
             combinedUnit = ureg(inputUnit).units
             # if unit (with a different multiplier) is already in base units
-            if dimensionalityMatrix.isin(dimensionalityVector).all(axis=0).any():
-                _baseUnit       = ureg(dimensionalityMatrix.columns[dimensionalityMatrix.isin(dimensionalityVector).all(axis=0)][0])
+            if dimMatrix.isin(dimVector).all(axis=0).any():
+                _baseUnit       = ureg(dimMatrix.columns[dimMatrix.isin(dimVector).all(axis=0)][0])
                 combinedUnit    *= _baseUnit**(-1)
-                multiplier      = combinedUnit.to_base_units().magnitude
-                return round(multiplier, self.solver["roundingDecimalPoints"])
             # if inverse of unit (with a different multiplier) is already in base units (e.g. 1/km and km)
-            elif (dimensionalityMatrix*-1).isin(dimensionalityVector).all(axis=0).any():
-                _baseUnit       = ureg(dimensionalityMatrix.columns[(dimensionalityMatrix*-1).isin(dimensionalityVector).all(axis=0)][0])
+            elif (dimMatrix*-1).isin(dimVector).all(axis=0).any():
+                _baseUnit       = ureg(dimMatrix.columns[(dimMatrix*-1).isin(dimVector).all(axis=0)][0])
                 combinedUnit    *= _baseUnit
-                multiplier      = combinedUnit.to_base_units().magnitude
-                return round(multiplier, self.solver["roundingDecimalPoints"])
             else:
-                return 1
-            M, I, pivot             = column_echelon_form(np.array(dimensionalityMatrix),ntype=float)
-            # combine units
-            listUnits               = dict(baseUnits)
-            listUnits.update({inputUnit:ureg(inputUnit).dimensionality})
-            # calculate combination of units to dimensionless parameter (cf. Buckingham pi theorem)
-            listPiTheorem           = ureg.pi_theorem(listUnits)
-            # get combinations of units which contains input unit
-            listInputCombinations   = [unitDict for unitDict in listPiTheorem if inputUnit in unitDict]
-            # assert that combination of units with input unit is unique
-            if len(listInputCombinations) == 0:
-                raise AssertionError(f"Input unit {inputUnit} cannot be represented by base units {baseUnits}")
-            inputCombination        = listInputCombinations[0]
-            # if input unit not to the power 1
-            if inputCombination[inputUnit] == 1:
-                listPiTheorem = [inputCombination]
-            else:
-                a=1
-            # calculate dimensionless combined unit
-            combinedUnit            = ureg(inputUnit).units
-            # for piCombination in listPiTheorem:
-            for unit in inputCombination:
-                if unit != inputUnit:
-                    combinedUnit    *= ureg(unit)**(inputCombination[unit]/inputCombination[inputUnit])
+                dimAnalysis         = self.energySystem.dimAnalysis
+                # drop dependent units
+                dimMatrixReduced    = dimMatrix.drop(dimAnalysis["dependentUnits"],axis=1)
+                # solve system of linear equations
+                combinationSolution = np.linalg.solve(dimMatrixReduced,dimVector)
+                # check if only -1, 0, 1
+                if self.checkIfPosNegBoolean(combinationSolution):
+                    # compose relevant units to dimensionless combined unit
+                    for unit,power in zip(dimMatrixReduced.columns,combinationSolution):
+                        combinedUnit *= ureg(unit)**(-1*power)
+                else:
+                    calculatedMultiplier = False
+                    for unit, power in zip(dimMatrixReduced.columns, combinationSolution):
+                        # try to substitute unit with power > 1 by a dependent unit
+                        if np.abs(power) > 1:
+                            # iterate through dependent units
+                            for dependentUnit,dependentDim in zip(dimAnalysis["dependentUnits"],dimAnalysis["dependentDims"]):
+                                idxUnitInMatrixReduced  = list(dimMatrixReduced.columns).index(unit)
+                                # if the power of the unit is the same as of the dimensionality in the dependent unit
+                                if np.abs(dependentDim[idxUnitInMatrixReduced]) == np.abs(power):
+                                    dimMatrixReducedTemp                    = dimMatrixReduced.drop(unit,axis=1)
+                                    dimMatrixReducedTemp[dependentUnit]     = dimMatrix[dependentUnit]
+                                    combinationSolutionTemp                 = np.linalg.solve(dimMatrixReducedTemp, dimVector)
+                                    if self.checkIfPosNegBoolean(combinationSolutionTemp):
+                                        # compose relevant units to dimensionless combined unit
+                                        for unit, power in zip(dimMatrixReducedTemp.columns, combinationSolutionTemp):
+                                            combinedUnit        *= ureg(unit) ** (-1 * power)
+                                        calculatedMultiplier    = True
+                                        break
+                    assert calculatedMultiplier, f"Cannot establish base unit conversion for {inputUnit} from base units {baseUnits.keys()}"
             # magnitude of combined unit is multiplier
-            multiplier           = combinedUnit.to_base_units().magnitude
+            multiplier = combinedUnit.to_base_units().magnitude
             return round(multiplier,self.solver["roundingDecimalPoints"])
+
+    def checkIfPosNegBoolean(self,array):
+        """ checks if the array has only positive or negative booleans (-1,0,1)
+        :param array: numeric numpy array
+        :return isPosNegBoolean """
+        isPosNegBoolean = np.array_equal(np.abs(array),np.abs(array).astype(bool))
+        return isPosNegBoolean

@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from pint import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
+from pint.util import column_echelon_form
 
 class EnergySystem:
     # energySystem
@@ -90,12 +91,45 @@ class EnergySystem:
         ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
         # empty base units and dimensionality matrix
         self.baseUnits                  = {}
-        self.dimensionalityMatrix       = pd.DataFrame(index=_listBaseUnits).astype(int)
+        self.dimMatrix                  = pd.DataFrame(index=_listBaseUnits).astype(int)
         for _baseUnit in _listBaseUnits:
-            unitDimensionality          = ureg.get_dimensionality(ureg(_baseUnit))
+            dimUnit                     = ureg.get_dimensionality(ureg(_baseUnit))
             self.baseUnits[_baseUnit]   = ureg(_baseUnit).dimensionality
-            self.dimensionalityMatrix.loc[_baseUnit, list(unitDimensionality.keys())] = list(unitDimensionality.values())
-        self.dimensionalityMatrix       = self.dimensionalityMatrix.fillna(0).astype(int).T
+            self.dimMatrix.loc[_baseUnit, list(dimUnit.keys())] = list(dimUnit.values())
+        self.dimMatrix                  = self.dimMatrix.fillna(0).astype(int).T
+        # check if unit defined twice or more
+        _duplicateUnits                 = self.dimMatrix.T.duplicated()
+        if _duplicateUnits.any():
+            _dimMatrixDuplicate         = self.dimMatrix.loc[:,_duplicateUnits]
+            for _duplicate in _dimMatrixDuplicate:
+                # if same unit twice (same order of magnitude and same dimensionality)
+                if len(self.dimMatrix[_duplicate].shape) > 1:
+                    logging.warning(f"The base unit <{_duplicate}> was defined more than once. Duplicates are dropped.")
+                    _duplicateDim       = self.dimMatrix[_duplicate].T.drop_duplicates().T
+                    self.dimMatrix      = self.dimMatrix.drop(_duplicate,axis=1)
+                    self.dimMatrix[_duplicate] = _duplicateDim
+                else:
+                    raise KeyError(f"More than one base unit defined for dimensionality {self.baseUnits[_duplicate]} (e.g., {_duplicate})")
+        # get linearly dependent units
+        M, I, pivot                     = column_echelon_form(np.array(self.dimMatrix), ntype=float)
+        M                               = np.array(M).squeeze()
+        I                               = np.array(I).squeeze()
+        pivot                           = np.array(pivot).squeeze()
+        # index of linearly dependent units in M and I
+        idxLinDep                       = np.squeeze(np.argwhere(np.all(M==0,axis=1)))
+        # index of linearly dependent units in dimensionality matrix
+        _idxPivot                       = range(len(self.baseUnits))
+        idxLinDepDimMatrix              = list(set(_idxPivot).difference(pivot))
+        self.dimAnalysis                    = {}
+        self.dimAnalysis["dependentUnits"]  = self.dimMatrix.columns[idxLinDepDimMatrix]
+        dependentDims                       = I[idxLinDep,:]
+        # if only one dependent unit
+        if len(self.dimAnalysis["dependentUnits"]) == 1:
+            dependentDims                   = dependentDims.reshape(1,dependentDims.size)
+        self.dimAnalysis["dependentDims"]   = dependentDims
+        # scale dependentDim to power of dependent unit
+        for dependentUnit, dependentDim in zip(self.dimAnalysis["dependentUnits"], self.dimAnalysis["dependentDims"]):
+            dependentDim /= dependentDim[list(self.dimMatrix.columns).index(dependentUnit)]
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
