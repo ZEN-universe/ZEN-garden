@@ -113,6 +113,8 @@ class DataCreation():
             self.createDefaultAttributeDataFrame("setTransportTechnologies",transportTechnology)
             # create distance matrix
             self.createDistanceMatrix(transportTechnology)
+            # create capacityLimit matrix
+            self.createCapacityLimitTransportTechnology(transportTechnology)
     
     def createStorageTechnologies(self):
         """ fills the setStorageTechnologies folder"""
@@ -321,6 +323,11 @@ class DataCreation():
         # calculate distance
         distanceMatrix = distanceMatrix.apply(lambda column: f_eucl_dist((xArr[column.name], yArr[column.name]),(xArr[column.index], yArr[column.index])))
         distanceMatrix.to_csv(self.folderPath / "setTransportTechnologies" / elementName / "distanceEuclidean.csv")
+
+    def createCapacityLimitTransportTechnology(self,elementName):
+        """ extract the capacity limit of the transmission technology lines """
+        if elementName == "power_line":
+            capacityLimit = self.apiData.getEntsoeTransmissionCapacity()
 
 def main():
     """ This is the main function to create NUTS0 """

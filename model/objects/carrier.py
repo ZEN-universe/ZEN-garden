@@ -262,9 +262,9 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
             elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
             carrierConversionOut += model.outputFlow[tech,carrier,node,elementTimeStep]
     # carrier flow transport technologies
-    carrierFlowIn, carrierFlowOut = 0, 0
-    setEdgesIn = EnergySystem.calculateConnectedEdges(node,"in")
-    setEdgesOut = EnergySystem.calculateConnectedEdges(node,"out")
+    carrierFlowIn, carrierFlowOut   = 0, 0
+    setEdgesIn                      = EnergySystem.calculateConnectedEdges(node,"in")
+    setEdgesOut                     = EnergySystem.calculateConnectedEdges(node,"out")
     for tech in model.setTransportTechnologies:
         if carrier in model.setReferenceCarriers[tech]:
             elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")

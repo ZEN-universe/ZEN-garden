@@ -412,7 +412,7 @@ class DataInput():
                 # solve system of linear equations
                 combinationSolution = np.linalg.solve(dimMatrixReduced,dimVector)
                 # check if only -1, 0, 1
-                if self.checkIfPosNegBoolean(combinationSolution):
+                if DataInput.checkIfPosNegBoolean(combinationSolution):
                     # compose relevant units to dimensionless combined unit
                     for unit,power in zip(dimMatrixReduced.columns,combinationSolution):
                         combinedUnit *= ureg(unit)**(-1*power)
@@ -429,7 +429,7 @@ class DataInput():
                                     dimMatrixReducedTemp                    = dimMatrixReduced.drop(unit,axis=1)
                                     dimMatrixReducedTemp[dependentUnit]     = dimMatrix[dependentUnit]
                                     combinationSolutionTemp                 = np.linalg.solve(dimMatrixReducedTemp, dimVector)
-                                    if self.checkIfPosNegBoolean(combinationSolutionTemp):
+                                    if DataInput.checkIfPosNegBoolean(combinationSolutionTemp):
                                         # compose relevant units to dimensionless combined unit
                                         for unit, power in zip(dimMatrixReducedTemp.columns, combinationSolutionTemp):
                                             combinedUnit        *= ureg(unit) ** (-1 * power)
@@ -438,11 +438,16 @@ class DataInput():
                     assert calculatedMultiplier, f"Cannot establish base unit conversion for {inputUnit} from base units {baseUnits.keys()}"
             # magnitude of combined unit is multiplier
             multiplier = combinedUnit.to_base_units().magnitude
+            # round to decimal points
             return round(multiplier,self.solver["roundingDecimalPoints"])
 
-    def checkIfPosNegBoolean(self,array):
+    @classmethod
+    def checkIfPosNegBoolean(cls, array,axis=None):
         """ checks if the array has only positive or negative booleans (-1,0,1)
         :param array: numeric numpy array
         :return isPosNegBoolean """
-        isPosNegBoolean = np.array_equal(np.abs(array),np.abs(array).astype(bool))
+        if axis:
+            isPosNegBoolean = np.apply_along_axis(lambda row: np.array_equal(np.abs(row), np.abs(row).astype(bool)),1,array).any()
+        else:
+            isPosNegBoolean = np.array_equal(np.abs(array), np.abs(array).astype(bool))
         return isPosNegBoolean

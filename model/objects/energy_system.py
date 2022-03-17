@@ -87,7 +87,7 @@ class EnergySystem:
         """ gets base units of energy system """
         _listBaseUnits                  = self.dataInput.extractBaseUnits(self.paths["setScenarios"]["folder"])
         ureg                            = EnergySystem.getUnitRegistry()
-        # define additional units
+        # load additional units
         ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
         # empty base units and dimensionality matrix
         self.baseUnits                  = {}
@@ -105,9 +105,9 @@ class EnergySystem:
                 # if same unit twice (same order of magnitude and same dimensionality)
                 if len(self.dimMatrix[_duplicate].shape) > 1:
                     logging.warning(f"The base unit <{_duplicate}> was defined more than once. Duplicates are dropped.")
-                    _duplicateDim       = self.dimMatrix[_duplicate].T.drop_duplicates().T
-                    self.dimMatrix      = self.dimMatrix.drop(_duplicate,axis=1)
-                    self.dimMatrix[_duplicate] = _duplicateDim
+                    _duplicateDim               = self.dimMatrix[_duplicate].T.drop_duplicates().T
+                    self.dimMatrix              = self.dimMatrix.drop(_duplicate,axis=1)
+                    self.dimMatrix[_duplicate]  = _duplicateDim
                 else:
                     raise KeyError(f"More than one base unit defined for dimensionality {self.baseUnits[_duplicate]} (e.g., {_duplicate})")
         # get linearly dependent units
@@ -118,8 +118,8 @@ class EnergySystem:
         # index of linearly dependent units in M and I
         idxLinDep                       = np.squeeze(np.argwhere(np.all(M==0,axis=1)))
         # index of linearly dependent units in dimensionality matrix
-        _idxPivot                       = range(len(self.baseUnits))
-        idxLinDepDimMatrix              = list(set(_idxPivot).difference(pivot))
+        _idxPivot                           = range(len(self.baseUnits))
+        idxLinDepDimMatrix                  = list(set(_idxPivot).difference(pivot))
         self.dimAnalysis                    = {}
         self.dimAnalysis["dependentUnits"]  = self.dimMatrix.columns[idxLinDepDimMatrix]
         dependentDims                       = I[idxLinDep,:]
@@ -127,9 +127,8 @@ class EnergySystem:
         if len(self.dimAnalysis["dependentUnits"]) == 1:
             dependentDims                   = dependentDims.reshape(1,dependentDims.size)
         self.dimAnalysis["dependentDims"]   = dependentDims
-        # scale dependentDim to power of dependent unit
-        for dependentUnit, dependentDim in zip(self.dimAnalysis["dependentUnits"], self.dimAnalysis["dependentDims"]):
-            dependentDim /= dependentDim[list(self.dimMatrix.columns).index(dependentUnit)]
+        # check that no base unit can be directly constructed from the others (e.g., GJ from GW and hour)
+        assert ~DataInput.checkIfPosNegBoolean(dependentDims,axis=1), f"At least one of the base units {self.baseUnits.keys()} can be directly constructed from the others"
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
@@ -194,7 +193,7 @@ class EnergySystem:
     def setOrderTimeSteps(cls,element,orderTimeSteps,timeStepType = None):
         """ sets order of time steps, either of operation or invest
         :param element: name of element in model
-        :param orderTimeSteps: list of time steps correpsponding to base time step
+        :param orderTimeSteps: list of time steps corresponding to base time step
         :param timeStepType: type of time step (operation or invest)"""
         if not timeStepType:
             timeStepType = "operation"
@@ -546,8 +545,8 @@ class EnergySystem:
 
         # construct objective
         model.objective = pe.Objective(
-            rule = objectiveRule,
-            sense = objectiveSense
+            rule    = objectiveRule,
+            sense   = objectiveSense
         )
 
 def constraintCarbonEmissionsTotalRule(model):

@@ -7,7 +7,7 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Functions to extract the input data from the ENTSO-E Transparency Database
 ==========================================================================================================================================================================="""
 from entsoe import EntsoeRawClient,EntsoePandasClient
-from entsoe.mappings import lookup_area, Area
+from entsoe.mappings import lookup_area, Area, NEIGHBOURS
 from entsoe.parsers import parse_loads, parse_generation
 import pandas as pd
 import numpy as np
@@ -26,6 +26,7 @@ class ExtractApis():
         # toggle extraction of data
         self.useExistingDemand          = True
         self.useExistingGeneration      = True
+        self.useExistingTransmission    = True
         self.useExistingCapacityFactor  = True
         # create entsoe client
         self.createApiClient()
@@ -38,7 +39,7 @@ class ExtractApis():
         # api tokens
         apiTokens       = {
             "entsoe":           "00a0c1f2-5b7e-431d-8106-45e020c9c229",
-            "renewablesNinja": "63d9a2d5e3106dee2fc7f84c24b18668fe7eae6d"
+            "renewablesNinja":  "63d9a2d5e3106dee2fc7f84c24b18668fe7eae6d"
         }
         # create entsoe client
         self.entsoeClient           = EntsoeRawClient(apiTokens["entsoe"])
@@ -63,14 +64,14 @@ class ExtractApis():
     def getEntsoeDemand(self):
         """ this method gets the electricity demand """
         if not os.path.exists(self.sourcePath / "demand" / "demandENTSOE.pickle") or not self.useExistingDemand:
-            self.entsoeDemand = pd.DataFrame(index=self.timeRange, columns=self.nodes["node"])
-            areaNames  = [area.name for area in Area]
+            entsoeDemand    = pd.DataFrame(index=self.timeRange, columns=self.nodes["node"])
+            areaNames       = [area.name for area in Area]
             for idx,node in enumerate(self.nodes["node"]):
                 print(f"Extract demand for {node} - {idx+1}/{len(self.nodes['node'])}")
                 if node == "EL":
-                    nodeEntsoe = "GR"
+                    nodeEntsoe  = "GR"
                 else:
-                    nodeEntsoe = node
+                    nodeEntsoe  = node
                 assert nodeEntsoe in areaNames, f"node {nodeEntsoe} not in ENTSO-E area names"
                 area    = lookup_area(nodeEntsoe)
                 # query entsoe database, for some reason, the EntsoePandasClient deletes a lot of values
@@ -88,24 +89,24 @@ class ExtractApis():
                 demand  = demand.truncate(before=self.timeStart, after=self.timeEnd)
                 # resample to hourly resolution
                 demand  = demand.resample('h').mean()
-                self.entsoeDemand[node] = demand
+                entsoeDemand[node] = demand
             # dump pickle
             with open(self.sourcePath / "demand" / "demandENTSOE.pickle","wb") as inputFile:
-                pickle.dump(self.entsoeDemand, inputFile)
+                pickle.dump(entsoeDemand, inputFile)
         else:
             with open(self.sourcePath / "demand" / "demandENTSOE.pickle","rb") as inputFile:
-                self.entsoeDemand = pickle.load(inputFile)
+                entsoeDemand = pickle.load(inputFile)
         # set zeros to nan and interpolate nans
-        self.entsoeDemand[self.entsoeDemand==0] = np.nan
-        self.entsoeDemand = self.entsoeDemand.interpolate()
+        entsoeDemand[entsoeDemand==0] = np.nan
+        entsoeDemand = entsoeDemand.interpolate()
         # fill remaining nans (where entire time series is nan - MT) with 0
-        self.entsoeDemand = self.entsoeDemand.fillna(0)
+        entsoeDemand = entsoeDemand.fillna(0)
         # convert to GW
-        self.entsoeDemand = self.entsoeDemand/1000
+        entsoeDemand = entsoeDemand/1000
         # drop index
-        self.entsoeDemand = self.entsoeDemand.reset_index(drop=True)
-        self.entsoeDemand.index.name = "time"
-        return self.entsoeDemand
+        entsoeDemand = entsoeDemand.reset_index(drop=True)
+        entsoeDemand.index.name = "time"
+        return entsoeDemand
 
     def getEntsoeGeneration(self,technology):
         """ this method gets the electricity generation of each technology """
@@ -151,6 +152,60 @@ class ExtractApis():
         entsoeGeneration = entsoeGeneration.reset_index(drop=True)
         entsoeGeneration.index.name = "time"
         return entsoeGeneration
+
+    def getEntsoeTransmissionCapacity(self):
+        """ this method gets the transmission capacity """
+        if not os.path.exists(self.sourcePath / "transmission" / "transmissionCapacityENTSOE.pickle") or not self.useExistingTransmission:
+            entsoeTransmissionCapacity  = pd.DataFrame(index=self.nodes["node"], columns=self.nodes["node"],data=0)
+            areaNames                   = [area.name for area in Area]
+            counter                     = 0
+            for nodeFrom in self.nodes["node"]:
+                if nodeFrom == "EL":
+                    nodeFromEntsoe = "GR"
+                else:
+                    nodeFromEntsoe = nodeFrom
+                #### TODO how to cope with bidding zones
+                NEIGHBOURS[nodeFrom]
+                assert nodeFromEntsoe in areaNames, f"node {nodeFromEntsoe} not in ENTSO-E area names"
+                for nodeTo in self.nodes["node"]:
+
+                    counter += 1
+                    if nodeFrom != nodeTo:
+                        print(f"Extract transmission capacity from {nodeFrom} to {nodeTo} - {counter}/{len(self.nodes['node'])*len(self.nodes['node'])}")
+                        if nodeTo == "EL":
+                            nodeToEntsoe = "GR"
+                        else:
+                            nodeToEntsoe = nodeTo
+                        assert nodeToEntsoe in areaNames, f"node {nodeToEntsoe} not in ENTSO-E area names"
+                        areaFrom    = lookup_area(nodeFromEntsoe)
+                        areaTo      = lookup_area(nodeToEntsoe)
+                        # query entsoe database, for some reason, the EntsoePandasClient deletes a lot of values
+                        try:
+                            text = self.entsoeClient.query_net_transfer_capacity_yearahead(country_code_from=areaFrom, country_code_to=areaTo, start=self.timeStart, end=self.timeEnd)
+                        except:
+                            print(f"No matching transmission capacity data found from {nodeFrom} to {nodeTo}")
+                            continue
+                        generation  = parse_generation(text, nett=True) # nett: condense generation and consumption into one
+                        generation  = generation.tz_convert(area.tz)
+                        generation  = generation.truncate(before=self.timeStart, after=self.timeEnd)
+                        # resample to hourly resolution
+                        generation  = generation.resample('h').mean()
+                        entsoeTransmissionCapacity[node] = generation
+            # dump pickle
+            with open(self.sourcePath / "transmission" / "transmissionCapacityENTSOE.pickle","wb") as inputFile:
+                pickle.dump(entsoeTransmissionCapacity, inputFile)
+        else:
+            with open(self.sourcePath / "transmission" / "transmissionCapacityENTSOE.pickle","rb") as inputFile:
+                entsoeTransmissionCapacity = pickle.load(inputFile)
+        # interpolate nans
+        entsoeTransmissionCapacity = entsoeTransmissionCapacity.interpolate()
+        # convert to GW
+        entsoeTransmissionCapacity = entsoeTransmissionCapacity/1000
+        # drop index
+        entsoeTransmissionCapacity = entsoeTransmissionCapacity.reset_index(drop=True)
+        entsoeTransmissionCapacity.index.name = "time"
+        return entsoeTransmissionCapacity
+        a=1
 
     def getRenewableNinjaData(self,technology):
         """ this method extracts the data from the renewable ninja database for PV and wind onshore """
