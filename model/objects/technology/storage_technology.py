@@ -48,6 +48,10 @@ class StorageTechnology(Technology):
         # non-time series input data
         self.capacityLimit                  = self.dataInput.extractInputData(self.inputPath,"capacityLimit",indexSets=["setNodes"])
         self.carbonIntensityTechnology      = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",indexSets=["setNodes"])
+        # extract existing capacity
+        self.setExistingTechnologies        = self.dataInput.extractSetExistingTechnologies(self.inputPath)
+        self.existingCapacity               = self.dataInput.extractInputData(self.inputPath,"existingCapacity",indexSets=["setNodes", "setExistingTechnologies"],column="existingCapacity",element=self)
+        self.lifetimeExistingTechnology     = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,"existingCapacity",indexSets=["setNodes","setExistingTechnologies"],tech=self)
         # set attributes for parameters of child class <StorageTechnology>
         self.efficiencyCharge               = self.dataInput.extractInputData(self.inputPath,"efficiencyCharge",indexSets=["setNodes"])
         self.efficiencyDischarge            = self.dataInput.extractInputData(self.inputPath,"efficiencyDischarge",indexSets=["setNodes"])

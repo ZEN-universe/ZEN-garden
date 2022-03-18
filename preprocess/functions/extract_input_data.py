@@ -49,11 +49,11 @@ class DataInput():
         else:
             return None, None
     
-    def constructIndexList(self,indexSets,timeSteps):
+    def constructIndexList(self,element,indexSets,timeSteps):
         """ constructs index list from index sets and returns list of indices and list of index names
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param timeSteps: specific timeSteps of element
-        :param transportTechnology: boolean if separately add edge set (for transport technologies)
+        :param element: element for that the index list is constructed. Element is none if indexSet is not element specific.
         :return indexList: list of indices
         :return indexNameList: list of name of indices
         """
@@ -66,11 +66,13 @@ class DataInput():
                 indexList.append(self.energySystem.setEdges)
             elif index == "setTimeSteps" and timeSteps:
                 indexList.append(timeSteps)
+            elif index == "setExistingTechnologies":
+                indexList.append(element.setExistingTechnologies)
             else:
                 indexList.append(self.system[index])
         return indexList,indexNameList
 
-    def extractInputData(self, folderPath,manualFileName,indexSets,column = None,timeSteps = [],transportTechnology = False):
+    def extractInputData(self, folderPath,manualFileName,indexSets,column=None,timeSteps=[],transportTechnology=False,element=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files 
         :param manualFileName: name of selected file. If only one file in folder, not used
@@ -91,7 +93,7 @@ class DataInput():
         if defaultValue is None:
             defaultValue = self.extractAttributeData(folderPath,defaultName+"Default")
         # select index
-        indexList,indexNameList = self.constructIndexList(indexSets,timeSteps)
+        indexList,indexNameList = self.constructIndexList(element, indexSets,timeSteps)
         # create pd.MultiIndex and select data
         indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
         # create output Series filled with default value
@@ -117,6 +119,7 @@ class DataInput():
         :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
         # select and drop scenario
+        assert dfInput.columns is not None, f"Input file '{fileName}' has no columns"
         if self.indexNames["setScenarios"] in dfInput.columns:
             dfInput = dfInput[dfInput[self.indexNames["setScenarios"]]==self.system['setScenarios']].drop(self.indexNames["setScenarios"],axis=1)
         # set index by indexNameList
@@ -132,7 +135,20 @@ class DataInput():
                 # check if only one column remaining
                 assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
                 dfInput = dfInput.squeeze(axis=1)
-        # check if requested values for missing index are columns of dfInput 
+        # check if special case of existing Technology
+        elif "existingTechnology" in missingIndex[0]:
+            indexNameList.remove(missingIndex[0])
+            dfInput = dfInput.set_index(indexNameList)
+            setNodes= dfInput.index.unique()
+            for node in setNodes:
+                values = dfInput[column].loc[node].tolist()
+                if isinstance(values, int):
+                    index=0
+                else:
+                    index  = range(len(values))
+                dfOutput[node][index] = values
+            return dfOutput
+        # check if requested values for missing index are columns of dfInput
         else:
             indexNameList.remove(missingIndex[0])
             dfInput = dfInput.set_index(indexNameList)
@@ -213,8 +229,6 @@ class DataInput():
                 dictNumberOfTimeSteps[element][typeTimeStep] = (int(numberTypicalPeriods),int(numberTimeStepsPerPeriod))
         return dictNumberOfTimeSteps
 
-
-
     def extractTimeSteps(self,elementName=None,typeOfTimeSteps=None,getListOfTimeSteps=True):
         """ reads input data and returns range of time steps 
         :param folderPath: path to input files 
@@ -293,6 +307,50 @@ class DataInput():
             carrierDict[_carrierType] = _carrierList
 
         return carrierDict
+
+    def extractSetExistingTechnologies(self, folderPath, transportTechnology=False):
+        """ reads input data and creates setExistingCapacity for each technology
+            :param folderPath: path to input files
+            :param transportTechnology: boolean if data extracted for transport technology
+            :return setExistingTechnologies: return set existing technologies"""
+        fileFormat = self.analysis["fileFormat"]
+
+        if f"existingCapacity.{fileFormat}" not in os.listdir(folderPath):
+            logging.warning(f"existingCapacity.{fileFormat} does not exist in {folderPath}")
+            return [0]
+
+        dfInput = pd.read_csv(folderPath + "existingCapacity" + '.' + fileFormat, header=0, index_col=None)
+
+        if not transportTechnology:
+            location = "node"
+        else:
+            location = "edge"
+        maxNodeCount = dfInput[location].value_counts().max()
+        setExistingTechnologies = np.arange(0, maxNodeCount)
+
+        return setExistingTechnologies
+
+    def extractLifetimeExistingTechnology(self, folderPath, fileName, indexSets, tech):
+        """ reads input data and restructures the dataframe to return (multi)indexed dict
+        :param folderPath: path to input files
+        :param tech: technology object
+        :return existingLifetimeDict: return existing Capacity and existing Lifetime """
+        fileFormat   = self.analysis["fileFormat"]
+        column       = "yearConstruction"
+        defaultValue = 0
+
+        dfOutput = pd.Series(index=tech.existingCapacity.index,data=0)
+        if "{fileName}.{fileFormat}" in os.listdir(folderPath):
+            indexList, indexNameList = self.constructIndexList(tech, indexSets, None)
+            dfInput, fileName = self.readInputData(folderPath, fileName)
+            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
+            # get reference year
+            referenceYear = self.extractAttributeData(self.energySystem.paths["setScenarios"]["folder"], "referenceYear")
+            assert referenceYear, f"File 'attributes.{fileFormat}' in '{folderPath}' does not contain a referenceYear"
+            # calculate remaining lifetime
+            dfOutput[dfOutput > 0] =  referenceYear - dfOutput[dfOutput > 0] + tech.lifetime
+
+        return dfOutput
 
     def extractPWAData(self, folderPath,tech):
         """ reads input data and restructures the dataframe to return (multi)indexed dict

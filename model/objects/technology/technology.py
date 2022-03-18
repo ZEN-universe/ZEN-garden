@@ -92,6 +92,11 @@ class Technology(Element):
         model.setStorageTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setStorageTechnologies"),
             doc='Set of storage technologies. Subset: setTechnologies')
+        # existing installed technologies
+        model.setExistingTechnologies = pe.Set(
+            model.setTechnologies,
+            initialize=cls.getAttributeOfAllElements("setExistingTechnologies"),
+            doc='Set of existing technologies. Subset: setTechnologies')
         # invest time steps
         model.setTimeStepsInvest = pe.Set(
             model.setTechnologies,
@@ -132,6 +137,13 @@ class Technology(Element):
             initialize = cls.getAttributeOfAllElements("timeStepsOperationDuration"),
             doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setTechnologies, setTimeStepsOperation"
         )
+        # existing capacity
+        model.existingCapacity = pe.Param(
+            cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
+            initialize=cls.getAttributeOfAllElements("existingCapacity"),
+
+            doc='Parameter which specifies the existing technology size. Dimensions: setTechnologies')
+
         # minimum capacity
         model.minBuiltCapacity = pe.Param(
             model.setTechnologies,
@@ -142,11 +154,16 @@ class Technology(Element):
             model.setTechnologies,
             initialize = cls.getAttributeOfAllElements("maxBuiltCapacity"),
             doc = 'Parameter which specifies the maximum technology size that can be installed. Dimensions: setTechnologies')
-        # lifetime
+        # lifetime existing technologies
+        model.lifetimeExistingTechnology = pe.Param(
+            cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
+            initialize=cls.getAttributeOfAllElements("lifetimeExistingTechnology"),
+            doc='Parameter which specifies the remaining lifetime of an existing technology. Dimensions: setTechnologies')
+        # lifetime newly built technologies
         model.lifetimeTechnology = pe.Param(
             model.setTechnologies,
             initialize = cls.getAttributeOfAllElements("lifetime"),
-            doc = 'Parameter which specifies the lifetime of technology. Dimensions: setTechnologies')
+            doc = 'Parameter which specifies the lifetime of a newly built technology. Dimensions: setTechnologies')
         # capacityLimit of technologies
         model.capacityLimitTechnology = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation"]),
@@ -188,10 +205,15 @@ class Technology(Element):
             :param tech: tech index
             :return bounds: bounds of capacity"""
             ### TODO: if existing capacity, add existing capacity
+            # existingCapacity = sum(model.existingCapacity[tech,loc,existingTechnology]
             existingCapacity = 0
+            for id in model.setExistingTechnologies[tech]:
+                if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
+                    existingCapacities += model.existingCapacity[tech, loc, id]
+
             maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
-            maxcapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
-            boundCapacity = min(maxBuiltCapacity + existingCapacity,maxcapacityLimitTechnology)
+            maxCapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
+            boundCapacity = min(maxBuiltCapacity - existingCapacity,maxCapacityLimitTechnology)
             bounds = (0,boundCapacity)
             return(bounds)
 
@@ -389,11 +411,19 @@ def constraintTechnologyLifetimeRule(model, tech, loc, time):
     if tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
         # time range
         # TODO convert lifetime into tech-specific time indexed lifetime?
-        t_start = int(max(min(model.setTimeStepsInvest[tech]), time - model.lifetimeTechnology[tech] + 1))
+         # time range newly built technologies
+        t_start    = int(max(min(model.setTimeStepsInvest[tech]), time - model.lifetimeTechnology[tech] + 1))
         t_end = time + 1
 
-        return (model.capacity[tech, loc, time] 
-            == sum(model.builtCapacity[tech,loc, previousTime] for previousTime in range(t_start, t_end)))
+        # determine existing capacities
+        existingCapacities = 0
+        for id in model.setExistingTechnologies[tech]:
+            if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
+                existingCapacities += model.existingCapacity[tech,loc,id]
+
+        return (model.capacity[tech, loc, time]
+                == existingCapacities
+                + sum(model.builtCapacity[tech, loc, previousTime] for previousTime in range(t_start, t_end)))
     else:
         return pe.Constraint.Skip
 
