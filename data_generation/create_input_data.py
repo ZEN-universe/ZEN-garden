@@ -197,17 +197,17 @@ class DataCreation():
         if setName == "setConversionTechnologies":
             # overwrite minLoad, if no min load, set to 0
             if not helpers.getTechnologies(self.sourcePath,"conversion","minLoad")[elementName]:
-                dfAttribute.loc["minLoad","value"]          = 0
+                dfAttribute.loc["minLoadDefault","value"]   = 0
             # input and output carrier
             _inputCarrier,_outputCarrier                    = self.getInputOutputCarrier(elementName)
             dfAttribute.loc["inputCarrier","value"],dfAttribute.loc["outputCarrier","value"]    = _inputCarrier,_outputCarrier
             dfAttribute.loc["inputCarrier","unit"],dfAttribute.loc["outputCarrier", "unit"]     = helpers.getCarrierUnits(_inputCarrier), helpers.getCarrierUnits(_outputCarrier)
             # Potencia assumptions
-            _potenciaAssumptions                            = self.technologyPotenciaAssumption.loc[helpers.getAttributeIndex(self.conversionTechnologiesPotencia[elementName])]
-            dfAttribute.loc["lifetime","value"]             = _potenciaAssumptions["Technical lifetime (years)"]
-            _maximumNumberNewPlants                         = helpers.getNumberOfNewPlants(elementName) # TODO choose sensible number
-            dfAttribute.loc["maxBuiltCapacity","value"]     = _potenciaAssumptions["Typical unit size of a new power plant (kW)"]/1e6*_maximumNumberNewPlants   # GW
-            dfAttribute.loc["opexSpecificDefault","value"]  = _potenciaAssumptions["Variable O&M  costs €2010/MWh"]                                             # kEUR/GWh
+            _potenciaAssumptions                                = self.technologyPotenciaAssumption.loc[helpers.getAttributeIndex(self.conversionTechnologiesPotencia[elementName])]
+            dfAttribute.loc["lifetimeDefault","value"]          = _potenciaAssumptions["Technical lifetime (years)"]
+            _maximumNumberNewPlants                             = helpers.getNumberOfNewPlants(elementName) # TODO choose sensible number
+            dfAttribute.loc["maxBuiltCapacityDefault","value"]  = _potenciaAssumptions["Typical unit size of a new power plant (kW)"]/1e6*_maximumNumberNewPlants   # GW
+            dfAttribute.loc["opexSpecificDefault","value"]      = _potenciaAssumptions["Variable O&M  costs €2010/MWh"]                                             # kEUR/GWh
             # save carbon intensity of input carrier
             if _inputCarrier:
                 self.carbonIntensityCarrier[_inputCarrier] = _potenciaAssumptions["Default emissions factor (t of CO2 / toe input)"]*helpers.getConstants("MWh2toe") #ktCO2/GWh

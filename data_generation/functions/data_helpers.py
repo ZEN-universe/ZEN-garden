@@ -111,11 +111,11 @@ def getAttributesOfSet(setName):
     :returns attributes: list of attributes of element set """
     attributesOfSets = {
         "setTechnologies": [
-            "minBuiltCapacity",
-            "maxBuiltCapacity",
-            "minLoad",
-            "maxLoad",
-            "lifetime",
+            "minBuiltCapacityDefault",
+            "maxBuiltCapacityDefault",
+            "minLoadDefault",
+            "maxLoadDefault",
+            "lifetimeDefault",
             "opexSpecificDefault",
             "referenceCarrier",
             "capacityLimitDefault",
@@ -126,16 +126,15 @@ def getAttributesOfSet(setName):
             "outputCarrier",
         ],
         "setTransportTechnologies": [
-            "lossFlow",
+            "lossFlowDefault",
             "capexPerDistanceDefault",
             "distanceEuclideanDefault"
         ],
         "setStorageTechnologies": [
-            "efficiencyCharge",
-            "efficiencyDischarge",
-            "selfDischarge",
+            "efficiencyChargeDefault",
+            "efficiencyDischargeDefault",
+            "selfDischargeDefault",
             "capexSpecificDefault",
-            "storageLevelRepetition"
         ],
         "setCarriers": [
             "carbonIntensityDefault",
@@ -168,13 +167,13 @@ def setManualAttributesTransport(elementName,dfAttribute):
     :return dfAttribute: attribute dataframe """
     # source: link-techs in euro-calliope
     if elementName == "power_line":
-        dfAttribute.loc["lossFlow","value"]                 = 5E-5  # 1/km TODO from where
-        dfAttribute.loc["lifetime","value"]                 = 60    # a TODO from where
+        dfAttribute.loc["lossFlowDefault","value"]          = 5E-5  # 1/km TODO from where?
+        dfAttribute.loc["lifetimeDefault","value"]          = 60    # a TODO from where?
         dfAttribute.loc["capexPerDistanceDefault","value"]  = 900/2 # kEUR/km/GW TODO from where
         dfAttribute.loc["capacityLimitDefault","value"]     = 0     # GW values given for every existing line
-        dfAttribute.loc["maxBuiltCapacity","value"]         = 20    # GW (chosen to be higher than capacity limit)
+        dfAttribute.loc["maxBuiltCapacityDefault","value"]         = 20    # GW (chosen to be higher than capacity limit)
 
-        dfAttribute.loc["lossFlow", "unit"]                 = "1/km"
+        dfAttribute.loc["lossFlowDefault", "unit"]                 = "1/km"
         dfAttribute.loc["capexPerDistanceDefault", "unit"]  = "kiloEuro/km/GW"
     return dfAttribute
 
@@ -185,24 +184,24 @@ def setManualAttributesStorage(elementName,dfAttribute):
     :return dfAttribute: attribute dataframe """
     # source is FactSheet_Energy_Storage_0219
     if elementName == "battery":
-        dfAttribute.loc["efficiencyCharge","value"]     = 0.95
-        dfAttribute.loc["efficiencyDischarge","value"]  = 0.95
-        dfAttribute.loc["selfDischarge","value"]        = 0.1/100                               # ESM_Final_Report_05-Nov-2019
-        dfAttribute.loc["maxLoad","value"]              = 1/2                                   # 1/(typical discharge time)
-        dfAttribute.loc["maxBuiltCapacity","value"]     = 0.1/dfAttribute.loc["maxLoad","value"]        # GWh, discharge in 1/maxLoad --> E_max = P_rated/maxLoad
-        dfAttribute.loc["capexSpecificDefault","value"] = 3000*dfAttribute.loc["maxLoad","value"]*1000  # kEUR/GWh,
+        dfAttribute.loc["efficiencyChargeDefault","value"]     = 0.95
+        dfAttribute.loc["efficiencyDischargeDefault","value"]  = 0.95
+        dfAttribute.loc["selfDischargeDefault","value"]        = 0.1/100                               # ESM_Final_Report_05-Nov-2019
+        dfAttribute.loc["maxLoadDefault","value"]              = 1/2                                   # 1/(typical discharge time)
+        dfAttribute.loc["maxBuiltCapacityDefault","value"]     = 0.1/dfAttribute.loc["maxLoadDefault","value"]        # GWh, discharge in 1/maxLoad --> E_max = P_rated/maxLoad
+        dfAttribute.loc["capexSpecificDefault","value"] = 3000*dfAttribute.loc["maxLoadDefault","value"]*1000  # kEUR/GWh,
     elif elementName == "pumped_hydro":
-        dfAttribute.loc["efficiencyCharge","value"]     = 0.9
-        dfAttribute.loc["efficiencyDischarge","value"]  = 0.9
-        dfAttribute.loc["selfDischarge","value"]        = 0                                     # ESM_Final_Report_05-Nov-2019
-        dfAttribute.loc["maxLoad","value"]              = 1/16                                  # 1/(typical discharge time)
-        dfAttribute.loc["maxBuiltCapacity","value"]     = 3/dfAttribute.loc["maxLoad","value"]          # GWh, discharge in 1/maxLoad --> E_max = P_rated*maxLoad
-        dfAttribute.loc["capexSpecificDefault","value"] = 2700*dfAttribute.loc["maxLoad","value"]*1000  # kEUR/GWh,
-    dfAttribute.loc["efficiencyCharge", "unit"]         = ""
-    dfAttribute.loc["efficiencyDischarge", "unit"]      = ""
-    dfAttribute.loc["selfDischarge", "unit"]            = ""
-    dfAttribute.loc["maxLoad", "unit"]                  = "GW/GWh"
-    dfAttribute.loc["maxBuiltCapacity", "unit"]         = "GWh"
+        dfAttribute.loc["efficiencyChargeDefault","value"]     = 0.9
+        dfAttribute.loc["efficiencyDischargeDefault","value"]  = 0.9
+        dfAttribute.loc["selfDischargeDefault","value"]        = 0                                     # ESM_Final_Report_05-Nov-2019
+        dfAttribute.loc["maxLoadDefault","value"]              = 1/16                                  # 1/(typical discharge time)
+        dfAttribute.loc["maxBuiltCapacityDefault","value"]     = 3/dfAttribute.loc["maxLoadDefault","value"]          # GWh, discharge in 1/maxLoad --> E_max = P_rated*maxLoad
+        dfAttribute.loc["capexSpecificDefault","value"] = 2700*dfAttribute.loc["maxLoadDefault","value"]*1000  # kEUR/GWh,
+    dfAttribute.loc["efficiencyChargeDefault", "unit"]         = ""
+    dfAttribute.loc["efficiencyDischargeDefault", "unit"]      = ""
+    dfAttribute.loc["selfDischargeDefault", "unit"]            = ""
+    dfAttribute.loc["maxLoadDefault", "unit"]                  = "GW/GWh"
+    dfAttribute.loc["maxBuiltCapacityDefault", "unit"]         = "GWh"
     dfAttribute.loc["capexSpecificDefault", "unit"]     = "kiloEuro/GWh"
     return dfAttribute
 

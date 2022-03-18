@@ -89,9 +89,6 @@ class DataInput():
         else:
             defaultName = manualFileName
         defaultValue = self.extractAttributeData(folderPath,defaultName)
-        if defaultValue is None:
-            defaultValue = self.extractAttributeData(folderPath,defaultName+"Default")
-
         # select index
         indexList,indexNameList = self.constructIndexList(indexSets,timeSteps)
         # create pd.MultiIndex and select data
@@ -138,7 +135,7 @@ class DataInput():
                 # check if only one column remaining
                 assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
                 dfInput     = dfInput.squeeze(axis=1)
-        # check if requested values for missing index are columns of dfInput 
+        # check if requested values for missing index are columns of dfInput
         else:
             indexNameList.remove(missingIndex[0])
             dfInput                 = dfInput.set_index(indexNameList)
@@ -190,27 +187,37 @@ class DataInput():
                     dfOutput.loc[index] = dfInput.loc[_nodeFrom,_nodeTo]
         return dfOutput
 
-    def extractAttributeData(self, folderPath,attributeName):
+    def extractAttributeData(self, folderPath,attributeName,isCarrier = False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
         :param attributeName: name of selected attribute
+        :param isCarrier: boolean to indicate if inputCarrier or outputCarrier. Then "Default" not needed
         :return attributeValue: attribute value """
-        # select data
         fileName    = "attributes.csv"
         if fileName not in os.listdir(folderPath):
             return None
         dfInput     = pd.read_csv(folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
         # check if attribute in index
-        if attributeName in dfInput.index:
-            attributeValue = dfInput.loc[attributeName,"value"]
-            multiplier = self.getUnitMultiplier(dfInput.loc[attributeName,"unit"])
-            try:
-                attribute = {"value":float(attributeValue)*multiplier,"multiplier":multiplier}
-                return attribute
-            except:
-                return attributeValue
+        if attributeName+"Default" not in dfInput.index:
+            if attributeName not in dfInput.index:
+                warnings.warn(
+                    f"Attribute without default value will be deprecated. \nAdd default value for {attributeName} in attribute file in {folderPath}",
+                    FutureWarning)
+                return None
+            elif not isCarrier:
+                warnings.warn(
+                    f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attributeName} of attributes in path {folderPath}",
+                    FutureWarning)
         else:
-            return None
+            attributeName = attributeName + "Default"
+        # get attribute
+        attributeValue = dfInput.loc[attributeName, "value"]
+        multiplier = self.getUnitMultiplier(dfInput.loc[attributeName, "unit"])
+        try:
+            attribute = {"value": float(attributeValue) * multiplier, "multiplier": multiplier}
+            return attribute
+        except:
+            return attributeValue
 
     def ifAttributeExists(self, folderPath, manualFileName, column=None):
         """ checks if default value or timeseries of an attribute exists in the input data
@@ -225,8 +232,6 @@ class DataInput():
         else:
             defaultName = manualFileName
         defaultValue = self.extractAttributeData(folderPath, defaultName)
-        if defaultValue is None:
-            defaultValue = self.extractAttributeData(folderPath,defaultName+"Default")
 
         # check if input file exists
         inputData = None
@@ -317,7 +322,7 @@ class DataInput():
         # get carriers
         for _carrierType in ["inputCarrier","outputCarrier"]:
             # TODO implement for multiple carriers
-            _carrierString = self.extractAttributeData(folderPath,_carrierType)
+            _carrierString = self.extractAttributeData(folderPath,_carrierType,isCarrier = True)
             if type(_carrierString) == str:
                 _carrierList = _carrierString.strip().split(" ")
                 for _carrierItem in _carrierList:
