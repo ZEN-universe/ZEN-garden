@@ -6,6 +6,8 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class containing the methods for the generation of the input dataset respecting the platform's data structure.
 ==========================================================================================================================================================================="""
+import copy
+
 import numpy as np
 import pandas as pd
 import os, sys
@@ -49,8 +51,6 @@ class DataCreation():
         self.carbonIntensityCarrier = {}
         # create nodes
         self.createNodes()
-        # create time steps
-        self.createTimeSteps()
         # create conversion technologies
         self.createConversionTechnologies()
         # create transport technologies
@@ -64,21 +64,53 @@ class DataCreation():
         """ fills the setNodes folder"""
         assert os.path.exists(self.folderPath / "setNodes" / "setNodes.csv"), "setNodes not yet created! Implement!"
         self.setNodes = pd.read_csv(self.folderPath / "setNodes" / "setNodes.csv")
-        self.apiData.setNodes(self.setNodes)
+        self.createEdges()
+        self.apiData.setNodesAndEdges(self.setNodes,self.setEdges)
 
-    def createTimeSteps(self,setName = None,elementName = None):
-        """ fills the setTimeSteps folder and creates the time steps for each element in each set """
-        if setName == "setConversionTechnologies":
-            pass
-        elif setName == "setTransportTechnologies":
-            pass
-        elif setName == "setStorageTechnologies":
-            pass
-        elif setName == "setCarriers":
-            pass
-        else:
-            pass
-        pass
+    def createEdges(self):
+        """ creates the edges """
+        setEdges = pd.DataFrame(columns=["nodeFrom","nodeTo"])
+        # nodes from ENTSOE TYNDP 2020-scenario.xlsx
+        # load nodes and edges
+        _nodes  = pd.read_csv(self.sourcePath / "nodesEdges" / "Nodes_Dict.csv",delimiter=";")
+        _edges  = pd.read_csv(self.sourcePath / "nodesEdges" / "Lines_Dict.csv",delimiter=";")
+        _edges  = _edges[~_edges["line_id"].str.contains("Exp")]
+        # iterate through nodes to find corresponding edges
+        setNodes = copy.deepcopy(self.setNodes["node"])
+        setNodes[setNodes == "EL"]  = "GR"
+        for _node in setNodes:
+            _nodeIds = _nodes["node_id"][_nodes["country"]==_node].reset_index(drop=True)
+            _connectedNodeIdFromNode  = []
+            _connectedNodeIdToNode    = []
+            for _nodeId in _nodeIds:
+                _connectedNodeIdFromNode.extend(list(_edges["node_b"][(_edges["node_a"] == _nodeId)]))
+                _connectedNodeIdToNode.extend(list(_edges["node_a"][(_edges["node_b"] == _nodeId)]))
+            # append to setEdges
+            _setEdgesTempFromNode               = pd.DataFrame(columns=["nodeFrom","nodeTo"])
+            _connectedNodeFromNode              = _nodes["country"][_nodes["node_id"].apply(lambda node: node in _connectedNodeIdFromNode)]
+            # only nodes which are in self.setNodes
+            _setEdgesTempFromNode["nodeTo"]     = _connectedNodeFromNode[_connectedNodeFromNode.isin(setNodes)]
+            _setEdgesTempFromNode["nodeFrom"]   = _node
+            _setEdgesTempToNode                 = pd.DataFrame(columns=["nodeFrom", "nodeTo"])
+            _connectedNodeToNode                = _nodes["country"][_nodes["node_id"].apply(lambda node: node in _connectedNodeIdToNode)]
+            # only nodes which are in self.setNodes
+            _setEdgesTempToNode["nodeFrom"]     = _connectedNodeToNode[_connectedNodeToNode.isin(setNodes)]
+            _setEdgesTempToNode["nodeTo"]       = _node
+            setEdges            = pd.concat([setEdges,_setEdgesTempFromNode,_setEdgesTempToNode])
+        # remove edges where nodeFrom = nodeTo
+        setEdges                    = setEdges[setEdges["nodeFrom"] != setEdges["nodeTo"]]
+        # flip direction of edge
+        setEdgesFlipped             = setEdges.rename(columns={"nodeFrom":"nodeTo","nodeTo":"nodeFrom"})
+        setEdges                    = pd.concat([setEdges,setEdgesFlipped]).drop_duplicates()
+        # substitute greece
+        setEdges[setEdges == "GR"]  = "EL"
+        # set edge name
+        setEdges["edge"]    = setEdges.apply(lambda row: row["nodeFrom"]+"-"+row["nodeTo"],axis=1)
+        setEdges            = setEdges.set_index("edge")
+        self.setEdges       = setEdges
+        # write csv
+        setEdges.to_csv(self.folderPath / "setNodes" / "setEdges.csv")
+
 
     def createConversionTechnologies(self):
         """ fills the setConversionTechnologies folder"""
@@ -318,16 +350,16 @@ class DataCreation():
         xArr        = setNodes["x"]
         yArr        = setNodes["y"]
         # create empty distance matrix
-        distanceMatrix              = pd.DataFrame(index = nodes, columns= nodes)
-        distanceMatrix.index.name   = "node"
+        distanceMatrix              = pd.DataFrame(index = self.setEdges.index, columns= ["distance"])
         # calculate distance
-        distanceMatrix = distanceMatrix.apply(lambda column: f_eucl_dist((xArr[column.name], yArr[column.name]),(xArr[column.index], yArr[column.index])))
+        distanceMatrix["distance"]  = self.setEdges.apply(lambda row: f_eucl_dist((xArr[row["nodeFrom"]], yArr[row["nodeFrom"]]),(xArr[row["nodeTo"]], yArr[row["nodeTo"]])),axis=1)
         distanceMatrix.to_csv(self.folderPath / "setTransportTechnologies" / elementName / "distanceEuclidean.csv")
 
     def createCapacityLimitTransportTechnology(self,elementName):
         """ extract the capacity limit of the transmission technology lines """
         if elementName == "power_line":
             capacityLimit = self.apiData.getEntsoeTransmissionCapacity()
+            capacityLimit.to_csv(self.folderPath / "setTransportTechnologies" / elementName / "capacityLimit.csv")
 
 def main():
     """ This is the main function to create NUTS0 """

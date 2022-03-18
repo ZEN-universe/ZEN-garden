@@ -24,13 +24,13 @@ analysis['nonlinearTechnologyApproximation']        = {'Capex': [], 'ConverEffic
 
 ## System - settings update compared to default values
 system['setCarriers']                               = ['electricity','natural_gas',"hard_coal","uranium"]
-system['setStorageTechnologies']                    = ["battery"]
+system['setStorageTechnologies']                    = ["battery","pumped_hydro"]
 system['setTransportTechnologies']                  = ['power_line']
-system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant","nuclear"]#,"run-of-river_hydro"]
+system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant","nuclear","photovoltaics"]
 system['setScenarios']                              = 'a'
 system['setTimeSteps']                              = list(range(0,2190))
 system["numberTimeStepsDefault"]                    = 20 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
-system['setNodes']                                  = ['CH','DE',"AT","IT","FR"]
+system['setNodes']                                  = ['CH','DE',"AT","IT","FR","ES","PT","CZ"]
 
 ## Solver - settings update compared to default values
 solver['gap']                                       = 0.01

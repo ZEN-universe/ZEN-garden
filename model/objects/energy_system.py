@@ -15,6 +15,7 @@ import pandas as pd
 from pint import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
 from pint.util import column_echelon_form
+import warnings
 
 class EnergySystem:
     # energySystem
@@ -50,11 +51,11 @@ class EnergySystem:
         # only one energy system can be defined
         assert not EnergySystem.getEnergySystem(), "Only one energy system can be defined."
         # set attributes
-        self.name = nameEnergySystem
+        self.name       = nameEnergySystem
         # add energySystem to list
         EnergySystem.setEnergySystem(self)
         # create DataInput object
-        self.dataInput = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
+        self.dataInput  = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
         # store input data
         self.storeInputData()
 
@@ -64,7 +65,7 @@ class EnergySystem:
         self.paths                      = EnergySystem.getPaths()
         self.getBaseUnits()
         # in class <EnergySystem>, all sets are constructed
-        self.setNodes                   = system["setNodes"]
+        self.setNodes                   = self.dataInput.extractLocations()
         self.setNodesOnEdges            = self.calculateEdgesFromNodes()
         self.setEdges                   = list(self.setNodesOnEdges.keys())
         self.setCarriers                = system["setCarriers"]
@@ -134,10 +135,17 @@ class EnergySystem:
         """ calculates setNodesOnEdges from setNodes
         :return setNodesOnEdges: dict with edges and corresponding nodes """
         setNodesOnEdges = {}
-        for node in self.setNodes:
-            for nodeAlias in self.setNodes:
-                if node != nodeAlias:
-                    setNodesOnEdges[node+"-"+nodeAlias] = (node,nodeAlias)
+        # read edge file
+        setEdgesInput = self.dataInput.extractLocations(extractNodes=False)
+        if setEdgesInput is not None:
+            for edge in setEdgesInput.index:
+                setNodesOnEdges[edge] = (setEdgesInput.loc[edge,"nodeFrom"],setEdgesInput.loc[edge,"nodeTo"])
+        else:
+            warnings.warn("Implicit creation of edges will be deprecated. Provide 'setEdges.csv' in folder 'setNodes' instead!",FutureWarning)
+            for nodeFrom in self.setNodes:
+                for nodeTo in self.setNodes:
+                    if nodeFrom != nodeTo:
+                        setNodesOnEdges[nodeFrom+"-"+nodeTo] = (nodeFrom,nodeTo)
         return setNodesOnEdges
 
     ### --- classmethods --- ###
@@ -437,17 +445,13 @@ class EnergySystem:
     def constructSets(cls):
         """ constructs the pe.Sets of the class <EnergySystem> """
         # construct pe.Sets of the class <EnergySystem>
-        model = cls.getConcreteModel()
-        energySystem = cls.getEnergySystem()
+        model           = cls.getConcreteModel()
+        energySystem    = cls.getEnergySystem()
 
         # nodes
         model.setNodes = pe.Set(
-            initialize=energySystem.setNodes, 
-            doc='Set of nodes')
-        # connected nodes
-        model.setAliasNodes = pe.Set(
             initialize=energySystem.setNodes,
-            doc='Copy of the set of nodes to model edges. Subset: setNodes')
+            doc='Set of nodes')
         # edges
         model.setEdges = pe.Set(
             initialize = energySystem.setEdges,
@@ -471,10 +475,6 @@ class EnergySystem:
         model.setBaseTimeSteps = pe.Set(
             initialize=energySystem.setBaseTimeSteps,
             doc='Set of base time-steps')
-        # scenarios
-        model.setScenarios = pe.Set(
-            initialize=energySystem.setScenarios,
-            doc='Set of scenarios')
 
     @classmethod
     def constructParams(cls):

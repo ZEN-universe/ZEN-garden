@@ -6,6 +6,8 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""
+import warnings
+
 import numpy as np
 from scipy.stats import linregress
 import pandas as pd
@@ -24,7 +26,7 @@ class DataInput():
         self.solver         = solver
         self.energySystem   = energySystem
         # get names of indices
-        self.indexNames  = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
+        self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
 
     def readInputData(self,folderPath,manualFileName):
         """ reads input data and returns raw input dataframe
@@ -107,87 +109,163 @@ class DataInput():
             if not transportTechnology:
                 dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
             else:
-                dfOutput = self.extractTransportInputData(dfInput,dfOutput,indexMultiIndex,defaultValue)
+                dfOutput = self.extractTransportInputData(dfInput,dfOutput,fileName,indexMultiIndex,defaultValue)
         return dfOutput 
     
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
         """ fills dfOutput with data from dfInput with no new index creation (no transport technologies)
         :param dfInput: raw input dataframe
         :param dfOutput: empty output dataframe, only filled with defaultValue 
-        :param filename: name of selected file
+        :param fileName: name of selected file
         :param indexNameList: list of name of indices
         :param column: select specific column
         :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
         # select and drop scenario
         if self.indexNames["setScenarios"] in dfInput.columns:
+            warnings.warn("'setScenarios' will be deprecated.",FutureWarning)
             dfInput = dfInput[dfInput[self.indexNames["setScenarios"]]==self.system['setScenarios']].drop(self.indexNames["setScenarios"],axis=1)
         # set index by indexNameList
         missingIndex = list(set(indexNameList) - set(indexNameList).intersection(set(dfInput.columns)))
         assert len(missingIndex)<=1, f"Some of the requested index sets {missingIndex} are missing from input file for {fileName}"
         # no indices missing
         if len(missingIndex) == 0:
-            dfInput = dfInput.set_index(indexNameList)
+            dfInput         = dfInput.set_index(indexNameList)
             if column:
                 assert column in dfInput.columns, f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {fileName}"
-                dfInput = dfInput[column]
+                dfInput     = dfInput[column]
             else:
                 # check if only one column remaining
                 assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
-                dfInput = dfInput.squeeze(axis=1)
+                dfInput     = dfInput.squeeze(axis=1)
         # check if requested values for missing index are columns of dfInput 
         else:
             indexNameList.remove(missingIndex[0])
-            dfInput = dfInput.set_index(indexNameList)
-            requestedIndexValues = set(dfOutput.index.get_level_values(missingIndex[0]))
+            dfInput                 = dfInput.set_index(indexNameList)
+            requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0]))
             assert requestedIndexValues.issubset(dfInput.columns), f"The index values {list(requestedIndexValues-set(dfInput.columns))} for index {missingIndex[0]} are missing from {fileName}"
-            dfInput.columns = dfInput.columns.set_names(missingIndex[0])
-            dfInput = dfInput[list(requestedIndexValues)].stack()
-            dfInput = dfInput.reorder_levels(dfOutput.index.names)
+            dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
+            dfInput                 = dfInput[list(requestedIndexValues)].stack()
+            dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
         # apply multiplier to input data
-        dfInput = dfInput * defaultValue["multiplier"]
+        dfInput     = dfInput * defaultValue["multiplier"]
+        # delete nans
+        dfInput     = dfInput.dropna()
         # get common index of dfOutput and dfInput
         if not isinstance(dfInput.index, pd.MultiIndex):
             indexList     = dfInput.index.to_list()
             if len(indexList) == 1:
-                indexMultiIndex = pd.MultiIndex.from_tuples([(indexList[0],)], names=[dfInput.index.name])
+                indexMultiIndex     = pd.MultiIndex.from_tuples([(indexList[0],)], names=[dfInput.index.name])
             else:
-                indexMultiIndex = pd.MultiIndex.from_product(indexList, names=[dfInput.index.name])
-            dfInput = pd.Series(index=indexMultiIndex, data=dfInput.to_list())
-        commonIndex = dfOutput.index.intersection(dfInput.index)
+                indexMultiIndex     = pd.MultiIndex.from_product([indexList], names=[dfInput.index.name])
+            dfInput                 = pd.Series(index=indexMultiIndex, data=dfInput.to_list())
+        commonIndex                 = dfOutput.index.intersection(dfInput.index)
         assert defaultValue is not None or len(commonIndex) == len(dfOutput.index), f"Input for {fileName} does not provide entire dataset and no default given in attributes.csv"
-        dfOutput.loc[commonIndex] = dfInput.loc[commonIndex]
+        dfOutput.loc[commonIndex]   = dfInput.loc[commonIndex]
         return dfOutput
 
-    def extractTransportInputData(self, dfInput,dfOutput,indexMultiIndex,defaultValue):
+    def extractTransportInputData(self, dfInput,dfOutput,fileName,indexMultiIndex,defaultValue):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param dfInput: raw input dataframe
-        :param dfOutput: empty output dataframe, only filled with defaultValue 
+        :param dfOutput: empty output dataframe, only filled with defaultValue
+        :param fileName: name of selected file
         :param indexMultiIndex: multiIndex of dfOutput
         :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
-        dfInput = dfInput.set_index(self.indexNames['setNodes'])
-        # apply multiplier to input data
-        dfInput = dfInput * defaultValue["multiplier"]
-        # fill dfOutput
-        for index in indexMultiIndex:
-            if isinstance(index,tuple):
-                _node,_nodeAlias = self.energySystem.setNodesOnEdges[index[0]]
-            else:
-                _node,_nodeAlias = self.energySystem.setNodesOnEdges[index]
-            if _node in dfInput.index and _nodeAlias in dfInput.columns:
-                dfOutput.loc[index] = dfInput.loc[_node,_nodeAlias]
+        # preferably already edges as index
+        if self.indexNames["setEdges"] in dfInput.columns:
+            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList=list(indexMultiIndex.names),column=None,defaultValue=defaultValue)
+        else:
+            warnings.warn(f"The matrix representation of edges will be deprecated. Change file '{fileName}'",FutureWarning)
+            dfInput = dfInput.set_index(self.indexNames['setNodes'])
+            # apply multiplier to input data
+            dfInput = dfInput * defaultValue["multiplier"]
+            # fill dfOutput
+            for index in indexMultiIndex:
+                if isinstance(index,tuple):
+                    _nodeFrom,_nodeTo = self.energySystem.setNodesOnEdges[index[0]]
+                else:
+                    _nodeFrom,_nodeTo = self.energySystem.setNodesOnEdges[index]
+                if _nodeFrom in dfInput.index and _nodeTo in dfInput.columns and ~np.isnan(dfInput.loc[_nodeFrom,_nodeTo]):
+                    dfOutput.loc[index] = dfInput.loc[_nodeFrom,_nodeTo]
         return dfOutput
+
+    def extractAttributeData(self, folderPath,attributeName):
+        """ reads input data and restructures the dataframe to return (multi)indexed dict
+        :param folderPath: path to input files
+        :param attributeName: name of selected attribute
+        :return attributeValue: attribute value """
+        # select data
+        fileName    = "attributes.csv"
+        if fileName not in os.listdir(folderPath):
+            return None
+        dfInput     = pd.read_csv(folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
+        # check if attribute in index
+        if attributeName in dfInput.index:
+            attributeValue = dfInput.loc[attributeName,"value"]
+            multiplier = self.getUnitMultiplier(dfInput.loc[attributeName,"unit"])
+            try:
+                attribute = {"value":float(attributeValue)*multiplier,"multiplier":multiplier}
+                return attribute
+            except:
+                return attributeValue
+        else:
+            return None
+
+    def ifAttributeExists(self, folderPath, manualFileName, column=None):
+        """ checks if default value or timeseries of an attribute exists in the input data
+        :param folderPath: path to input files
+        :param manualFileName: name of selected file. If only one file in folder, not used
+        :param column: select specific column
+        """
+
+        # check if default value exists
+        if column:
+            defaultName = column
+        else:
+            defaultName = manualFileName
+        defaultValue = self.extractAttributeData(folderPath, defaultName)
+        if defaultValue is None:
+            defaultValue = self.extractAttributeData(folderPath,defaultName+"Default")
+
+        # check if input file exists
+        inputData = None
+        if defaultValue is None:
+            inputData, _ = self.readInputData(folderPath, manualFileName)
+
+        if defaultValue is None and inputData is None:
+            return False
+        else:
+            return True
+
+    def extractLocations(self,extractNodes = True):
+        """ reads input data to extract nodes or edges.
+        :param extractNodes: boolean to switch between nodes and edges """
+        folderPath          = self.energySystem.getPaths()["setNodes"]["folder"]
+        if extractNodes:
+            setNodesConfig  = self.system["setNodes"]
+            setNodesInput   = self.readInputData(folderPath,"setNodes")[0]["node"]
+            _missingNodes   = list(set(setNodesConfig).difference(setNodesInput))
+            assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {folderPath+'setNodes'}"
+            return setNodesConfig
+        else:
+            setEdgesInput   = self.readInputData(folderPath,"setEdges")[0]
+            if setEdgesInput is not None:
+                setEdges        = setEdgesInput[(setEdgesInput["nodeFrom"].isin(self.energySystem.setNodes)) & (setEdgesInput["nodeTo"].isin(self.energySystem.setNodes))]
+                setEdges        = setEdges.set_index("edge")
+                return setEdges
+            else:
+                return None
 
     def extractNumberTimeSteps(self):
         """ reads input data and returns number of typical periods and time steps per period for each technology and carrier
         :param folderPath: path to input files 
         :return dictNumberOfTimeSteps: number of typical periods and time steps per period """
         # select data
-        folderName = "setTimeSteps"
-        fileName = "setTimeSteps"
-        dfInput,_ = self.readInputData(self.energySystem.paths[folderName]["folder"],fileName)
-        dfInput = dfInput.set_index(["element","typeTimeStep"])
+        folderName  = "setTimeSteps"
+        fileName    = "setTimeSteps"
+        dfInput,_   = self.readInputData(self.energySystem.paths[folderName]["folder"],fileName)
+        dfInput     = dfInput.set_index(["element","typeTimeStep"])
         # default numberTimeStepsPerPeriod
         # TODO time steps per period necessary?
         numberTimeStepsPerPeriod = 1
@@ -230,54 +308,6 @@ class DataInput():
             return listOfTimeSteps
         else:
             return numberTypicalPeriods,numberTimeStepsPerPeriod
-
-    def extractAttributeData(self, folderPath,attributeName):
-        """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files 
-        :param attributeName: name of selected attribute
-        :return attributeValue: attribute value """
-        # select data
-        fileName = "attributes.csv"
-        if fileName not in os.listdir(folderPath):
-            return None
-        dfInput = pd.read_csv(folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
-        # check if attribute in index
-        if attributeName in dfInput.index:
-            attributeValue = dfInput.loc[attributeName,"value"]
-            multiplier = self.getUnitMultiplier(dfInput.loc[attributeName,"unit"])
-            try:
-                attribute = {"value":float(attributeValue)*multiplier,"multiplier":multiplier}
-                return attribute
-            except:
-                return attributeValue
-        else:
-            return None
-
-    def ifAttributeExists(self, folderPath, manualFileName, column=None):
-        """ checks if default value or timeseries of an attribute exists in the input data
-        :param folderPath: path to input files
-        :param manualFileName: name of selected file. If only one file in folder, not used
-        :param column: select specific column
-        """
-
-        # check if default value exists
-        if column:
-            defaultName = column
-        else:
-            defaultName = manualFileName
-        defaultValue = self.extractAttributeData(folderPath, defaultName)
-        if defaultValue is None:
-            defaultValue = self.extractAttributeData(folderPath,defaultName+"Default")
-
-        # check if input file exists
-        inputData = None
-        if defaultValue is None:
-            inputData, _ = self.readInputData(folderPath, manualFileName)
-
-        if defaultValue is None and inputData is None:
-            return False
-        else:
-            return True
 
     def extractConversionCarriers(self, folderPath):
         """ reads input data and extracts conversion carriers

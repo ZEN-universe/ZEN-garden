@@ -39,7 +39,7 @@ analysis['subsets'] = {
     }
 # headers for the generation of input files
 analysis['headerDataInputs']=   {'setNodes': ['node', 'x', 'y'],
-                                "setEdges": ["edge"],
+                                "setEdges": ["edge","nodeFrom","nodeTo"],
                                 'setScenarios':['scenario'],
                                 'setTimeSteps':['time'],
                                 'setCarriers':['demandCarrier', 'availabilityCarrier', 'exportPriceCarrier', 'importPriceCarrier'],

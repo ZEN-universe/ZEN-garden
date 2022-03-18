@@ -8,7 +8,7 @@ Description:  Functions to extract the input data from the ENTSO-E Transparency 
 ==========================================================================================================================================================================="""
 from entsoe import EntsoeRawClient,EntsoePandasClient
 from entsoe.mappings import lookup_area, Area, NEIGHBOURS
-from entsoe.parsers import parse_loads, parse_generation
+from entsoe.parsers import parse_loads, parse_generation, parse_crossborder_flows
 import pandas as pd
 import numpy as np
 import os
@@ -22,7 +22,8 @@ class ExtractApis():
         """ this method initializes the extraction object """
         self.dataCreation   = dataCreation
         self.helpers        = helpers
-        self.nodes          = None
+        self.setNodes       = None
+        self.setEdges       = None
         # toggle extraction of data
         self.useExistingDemand          = True
         self.useExistingGeneration      = True
@@ -57,17 +58,18 @@ class ExtractApis():
         self.timeEnd    = pd.Timestamp(year=self.apiYear+1,month=1,day=1,hour=0, tz='Europe/Brussels')
         self.timeRange  = pd.date_range(self.timeStart,self.timeEnd,freq="H")[:-1]
 
-    def setNodes(self,setNodes):
-        """ this method sets the nodes to the extraction object """
-        self.nodes = setNodes
+    def setNodesAndEdges(self,setNodes,setEdges):
+        """ this method sets the nodes and the edges to the extraction object """
+        self.setNodes   = setNodes
+        self.setEdges   = setEdges
 
     def getEntsoeDemand(self):
         """ this method gets the electricity demand """
         if not os.path.exists(self.sourcePath / "demand" / "demandENTSOE.pickle") or not self.useExistingDemand:
-            entsoeDemand    = pd.DataFrame(index=self.timeRange, columns=self.nodes["node"])
+            entsoeDemand    = pd.DataFrame(index=self.timeRange, columns=self.setNodes["node"])
             areaNames       = [area.name for area in Area]
-            for idx,node in enumerate(self.nodes["node"]):
-                print(f"Extract demand for {node} - {idx+1}/{len(self.nodes['node'])}")
+            for idx,node in enumerate(self.setNodes["node"]):
+                print(f"Extract demand for {node} - {idx+1}/{len(self.setNodes['node'])}")
                 if node == "EL":
                     nodeEntsoe  = "GR"
                 else:
@@ -111,10 +113,10 @@ class ExtractApis():
     def getEntsoeGeneration(self,technology):
         """ this method gets the electricity generation of each technology """
         if not os.path.exists(self.sourcePath / "historicGeneration" / f"generationENTSOE{technology}.pickle") or not self.useExistingGeneration:
-            entsoeGeneration = pd.DataFrame(index=self.timeRange, columns=self.nodes["node"])
+            entsoeGeneration = pd.DataFrame(index=self.timeRange, columns=self.setNodes["node"])
             areaNames  = [area.name for area in Area]
-            for idx,node in enumerate(self.nodes["node"]):
-                print(f"Extract historic generation for {node} of technology {technology} - {idx+1}/{len(self.nodes['node'])}")
+            for idx,node in enumerate(self.setNodes["node"]):
+                print(f"Extract historic generation for {node} of technology {technology} - {idx+1}/{len(self.setNodes['node'])}")
                 if node == "EL":
                     nodeEntsoe = "GR"
                 else:
@@ -155,70 +157,67 @@ class ExtractApis():
 
     def getEntsoeTransmissionCapacity(self):
         """ this method gets the transmission capacity """
+        # convert neighbours to list of
         if not os.path.exists(self.sourcePath / "transmission" / "transmissionCapacityENTSOE.pickle") or not self.useExistingTransmission:
-            entsoeTransmissionCapacity  = pd.DataFrame(index=self.nodes["node"], columns=self.nodes["node"],data=0)
+            entsoeTransmissionCapacity  = pd.DataFrame(index=self.setEdges.index, columns=["capacity"])
             areaNames                   = [area.name for area in Area]
             counter                     = 0
-            for nodeFrom in self.nodes["node"]:
+            for edge in self.setEdges.index:
+                nodeFrom    = self.setEdges.loc[edge,"nodeFrom"]
+                nodeTo      = self.setEdges.loc[edge, "nodeTo"]
                 if nodeFrom == "EL":
                     nodeFromEntsoe = "GR"
                 else:
                     nodeFromEntsoe = nodeFrom
-                #### TODO how to cope with bidding zones
-                NEIGHBOURS[nodeFrom]
                 assert nodeFromEntsoe in areaNames, f"node {nodeFromEntsoe} not in ENTSO-E area names"
-                for nodeTo in self.nodes["node"]:
-
-                    counter += 1
-                    if nodeFrom != nodeTo:
-                        print(f"Extract transmission capacity from {nodeFrom} to {nodeTo} - {counter}/{len(self.nodes['node'])*len(self.nodes['node'])}")
-                        if nodeTo == "EL":
-                            nodeToEntsoe = "GR"
-                        else:
-                            nodeToEntsoe = nodeTo
-                        assert nodeToEntsoe in areaNames, f"node {nodeToEntsoe} not in ENTSO-E area names"
-                        areaFrom    = lookup_area(nodeFromEntsoe)
-                        areaTo      = lookup_area(nodeToEntsoe)
-                        # query entsoe database, for some reason, the EntsoePandasClient deletes a lot of values
-                        try:
-                            text = self.entsoeClient.query_net_transfer_capacity_yearahead(country_code_from=areaFrom, country_code_to=areaTo, start=self.timeStart, end=self.timeEnd)
-                        except:
-                            print(f"No matching transmission capacity data found from {nodeFrom} to {nodeTo}")
-                            continue
-                        generation  = parse_generation(text, nett=True) # nett: condense generation and consumption into one
-                        generation  = generation.tz_convert(area.tz)
-                        generation  = generation.truncate(before=self.timeStart, after=self.timeEnd)
-                        # resample to hourly resolution
-                        generation  = generation.resample('h').mean()
-                        entsoeTransmissionCapacity[node] = generation
+                if nodeTo == "EL":
+                    nodeToEntsoe = "GR"
+                else:
+                    nodeToEntsoe = nodeTo
+                assert nodeToEntsoe in areaNames, f"node {nodeToEntsoe} not in ENTSO-E area names"
+                counter += 1
+                print(f"Extract transmission capacity from {nodeFrom} to {nodeTo} - {counter}/{len(self.setEdges.index)}")
+                areaFrom    = lookup_area(nodeFromEntsoe)
+                areaTo      = lookup_area(nodeToEntsoe)
+                # query entsoe database, for some reason, the EntsoePandasClient deletes a lot of values
+                try:
+                    text = self.entsoeClient.query_net_transfer_capacity_yearahead(country_code_from=areaFrom, country_code_to=areaTo,
+                                                                     start=self.timeStart, end=self.timeEnd)
+                except:
+                    try:
+                        text = self.entsoeClient.query_crossborder_flows(country_code_from=areaFrom, country_code_to=areaTo, start=self.timeStart, end=self.timeEnd)
+                        print(f"No NTC data found for from {nodeFrom} to {nodeTo}. Use physical crossborder flow instead.")
+                    except:
+                        print(f"No matching transmission capacity data found from {nodeFrom} to {nodeTo}")
+                        continue
+                crossborderFlows        = parse_crossborder_flows(text) # nett: condense crossborderFlows and consumption into one
+                crossborderFlows        = crossborderFlows.tz_convert(areaFrom.tz)
+                crossborderFlows        = crossborderFlows.truncate(before=self.timeStart, after=self.timeEnd)
+                # maximum is capacity
+                transmissionCapacity    = crossborderFlows.max()
+                entsoeTransmissionCapacity.loc[edge] = transmissionCapacity
             # dump pickle
             with open(self.sourcePath / "transmission" / "transmissionCapacityENTSOE.pickle","wb") as inputFile:
                 pickle.dump(entsoeTransmissionCapacity, inputFile)
         else:
             with open(self.sourcePath / "transmission" / "transmissionCapacityENTSOE.pickle","rb") as inputFile:
                 entsoeTransmissionCapacity = pickle.load(inputFile)
-        # interpolate nans
-        entsoeTransmissionCapacity = entsoeTransmissionCapacity.interpolate()
         # convert to GW
         entsoeTransmissionCapacity = entsoeTransmissionCapacity/1000
-        # drop index
-        entsoeTransmissionCapacity = entsoeTransmissionCapacity.reset_index(drop=True)
-        entsoeTransmissionCapacity.index.name = "time"
         return entsoeTransmissionCapacity
-        a=1
 
     def getRenewableNinjaData(self,technology):
         """ this method extracts the data from the renewable ninja database for PV and wind onshore """
         if not os.path.exists(self.sourcePath / "maxLoad" / f"maxLoadRenwableNinja_{technology}.pickle") or not self.useExistingCapacityFactor:
-            capacityFactorRN = pd.DataFrame(index=self.timeRange, columns=self.nodes["node"])
+            capacityFactorRN = pd.DataFrame(index=self.timeRange, columns=self.setNodes["node"])
             merra2Idx = 0
             if technology == "photovoltaics":
                 techIdxRN = 0
             else:
                 techIdxRN = 1
-            for idx, node in enumerate(self.nodes["node"]):
+            for idx, node in enumerate(self.setNodes["node"]):
                 print(
-                    f"Extract capacity factors for {node} of technology {technology} - {idx + 1}/{len(self.nodes['node'])}")
+                    f"Extract capacity factors for {node} of technology {technology} - {idx + 1}/{len(self.setNodes['node'])}")
                 if node == "EL":
                     nodeRN = "GR"
                 elif node == "UK":

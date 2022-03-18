@@ -168,10 +168,12 @@ def setManualAttributesTransport(elementName,dfAttribute):
     :return dfAttribute: attribute dataframe """
     # source: link-techs in euro-calliope
     if elementName == "power_line":
-        dfAttribute.loc["lossFlow","value"]                 = 5E-5  # 1/km
-        dfAttribute.loc["lifetime","value"]                 = 60    # a
-        dfAttribute.loc["capexPerDistanceDefault","value"]  = 900/2 # kEUR/km/GW
-        dfAttribute.loc["capacityLimitDefault","value"]     = 6     # GW (loosely chosen from highest capacity in ENTSO-E TYNDP)
+        dfAttribute.loc["lossFlow","value"]                 = 5E-5  # 1/km TODO from where
+        dfAttribute.loc["lifetime","value"]                 = 60    # a TODO from where
+        dfAttribute.loc["capexPerDistanceDefault","value"]  = 900/2 # kEUR/km/GW TODO from where
+        dfAttribute.loc["capacityLimitDefault","value"]     = 0     # GW values given for every existing line
+        dfAttribute.loc["maxBuiltCapacity","value"]         = 20    # GW (chosen to be higher than capacity limit)
+
         dfAttribute.loc["lossFlow", "unit"]                 = "1/km"
         dfAttribute.loc["capexPerDistanceDefault", "unit"]  = "kiloEuro/km/GW"
     return dfAttribute
