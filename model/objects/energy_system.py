@@ -129,6 +129,7 @@ class EnergySystem:
             dependentDims                   = dependentDims.reshape(1,dependentDims.size)
         # reorder dependent dims to match dependent units
         DimOfDependentUnits                 = dependentDims[:,idxLinDepDimMatrix]
+        # if not already in correct order (ones on the diagonal of dependentDims)
         if not np.all(np.diag(DimOfDependentUnits)==1):
             # get position of ones in DimOfDependentUnits
             posOnes         = np.argwhere(DimOfDependentUnits==1)
