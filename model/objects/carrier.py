@@ -60,6 +60,11 @@ class Carrier(Element):
             model.setCarriers,
             initialize=cls.getAttributeOfAllElements("setTimeStepsCarrier"),
             doc='Set of time steps of carriers. Dimensions: setCarriers')
+        # time-steps of energy balance of carrier
+        model.setTimeStepsEnergyBalance = pe.Set(
+            model.setCarriers,
+            initialize=cls.getAttributeOfAllElements("setTimeStepsEnergyBalance"),
+            doc='Set of time steps of carriers. Dimensions: setCarriers')
 
     @classmethod
     def constructParams(cls):
@@ -183,9 +188,9 @@ class Carrier(Element):
         )
         # energy balance
         model.constraintNodalEnergyBalance = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsEnergyBalance"]),
             rule = constraintNodalEnergyBalanceRule,
-            doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
+            doc = 'node- and time-dependent energy balance for each carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsEnergyBalance',
         )
         # carbon emissions carrier
         model.constraintCarbonEmissionsCarrierTotal = pe.Constraint(
@@ -249,7 +254,7 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
     """
     # decode to baseTimeStep
-    baseTimeStep = EnergySystem.decodeTimeStep(carrier,time)
+    baseTimeStep = EnergySystem.decodeTimeStep(carrier+"EnergyBalance",time)
     # carrier input and output conversion technologies
     carrierConversionIn, carrierConversionOut = 0, 0
     for tech in model.setConversionTechnologies:
@@ -260,9 +265,9 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
             elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
             carrierConversionOut += model.outputFlow[tech,carrier,node,elementTimeStep]
     # carrier flow transport technologies
-    carrierFlowIn, carrierFlowOut = 0, 0
-    setEdgesIn = EnergySystem.calculateConnectedEdges(node,"in")
-    setEdgesOut = EnergySystem.calculateConnectedEdges(node,"out")
+    carrierFlowIn, carrierFlowOut   = 0, 0
+    setEdgesIn                      = EnergySystem.calculateConnectedEdges(node,"in")
+    setEdgesOut                     = EnergySystem.calculateConnectedEdges(node,"out")
     for tech in model.setTransportTechnologies:
         if carrier in model.setReferenceCarriers[tech]:
             elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")

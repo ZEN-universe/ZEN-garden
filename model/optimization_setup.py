@@ -88,4 +88,3 @@ class OptimizationSetup():
         # enable logger 
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)
-        # save the results of the optimization

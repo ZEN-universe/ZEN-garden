@@ -42,15 +42,43 @@ class Technology(Element):
         # set attributes of technology
         for technologyType in technologyTypes:
             if self.name in system[technologyType]:
-                _inputPath                      = paths[technologyType][self.name]["folder"]
+                if technologyType == "setTransportTechnologies":
+                    _setLocation            = "setEdges"
+                    _isTransportTechnology  = True
+                else:
+                    _setLocation            = "setNodes"
+                    _isTransportTechnology  = False
+                self.inputPath                  = paths[technologyType][self.name]["folder"]
+                setBaseTimeSteps                = EnergySystem.getEnergySystem().setBaseTimeSteps
+
                 self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(self.name,typeOfTimeSteps="invest")
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
                 self.orderTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
-                EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest") 
-                self.referenceCarrier           = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
-                self.minBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
-                self.maxBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
-                self.lifetime                   = self.dataInput.extractAttributeData(_inputPath,"lifetime")
+                EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest")
+                self.referenceCarrier           = [self.dataInput.extractAttributeData(self.inputPath,"referenceCarrier",isCarrier=True)]
+                self.minBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"minBuiltCapacity")["value"]
+                self.maxBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"maxBuiltCapacity")["value"]
+                self.lifetime                   = self.dataInput.extractAttributeData(self.inputPath,"lifetime")["value"]
+                # add all raw time series to dict
+                self.rawTimeSeries = {}
+                self.rawTimeSeries["minLoad"]   = self.dataInput.extractInputData(self.inputPath, "minLoad",
+                                                                                indexSets=[_setLocation, "setTimeSteps"],
+                                                                                timeSteps=setBaseTimeSteps,
+                                                                                transportTechnology=_isTransportTechnology)
+                self.rawTimeSeries["maxLoad"]   = self.dataInput.extractInputData(self.inputPath, "maxLoad",
+                                                                                indexSets=[_setLocation, "setTimeSteps"],
+                                                                                timeSteps=setBaseTimeSteps,
+                                                                                transportTechnology=_isTransportTechnology)
+                self.rawTimeSeries["opexSpecific"] = self.dataInput.extractInputData(self.inputPath, "opexSpecific",
+                                                                                indexSets=[_setLocation,"setTimeSteps"],
+                                                                                timeSteps=setBaseTimeSteps,
+                                                                                transportTechnology=_isTransportTechnology)
+                # non-time series input data
+                self.capacityLimit              = self.dataInput.extractInputData(self.inputPath, "capacityLimit",
+                                                                                indexSets=[_setLocation],
+                                                                                transportTechnology=_isTransportTechnology)
+                self.carbonIntensityTechnology  = self.dataInput.extractInputData(self.inputPath, "carbonIntensity",
+                                                                                indexSets=[_setLocation])
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """

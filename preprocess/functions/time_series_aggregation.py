@@ -8,17 +8,14 @@ Description:  Functions to apply time series aggregation to time series
 ==========================================================================================================================================================================="""
 import numpy as np
 import pandas as pd
-import copy
 import logging
 import tsam.timeseriesaggregation as tsam
-from model.objects.carrier import Carrier
-
 from model.objects.energy_system import EnergySystem
 from model.objects.element import Element
+from model.objects.carrier import Carrier
+from model.objects.technology.technology import Technology
 from model.objects.technology.storage_technology import StorageTechnology
 
-
-# noinspection PyAttributeOutsideInit
 class TimeSeriesAggregation():
     def __init__(self):
         self.system = EnergySystem.getSystem()
@@ -180,9 +177,9 @@ class TimeSeriesAggregation():
             setTimeStepsCarrier, timeStepsCarrierDuration, orderTimeStepsCarrier = TimeSeriesAggregation.uniqueTimeStepsInMultigrid(
                 listOrderTimeSteps)
             # set attributes
-            element.setTimeStepsEnergyBalance = setTimeStepsCarrier
-            element.timeStepsEnergyBalanceDuration = timeStepsCarrierDuration
-            element.orderTimeStepsEnergyBalance = orderTimeStepsCarrier
+            element.setTimeStepsEnergyBalance       = setTimeStepsCarrier
+            element.timeStepsEnergyBalanceDuration  = timeStepsCarrierDuration
+            element.orderTimeStepsEnergyBalance     = orderTimeStepsCarrier
             # if carrier previously not aggregated
             if not element.isAggregated():
                 # iterate through raw time series data and conduct "manual" time series aggregation
@@ -190,11 +187,48 @@ class TimeSeriesAggregation():
                     dfTimeSeries = element.rawTimeSeries[timeSeries].loc[(slice(None), setTimeStepsCarrier)]
                     # save attribute
                     setattr(element, timeSeries, dfTimeSeries)
-                element.setTimeStepsCarrier = setTimeStepsCarrier
-                element.timeStepsCarrierDuration = timeStepsCarrierDuration
-                element.orderTimeSteps = orderTimeStepsCarrier
+                element.setTimeStepsCarrier         = setTimeStepsCarrier
+                element.timeStepsCarrierDuration    = timeStepsCarrierDuration
+                element.orderTimeSteps              = orderTimeStepsCarrier
             # set aggregation indicator
             TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
+
+    @classmethod
+    def calculateTimeStepsLinkInvestOperation(cls, element):
+        """ calculates the necessary overlapping time steps of the investment and operation of a technology.
+        It sets the union of the time steps for investment and operation.
+        :param element: technology of the optimization
+        :storageLevel: boolean if the link is calculated for the storage level"""
+        if len(np.unique(Element.getAttributeOfSpecificElement(element.name, "orderTimeStepsInvest"))) > 1:
+            listOrderTimeSteps = [
+                Element.getAttributeOfSpecificElement(element.name, "orderTimeStepsInvest"),
+                Element.getAttributeOfSpecificElement(element.name, "orderTimeSteps")
+            ]
+            setTimeStepsOperation, timeStepsOperationDuration, orderTimeSteps = \
+                TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listOrderTimeSteps)
+            # time series parameters
+            cls.overwriteTimeSeriesWithExpandedTimeIndex(element,setTimeStepsOperation,orderTimeSteps)
+            # set attributes
+            element.setTimeStepsOperation       = setTimeStepsOperation
+            element.timeStepsOperationDuration  = timeStepsOperationDuration
+            element.orderTimeSteps              = orderTimeSteps
+            EnergySystem.setOrderTimeSteps(element.name, element.orderTimeSteps)
+
+    @classmethod
+    def overwriteTimeSeriesWithExpandedTimeIndex(cls, element, setTimeStepsOperation, orderTimeSteps):
+        """ this method expands the aggregated time series to match the extended operational time steps because of matching the investment and operational time sequences.
+        :param element: technology of the optimization
+        :param setTimeStepsOperation: new time steps operation
+        :param orderTimeSteps: new order of operational time steps """
+        headerSetTimeSteps    = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
+        oldOrderTimeSteps   = element.orderTimeSteps
+        for timeSeries in element.rawTimeSeries:
+            oldTimeSeries   = getattr(element,timeSeries).unstack(headerSetTimeSteps)
+            newTimeSeries   = pd.DataFrame(index = oldTimeSeries.index, columns=setTimeStepsOperation)
+            idxOld2New      = [np.unique(oldOrderTimeSteps[np.argwhere(idx == orderTimeSteps)]) for idx in setTimeStepsOperation]
+            newTimeSeries   = newTimeSeries.apply(lambda row: oldTimeSeries[idxOld2New[row.name][0]],axis=0).stack()
+            # overwrite time series
+            setattr(element,timeSeries,newTimeSeries)
 
     @classmethod
     def setAggregationIndicators(cls, element, setEnergyBalanceIndicator=False):
@@ -218,7 +252,6 @@ class TimeSeriesAggregation():
     @classmethod
     def uniqueTimeStepsInMultigrid(cls, listOrderTimeSteps):
         """ this method returns the unique time steps of multiple time grids """
-        system = EnergySystem.getSystem()
         orderTimeSteps = np.zeros(np.size(listOrderTimeSteps, axis=1)).astype(int)
         combinedOrderTimeSteps = np.vstack(listOrderTimeSteps)
         uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedOrderTimeSteps, axis=1, return_counts=True)
@@ -242,9 +275,15 @@ class TimeSeriesAggregation():
     @classmethod
     def conductTimeSeriesAggregation(cls):
         """ this method conducts time series aggregation """
+        logging.info("\n--- Time series aggregation ---")
         TimeSeriesAggregation()
 
-        # calculate storage level time steps
-        for tech in StorageTechnology.getAllElements():
-            # calculate time steps of storage levels
-            tech.calculateTimeStepsStorageLevel()
+        for element in Technology.getAllElements():
+            # calculate the time steps in operation to link with investment time steps
+            cls.calculateTimeStepsLinkInvestOperation(element)
+            if element in StorageTechnology.getAllElements():
+                # calculate time steps of storage levels
+                element.calculateTimeStepsStorageLevel()
+        # calculate new time steps of energy balance
+        for element in Carrier.getAllElements():
+            cls.calculateTimeStepsEnergyBalance(element)

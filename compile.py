@@ -12,6 +12,7 @@ import os
 import logging
 import config
 import sys
+from datetime import datetime
 from preprocess.prepare import Prepare
 from model.optimization_setup import OptimizationSetup
 from model.metaheuristic.algorithm import Metaheuristic
@@ -24,6 +25,7 @@ if not os.path.exists('outputs/logs'):
         os.mkdir('outputs')
     os.mkdir('outputs/logs')
 logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+logging.captureWarnings(True)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -31,9 +33,9 @@ handler.setLevel(logging.INFO)
 logging.getLogger().addHandler(handler)
 # prevent double printing
 logging.propagate = False
-
 # CREATE INPUT FILE
 prepare = Prepare(config)
+
 # check if all data inputs exist and remove non-existent
 system = prepare.checkExistingInputData()
 # FORMULATE THE OPTIMIZATION PROBLEM
@@ -50,5 +52,7 @@ elif config.solver['model'] == 'MINLP':
     master.solveMINLP(config.solver)
 
 # EVALUATE RESULTS
-evaluation = Postprocess(optimizationSetup, modelName = config.system["modelName"])
+# today      = datetime.now()
+# modelName  = "model_" + today.strftime("%Y-%m-%d")
+# evaluation = Postprocess(optimizationSetup, modelName = modelName)
 
