@@ -25,6 +25,7 @@ if not os.path.exists('outputs/logs'):
         os.mkdir('outputs')
     os.mkdir('outputs/logs')
 logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+logging.captureWarnings(True)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -51,7 +52,7 @@ elif config.solver['model'] == 'MINLP':
     master.solveMINLP(config.solver)
 
 # EVALUATE RESULTS
-today      = datetime.now()
-modelName  = "model_" + today.strftime("%Y-%m-%d")
-evaluation = Postprocess(optimizationSetup, modelName = modelName)
+# today      = datetime.now()
+# modelName  = "model_" + today.strftime("%Y-%m-%d")
+# evaluation = Postprocess(optimizationSetup, modelName = modelName)
 

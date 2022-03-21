@@ -35,27 +35,17 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths               = EnergySystem.getPaths()   
-        setBaseTimeSteps    = EnergySystem.getEnergySystem().setBaseTimeSteps
-        # set attributes for parameters of parent class <Technology>
+        paths                               = EnergySystem.getPaths()
         self.inputPath                     = paths["setTransportTechnologies"][self.name]["folder"]
-        # add all raw time series to dict
-        self.rawTimeSeries                  = {}
-        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(self.inputPath,"minLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=setBaseTimeSteps,transportTechnology=True)
-        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(self.inputPath,"maxLoad",indexSets=["setEdges","setTimeSteps"],timeSteps=setBaseTimeSteps,transportTechnology=True)
-        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(self.inputPath,"opexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= setBaseTimeSteps,transportTechnology=True)
-        # non-time series input data
-        self.capacityLimit                  = self.dataInput.extractInputData(self.inputPath,"capacityLimit",indexSets=["setEdges"],transportTechnology=True)
-        self.carbonIntensityTechnology      = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",indexSets=["setEdges"])
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
         self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
-        self.lossFlow                       = self.dataInput.extractAttributeData(self.inputPath,"lossFlow")
+        self.lossFlow                       = self.dataInput.extractAttributeData(self.inputPath,"lossFlow")["value"]
         if self.dataInput.ifAttributeExists(self.inputPath,"capexPerDistance"):
-            self.capexPerDistance = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
-            self.capexSpecific    = self.capexPerDistance * self.distance
+            self.capexPerDistance           = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+            self.capexSpecific              = self.capexPerDistance * self.distance
         else:
-            self.capexSpecific = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+            self.capexSpecific              = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
         self.convertToAnnualizedCapex()
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
@@ -75,10 +65,6 @@ class TransportTechnology(Technology):
             initialize = cls.getAttributeOfAllElements("distance"),
             doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
         # cost per distance
-        # model.capexPerDistance = pe.Param(
-        #     cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
-        #     initialize = cls.getAttributeOfAllElements("capexPerDistance"),
-        #     doc = 'capex per unit distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
         model.capexSpecificTransport = pe.Param(
              cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
              initialize = cls.getAttributeOfAllElements("capexSpecific"),
