@@ -12,7 +12,10 @@ import logging
 import pyomo.environ as pe
 import numpy as np
 import pandas as pd
+from pint import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
+from pint.util import column_echelon_form
+import warnings
 
 class EnergySystem:
     # energySystem
@@ -27,6 +30,8 @@ class EnergySystem:
     paths = None
     # solver
     solver = None
+    # unit registry
+    ureg = UnitRegistry()
     # empty list of indexing sets
     indexingSets = []
     # aggregationObjects of element
@@ -37,6 +42,8 @@ class EnergySystem:
     dictOrderTimeStepsOperation = {}
     # empty dict of order of time steps invest
     dictOrderTimeStepsInvest = {}
+    # empty dict of order of time steps yearly
+    dictOrderTimeStepsYearly = {}
     # empty dict of raw time series, only necessary for single time grid approach
     dictTimeSeriesRaw = {}
 
@@ -46,46 +53,117 @@ class EnergySystem:
         # only one energy system can be defined
         assert not EnergySystem.getEnergySystem(), "Only one energy system can be defined."
         # set attributes
-        self.name = nameEnergySystem
+        self.name       = nameEnergySystem
         # add energySystem to list
         EnergySystem.setEnergySystem(self)
         # create DataInput object
-        self.dataInput = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
+        self.dataInput  = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
         # store input data
         self.storeInputData()
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """      
         system                          = EnergySystem.getSystem()
-        self.paths                      = EnergySystem.getPaths() 
-        # in class <EnergySystem>, all sets are constructd
-        self.setNodes                   = system["setNodes"]
+        self.paths                      = EnergySystem.getPaths()
+        self.getBaseUnits()
+        # in class <EnergySystem>, all sets are constructed
+        self.setNodes                   = self.dataInput.extractLocations()
         self.setNodesOnEdges            = self.calculateEdgesFromNodes()
         self.setEdges                   = list(self.setNodesOnEdges.keys())
         self.setCarriers                = system["setCarriers"]
         self.setTechnologies            = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
-        self.setBaseTimeSteps           = system["setTimeSteps"]
         self.setScenarios               = system["setScenarios"]
+        # base time steps
+        self.setBaseTimeSteps           = system["setTimeSteps"]
+        # yearly time steps
+        self.typesTimeSteps             = ["invest", "operation", "yearly"]
+        self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
+        self.setTimeStepsYearly         = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
+        self.timeStepsYearlyDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
+        self.orderTimeStepsYearly       = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
+        self.setOrderTimeSteps(None, self.orderTimeStepsYearly, timeStepType="yearly")
         # technology-specific
         self.setConversionTechnologies  = system["setConversionTechnologies"]
         self.setTransportTechnologies   = system["setTransportTechnologies"]
         self.setStorageTechnologies     = system["setStorageTechnologies"]
         # carbon emissions limit
-        self.carbonEmissionsLimit       = self.dataInput.extractAttributeData(self.paths["setScenarios"]["folder"],"carbonEmissionsLimit")
+        self.carbonEmissionsLimit       = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
         _fractionOfYear                 = len(system["setTimeSteps"])/system["hoursPerYear"]
         self.carbonEmissionsLimit       = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
-        # extract number of time steps for elements
-        self.typesTimeSteps             = ["invest","operation"]
-        self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
-    
+
+    def getBaseUnits(self):
+        """ gets base units of energy system """
+        _listBaseUnits                  = self.dataInput.extractBaseUnits(self.paths["setScenarios"]["folder"])
+        ureg                            = EnergySystem.getUnitRegistry()
+        # load additional units
+        ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
+        # empty base units and dimensionality matrix
+        self.baseUnits                  = {}
+        self.dimMatrix                  = pd.DataFrame(index=_listBaseUnits).astype(int)
+        for _baseUnit in _listBaseUnits:
+            dimUnit                     = ureg.get_dimensionality(ureg(_baseUnit))
+            self.baseUnits[_baseUnit]   = ureg(_baseUnit).dimensionality
+            self.dimMatrix.loc[_baseUnit, list(dimUnit.keys())] = list(dimUnit.values())
+        self.dimMatrix                  = self.dimMatrix.fillna(0).astype(int).T
+        # check if unit defined twice or more
+        _duplicateUnits                 = self.dimMatrix.T.duplicated()
+        if _duplicateUnits.any():
+            _dimMatrixDuplicate         = self.dimMatrix.loc[:,_duplicateUnits]
+            for _duplicate in _dimMatrixDuplicate:
+                # if same unit twice (same order of magnitude and same dimensionality)
+                if len(self.dimMatrix[_duplicate].shape) > 1:
+                    logging.warning(f"The base unit <{_duplicate}> was defined more than once. Duplicates are dropped.")
+                    _duplicateDim               = self.dimMatrix[_duplicate].T.drop_duplicates().T
+                    self.dimMatrix              = self.dimMatrix.drop(_duplicate,axis=1)
+                    self.dimMatrix[_duplicate]  = _duplicateDim
+                else:
+                    raise KeyError(f"More than one base unit defined for dimensionality {self.baseUnits[_duplicate]} (e.g., {_duplicate})")
+        # get linearly dependent units
+        M, I, pivot                     = column_echelon_form(np.array(self.dimMatrix), ntype=float)
+        M                               = np.array(M).squeeze()
+        I                               = np.array(I).squeeze()
+        pivot                           = np.array(pivot).squeeze()
+        # index of linearly dependent units in M and I
+        idxLinDep                       = np.squeeze(np.argwhere(np.all(M==0,axis=1)))
+        # index of linearly dependent units in dimensionality matrix
+        _idxPivot                           = range(len(self.baseUnits))
+        idxLinDepDimMatrix                  = list(set(_idxPivot).difference(pivot))
+        self.dimAnalysis                    = {}
+        self.dimAnalysis["dependentUnits"]  = self.dimMatrix.columns[idxLinDepDimMatrix]
+        dependentDims                       = I[idxLinDep,:]
+        # if only one dependent unit
+        if len(self.dimAnalysis["dependentUnits"]) == 1:
+            dependentDims                   = dependentDims.reshape(1,dependentDims.size)
+        # reorder dependent dims to match dependent units
+        DimOfDependentUnits                 = dependentDims[:,idxLinDepDimMatrix]
+        # if not already in correct order (ones on the diagonal of dependentDims)
+        if not np.all(np.diag(DimOfDependentUnits)==1):
+            # get position of ones in DimOfDependentUnits
+            posOnes         = np.argwhere(DimOfDependentUnits==1)
+            assert np.size(posOnes,axis=0) == len(self.dimAnalysis["dependentUnits"]), \
+                f"Cannot determine order of dependent base units {self.dimAnalysis['dependentUnits']}, " \
+                f"because diagonal of dimensions of the dependent units cannot be determined."
+            # pivot dependent dims
+            dependentDims   = dependentDims[posOnes[:,1],:]
+        self.dimAnalysis["dependentDims"]   = dependentDims
+        # check that no base unit can be directly constructed from the others (e.g., GJ from GW and hour)
+        assert ~DataInput.checkIfPosNegBoolean(dependentDims,axis=1), f"At least one of the base units {list(self.baseUnits.keys())} can be directly constructed from the others"
+
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
         :return setNodesOnEdges: dict with edges and corresponding nodes """
         setNodesOnEdges = {}
-        for node in self.setNodes:
-            for nodeAlias in self.setNodes:
-                if node != nodeAlias:
-                    setNodesOnEdges[node+"-"+nodeAlias] = (node,nodeAlias)
+        # read edge file
+        setEdgesInput = self.dataInput.extractLocations(extractNodes=False)
+        if setEdgesInput is not None:
+            for edge in setEdgesInput.index:
+                setNodesOnEdges[edge] = (setEdgesInput.loc[edge,"nodeFrom"],setEdgesInput.loc[edge,"nodeTo"])
+        else:
+            warnings.warn("Implicit creation of edges will be deprecated. Provide 'setEdges.csv' in folder 'setNodes' instead!",FutureWarning)
+            for nodeFrom in self.setNodes:
+                for nodeTo in self.setNodes:
+                    if nodeFrom != nodeTo:
+                        setNodesOnEdges[nodeFrom+"-"+nodeTo] = (nodeFrom,nodeTo)
         return setNodesOnEdges
 
     ### --- classmethods --- ###
@@ -139,10 +217,10 @@ class EnergySystem:
 
     @classmethod
     def setOrderTimeSteps(cls,element,orderTimeSteps,timeStepType = None):
-        """ sets order of time steps, either of operation or invest
+        """ sets order of time steps, either of operation, invest, or year
         :param element: name of element in model
-        :param orderTimeSteps: list of time steps correpsponding to base time step
-        :param timeStepType: type of time step (operation or invest)"""
+        :param orderTimeSteps: list of time steps corresponding to base time step
+        :param timeStepType: type of time step (operation, invest or year)"""
         if not timeStepType:
             timeStepType = "operation"
 
@@ -150,6 +228,8 @@ class EnergySystem:
             cls.dictOrderTimeStepsOperation[element] = orderTimeSteps
         elif timeStepType == "invest":
             cls.dictOrderTimeStepsInvest[element] = orderTimeSteps
+        elif timeStepType == "yearly":
+            cls.dictOrderTimeStepsYearly[element] = orderTimeSteps
         else:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
 
@@ -200,7 +280,13 @@ class EnergySystem:
         """ get energySystem.
         :return energySystem: return energySystem  """
         return cls.energySystem
-    
+
+    @classmethod
+    def getUnitRegistry(cls):
+        """ get the unit registry
+        :return units: unit registry """
+        return cls.ureg
+
     @classmethod
     def getAttribute(cls,attributeName:str):
         """ get attribute value of energySystem
@@ -231,13 +317,15 @@ class EnergySystem:
         """ get order ot time steps of element
         :param element: name of element in model
         :param timeStepType: type of time step (operation or invest)
-        :return orderTimeSteps: list of time steps correpsponding to base time step"""
+        :return orderTimeSteps: list of time steps corresponding to base time step"""
         if not timeStepType:
             timeStepType = "operation"
         if timeStepType == "operation":
             return cls.dictOrderTimeStepsOperation[element]
         elif timeStepType == "invest":
             return cls.dictOrderTimeStepsInvest[element]
+        elif timeStepType == "yearly":
+            return cls.dictOrderTimeStepsYearly[element]
         else:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
 
@@ -282,17 +370,21 @@ class EnergySystem:
         :param manualBaseTimeSteps: manual list of base time steps
         :return timeStepDurationDict: dict with duration of each time step """
         if manualBaseTimeSteps is not None:
-            baseTimeSteps = manualBaseTimeSteps
+            baseTimeSteps       = manualBaseTimeSteps
         else:
-            baseTimeSteps = cls.getEnergySystem().setBaseTimeSteps
-        durationInputTimeSteps = len(baseTimeSteps)/len(inputTimeSteps)
-        # assert durationInputTimeSteps.is_integer(),f"The duration of each time step {durationInputTimeSteps} of input time steps {inputTimeSteps} does not evaluate to an integer"
-        timeStepDurationDict = {timeStep: int(durationInputTimeSteps) for timeStep in inputTimeSteps}
+            baseTimeSteps       = cls.getEnergySystem().setBaseTimeSteps
+        durationInputTimeSteps  = len(baseTimeSteps)/len(inputTimeSteps)
+        timeStepDurationDict    = {timeStep: int(durationInputTimeSteps) for timeStep in inputTimeSteps}
+        if not durationInputTimeSteps.is_integer():
+            logging.warning(f"The duration of each time step {durationInputTimeSteps} of input time steps {inputTimeSteps} does not evaluate to an integer. \n"
+                            f"The duration of the last time step is set to compensate for the difference")
+            durationLastTimeStep = len(baseTimeSteps) - sum(timeStepDurationDict[key] for key in timeStepDurationDict if key != inputTimeSteps[-1])
+            timeStepDurationDict[inputTimeSteps[-1]] = durationLastTimeStep
         return timeStepDurationDict
 
     @classmethod
-    def decodeTimeStep(cls,element:str,elementTimeStep,timeStepType:str = None):
-        """ decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variablTimeStep of a element.
+    def decodeTimeStep(cls,element:str,elementTimeStep:int,timeStepType:str = None):
+        """ decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variableTimeStep of a element.
         timeStep of element --> baseTimeStep of model 
         :param element: element of model, i.e., carrier or technology
         :param elementTimeStep: time step of element
@@ -304,7 +396,7 @@ class EnergySystem:
         return baseTimeSteps
 
     @classmethod
-    def encodeTimeStep(cls,element:str,baseTimeSteps,timeStepType:str = None):
+    def encodeTimeStep(cls,element:str,baseTimeSteps:int,timeStepType:str = None,yearly=False):
         """ encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
         baseTimeStep of model --> timeStep of element 
         :param element: element of model, i.e., carrier or technology
@@ -315,6 +407,8 @@ class EnergySystem:
         orderTimeSteps = cls.getOrderTimeSteps(element,timeStepType)
         # get time step duration
         elementTimeStep = np.unique(orderTimeSteps[baseTimeSteps])
+        if yearly:
+            return(elementTimeStep)
         if len(elementTimeStep) == 1:
             return(elementTimeStep[0])
         else:
@@ -328,9 +422,9 @@ class EnergySystem:
         :param elementTimeStep: time step of element
         :param direction: conversion direction (operation2invest or invest2operation)
         :return convertedTimeStep: time of second type """
-        model = cls.getConcreteModel()
-        setTimeStepsInvest = model.setTimeStepsInvest[element]
-        setTimeStepsOperation = model.setTimeStepsOperation[element]
+        model                   = cls.getConcreteModel()
+        setTimeStepsInvest      = model.setTimeStepsInvest[element]
+        setTimeStepsOperation   = model.setTimeStepsOperation[element]
         # if only one investment step
         if len(setTimeStepsInvest) == 1:
             if direction ==  "operation2invest":
@@ -379,17 +473,13 @@ class EnergySystem:
     def constructSets(cls):
         """ constructs the pe.Sets of the class <EnergySystem> """
         # construct pe.Sets of the class <EnergySystem>
-        model = cls.getConcreteModel()
-        energySystem = cls.getEnergySystem()
+        model           = cls.getConcreteModel()
+        energySystem    = cls.getEnergySystem()
 
         # nodes
         model.setNodes = pe.Set(
-            initialize=energySystem.setNodes, 
-            doc='Set of nodes')
-        # connected nodes
-        model.setAliasNodes = pe.Set(
             initialize=energySystem.setNodes,
-            doc='Copy of the set of nodes to model edges. Subset: setNodes')
+            doc='Set of nodes')
         # edges
         model.setEdges = pe.Set(
             initialize = energySystem.setEdges,
@@ -413,10 +503,10 @@ class EnergySystem:
         model.setBaseTimeSteps = pe.Set(
             initialize=energySystem.setBaseTimeSteps,
             doc='Set of base time-steps')
-        # scenarios
-        model.setScenarios = pe.Set(
-            initialize=energySystem.setScenarios,
-            doc='Set of scenarios')
+        # yearly time steps
+        model.setTimeStepsYearly = pe.Set(
+            initialize=energySystem.setTimeStepsYearly,
+            doc='Set of yearly time-steps')
 
     @classmethod
     def constructParams(cls):
@@ -426,6 +516,7 @@ class EnergySystem:
 
         # carbon emissions limit
         model.carbonEmissionsLimit = pe.Param(
+            model.setTimeStepsYearly,
             initialize = cls.getEnergySystem().carbonEmissionsLimit,
             doc = 'Parameter which specifies the total limit on carbon emissions'
         )
@@ -438,6 +529,7 @@ class EnergySystem:
 
         # carbon emissions
         model.carbonEmissionsTotal = pe.Var(
+            model.setTimeStepsYearly,
             domain = pe.NonNegativeReals,
             doc = "total carbon emissions of energy system. Domain: NonNegativeReals"
         )
@@ -450,13 +542,15 @@ class EnergySystem:
 
         # carbon emissions
         model.constraintCarbonEmissionsTotal = pe.Constraint(
+            model.setTimeStepsYearly,
             rule = constraintCarbonEmissionsTotalRule,
             doc = "total carbon emissions of energy system"
         )
         # carbon emissions
         model.constraintCarbonEmissionsLimit = pe.Constraint(
-            rule = constraintCarbonEmissionsLimitRule,
-            doc = "limit of total carbon emissions of energy system"
+            model.setTimeStepsYearly,
+            rule=constraintCarbonEmissionsLimitRule,
+            doc="limit of total carbon emissions of energy system"
         )
     
     @classmethod
@@ -487,26 +581,26 @@ class EnergySystem:
 
         # construct objective
         model.objective = pe.Objective(
-            rule = objectiveRule,
-            sense = objectiveSense
+            rule    = objectiveRule,
+            sense   = objectiveSense
         )
 
-def constraintCarbonEmissionsTotalRule(model):
+def constraintCarbonEmissionsTotalRule(model,year):
     """ add up all carbon emissions from technologies and carriers """
     return(
-        model.carbonEmissionsTotal ==
+        model.carbonEmissionsTotal[year] ==
         # technologies
-        model.carbonEmissionsTechnologyTotal
+        model.carbonEmissionsTechnologyTotal[year]
         + 
         # carriers
-        model.carbonEmissionsCarrierTotal
+        model.carbonEmissionsCarrierTotal[year]
     )
 
-def constraintCarbonEmissionsLimitRule(model):
-    """ limit all carbon emissions from technologies and carriers """
-    if model.carbonEmissionsLimit != np.inf:
+def constraintCarbonEmissionsLimitRule(model, year):
+    """ time dependent carbon emissions limit from technologies and carriers"""
+    if model.carbonEmissionsLimit[year] != np.inf:
         return(
-            model.carbonEmissionsTotal <= model.carbonEmissionsLimit
+            model.carbonEmissionsLimit[year] >= model.carbonEmissionsTotal[year]
         )
     else:
         return pe.Constraint.Skip
@@ -518,12 +612,10 @@ def objectiveTotalCostRule(model):
 
 def objectiveTotalCarbonEmissionsRule(model):
     """objective function to minimize total emissions"""
-
-    return(model.carbonEmissionsTotal)
+    return(sum(model.carbonEmissionsTotal[year] for year in model.setTimeStepsYearly))
 
 def objectiveRiskRule(model):
     """objective function to minimize total risk"""
-
     # TODO implement objective functions for risk
     return pe.Constraint.Skip
 
