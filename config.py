@@ -16,7 +16,7 @@ system = default_config.system
 solver = default_config.solver   
 
 ## Analysis - settings update compared to default values
-analysis["dataset"]                                 = "Axpo_4"
+analysis["dataset"]                                 = "InputData"
 analysis["modelFormulation"]                        = "HSC"
 analysis["objective"]                               = "TotalCost" # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
 # definition of the approximation
@@ -26,12 +26,12 @@ analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEffic
 ## System - settings update compared to default values
 system["setCarriers"]                               = ["electricity", "hydrogen"] # ,
 system["setStorageTechnologies"]                    = []
-system["setTransportTechnologies"]                  = ["hydrogen_pipeline", "hydrogen_truck_gas",] #"hydrogen_train", "hydrogen_ship"] # hydrogen_truck_liquid ##, ,
+system["setTransportTechnologies"]                  = ["hydrogen_pipeline","hydrogen_train"] # ,"hydrogen_truck_gas", "hydrogen_ship"] # hydrogen_truck_liquid ##, ,
 system["setConversionTechnologies"]                 = ["electrolysis"] # ,
-system["setTimeSteps"]                              = list(range(0,15))
+system["setTimeSteps"]                              = list(range(0,24))
 system["multiGridTimeIndex"]                        = False # if True, each element has its own time index; if False, use single time grid approach
-system["numberTimeStepsDefault"]                    = 16 # default number of operational time steps, only used in single-grid time series aggregation # TODO number of time steps per period = 1
-system["setNodes"]                                  = ["IT","DE"]#,"AT","CH","FR"]#, "IT","FR"]
+system["numberTimeStepsDefault"]                    = 26 # default number of operational time steps, only used in single-grid time series aggregation # TODO number of time steps per period = 1
+system["setNodes"]                                  = ["IT","DE","AT","FR"]#,"AT","CH","FR"]#, "IT","FR"]
 #system["setNodes"]                                  = ["AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "EL", "ES",
                                                        #"FI", "FR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK",
                                                        #"MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "UK"]
