@@ -28,9 +28,6 @@ class Technology(Element):
         :param technology: technology that is added to the model"""
 
         super().__init__(technology)
-        # store input data
-        # # TODO fix storing the data multiple times
-        # self.storeInputData()
         # add Technology to list
         Technology.addElement(self)
 
