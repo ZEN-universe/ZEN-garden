@@ -127,9 +127,19 @@ class EnergySystem:
         # if only one dependent unit
         if len(self.dimAnalysis["dependentUnits"]) == 1:
             dependentDims                   = dependentDims.reshape(1,dependentDims.size)
+        # reorder dependent dims to match dependent units
+        DimOfDependentUnits                 = dependentDims[:,idxLinDepDimMatrix]
+        if not np.all(np.diag(DimOfDependentUnits)==1):
+            # get position of ones in DimOfDependentUnits
+            posOnes         = np.argwhere(DimOfDependentUnits==1)
+            assert np.size(posOnes,axis=0) == len(self.dimAnalysis["dependentUnits"]), \
+                f"Cannot determine order of dependent base units {self.dimAnalysis['dependentUnits']}, " \
+                f"because diagonal of dimensions of the dependent units cannot be determined."
+            # pivot dependent dims
+            dependentDims   = dependentDims[posOnes[:,1],:]
         self.dimAnalysis["dependentDims"]   = dependentDims
         # check that no base unit can be directly constructed from the others (e.g., GJ from GW and hour)
-        assert ~DataInput.checkIfPosNegBoolean(dependentDims,axis=1), f"At least one of the base units {self.baseUnits.keys()} can be directly constructed from the others"
+        assert ~DataInput.checkIfPosNegBoolean(dependentDims,axis=1), f"At least one of the base units {list(self.baseUnits.keys())} can be directly constructed from the others"
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes

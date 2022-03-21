@@ -210,7 +210,7 @@ class DataCreation():
             dfAttribute.loc["opexSpecificDefault","value"]      = _potenciaAssumptions["Variable O&M  costs €2010/MWh"]                                             # kEUR/GWh
             # save carbon intensity of input carrier
             if _inputCarrier:
-                self.carbonIntensityCarrier[_inputCarrier] = _potenciaAssumptions["Default emissions factor (t of CO2 / toe input)"]*helpers.getConstants("MWh2toe") #ktCO2/GWh
+                self.carbonIntensityCarrier[_inputCarrier]      = _potenciaAssumptions["Default emissions factor (t of CO2 / toe input)"]*helpers.getConstants("MWh2toe") #ktCO2/GWh
 
         elif setName == "setTransportTechnologies":
             dfAttribute = helpers.setManualAttributesTransport(elementName,dfAttribute)
