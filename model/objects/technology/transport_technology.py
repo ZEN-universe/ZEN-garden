@@ -35,17 +35,8 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # get system information
-        paths               = EnergySystem.getPaths()   
-        setBaseTimeSteps    = EnergySystem.getEnergySystem().setBaseTimeSteps
-        # set attributes for parameters of parent class <Technology>
+        paths                               = EnergySystem.getPaths()
         self.inputPath                     = paths["setTransportTechnologies"][self.name]["folder"]
-        # non-time series input data
-        self.capacityLimit                  = self.dataInput.extractInputData(self.inputPath,"capacityLimit",indexSets=["setEdges"],transportTechnology=True)
-        self.carbonIntensityTechnology      = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",indexSets=["setEdges"],transportTechnology=True)
-        # extract existing capacity
-        self.setExistingTechnologies        = self.dataInput.extractSetExistingTechnologies(self.inputPath,transportTechnology=True)
-        self.existingCapacity               = self.dataInput.extractInputData(self.inputPath,"existingCapacity",indexSets=["setEdges", "setExistingTechnologies"],column="existingCapacity",element=self)
-        self.lifetimeExistingTechnology     = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,"existingCapacity",indexSets=["setEdges","setExistingTechnologies"],tech=self)
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
         self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)

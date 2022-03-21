@@ -306,7 +306,7 @@ class DataInput():
             assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.{self.analysis['fileFormat']}"
             dictNumberOfTimeSteps[carrier] = {None: (dfInput.loc[carrier].squeeze(),numberTimeStepsPerPeriod)}
         # add yearly time steps
-        dictNumberOfTimeSteps[None] = {"yearly": (self.extractAttributeData(self.energySystem.paths["setScenarios"]["folder"], "timeStepsYearly"),numberTimeStepsPerPeriod)}
+        dictNumberOfTimeSteps[None] = {"yearly": (self.extractAttributeData(self.energySystem.paths["setScenarios"]["folder"], "timeStepsYearly")["value"],numberTimeStepsPerPeriod)}
 
         # limit number of periods to base time steps of system
         for element in dictNumberOfTimeSteps:

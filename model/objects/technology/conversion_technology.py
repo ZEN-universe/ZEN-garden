@@ -38,10 +38,6 @@ class ConversionTechnology(Technology):
         # define input and output carrier
         self.inputCarrier               = self.dataInput.extractConversionCarriers(self.inputPath)["inputCarrier"]
         self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
-        # extract existing capacity
-        self.setExistingTechnologies    = self.dataInput.extractSetExistingTechnologies(self.inputPath)
-        self.existingCapacity           = self.dataInput.extractInputData(self.inputPath,"existingCapacity",indexSets=["setNodes", "setExistingTechnologies"],column = "existingCapacity",element = self)
-        self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,"existingCapacity",indexSets=["setNodes", "setExistingTechnologies"],tech=self)
         # extract PWA parameters
         self.PWAParameter               = self.dataInput.extractPWAData(self.inputPath,self)
         self.convertToAnnualizedCapex()

@@ -79,6 +79,19 @@ class Technology(Element):
                                                                                 transportTechnology=_isTransportTechnology)
                 self.carbonIntensityTechnology  = self.dataInput.extractInputData(self.inputPath, "carbonIntensity",
                                                                                 indexSets=[_setLocation])
+                # extract existing capacity
+                self.setExistingTechnologies    = self.dataInput.extractSetExistingTechnologies(self.inputPath,
+                                                                                transportTechnology=_isTransportTechnology)
+                self.existingCapacity           = self.dataInput.extractInputData(self.inputPath,
+                                                                                  "existingCapacity",
+                                                                        indexSets=[_setLocation,
+                                                                           "setExistingTechnologies"],
+                                                                        column="existingCapacity", element=self)
+                self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,
+                                                                                   "existingCapacity",
+                                                                       indexSets=[_setLocation,
+                                                                           "setExistingTechnologies"],
+                                                                       tech=self)
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """

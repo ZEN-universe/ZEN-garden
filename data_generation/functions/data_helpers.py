@@ -54,6 +54,7 @@ def getDefaultValue(attribute):
     defaultValues={                                 # unit
         "minBuiltCapacity"          : 0,            # GW,GWh
         "maxBuiltCapacity"          : 1,            # GW,GWh
+        "existingCapacity"          : 0,            # GW,GWh
         "minLoad"                   : 0.1,          # -
         "maxLoad"                   : 1,            # -
         "lifetime"                  : 20,           # a
@@ -83,6 +84,7 @@ def getDefaultUnit(attribute):
     defaultUnits={                                 # unit
         "minBuiltCapacity"          : "GW",            # GW,GWh
         "maxBuiltCapacity"          : "GW",            # GW,GWh
+        "existingCapacity"          : "GW",
         "minLoad"                   : "",            # -
         "maxLoad"                   : "",            # -
         "lifetime"                  : "",           # a
@@ -113,6 +115,7 @@ def getAttributesOfSet(setName):
         "setTechnologies": [
             "minBuiltCapacityDefault",
             "maxBuiltCapacityDefault",
+            "existingCapacityDefault",
             "minLoadDefault",
             "maxLoadDefault",
             "lifetimeDefault",
@@ -202,6 +205,7 @@ def setManualAttributesStorage(elementName,dfAttribute):
     dfAttribute.loc["selfDischargeDefault", "unit"]             = ""
     dfAttribute.loc["maxLoadDefault", "unit"]                   = "GW/GWh"
     dfAttribute.loc["maxBuiltCapacityDefault", "unit"]          = "GWh"
+    dfAttribute.loc["existingCapacityDefault", "unit"]          = "GWh"
     dfAttribute.loc["capexSpecificDefault", "unit"]             = "kiloEuro/GWh"
     return dfAttribute
 
