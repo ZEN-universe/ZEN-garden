@@ -47,7 +47,6 @@ class Technology(Element):
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
                 self.orderTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
                 EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest") 
-                # self.timeStepsOperationDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsOperation)
                 self.referenceCarrier           = [self.dataInput.extractAttributeData(_inputPath,"referenceCarrier")]
                 self.minBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
                 self.maxBuiltCapacity           = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
@@ -205,14 +204,14 @@ class Technology(Element):
             :param tech: tech index
             :return bounds: bounds of capacity"""
             ### TODO: if existing capacity, add existing capacity
-            existingCapacity = 0
+            existingCapacities = 0
             for id in model.setExistingTechnologies[tech]:
                 if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
-                    existingCapacity += model.existingCapacity[tech, loc, id]
+                    existingCapacities += model.existingCapacity[tech, loc, id]
 
             maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
             maxCapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
-            boundCapacity = min(maxBuiltCapacity + existingCapacity,maxCapacityLimitTechnology)
+            boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology)
             bounds = (0,boundCapacity)
             return(bounds)
 
@@ -410,7 +409,7 @@ def constraintTechnologyLifetimeRule(model, tech, loc, time):
     if tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
         # time range
         # TODO convert lifetime into tech-specific time indexed lifetime?
-         # time range newly built technologies
+        # time range newly built technologies
         t_start    = int(max(min(model.setTimeStepsInvest[tech]), time - model.lifetimeTechnology[tech] + 1))
         t_end = time + 1
 
