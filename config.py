@@ -28,14 +28,18 @@ analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEffic
 ## System - settings update compared to default values
 today      = datetime.now()
 system["modelName"]                                 = "model_" + today.strftime("%Y-%m-%d") + "_reduced_Emissions"
-system["setCarriers"]                               = ["electricity", "hydrogen", "dry_biomass", "wet_biomass", "natural_gas", "carbon"] # ,
-system["setStorageTechnologies"]                    = ["carbon_storage"]
+system["setCarriers"]                               = ["electricity", "hydrogen",
+                                                       "dry_biomass", "wet_biomass",
+                                                       "natural_gas",
+                                                       "carbon", "stored_carbon"] # ,
+system["setStorageTechnologies"]                    = []#["carbon_storage"]
 system["setTransportTechnologies"]                  = ["hydrogen_truck_gas", "hydrogen_train", #"hydrogen_pipeline", "hydrogen_ship", hydrogen_truck_liquid
                                                        "carbon_truck", "carbon_train"] #"carbon_pipeline"
-system["setConversionTechnologies"]                 = ["electrolysis",             # electricity
+system["setConversionTechnologies"]                 = ["electrolysis",              # electricity
                                                        "SMR",
-                                                       "SMR-54", "SMR-89",  # natural gas
-                                                       "bSMR", "bGasification"]    # biomass
+                                                       "SMR-54", "SMR-89",          # natural gas
+                                                       "bSMR", "bGasification",     # biomass
+                                                       "carbon_storage"]
 system["setTimeSteps"]                              = list(range(0,15))
 system["multiGridTimeIndex"]                        = False # if True, each element has its own time index; if False, use single time grid approach
 system["numberTimeStepsDefault"]                    = 16 # default number of operational time steps, only used in single-grid time series aggregation # TODO number of time steps per period = 1

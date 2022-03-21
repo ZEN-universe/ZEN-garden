@@ -205,15 +205,14 @@ class Technology(Element):
             :param tech: tech index
             :return bounds: bounds of capacity"""
             ### TODO: if existing capacity, add existing capacity
-            # existingCapacity = sum(model.existingCapacity[tech,loc,existingTechnology]
             existingCapacity = 0
             for id in model.setExistingTechnologies[tech]:
                 if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
-                    existingCapacities += model.existingCapacity[tech, loc, id]
+                    existingCapacity += model.existingCapacity[tech, loc, id]
 
             maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
             maxCapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
-            boundCapacity = min(maxBuiltCapacity - existingCapacity,maxCapacityLimitTechnology)
+            boundCapacity = min(maxBuiltCapacity + existingCapacity,maxCapacityLimitTechnology)
             bounds = (0,boundCapacity)
             return(bounds)
 
