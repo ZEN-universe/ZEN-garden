@@ -46,12 +46,16 @@ class ConversionTechnology(Technology):
         self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(self.inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
         self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(self.inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
         # non-time series input data
-        self.capacityLimit              = self.dataInput.extractInputData(self.inputPath,"capacityLimit",["setNodes"])
+        self.capacityLimit              = self.dataInput.extractInputData(self.inputPath,"capacityLimit",indexSets=["setNodes"])
         self.carbonIntensityTechnology  = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",indexSets=["setNodes"])
         # set attributes for parameters of child class <ConversionTechnology>
         # define input and output carrier
         self.inputCarrier               = self.dataInput.extractConversionCarriers(self.inputPath)["inputCarrier"]
         self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
+        # extract existing capacity
+        self.setExistingTechnologies    = self.dataInput.extractSetExistingTechnologies(self.inputPath)
+        self.existingCapacity           = self.dataInput.extractInputData(self.inputPath,"existingCapacity",indexSets=["setNodes", "setExistingTechnologies"],column = "existingCapacity",element = self)
+        self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,"existingCapacity",indexSets=["setNodes", "setExistingTechnologies"],tech=self)
         # extract PWA parameters
         self.PWAParameter               = self.dataInput.extractPWAData(self.inputPath,self)
         self.convertToAnnualizedCapex()
@@ -75,13 +79,13 @@ class ConversionTechnology(Technology):
         model.setInputCarriers = pe.Set(
             model.setConversionTechnologies,
             initialize = _inputCarriers,
-            doc = "set of carriers that are an input to a specific conversion technology.\n\t Dimensions: setConversionTechnologies"
+            doc = "set of carriers that are an input to a specific conversion technology. Dimensions: setConversionTechnologies"
         )
         # output carriers of technology
         model.setOutputCarriers = pe.Set(
             model.setConversionTechnologies,
             initialize = _outputCarriers,
-            doc = "set of carriers that are an output to a specific conversion technology.\n\t Dimensions: setConversionTechnologies"
+            doc = "set of carriers that are an output to a specific conversion technology. Dimensions: setConversionTechnologies"
         )
         # dependent carriers of technology
         model.setDependentCarriers = pe.Set(
