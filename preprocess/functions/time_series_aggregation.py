@@ -97,13 +97,13 @@ class TimeSeriesAggregation():
             rawTimeSeries = getattr(element, "rawTimeSeries")
             # setTimeSteps and duration
             if element.name in self.system["setCarriers"]:
-                element.setTimeStepsCarrier = list(self.setTimeSteps)
-                element.timeStepsCarrierDuration = self.timeStepsDuration
-                element.orderTimeSteps = self.orderTimeSteps
+                element.setTimeStepsCarrier         = list(self.setTimeSteps)
+                element.timeStepsCarrierDuration    = self.timeStepsDuration
+                element.orderTimeSteps              = self.orderTimeSteps
             elif element.name in self.system["setTechnologies"]:
-                element.setTimeStepsOperation = list(self.setTimeSteps)
-                element.timeStepsOperationDuration = self.timeStepsDuration
-                element.orderTimeSteps = self.orderTimeSteps
+                element.setTimeStepsOperation       = list(self.setTimeSteps)
+                element.timeStepsOperationDuration  = self.timeStepsDuration
+                element.orderTimeSteps              = self.orderTimeSteps
             else:
                 raise KeyError(f"{element.name} neither in setCarriers nor setTechnologies")
             # iterate through raw time series
@@ -124,7 +124,7 @@ class TimeSeriesAggregation():
                 else:
                     NotAggregatedColumns = dfTimeSeries.columns
                 # not aggregated columns
-                dfAggregatedTimeSeries[NotAggregatedColumns] = dfTimeSeries.iloc[0][NotAggregatedColumns]
+                dfAggregatedTimeSeries[NotAggregatedColumns] = dfTimeSeries.loc[dfAggregatedTimeSeries.index, NotAggregatedColumns]
                 # reorder
                 dfAggregatedTimeSeries.index.names = [self.headerSetTimeSteps]
                 dfAggregatedTimeSeries.columns.names = _indexNames

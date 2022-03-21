@@ -147,10 +147,11 @@ class DataInput():
             for node in setNodes:
                 values = dfInput[column].loc[node].tolist()
                 if isinstance(values, int):
-                    index=0
+                    index=[0]
                 else:
-                    index  = range(len(values))
-                dfOutput[node][index] = values
+                    index  = list(range(len(values)))
+                    #dfOutput[node][index] = values
+                dfOutput.loc[node, index] = values
             return dfOutput
         # check if requested values for missing index are columns of dfInput
         else:
@@ -204,11 +205,11 @@ class DataInput():
                     dfOutput.loc[index] = dfInput.loc[_nodeFrom,_nodeTo]
         return dfOutput
 
-    def extractAttributeData(self, folderPath,attributeName,isCarrier = False):
+    def extractAttributeData(self, folderPath,attributeName,skipWarning = False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
         :param attributeName: name of selected attribute
-        :param isCarrier: boolean to indicate if inputCarrier or outputCarrier. Then "Default" not needed
+        :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
         fileName    = "attributes.csv"
         if fileName not in os.listdir(folderPath):
@@ -221,7 +222,7 @@ class DataInput():
                     f"Attribute without default value will be deprecated. \nAdd default value for {attributeName} in attribute file in {folderPath}",
                     FutureWarning)
                 return None
-            elif not isCarrier:
+            elif not skipWarning:
                 warnings.warn(
                     f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attributeName} of attributes in path {folderPath}",
                     FutureWarning)
@@ -363,7 +364,6 @@ class DataInput():
         fileFormat = self.analysis["fileFormat"]
 
         if f"existingCapacity.{fileFormat}" not in os.listdir(folderPath):
-            logging.warning(f"existingCapacity.{fileFormat} does not exist in {folderPath}")
             return [0]
 
         dfInput = pd.read_csv(folderPath + "existingCapacity" + '.' + fileFormat, header=0, index_col=None)
@@ -386,16 +386,16 @@ class DataInput():
         column       = "yearConstruction"
         defaultValue = 0
 
-        dfOutput = pd.Series(index=tech.existingCapacity.index,data=0)
-        if "{fileName}.{fileFormat}" in os.listdir(folderPath):
-            indexList, indexNameList = self.constructIndexList(tech, indexSets, None)
-            dfInput, fileName = self.readInputData(folderPath, fileName)
-            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
+        dfOutput    = pd.Series(index=tech.existingCapacity.index,data=0)
+        if f"{fileName}.{fileFormat}" in os.listdir(folderPath):
+            indexList, indexNameList    = self.constructIndexList(tech, indexSets, None)
+            dfInput, fileName           = self.readInputData(folderPath, fileName)
+            dfOutput                    = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
             # get reference year
-            referenceYear = self.extractAttributeData(self.energySystem.paths["setScenarios"]["folder"], "referenceYear")
+            referenceYear               = self.extractAttributeData(self.energySystem.paths["setScenarios"]["folder"], "referenceYear",skipWarning=True)
             assert referenceYear, f"File 'attributes.{fileFormat}' in '{folderPath}' does not contain a referenceYear"
             # calculate remaining lifetime
-            dfOutput[dfOutput > 0] =  referenceYear - dfOutput[dfOutput > 0] + tech.lifetime
+            dfOutput[dfOutput > 0]      = -referenceYear["value"] + dfOutput[dfOutput > 0] + tech.lifetime
 
         return dfOutput
 

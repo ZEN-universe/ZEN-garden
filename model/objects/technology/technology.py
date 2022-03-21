@@ -29,6 +29,7 @@ class Technology(Element):
 
         super().__init__(technology)
         # store input data
+        # TODO fix storing the data multiple times
         self.storeInputData()
         # add Technology to list
         Technology.addElement(self)

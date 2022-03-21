@@ -370,12 +370,16 @@ class EnergySystem:
         :param manualBaseTimeSteps: manual list of base time steps
         :return timeStepDurationDict: dict with duration of each time step """
         if manualBaseTimeSteps is not None:
-            baseTimeSteps = manualBaseTimeSteps
+            baseTimeSteps       = manualBaseTimeSteps
         else:
-            baseTimeSteps = cls.getEnergySystem().setBaseTimeSteps
-        durationInputTimeSteps = len(baseTimeSteps)/len(inputTimeSteps)
-        # assert durationInputTimeSteps.is_integer(),f"The duration of each time step {durationInputTimeSteps} of input time steps {inputTimeSteps} does not evaluate to an integer"
-        timeStepDurationDict = {timeStep: int(durationInputTimeSteps) for timeStep in inputTimeSteps}
+            baseTimeSteps       = cls.getEnergySystem().setBaseTimeSteps
+        durationInputTimeSteps  = len(baseTimeSteps)/len(inputTimeSteps)
+        timeStepDurationDict    = {timeStep: int(durationInputTimeSteps) for timeStep in inputTimeSteps}
+        if not durationInputTimeSteps.is_integer():
+            logging.warning(f"The duration of each time step {durationInputTimeSteps} of input time steps {inputTimeSteps} does not evaluate to an integer. \n"
+                            f"The duration of the last time step is set to compensate for the difference")
+            durationLastTimeStep = len(baseTimeSteps) - sum(timeStepDurationDict[key] for key in timeStepDurationDict if key != inputTimeSteps[-1])
+            timeStepDurationDict[inputTimeSteps[-1]] = durationLastTimeStep
         return timeStepDurationDict
 
     @classmethod
