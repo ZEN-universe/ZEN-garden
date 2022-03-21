@@ -197,7 +197,12 @@ class Carrier(Element):
 def constraintAvailabilityCarrierImportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to import from outside the system boundaries"""
 
-    return(model.importCarrierFlow[carrier, node, time] <= model.availabilityCarrierImport[carrier,node,time])
+    #return(model.importCarrierFlow[carrier, node, time] <= model.availabilityCarrierImport[carrier,node,time])
+    
+    """Production nodes :  import ~ production of the plant @ production cost"""
+    # TODO : import price = production cost 
+
+    return(model.importCarrierFlow[carrier, node, time] == model.availabilityCarrierImport[carrier,node,time])
 
 def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to export to outside the system boundaries"""
@@ -291,5 +296,8 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
         + carrierImport - carrierExport 
         # demand
         - carrierDemand 
-        == 0
+        # If demand has to be met 
+        ##==0
+        # If demand does not have to be met 
+        <=0
         )
