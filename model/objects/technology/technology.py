@@ -29,8 +29,8 @@ class Technology(Element):
 
         super().__init__(technology)
         # store input data
-        # TODO fix storing the data multiple times
-        self.storeInputData()
+        # # TODO fix storing the data multiple times
+        # self.storeInputData()
         # add Technology to list
         Technology.addElement(self)
 
@@ -56,7 +56,7 @@ class Technology(Element):
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
                 self.orderTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
                 EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest")
-                self.referenceCarrier           = [self.dataInput.extractAttributeData(self.inputPath,"referenceCarrier",isCarrier=True)]
+                self.referenceCarrier           = [self.dataInput.extractAttributeData(self.inputPath,"referenceCarrier",skipWarning=True)]
                 self.minBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"minBuiltCapacity")["value"]
                 self.maxBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"maxBuiltCapacity")["value"]
                 self.lifetime                   = self.dataInput.extractAttributeData(self.inputPath,"lifetime")["value"]

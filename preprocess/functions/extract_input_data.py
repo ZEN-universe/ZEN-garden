@@ -344,7 +344,7 @@ class DataInput():
         # get carriers
         for _carrierType in ["inputCarrier","outputCarrier"]:
             # TODO implement for multiple carriers
-            _carrierString = self.extractAttributeData(folderPath,_carrierType,isCarrier = True)
+            _carrierString = self.extractAttributeData(folderPath,_carrierType,skipWarning = True)
             if type(_carrierString) == str:
                 _carrierList = _carrierString.strip().split(" ")
                 for _carrierItem in _carrierList:
