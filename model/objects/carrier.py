@@ -42,6 +42,7 @@ class Carrier(Element):
         # raw import
         self.rawTimeSeries                              = {}
         self.rawTimeSeries["demandCarrier"]             = self.dataInput.extractInputData(self.inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
+        # TODO add import priceCarrier
         self.rawTimeSeries["availabilityCarrierImport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=setBaseTimeSteps)
         self.rawTimeSeries["availabilityCarrierExport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=setBaseTimeSteps)
         self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeSteps)
@@ -72,6 +73,9 @@ class Carrier(Element):
             initialize = cls.getAttributeOfAllElements("timeStepsCarrierDuration"),
             doc="Parameter which specifies the time step duration for all carriers. Dimensions: setCarriers, setTimeStepsCarrier"
         )
+        # price of demand 
+        # TODO : add parameter handling 
+
         # demand of carrier
         model.demandCarrier = pe.Param(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
@@ -213,7 +217,8 @@ def constraintCostCarrierRule(model, carrier, node, time):
     """ carbon emissions of importing/exporting carrier"""
     return(model.costCarrier[carrier,node, time] == 
         model.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] - 
-        model.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
+        model.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time] 
+        #TODO add outflow * price demand - model.xx[carrier, node, time]*1000 # price is hard coded for now
     )
 
 def constraintCostCarrierTotalRule(model):
