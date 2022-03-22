@@ -12,7 +12,6 @@ Description:    Class defining the parameters, variables and constraints that ho
 import logging
 import pyomo.environ as pe
 import numpy as np
-from sympy import E
 from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
 
@@ -35,23 +34,6 @@ class StorageTechnology(Technology):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get attributes from class <Technology>
         super().storeInputData()
-        # get system information
-        paths               = EnergySystem.getPaths()   
-        # set attributes for parameters of parent class <Technology>
-        self.inputPath          = paths["setStorageTechnologies"][self.name]["folder"]
-        setBaseTimeSteps    = EnergySystem.getEnergySystem().setBaseTimeSteps
-        # add all raw time series to dict
-        self.rawTimeSeries                  = {}
-        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(self.inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps) # TODO maybe rename: minLoad = minimum specific power to charge/discharge, probably 0
-        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(self.inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps) # TODO maybe rename: maxLoad = maximum specific power to charge/discharge, i.e., 1/(hours until entirely charged/discharged)
-        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(self.inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= setBaseTimeSteps)
-        # non-time series input data
-        self.capacityLimit                  = self.dataInput.extractInputData(self.inputPath,"capacityLimit",indexSets=["setNodes"])
-        self.carbonIntensityTechnology      = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",indexSets=["setNodes"])
-        # extract existing capacity
-        self.setExistingTechnologies        = self.dataInput.extractSetExistingTechnologies(self.inputPath)
-        self.existingCapacity               = self.dataInput.extractInputData(self.inputPath,"existingCapacity",indexSets=["setNodes", "setExistingTechnologies"],column="existingCapacity",element=self)
-        self.lifetimeExistingTechnology     = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,"existingCapacity",indexSets=["setNodes","setExistingTechnologies"],tech=self)
         # set attributes for parameters of child class <StorageTechnology>
         self.efficiencyCharge               = self.dataInput.extractInputData(self.inputPath,"efficiencyCharge",indexSets=["setNodes"])
         self.efficiencyDischarge            = self.dataInput.extractInputData(self.inputPath,"efficiencyDischarge",indexSets=["setNodes"])
@@ -171,7 +153,7 @@ class StorageTechnology(Technology):
         model = EnergySystem.getConcreteModel()
         # Limit storage level
         model.constraintStorageLevelMax = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]), #setTimeStepsStorageLevel setBaseTimeSteps 
+            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             rule = constraintStorageLevelMaxRule,
             doc = 'limit maximum storage level to capacity. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel'
         ) 
@@ -258,32 +240,6 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
         (model.carrierFlowCharge[tech, node, elementTimeStep]*model.efficiencyCharge[tech,node] - 
         model.carrierFlowDischarge[tech, node, elementTimeStep]/model.efficiencyDischarge[tech,node])*sum((1-model.selfDischarge[tech,node])**interimTimeStep for interimTimeStep in range(0,model.timeStepsStorageLevelDuration[tech,time]))
     )
-
-# full time series
-# def constraintStorageLevelMaxRule(model, tech, node, time):
-#     """limit maximum storage level to capacity"""
-#     # get invest time step
-#     # baseTimeStep    = EnergySystem.decodeTimeStep(tech+"StorageLevel",time)
-#     elementTimeStep = EnergySystem.encodeTimeStep(tech,time)
-#     investTimeStep  = EnergySystem.convertTechnologyTimeStepType(tech,elementTimeStep,"operation2invest")
-#     # investTimeStep = EnergySystem.encodeTimeStep(tech,time,"invest")
-#     return(model.levelCharge[tech, node, time] <= model.capacity[tech, node, investTimeStep])
-
-# def constraintCoupleStorageLevelRule(model, tech, node, time):
-#     """couple subsequent storage levels (time coupling constraints)"""
-#     # baseTimeStep                = EnergySystem.decodeTimeStep(tech+"StorageLevel",time)
-#     elementTimeStep             = EnergySystem.encodeTimeStep(tech,time)
-#     currentLevelTimeStep        = time
-#     if time != 0:
-#         previousLevelTimeStep   = time-1
-#     else:
-#         previousLevelTimeStep   = model.setBaseTimeSteps.at(-1)
-#     return(
-#         model.levelCharge[tech, node, currentLevelTimeStep] == 
-#         model.levelCharge[tech, node, previousLevelTimeStep]*(1-model.selfDischarge[tech,node])+#**model.timeStepsStorageLevelDuration[tech,time] + 
-#         (model.carrierFlowCharge[tech, node, elementTimeStep]*model.efficiencyCharge[tech,node] - 
-#         model.carrierFlowDischarge[tech, node, elementTimeStep]/model.efficiencyDischarge[tech,node])#*model.timeStepsStorageLevelDuration[tech,time]
-#     )
 
 def constraintCapexStorageTechnologyRule(model, tech, node, time):
     """ definition of the capital expenditures for the storage technology"""

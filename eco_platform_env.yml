@@ -11,9 +11,12 @@ dependencies:
   - pyomo=6.2
   - python=3.*
   - scipy
+  - sympy
   - ipython
   - matplotlib
   - mpmath
+  - pint
+  - entsoe-py
   - pip:
       - tsam
 

@@ -2,6 +2,7 @@
 /.vscode
 /data/
 /outputs/
+/data_generation/
 *.pyc
 *.DS_Store
 config.py

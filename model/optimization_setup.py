@@ -44,7 +44,7 @@ class OptimizationSetup():
         self.addElements()
         # define and construct components of self.model
         Element.constructModelComponents()
-        
+        logging.info("Apply Big-M GDP ")
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)  
 
@@ -88,4 +88,4 @@ class OptimizationSetup():
         # enable logger 
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)
-        # save the results of the optimization
+        a=1
