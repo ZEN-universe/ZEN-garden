@@ -316,7 +316,7 @@ class DataInput():
         fileFormat = self.analysis["fileFormat"]
 
         if f"existingCapacity.{fileFormat}" not in os.listdir(folderPath):
-            logging.warning(f"existingCapacity.{fileFormat} does not exist in {folderPath}")
+            #logging.warning(f"existingCapacity.{fileFormat} does not exist in {folderPath}")
             return [0]
 
         dfInput = pd.read_csv(folderPath + "existingCapacity" + '.' + fileFormat, header=0, index_col=None)
@@ -340,10 +340,10 @@ class DataInput():
         defaultValue = 0
 
         dfOutput = pd.Series(index=tech.existingCapacity.index,data=0)
-        if "{fileName}.{fileFormat}" in os.listdir(folderPath):
+        if f"{fileName}.{fileFormat}" in os.listdir(folderPath):
             indexList, indexNameList = self.constructIndexList(tech, indexSets, None)
-            dfInput, fileName = self.readInputData(folderPath, fileName)
-            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
+            dfInput, fileName        = self.readInputData(folderPath, fileName)
+            dfOutput                 = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
             # get reference year
             referenceYear = self.extractAttributeData(self.energySystem.paths["setScenarios"]["folder"], "referenceYear")
             assert referenceYear, f"File 'attributes.{fileFormat}' in '{folderPath}' does not contain a referenceYear"
