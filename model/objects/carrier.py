@@ -137,13 +137,13 @@ class Carrier(Element):
         # carbon emissions
         model.carbonEmissionsCarrier = pe.Var(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = "carbon emissions of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals"
         )
         # carbon emissions carrier
         model.carbonEmissionsCarrierTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain=pe.NonNegativeReals,
+            domain=pe.Reals,
             doc="total carbon emissions of importing/exporting carrier. Domain: NonNegativeReals"
         )
 
@@ -207,14 +207,14 @@ def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
     return(model.exportCarrierFlow[carrier, node, time] <= model.availabilityCarrierExport[carrier,node,time])
 
 def constraintCostCarrierRule(model, carrier, node, time):
-    """ carbon emissions of importing/exporting carrier"""
+    """ cost of importing/exporting carrier"""
     return(model.costCarrier[carrier,node, time] == 
         model.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] - 
         model.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
     )
 
 def constraintCostCarrierTotalRule(model):
-    """ total carbon emissions of importing/exporting carrier"""
+    """ total cosst of importing/exporting carrier"""
     return(model.costCarrierTotal == 
         sum(
             model.costCarrier[carrier,node,time]*model.timeStepsCarrierDuration[carrier, time]
@@ -224,7 +224,8 @@ def constraintCostCarrierTotalRule(model):
 
 def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
     """ carbon emissions of importing/exporting carrier"""
-    return(model.carbonEmissionsCarrier[carrier,node, time] == 
+
+    return(model.carbonEmissionsCarrier[carrier,node, time] ==
         model.carbonIntensityCarrier[carrier,node]*
         (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
     )
