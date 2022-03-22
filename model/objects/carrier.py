@@ -36,16 +36,16 @@ class Carrier(Element):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get paths
         paths                           = EnergySystem.getPaths()   
-        setBaseTimeSteps                = EnergySystem.getEnergySystem().setBaseTimeSteps
+        setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
         # set attributes of carrier
         self.inputPath                  = paths["setCarriers"][self.name]["folder"]
         # raw import
         self.rawTimeSeries                              = {}
-        self.rawTimeSeries["demandCarrier"]             = self.dataInput.extractInputData(self.inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["availabilityCarrierImport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["availabilityCarrierExport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeSteps)
+        self.rawTimeSeries["demandCarrier"]             = self.dataInput.extractInputData(self.inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["availabilityCarrierImport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["availabilityCarrierExport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         # non-time series input data
         self.carbonIntensityCarrier                     = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",["setNodes"])
         
@@ -136,6 +136,7 @@ class Carrier(Element):
         )
         # total carrier import/export cost
         model.costCarrierTotal = pe.Var(
+            model.setTimeStepsYearly,
             domain = pe.NonNegativeReals,
             doc = 'total carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
@@ -177,6 +178,7 @@ class Carrier(Element):
         )
         # total cost for carriers
         model.constraintCostCarrierTotal = pe.Constraint(
+            model.setTimeStepsYearly,
             rule = constraintCostCarrierTotalRule,
             doc = "total cost of importing/exporting carriers. ."
         )
@@ -218,12 +220,16 @@ def constraintCostCarrierRule(model, carrier, node, time):
         model.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
     )
 
-def constraintCostCarrierTotalRule(model):
+def constraintCostCarrierTotalRule(model,year):
     """ total carbon emissions of importing/exporting carrier"""
-    return(model.costCarrierTotal == 
+    baseTimeStep = EnergySystem.decodeTimeStep(None, year, "yearly")
+    return(model.costCarrierTotal[year] ==
         sum(
-            model.costCarrier[carrier,node,time]*model.timeStepsCarrierDuration[carrier, time]
-            for carrier,node,time in Element.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"])
+            sum(
+                model.costCarrier[carrier,node,time]*model.timeStepsCarrierDuration[carrier, time]
+                for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly=True)
+            )
+            for carrier,node in Element.createCustomSet(["setCarriers","setNodes"])
         )
     )
 
@@ -259,11 +265,11 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     carrierConversionIn, carrierConversionOut = 0, 0
     for tech in model.setConversionTechnologies:
         if carrier in model.setInputCarriers[tech]:
-            elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierConversionIn += model.inputFlow[tech,carrier,node,elementTimeStep]
+            elementTimeStep         = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+            carrierConversionIn     += model.inputFlow[tech,carrier,node,elementTimeStep]
         if carrier in model.setOutputCarriers[tech]:
-            elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierConversionOut += model.outputFlow[tech,carrier,node,elementTimeStep]
+            elementTimeStep         = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+            carrierConversionOut    += model.outputFlow[tech,carrier,node,elementTimeStep]
     # carrier flow transport technologies
     carrierFlowIn, carrierFlowOut   = 0, 0
     setEdgesIn                      = EnergySystem.calculateConnectedEdges(node,"in")
@@ -278,15 +284,15 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     carrierFlowDischarge, carrierFlowCharge = 0, 0
     for tech in model.setStorageTechnologies:
         if carrier in model.setReferenceCarriers[tech]:
-            elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierFlowDischarge += model.carrierFlowDischarge[tech,node,elementTimeStep]
-            carrierFlowCharge += model.carrierFlowCharge[tech,node,elementTimeStep]
+            elementTimeStep         = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
+            carrierFlowDischarge    += model.carrierFlowDischarge[tech,node,elementTimeStep]
+            carrierFlowCharge       += model.carrierFlowCharge[tech,node,elementTimeStep]
     # carrier import, demand and export
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
-    elementTimeStep = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
-    carrierImport = model.importCarrierFlow[carrier, node, elementTimeStep]
-    carrierExport = model.exportCarrierFlow[carrier, node, elementTimeStep]
-    carrierDemand = model.demandCarrier[carrier, node, elementTimeStep]
+    elementTimeStep     = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
+    carrierImport       = model.importCarrierFlow[carrier, node, elementTimeStep]
+    carrierExport       = model.exportCarrierFlow[carrier, node, elementTimeStep]
+    carrierDemand       = model.demandCarrier[carrier, node, elementTimeStep]
     
     return (
         # conversion technologies

@@ -29,8 +29,11 @@ system['setStorageTechnologies']                    = ["battery","pumped_hydro"]
 system['setTransportTechnologies']                  = ['power_line']
 system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant","nuclear","photovoltaics"]
 system['setScenarios']                              = 'a'
-system['setTimeSteps']                              = list(range(0,40))
-system["numberTimeStepsDefault"]                    = 20 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
+system["referenceYear"]                             = 2020
+system["timeStepsPerYear"]                          = 2190
+system["numberTimeStepsPerYearDefault"]             = 20 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
+system["timeStepsYearly"]                           = 1
+system['setTimeStepsPerYear']                       = list(range(0,system["timeStepsPerYear"]))
 system['setNodes']                                  = ['CH','DE',"AT","IT"]#,"FR","ES","PT","CZ"]
 
 ## Solver - settings update compared to default values

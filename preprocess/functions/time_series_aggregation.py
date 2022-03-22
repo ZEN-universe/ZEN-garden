@@ -18,15 +18,17 @@ from model.objects.technology.storage_technology import StorageTechnology
 
 class TimeSeriesAggregation():
     def __init__(self):
-        self.system = EnergySystem.getSystem()
-        self.analysis = EnergySystem.getAnalysis()
-        self.headerSetTimeSteps = self.analysis['headerDataInputs']["setTimeSteps"][0]
-        # if setTimeSteps as input (because already aggregated), use this as base time step, otherwise self.setBaseTimeSteps
-        self.setBaseTimeSteps = self.system["setTimeSteps"]
-        self.numberTypicalPeriods = min(self.system["numberTimeStepsDefault"], np.size(self.setBaseTimeSteps))
-        self.numberTimeStepsPerPeriod = 1
+        """ initializes the time series aggregation. The data is aggregated for a single year and then concatenated"""
+        self.system                     = EnergySystem.getSystem()
+        self.analysis                   = EnergySystem.getAnalysis()
+        self.energySystem               = EnergySystem.getEnergySystem()
+        self.headerSetTimeSteps         = self.analysis['headerDataInputs']["setTimeSteps"][0]
+        # if setTimeSteps as input (because already aggregated), use this as base time step, otherwise self.setBaseTimeStepsYear
+        self.setBaseTimeStepsYear       = list(range(0,self.system["timeStepsPerYear"]))
+        self.numberTypicalPeriods       = min(self.system["timeStepsPerYear"], self.system["numberTimeStepsPerYearDefault"])
+        self.numberTimeStepsPerPeriod   = 1
         # if number of time steps >= number of base time steps, skip aggregation
-        if self.numberTypicalPeriods * self.numberTimeStepsPerPeriod < np.size(self.setBaseTimeSteps):
+        if self.numberTypicalPeriods * self.numberTimeStepsPerPeriod < np.size(self.setBaseTimeStepsYear):
             # select time series
             self.selectTimeSeriesOfAllElements()
             if not self.dfTimeSeriesRaw.empty:
@@ -41,8 +43,8 @@ class TimeSeriesAggregation():
                 self.setAggregatedTimeSeriesOfAllElements()
         else:
             self.typicalPeriods     = pd.DataFrame()
-            self.setTimeSteps       = self.setBaseTimeSteps
-            self.timeStepsDuration  = EnergySystem.calculateTimeStepDuration(self.setTimeSteps, self.setBaseTimeSteps)
+            self.setTimeSteps       = self.setBaseTimeStepsYear
+            self.timeStepsDuration  = EnergySystem.calculateTimeStepDuration(self.setTimeSteps, self.setBaseTimeStepsYear)
             self.orderTimeSteps     = np.concatenate(
                 [[timeStep] * self.timeStepsDuration[timeStep] for timeStep in self.timeStepsDuration])
             # set aggregated time series
@@ -77,19 +79,19 @@ class TimeSeriesAggregation():
 
         # create aggregation object
         self.aggregation = tsam.TimeSeriesAggregation(
-            timeSeries=self.dfTimeSeriesRaw,
-            noTypicalPeriods=self.numberTypicalPeriods,
-            hoursPerPeriod=self.numberTimeStepsPerPeriod,
-            resolution=self.analysis["timeSeriesAggregation"]["resolution"],
-            clusterMethod=self.analysis["timeSeriesAggregation"]["clusterMethod"],
-            solver=self.analysis["timeSeriesAggregation"]["solver"],
-            extremePeriodMethod=self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
+            timeSeries          =self.dfTimeSeriesRaw,
+            noTypicalPeriods    =self.numberTypicalPeriods,
+            hoursPerPeriod      =self.numberTimeStepsPerPeriod,
+            resolution          =self.analysis["timeSeriesAggregation"]["resolution"],
+            clusterMethod       =self.analysis["timeSeriesAggregation"]["clusterMethod"],
+            solver              =self.analysis["timeSeriesAggregation"]["solver"],
+            extremePeriodMethod =self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
         )
         # create typical periods
-        self.typicalPeriods = self.aggregation.createTypicalPeriods().reset_index(drop=True)
-        self.setTimeSteps = self.aggregation.clusterPeriodIdx
-        self.timeStepsDuration = self.aggregation.clusterPeriodNoOccur
-        self.orderTimeSteps = self.aggregation.clusterOrder
+        self.typicalPeriods     = self.aggregation.createTypicalPeriods().reset_index(drop=True)
+        self.setTimeSteps       = self.aggregation.clusterPeriodIdx
+        self.timeStepsDuration  = self.aggregation.clusterPeriodNoOccur
+        self.orderTimeSteps     = self.aggregation.clusterOrder
 
     def setAggregatedTimeSeriesOfAllElements(self):
         """ this method sets the aggregated time series and sets the necessary attributes after the aggregation to a single time grid """
@@ -112,12 +114,12 @@ class TimeSeriesAggregation():
                 _indexNames.remove(self.headerSetTimeSteps)
                 dfTimeSeries = rawTimeSeries[timeSeries].unstack(level=_indexNames)
 
-                dfAggregatedTimeSeries = pd.DataFrame(index=self.setTimeSteps, columns=dfTimeSeries.columns)
+                dfAggregatedTimeSeries      = pd.DataFrame(index=self.setTimeSteps, columns=dfTimeSeries.columns)
                 # columns which are in aggregated time series and which are not
                 if element.name in self.typicalPeriods and timeSeries in self.typicalPeriods[element.name]:
-                    dfTypicalPeriods = self.typicalPeriods[element.name, timeSeries]
-                    AggregatedColumns = dfTimeSeries.columns.intersection(dfTypicalPeriods.columns)
-                    NotAggregatedColumns = dfTimeSeries.columns.difference(dfTypicalPeriods.columns)
+                    dfTypicalPeriods        = self.typicalPeriods[element.name, timeSeries]
+                    AggregatedColumns       = dfTimeSeries.columns.intersection(dfTypicalPeriods.columns)
+                    NotAggregatedColumns    = dfTimeSeries.columns.difference(dfTypicalPeriods.columns)
                     # aggregated columns
                     dfAggregatedTimeSeries[AggregatedColumns] = self.typicalPeriods[element.name, timeSeries][
                         AggregatedColumns]
@@ -126,10 +128,10 @@ class TimeSeriesAggregation():
                 # not aggregated columns
                 dfAggregatedTimeSeries[NotAggregatedColumns] = dfTimeSeries.loc[dfAggregatedTimeSeries.index, NotAggregatedColumns]
                 # reorder
-                dfAggregatedTimeSeries.index.names = [self.headerSetTimeSteps]
-                dfAggregatedTimeSeries.columns.names = _indexNames
-                dfAggregatedTimeSeries = dfAggregatedTimeSeries.stack(_indexNames)
-                dfAggregatedTimeSeries.index = dfAggregatedTimeSeries.index.reorder_levels(
+                dfAggregatedTimeSeries.index.names      = [self.headerSetTimeSteps]
+                dfAggregatedTimeSeries.columns.names    = _indexNames
+                dfAggregatedTimeSeries                  = dfAggregatedTimeSeries.stack(_indexNames)
+                dfAggregatedTimeSeries.index            = dfAggregatedTimeSeries.index.reorder_levels(
                     _indexNames + [self.headerSetTimeSteps])
                 setattr(element, timeSeries, dfAggregatedTimeSeries)
                 TimeSeriesAggregation.setAggregationIndicators(element)
@@ -194,25 +196,35 @@ class TimeSeriesAggregation():
             TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
 
     @classmethod
-    def calculateTimeStepsLinkInvestOperation(cls, element):
-        """ calculates the necessary overlapping time steps of the investment and operation of a technology.
-        It sets the union of the time steps for investment and operation.
-        :param element: technology of the optimization
-        :storageLevel: boolean if the link is calculated for the storage level"""
-        if len(np.unique(Element.getAttributeOfSpecificElement(element.name, "orderTimeStepsInvest"))) > 1:
+    def linkTimeSteps(cls, element):
+        """ calculates the necessary overlapping time steps of the investment and operation of a technology for all year.
+        It sets the union of the time steps for investment, operation and years.
+        :param element: technology of the optimization """
+        if element in Technology.getAllElements():
             listOrderTimeSteps = [
-                Element.getAttributeOfSpecificElement(element.name, "orderTimeStepsInvest"),
-                Element.getAttributeOfSpecificElement(element.name, "orderTimeSteps")
+                EnergySystem.getOrderTimeSteps(element.name,"invest"),
+                EnergySystem.getOrderTimeSteps(element.name,"operation"),
+                EnergySystem.getOrderTimeSteps(None, "yearly")
             ]
-            setTimeStepsOperation, timeStepsOperationDuration, orderTimeSteps = \
-                TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listOrderTimeSteps)
-            # time series parameters
-            cls.overwriteTimeSeriesWithExpandedTimeIndex(element,setTimeStepsOperation,orderTimeSteps)
-            # set attributes
-            element.setTimeStepsOperation       = setTimeStepsOperation
-            element.timeStepsOperationDuration  = timeStepsOperationDuration
+        elif element in Carrier.getAllElements():
+            listOrderTimeSteps = [
+                EnergySystem.getOrderTimeSteps(element.name, "operation"),
+                EnergySystem.getOrderTimeSteps(None, "yearly")
+            ]
+        setTimeSteps, timeStepsDuration, orderTimeSteps = \
+            TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listOrderTimeSteps)
+        # time series parameters
+        cls.overwriteTimeSeriesWithExpandedTimeIndex(element,setTimeSteps,orderTimeSteps)
+        # set attributes
+        if element in Technology.getAllElements():
+            element.setTimeStepsOperation       = setTimeSteps
+            element.timeStepsOperationDuration  = timeStepsDuration
             element.orderTimeSteps              = orderTimeSteps
-            EnergySystem.setOrderTimeSteps(element.name, element.orderTimeSteps)
+        elif element in Carrier.getAllElements():
+            element.setTimeStepsCarrier         = setTimeSteps
+            element.timeStepsCarrierDuration    = timeStepsDuration
+            element.orderTimeSteps              = orderTimeSteps
+        EnergySystem.setOrderTimeSteps(element.name, element.orderTimeSteps)
 
     @classmethod
     def overwriteTimeSeriesWithExpandedTimeIndex(cls, element, setTimeStepsOperation, orderTimeSteps):
@@ -220,15 +232,29 @@ class TimeSeriesAggregation():
         :param element: technology of the optimization
         :param setTimeStepsOperation: new time steps operation
         :param orderTimeSteps: new order of operational time steps """
-        headerSetTimeSteps    = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
-        oldOrderTimeSteps   = element.orderTimeSteps
+        headerSetTimeSteps = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
+        oldOrderTimeSteps = element.orderTimeSteps
         for timeSeries in element.rawTimeSeries:
-            oldTimeSeries   = getattr(element,timeSeries).unstack(headerSetTimeSteps)
-            newTimeSeries   = pd.DataFrame(index = oldTimeSeries.index, columns=setTimeStepsOperation)
-            idxOld2New      = [np.unique(oldOrderTimeSteps[np.argwhere(idx == orderTimeSteps)]) for idx in setTimeStepsOperation]
-            newTimeSeries   = newTimeSeries.apply(lambda row: oldTimeSeries[idxOld2New[row.name][0]],axis=0).stack()
+            _oldTimeSeries = getattr(element, timeSeries).unstack(headerSetTimeSteps)
+            _newTimeSeries = pd.DataFrame(index=_oldTimeSeries.index, columns=setTimeStepsOperation)
+            _idxOld2New = [np.unique(oldOrderTimeSteps[np.argwhere(idx == orderTimeSteps)]) for idx in
+                           setTimeStepsOperation]
+            _newTimeSeries = _newTimeSeries.apply(lambda row: _oldTimeSeries[_idxOld2New[row.name][0]], axis=0).stack()
             # overwrite time series
-            setattr(element,timeSeries,newTimeSeries)
+            setattr(element, timeSeries, _newTimeSeries)
+
+    @classmethod
+    def repeatOrderTimeStepsForAllYears(cls):
+        """ this method repeats the operational time series for all years."""
+        # concatenate the order of time steps for all elements and link with investment and yearly time steps
+        for element in Element.getAllElements():
+            timeStepsYearly         = EnergySystem.getSystem()["timeStepsYearly"]
+            oldOrderTimeSteps       = Element.getAttributeOfSpecificElement(element.name, "orderTimeSteps")
+            newOrderTimeSteps       = np.hstack([oldOrderTimeSteps]*timeStepsYearly)
+            element.orderTimeSteps  = newOrderTimeSteps
+            EnergySystem.setOrderTimeSteps(element.name, element.orderTimeSteps)
+            # calculate the time steps in operation to link with investment and yearly time steps
+            cls.linkTimeSteps(element)
 
     @classmethod
     def setAggregationIndicators(cls, element, setEnergyBalanceIndicator=False):
@@ -268,7 +294,8 @@ class TimeSeriesAggregation():
 
     @classmethod
     def overwriteRawTimeSeries(cls, element):
-        """ this method overwrites the raw time series to the already once aggregated time series """
+        """ this method overwrites the raw time series to the already once aggregated time series
+        :param element: technology of the optimization """
         for timeSeries in element.rawTimeSeries:
             element.rawTimeSeries[timeSeries] = getattr(element, timeSeries)
 
@@ -277,13 +304,11 @@ class TimeSeriesAggregation():
         """ this method conducts time series aggregation """
         logging.info("\n--- Time series aggregation ---")
         TimeSeriesAggregation()
-
-        for element in Technology.getAllElements():
-            # calculate the time steps in operation to link with investment time steps
-            cls.calculateTimeStepsLinkInvestOperation(element)
-            if element in StorageTechnology.getAllElements():
-                # calculate time steps of storage levels
-                element.calculateTimeStepsStorageLevel()
+        # repeat order of operational time steps and link with investment and yearly time steps
+        cls.repeatOrderTimeStepsForAllYears()
+        for element in StorageTechnology.getAllElements():
+            # calculate time steps of storage levels
+            element.calculateTimeStepsStorageLevel()
         # calculate new time steps of energy balance
         for element in Carrier.getAllElements():
             cls.calculateTimeStepsEnergyBalance(element)

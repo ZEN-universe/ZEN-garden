@@ -74,7 +74,8 @@ class EnergySystem:
         self.setTechnologies            = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
         self.setScenarios               = system["setScenarios"]
         # base time steps
-        self.setBaseTimeSteps           = system["setTimeSteps"]
+        self.setBaseTimeSteps           = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
+        self.setBaseTimeStepsYearly     = list(range(0, system["timeStepsPerYear"]))
         # yearly time steps
         self.typesTimeSteps             = ["invest", "operation", "yearly"]
         self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
@@ -88,7 +89,7 @@ class EnergySystem:
         self.setStorageTechnologies     = system["setStorageTechnologies"]
         # carbon emissions limit
         self.carbonEmissionsLimit       = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
-        _fractionOfYear                 = len(system["setTimeSteps"])/system["hoursPerYear"]
+        _fractionOfYear                 = system["timeStepsPerYear"]/system["totalHoursPerYear"]
         self.carbonEmissionsLimit       = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
 
     def getBaseUnits(self):
@@ -449,6 +450,35 @@ class EnergySystem:
             return convertedTimeSteps[0]
 
     @classmethod
+    def getLifetimeRange(cls, tech, time,timeStepType:str = None):
+        """ returns lifetime range of technology. If timeStepType, then converts the yearly time step 'time' to timeStepType """
+        model               = cls.getConcreteModel()
+        if timeStepType:
+            investTimeStep  = cls.encodeTimeStep(tech,time,timeStepType,yearly=True)
+            assert len(investTimeStep) == 1, f"lifetime calculation for more than one invest step per year is not yet implemented. (Technology {tech}, invest time steps {investTimeStep}"
+            investTimeStep  = investTimeStep[0]
+        else:
+            investTimeStep  = time
+        tStart              = cls.getStartTimeOfLifetime(tech,investTimeStep)
+        tEnd                = investTimeStep + 1
+        return range(tStart,tEnd)
+
+    @classmethod
+    def getStartTimeOfLifetime(cls,tech,investTimeStep):
+        """ counts back the lifetime to get the start invest time step and returns startInvestTimeStep """
+        # TODO use durations
+        model               = cls.getConcreteModel()
+        baseTimeStep        = cls.decodeTimeStep(tech,investTimeStep,timeStepType="invest")
+        yearlyTimeStep      = cls.encodeTimeStep(None,baseTimeStep,timeStepType="yearly",yearly=True)
+        assert len(yearlyTimeStep) == 1, f"lifetime calculation for less than one invest step per year is not yet implemented. (Technology {tech}, invest time steps {investTimeStep}"
+        yearlyTimeStep      = yearlyTimeStep[0]
+        lifetimeTech        = model.lifetimeTechnology[tech]
+        startYear           = max(0,yearlyTimeStep-lifetimeTech + 1)
+        startBaseTimeStep   = cls.decodeTimeStep(None, startYear, timeStepType="yearly")
+        startInvestTimeStep = cls.encodeTimeStep(tech,startBaseTimeStep,timeStepType="invest",yearly=True)
+        return startInvestTimeStep[0]
+
+    @classmethod
     def getFullTimeSeriesOfComponent(cls,component,indexSubsets:tuple,manualOrderName = None):
         """ returns full time series of result component 
         :param component: component (parameter or variable) of optimization model 
@@ -608,7 +638,11 @@ def constraintCarbonEmissionsLimitRule(model, year):
 # objective rules
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
-    return(model.capexTotal + model.opexTotal + model.costCarrierTotal)
+    return(
+            sum(
+                model.capexTotal[year] + model.opexTotal[year] + model.costCarrierTotal[year]
+            for year in model.setTimeStepsYearly)
+    )
 
 def objectiveTotalCarbonEmissionsRule(model):
     """objective function to minimize total emissions"""
