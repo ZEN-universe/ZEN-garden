@@ -88,8 +88,8 @@ class EnergySystem:
         self.setStorageTechnologies     = system["setStorageTechnologies"]
         # carbon emissions limit
         self.carbonEmissionsLimit       = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
-        _fractionOfYear                 = len(system["setTimeSteps"])/system["hoursPerYear"]
-        self.carbonEmissionsLimit       = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
+        #_fractionOfYear                 = len(system["setTimeSteps"])/system["hoursPerYear"]
+        #self.carbonEmissionsLimit       = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
 
     def getBaseUnits(self):
         """ gets base units of energy system """
@@ -530,7 +530,7 @@ class EnergySystem:
         # carbon emissions
         model.carbonEmissionsTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = "total carbon emissions of energy system. Domain: NonNegativeReals"
         )
 
@@ -590,8 +590,8 @@ def constraintCarbonEmissionsTotalRule(model,year):
     return(
         model.carbonEmissionsTotal[year] ==
         # technologies
-        model.carbonEmissionsTechnologyTotal[year]
-        + 
+        #model.carbonEmissionsTechnologyTotal[year]
+        #+
         # carriers
         model.carbonEmissionsCarrierTotal[year]
     )
