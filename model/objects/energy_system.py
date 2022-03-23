@@ -75,8 +75,7 @@ class EnergySystem:
         self.setTechnologies            = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
         self.setScenarios               = system["setScenarios"]
         # base time steps
-        self.setBaseTimeSteps           = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
-        self.setBaseTimeStepsYearly     = list(range(0, system["timeStepsPerYear"]))
+        self.setBaseTimeSteps           = system["setTimeSteps"]
         # yearly time steps
         self.typesTimeSteps             = ["invest", "operation", "yearly"]
         self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
@@ -572,7 +571,7 @@ class EnergySystem:
         # carbon emissions
         model.carbonEmissionsTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = "total carbon emissions of energy system. Domain: NonNegativeReals"
         )
 
