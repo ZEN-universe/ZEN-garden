@@ -69,10 +69,10 @@ system["setStorageTechnologies"] = ["CO2_storage"]
 # set of transport technologies
 system["setTransportTechnologies"] = ["pipeline_hydrogen", "truck_hydrogen_gas", "truck_hydrogen_liquid"]
 # set of scenarios
-system["setScenarios"] = "a"
+system["setScenarios"]          = "a"
 # set of time steps
-system["setTimeSteps"] = [1,2,3]
-system["hoursPerYear"] = 8760
+system["setTimeStepsPerYear"]   = [1,2,3]
+system["totalHoursPerYear"]     = 8760
 # set of nodes
 system["setNodes"] = ["Berlin", "Zurich", "Rome"]
 # folder output
