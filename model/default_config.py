@@ -14,7 +14,7 @@ analysis = dict()
 
 ## Solver - dictionary declaration
 # This dictionary contains all the settings related to the solver of the optimisation problem.
-solver = dict()  
+solver = dict()
 
 ## System - dictionary declaration
 # This dictionary defines the configuration of the system by selecting the subset of technologies ot be included into the analysis.
@@ -56,6 +56,32 @@ analysis["timeSeriesAggregation"] = {
     "extremePeriodMethod"   : "None",
     "resolution"            : 1
 }
+
+analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
+                                'costCarrierTotal': ['capacity[€]'],
+                                'opexTotal':['capacity[€]'],
+                                'carbonEmissionsCarrierTotal':['capacity[GWh]'],
+                                'carbonEmissionsTechnologyTotal':['capacity[GWh]'],
+                                'carbonEmissionsTotal':['capacity[GWh]'],
+                                'carbonEmissionsCarrier':['carrier','node','time','capacity[GWh]'],
+                                'costCarrier': ['carrier','node','time','capacity[GWh]'],
+                                'exportCarrierFlow':['carrier','node','time','capacity[GWh]'],
+                                'importCarrierFlow':['carrier','node','time','capacity[GWh]'],
+                                'carrierFlow':['trans_tech','edge','time','capacity[GWh]'],
+                                'carrierLoss':['trans_tech','edge','time','capacity[GWh]'],
+                                'dependentFlowApproximation':['conv_tech','carrier','node','time','capacity[GWh]'],
+                                'inputFlow':['conv_tech','carrier','node','time','capacity[GWh]'],
+                                'outputFlow':['conv_tech','carrier','node','time','capacity[GWh]'],
+                                'referenceFlowApproximation':['conv_tech','carrier','node','time','capacity[GWh]'],
+                                'installTechnology':['conv_tech','node','time','T/F'],
+                                'builtCapacity':['conv_tech','node','time','capacity[GWh]'],
+                                'capacity':['conv_tech','node','time','capacity[GWh]'],
+                                'capacityApproximation':['conv_tech','node','time','capacity[GWh]'],
+                                'capex':['conv_tech','node','time','capacity[GWh]'],
+                                'capexApproximation':['conv_tech','node','time','capacity[GWh]'],
+                                'carbonEmissionsTechnology':['conv_tech','node','time','capacity[GWh]'],
+                                'opex':['conv_tech','node','time','capacity[GWh]'],
+                                }
 
 ## System - Items assignment
 # set of energy carriers
@@ -102,6 +128,6 @@ solver['parametersMetaheuristic'] = {
 solver['convergenceCriterion'] = {'check': True, 'conditionDelta':'relative', 'restart':True}
 # settings for performance check
 solver['performanceCheck'] = {'printDeltaRun':1, 'printDeltaIteration':1}
-# settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly: 
+# settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly:
 # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
 solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
