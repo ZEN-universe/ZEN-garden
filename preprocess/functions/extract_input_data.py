@@ -145,13 +145,14 @@ class DataInput():
             dfInput = dfInput.set_index(indexNameList)
             setNodes= dfInput.index.unique()
             for node in setNodes:
-                values = dfInput[column].loc[node].tolist()
-                if isinstance(values, int):
-                    index=[0]
-                else:
-                    index  = list(range(len(values)))
-                    #dfOutput[node][index] = values
-                dfOutput.loc[node, index] = values
+                if node in self.system["setNodes"]:
+                    values = dfInput[column].loc[node].tolist()
+                    if isinstance(values, int) or isinstance(values,float):
+                        index=[0]
+                    else:
+                        index  = list(range(len(values)))
+                        #dfOutput[node][index] = values
+                    dfOutput.loc[node, index] = values
             return dfOutput
         # check if requested values for missing index are columns of dfInput
         else:
