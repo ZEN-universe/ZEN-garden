@@ -44,7 +44,11 @@ class OptimizationSetup():
         self.addElements()
         # define and construct components of self.model
         Element.constructModelComponents()
+<<<<<<< HEAD
 
+=======
+        logging.info("Apply Big-M GDP ")
+>>>>>>> 51b140a4a44a174f3d3667f286cb33f7f1165105
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)
 
@@ -81,9 +85,10 @@ class OptimizationSetup():
         logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
         # (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
-        solver_parameters = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
-        self.opt = pe.SolverFactory(solverName, options=solverOptions)
+        solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
+        self.opt            = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels=True)
+<<<<<<< HEAD
         self.results = self.opt.solve(tee=solver['verbosity'], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
 
         # TODO: save results 
@@ -92,3 +97,9 @@ class OptimizationSetup():
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)
         a=1
+=======
+        self.results        = self.opt.solve(tee=solver['verbosity'], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
+        # enable logger 
+        logging.disable(logging.NOTSET)
+        self.model.solutions.load_from(self.results)
+>>>>>>> 51b140a4a44a174f3d3667f286cb33f7f1165105

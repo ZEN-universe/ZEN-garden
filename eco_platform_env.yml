@@ -4,19 +4,20 @@ channels:
   - defaults
   - gurobi
 dependencies:
-  - numpy
-  - gurobi
-  - pandas
-  - pip
-  - pyomo=6.2
+  - numpy>=1.22.2
+  - gurobi>=9.5.1
+  - pandas>=1.4.1
+  - pip>=22.0.4
+  - pyomo>=6.2
   - python=3.*
-  - scipy
-  - sympy
-  - ipython
-  - matplotlib
-  - mpmath
+  - scipy>=1.8
+  - ipython>=8.1.1
+  - matplotlib>=3.5.1
+  - mpmath>=1.2.1
+  - pint>=0.18
+  - entsoe-py>=0.4.3
   - pip:
-      - tsam
+      - tsam>=2.0.0
 
 # conda env create -f eco_platform_env.yml
 # conda remove --name eco_platform --all

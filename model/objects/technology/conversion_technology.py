@@ -35,20 +35,6 @@ class ConversionTechnology(Technology):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get attributes from class <Technology>
         super().storeInputData()
-        # get system information
-        paths               = EnergySystem.getPaths()   
-        setBaseTimeSteps    = EnergySystem.getEnergySystem().setBaseTimeSteps
-        #  set attributes for parameters of parent class <Technology>
-        self.inputPath      = paths["setConversionTechnologies"][self.name]["folder"]
-        # add all raw time series to dict
-        self.rawTimeSeries                  = {}
-        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData(self.inputPath,"minLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData(self.inputPath,"maxLoad",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
-        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData(self.inputPath,"opexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps=setBaseTimeSteps)
-        # non-time series input data
-        self.capacityLimit              = self.dataInput.extractInputData(self.inputPath,"capacityLimit",["setNodes"])
-        self.carbonIntensityTechnology  = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",indexSets=["setNodes"])
-        # set attributes for parameters of child class <ConversionTechnology>
         # define input and output carrier
         self.inputCarrier               = self.dataInput.extractConversionCarriers(self.inputPath)["inputCarrier"]
         self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
@@ -75,13 +61,13 @@ class ConversionTechnology(Technology):
         model.setInputCarriers = pe.Set(
             model.setConversionTechnologies,
             initialize = _inputCarriers,
-            doc = "set of carriers that are an input to a specific conversion technology.\n\t Dimensions: setConversionTechnologies"
+            doc = "set of carriers that are an input to a specific conversion technology. Dimensions: setConversionTechnologies"
         )
         # output carriers of technology
         model.setOutputCarriers = pe.Set(
             model.setConversionTechnologies,
             initialize = _outputCarriers,
-            doc = "set of carriers that are an output to a specific conversion technology.\n\t Dimensions: setConversionTechnologies"
+            doc = "set of carriers that are an output to a specific conversion technology. Dimensions: setConversionTechnologies"
         )
         # dependent carriers of technology
         model.setDependentCarriers = pe.Set(
@@ -176,8 +162,8 @@ class ConversionTechnology(Technology):
                 doc = "Linear relationship in capex. Dimension: setLinearCapex."
             )
         # Conversion Efficiency
-        setPWAConverEfficiency = cls.createCustomSet(["setConversionTechnologies","setConverEfficiencyPWA","setNodes","setTimeStepsOperation"])
-        setLinearConverEfficiency = cls.createCustomSet(["setConversionTechnologies","setConverEfficiencyLinear","setNodes","setTimeStepsOperation"])
+        setPWAConverEfficiency      = cls.createCustomSet(["setConversionTechnologies","setConverEfficiencyPWA","setNodes","setTimeStepsOperation"])
+        setLinearConverEfficiency   = cls.createCustomSet(["setConversionTechnologies","setConverEfficiencyLinear","setNodes","setTimeStepsOperation"])
         if setPWAConverEfficiency:
             # if setPWAConverEfficiency contains technologies:
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(setPWAConverEfficiency,"ConverEfficiency")
@@ -255,7 +241,7 @@ class ConversionTechnology(Technology):
         disjunct.constraintNoLoad = pe.Constraint(
             expr=
                 sum(model.inputFlow[tech,inputCarrier,node,time]     for inputCarrier  in model.setInputCarriers[tech]) +
-                sum(model.outputFlow[tech,outputCarrier,node,time]   for outputCarrier in model.setOutputCarriers[tech]) 
+                sum(model.outputFlow[tech,outputCarrier,node,time]   for outputCarrier in model.setOutputCarriers[tech])
                 == 0
         )
             

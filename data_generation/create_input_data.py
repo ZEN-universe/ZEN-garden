@@ -6,10 +6,13 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class containing the methods for the generation of the input dataset respecting the platform's data structure.
 ==========================================================================================================================================================================="""
+import copy
+
 import numpy as np
 import pandas as pd
 import os, sys
 import functions.data_helpers as helpers
+import functions.query_api_data as queryApi
 from pathlib import Path
 import pickle
 
@@ -18,13 +21,16 @@ class DataCreation():
     def __init__(self,folderName,sourceName):
         self.folderName = folderName
         self.sourceName = sourceName
-        self.cwd = Path(os.getcwd())
+        self.cwd        = Path(os.getcwd())
         self.folderPath = self.cwd / "data" / self.folderName
         # create new folder structure if it does not exist yet
         self.createNewFolder()
         # check if source path exists
         self.sourcePath = self.cwd.parent / self.sourceName
-        assert os.path.exists(self.sourcePath), f"Source data folder {self.sourceName} does not exist in {self.cwd.parent}" 
+        assert os.path.exists(self.sourcePath), f"Source data folder {self.sourceName} does not exist in {self.cwd.parent}"
+        # initialize extraction from ENTSO-E transparency platform
+        self.useApiData = True
+        self.apiData    = queryApi.ExtractApis(self,helpers)
         # create input data
         self.createInputData()
 
@@ -45,8 +51,6 @@ class DataCreation():
         self.carbonIntensityCarrier = {}
         # create nodes
         self.createNodes()
-        # create time steps
-        self.createTimeSteps()
         # create conversion technologies
         self.createConversionTechnologies()
         # create transport technologies
@@ -55,27 +59,58 @@ class DataCreation():
         self.createStorageTechnologies()
         # create carriers
         self.createCarriers()
-        
-        a=1
 
     def createNodes(self):
         """ fills the setNodes folder"""
         assert os.path.exists(self.folderPath / "setNodes" / "setNodes.csv"), "setNodes not yet created! Implement!"
         self.setNodes = pd.read_csv(self.folderPath / "setNodes" / "setNodes.csv")
+        self.createEdges()
+        self.apiData.setNodesAndEdges(self.setNodes,self.setEdges)
 
-    def createTimeSteps(self,setName = None,elementName = None):
-        """ fills the setTimeSteps folder and creates the time steps for each element in each set """
-        if setName == "setConversionTechnologies":
-            pass
-        elif setName == "setTransportTechnologies":
-            pass
-        elif setName == "setStorageTechnologies":
-            pass
-        elif setName == "setCarriers":
-            pass
-        else:
-            pass
-        pass
+    def createEdges(self):
+        """ creates the edges """
+        setEdges = pd.DataFrame(columns=["nodeFrom","nodeTo"])
+        # nodes from ENTSOE TYNDP 2020-scenario.xlsx
+        # load nodes and edges
+        _nodes  = pd.read_csv(self.sourcePath / "nodesEdges" / "Nodes_Dict.csv",delimiter=";")
+        _edges  = pd.read_csv(self.sourcePath / "nodesEdges" / "Lines_Dict.csv",delimiter=";")
+        _edges  = _edges[~_edges["line_id"].str.contains("Exp")]
+        # iterate through nodes to find corresponding edges
+        setNodes = copy.deepcopy(self.setNodes["node"])
+        setNodes[setNodes == "EL"]  = "GR"
+        for _node in setNodes:
+            _nodeIds = _nodes["node_id"][_nodes["country"]==_node].reset_index(drop=True)
+            _connectedNodeIdFromNode  = []
+            _connectedNodeIdToNode    = []
+            for _nodeId in _nodeIds:
+                _connectedNodeIdFromNode.extend(list(_edges["node_b"][(_edges["node_a"] == _nodeId)]))
+                _connectedNodeIdToNode.extend(list(_edges["node_a"][(_edges["node_b"] == _nodeId)]))
+            # append to setEdges
+            _setEdgesTempFromNode               = pd.DataFrame(columns=["nodeFrom","nodeTo"])
+            _connectedNodeFromNode              = _nodes["country"][_nodes["node_id"].apply(lambda node: node in _connectedNodeIdFromNode)]
+            # only nodes which are in self.setNodes
+            _setEdgesTempFromNode["nodeTo"]     = _connectedNodeFromNode[_connectedNodeFromNode.isin(setNodes)]
+            _setEdgesTempFromNode["nodeFrom"]   = _node
+            _setEdgesTempToNode                 = pd.DataFrame(columns=["nodeFrom", "nodeTo"])
+            _connectedNodeToNode                = _nodes["country"][_nodes["node_id"].apply(lambda node: node in _connectedNodeIdToNode)]
+            # only nodes which are in self.setNodes
+            _setEdgesTempToNode["nodeFrom"]     = _connectedNodeToNode[_connectedNodeToNode.isin(setNodes)]
+            _setEdgesTempToNode["nodeTo"]       = _node
+            setEdges            = pd.concat([setEdges,_setEdgesTempFromNode,_setEdgesTempToNode])
+        # remove edges where nodeFrom = nodeTo
+        setEdges                    = setEdges[setEdges["nodeFrom"] != setEdges["nodeTo"]]
+        # flip direction of edge
+        setEdgesFlipped             = setEdges.rename(columns={"nodeFrom":"nodeTo","nodeTo":"nodeFrom"})
+        setEdges                    = pd.concat([setEdges,setEdgesFlipped]).drop_duplicates()
+        # substitute greece
+        setEdges[setEdges == "GR"]  = "EL"
+        # set edge name
+        setEdges["edge"]    = setEdges.apply(lambda row: row["nodeFrom"]+"-"+row["nodeTo"],axis=1)
+        setEdges            = setEdges.set_index("edge")
+        self.setEdges       = setEdges
+        # write csv
+        setEdges.to_csv(self.folderPath / "setNodes" / "setEdges.csv")
+
 
     def createConversionTechnologies(self):
         """ fills the setConversionTechnologies folder"""
@@ -98,7 +133,9 @@ class DataCreation():
             self.createPWAfiles(conversionTechnology)
             # create PV and wind onshore maxLoad files
             self.createMaxLoadFiles(conversionTechnology)
-    
+            # extract historic generation profile
+            self.extractHistoricGeneration(conversionTechnology)
+
     def createTransportTechnologies(self):
         """ fills the setTransportTechnologies folder"""
         transportTechnologies = helpers.getTechnologies(self.sourcePath,"transport")
@@ -108,6 +145,8 @@ class DataCreation():
             self.createDefaultAttributeDataFrame("setTransportTechnologies",transportTechnology)
             # create distance matrix
             self.createDistanceMatrix(transportTechnology)
+            # create capacityLimit matrix
+            self.createCapacityLimitTransportTechnology(transportTechnology)
     
     def createStorageTechnologies(self):
         """ fills the setStorageTechnologies folder"""
@@ -151,22 +190,27 @@ class DataCreation():
         """ this method creates a default attribute DataFrame
         :param setName: name of set to which element belongs
         :param elementName: name of element """
-        dfAttribute                                 = pd.DataFrame(index = helpers.getAttributesOfSet(setName),columns=["attributes"])
-        dfAttribute.index.name                      = "index"
-        dfAttribute["attributes"]                   = dfAttribute.index.map(lambda index: helpers.getDefaultValue(index))
+        dfAttribute             = pd.DataFrame(index = helpers.getAttributesOfSet(setName),columns=["value","unit"])
+        dfAttribute.index.name  = "index"
+        dfAttribute["value"]    = dfAttribute.index.map(lambda index: helpers.getDefaultValue(index))
+        dfAttribute["unit"]     = dfAttribute.index.map(lambda index: helpers.getDefaultUnit(index))
         if setName == "setConversionTechnologies":
+            # overwrite minLoad, if no min load, set to 0
+            if not helpers.getTechnologies(self.sourcePath,"conversion","minLoad")[elementName]:
+                dfAttribute.loc["minLoadDefault","value"]   = 0
             # input and output carrier
-            _inputCarrier,_outputCarrier            = self.getInputOutputCarrier(elementName)
-            dfAttribute.loc["inputCarrier"],dfAttribute.loc["outputCarrier"] = _inputCarrier,_outputCarrier
+            _inputCarrier,_outputCarrier                    = self.getInputOutputCarrier(elementName)
+            dfAttribute.loc["inputCarrier","value"],dfAttribute.loc["outputCarrier","value"]    = _inputCarrier,_outputCarrier
+            dfAttribute.loc["inputCarrier","unit"],dfAttribute.loc["outputCarrier", "unit"]     = helpers.getCarrierUnits(_inputCarrier), helpers.getCarrierUnits(_outputCarrier)
             # Potencia assumptions
-            _potenciaAssumptions                    = self.technologyPotenciaAssumption.loc[helpers.getAttributeIndex(self.conversionTechnologiesPotencia[elementName])]
-            dfAttribute.loc["lifetime"]             = _potenciaAssumptions["Technical lifetime (years)"]
-            _maximumNumberNewPlants                 = helpers.getNumberOfNewPlants(elementName) # TODO choose sensible number
-            dfAttribute.loc["maxBuiltCapacity"]     = _potenciaAssumptions["Typical unit size of a new power plant (kW)"]/1e6*_maximumNumberNewPlants   # GW
-            dfAttribute.loc["opexSpecificDefault"]  = _potenciaAssumptions["Variable O&M  costs €2010/MWh"]                                             # kEUR/GWh
+            _potenciaAssumptions                                = self.technologyPotenciaAssumption.loc[helpers.getAttributeIndex(self.conversionTechnologiesPotencia[elementName])]
+            dfAttribute.loc["lifetimeDefault","value"]          = _potenciaAssumptions["Technical lifetime (years)"]
+            _maximumNumberNewPlants                             = helpers.getNumberOfNewPlants(elementName) # TODO choose sensible number
+            dfAttribute.loc["maxBuiltCapacityDefault","value"]  = _potenciaAssumptions["Typical unit size of a new power plant (kW)"]/1e6*_maximumNumberNewPlants   # GW
+            dfAttribute.loc["opexSpecificDefault","value"]      = _potenciaAssumptions["Variable O&M  costs €2010/MWh"]                                             # kEUR/GWh
             # save carbon intensity of input carrier
             if _inputCarrier:
-                self.carbonIntensityCarrier[_inputCarrier] = _potenciaAssumptions["Default emissions factor (t of CO2 / toe input)"]*helpers.getConstants("MWh2toe") #ktCO2/GWh
+                self.carbonIntensityCarrier[_inputCarrier]      = _potenciaAssumptions["Default emissions factor (t of CO2 / toe input)"]*helpers.getConstants("MWh2toe") #ktCO2/GWh
 
         elif setName == "setTransportTechnologies":
             dfAttribute = helpers.setManualAttributesTransport(elementName,dfAttribute)
@@ -176,10 +220,10 @@ class DataCreation():
             # set fuel prices
             _carrierIdentifier = helpers.getCarrierIdentifier(elementName)
             if _carrierIdentifier:
-                dfAttribute.loc["importPriceCarrierDefault"]    = self.fuelPricesPotencia[_carrierIdentifier]*helpers.getConstants("MWh2toe")           # kEUR/GWh
+                dfAttribute.loc["importPriceCarrierDefault","value"]    = self.fuelPricesPotencia[_carrierIdentifier]*helpers.getConstants("MWh2toe")           # kEUR/GWh
             # carbon intensity
             if elementName in self.carbonIntensityCarrier:  
-                dfAttribute.loc["carbonIntensityDefault"]       = self.carbonIntensityCarrier[elementName]                                              # ktCO2/GWh
+                dfAttribute.loc["carbonIntensityDefault","value"]       = self.carbonIntensityCarrier[elementName]                                              # ktCO2/GWh
             # manual attributes
             dfAttribute = helpers.setManualAttributesCarriers(elementName,dfAttribute)
         # write csv
@@ -204,12 +248,15 @@ class DataCreation():
         """ creates demand file for selected carriers 
         :param carrier: carrier in model """
         if carrier == "electricity":
-            commonCountries = set(self.electricityDemand.columns).intersection(self.setNodes["node"])
-            missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
-            if missingCountries:
-                print(f"electricity demand missing for countries {missingCountries}. Default demand is used.")
-            electricityDemandSelection = self.electricityDemand[sorted(commonCountries)]
-            electricityDemandSelection.index.name = "time"
+            if self.useApiData:
+                electricityDemandSelection = self.apiData.getEntsoeDemand()
+            else:
+                commonCountries = set(self.electricityDemand.columns).intersection(self.setNodes["node"])
+                missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
+                if missingCountries:
+                    print(f"electricity demand missing for countries {missingCountries}. Default demand is used.")
+                electricityDemandSelection = self.electricityDemand[sorted(commonCountries)]
+                electricityDemandSelection.index.name = "time"
             electricityDemandSelection.to_csv(self.folderPath / "setCarriers" / carrier / "demandCarrier.csv")
 
     def createPWAfiles(self,elementName):
@@ -233,45 +280,59 @@ class DataCreation():
         # create csv
         # capex
         dfCapex                         = pd.DataFrame([minCapacity,maxBuiltCapacity],columns=["capacity"])
-        dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWACapex.csv",index = False)
-        dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"]*1000 # kEUR/GW                       
+        dfCapex["capex"]                = _potenciaAssumptions["Capital costs €2010/kW"] * 1000  # kEUR/GW
+        # append units
+        dfCapex.loc[len(dfCapex.index)] = ["GW","kiloEuro/GW"]
+        # save as csv
+        dfCapex["capacity"].to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWACapex.csv",index = False)
         dfCapex.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearCapex.csv",index = False)
         # converEfficiency
         dfConverEfficiency              = pd.DataFrame([minCapacity,maxTotalCapacity],columns=[_referenceCarrier])
-        dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWAConverEfficiency.csv",index = False)
         if len(_dependentCarrier) == 1:
-            dfConverEfficiency[_dependentCarrier[0]] = dfConverEfficiency[_referenceCarrier]/_potenciaAssumptions["Net efficiency"]
+            dfConverEfficiency[_dependentCarrier[0]]            = dfConverEfficiency[_referenceCarrier]/_potenciaAssumptions["Net efficiency"]
+        # append units
+        dfConverEfficiency.loc[len(dfConverEfficiency.index)]   = "GW"
+        # save as csv
+        dfConverEfficiency[_referenceCarrier].to_csv(self.folderPath / "setConversionTechnologies" / elementName / "breakpointsPWAConverEfficiency.csv",index = False)
         dfConverEfficiency.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "nonlinearConverEfficiency.csv",index = False)
 
     def createMaxLoadFiles(self,elementName):
         """ creates maxLoad files for photovoltaics and wind onshore conversion technologies """
         if elementName == "photovoltaics" or elementName == "wind_onshore":
-            # if already converted
-            if os.path.exists(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle"):
-                with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "rb") as input_file:
-                    maxLoad = pickle.load(input_file)
+            if self.useApiData:
+                maxLoad = self.apiData.getRenewableNinjaData(elementName)
             else:
-                # elementName specific
-                if elementName == "photovoltaics":
-                    # from EMHIRESPV_TSh_CF_Country_only2015, reduced version 
-                    maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRESPV_TSh_CF_Country_only2015.xlsx").set_index("Date")
-                elif elementName == "wind_onshore":
-                    # from EMHIRES_WIND_COUNTRY_only2015_June2019, reduced version 
-                    maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRES_WIND_COUNTRY_only2015_June2019.xlsx").set_index("Date")
-                # only select specific countries
-                commonCountries = set(maxLoad.columns).intersection(self.setNodes["node"])
-                missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
-                if missingCountries:
-                    print(f"MaxLoad for {elementName} missing for countries {missingCountries}. Default maxLoad is used.")
-                maxLoad = maxLoad[sorted(commonCountries)]
-                # dump pickle
-                with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "wb") as input_file:
-                    pickle.dump(maxLoad , input_file)
+                # if already converted
+                if os.path.exists(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle"):
+                    with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "rb") as input_file:
+                        maxLoad = pickle.load(input_file)
+                else:
+                    # elementName specific
+                    if elementName == "photovoltaics":
+                        # from EMHIRESPV_TSh_CF_Country_only2015, reduced version
+                        maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRESPV_TSh_CF_Country_only2015.xlsx").set_index("Date")
+                    elif elementName == "wind_onshore":
+                        # from EMHIRES_WIND_COUNTRY_only2015_June2019, reduced version
+                        maxLoad = pd.read_excel(self.sourcePath / "maxLoad" / "EMHIRES_WIND_COUNTRY_only2015_June2019.xlsx").set_index("Date")
+                    # only select specific countries
+                    commonCountries = set(maxLoad.columns).intersection(self.setNodes["node"])
+                    missingCountries = list(set(self.setNodes["node"]).difference(commonCountries))
+                    if missingCountries:
+                        print(f"MaxLoad for {elementName} missing for countries {missingCountries}. Default maxLoad is used.")
+                    maxLoad = maxLoad[sorted(commonCountries)]
+                    # dump pickle
+                    with open(self.sourcePath / "maxLoad" / f"maxLoad_{elementName}.pickle", "wb") as input_file:
+                        pickle.dump(maxLoad , input_file)
             # do not use datetime index but (for the time being) range from 0-8759
-            maxLoad        = maxLoad.reset_index(drop=True)
+            maxLoad             = maxLoad.reset_index(drop=True)
             # create csv
-            maxLoad.index.name = "time"
+            maxLoad.index.name  = "time"
             maxLoad.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "maxLoad.csv")
+
+    def extractHistoricGeneration(self,elementName):
+        """ extracts historic entsoe generation profiles """
+        historicGeneration = self.apiData.getEntsoeGeneration(elementName)
+        historicGeneration.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "historicGeneration.csv")
 
     def createDistanceMatrix(self,elementName):
         """
@@ -289,18 +350,23 @@ class DataCreation():
         xArr        = setNodes["x"]
         yArr        = setNodes["y"]
         # create empty distance matrix
-        distanceMatrix              = pd.DataFrame(index = nodes, columns= nodes)
-        distanceMatrix.index.name   = "node"
+        distanceMatrix              = pd.DataFrame(index = self.setEdges.index, columns= ["distance"])
         # calculate distance
-        distanceMatrix = distanceMatrix.apply(lambda column: f_eucl_dist((xArr[column.name], yArr[column.name]),(xArr[column.index], yArr[column.index])))
+        distanceMatrix["distance"]  = self.setEdges.apply(lambda row: f_eucl_dist((xArr[row["nodeFrom"]], yArr[row["nodeFrom"]]),(xArr[row["nodeTo"]], yArr[row["nodeTo"]])),axis=1)
         distanceMatrix.to_csv(self.folderPath / "setTransportTechnologies" / elementName / "distanceEuclidean.csv")
+
+    def createCapacityLimitTransportTechnology(self,elementName):
+        """ extract the capacity limit of the transmission technology lines """
+        if elementName == "power_line":
+            capacityLimit = self.apiData.getEntsoeTransmissionCapacity()
+            capacityLimit.to_csv(self.folderPath / "setTransportTechnologies" / elementName / "capacityLimit.csv")
 
 def main():
     """ This is the main function to create NUTS0 """
     # set folder name
     folderName = "NUTS0_electricity"
     sourceName = "NUTS0_Source_Data"
-    # enable or disable creation scripts. 
+    # enable or disable creation scripts.
     DataCreation(folderName = folderName,sourceName = sourceName)
 
 if __name__ == "__main__":
