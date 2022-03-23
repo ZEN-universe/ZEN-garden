@@ -34,7 +34,7 @@ system['setNodes']                                  = ['IT','DE']#['CH','DE',"AT
 system["referenceYear"]                             = 2020
 system["timeStepsPerYear"]                          = 2190
 system["timeStepsYearly"]                           = 4
-system["intervalYears"]                             = 3
+system["intervalYears"]                             = 10
 system['setTimeStepsPerYear']                       = list(range(0,system["timeStepsPerYear"]))
 system["numberTimeStepsPerYearDefault"]             = 50 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
 

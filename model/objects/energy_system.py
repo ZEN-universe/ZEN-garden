@@ -62,7 +62,7 @@ class EnergySystem:
         self.storeInputData()
 
     def storeInputData(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """      
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         system                          = EnergySystem.getSystem()
         self.paths                      = EnergySystem.getPaths()
         self.getBaseUnits()
@@ -170,13 +170,13 @@ class EnergySystem:
     # setter/getter classmethods
     @classmethod
     def setEnergySystem(cls,energySystem):
-        """ set energySystem. 
+        """ set energySystem.
         :param energySystem: new energySystem that is set """
         cls.energySystem = energySystem
 
     @classmethod
     def setOptimizationAttributes(cls,analysis, system,paths,solver,model):
-        """ set attributes of class <EnergySystem> with inputs 
+        """ set attributes of class <EnergySystem> with inputs
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
         :param paths: paths to input folders of data
@@ -194,7 +194,7 @@ class EnergySystem:
         cls.concreteModel = model
         # set indexing sets
         cls.setIndexingSets()
-    
+
     @classmethod
     def setIndexingSets(cls):
         """ set sets that serve as an index for other sets """
@@ -236,7 +236,7 @@ class EnergySystem:
     @classmethod
     def setAggregationObjects(cls,element,aggregationObject):
         """ append aggregation object of element
-        :param element: element in model 
+        :param element: element in model
         :param aggregationObject: object of TimeSeriesAggregation"""
         cls.aggregationObjectsOfElements[element] = aggregationObject
 
@@ -254,24 +254,24 @@ class EnergySystem:
 
     @classmethod
     def getAnalysis(cls):
-        """ get analysis of the class <EnergySystem>. 
+        """ get analysis of the class <EnergySystem>.
         :return analysis: dictionary defining the analysis framework """
         return cls.analysis
 
     @classmethod
     def getSystem(cls):
-        """ get system 
+        """ get system
         :return system: dictionary defining the system """
         return cls.system
 
     @classmethod
     def getPaths(cls):
-        """ get paths 
+        """ get paths
         :return paths: paths to folders of input data """
         return cls.paths
     @classmethod
     def getSolver(cls):
-        """ get solver 
+        """ get solver
         :return solver: dictionary defining the analysis solver """
         return cls.solver
 
@@ -298,13 +298,13 @@ class EnergySystem:
 
     @classmethod
     def getIndexingSets(cls):
-        """ set sets that serve as an index for other sets 
+        """ set sets that serve as an index for other sets
         :return cls.indexingSets: list of sets that serve as an index for other sets"""
         return cls.indexingSets
 
     @classmethod
     def getTechnologyOfCarrier(cls,carrier):
-        """ gets technologies which are connected by carrier 
+        """ gets technologies which are connected by carrier
         :param carrier: carrier which connects technologies
         :return listOfTechnologies: list of technologies connected by carrier"""
         if carrier in cls.dictTechnologyOfCarrier:
@@ -332,14 +332,14 @@ class EnergySystem:
     @classmethod
     def getAggregationObjects(cls,element):
         """ get aggregation object of element
-        :param element: element in model 
+        :param element: element in model
         :return aggregationObject: object of TimeSeriesAggregation """
-        return cls.aggregationObjectsOfElements[element] 
+        return cls.aggregationObjectsOfElements[element]
 
     @classmethod
     def getTimeSeriesRaw(cls,element):
         """ get the raw time series of element
-        :param element: element in model 
+        :param element: element in model
         :return dfTimeSeriesRaw: raw time series of element """
         if element in cls.dictTimeSeriesRaw:
             return cls.dictTimeSeriesRaw[element]
@@ -348,8 +348,8 @@ class EnergySystem:
 
     @classmethod
     def calculateConnectedEdges(cls,node,direction:str):
-        """ calculates connected edges going in (direction = 'in') or going out (direction = 'out') 
-        :param node: current node, connected by edges 
+        """ calculates connected edges going in (direction = 'in') or going out (direction = 'out')
+        :param node: current node, connected by edges
         :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
         :return setConnectedEdges: list of connected edges """
         energySystem = cls.getEnergySystem()
@@ -385,7 +385,7 @@ class EnergySystem:
     @classmethod
     def decodeTimeStep(cls,element:str,elementTimeStep:int,timeStepType:str = None):
         """ decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variableTimeStep of a element.
-        timeStep of element --> baseTimeStep of model 
+        timeStep of element --> baseTimeStep of model
         :param element: element of model, i.e., carrier or technology
         :param elementTimeStep: time step of element
         :param timeStepType: invest or operation. Only relevant for technologies, None for carrier
@@ -398,7 +398,7 @@ class EnergySystem:
     @classmethod
     def encodeTimeStep(cls,element:str,baseTimeSteps:int,timeStepType:str = None,yearly=False):
         """ encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
-        baseTimeStep of model --> timeStep of element 
+        baseTimeStep of model --> timeStep of element
         :param element: element of model, i.e., carrier or technology
         :param baseTimeStep: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
@@ -490,9 +490,9 @@ class EnergySystem:
 
     @classmethod
     def getFullTimeSeriesOfComponent(cls,component,indexSubsets:tuple,manualOrderName = None):
-        """ returns full time series of result component 
-        :param component: component (parameter or variable) of optimization model 
-        :param indexSubsets: dict of index subsets {<levelOfSubset>:<value(s)OfSubset>} 
+        """ returns full time series of result component
+        :param component: component (parameter or variable) of optimization model
+        :param indexSubsets: dict of index subsets {<levelOfSubset>:<value(s)OfSubset>}
         :return fullTimeSeries: full time series """
         # TODO quick fix
         if manualOrderName:
@@ -592,7 +592,7 @@ class EnergySystem:
             rule=constraintCarbonEmissionsLimitRule,
             doc="limit of total carbon emissions of energy system"
         )
-    
+
     @classmethod
     def constructObjective(cls):
         """ constructs the pe.Objective of the class <EnergySystem> """
@@ -631,7 +631,7 @@ def constraintCarbonEmissionsTotalRule(model,year):
         model.carbonEmissionsTotal[year] ==
         # technologies
         model.carbonEmissionsTechnologyTotal[year]
-        + 
+        +
         # carriers
         model.carbonEmissionsCarrierTotal[year]
     )
@@ -662,4 +662,3 @@ def objectiveRiskRule(model):
     """objective function to minimize total risk"""
     # TODO implement objective functions for risk
     return pe.Constraint.Skip
-

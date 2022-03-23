@@ -90,7 +90,6 @@ class Postprocess:
                 df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=self.analysis['headerDataOutputs'][obj.name])
                 self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
                 print(df)
-            #
             elif type(list(dict[obj.name].keys())[0]) == int:
                 # seems like we never come in here
                 print("DID SOMETHING COME IN HERE??")
@@ -136,19 +135,6 @@ class Postprocess:
                 continue
             elif varName=='installTechnology':    # --> 1)
                 print('not implemented')
-                # for node in df['node'].unique():
-                #     idx = df['time'].unique()
-                #     # print(idx)
-                #
-                #     # fig, ax = plt.subplots()
-                #     # # Hide axes
-                #     # ax.xaxis.set_visible(False)
-                #     # ax.yaxis.set_visible(False)
-                #     #
-                #     # node_table = plt.table(cellText=cell_text,
-                #     #   rowLabels=df[['conv_tech']].unique,
-                #     #   colLabels=columns,
-                #     #   loc='bottom')
             elif varName=='carrierFlow' or varName=='carrierLoss': # --> 2)
                 print('not implemented')
             elif varName=='dependentFlowApproximation' or varName=='inputFlow' or varName=='outputFlow' or varName=='referenceFlowApproximation': # --> 4)
@@ -165,14 +151,19 @@ class Postprocess:
                 print(df)
                 # print(c)
                 # df=df.set_index(['node', c[0],'time'])
-                df = df.set_index(['node',c[0],'time'])
+                # df = df.set_index(['node',c[0],'time'])
+                df = df.set_index(['node',c[0]])
+                df = df.loc[df['time']==0,"capacity[GWh]"]
                 print(df)
+                data = df.value
                 # df = df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True'])
-                print(df)
+                # print(df)
                 # print(df.loc[(slice(None),slice(None),0), :])
                 # print(df.loc[df['time']==0,[c[0],'capacity[GWh]']])
                 # ax = df.loc[(slice(None),slice(None),0), :].reset_index(level=[c[0],'time'],drop=['False', 'True']).plot.bar(rot=0)
-                df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar')
+                # df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar', stacked=True)
+                # data = df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).value
+                data.unstack().plot(kind='bar', stacked=True)
                 # ax = df.loc[df['time']==0,[c[0],'capacity[GWh]']].plot.bar(rot=0)
                 plt.show()
 
