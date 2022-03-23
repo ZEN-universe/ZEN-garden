@@ -28,7 +28,6 @@ system['setCarriers']                               = ['electricity','natural_ga
 system['setStorageTechnologies']                    = ["battery","pumped_hydro"]
 system['setTransportTechnologies']                  = ['power_line']
 system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant","nuclear","photovoltaics"]
-system['setScenarios']                              = 'a'
 system['setNodes']                                  = ['CH','DE',"AT","IT"]#,"FR","ES","PT","CZ"]
 # time steps
 system["referenceYear"]                             = 2020
