@@ -454,29 +454,40 @@ class EnergySystem:
         """ returns lifetime range of technology. If timeStepType, then converts the yearly time step 'time' to timeStepType """
         model               = cls.getConcreteModel()
         if timeStepType:
-            investTimeStep  = cls.encodeTimeStep(tech,time,timeStepType,yearly=True)
-            assert len(investTimeStep) == 1, f"lifetime calculation for more than one invest step per year is not yet implemented. (Technology {tech}, invest time steps {investTimeStep}"
-            investTimeStep  = investTimeStep[0]
+            baseTimeSteps   = cls.decodeTimeStep(None,time,"yearly")
+            investTimeStep  = cls.encodeTimeStep(tech,baseTimeSteps,timeStepType,yearly=True)
+            a=1
         else:
             investTimeStep  = time
-        tStart              = cls.getStartTimeOfLifetime(tech,investTimeStep)
-        tEnd                = investTimeStep + 1
-        return range(tStart,tEnd)
+        tStart,tEnd         = cls.getStartEndTimeOfLifetime(tech,investTimeStep)
+
+        return range(tStart,tEnd+1)
 
     @classmethod
-    def getStartTimeOfLifetime(cls,tech,investTimeStep):
+    def getStartEndTimeOfLifetime(cls,tech,investTimeStep):
         """ counts back the lifetime to get the start invest time step and returns startInvestTimeStep """
-        # TODO use durations
+        # get model and system
         model               = cls.getConcreteModel()
-        baseTimeStep        = cls.decodeTimeStep(tech,investTimeStep,timeStepType="invest")
-        yearlyTimeStep      = cls.encodeTimeStep(None,baseTimeStep,timeStepType="yearly",yearly=True)
-        assert len(yearlyTimeStep) == 1, f"lifetime calculation for less than one invest step per year is not yet implemented. (Technology {tech}, invest time steps {investTimeStep}"
-        yearlyTimeStep      = yearlyTimeStep[0]
-        lifetimeTech        = model.lifetimeTechnology[tech]
-        startYear           = max(0,yearlyTimeStep-lifetimeTech + 1)
-        startBaseTimeStep   = cls.decodeTimeStep(None, startYear, timeStepType="yearly")
-        startInvestTimeStep = cls.encodeTimeStep(tech,startBaseTimeStep,timeStepType="invest",yearly=True)
-        return startInvestTimeStep[0]
+        system              = cls.getSystem()
+        # get endInvestTimeStep
+        if not isinstance(investTimeStep,np.ndarray):
+            endInvestTimeStep = investTimeStep
+        elif len(investTimeStep) == 1:
+            endInvestTimeStep = investTimeStep[0]
+        # if more than one investment time step
+        else:
+            endInvestTimeStep = investTimeStep[-1]
+            investTimeStep = investTimeStep[0]
+        # decode to base time steps
+        baseTimeSteps       = cls.decodeTimeStep(tech,investTimeStep,timeStepType="invest")
+        baseTimeStep        = baseTimeSteps[0]
+        # convert lifetime to interval of base time steps
+        baseLifetime        = model.lifetimeTechnology[tech]/system["intervalYears"]*system["timeStepsPerYear"]
+        if int(baseLifetime) != baseLifetime:
+            logging.warning(f"The lifetime of {tech} does not translate to an integer lifetime interval in the base time domain ({baseLifetime})")
+        startBaseTimeStep   = int(max(0,baseTimeStep-baseLifetime + 1))
+        startInvestTimeStep = cls.encodeTimeStep(tech,startBaseTimeStep,timeStepType="invest",yearly=True)[0]
+        return startInvestTimeStep,endInvestTimeStep
 
     @classmethod
     def getFullTimeSeriesOfComponent(cls,component,indexSubsets:tuple,manualOrderName = None):

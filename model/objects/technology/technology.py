@@ -442,7 +442,7 @@ def constraintTechnologyMinCapacityRule(model, tech, loc, time):
 def constraintTechnologyMaxCapacityRule(model, tech, loc, time):
     """max capacity expansion of  technology"""
     if model.maxBuiltCapacity[tech] != np.inf and tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
-        return (model.maxBuiltCapacity[tech] * model.installTechnology[tech, loc, time] >= model.builtCapacity[tech, loc, time])
+        return (model.maxBuiltCapacity[tech] >= model.builtCapacity[tech, loc, time])
     else:
         return pe.Constraint.Skip
 
@@ -463,12 +463,11 @@ def constraintTechnologyLifetimeRule(model, tech, loc, time):
 
 def constraintCapexTotalRule(model,year):
     """ sums over all technologies to calculate total capex """
-    baseTimeStep = EnergySystem.decodeTimeStep(None, year, "yearly")
     return(model.capexTotal[year] ==
         sum(
             sum(
                 model.capex[tech, loc, time]
-                for time in EnergySystem.getLifetimeRange(tech, baseTimeStep, "invest")
+                for time in EnergySystem.getLifetimeRange(tech, year, "invest")
             )
             for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])
         )
