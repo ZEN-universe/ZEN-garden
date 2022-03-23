@@ -130,51 +130,51 @@ class Postprocess:
             df.to_csv(f'{self.nameDir}vars/{varName}.csv', index=False)
 
     def plotResults(self):
-        for varName, df in self.varDf.items():
-            # Need to catch here the empty dataframes because we cant plot something that isnt there
-            if df.empty:
-                continue
-            elif varName=='installTechnology':    # --> 1)
-                print('not implemented')
-                # for node in df['node'].unique():
-                #     idx = df['time'].unique()
-                #     # print(idx)
-                #
-                #     # fig, ax = plt.subplots()
-                #     # # Hide axes
-                #     # ax.xaxis.set_visible(False)
-                #     # ax.yaxis.set_visible(False)
-                #     #
-                #     # node_table = plt.table(cellText=cell_text,
-                #     #   rowLabels=df[['conv_tech']].unique,
-                #     #   colLabels=columns,
-                #     #   loc='bottom')
-            elif varName=='carrierFlow' or varName=='carrierLoss': # --> 2)
-                print('not implemented')
-            elif varName=='dependentFlowApproximation' or varName=='inputFlow' or varName=='outputFlow' or varName=='referenceFlowApproximation': # --> 4)
-                print('not implemented')
-            elif varName=='carbonEmissionsCarrierTotal' or varName=='capexTotal' or varName=='carbonEmissionsTechnologyTotal' or varName=='carbonEmissionsTotal' or varName=='costCarrierTotal' or varName=='opexTotal':
-                print('not implemented')
-            else: # --> 3)
-                # print(varName)
-                c = df.columns
-                df2 = pd.DataFrame({c[0]:['biomass','biomass','biomass'],"node":['IT','IT','IT'],"time":[0,1,2],"capacity[GWh]":[5000000,5000000,5000000]})
-                df = df.append(df2).reset_index(drop=True)
-                print(df)
-                df = df.sort_values(by=['node',c[0]])
-                print(df)
-                # print(c)
-                # df=df.set_index(['node', c[0],'time'])
-                df = df.set_index(['node',c[0],'time'])
-                print(df)
-                # df = df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True'])
-                print(df)
-                # print(df.loc[(slice(None),slice(None),0), :])
-                # print(df.loc[df['time']==0,[c[0],'capacity[GWh]']])
-                # ax = df.loc[(slice(None),slice(None),0), :].reset_index(level=[c[0],'time'],drop=['False', 'True']).plot.bar(rot=0)
-                df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar')
-                # ax = df.loc[df['time']==0,[c[0],'capacity[GWh]']].plot.bar(rot=0)
-                plt.show()
+        # for varName, df in self.varDf.items():
+        #     # Need to catch here the empty dataframes because we cant plot something that isnt there
+        #     if df.empty:
+        #         continue
+        #     elif varName=='installTechnology':    # --> 1)
+        #         print('not implemented')
+        #         # for node in df['node'].unique():
+        #         #     idx = df['time'].unique()
+        #         #     # print(idx)
+        #         #
+        #         #     # fig, ax = plt.subplots()
+        #         #     # # Hide axes
+        #         #     # ax.xaxis.set_visible(False)
+        #         #     # ax.yaxis.set_visible(False)
+        #         #     #
+        #         #     # node_table = plt.table(cellText=cell_text,
+        #         #     #   rowLabels=df[['conv_tech']].unique,
+        #         #     #   colLabels=columns,
+        #         #     #   loc='bottom')
+        #     elif varName=='carrierFlow' or varName=='carrierLoss': # --> 2)
+        #         print('not implemented')
+        #     elif varName=='dependentFlowApproximation' or varName=='inputFlow' or varName=='outputFlow' or varName=='referenceFlowApproximation': # --> 4)
+        #         print('not implemented')
+        #     elif varName=='carbonEmissionsCarrierTotal' or varName=='capexTotal' or varName=='carbonEmissionsTechnologyTotal' or varName=='carbonEmissionsTotal' or varName=='costCarrierTotal' or varName=='opexTotal':
+        #         print('not implemented')
+        #     else: # --> 3)
+        #         # print(varName)
+        #         c = df.columns
+        #         df2 = pd.DataFrame({c[0]:['biomass','biomass','biomass'],"node":['IT','IT','IT'],"time":[0,1,2],"capacity[GWh]":[5000000,5000000,5000000]})
+        #         df = df.append(df2).reset_index(drop=True)
+        #         print(df)
+        #         df = df.sort_values(by=['node',c[0]])
+        #         print(df)
+        #         # print(c)
+        #         # df=df.set_index(['node', c[0],'time'])
+        #         df = df.set_index(['node',c[0],'time'])
+        #         print(df)
+        #         # df = df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True'])
+        #         print(df)
+        #         # print(df.loc[(slice(None),slice(None),0), :])
+        #         # print(df.loc[df['time']==0,[c[0],'capacity[GWh]']])
+        #         # ax = df.loc[(slice(None),slice(None),0), :].reset_index(level=[c[0],'time'],drop=['False', 'True']).plot.bar(rot=0)
+        #         df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar')
+        #         # ax = df.loc[df['time']==0,[c[0],'capacity[GWh]']].plot.bar(rot=0)
+        #         plt.show()
 
             # print(varName)
             # print(df)
