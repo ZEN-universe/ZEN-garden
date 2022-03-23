@@ -14,6 +14,7 @@ import csv
 import os
 import pickle
 import pandas as pd
+from matplotlib import pyplot as plt
 
 #from postprocess.functions.create_dashboard_dictionary import DashboardDictionary
 
@@ -35,6 +36,7 @@ class Postprocess:
 
         self.model     = model.model
         self.system    = model.system
+        self.analysis  = model.analysis
         self.modelName = kwargs.get('modelName', self.modelName)
         self.nameDir   = f'./outputs/results{self.modelName}/'
 
@@ -42,6 +44,7 @@ class Postprocess:
         self.getVarValues()
         #self.getParamValues()
         self.saveResults()
+        self.plotResults()
 
     def makeDirs(self):
         """create results directory"""
@@ -82,48 +85,24 @@ class Postprocess:
     def createDataframe(self, obj, dict, df):
         """ save data in dataframe"""
         if dict[obj.name]:
-
             if list(dict[obj.name].keys())[0] == None:
                 # [index, capacity]
-                # type 2, and 4 comes in here
-                if obj.name=='capexTotal' or obj.name=='costCarrierTotal' or obj.name=='opexTotal':
-                    df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=['capacity[k€]'])
-                else:   # obj.name=='carbonEmissionsCarrierTotal' or obj.name=='carbonEmissionsTechnologyTotal' or obj.name=='carbonEmissionsgTotal'
-                    df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=['capacity[GWh]'])
-
+                df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=self.analysis['headerDataOutputs'][obj.name])
                 self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
-
+                print(df)
+            #
             elif type(list(dict[obj.name].keys())[0]) == int:
                 # seems like we never come in here
                 print("DID SOMETHING COME IN HERE??")
-                df[obj.name] = pd.DataFrame(dict[obj.name].values(),
-                                            index=list(dict[obj.name].keys()))
-                self.trimZeros(obj, self.varDf)
+                df[obj.name] = pd.DataFrame(dict[obj.name].values(), index=list(dict[obj.name].keys()), columns=self.analysis['headerDataOutputs'][obj.name])
+                self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
+                print(df)
             else:
                 # [tech, node, time, capacity]
-                # both type 1, 3 and 5 come in here
-                if obj.name=='carbonEmissionsCarrier' or obj.name=='costCarrier' or obj.name=='exportCarrierFlow' or obj.name=='importCarrierFlow':
-                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
-                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
-                    df[obj.name].columns = ['carrier','node','time','capacity[GWh]']
-                elif obj.name=='carrierFlow' or obj.name=='carrierLoss':
-                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
-                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
-                    df[obj.name].columns=['trans_tech','n1->n2','time','capacity[GWh]']
-                elif obj.name=='dependentFlowApproximation' or obj.name=='inputFlow' or obj.name=='outputFlow' or obj.name=='referenceFlowApproximation':
-                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
-                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
-                    df[obj.name].columns=['conv_tech','carrier','node','time','capacity[GWh]']
-                elif obj.name=='installTechnology':
-                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
-                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
-                    df[obj.name].columns=['conv_tech','node','time','T/F']
-                else:
-                    df[obj.name] = pd.DataFrame(dict[obj.name].values(),
-                                            index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
-                    df[obj.name].columns=['conv_tech','node','time','capacity[GWh]']
-
+                df[obj.name] = pd.DataFrame(dict[obj.name].values(),index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
+                df[obj.name].columns = self.analysis['headerDataOutputs'][obj.name]
                 self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
+                print(df)
         else:
             print(f'{obj.name} not evaluated in results.py')
 
@@ -149,6 +128,56 @@ class Postprocess:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for varName, df in self.varDf.items():
             df.to_csv(f'{self.nameDir}vars/{varName}.csv', index=False)
+
+    def plotResults(self):
+        for varName, df in self.varDf.items():
+            # Need to catch here the empty dataframes because we cant plot something that isnt there
+            if df.empty:
+                continue
+            elif varName=='installTechnology':    # --> 1)
+                print('not implemented')
+                # for node in df['node'].unique():
+                #     idx = df['time'].unique()
+                #     # print(idx)
+                #
+                #     # fig, ax = plt.subplots()
+                #     # # Hide axes
+                #     # ax.xaxis.set_visible(False)
+                #     # ax.yaxis.set_visible(False)
+                #     #
+                #     # node_table = plt.table(cellText=cell_text,
+                #     #   rowLabels=df[['conv_tech']].unique,
+                #     #   colLabels=columns,
+                #     #   loc='bottom')
+            elif varName=='carrierFlow' or varName=='carrierLoss': # --> 2)
+                print('not implemented')
+            elif varName=='dependentFlowApproximation' or varName=='inputFlow' or varName=='outputFlow' or varName=='referenceFlowApproximation': # --> 4)
+                print('not implemented')
+            elif varName=='carbonEmissionsCarrierTotal' or varName=='capexTotal' or varName=='carbonEmissionsTechnologyTotal' or varName=='carbonEmissionsTotal' or varName=='costCarrierTotal' or varName=='opexTotal':
+                print('not implemented')
+            else: # --> 3)
+                # print(varName)
+                c = df.columns
+                df2 = pd.DataFrame({c[0]:['biomass','biomass','biomass'],"node":['IT','IT','IT'],"time":[0,1,2],"capacity[GWh]":[5000000,5000000,5000000]})
+                df = df.append(df2).reset_index(drop=True)
+                print(df)
+                df = df.sort_values(by=['node',c[0]])
+                print(df)
+                # print(c)
+                # df=df.set_index(['node', c[0],'time'])
+                df = df.set_index(['node',c[0],'time'])
+                print(df)
+                # df = df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True'])
+                print(df)
+                # print(df.loc[(slice(None),slice(None),0), :])
+                # print(df.loc[df['time']==0,[c[0],'capacity[GWh]']])
+                # ax = df.loc[(slice(None),slice(None),0), :].reset_index(level=[c[0],'time'],drop=['False', 'True']).plot.bar(rot=0)
+                df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar')
+                # ax = df.loc[df['time']==0,[c[0],'capacity[GWh]']].plot.bar(rot=0)
+                plt.show()
+
+            # print(varName)
+            # print(df)
 
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
     # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))
