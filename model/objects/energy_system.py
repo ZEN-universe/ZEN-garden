@@ -63,10 +63,6 @@ class EnergySystem:
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
-<<<<<<< HEAD
-=======
-
->>>>>>> 493051b9be4cf150116325ed044d9ceddadd4c13
         system                          = EnergySystem.getSystem()
         self.paths                      = EnergySystem.getPaths()
         self.getBaseUnits()
