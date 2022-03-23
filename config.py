@@ -38,7 +38,6 @@ system["intervalYears"]                             = 10
 system['setTimeStepsPerYear']                       = list(range(0,system["timeStepsPerYear"]))
 system["numberTimeStepsPerYearDefault"]             = 50 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
 
-
 ## Solver - settings update compared to default values
 solver['gap']                                       = 0.01
 solver['model']                                     = 'MILP'

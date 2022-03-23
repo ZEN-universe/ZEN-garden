@@ -86,8 +86,6 @@ class DataInput():
         # generic time steps
         if not timeSteps:
             timeSteps = self.energySystem.setBaseTimeSteps
-            if "setTimeSteps" in indexSets:
-                a=1
         # check if default value exists in attributes.csv, with or without "Default" Suffix
         if column:
             defaultName = column
