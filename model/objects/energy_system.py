@@ -74,8 +74,8 @@ class EnergySystem:
         self.setTechnologies            = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
         self.setScenarios               = system["setScenarios"]
         # base time steps
-        self.setBaseTimeStepsnew           = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
-        self.setBaseTimeStepsYearlynew     = list(range(0, system["timeStepsPerYear"]))
+        self.setBaseTimeSteps           = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
+        self.setBaseTimeStepsYearly     = list(range(0, system["timeStepsPerYear"]))
         # yearly time steps
         self.typesTimeSteps             = ["invest", "operation", "yearly"]
         self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
