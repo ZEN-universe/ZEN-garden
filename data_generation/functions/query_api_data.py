@@ -7,7 +7,7 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Functions to extract the input data from the ENTSO-E Transparency Database
 ==========================================================================================================================================================================="""
 from entsoe import EntsoeRawClient,EntsoePandasClient
-from entsoe.mappings import lookup_area, Area, NEIGHBOURS
+from entsoe.mappings import lookup_area, Area, NEIGHBOURS,PSRTYPE_MAPPINGS
 from entsoe.parsers import parse_loads, parse_generation, parse_crossborder_flows
 import pandas as pd
 import numpy as np
@@ -25,10 +25,11 @@ class ExtractApis():
         self.setNodes       = None
         self.setEdges       = None
         # toggle extraction of data
-        self.useExistingDemand          = True
-        self.useExistingGeneration      = True
-        self.useExistingTransmission    = True
-        self.useExistingCapacityFactor  = True
+        self.useExistingDemand              = True
+        self.useExistingGeneration          = True
+        self.useExistingExistingCapacity    = True
+        self.useExistingTransmission        = True
+        self.useExistingCapacityFactor      = True
         # create entsoe client
         self.createApiClient()
         # calculate time interval for which the data is extracted
@@ -154,6 +155,50 @@ class ExtractApis():
         entsoeGeneration = entsoeGeneration.reset_index(drop=True)
         entsoeGeneration.index.name = "time"
         return entsoeGeneration
+
+    def getExistingCapacity(self,technology):
+        """ this method gets the existing capacity """
+        if not os.path.exists(self.sourcePath / "existingCapacity" / "existingCapacityENTSOE.pickle") or not self.useExistingExistingCapacity:
+            _indexExistingCapacity  = pd.MultiIndex.from_product([self.setNodes["node"],[self.helpers.getConstants("apiYear")]],names=["node","yearConstruction"])
+            existingCapacity        = pd.DataFrame(index=_indexExistingCapacity, columns=["existingCapacity"])
+            areaNames               = [area.name for area in Area]
+            for idx, node in enumerate(self.setNodes["node"]):
+                print(
+                    f"Extract existing capacity for {node} of technology {technology} - {idx + 1}/{len(self.setNodes['node'])}")
+                if node == "EL":
+                    nodeEntsoe = "GR"
+                else:
+                    nodeEntsoe = node
+                assert nodeEntsoe in areaNames, f"node {nodeEntsoe} not in ENTSO-E area names"
+                area = lookup_area(nodeEntsoe)
+                psr = self.helpers.getEntsoeTechnologyIdentifier(technology)
+                # query entsoe database, for some reason, the EntsoePandasClient deletes a lot of values
+                try:
+                    text = self.entsoeClient.query_generation(country_code=area, start=self.timeStart, end=self.timeEnd,
+                                                              psr_type=psr)
+                except:
+                    try:
+                        text = self.entsoeClient.query_generation_forecast(country_code=area, start=self.timeStart,
+                                                                           end=self.timeEnd, psr_type=psr)
+                        print(f"Forecasted generation data used for {technology} on {node}")
+                    except:
+                        print(f"No matching generation data found for {technology} on {node}")
+                        continue
+                generation = parse_generation(text, nett=True)  # nett: condense generation and consumption into one
+                generation = generation.tz_convert(area.tz)
+                generation = generation.truncate(before=self.timeStart, after=self.timeEnd)
+                # resample to hourly resolution
+                generation = generation.resample('h').mean()
+                entsoeGeneration[node] = generation
+            # dump pickle
+            with open(self.sourcePath / "existingCapacity" / "existingCapacityENTSOE.pickle","wb") as inputFile:
+                pickle.dump(existingCapacity, inputFile)
+        else:
+            with open(self.sourcePath / "existingCapacity" / "existingCapacityENTSOE.pickle","rb") as inputFile:
+                existingCapacity = pickle.load(inputFile)
+        # convert to GW
+        existingCapacity = existingCapacity/1000
+        return existingCapacity
 
     def getEntsoeTransmissionCapacity(self):
         """ this method gets the transmission capacity """
