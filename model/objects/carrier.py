@@ -229,11 +229,18 @@ def constraintCostCarrierTotalRule(model):
 
 def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
     """ carbon emissions of importing/exporting carrier"""
-
-    return(model.carbonEmissionsCarrier[carrier,node, time] ==
-        model.carbonIntensityCarrier[carrier,node]*
-        (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
-    )
+    if carrier != "carbon":
+        return (model.carbonEmissionsCarrier[carrier, node, time] ==
+                model.carbonIntensityCarrier[carrier, node] *
+                (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
+                )
+    else:
+        return (model.carbonEmissionsCarrier[carrier, node, time] ==
+                model.carbonIntensityCarrier[carrier, node] *
+                (model.importCarrierFlow[carrier, node, time]
+                 - model.exportCarrierFlow[carrier, node, time]) -
+                model.inputFlow["carbon_storage", carrier, node, time]
+                )
 
 def constraintCarbonEmissionsCarrierTotalRule(model, year):
     """ total carbon emissions of importing/exporting carrier"""
