@@ -1,5 +1,5 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
@@ -32,20 +32,27 @@ system["setCarriers"]                               = ["electricity", "hydrogen"
                                                        "natural_gas",
                                                        "carbon"] # ,"stored_carbon"
 system["setStorageTechnologies"]                    = []#["carbon_storage"]
-system["setTransportTechnologies"]                  = ["hydrogen_truck_gas", #"hydrogen_train", "hydrogen_pipeline", "hydrogen_ship", hydrogen_truck_liquid
-                                                       "carbon_truck"] # "carbon_train", "carbon_pipeline"
+system["setTransportTechnologies"]                  = ["hydrogen_truck_gas" #"hydrogen_train", "hydrogen_pipeline", "hydrogen_ship", hydrogen_truck_liquid
+                                                       #"carbon_truck"
+                                                       ] # "carbon_train", "carbon_pipeline"
 system["setConversionTechnologies"]                 = [#"electrolysis",              # electricity
                                                        #"SMR",
                                                        "SMR-54",# "SMR-89",          # natural gas
                                                        #"bSMR", "bGasification",     # biomass
                                                        "carbon_storage"]
-system["setTimeSteps"]                              = list(range(0,1))
-system["multiGridTimeIndex"]                        = False # if True, each element has its own time index; if False, use single time grid approach
-system["numberTimeStepsDefault"]                    = 16 # default number of operational time steps, only used in single-grid time series aggregation # TODO number of time steps per period = 1
-system["setNodes"]                                  = ["AT", "NO"] #["BE", "BG", "DE", "ES", "FR", "IT", "NL", "PL", "RO", "UK", "NO"]
-#system["setNodes"]                                  = ["AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "EL", "ES",
-#                                                       "FI", "FR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK",
-#                                                       "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "UK"]
+#system["setNodes"]                                  = ["AT", "NO"] #["BE", "BG", "DE", "ES", "FR", "IT", "NL", "PL", "RO", "UK", "NO"]
+system["setNodes"]                                  = ["AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "EL", "ES",
+                                                       "FI", "FR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK",
+                                                       "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "UK"]
+
+# time steps
+system["referenceYear"]                             = 2020
+system["timeStepsPerYear"]                          = 1
+system["timeStepsYearly"]                           = 15
+system["intervalYears"]                             = 1
+system['setTimeStepsPerYear']                       = list(range(0,system["timeStepsPerYear"]))
+system["numberTimeStepsPerYearDefault"]             = 1 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
+
 
 ## Solver - settings update compared to default values
 solver["gap"]                                       = 0.01
