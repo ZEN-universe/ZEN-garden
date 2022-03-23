@@ -85,7 +85,7 @@ class DataInput():
         :return dataDict: dictionary with attribute values """
         # generic time steps
         if not timeSteps:
-            timeSteps = self.system["setTimeSteps"]
+            timeSteps = self.energySystem.setBaseTimeSteps
         # check if default value exists in attributes.csv, with or without "Default" Suffix
         if column:
             defaultName = column
@@ -307,19 +307,33 @@ class DataInput():
             assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.{self.analysis['fileFormat']}"
             dictNumberOfTimeSteps[carrier] = {None: (dfInput.loc[carrier].squeeze(),numberTimeStepsPerPeriod)}
         # add yearly time steps
-        dictNumberOfTimeSteps[None] = {"yearly": (self.extractAttributeData(self.energySystem.paths["setScenarios"]["folder"], "timeStepsYearly")["value"],numberTimeStepsPerPeriod)}
+        dictNumberOfTimeSteps[None] = {"yearly": (self.system["timeStepsYearly"],numberTimeStepsPerPeriod)}
 
         # limit number of periods to base time steps of system
         for element in dictNumberOfTimeSteps:
+            # if yearly time steps
+            if element is None:
+                continue
             for typeTimeStep in dictNumberOfTimeSteps[element]:
-                numberTypicalPeriods,numberTimeStepsPerPeriod = dictNumberOfTimeSteps[element][typeTimeStep]
-                if numberTypicalPeriods*numberTimeStepsPerPeriod > len(self.system["setTimeSteps"]):
-                    if len(self.system["setTimeSteps"])%numberTimeStepsPerPeriod == 0:
-                        numberTypicalPeriods        = int(len(self.system["setTimeSteps"])/numberTimeStepsPerPeriod)
-                    else:
-                        numberTypicalPeriods        = len(self.system["setTimeSteps"]) 
-                        numberTimeStepsPerPeriod    = 1
-                dictNumberOfTimeSteps[element][typeTimeStep] = (int(numberTypicalPeriods),int(numberTimeStepsPerPeriod))
+                # if operation or carrier, limit to timeStepsPerYear
+                if typeTimeStep == "operation" or typeTimeStep is None:
+                    numberTypicalPeriods,numberTimeStepsPerPeriod = dictNumberOfTimeSteps[element][typeTimeStep]
+                    if numberTypicalPeriods*numberTimeStepsPerPeriod > self.system["timeStepsPerYear"]:
+                        if self.system["timeStepsPerYear"]%numberTimeStepsPerPeriod == 0:
+                            numberTypicalPeriods        = int(self.system["timeStepsPerYear"]/numberTimeStepsPerPeriod)
+                        else:
+                            numberTypicalPeriods        = self.system["timeStepsPerYear"]
+                            numberTimeStepsPerPeriod    = 1
+                    dictNumberOfTimeSteps[element][typeTimeStep] = (int(numberTypicalPeriods),int(numberTimeStepsPerPeriod))
+                # if invest, multiply with timeStepsYearly and adjust so that it is an integer number of time steps
+                else:
+                    numberTypicalPeriods, numberTimeStepsPerPeriod = dictNumberOfTimeSteps[element][typeTimeStep]
+                    numberTypicalPeriodsTotal = numberTypicalPeriods*self.system["timeStepsYearly"]
+                    if int(numberTypicalPeriodsTotal) != numberTypicalPeriodsTotal:
+                        logging.warning(f"The requested invest time steps per year ({numberTypicalPeriods}) of {element} do not evaluate to an integer for the entire time horizon ({numberTypicalPeriodsTotal}). Rounded up.")
+                        numberTypicalPeriodsTotal = np.ceil(numberTypicalPeriodsTotal)
+                    dictNumberOfTimeSteps[element][typeTimeStep] = (int(numberTypicalPeriodsTotal), int(numberTimeStepsPerPeriod))
+
         return dictNumberOfTimeSteps
 
     def extractTimeSteps(self,elementName=None,typeOfTimeSteps=None,getListOfTimeSteps=True):
@@ -392,10 +406,9 @@ class DataInput():
             dfInput, fileName           = self.readInputData(folderPath, fileName)
             dfOutput                    = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
             # get reference year
-            referenceYear               = self.extractAttributeData(self.energySystem.paths["setScenarios"]["folder"], "referenceYear",skipWarning=True)
-            assert referenceYear, f"File 'attributes.{fileFormat}' in '{folderPath}' does not contain a referenceYear"
+            referenceYear               = self.system["referenceYear"]
             # calculate remaining lifetime
-            dfOutput[dfOutput > 0]      = -referenceYear["value"] + dfOutput[dfOutput > 0] + tech.lifetime
+            dfOutput[dfOutput > 0]      = -referenceYear + dfOutput[dfOutput > 0] + tech.lifetime
 
         return dfOutput
 

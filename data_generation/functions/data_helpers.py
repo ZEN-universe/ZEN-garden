@@ -175,6 +175,7 @@ def setManualAttributesTransport(elementName,dfAttribute):
         dfAttribute.loc["capexPerDistanceDefault","value"]  = 900/2 # kEUR/km/GW Euro calliope
         dfAttribute.loc["capacityLimitDefault","value"]     = 0     # GW values given for every existing line
         dfAttribute.loc["maxBuiltCapacityDefault","value"]  = 20    # GW (chosen to be higher than capacity limit)
+        dfAttribute.loc["minLoadDefault","value"]           = 0    # GW
 
         dfAttribute.loc["lossFlowDefault", "unit"]          = "1/km"
         dfAttribute.loc["capexPerDistanceDefault", "unit"]  = "kiloEuro/km/GW"
@@ -200,6 +201,8 @@ def setManualAttributesStorage(elementName,dfAttribute):
         dfAttribute.loc["maxLoadDefault","value"]               = 1/16                                  # 1/(typical discharge time)
         dfAttribute.loc["maxBuiltCapacityDefault","value"]      = 3/dfAttribute.loc["maxLoadDefault","value"]          # GWh, discharge in 1/maxLoad --> E_max = P_rated*maxLoad
         dfAttribute.loc["capexSpecificDefault","value"]         = 2700*dfAttribute.loc["maxLoadDefault","value"]*1000  # kEUR/GWh,
+    dfAttribute.loc["minLoadDefault", "value"]                  = 0  # GW
+    # units
     dfAttribute.loc["efficiencyChargeDefault", "unit"]          = ""
     dfAttribute.loc["efficiencyDischargeDefault", "unit"]       = ""
     dfAttribute.loc["selfDischargeDefault", "unit"]             = ""
