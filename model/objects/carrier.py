@@ -143,13 +143,13 @@ class Carrier(Element):
         # carbon emissions
         model.carbonEmissionsCarrier = pe.Var(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            domain = pe.Reals,
+            domain = pe.NonNegativeReals,
             doc = "carbon emissions of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals"
         )
         # carbon emissions carrier
         model.carbonEmissionsCarrierTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain=pe.Reals,
+            domain=pe.NonNegativeReals,
             doc="total carbon emissions of importing/exporting carrier. Domain: NonNegativeReals"
         )
 
@@ -214,14 +214,14 @@ def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
     return(model.exportCarrierFlow[carrier, node, time] <= model.availabilityCarrierExport[carrier,node,time])
 
 def constraintCostCarrierRule(model, carrier, node, time):
-    """ cost of importing/exporting carrier"""
+    """ carbon emissions of importing/exporting carrier"""
     return(model.costCarrier[carrier,node, time] == 
         model.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] - 
         model.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
     )
 
 def constraintCostCarrierTotalRule(model,year):
-    """ total cost of importing/exporting carrier"""
+    """ total carbon emissions of importing/exporting carrier"""
     baseTimeStep = EnergySystem.decodeTimeStep(None, year, "yearly")
     return(model.costCarrierTotal[year] ==
         sum(
