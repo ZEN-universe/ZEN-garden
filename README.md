@@ -58,7 +58,7 @@ When an issue is opened, it should be assigned to one or more developers and it 
 
         """
       ===========================================================================================================================================================================
-        Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+        Title:        ZEN-GARDEN
         Created:      month-20yy
         Authors:      Jane Doe (jdoe@ethz.ch)
         Organization: Labratory of Risk and Reliability Engineering, ETH Zurich

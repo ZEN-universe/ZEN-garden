@@ -1,5 +1,5 @@
 """===========================================================================================================================================================================
-Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Davide Tonelli (davidetonelli@outlook.com
                 Jacob Mannhardt (jmannhardt@ethz.ch)
