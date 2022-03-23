@@ -63,6 +63,10 @@ class EnergySystem:
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
+<<<<<<< HEAD
+=======
+
+>>>>>>> 493051b9be4cf150116325ed044d9ceddadd4c13
         system                          = EnergySystem.getSystem()
         self.paths                      = EnergySystem.getPaths()
         self.getBaseUnits()
@@ -74,7 +78,8 @@ class EnergySystem:
         self.setTechnologies            = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
         self.setScenarios               = system["setScenarios"]
         # base time steps
-        self.setBaseTimeSteps           = system["setTimeSteps"]
+        self.setBaseTimeSteps           = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
+        self.setBaseTimeStepsYearly     = list(range(0, system["timeStepsPerYear"]))
         # yearly time steps
         self.typesTimeSteps             = ["invest", "operation", "yearly"]
         self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
@@ -570,7 +575,7 @@ class EnergySystem:
         # carbon emissions
         model.carbonEmissionsTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain = pe.Reals,
+            domain = pe.NonNegativeReals,
             doc = "total carbon emissions of energy system. Domain: NonNegativeReals"
         )
 

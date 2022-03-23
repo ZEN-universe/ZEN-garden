@@ -135,6 +135,8 @@ class DataCreation():
             self.createMaxLoadFiles(conversionTechnology)
             # extract historic generation profile
             self.extractHistoricGeneration(conversionTechnology)
+            # extract existing capacity
+            self.extractExistingCapacity(conversionTechnology)
 
     def createTransportTechnologies(self):
         """ fills the setTransportTechnologies folder"""
@@ -334,6 +336,11 @@ class DataCreation():
         historicGeneration = self.apiData.getEntsoeGeneration(elementName)
         historicGeneration.to_csv(self.folderPath / "setConversionTechnologies" / elementName / "historicGeneration.csv")
 
+    def extractExistingCapacity(self,elementName):
+        """ extracts existing capacity from  ENTSOE"""
+        existingCapacity = self.apiData.getExistingCapacity(elementName)
+        existingCapacity.to_csv(
+            self.folderPath / "setConversionTechnologies" / elementName / "existingCapacity.csv")
     def createDistanceMatrix(self,elementName):
         """
         Compute a matrix containing the distance between any two points in the domain based on the Euclidean distance
