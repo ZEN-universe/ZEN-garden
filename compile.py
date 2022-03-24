@@ -10,7 +10,7 @@ Description:  Compilation  of the optimization problem.
 
 import os
 import logging
-import config
+import data.config as config
 import sys
 from datetime import datetime
 from preprocess.prepare import Prepare
