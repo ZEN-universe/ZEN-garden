@@ -1,6 +1,8 @@
 /.idea
 /.vscode
+/data/*/
 /data/*
+!/data/.gitkeep
 /outputs/
 /data_generation/
 config.py
