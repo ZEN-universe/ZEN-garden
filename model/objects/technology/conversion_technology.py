@@ -11,6 +11,7 @@ Description:    Class defining the parameters, variables and constraints of the 
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
+import numpy as np
 from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
 from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
@@ -41,8 +42,33 @@ class ConversionTechnology(Technology):
         # extract PWA parameters
         self.PWAParameter               = self.dataInput.extractPWAData(self.inputPath,self)
         self.convertToAnnualizedCapex()
+        # calculate capex of existing capacity
+        self.capexExistingCapacity      = self.calculateCapexOfExistingCapacities()
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
+
+    def convertToAnnualizedCapex(self):
+        """ this method converts the total capex to annualized capex """
+        fractionalAnnuity   = self.calculateFractionalAnnuity()
+        # annualize capex
+        # set bounds
+        self.PWAParameter["Capex"]["bounds"]["capex"] = tuple([bound*fractionalAnnuity for bound in self.PWAParameter["Capex"]["bounds"]["capex"]])
+        if not self.PWAParameter["Capex"]["PWAVariables"]:
+            self.PWAParameter["Capex"]["capex"] = self.PWAParameter["Capex"]["capex"]*fractionalAnnuity
+        else:
+            self.PWAParameter["Capex"]["capex"] = [value*fractionalAnnuity for value in self.PWAParameter["Capex"]["capex"]]
+
+    def calculateCapexOfSingleCapacity(self,capacity,_):
+        """ this method calculates the annualized capex of a single existing capacity. """
+        if capacity == 0:
+            return 0
+        _PWACapex = self.PWAParameter["Capex"]
+        # linear
+        if not _PWACapex["PWAVariables"]:
+            capex   = _PWACapex["capex"]*capacity
+        else:
+            capex   = np.interp(capacity,_PWACapex["capacity"],_PWACapex["capex"])
+        return capex
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod

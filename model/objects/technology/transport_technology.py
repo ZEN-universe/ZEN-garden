@@ -36,7 +36,7 @@ class TransportTechnology(Technology):
         super().storeInputData()
         # get system information
         paths                               = EnergySystem.getPaths()
-        self.inputPath                     = paths["setTransportTechnologies"][self.name]["folder"]
+        self.inputPath                      = paths["setTransportTechnologies"][self.name]["folder"]
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
         self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
@@ -46,7 +46,20 @@ class TransportTechnology(Technology):
             self.capexSpecific              = self.capexPerDistance * self.distance
         else:
             self.capexSpecific              = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+        # annualize capex
         self.convertToAnnualizedCapex()
+        # calculate capex of existing capacity
+        self.capexExistingCapacity          = self.calculateCapexOfExistingCapacities()
+
+    def convertToAnnualizedCapex(self):
+        """ this method converts the total capex to annualized capex """
+        fractionalAnnuity   = self.calculateFractionalAnnuity()
+        # annualize capex
+        self.capexSpecific  = self.capexSpecific*fractionalAnnuity
+
+    def calculateCapexOfSingleCapacity(self,capacity,index):
+        """ this method calculates the annualized capex of a single existing capacity. """
+        return self.capexSpecific[index] * capacity
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod

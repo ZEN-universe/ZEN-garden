@@ -109,7 +109,7 @@ class DataInput():
             if not transportTechnology:
                 dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
             else:
-                dfOutput = self.extractTransportInputData(dfInput,dfOutput,fileName,indexMultiIndex,defaultValue)
+                dfOutput = self.extractTransportInputData(dfInput,dfOutput,fileName,indexMultiIndex,column,defaultValue)
         return dfOutput 
     
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
@@ -142,17 +142,16 @@ class DataInput():
         # check if special case of existing Technology
         elif "existingTechnology" in missingIndex[0]:
             indexNameList.remove(missingIndex[0])
-            dfInput = dfInput.set_index(indexNameList)
-            setNodes= dfInput.index.unique()
-            for node in setNodes:
-                if node in self.system["setNodes"]:
-                    values = dfInput[column].loc[node].tolist()
+            dfInput             = dfInput.set_index(indexNameList)
+            setLocation         = dfInput.index.unique()
+            for location in setLocation:
+                if location in dfOutput.index.get_level_values(indexNameList[0]):
+                    values      = dfInput[column].loc[location].tolist()
                     if isinstance(values, int) or isinstance(values,float):
-                        index=[0]
+                        index   =[0]
                     else:
-                        index  = list(range(len(values)))
-                        #dfOutput[node][index] = values
-                    dfOutput.loc[node, index] = values
+                        index   = list(range(len(values)))
+                    dfOutput.loc[location, index] = values
             return dfOutput
         # check if requested values for missing index are columns of dfInput
         else:
@@ -180,7 +179,7 @@ class DataInput():
         dfOutput.loc[commonIndex]   = dfInput.loc[commonIndex]
         return dfOutput
 
-    def extractTransportInputData(self, dfInput,dfOutput,fileName,indexMultiIndex,defaultValue):
+    def extractTransportInputData(self, dfInput,dfOutput,fileName,indexMultiIndex,column,defaultValue):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param dfInput: raw input dataframe
         :param dfOutput: empty output dataframe, only filled with defaultValue
@@ -190,7 +189,7 @@ class DataInput():
         :return dfOutput: filled output dataframe """
         # preferably already edges as index
         if self.indexNames["setEdges"] in dfInput.columns:
-            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList=list(indexMultiIndex.names),column=None,defaultValue=defaultValue)
+            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList=list(indexMultiIndex.names),column=column,defaultValue=defaultValue)
         else:
             warnings.warn(f"The matrix representation of edges will be deprecated. Change file '{fileName}'",FutureWarning)
             dfInput = dfInput.set_index(self.indexNames['setNodes'])
@@ -392,7 +391,7 @@ class DataInput():
 
         return setExistingTechnologies
 
-    def extractLifetimeExistingTechnology(self, folderPath, fileName, indexSets, tech):
+    def extractLifetimeExistingTechnology(self, folderPath, fileName, indexSets, tech, transportTechnology=False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
         :param tech: technology object
@@ -405,7 +404,12 @@ class DataInput():
         if f"{fileName}.{fileFormat}" in os.listdir(folderPath):
             indexList, indexNameList    = self.constructIndexList(tech, indexSets, None)
             dfInput, fileName           = self.readInputData(folderPath, fileName)
-            dfOutput                    = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
+            indexMultiIndex             = pd.MultiIndex.from_product(indexList, names=indexNameList)
+            # if not extracted for transport technology
+            if not transportTechnology:
+                dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
+            else:
+                dfOutput = self.extractTransportInputData(dfInput, dfOutput, fileName, indexMultiIndex,column, defaultValue)
             # get reference year
             referenceYear               = self.system["referenceYear"]
             # calculate remaining lifetime
