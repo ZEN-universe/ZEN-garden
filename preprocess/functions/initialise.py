@@ -1,6 +1,6 @@
 # =====================================================================================================================
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
 Organization: Labratory of Risk and Reliability Engineering, ETH Zurich

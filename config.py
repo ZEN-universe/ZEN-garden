@@ -1,5 +1,5 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
@@ -17,28 +17,45 @@ system = default_config.system
 solver = default_config.solver   
 
 ## Analysis - settings update compared to default values
-analysis['dataset']                                 = 'NUTS0_electricity'
-analysis['objective']                               = 'TotalCost' # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
+analysis["dataset"]                                 = "NUTS0_HSC"
+#analysis["objective"]                               = "TotalCarbonEmissions" TotalCost# choose from "TotalCost", "TotalCarbonEmissions", "Risk"
+analysis["objective"]                               = "TotalCost"
 # definition of the approximation
-analysis['variablesNonlinearModel']                 = {'builtCapacity': []}
-analysis['nonlinearTechnologyApproximation']        = {'Capex': [], 'ConverEfficiency':[]}
+analysis["variablesNonlinearModel"]                 = {"builtCapacity": []}
+analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEfficiency":[]}
 
 ## System - settings update compared to default values
-system['setCarriers']                               = ['electricity','natural_gas',"hard_coal","uranium"]
-system['setStorageTechnologies']                    = ["battery","pumped_hydro"]
-system['setTransportTechnologies']                  = ['power_line']
-system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant","nuclear","photovoltaics"]
-system['setNodes']                                  = ['CH','DE',"AT","IT"]#,"FR","ES","PT","CZ"]
+today      = datetime.now()
+system["modelName"]                                 = "model_" + today.strftime("%Y-%m-%d") #+ "_reduced_Emissions"
+system["setCarriers"]                               = ["electricity", "hydrogen",
+                                                       #"dry_biomass", "wet_biomass",
+                                                       "natural_gas",
+                                                       "carbon"] # ,"stored_carbon"
+system["setStorageTechnologies"]                    = []#["carbon_storage"]
+system["setTransportTechnologies"]                  = ["hydrogen_truck_gas" #"hydrogen_train", "hydrogen_pipeline", "hydrogen_ship", hydrogen_truck_liquid
+                                                       #"carbon_truck"
+                                                       ] # "carbon_train", "carbon_pipeline"
+system["setConversionTechnologies"]                 = [#"electrolysis",              # electricity
+                                                       #"SMR",
+                                                       "SMR-54",# "SMR-89",          # natural gas
+                                                       #"bSMR", "bGasification",     # biomass
+                                                       "carbon_storage"]
+#system["setNodes"]                                  = ["AT", "NO"] #["BE", "BG", "DE", "ES", "FR", "IT", "NL", "PL", "RO", "UK", "NO"]
+system["setNodes"]                                  = ["AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "EL", "ES",
+                                                       "FI", "FR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK",
+                                                       "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "UK"]
+
 # time steps
 system["referenceYear"]                             = 2020
-system["timeStepsPerYear"]                          = 2190
-system["timeStepsYearly"]                           = 4
-system["intervalYears"]                             = 10
+system["timeStepsPerYear"]                          = 1
+system["timeStepsYearly"]                           = 15
+system["intervalYears"]                             = 1
 system['setTimeStepsPerYear']                       = list(range(0,system["timeStepsPerYear"]))
-system["numberTimeStepsPerYearDefault"]             = 50 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
+system["numberTimeStepsPerYearDefault"]             = 1 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
+
 
 ## Solver - settings update compared to default values
-solver['gap']                                       = 0.01
-solver['model']                                     = 'MILP'
-solver['verbosity']                                 = True
-solver['performanceCheck']['printDeltaIteration']   = 50
+solver["gap"]                                       = 0.01
+solver["model"]                                     = "MILP"
+solver["verbosity"]                                 = True
+solver["performanceCheck"]["printDeltaIteration"]   = 50
