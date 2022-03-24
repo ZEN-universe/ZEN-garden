@@ -28,9 +28,14 @@ system['setCarriers']                               = ['electricity','natural_ga
 system['setStorageTechnologies']                    = ["battery","pumped_hydro"]
 system['setTransportTechnologies']                  = ['power_line']
 system['setConversionTechnologies']                 = ["natural_gas_turbine","wind_onshore","hard_coal_plant","nuclear","photovoltaics"]
-system['setTimeSteps']                              = list(range(0,15))
-system["numberTimeStepsDefault"]                    = 15 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
 system['setNodes']                                  = ['CH','DE',"AT","IT"]#,"FR","ES","PT","CZ"]
+# time steps
+system["referenceYear"]                             = 2020
+system["timeStepsPerYear"]                          = 2190
+system["timeStepsYearly"]                           = 4
+system["intervalYears"]                             = 10
+system['setTimeStepsPerYear']                       = list(range(0,system["timeStepsPerYear"]))
+system["numberTimeStepsPerYearDefault"]             = 50 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
 
 ## Solver - settings update compared to default values
 solver['gap']                                       = 0.01
