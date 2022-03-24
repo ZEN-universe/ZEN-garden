@@ -2,6 +2,8 @@
 /.vscode
 /data/
 /outputs/
+/data_generation/
+config.py
 *.pyc
 *.DS_Store
-config.py
+

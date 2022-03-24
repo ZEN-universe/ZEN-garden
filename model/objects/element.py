@@ -1,12 +1,12 @@
 """===========================================================================================================================================================================
-Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
 Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class defining a standard Element. Contains methods to add parameters, variables and constraints to the
-                optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
+                optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
                 optimization model as an input.
 ==========================================================================================================================================================================="""
 import itertools 
@@ -313,10 +313,10 @@ class Element:
     @classmethod
     def checkOnOffModeled(cls,tech):
         """ this classmethod checks if the on-off-behavior of a technology needs to be modeled.
-        If the technology has a minimum load of 0 for all nodes and time steps, 
-        and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as PWA), 
-        then on-off-behavior is not necessary to model 
-        :param tech: technology in model 
+        If the technology has a minimum load of 0 for all nodes and time steps,
+        and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as PWA),
+        then on-off-behavior is not necessary to model
+        :param tech: technology in model
         :returns modelOnOff: boolean to indicate that on-off-behavior modeled """
         model = EnergySystem.getConcreteModel()
 
