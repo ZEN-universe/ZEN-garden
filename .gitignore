@@ -3,7 +3,7 @@
 /data/
 /outputs/
 /data_generation/
-config.py
+#config.py
 *.pyc
 *.DS_Store
 
