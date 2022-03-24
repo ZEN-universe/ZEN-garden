@@ -1,5 +1,5 @@
 """===========================================================================================================================================================================
-Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
@@ -205,12 +205,10 @@ class Carrier(Element):
 #%% Constraint rules defined in current class
 def constraintAvailabilityCarrierImportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to import from outside the system boundaries"""
-
     return(model.importCarrierFlow[carrier, node, time] <= model.availabilityCarrierImport[carrier,node,time])
 
 def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to export to outside the system boundaries"""
-
     return(model.exportCarrierFlow[carrier, node, time] <= model.availabilityCarrierExport[carrier,node,time])
 
 def constraintCostCarrierRule(model, carrier, node, time):
