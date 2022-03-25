@@ -131,13 +131,13 @@ class Carrier(Element):
         # carrier import/export cost
         model.costCarrier = pe.Var(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = 'node- and time-dependent carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
         # total carrier import/export cost
         model.costCarrierTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = 'total carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
         # carbon emissions
