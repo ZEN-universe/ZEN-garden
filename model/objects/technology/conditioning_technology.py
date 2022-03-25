@@ -2,34 +2,33 @@
 Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
-                Jacob Mannhardt (jmannhardt@ethz.ch)
 Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:    Class defining the parameters, variables and constraints of the conversion technologies.
-                The class takes the abstract optimization model as an input, and adds parameters, variables and
+Description:    Class defining the parameters, variables and constraints of the conditioning technologies.
+                The class takes the optimization model as an input, and adds parameters, variables and
                 constraints of the conversion technologies.
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
-from model.objects.technology.technology import Technology
+from model.objects.technology.conversion_technology import ConversionTechnology
 from model.objects.energy_system import EnergySystem
 from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 
-class ConversionTechnology(Technology):
+class ConditioningTechnology(ConversionTechnology):
     # empty list of elements
     listOfElements = []
 
     def __init__(self, tech):
-        """init conversion technology object
+        """init conditioning technology object
         :param tech: name of added technology"""
 
-        logging.info(f'Initialize conversion technology {tech}')
+        logging.info(f'Initialize conditioning technology {tech}')
         super().__init__(tech)
         # store input data
         self.storeInputData()
         # add ConversionTechnology to list
-        ConversionTechnology.addElement(self)
+        ConditioningTechnology.addElement(self)
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
@@ -38,68 +37,28 @@ class ConversionTechnology(Technology):
         # define input and output carrier
         self.inputCarrier               = self.dataInput.extractConversionCarriers(self.inputPath)["inputCarrier"]
         self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
+        # thermodynamic properties
+        self.specificHeat               = self.dataInput.extractInputData(self.inputPath,self)
+        self.specificHeatRatio          = self.dataInput.extractInputData(self.inputPath,self)
+        self.pressureIn                 = self.dataInput.extractInputData(self.inputPath, self)
+        self.pressureOut                = self.dataInput.extractInputData(self.inputPath, self)
+        self.temperatureIn              = self.dataInput.extractInputData(self.inputPath, self)
+        self.isentropicEfficiency       = self.dataInput.extractInputData(self.inputPath, self)
+        self.convertToAnnualizedCapex()
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
-        # extract PWA parameters: Capex
-        self.PWACapex                   = self.dataInput.extractPWAData(self.inputPath,"Capex",self)
-        self.convertToAnnualizedCapex()
-        # extract PWA parameters: ConverEfficiency
-        system = EnergySystem.getSystem()
-        if self.name in system['setConditioningTechnologies']:
-            self.PWAConverEfficiency   = self.dataInput.extractDataConditioning(self.inputPath,"ConverEfficiency",self)
-        else:
-            self.PWAConverEfficiency    = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency",self)
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
     def constructSets(cls):
-        """ constructs the pe.Sets of the class <ConversionTechnology> """
-        model = EnergySystem.getConcreteModel()
-        # get input carriers
-        _inputCarriers      = cls.getAttributeOfAllElements("inputCarrier")
-        _outputCarriers     = cls.getAttributeOfAllElements("outputCarrier")
-        _referenceCarrier   = cls.getAttributeOfAllElements("referenceCarrier")
-        _dependentCarriers  = {}
-        for tech in _inputCarriers:
-            _dependentCarriers[tech] = _inputCarriers[tech]+_outputCarriers[tech]
-            _dependentCarriers[tech].remove(_referenceCarrier[tech][0])
-        # input carriers of technology
-        model.setInputCarriers = pe.Set(
-            model.setConversionTechnologies,
-            initialize = _inputCarriers,
-            doc = "set of carriers that are an input to a specific conversion technology. Dimensions: setConversionTechnologies"
-        )
-        # output carriers of technology
-        model.setOutputCarriers = pe.Set(
-            model.setConversionTechnologies,
-            initialize = _outputCarriers,
-            doc = "set of carriers that are an output to a specific conversion technology. Dimensions: setConversionTechnologies"
-        )
-        # dependent carriers of technology
-        model.setDependentCarriers = pe.Set(
-            model.setConversionTechnologies,
-            initialize = _dependentCarriers,
-            doc = "set of carriers that are an output to a specific conversion technology.\n\t Dimensions: setConversionTechnologies"
-        )
+        """ constructs the pe.Sets of the class <ConditioningTechnology> """
+        pass
 
     @classmethod
     def constructParams(cls):
-        """ constructs the pe.Params of the class <ConversionTechnology> """
-        model                = EnergySystem.getConcreteModel()
-        _PWACapex            = cls.getAttributeOfAllElements("PWACapex")
-        _PWAConverEfficiency = cls.getAttributeOfAllElements("PWAConverEfficiency")
-        # slope of linearly modeled capex
-        model.slopeLinearApproximationCapex = pe.Param(
-            cls.createCustomSet(["setConversionTechnologies","setCapexLinear","setNodes","setTimeStepsInvest"]),
-            initialize = lambda _,tech,*__: _PWACapex[tech]["capex"],
-            doc = "Parameter which specifies the slope of the capex if approximated linearly. Dimensions: setConversionTechnologies, setNodes, setTimeStepsInvest"
-        )
-        # slope of linearly modeled conversion efficiencies
-        model.slopeLinearApproximationConverEfficiency = pe.Param(
-            cls.createCustomSet(["setConversionTechnologies","setConverEfficiencyLinear","setNodes","setTimeStepsOperation"]),
-            initialize = lambda _,tech,carrier,*__: _PWAConverEfficiency[tech][carrier],
-            doc = "Parameter which specifies the slope of the conversion efficiency if approximated linearly. Dimensions: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation"
-        )
+        """ constructs the pe.Params of the class <ConditioningTechnology> """
+        model = EnergySystem.getConcreteModel()
+
 
     @classmethod
     def constructVars(cls):
@@ -111,13 +70,13 @@ class ConversionTechnology(Technology):
         model.inputFlow = pe.Var(
             cls.createCustomSet(["setConversionTechnologies","setInputCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAConverEfficiency")[tech]["bounds"][carrier],
+            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
             doc = 'Carrier input of conversion technologies. Dimensions: setConversionTechnologies, setInputCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals' )
         # output flow of carrier into technology
         model.outputFlow = pe.Var(
             cls.createCustomSet(["setConversionTechnologies","setOutputCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAConverEfficiency")[tech]["bounds"][carrier],
+            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
             doc = 'Carrier output of conversion technologies. Dimensions: setConversionTechnologies, setOutputCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals')
         
         ## PWA Variables - Capex
@@ -137,13 +96,13 @@ class ConversionTechnology(Technology):
         model.referenceFlowApproximation = pe.Var(
             cls.createCustomSet(["setConversionTechnologies","setConverEfficiency","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            bounds = lambda model, tech, *__: cls.getAttributeOfAllElements("PWAConverEfficiency")[tech]["bounds"][model.setReferenceCarriers[tech].at(1)],
+            bounds = lambda model, tech, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][model.setReferenceCarriers[tech].at(1)],
             doc = 'PWA of flow of reference carrier of conversion technologies. Dimensions: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals')
         # PWA dependent flow of carrier into technology
         model.dependentFlowApproximation = pe.Var(
             cls.createCustomSet(["setConversionTechnologies","setConverEfficiency","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAConverEfficiency")[tech]["bounds"][carrier],
+            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
             doc = 'PWA of flow of dependent carriers of conversion technologies. Dimensions: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals')
 
     @classmethod
@@ -153,7 +112,7 @@ class ConversionTechnology(Technology):
         
         # add PWA constraints
         # capex
-        setPWACapex    = cls.createCustomSet(["setConversionTechnologies","setCapexPWA","setNodes","setTimeStepsInvest"])
+        setPWACapex = cls.createCustomSet(["setConversionTechnologies","setCapexPWA","setNodes","setTimeStepsInvest"])
         setLinearCapex = cls.createCustomSet(["setConversionTechnologies","setCapexLinear","setNodes","setTimeStepsInvest"])
         if setPWACapex: 
             # if setPWACapex contains technologies:
@@ -271,13 +230,13 @@ class ConversionTechnology(Technology):
             else:
                 tech = index
             # retrieve PWA variables
-            PWAParameter = cls.getAttributeOfAllElements(f"PWA{typePWA}")
-            if typePWA == "Capex": # TODO check if necessary
-                PWABreakpoints[index] = PWAParameter[tech]["capacity"]
-                PWAValues[index] = PWAParameter[tech]["capex"]
+            PWAParameter = cls.getAttributeOfAllElements("PWAParameter")
+            if typePWA == "Capex":
+                PWABreakpoints[index] = PWAParameter[(tech,typePWA)]["capacity"]
+                PWAValues[index] = PWAParameter[(tech,typePWA)]["capex"]
             elif typePWA == "ConverEfficiency":
-                PWABreakpoints[index] = PWAParameter[tech][cls.getAttributeOfAllElements("referenceCarrier")[tech][0]]
-                PWAValues[index] = PWAParameter[tech][index[1]]
+                PWABreakpoints[index] = PWAParameter[(tech,typePWA)][cls.getAttributeOfAllElements("referenceCarrier")[tech][0]]
+                PWAValues[index] = PWAParameter[(tech,typePWA)][index[1]]
 
         return PWABreakpoints,PWAValues
 

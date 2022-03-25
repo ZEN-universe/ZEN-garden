@@ -38,7 +38,7 @@ class Technology(Element):
         paths               = EnergySystem.getPaths()
         technologyTypes     = EnergySystem.getAnalysis()['subsets']["setTechnologies"]
         # set attributes of technology
-        for technologyType in technologyTypes:
+        for technologyType in set(technologyTypes) - set(["setConditioningTechnologies"]):                              # setConditioningTechnologies is included in setConversionTechnologies
             if self.name in system[technologyType]:
                 if technologyType == "setTransportTechnologies":
                     _setLocation            = "setEdges"
@@ -46,6 +46,8 @@ class Technology(Element):
                 else:
                     _setLocation            = "setNodes"
                     _isTransportTechnology  = False
+                if self.name in system["setConditioningTechnologies"]:
+                    technologyType = "setConditioningTechnologies"
                 self.inputPath                  = paths[technologyType][self.name]["folder"]
                 setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
 
@@ -103,11 +105,11 @@ class Technology(Element):
         # annualize capex
         if self.name in system["setConversionTechnologies"]:
             # set bounds
-            self.PWAParameter["Capex"]["bounds"]["capex"] = tuple([bound/presentValueFactor*_fractionOfYear for bound in self.PWAParameter["Capex"]["bounds"]["capex"]])
-            if not self.PWAParameter["Capex"]["PWAVariables"]:
-                self.PWAParameter["Capex"]["capex"] = self.PWAParameter["Capex"]["capex"]/presentValueFactor*_fractionOfYear
+            self.PWACapex["bounds"]["capex"] = tuple([bound/presentValueFactor*_fractionOfYear for bound in self.PWACapex["bounds"]["capex"]])
+            if not self.PWACapex["PWAVariables"]:
+                self.PWACapex["capex"] = self.PWACapex["capex"]/presentValueFactor*_fractionOfYear
             else:
-                self.PWAParameter["Capex"]["capex"] = [value/presentValueFactor*_fractionOfYear for value in self.PWAParameter["Capex"]["capex"]]
+                self.PWACapex["capex"] = [value/presentValueFactor*_fractionOfYear for value in self.PWACapex["capex"]]
         elif self.name in system["setTransportTechnologies"] or self.name in system["setStorageTechnologies"]:
             self.capexSpecific = self.capexSpecific/presentValueFactor*_fractionOfYear
 
@@ -118,10 +120,14 @@ class Technology(Element):
         # construct the pe.Sets of the class <Technology>
         model = EnergySystem.getConcreteModel()
 
-        # conversion technologies
+        # production technologies
         model.setConversionTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setConversionTechnologies"),
-            doc='Set of conversion technologies. Subset: setTechnologies')
+            doc='Set of production technologies. Subset: setTechnologies')
+        # conditioning technologies
+        model.setConditioningTechnologies = pe.Set(
+            initialize=EnergySystem.getAttribute("setConditioningTechnologies"),
+            doc='Set of conditioning technologies. Subset: setConversionTechnologies')
         # transport technologies
         model.setTransportTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setTransportTechnologies"),
@@ -130,6 +136,7 @@ class Technology(Element):
         model.setStorageTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setStorageTechnologies"),
             doc='Set of storage technologies. Subset: setTechnologies')
+
         # existing installed technologies
         model.setExistingTechnologies = pe.Set(
             model.setTechnologies,
