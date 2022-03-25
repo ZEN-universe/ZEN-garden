@@ -11,9 +11,9 @@ Description:  Compilation  of the optimization problem.
 import os
 import logging
 import sys
-import data.config as config
-from preprocess.prepare            import Prepare
-from model.optimization_setup      import OptimizationSetup
+import data.NUTS0_electricity.config as config
+from preprocess.prepare import Prepare
+from model.optimization_setup import OptimizationSetup
 from model.metaheuristic.algorithm import Metaheuristic
 from postprocess.results import Postprocess
 
@@ -23,7 +23,8 @@ if not os.path.exists('outputs/logs'):
     if not os.path.exists('outputs'):
         os.mkdir('outputs')
     os.mkdir('outputs/logs')
-logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, format=log_format,
+                    datefmt='%Y-%m-%d %H:%M:%S')
 logging.captureWarnings(True)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
@@ -52,5 +53,5 @@ elif config.solver['model'] == 'MINLP':
     master.solveMINLP(config.solver)
 
 # EVALUATE RESULTS
-evaluation = Postprocess(optimizationSetup, modelName = config.system["modelName"])
+evaluation = Postprocess(optimizationSetup, modelName=config.system["modelName"])
 a = 1
