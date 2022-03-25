@@ -15,7 +15,7 @@ import data.config as config
 from preprocess.prepare            import Prepare
 from model.optimization_setup      import OptimizationSetup
 from model.metaheuristic.algorithm import Metaheuristic
-from postprocess.results           import Postprocess
+from postprocess.results import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
