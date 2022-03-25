@@ -76,7 +76,7 @@ class Postprocess:
                 self.varDict[var.name] = dict()
                 for index in var:
                     try:
-                        self.varDict[var.name][index] = pe.value(var[index])
+                        self.varDict[var.name][index] = var[index].value
                     except:
                         pass
                 # save vars in a DataFrame
