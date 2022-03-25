@@ -7,15 +7,16 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""
-import warnings
 
-import numpy as np
-from scipy.stats import linregress
-import pandas as pd
 import os
 import logging
+import warnings
+import numpy  as np
+import pandas as pd
+from scipy.stats import linregress
 
 class DataInput():
+    
     def __init__(self,system,analysis,solver,energySystem = None):
         """ data input object to extract input data
         :param system: dictionary defining the system
@@ -26,6 +27,7 @@ class DataInput():
         self.analysis       = analysis
         self.solver         = solver
         self.energySystem   = energySystem
+
         # get names of indices
         self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
 
@@ -35,8 +37,10 @@ class DataInput():
         :param manualFileName: name of selected file. If only one file in folder, not used
         :return dfInput: pd.DataFrame with input data 
         :return fileName: name of file """
+
         # get system attribute
         fileFormat  = self.analysis["fileFormat"]
+
         # select data
         fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1]==fileFormat)]
         if manualFileName in fileNames:
@@ -44,6 +48,7 @@ class DataInput():
             for fileName in fileNames:
                 if len(fileNames) > 1 and fileName != manualFileName:
                     continue
+
                 # table attributes                     
                 dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None) 
                 break 
@@ -59,8 +64,9 @@ class DataInput():
         :return indexList: list of indices
         :return indexNameList: list of name of indices
         """
-        indexList = []
+        indexList     = []
         indexNameList = []
+
         # add rest of indices
         for index in indexSets:
             indexNameList.append(self.indexNames[index])
@@ -83,28 +89,35 @@ class DataInput():
         :param timeSteps: specific timeSteps of element
         :param transportTechnology: boolean if data extracted for transport technology
         :return dataDict: dictionary with attribute values """
+
         # generic time steps
         if not timeSteps:
             timeSteps = self.energySystem.setBaseTimeSteps
+
         # check if default value exists in attributes.csv, with or without "Default" Suffix
         if column:
             defaultName = column
         else:
             defaultName = manualFileName
         defaultValue = self.extractAttributeData(folderPath,defaultName)
+
         # select index
         indexList,indexNameList = self.constructIndexList(element, indexSets,timeSteps)
+
         # create pd.MultiIndex and select data
         indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
+
         # create output Series filled with default value
         if defaultValue is None:
             dfOutput = pd.Series(index=indexMultiIndex, dtype=float)
         else:
             dfOutput = pd.Series(index=indexMultiIndex,data=defaultValue["value"],dtype=float)
+
         # read input file
         dfInput,fileName = self.readInputData(folderPath,manualFileName)
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
+
             # if not extracted for transport technology
             if not transportTechnology:
                 dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
@@ -121,14 +134,17 @@ class DataInput():
         :param column: select specific column
         :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
+
         # select and drop scenario
         assert dfInput.columns is not None, f"Input file '{fileName}' has no columns"
         if self.indexNames["setScenarios"] in dfInput.columns:
             warnings.warn("'setScenarios' will be deprecated.",FutureWarning)
             dfInput = dfInput[dfInput[self.indexNames["setScenarios"]]==self.system['setScenarios']].drop(self.indexNames["setScenarios"],axis=1)
+
         # set index by indexNameList
         missingIndex = list(set(indexNameList) - set(indexNameList).intersection(set(dfInput.columns)))
         assert len(missingIndex)<=1, f"Some of the requested index sets {missingIndex} are missing from input file for {fileName}"
+
         # no indices missing
         if len(missingIndex) == 0:
             dfInput         = dfInput.set_index(indexNameList)
@@ -139,6 +155,7 @@ class DataInput():
                 # check if only one column remaining
                 assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
                 dfInput     = dfInput.squeeze(axis=1)
+
         # check if special case of existing Technology
         elif "existingTechnology" in missingIndex[0]:
             indexNameList.remove(missingIndex[0])
@@ -153,6 +170,7 @@ class DataInput():
                         index   = list(range(len(values)))
                     dfOutput.loc[location, index] = values
             return dfOutput
+
         # check if requested values for missing index are columns of dfInput
         else:
             indexNameList.remove(missingIndex[0])
@@ -162,10 +180,13 @@ class DataInput():
             dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
             dfInput                 = dfInput[list(requestedIndexValues)].stack()
             dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
+
         # apply multiplier to input data
         dfInput     = dfInput * defaultValue["multiplier"]
+
         # delete nans
         dfInput     = dfInput.dropna()
+        
         # get common index of dfOutput and dfInput
         if not isinstance(dfInput.index, pd.MultiIndex):
             indexList     = dfInput.index.to_list()
@@ -187,14 +208,17 @@ class DataInput():
         :param indexMultiIndex: multiIndex of dfOutput
         :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
+
         # preferably already edges as index
         if self.indexNames["setEdges"] in dfInput.columns:
             dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList=list(indexMultiIndex.names),column=column,defaultValue=defaultValue)
         else:
             warnings.warn(f"The matrix representation of edges will be deprecated. Change file '{fileName}'",FutureWarning)
             dfInput = dfInput.set_index(self.indexNames['setNodes'])
+
             # apply multiplier to input data
             dfInput = dfInput * defaultValue["multiplier"]
+
             # fill dfOutput
             for index in indexMultiIndex:
                 if isinstance(index,tuple):
@@ -212,9 +236,11 @@ class DataInput():
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
         fileName    = "attributes.csv"
+
         if fileName not in os.listdir(folderPath):
             return None
         dfInput     = pd.read_csv(folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
+
         # check if attribute in index
         if attributeName+"Default" not in dfInput.index:
             if attributeName not in dfInput.index:
@@ -228,6 +254,7 @@ class DataInput():
                     FutureWarning)
         else:
             attributeName = attributeName + "Default"
+
         # get attribute
         attributeValue = dfInput.loc[attributeName, "value"]
         multiplier = self.getUnitMultiplier(dfInput.loc[attributeName, "unit"])
@@ -264,7 +291,7 @@ class DataInput():
     def extractLocations(self,extractNodes = True):
         """ reads input data to extract nodes or edges.
         :param extractNodes: boolean to switch between nodes and edges """
-        folderPath          = self.energySystem.getPaths()["setNodes"]["folder"]
+        folderPath = self.energySystem.getPaths()["setNodes"]["folder"]
         if extractNodes:
             setNodesConfig  = self.system["setNodes"]
             setNodesInput   = self.readInputData(folderPath,"setNodes")[0]["node"]
@@ -272,7 +299,7 @@ class DataInput():
             assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {folderPath+'setNodes'}"
             return setNodesConfig
         else:
-            setEdgesInput   = self.readInputData(folderPath,"setEdges")[0]
+            setEdgesInput = self.readInputData(folderPath,"setEdges")[0]
             if setEdgesInput is not None:
                 setEdges        = setEdgesInput[(setEdgesInput["nodeFrom"].isin(self.energySystem.setNodes)) & (setEdgesInput["nodeTo"].isin(self.energySystem.setNodes))]
                 setEdges        = setEdges.set_index("edge")
