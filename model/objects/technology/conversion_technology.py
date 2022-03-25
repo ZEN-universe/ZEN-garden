@@ -46,6 +46,7 @@ class ConversionTechnology(Technology):
         # calculate capex of existing capacity
         self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
         self.convertToAnnualizedCapex()
+        # extract PWA parameters: Conver Efficiency
         self.PWAConverEfficiency    = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency",self)
 
     def convertToAnnualizedCapex(self):
