@@ -52,7 +52,7 @@ elif config.solver['model'] == 'MINLP':
     master.solveMINLP(config.solver)
 
 # EVALUATE RESULTS
-# today      = datetime.now()
-# modelName  = "model_" + today.strftime("%Y-%m-%d")
-# evaluation = Postprocess(optimizationSetup, modelName = modelName)
-
+today      = datetime.now()
+modelName  = "model_" + today.strftime("%Y-%m-%d")
+evaluation = Postprocess(optimizationSetup, modelName = modelName)
+a=1
