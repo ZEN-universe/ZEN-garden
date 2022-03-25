@@ -467,9 +467,9 @@ class DataInput():
         :return PWADict: dictionary with PWA parameters """
 
         if hasattr(tech, "subset") and type == "ConverEfficiency":
-            return None
-            #assert tech.subset == "setConditioningTechnologies", f"Only implemented for setConditioningTechnologies. {tech.subset} is not valid. "
-            #PWADict = self.extractDataConditioning(folderPath,tech)
+            assert tech.subset == "setConditioningTechnologies", f"Only implemented for setConditioningTechnologies. {tech.subset} is not valid. "
+            #return None
+            PWADict = self.extractDataConditioning(folderPath,tech)
         else:
             # get system attribute
             fileFormat = self.analysis["fileFormat"]

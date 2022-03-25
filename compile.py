@@ -55,4 +55,3 @@ elif config.solver['model'] == 'MINLP':
 today      = datetime.now()
 modelName  = "model_" + today.strftime("%Y-%m-%d")
 evaluation = Postprocess(optimizationSetup, modelName = modelName)
-a=1
