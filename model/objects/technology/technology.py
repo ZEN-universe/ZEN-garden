@@ -38,7 +38,7 @@ class Technology(Element):
         paths               = EnergySystem.getPaths()
         technologyTypes     = EnergySystem.getAnalysis()['subsets']["setTechnologies"]
         # set attributes of technology
-        for technologyType in technologyTypes:
+        for technologyType in set(technologyTypes) - set(["setConditioningTechnologies"]):                              # setConditioningTechnologies is included in setConversionTechnologies
             if self.name in system[technologyType]:
                 if technologyType == "setTransportTechnologies":
                     _setLocation            = "setEdges"
@@ -46,6 +46,8 @@ class Technology(Element):
                 else:
                     _setLocation            = "setNodes"
                     _isTransportTechnology  = False
+                if self.name in system["setConditioningTechnologies"]:
+                    technologyType = "setConditioningTechnologies"
                 self.inputPath                  = paths[technologyType][self.name]["folder"]
                 setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
 
@@ -209,6 +211,10 @@ class Technology(Element):
         model.setConversionTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setConversionTechnologies"),
             doc='Set of conversion technologies. Subset: setTechnologies')
+        # conditioning technologies
+        model.setConditioningTechnologies = pe.Set(
+            initialize=EnergySystem.getAttribute("setConditioningTechnologies"),
+            doc='Set of conditioning technologies. Subset: setConversionTechnologies')
         # transport technologies
         model.setTransportTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setTransportTechnologies"),
@@ -217,6 +223,7 @@ class Technology(Element):
         model.setStorageTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setStorageTechnologies"),
             doc='Set of storage technologies. Subset: setTechnologies')
+
         # existing installed technologies
         model.setExistingTechnologies = pe.Set(
             model.setTechnologies,

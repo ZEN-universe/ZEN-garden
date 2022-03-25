@@ -64,34 +64,35 @@ class EnergySystem:
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
 
-        system                          = EnergySystem.getSystem()
-        self.paths                      = EnergySystem.getPaths()
+        system                           = EnergySystem.getSystem()
+        self.paths                       = EnergySystem.getPaths()
         self.getBaseUnits()
         # in class <EnergySystem>, all sets are constructed
-        self.setNodes                   = self.dataInput.extractLocations()
-        self.setNodesOnEdges            = self.calculateEdgesFromNodes()
-        self.setEdges                   = list(self.setNodesOnEdges.keys())
-        self.setCarriers                = system["setCarriers"]
-        self.setTechnologies            = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
-        self.setScenarios               = system["setScenarios"]
+        self.setNodes                    = self.dataInput.extractLocations()
+        self.setNodesOnEdges             = self.calculateEdgesFromNodes()
+        self.setEdges                    = list(self.setNodesOnEdges.keys())
+        self.setCarriers                 = system["setCarriers"]
+        self.setTechnologies             = system["setConversionTechnologies"]  + system["setConditioningTechnologies"] \
+                                          + system["setTransportTechnologies"] + system["setStorageTechnologies"]
         # base time steps
-        self.setBaseTimeSteps           = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
-        self.setBaseTimeStepsYearly     = list(range(0, system["timeStepsPerYear"]))
+        self.setBaseTimeSteps            = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
+        self.setBaseTimeStepsYearly      = list(range(0, system["timeStepsPerYear"]))
         # yearly time steps
-        self.typesTimeSteps             = ["invest", "operation", "yearly"]
-        self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
-        self.setTimeStepsYearly         = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
-        self.timeStepsYearlyDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
-        self.orderTimeStepsYearly       = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
+        self.typesTimeSteps              = ["invest", "operation", "yearly"]
+        self.dictNumberOfTimeSteps       = self.dataInput.extractNumberTimeSteps()
+        self.setTimeStepsYearly          = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
+        self.timeStepsYearlyDuration     = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
+        self.orderTimeStepsYearly        = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
         self.setOrderTimeSteps(None, self.orderTimeStepsYearly, timeStepType="yearly")
         # technology-specific
-        self.setConversionTechnologies  = system["setConversionTechnologies"]
-        self.setTransportTechnologies   = system["setTransportTechnologies"]
-        self.setStorageTechnologies     = system["setStorageTechnologies"]
+        self.setConversionTechnologies   = system["setConversionTechnologies"]
+        self.setConditioningTechnologies = system["setConditioningTechnologies"]
+        self.setTransportTechnologies    = system["setTransportTechnologies"]
+        self.setStorageTechnologies      = system["setStorageTechnologies"]
         # carbon emissions limit
-        self.carbonEmissionsLimit       = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
-        _fractionOfYear                 = system["timeStepsPerYear"]/system["totalHoursPerYear"]
-        self.carbonEmissionsLimit       = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
+        self.carbonEmissionsLimit        = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
+        _fractionOfYear                  = system["timeStepsPerYear"]/system["totalHoursPerYear"]
+        self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
 
     def getBaseUnits(self):
         """ gets base units of energy system """
