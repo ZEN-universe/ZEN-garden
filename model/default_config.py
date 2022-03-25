@@ -34,9 +34,8 @@ analysis["discountRate"] = 0.06
 # transport distance (euclidean or actual)
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
-analysis["subsets"] = {
-    "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]
-    }
+analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
+
 # headers for the generation of input files
 analysis["headerDataInputs"]=   {"setNodes": ["node", "x", "y"],
                                 "setEdges": ["edge"],
@@ -63,18 +62,22 @@ system["setCarriers"] = ["electricity", "gas", "hydrogen", "biomass", "CO2","wat
 # # set of energy carriers for transport
 # system["setTransportCarriers"] = ["hydrogen"]
 # set of conversion technologies
-system["setConversionTechnologies"] = ["electrolysis", "SMR", "b_SMR", "b_Gasification"]
+system["setConversionTechnologies"] = []
 # set of storage technologies
-system["setStorageTechnologies"] = ["CO2_storage"]
+system["setStorageTechnologies"] = []
 # set of transport technologies
-system["setTransportTechnologies"] = ["pipeline_hydrogen", "truck_hydrogen_gas", "truck_hydrogen_liquid"]
-# set of scenarios
-system["setScenarios"]          = "a"
-# set of time steps
-system["setTimeStepsPerYear"]   = [1,2,3]
-system["totalHoursPerYear"]     = 8760
+system["setTransportTechnologies"] = []
 # set of nodes
-system["setNodes"] = ["Berlin", "Zurich", "Rome"]
+system["setNodes"] = []
+# time steps
+system["referenceYear"]                             = 2020
+system["timeStepsPerYear"]                          = 1
+system["timeStepsYearly"]                           = 15
+system["intervalYears"]                             = 1
+system['setTimeStepsPerYear']                       = list(range(0,system["timeStepsPerYear"]))
+system["numberTimeStepsPerYearDefault"]             = 1 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
+system["totalHoursPerYear"]                         = 8760
+
 # folder output
 system["folderOutput"] = "outputs/results/"
 

@@ -217,6 +217,7 @@ class Technology(Element):
         model.setStorageTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setStorageTechnologies"),
             doc='Set of storage technologies. Subset: setTechnologies')
+
         # existing installed technologies
         model.setExistingTechnologies = pe.Set(
             model.setTechnologies,
