@@ -27,19 +27,20 @@ analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEffic
 ## System - settings update compared to default values
 today      = datetime.now()
 system["modelName"]                                 = "model_" + today.strftime("%Y-%m-%d") #+ "_reduced_Emissions"
-system["setCarriers"]                               = ["electricity", "hydrogen",
-                                                       #"dry_biomass", "wet_biomass",
+system["setCarriers"]                               = ["electricity", "hydrogen", "hydrogen_high",
+                                                       "dry_biomass", "wet_biomass",
                                                        "natural_gas",
                                                        "carbon"] # ,"stored_carbon"
 system["setStorageTechnologies"]                    = []#["carbon_storage"]
-system["setTransportTechnologies"]                  = ["hydrogen_truck_gas" #"hydrogen_train", "hydrogen_pipeline", "hydrogen_ship", hydrogen_truck_liquid
-                                                       #"carbon_truck"
-                                                       ] # "carbon_train", "carbon_pipeline"
-system["setConversionTechnologies"]                 = [#"electrolysis",              # electricity
-                                                       #"SMR",
-                                                       "SMR-54",# "SMR-89",          # natural gas
-                                                       #"bSMR", "bGasification",     # biomass
+system["setTransportTechnologies"]                  = ["hydrogen_truck_gas", #"hydrogen_train", "hydrogen_pipeline", "hydrogen_ship", hydrogen_truck_liquid
+                                                       "carbon_truck"] # "carbon_train", "carbon_pipeline"
+system["setConversionTechnologies"]                 = ["electrolysis",              # electricity
+                                                       "SMR",
+                                                       "SMR-54", "SMR-89",          # natural gas
+                                                       "bSMR", "bGasification",     # biomass
                                                        "carbon_storage"]
+system["setConditioningTechnologies"]               = ["compressor"]
+system["setConversionTechnologies"]                 = list(set(set(system["setConversionTechnologies"]) | set(system["setConditioningTechnologies"])))
 #system["setNodes"]                                  = ["AT", "NO"] #["BE", "BG", "DE", "ES", "FR", "IT", "NL", "PL", "RO", "UK", "NO"]
 system["setNodes"]                                  = ["AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "EL", "ES",
                                                        "FI", "FR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK",
@@ -50,7 +51,7 @@ system["referenceYear"]                             = 2020
 system["timeStepsPerYear"]                          = 1
 system["timeStepsYearly"]                           = 15
 system["intervalYears"]                             = 1
-system['setTimeStepsPerYear']                       = list(range(0,system["timeStepsPerYear"]))
+system["setTimeStepsPerYear"]                       = list(range(0,system["timeStepsPerYear"]))
 system["numberTimeStepsPerYearDefault"]             = 1 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
 
 
