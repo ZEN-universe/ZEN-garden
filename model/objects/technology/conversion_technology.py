@@ -39,44 +39,35 @@ class ConversionTechnology(Technology):
         # define input and output carrier
         self.inputCarrier               = self.dataInput.extractConversionCarriers(self.inputPath)["inputCarrier"]
         self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
-        # extract PWA parameters
-        self.PWAParameter               = self.dataInput.extractPWAData(self.inputPath,self)
-        self.convertToAnnualizedCapex()
-        # calculate capex of existing capacity
-        self.capexExistingCapacity      = self.calculateCapexOfExistingCapacities()
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
         # extract PWA parameters: Capex
         self.PWACapex                   = self.dataInput.extractPWAData(self.inputPath,"Capex",self)
+        # calculate capex of existing capacity
+        self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
         self.convertToAnnualizedCapex()
-        # extract PWA parameters: ConverEfficiency
-        system = EnergySystem.getSystem()
-        if self.name in system['setConditioningTechnologies']:
-            self.PWAConverEfficiency   = self.dataInput.extractDataConditioning(self.inputPath,"ConverEfficiency",self)
-        else:
-            self.PWAConverEfficiency    = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency",self)
+        self.PWAConverEfficiency    = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency",self)
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
         fractionalAnnuity   = self.calculateFractionalAnnuity()
         # annualize capex
         # set bounds
-        self.PWAParameter["Capex"]["bounds"]["capex"] = tuple([bound*fractionalAnnuity for bound in self.PWAParameter["Capex"]["bounds"]["capex"]])
-        if not self.PWAParameter["Capex"]["PWAVariables"]:
-            self.PWAParameter["Capex"]["capex"] = self.PWAParameter["Capex"]["capex"]*fractionalAnnuity
+        self.PWACapex["bounds"]["capex"] = tuple([bound*fractionalAnnuity for bound in self.PWACapex["bounds"]["capex"]])
+        if not self.PWACapex["PWAVariables"]:
+            self.PWACapex["capex"] = self.PWACapex["capex"]*fractionalAnnuity
         else:
-            self.PWAParameter["Capex"]["capex"] = [value*fractionalAnnuity for value in self.PWAParameter["Capex"]["capex"]]
+            self.PWACapex["capex"] = [value*fractionalAnnuity for value in self.PWACapex["capex"]]
 
     def calculateCapexOfSingleCapacity(self,capacity,_):
         """ this method calculates the annualized capex of a single existing capacity. """
         if capacity == 0:
             return 0
-        _PWACapex = self.PWAParameter["Capex"]
         # linear
-        if not _PWACapex["PWAVariables"]:
-            capex   = _PWACapex["capex"]*capacity
+        if not self.PWACapex["PWAVariables"]:
+            capex   = self.PWACapex["capex"]*capacity
         else:
-            capex   = np.interp(capacity,_PWACapex["capacity"],_PWACapex["capex"])
+            capex   = np.interp(capacity,self.PWACapex["capacity"],self.PWACapex["capex"])
         return capex
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
@@ -346,5 +337,3 @@ def constraintDependentFlowCouplingRule(disjunct,tech,dependentCarrier,node,time
         return(model.inputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
     else:
         return(model.outputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
-
-#%% TODO implement conditioning for e.g. hydrogen
