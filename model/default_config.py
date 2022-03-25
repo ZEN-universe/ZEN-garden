@@ -34,7 +34,7 @@ analysis["discountRate"] = 0.06
 # transport distance (euclidean or actual)
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
-analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies","setConditioningTechnologies"]}
+analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
 
 # headers for the generation of input files
 analysis["headerDataInputs"]=   {"setNodes": ["node", "x", "y"],
@@ -67,8 +67,6 @@ system["setConversionTechnologies"] = []
 system["setStorageTechnologies"] = []
 # set of transport technologies
 system["setTransportTechnologies"] = []
-# set of conditioning technologies
-system["setConditioningTechnologies"] = []
 # set of nodes
 system["setNodes"] = []
 # time steps

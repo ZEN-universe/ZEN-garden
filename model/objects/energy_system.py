@@ -72,8 +72,7 @@ class EnergySystem:
         self.setNodesOnEdges             = self.calculateEdgesFromNodes()
         self.setEdges                    = list(self.setNodesOnEdges.keys())
         self.setCarriers                 = system["setCarriers"]
-        self.setTechnologies             = system["setConversionTechnologies"]  + system["setConditioningTechnologies"] \
-                                          + system["setTransportTechnologies"] + system["setStorageTechnologies"]
+        self.setTechnologies             = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
         # base time steps
         self.setBaseTimeSteps            = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
         self.setBaseTimeStepsYearly      = list(range(0, system["timeStepsPerYear"]))
@@ -86,7 +85,6 @@ class EnergySystem:
         self.setOrderTimeSteps(None, self.orderTimeStepsYearly, timeStepType="yearly")
         # technology-specific
         self.setConversionTechnologies   = system["setConversionTechnologies"]
-        self.setConditioningTechnologies = system["setConditioningTechnologies"]
         self.setTransportTechnologies    = system["setTransportTechnologies"]
         self.setStorageTechnologies      = system["setStorageTechnologies"]
         # carbon emissions limit
