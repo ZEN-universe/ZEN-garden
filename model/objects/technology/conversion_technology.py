@@ -47,11 +47,7 @@ class ConversionTechnology(Technology):
         self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
         self.convertToAnnualizedCapex()
         # extract PWA parameters: ConverEfficiency
-        system = EnergySystem.getSystem()
-        if self.name in system['setConditioningTechnologies']:
-            self.PWAConverEfficiency   = self.dataInput.extractDataConditioning(self.inputPath,"ConverEfficiency",self)
-        else:
-            self.PWAConverEfficiency    = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency",self)
+        self.PWAConverEfficiency   = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency",self)
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
@@ -298,7 +294,7 @@ class ConversionTechnology(Technology):
                 tech = index
             # retrieve PWA variables
             PWAParameter = cls.getAttributeOfAllElements(f"PWA{typePWA}")
-            if typePWA == "Capex": # TODO check if necessary
+            if typePWA == "Capex":
                 PWABreakpoints[index] = PWAParameter[tech]["capacity"]
                 PWAValues[index] = PWAParameter[tech]["capex"]
             elif typePWA == "ConverEfficiency":

@@ -157,6 +157,15 @@ class Prepare:
                     logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
                     system[technologySubset].remove(technology)
             system["setTechnologies"].extend(system[technologySubset])
+            # check subsets of technologySubset
+            if technologySubset in self.analysis["subsets"].keys():
+                for subset in self.analysis["subsets"][technologySubset]:
+                    for technology in system[subset]:
+                        if technology not in self.paths[subset].keys():
+                            logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
+                            system[subset].remove(technology)
+                    system[technologySubset].extend(system[subset])
+                    system["setTechnologies"].extend(system[subset])
         
         # return system
         return system

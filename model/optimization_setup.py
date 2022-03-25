@@ -18,12 +18,13 @@ import pandas as pd
 
 from model.objects.element import Element
 # the order of the following classes defines the order in which they are constructed. Keep this way
-from model.objects.technology.conversion_technology import ConversionTechnology
-from model.objects.technology.storage_technology import StorageTechnology
-from model.objects.technology.transport_technology import TransportTechnology
-from model.objects.carrier import Carrier
-from model.objects.energy_system import EnergySystem
-from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
+from model.objects.technology.conversion_technology     import ConversionTechnology
+from model.objects.technology.conditioning_technology   import ConditioningTechnology
+from model.objects.technology.storage_technology        import StorageTechnology
+from model.objects.technology.transport_technology      import TransportTechnology
+from model.objects.carrier                              import Carrier
+from model.objects.energy_system                        import EnergySystem
+from preprocess.functions.time_series_aggregation       import TimeSeriesAggregation
 
 class OptimizationSetup():
 
@@ -57,7 +58,10 @@ class OptimizationSetup():
         EnergySystem("energySystem")
         # add technology 
         for conversionTech in self.system['setConversionTechnologies']:
-            ConversionTechnology(conversionTech)
+            if conversionTech in self.system["setConditioningTechnologies"]:
+                ConditioningTechnology(conversionTech)
+            else:
+                ConversionTechnology(conversionTech)
         for transportTech in self.system['setTransportTechnologies']:
             TransportTechnology(transportTech)
         for storageTech in self.system['setStorageTechnologies']:
@@ -67,7 +71,7 @@ class OptimizationSetup():
             Carrier(carrier)
         # conduct  time series aggregation
         TimeSeriesAggregation.conductTimeSeriesAggregation()
-        
+
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets

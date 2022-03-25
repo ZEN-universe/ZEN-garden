@@ -72,7 +72,7 @@ class EnergySystem:
         self.setNodesOnEdges             = self.calculateEdgesFromNodes()
         self.setEdges                    = list(self.setNodesOnEdges.keys())
         self.setCarriers                 = system["setCarriers"]
-        self.setTechnologies             = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
+        self.setTechnologies             = system["setTechnologies"]
         # base time steps
         self.setBaseTimeSteps            = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
         self.setBaseTimeStepsYearly      = list(range(0, system["timeStepsPerYear"]))
@@ -270,6 +270,7 @@ class EnergySystem:
         """ get paths 
         :return paths: paths to folders of input data """
         return cls.paths
+
     @classmethod
     def getSolver(cls):
         """ get solver 

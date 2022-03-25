@@ -417,10 +417,9 @@ class DataInput():
 
         return dfOutput
 
-    def extractDataConditioning(self, folderPath, type, tech):
+    def extractDataConditioning(self, folderPath, tech):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
-        :param type: technology approximation type
         :param tech: technology object
         :return outputDict: dictionary with output parameters following the structure of the PWA dict"""
 
@@ -466,68 +465,74 @@ class DataInput():
         :param type: technology approximation type
         :param tech: technology object
         :return PWADict: dictionary with PWA parameters """
-        # get system attribute
-        fileFormat = self.analysis["fileFormat"]
-        # select data
-        PWADict = {}
-        assert type in self.analysis["nonlinearTechnologyApproximation"], f"{type} is not specified in analysis['nonlinearTechnologyApproximation']"
 
-        # extract all data values
-        nonlinearValues     = {}
-        assert f"nonlinear{type}.{fileFormat}" in os.listdir(folderPath), f"File 'nonlinear{type}.{fileFormat}' does not exist in {folderPath}"
-        dfInputNonlinear    = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
-        dfInputUnits        = dfInputNonlinear.iloc[-1]
-        dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.getUnitMultiplier(unit))
-        dfInputNonlinear    = dfInputNonlinear.iloc[:-1].astype(float)
-        dfInputNonlinear    = dfInputNonlinear*dfInputMultiplier
-        if type == "Capex":
-            # make absolute capex
-            dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
-        for column in dfInputNonlinear.columns:
-            nonlinearValues[column] = dfInputNonlinear[column].to_list()
-        # extract PWA breakpoints
-        assert f"breakpointsPWA{type}.{fileFormat}" in os.listdir(folderPath), f"File 'breakpointsPWA{type}.{fileFormat}' does not exist in {folderPath}"
-        # TODO devise better way to split string units
-        dfInputBreakpoints          = pd.read_csv(folderPath+"breakpointsPWA" + type + '.'+fileFormat, header=0, index_col=None)
-        dfInputBreakpointsUnits     = dfInputBreakpoints.iloc[-1]
-        dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.getUnitMultiplier(unit))
-        dfInputBreakpoints          = dfInputBreakpoints.iloc[:-1].astype(float)
-        dfInputBreakpoints          = dfInputBreakpoints*dfInputMultiplier
-        # assert that breakpoint variable (x variable in nonlinear input)
-        assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
-        breakpointVariable = dfInputBreakpoints.columns[0]
-        breakpoints = dfInputBreakpoints[breakpointVariable].to_list()
+        if hasattr(tech, "subset") and type == "ConverEfficiency":
+            return None
+            #assert tech.subset == "setConditioningTechnologies", f"Only implemented for setConditioningTechnologies. {tech.subset} is not valid. "
+            #PWADict = self.extractDataConditioning(folderPath,tech)
+        else:
+            # get system attribute
+            fileFormat = self.analysis["fileFormat"]
+            # select data
+            PWADict = {}
+            assert type in self.analysis["nonlinearTechnologyApproximation"], f"{type} is not specified in analysis['nonlinearTechnologyApproximation']"
 
-        PWADict[breakpointVariable] = breakpoints
-        PWADict["PWAVariables"] = [] # select only those variables that are modeled as PWA
-        PWADict["bounds"] = {} # save bounds of variables
-        # min and max total capacity of technology
-        minCapacityTech,maxCapacityTech = (0,min(max(tech.capacityLimit.values),max(breakpoints)))
-        for valueVariable in nonlinearValues:
-            if valueVariable == breakpointVariable:
-                PWADict["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
-            else:
-                # conduct linear regress
-                linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
-                # calculate relative intercept (intercept/slope) if slope != 0
-                if linearRegressObject.slope != 0:
-                    _relativeIntercept = np.abs(linearRegressObject.intercept/linearRegressObject.slope)
+            # extract all data values
+            nonlinearValues     = {}
+            assert f"nonlinear{type}.{fileFormat}" in os.listdir(folderPath), f"File 'nonlinear{type}.{fileFormat}' does not exist in {folderPath}"
+            dfInputNonlinear    = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
+            dfInputUnits        = dfInputNonlinear.iloc[-1]
+            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.getUnitMultiplier(unit))
+            dfInputNonlinear    = dfInputNonlinear.iloc[:-1].astype(float)
+            dfInputNonlinear    = dfInputNonlinear*dfInputMultiplier
+            if type == "Capex":
+                # make absolute capex
+                dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
+            for column in dfInputNonlinear.columns:
+                nonlinearValues[column] = dfInputNonlinear[column].to_list()
+            # extract PWA breakpoints
+            assert f"breakpointsPWA{type}.{fileFormat}" in os.listdir(folderPath), f"File 'breakpointsPWA{type}.{fileFormat}' does not exist in {folderPath}"
+            # TODO devise better way to split string units
+            dfInputBreakpoints          = pd.read_csv(folderPath+"breakpointsPWA" + type + '.'+fileFormat, header=0, index_col=None)
+            dfInputBreakpointsUnits     = dfInputBreakpoints.iloc[-1]
+            dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.getUnitMultiplier(unit))
+            dfInputBreakpoints          = dfInputBreakpoints.iloc[:-1].astype(float)
+            dfInputBreakpoints          = dfInputBreakpoints*dfInputMultiplier
+            # assert that breakpoint variable (x variable in nonlinear input)
+            assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
+            breakpointVariable = dfInputBreakpoints.columns[0]
+            breakpoints = dfInputBreakpoints[breakpointVariable].to_list()
+
+            PWADict[breakpointVariable] = breakpoints
+            PWADict["PWAVariables"] = [] # select only those variables that are modeled as PWA
+            PWADict["bounds"] = {} # save bounds of variables
+            # min and max total capacity of technology
+            minCapacityTech,maxCapacityTech = (0,min(max(tech.capacityLimit.values),max(breakpoints)))
+            for valueVariable in nonlinearValues:
+                if valueVariable == breakpointVariable:
+                    PWADict["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
                 else:
-                    _relativeIntercept = np.abs(linearRegressObject.intercept)
-                # check if to a reasonable degree linear
-                if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
-                    # model as linear function
-                    PWADict[valueVariable] = linearRegressObject.slope
-                    # save bounds
-                    PWADict["bounds"][valueVariable] = (PWADict[valueVariable]*minCapacityTech,PWADict[valueVariable]*maxCapacityTech)
-                else:
-                    # model as PWA function
-                    PWADict[valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
-                    PWADict["PWAVariables"].append(valueVariable)
-                    # save bounds
-                    _valuesBetweenBounds = [PWADict[valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= minCapacityTech and breakpoint <= maxCapacityTech]
-                    _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[valueVariable])))
-                    PWADict["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
+                    # conduct linear regress
+                    linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
+                    # calculate relative intercept (intercept/slope) if slope != 0
+                    if linearRegressObject.slope != 0:
+                        _relativeIntercept = np.abs(linearRegressObject.intercept/linearRegressObject.slope)
+                    else:
+                        _relativeIntercept = np.abs(linearRegressObject.intercept)
+                    # check if to a reasonable degree linear
+                    if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
+                        # model as linear function
+                        PWADict[valueVariable] = linearRegressObject.slope
+                        # save bounds
+                        PWADict["bounds"][valueVariable] = (PWADict[valueVariable]*minCapacityTech,PWADict[valueVariable]*maxCapacityTech)
+                    else:
+                        # model as PWA function
+                        PWADict[valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
+                        PWADict["PWAVariables"].append(valueVariable)
+                        # save bounds
+                        _valuesBetweenBounds = [PWADict[valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= minCapacityTech and breakpoint <= maxCapacityTech]
+                        _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[valueVariable])))
+                        PWADict["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
         return PWADict
 
     def extractBaseUnits(self,folderPath):
