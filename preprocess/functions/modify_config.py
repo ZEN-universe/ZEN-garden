@@ -4,15 +4,10 @@ Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:    Class to modify the config dictionary based on existing inputs from config and default_config
+Description:  Class to modify the config dictionary based on existing inputs from config and default_config
 ==========================================================================================================================================================================="""
-import numpy as np
-
 
 class UpdateConfig:
-
-    def __init__(self):
-        pass
 
     def createSetsFromSubsets(self):
 
@@ -26,9 +21,9 @@ class UpdateConfig:
                 self.system[setName].extend(self.system[subsetName])
 
     def createSupportPoints(self):
-
         technologySubset = 'setConversionTechnologies'
-        # types = self.analysis['linearTechnologyApproximation'].keys()
+        types            = self.analysis['linearTechnologyApproximation'].keys()
+
         for technologyName in self.system[technologySubset]:
             for type in types:
                 if technologyName in self.analysis['nonlinearTechnologyApproximation'][type]:

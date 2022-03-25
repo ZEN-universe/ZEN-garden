@@ -218,6 +218,7 @@ class Technology(Element):
         model.setStorageTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setStorageTechnologies"),
             doc='Set of storage technologies. Subset: setTechnologies')
+
         # existing installed technologies
         model.setExistingTechnologies = pe.Set(
             model.setTechnologies,
@@ -334,16 +335,20 @@ class Technology(Element):
             :param model: pe.ConcreteModel
             :param tech: tech index
             :return bounds: bounds of capacity"""
-            existingCapacities = 0
-            for id in model.setExistingTechnologies[tech]:
-                if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
-                    existingCapacities += model.existingCapacity[tech, loc, id]
+            # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
+            if tech in Technology.createCustomSet(["setTechnologies","setOnOff"]):
+                existingCapacities = 0
+                for id in model.setExistingTechnologies[tech]:
+                    if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
+                        existingCapacities += model.existingCapacity[tech, loc, id]
 
-            maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
-            maxCapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
-            boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology)
-            bounds = (0,boundCapacity)
-            return(bounds)
+                maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
+                maxCapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
+                boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology)
+                bounds = (0,boundCapacity)
+                return(bounds)
+            else:
+                return(None,None)
 
         model = EnergySystem.getConcreteModel()
         # construct pe.Vars of the class <Technology>

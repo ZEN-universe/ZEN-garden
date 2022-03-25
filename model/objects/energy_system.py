@@ -1,23 +1,25 @@
 """===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        January-2022
-Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Title:        ZEN-GARDEN
+Created:      January-2022
+Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:    Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
-                optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
-                optimization model as an input.
+Description:  Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
+              optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
+              optimization model as an input.
 ==========================================================================================================================================================================="""
+
 import logging
-import pyomo.environ as pe
-import numpy as np
-import pandas as pd
-from pint import UnitRegistry
-from preprocess.functions.extract_input_data import DataInput
-from pint.util import column_echelon_form
 import warnings
+import pyomo.environ as pe
+import numpy         as np
+import pandas        as pd
+from pint                                    import UnitRegistry
+from preprocess.functions.extract_input_data import DataInput
+from pint.util                               import column_echelon_form
 
 class EnergySystem:
+    
     # energySystem
     energySystem = None
     # pe.ConcreteModel
@@ -49,56 +51,67 @@ class EnergySystem:
 
     def __init__(self,nameEnergySystem):
         """ initialization of the energySystem
-        :param nameEnergySystem: name of energySystem that is added to the model"""
+        :param nameEnergySystem: name of energySystem that is added to the model """
+
         # only one energy system can be defined
         assert not EnergySystem.getEnergySystem(), "Only one energy system can be defined."
+
         # set attributes
-        self.name       = nameEnergySystem
+        self.name = nameEnergySystem
+
         # add energySystem to list
         EnergySystem.setEnergySystem(self)
+
         # create DataInput object
-        self.dataInput  = DataInput(EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
+        self.dataInput = DataInput(EnergySystem.getSystem(), EnergySystem.getAnalysis(), EnergySystem.getSolver(), EnergySystem.getEnergySystem())
+
         # store input data
         self.storeInputData()
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
 
-        system                          = EnergySystem.getSystem()
-        self.paths                      = EnergySystem.getPaths()
+        system                           = EnergySystem.getSystem()
+        self.paths                       = EnergySystem.getPaths()
         self.getBaseUnits()
+
         # in class <EnergySystem>, all sets are constructed
-        self.setNodes                   = self.dataInput.extractLocations()
-        self.setNodesOnEdges            = self.calculateEdgesFromNodes()
-        self.setEdges                   = list(self.setNodesOnEdges.keys())
-        self.setCarriers                = system["setCarriers"]
-        self.setTechnologies            = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
-        self.setScenarios               = system["setScenarios"]
+        self.setNodes                    = self.dataInput.extractLocations()
+        self.setNodesOnEdges             = self.calculateEdgesFromNodes()
+        self.setEdges                    = list(self.setNodesOnEdges.keys())
+        self.setCarriers                 = system["setCarriers"]
+        self.setTechnologies             = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
+
         # base time steps
-        self.setBaseTimeSteps           = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
-        self.setBaseTimeStepsYearly     = list(range(0, system["timeStepsPerYear"]))
+        self.setBaseTimeSteps            = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
+        self.setBaseTimeStepsYearly      = list(range(0, system["timeStepsPerYear"]))
+        
         # yearly time steps
-        self.typesTimeSteps             = ["invest", "operation", "yearly"]
-        self.dictNumberOfTimeSteps      = self.dataInput.extractNumberTimeSteps()
-        self.setTimeStepsYearly         = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
-        self.timeStepsYearlyDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
-        self.orderTimeStepsYearly       = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
+        self.typesTimeSteps              = ["invest", "operation", "yearly"]
+        self.dictNumberOfTimeSteps       = self.dataInput.extractNumberTimeSteps()
+        self.setTimeStepsYearly          = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
+        self.timeStepsYearlyDuration     = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
+        self.orderTimeStepsYearly        = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
         self.setOrderTimeSteps(None, self.orderTimeStepsYearly, timeStepType="yearly")
+
         # technology-specific
-        self.setConversionTechnologies  = system["setConversionTechnologies"]
-        self.setTransportTechnologies   = system["setTransportTechnologies"]
-        self.setStorageTechnologies     = system["setStorageTechnologies"]
+        self.setConversionTechnologies   = system["setConversionTechnologies"]
+        self.setTransportTechnologies    = system["setTransportTechnologies"]
+        self.setStorageTechnologies      = system["setStorageTechnologies"]
+
         # carbon emissions limit
-        self.carbonEmissionsLimit       = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
-        _fractionOfYear                 = system["timeStepsPerYear"]/system["totalHoursPerYear"]
-        self.carbonEmissionsLimit       = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
+        self.carbonEmissionsLimit        = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
+        _fractionOfYear                  = system["timeStepsPerYear"]/system["totalHoursPerYear"]
+        self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
 
     def getBaseUnits(self):
         """ gets base units of energy system """
         _listBaseUnits                  = self.dataInput.extractBaseUnits(self.paths["setScenarios"]["folder"])
         ureg                            = EnergySystem.getUnitRegistry()
+
         # load additional units
         ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
+
         # empty base units and dimensionality matrix
         self.baseUnits                  = {}
         self.dimMatrix                  = pd.DataFrame(index=_listBaseUnits).astype(int)
@@ -107,6 +120,7 @@ class EnergySystem:
             self.baseUnits[_baseUnit]   = ureg(_baseUnit).dimensionality
             self.dimMatrix.loc[_baseUnit, list(dimUnit.keys())] = list(dimUnit.values())
         self.dimMatrix                  = self.dimMatrix.fillna(0).astype(int).T
+        
         # check if unit defined twice or more
         _duplicateUnits                 = self.dimMatrix.T.duplicated()
         if _duplicateUnits.any():
@@ -168,8 +182,14 @@ class EnergySystem:
                         setNodesOnEdges[nodeFrom+"-"+nodeTo] = (nodeFrom,nodeTo)
         return setNodesOnEdges
 
-    ### --- classmethods --- ###
+    ### CLASS METHODS ###
     # setter/getter classmethods
+    @classmethod
+    def getEnergySystem(cls):
+        """ get energySystem.
+        :return energySystem: return energySystem  """
+        return cls.energySystem
+
     @classmethod
     def setEnergySystem(cls,energySystem):
         """ set energySystem. 
@@ -276,12 +296,6 @@ class EnergySystem:
         """ get solver 
         :return solver: dictionary defining the analysis solver """
         return cls.solver
-
-    @classmethod
-    def getEnergySystem(cls):
-        """ get energySystem.
-        :return energySystem: return energySystem  """
-        return cls.energySystem
 
     @classmethod
     def getUnitRegistry(cls):

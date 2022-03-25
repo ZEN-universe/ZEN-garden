@@ -1,9 +1,9 @@
 /.idea
 /.vscode
-/data/
+/data/*/
+/data/*
+!/data/.gitkeep
 /outputs/
 /data_generation/
-config.py
 *.pyc
 *.DS_Store
-
