@@ -39,35 +39,35 @@ class ConversionTechnology(Technology):
         # define input and output carrier
         self.inputCarrier               = self.dataInput.extractConversionCarriers(self.inputPath)["inputCarrier"]
         self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
-        # extract PWA parameters
-        self.PWAParameter               = self.dataInput.extractPWAData(self.inputPath,self)
-        self.convertToAnnualizedCapex()
-        # calculate capex of existing capacity
-        self.capexExistingCapacity      = self.calculateCapexOfExistingCapacities()
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
+        # extract PWA parameters: Capex
+        self.PWACapex                   = self.dataInput.extractPWAData(self.inputPath,"Capex",self)
+        # calculate capex of existing capacity
+        self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
+        self.convertToAnnualizedCapex()
+        self.PWAConverEfficiency    = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency",self)
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
         fractionalAnnuity   = self.calculateFractionalAnnuity()
         # annualize capex
         # set bounds
-        self.PWAParameter["Capex"]["bounds"]["capex"] = tuple([bound*fractionalAnnuity for bound in self.PWAParameter["Capex"]["bounds"]["capex"]])
-        if not self.PWAParameter["Capex"]["PWAVariables"]:
-            self.PWAParameter["Capex"]["capex"] = self.PWAParameter["Capex"]["capex"]*fractionalAnnuity
+        self.PWACapex["bounds"]["capex"] = tuple([bound*fractionalAnnuity for bound in self.PWACapex["bounds"]["capex"]])
+        if not self.PWACapex["PWAVariables"]:
+            self.PWACapex["capex"] = self.PWACapex["capex"]*fractionalAnnuity
         else:
-            self.PWAParameter["Capex"]["capex"] = [value*fractionalAnnuity for value in self.PWAParameter["Capex"]["capex"]]
+            self.PWACapex["capex"] = [value*fractionalAnnuity for value in self.PWACapex["capex"]]
 
     def calculateCapexOfSingleCapacity(self,capacity,_):
         """ this method calculates the annualized capex of a single existing capacity. """
         if capacity == 0:
             return 0
-        _PWACapex = self.PWAParameter["Capex"]
         # linear
-        if not _PWACapex["PWAVariables"]:
-            capex   = _PWACapex["capex"]*capacity
+        if not self.PWACapex["PWAVariables"]:
+            capex   = self.PWACapex["capex"]*capacity
         else:
-            capex   = np.interp(capacity,_PWACapex["capacity"],_PWACapex["capex"])
+            capex   = np.interp(capacity,self.PWACapex["capacity"],self.PWACapex["capex"])
         return capex
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
@@ -105,18 +105,19 @@ class ConversionTechnology(Technology):
     @classmethod
     def constructParams(cls):
         """ constructs the pe.Params of the class <ConversionTechnology> """
-        model = EnergySystem.getConcreteModel()
-        _PWAParameter       = cls.getAttributeOfAllElements("PWAParameter")
+        model                = EnergySystem.getConcreteModel()
+        _PWACapex            = cls.getAttributeOfAllElements("PWACapex")
+        _PWAConverEfficiency = cls.getAttributeOfAllElements("PWAConverEfficiency")
         # slope of linearly modeled capex
         model.slopeLinearApproximationCapex = pe.Param(
             cls.createCustomSet(["setConversionTechnologies","setCapexLinear","setNodes","setTimeStepsInvest"]),
-            initialize = lambda _,tech,*__: _PWAParameter[(tech,"Capex")]["capex"],
+            initialize = lambda _,tech,*__: _PWACapex[tech]["capex"],
             doc = "Parameter which specifies the slope of the capex if approximated linearly. Dimensions: setConversionTechnologies, setNodes, setTimeStepsInvest"
         )
         # slope of linearly modeled conversion efficiencies
         model.slopeLinearApproximationConverEfficiency = pe.Param(
             cls.createCustomSet(["setConversionTechnologies","setConverEfficiencyLinear","setNodes","setTimeStepsOperation"]),
-            initialize = lambda _,tech,carrier,*__: _PWAParameter[(tech,"ConverEfficiency")][carrier],
+            initialize = lambda _,tech,carrier,*__: _PWAConverEfficiency[tech][carrier],
             doc = "Parameter which specifies the slope of the conversion efficiency if approximated linearly. Dimensions: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation"
         )
 
@@ -130,13 +131,13 @@ class ConversionTechnology(Technology):
         model.inputFlow = pe.Var(
             cls.createCustomSet(["setConversionTechnologies","setInputCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
+            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAConverEfficiency")[tech]["bounds"][carrier],
             doc = 'Carrier input of conversion technologies. Dimensions: setConversionTechnologies, setInputCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals' )
         # output flow of carrier into technology
         model.outputFlow = pe.Var(
             cls.createCustomSet(["setConversionTechnologies","setOutputCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
+            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAConverEfficiency")[tech]["bounds"][carrier],
             doc = 'Carrier output of conversion technologies. Dimensions: setConversionTechnologies, setOutputCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals')
         
         ## PWA Variables - Capex
@@ -156,13 +157,13 @@ class ConversionTechnology(Technology):
         model.referenceFlowApproximation = pe.Var(
             cls.createCustomSet(["setConversionTechnologies","setConverEfficiency","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            bounds = lambda model, tech, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][model.setReferenceCarriers[tech].at(1)],
+            bounds = lambda model, tech, *__: cls.getAttributeOfAllElements("PWAConverEfficiency")[tech]["bounds"][model.setReferenceCarriers[tech].at(1)],
             doc = 'PWA of flow of reference carrier of conversion technologies. Dimensions: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals')
         # PWA dependent flow of carrier into technology
         model.dependentFlowApproximation = pe.Var(
             cls.createCustomSet(["setConversionTechnologies","setConverEfficiency","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAParameter")[tech,"ConverEfficiency"]["bounds"][carrier],
+            bounds = lambda _, tech, carrier, *__: cls.getAttributeOfAllElements("PWAConverEfficiency")[tech]["bounds"][carrier],
             doc = 'PWA of flow of dependent carriers of conversion technologies. Dimensions: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals')
 
     @classmethod
@@ -172,7 +173,7 @@ class ConversionTechnology(Technology):
         
         # add PWA constraints
         # capex
-        setPWACapex = cls.createCustomSet(["setConversionTechnologies","setCapexPWA","setNodes","setTimeStepsInvest"])
+        setPWACapex    = cls.createCustomSet(["setConversionTechnologies","setCapexPWA","setNodes","setTimeStepsInvest"])
         setLinearCapex = cls.createCustomSet(["setConversionTechnologies","setCapexLinear","setNodes","setTimeStepsInvest"])
         if setPWACapex: 
             # if setPWACapex contains technologies:
@@ -290,13 +291,13 @@ class ConversionTechnology(Technology):
             else:
                 tech = index
             # retrieve PWA variables
-            PWAParameter = cls.getAttributeOfAllElements("PWAParameter")
-            if typePWA == "Capex":
-                PWABreakpoints[index] = PWAParameter[(tech,typePWA)]["capacity"]
-                PWAValues[index] = PWAParameter[(tech,typePWA)]["capex"]
+            PWAParameter = cls.getAttributeOfAllElements(f"PWA{typePWA}")
+            if typePWA == "Capex": # TODO check if necessary
+                PWABreakpoints[index] = PWAParameter[tech]["capacity"]
+                PWAValues[index] = PWAParameter[tech]["capex"]
             elif typePWA == "ConverEfficiency":
-                PWABreakpoints[index] = PWAParameter[(tech,typePWA)][cls.getAttributeOfAllElements("referenceCarrier")[tech][0]]
-                PWAValues[index] = PWAParameter[(tech,typePWA)][index[1]]
+                PWABreakpoints[index] = PWAParameter[tech][cls.getAttributeOfAllElements("referenceCarrier")[tech][0]]
+                PWAValues[index] = PWAParameter[tech][index[1]]
 
         return PWABreakpoints,PWAValues
 
@@ -336,5 +337,3 @@ def constraintDependentFlowCouplingRule(disjunct,tech,dependentCarrier,node,time
         return(model.inputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
     else:
         return(model.outputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
-
-#%% TODO implement conditioning for e.g. hydrogen

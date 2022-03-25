@@ -94,13 +94,13 @@ class Element:
                 _attribute = _attribute.to_dict()
             elif isinstance(_attribute,pd.DataFrame):
                 raise TypeError("Not yet implemented for pd.DataFrames")
-            if isinstance(_attribute,dict):
+            if isinstance(_attribute,dict) and "PWA" not in attributeName:
                 # if attribute is dict
                 for _key in _attribute:
                     if isinstance(_key,tuple):
                         dictOfAttributes[(_element.name,)+_key] = _attribute[_key]
                     else:
-                        dictOfAttributes[(_element.name,_key)] = _attribute[_key]
+                        dictOfAttributes[(_element.name, _key)] = _attribute[_key]
             else:
                 dictOfAttributes[_element.name] = _attribute
 
@@ -235,13 +235,13 @@ class Element:
                             if element in model.setConversionTechnologies: # TODO or element in model.setStorageTechnologies:
                                 # if technology is approximated (by either PWA or Linear)
                                 if element not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["Capex"] or EnergySystem.getSolver()["model"] == "MILP":
-                                    _PWAParameter = cls.getAttributeOfSpecificElement(element,"PWAParameter")
+                                    _PWACapex = cls.getAttributeOfSpecificElement(element,"PWACapex")
                                     # if technology is modeled as PWA, break for Linear index
-                                    if "Linear" in index and "capex" in _PWAParameter["Capex"]["PWAVariables"]:
+                                    if "Linear" in index and "capex" in _PWACapex["PWAVariables"]:
                                         appendElement = False
                                         break
                                     # if technology is not modeled as PWA, break for PWA index
-                                    elif "PWA" in index and "capex" not in _PWAParameter["Capex"]["PWAVariables"]:
+                                    elif "PWA" in index and "capex" not in _PWACapex["PWAVariables"]:
                                         appendElement = False
                                         break
                                     # if NL
@@ -262,9 +262,9 @@ class Element:
                             if element in model.setConversionTechnologies: # or element in model.setStorageTechnologies:
                                 # if technology is approximated (by either PWA or Linear)
                                 if element not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"] or EnergySystem.getSolver()["model"] == "MILP":
-                                    _PWAParameter = cls.getAttributeOfSpecificElement(element,"PWAParameter")
-                                    dependentCarrier = model.setDependentCarriers[element]
-                                    dependentCarrierPWA = _PWAParameter["ConverEfficiency"]["PWAVariables"]
+                                    _PWAConverEfficiency = cls.getAttributeOfSpecificElement(element,"PWAConverEfficiency")
+                                    dependentCarrier     = model.setDependentCarriers[element]
+                                    dependentCarrierPWA = _PWAConverEfficiency["PWAVariables"]
                                     if "Linear" in index:
                                         listSets.append(dependentCarrier-dependentCarrierPWA)
                                     elif "PWA" in index:
@@ -333,7 +333,7 @@ class Element:
             else:
                 # if technology is approximated (by either PWA or Linear)
                 if tech not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"] or EnergySystem.getSolver()["model"] == "MILP":
-                    _PWAParameter = cls.getAttributeOfSpecificElement(tech,"PWAParameter")["ConverEfficiency"]
+                    _PWAParameter = cls.getAttributeOfSpecificElement(tech,"PWAConverEfficiency")
                     # if not modeled as PWA
                     if not _PWAParameter["PWAVariables"]:
                         modelOnOff = False

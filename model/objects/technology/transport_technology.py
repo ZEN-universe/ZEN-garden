@@ -36,7 +36,7 @@ class TransportTechnology(Technology):
         super().storeInputData()
         # get system information
         paths                               = EnergySystem.getPaths()
-        self.inputPath                      = paths["setTransportTechnologies"][self.name]["folder"]
+        self.inputPath                     = paths["setTransportTechnologies"][self.name]["folder"]
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
         self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
