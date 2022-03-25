@@ -73,14 +73,14 @@ class OptimizationSetup():
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """
 
-        solverName = solver['name']
-        solverOptions = solver["solverOptions"]
+        solverName          = solver['name']
+        solverOptions       = solver["solverOptions"]
 
         logging.info(f"\n--- Solve model instance using {solverName} ---\n")
         # disable logger temporarily
         logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
-        # (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
+        #         # (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt            = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels=True)

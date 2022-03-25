@@ -86,32 +86,120 @@ class Technology(Element):
                                                                                   "existingCapacity",
                                                                         indexSets=[_setLocation,
                                                                            "setExistingTechnologies"],
-                                                                        column="existingCapacity", element=self)
+                                                                        column="existingCapacity",
+                                                                        transportTechnology=_isTransportTechnology,
+                                                                        element=self)
                 self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,
                                                                                    "existingCapacity",
                                                                        indexSets=[_setLocation,
                                                                            "setExistingTechnologies"],
                                                                        tech=self)
 
-    def convertToAnnualizedCapex(self):
-        """ this method converts the total capex to annualized capex """
+    def calculateCapexOfExistingCapacities(self):
+        """ this method calculates the annualized capex of the existing capacities. """
+        existingCapacities  = self.existingCapacity
+        existingCapex       = existingCapacities.to_frame().apply(
+            lambda _existingCapacity: self.calculateCapexOfSingleCapacity(_existingCapacity.squeeze(),_existingCapacity.name),axis=1)
+        return existingCapex
+
+    def calculateCapexOfSingleCapacity(self,*args):
+        """ this method calculates the annualized capex of the existing capacities. Is implemented in child class """
+        raise NotImplementedError
+
+    def calculateFractionalAnnuity(self):
+        """calculate fraction of annuity to depreciate investment"""
         system              = EnergySystem.getSystem()
         discountRate        = EnergySystem.getAnalysis()["discountRate"]
         
         lifetime            = self.lifetime
         presentValueFactor  = ((1+discountRate)**lifetime - 1)/(((1+discountRate)**lifetime)*discountRate)
         # only account for fraction of year
-        _fractionOfYear      = system["timeStepsPerYear"]/system["totalHoursPerYear"]
-        # annualize capex
-        if self.name in system["setConversionTechnologies"]:
-            # set bounds
-            self.PWACapex["bounds"]["capex"] = tuple([bound/presentValueFactor*_fractionOfYear for bound in self.PWACapex["bounds"]["capex"]])
-            if not self.PWACapex["PWAVariables"]:
-                self.PWACapex["capex"] = self.PWACapex["capex"]/presentValueFactor*_fractionOfYear
-            else:
-                self.PWACapex["capex"] = [value/presentValueFactor*_fractionOfYear for value in self.PWACapex["capex"]]
-        elif self.name in system["setTransportTechnologies"] or self.name in system["setStorageTechnologies"]:
-            self.capexSpecific = self.capexSpecific/presentValueFactor*_fractionOfYear
+        _fractionOfYear     = system["timeStepsPerYear"] / system["totalHoursPerYear"]
+        _fractionalAnnuity  = _annuity*_fractionOfYear
+        return _fractionalAnnuity
+    ### --- classmethods
+    @classmethod
+    def getLifetimeRange(cls, tech, time, timeStepType: str = None):
+        """ returns lifetime range of technology. If timeStepType, then converts the yearly time step 'time' to timeStepType """
+        if timeStepType:
+            baseTimeSteps   = EnergySystem.decodeTimeStep(None, time, "yearly")
+            investTimeStep  = EnergySystem.encodeTimeStep(tech, baseTimeSteps, timeStepType, yearly=True)
+        else:
+            investTimeStep  = time
+        tStart, tEnd = cls.getStartEndTimeOfLifetime(tech, investTimeStep)
+
+        return range(tStart, tEnd + 1)
+
+    @classmethod
+    def getAvailableExistingQuantity(cls, tech,loc, time,typeExistingQuantity, timeStepType: str = None):
+        """ returns existing quantity of 'tech', that is still available at invest time step 'time'.
+        Either capacity or capex.
+        :param tech: name of technology
+        :param loc: location (node or edge) of existing capacity
+        :param time: current time
+        :param idExistingCapacity: id of existing capacity
+        :return existingQuantity: existing capacity or capex of existing capacity
+        """
+        if timeStepType:
+            baseTimeSteps   = EnergySystem.decodeTimeStep(None, time, "yearly")
+            investTimeStep  = EnergySystem.encodeTimeStep(tech, baseTimeSteps, timeStepType, yearly=True)
+        else:
+            investTimeStep  = time
+
+        model               = EnergySystem.getConcreteModel()
+        existingQuantity = 0
+        if typeExistingQuantity == "capacity":
+            existingVariable = model.existingCapacity
+        elif typeExistingQuantity == "capex":
+            existingVariable = model.capexExistingCapacity
+        else:
+            raise KeyError(f"Wrong type of existing quantity {typeExistingQuantity}")
+
+        for idExistingCapacity in model.setExistingTechnologies[tech]:
+            tStart  = cls.getStartEndTimeOfLifetime(tech, investTimeStep, idExistingCapacity,loc)
+            # if still available at base time step 0, add to list
+            if tStart == 0:
+                existingQuantity += existingVariable[tech, loc, idExistingCapacity]
+        return existingQuantity
+
+    @classmethod
+    def getStartEndTimeOfLifetime(cls, tech, investTimeStep, idExistingCapacity = None,loc = None):
+        """ counts back the lifetime to get the start invest time step and returns startInvestTimeStep
+        :param tech: name of technology
+        :param investTimeStep: current investment time step
+        :param idExistingCapacity: id of existing capacity
+        :param loc: location (node or edge) of existing capacity
+        :return startInvestTimeStep,endInvestTimeStep: start and end of lifetime in invest time step domain"""
+        # get model and system
+        model   = EnergySystem.getConcreteModel()
+        system  = EnergySystem.getSystem()
+        # get endInvestTimeStep
+        if not isinstance(investTimeStep, np.ndarray):
+            endInvestTimeStep = investTimeStep
+        elif len(investTimeStep) == 1:
+            endInvestTimeStep = investTimeStep[0]
+        # if more than one investment time step
+        else:
+            endInvestTimeStep = investTimeStep[-1]
+            investTimeStep = investTimeStep[0]
+        # decode to base time steps
+        baseTimeSteps = EnergySystem.decodeTimeStep(tech, investTimeStep, timeStepType="invest")
+        baseTimeStep = baseTimeSteps[0]
+        # convert lifetime to interval of base time steps
+        if idExistingCapacity is None:
+            lifetimeYearly = model.lifetimeTechnology[tech]
+        else:
+            lifetimeYearly = model.lifetimeExistingTechnology[tech,loc,idExistingCapacity]
+        baseLifetime =  lifetimeYearly / system["intervalYears"] * system["timeStepsPerYear"]
+        if int(baseLifetime) != baseLifetime:
+            logging.warning(
+                f"The lifetime of {tech} does not translate to an integer lifetime interval in the base time domain ({baseLifetime})")
+        startBaseTimeStep       = int(max(0, baseTimeStep - baseLifetime + 1))
+        # if lifetime of existing capacity, then only return the start base time step
+        if idExistingCapacity is not None:
+            return startBaseTimeStep
+        startInvestTimeStep     = EnergySystem.encodeTimeStep(tech, startBaseTimeStep, timeStepType="invest", yearly=True)[0]
+        return startInvestTimeStep, endInvestTimeStep
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
@@ -136,7 +224,6 @@ class Technology(Element):
         model.setStorageTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setStorageTechnologies"),
             doc='Set of storage technologies. Subset: setTechnologies')
-
         # existing installed technologies
         model.setExistingTechnologies = pe.Set(
             model.setTechnologies,
@@ -204,6 +291,11 @@ class Technology(Element):
             cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
             initialize=cls.getAttributeOfAllElements("lifetimeExistingTechnology"),
             doc='Parameter which specifies the remaining lifetime of an existing technology. Dimensions: setTechnologies')
+        # lifetime existing technologies
+        model.capexExistingCapacity = pe.Param(
+            cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
+            initialize=cls.getAttributeOfAllElements("capexExistingCapacity"),
+            doc='Parameter which specifies the annualized capex of an existing technology which still has to be paid. Dimensions: setTechnologies')
         # lifetime newly built technologies
         model.lifetimeTechnology = pe.Param(
             model.setTechnologies,
@@ -249,16 +341,20 @@ class Technology(Element):
             :param model: pe.ConcreteModel
             :param tech: tech index
             :return bounds: bounds of capacity"""
-            existingCapacities = 0
-            for id in model.setExistingTechnologies[tech]:
-                if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
-                    existingCapacities += model.existingCapacity[tech, loc, id]
+            # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
+            if tech in Technology.createCustomSet(["setTechnologies","setOnOff"]):
+                existingCapacities = 0
+                for id in model.setExistingTechnologies[tech]:
+                    if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
+                        existingCapacities += model.existingCapacity[tech, loc, id]
 
-            maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
-            maxCapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
-            boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology)
-            bounds = (0,boundCapacity)
-            return(bounds)
+                maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
+                maxCapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
+                boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology)
+                bounds = (0,boundCapacity)
+                return(bounds)
+            else:
+                return(None,None)
 
         model = EnergySystem.getConcreteModel()
         # construct pe.Vars of the class <Technology>
@@ -457,25 +553,25 @@ def constraintTechnologyLifetimeRule(model, tech, loc, time):
     """limited lifetime of the technologies"""
     if tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
         # determine existing capacities
-        existingCapacities = 0
-        for id in model.setExistingTechnologies[tech]:
-            if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
-                existingCapacities += model.existingCapacity[tech,loc,id]
+        existingCapacities = Technology.getAvailableExistingQuantity(tech,loc,time,typeExistingQuantity="capacity")
 
         return (model.capacity[tech, loc, time]
                 == existingCapacities
-                + sum(model.builtCapacity[tech, loc, previousTime] for previousTime in EnergySystem.getLifetimeRange(tech,time))) #TODO constraint in invest steps, lifetime in years
+                + sum(model.builtCapacity[tech, loc, previousTime] for previousTime in Technology.getLifetimeRange(tech,time)))
     else:
         return pe.Constraint.Skip
 
 def constraintCapexTotalRule(model,year):
     """ sums over all technologies to calculate total capex """
+
     return(model.capexTotal[year] ==
         sum(
             sum(
                 model.capex[tech, loc, time]
-                for time in EnergySystem.getLifetimeRange(tech, year, "invest")
+                for time in Technology.getLifetimeRange(tech, year, timeStepType="invest")
             )
+            +
+            Technology.getAvailableExistingQuantity(tech, loc, year, typeExistingQuantity="capex",timeStepType="invest")
             for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])
         )
     )
