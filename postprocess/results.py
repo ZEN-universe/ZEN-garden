@@ -14,6 +14,7 @@ import csv
 import os
 import pickle
 import pandas as pd
+import matplotlib.pyplot as plt
 
 #from postprocess.functions.create_dashboard_dictionary import DashboardDictionary
 
@@ -53,6 +54,7 @@ class Postprocess:
             pass
 
         try:
+            os.makedirs(f'{self.nameDir}/plots/')
             os.makedirs(f'{self.nameDir}/params/')
             os.makedirs(f'{self.nameDir}/vars/')
         except OSError:
@@ -143,34 +145,30 @@ class Postprocess:
                 print('not implemented')
             elif varName=='carbonEmissionsCarrierTotal' or varName=='capexTotal' or varName=='carbonEmissionsTechnologyTotal' or varName=='carbonEmissionsTotal' or varName=='costCarrierTotal' or varName=='opexTotal':
                 print('not implemented')
+            elif varName=='carrierFlowCharge' or varName=='carrierFlowDischarge' or varName=='levelCharge':
+                print('not implemented')
             else: # --> 3)
-                # print(varName)
+                print(varName)
                 c = df.columns
-                df2 = pd.DataFrame({c[0]:['biomass','biomass','biomass'],"node":['IT','IT','IT'],"time":[0,1,2],"capacity[GWh]":[5000000,5000000,5000000]})
-                df = df.append(df2).reset_index(drop=True)
-                print(df)
+                t = 2
+                labels = df[c[0]].unique()
                 df = df.sort_values(by=['node',c[0]])
+                df = df.set_index(['node',c[0],'time'])
                 print(df)
-                # print(c)
-                # df=df.set_index(['node', c[0],'time'])
-                # df = df.set_index(['node',c[0],'time'])
-                df = df.set_index(['node',c[0]])
-                df = df.loc[df['time']==0,"capacity[GWh]"]
-                print(df)
-                data = df.value
-                # df = df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True'])
-                # print(df)
-                # print(df.loc[(slice(None),slice(None),0), :])
-                # print(df.loc[df['time']==0,[c[0],'capacity[GWh]']])
-                # ax = df.loc[(slice(None),slice(None),0), :].reset_index(level=[c[0],'time'],drop=['False', 'True']).plot.bar(rot=0)
-                # df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar', stacked=True)
-                # data = df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).value
-                data.unstack().plot(kind='bar', stacked=True)
-                # ax = df.loc[df['time']==0,[c[0],'capacity[GWh]']].plot.bar(rot=0)
-                plt.show()
-
-            # print(varName)
-            # print(df)
+                df.loc[(slice(None),slice(None),t), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar', stacked=True, title=varName+'\ntimeStep='+str(t))
+                hand, lab = plt.gca().get_legend_handles_labels()
+                print(lab)
+                leg = []
+                for l in lab:
+                    for la in labels:
+                        if la in l:
+                            leg.append(la)
+                plt.legend(leg)
+                # df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar', stacked=True,table=True,title=varName)
+                # plt.show()
+                path = f'{self.nameDir}plots/'+varName+'.png'
+                print(path)
+                plt.savefig(path)
 
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
     # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))

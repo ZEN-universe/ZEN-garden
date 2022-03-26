@@ -80,6 +80,9 @@ analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
                                 'capexApproximation':['conversionTechnology','node','time','capacity[GWh]'],
                                 'carbonEmissionsTechnology':['conversionTechnology','node','time','capacity[GWh]'],
                                 'opex':['conversionTechnology','node','time','capacity[GWh]'],
+                                'carrierFlowCharge':['?','??','???','????'],
+                                'carrierFlowDischarge':['?','??','???','????'],
+                                'levelCharge':['?','??','???','????'],
                                 }
 
 ## System - Items assignment
