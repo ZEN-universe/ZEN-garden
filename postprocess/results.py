@@ -40,11 +40,14 @@ class Postprocess:
         self.modelName = kwargs.get('modelName', self.modelName)
         self.nameDir   = f'./outputs/results{self.modelName}/'
 
-        self.makeDirs()
-        self.getVarValues()
-        #self.getParamValues()
-        self.saveResults()
-        self.plotResults()
+        if self.analysis['postprocess']:
+            self.makeDirs()
+            self.getVarValues()
+            #self.getParamValues()
+            self.saveResults()
+            self.plotResults()
+        else:
+            self.saveModel(model)
 
     def makeDirs(self):
         """create results directory"""
@@ -132,6 +135,11 @@ class Postprocess:
         for varName, df in self.varDf.items():
             df.to_csv(f'{self.nameDir}vars/{varName}.csv', index=False)
 
+    def saveModel(self,model):
+        filename = f'{self.nameDir}'+self.system["modelName"]+'.pickle"'
+        with open(filename, 'wb') as file:
+            pickle.dump(model, file, protocol=pickle.HIGHEST_PROTOCOL)
+
     def plotResults(self):
         for varName, df in self.varDf.items():
             # Need to catch here the empty dataframes because we cant plot something that isnt there
@@ -148,26 +156,23 @@ class Postprocess:
             elif varName=='carrierFlowCharge' or varName=='carrierFlowDischarge' or varName=='levelCharge':
                 print('not implemented')
             else: # --> 3)
-                print(varName)
                 c = df.columns
-                t = 2
+                t = 0
                 labels = df[c[0]].unique()
+
                 df = df.sort_values(by=['node',c[0]])
                 df = df.set_index(['node',c[0],'time'])
-                print(df)
                 df.loc[(slice(None),slice(None),t), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar', stacked=True, title=varName+'\ntimeStep='+str(t))
+
                 hand, lab = plt.gca().get_legend_handles_labels()
-                print(lab)
                 leg = []
                 for l in lab:
                     for la in labels:
                         if la in l:
                             leg.append(la)
                 plt.legend(leg)
-                # df.loc[(slice(None),slice(None),0), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar', stacked=True,table=True,title=varName)
-                # plt.show()
+
                 path = f'{self.nameDir}plots/'+varName+'.png'
-                print(path)
                 plt.savefig(path)
 
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
