@@ -1,5 +1,5 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:        ZEN-GARDEN
 Created:      January-2022
 Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
               Alissa Ganter (aganter@ethz.ch)
@@ -7,15 +7,16 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""
-import warnings
 
-import numpy as np
-from scipy.stats import linregress
-import pandas as pd
 import os
 import logging
+import warnings
+import numpy  as np
+import pandas as pd
+from scipy.stats import linregress
 
 class DataInput():
+    
     def __init__(self,system,analysis,solver,energySystem = None):
         """ data input object to extract input data
         :param system: dictionary defining the system
@@ -26,6 +27,7 @@ class DataInput():
         self.analysis       = analysis
         self.solver         = solver
         self.energySystem   = energySystem
+
         # get names of indices
         self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
 
@@ -35,8 +37,10 @@ class DataInput():
         :param manualFileName: name of selected file. If only one file in folder, not used
         :return dfInput: pd.DataFrame with input data 
         :return fileName: name of file """
+
         # get system attribute
         fileFormat  = self.analysis["fileFormat"]
+
         # select data
         fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1]==fileFormat)]
         if manualFileName in fileNames:
@@ -44,6 +48,7 @@ class DataInput():
             for fileName in fileNames:
                 if len(fileNames) > 1 and fileName != manualFileName:
                     continue
+
                 # table attributes                     
                 dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None) 
                 break 
@@ -59,8 +64,9 @@ class DataInput():
         :return indexList: list of indices
         :return indexNameList: list of name of indices
         """
-        indexList = []
+        indexList     = []
         indexNameList = []
+
         # add rest of indices
         for index in indexSets:
             indexNameList.append(self.indexNames[index])
@@ -83,33 +89,40 @@ class DataInput():
         :param timeSteps: specific timeSteps of element
         :param transportTechnology: boolean if data extracted for transport technology
         :return dataDict: dictionary with attribute values """
+
         # generic time steps
         if not timeSteps:
             timeSteps = self.energySystem.setBaseTimeSteps
+
         # check if default value exists in attributes.csv, with or without "Default" Suffix
         if column:
             defaultName = column
         else:
             defaultName = manualFileName
         defaultValue = self.extractAttributeData(folderPath,defaultName)
+
         # select index
         indexList,indexNameList = self.constructIndexList(element, indexSets,timeSteps)
+
         # create pd.MultiIndex and select data
         indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
+
         # create output Series filled with default value
         if defaultValue is None:
             dfOutput = pd.Series(index=indexMultiIndex, dtype=float)
         else:
             dfOutput = pd.Series(index=indexMultiIndex,data=defaultValue["value"],dtype=float)
+
         # read input file
         dfInput,fileName = self.readInputData(folderPath,manualFileName)
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
+
             # if not extracted for transport technology
             if not transportTechnology:
                 dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
             else:
-                dfOutput = self.extractTransportInputData(dfInput,dfOutput,fileName,indexMultiIndex,defaultValue)
+                dfOutput = self.extractTransportInputData(dfInput,dfOutput,fileName,indexMultiIndex,column,defaultValue)
         return dfOutput 
     
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
@@ -121,14 +134,17 @@ class DataInput():
         :param column: select specific column
         :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
+
         # select and drop scenario
         assert dfInput.columns is not None, f"Input file '{fileName}' has no columns"
         if self.indexNames["setScenarios"] in dfInput.columns:
             warnings.warn("'setScenarios' will be deprecated.",FutureWarning)
             dfInput = dfInput[dfInput[self.indexNames["setScenarios"]]==self.system['setScenarios']].drop(self.indexNames["setScenarios"],axis=1)
+
         # set index by indexNameList
         missingIndex = list(set(indexNameList) - set(indexNameList).intersection(set(dfInput.columns)))
         assert len(missingIndex)<=1, f"Some of the requested index sets {missingIndex} are missing from input file for {fileName}"
+
         # no indices missing
         if len(missingIndex) == 0:
             dfInput         = dfInput.set_index(indexNameList)
@@ -139,20 +155,22 @@ class DataInput():
                 # check if only one column remaining
                 assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
                 dfInput     = dfInput.squeeze(axis=1)
+
         # check if special case of existing Technology
         elif "existingTechnology" in missingIndex[0]:
             indexNameList.remove(missingIndex[0])
-            dfInput = dfInput.set_index(indexNameList)
-            setNodes= dfInput.index.unique()
-            for node in setNodes:
-                values = dfInput[column].loc[node].tolist()
-                if isinstance(values, int):
-                    index=[0]
-                else:
-                    index  = list(range(len(values)))
-                    #dfOutput[node][index] = values
-                dfOutput.loc[node, index] = values
+            dfInput             = dfInput.set_index(indexNameList)
+            setLocation         = dfInput.index.unique()
+            for location in setLocation:
+                if location in dfOutput.index.get_level_values(indexNameList[0]):
+                    values      = dfInput[column].loc[location].tolist()
+                    if isinstance(values, int) or isinstance(values,float):
+                        index   =[0]
+                    else:
+                        index   = list(range(len(values)))
+                    dfOutput.loc[location, index] = values
             return dfOutput
+
         # check if requested values for missing index are columns of dfInput
         else:
             indexNameList.remove(missingIndex[0])
@@ -162,10 +180,13 @@ class DataInput():
             dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
             dfInput                 = dfInput[list(requestedIndexValues)].stack()
             dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
+
         # apply multiplier to input data
         dfInput     = dfInput * defaultValue["multiplier"]
+
         # delete nans
         dfInput     = dfInput.dropna()
+        
         # get common index of dfOutput and dfInput
         if not isinstance(dfInput.index, pd.MultiIndex):
             indexList     = dfInput.index.to_list()
@@ -179,7 +200,7 @@ class DataInput():
         dfOutput.loc[commonIndex]   = dfInput.loc[commonIndex]
         return dfOutput
 
-    def extractTransportInputData(self, dfInput,dfOutput,fileName,indexMultiIndex,defaultValue):
+    def extractTransportInputData(self, dfInput,dfOutput,fileName,indexMultiIndex,column,defaultValue):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param dfInput: raw input dataframe
         :param dfOutput: empty output dataframe, only filled with defaultValue
@@ -187,14 +208,17 @@ class DataInput():
         :param indexMultiIndex: multiIndex of dfOutput
         :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
+
         # preferably already edges as index
         if self.indexNames["setEdges"] in dfInput.columns:
-            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList=list(indexMultiIndex.names),column=None,defaultValue=defaultValue)
+            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList=list(indexMultiIndex.names),column=column,defaultValue=defaultValue)
         else:
             warnings.warn(f"The matrix representation of edges will be deprecated. Change file '{fileName}'",FutureWarning)
             dfInput = dfInput.set_index(self.indexNames['setNodes'])
+
             # apply multiplier to input data
             dfInput = dfInput * defaultValue["multiplier"]
+
             # fill dfOutput
             for index in indexMultiIndex:
                 if isinstance(index,tuple):
@@ -212,9 +236,11 @@ class DataInput():
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
         fileName    = "attributes.csv"
+
         if fileName not in os.listdir(folderPath):
             return None
         dfInput     = pd.read_csv(folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
+
         # check if attribute in index
         if attributeName+"Default" not in dfInput.index:
             if attributeName not in dfInput.index:
@@ -228,6 +254,7 @@ class DataInput():
                     FutureWarning)
         else:
             attributeName = attributeName + "Default"
+
         # get attribute
         attributeValue = dfInput.loc[attributeName, "value"]
         multiplier = self.getUnitMultiplier(dfInput.loc[attributeName, "unit"])
@@ -264,7 +291,7 @@ class DataInput():
     def extractLocations(self,extractNodes = True):
         """ reads input data to extract nodes or edges.
         :param extractNodes: boolean to switch between nodes and edges """
-        folderPath          = self.energySystem.getPaths()["setNodes"]["folder"]
+        folderPath = self.energySystem.getPaths()["setNodes"]["folder"]
         if extractNodes:
             setNodesConfig  = self.system["setNodes"]
             setNodesInput   = self.readInputData(folderPath,"setNodes")[0]["node"]
@@ -272,7 +299,7 @@ class DataInput():
             assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {folderPath+'setNodes'}"
             return setNodesConfig
         else:
-            setEdgesInput   = self.readInputData(folderPath,"setEdges")[0]
+            setEdgesInput = self.readInputData(folderPath,"setEdges")[0]
             if setEdgesInput is not None:
                 setEdges        = setEdgesInput[(setEdgesInput["nodeFrom"].isin(self.energySystem.setNodes)) & (setEdgesInput["nodeTo"].isin(self.energySystem.setNodes))]
                 setEdges        = setEdges.set_index("edge")
@@ -391,7 +418,7 @@ class DataInput():
 
         return setExistingTechnologies
 
-    def extractLifetimeExistingTechnology(self, folderPath, fileName, indexSets, tech):
+    def extractLifetimeExistingTechnology(self, folderPath, fileName, indexSets, tech, transportTechnology=False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
         :param tech: technology object
@@ -404,7 +431,12 @@ class DataInput():
         if f"{fileName}.{fileFormat}" in os.listdir(folderPath):
             indexList, indexNameList    = self.constructIndexList(tech, indexSets, None)
             dfInput, fileName           = self.readInputData(folderPath, fileName)
-            dfOutput                    = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
+            indexMultiIndex             = pd.MultiIndex.from_product(indexList, names=indexNameList)
+            # if not extracted for transport technology
+            if not transportTechnology:
+                dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
+            else:
+                dfOutput = self.extractTransportInputData(dfInput, dfOutput, fileName, indexMultiIndex,column, defaultValue)
             # get reference year
             referenceYear               = self.system["referenceYear"]
             # calculate remaining lifetime
@@ -412,73 +444,117 @@ class DataInput():
 
         return dfOutput
 
-    def extractPWAData(self, folderPath,tech):
+    def extractDataConditioning(self, folderPath, type, tech):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files 
+        :param folderPath: path to input files
+        :param type: technology approximation type
+        :param tech: technology object
+        :return outputDict: dictionary with output parameters following the structure of the PWA dict"""
+
+        # select data
+        outputDict = {}
+        specificHeat           = self.extractAttributeData(folderPath, "specificHeat", skipWarning=True)["value"]
+        specificHeatRatio      = self.extractAttributeData(folderPath, "specificHeatRatio", skipWarning=True)["value"]
+        pressureIn             = self.extractAttributeData(folderPath, "pressureIn", skipWarning=True)["value"]
+        pressureOut            = self.extractAttributeData(folderPath, "pressureOut", skipWarning=True)["value"]
+        temperatureIn          = self.extractAttributeData(folderPath, "temperatureIn", skipWarning=True)["value"]
+        isentropicEfficiency   = self.extractAttributeData(folderPath, "isentropicEfficiency", skipWarning=True)["value"]
+
+        pressureRatio          = pressureOut/pressureIn
+        exponent               = (specificHeatRatio - 1) / specificHeatRatio
+        energyConsumption      = specificHeat * temperatureIn / isentropicEfficiency * (pressureRatio**exponent - 1)
+
+        # model as linear function
+        inputCarriers    = tech.inputCarrier.copy()
+        outputCarriers   = tech.outputCarrier
+        referenceCarrier = tech.referenceCarrier
+        if referenceCarrier[0] in inputCarriers:
+            inputCarriers.remove(referenceCarrier[0])
+        assert len(inputCarriers) == 1, f"{tech.name} can only have 1 input carrier besides the reference carrier."
+        assert len(outputCarriers) == 1, f"{tech.name} can only have 1 output carrier."
+        # create dictionary
+        outputDict[referenceCarrier[0]] = (tech.minBuiltCapacity, tech.maxBuiltCapacity)
+        outputDict[outputCarriers[0]]   = 1 # TODO losses are not yet accounted for
+        outputDict[inputCarriers[0]]    = energyConsumption
+        # PWA Variables
+        outputDict["PWAVariables"]   = []
+        # bounds
+        outputDict["bounds"] = dict()
+        outputDict["bounds"][referenceCarrier[0]] = (tech.minBuiltCapacity, tech.maxBuiltCapacity)
+        outputDict["bounds"][outputCarriers[0]]    = (tech.minBuiltCapacity, tech.maxBuiltCapacity)
+        outputDict["bounds"][inputCarriers[0]]    = (tech.minBuiltCapacity*energyConsumption, tech.maxBuiltCapacity*energyConsumption)
+
+        return outputDict
+
+
+    def extractPWAData(self, folderPath,type,tech):
+        """ reads input data and restructures the dataframe to return (multi)indexed dict
+        :param folderPath: path to input files
+        :param type: technology approximation type
         :param tech: technology object
         :return PWADict: dictionary with PWA parameters """
         # get system attribute
         fileFormat = self.analysis["fileFormat"]
         # select data
         PWADict = {}
-        for type in self.analysis["nonlinearTechnologyApproximation"]:
-            # extract all data values
-            PWADict[type]       = {}
-            nonlinearValues     = {}
-            assert f"nonlinear{type}.{fileFormat}" in os.listdir(folderPath), f"File 'nonlinear{type}.{fileFormat}' does not exist in {folderPath}"
-            dfInputNonlinear    = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
-            dfInputUnits        = dfInputNonlinear.iloc[-1]
-            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.getUnitMultiplier(unit))
-            dfInputNonlinear    = dfInputNonlinear.iloc[:-1].astype(float)
-            dfInputNonlinear    = dfInputNonlinear*dfInputMultiplier
-            if type == "Capex":
-                # make absolute capex
-                dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
-            for column in dfInputNonlinear.columns:
-                nonlinearValues[column] = dfInputNonlinear[column].to_list()
-            # extract PWA breakpoints
-            assert f"breakpointsPWA{type}.{fileFormat}" in os.listdir(folderPath), f"File 'breakpointsPWA{type}.{fileFormat}' does not exist in {folderPath}"
-            # TODO devise better way to split string units
-            dfInputBreakpoints          = pd.read_csv(folderPath+"breakpointsPWA" + type + '.'+fileFormat, header=0, index_col=None)
-            dfInputBreakpointsUnits     = dfInputBreakpoints.iloc[-1]
-            dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.getUnitMultiplier(unit))
-            dfInputBreakpoints          = dfInputBreakpoints.iloc[:-1].astype(float)
-            dfInputBreakpoints          = dfInputBreakpoints*dfInputMultiplier
-            # assert that breakpoint variable (x variable in nonlinear input)
-            assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
-            breakpointVariable = dfInputBreakpoints.columns[0]
-            breakpoints = dfInputBreakpoints[breakpointVariable].to_list()
+        assert type in self.analysis["nonlinearTechnologyApproximation"], f"{type} is not specified in analysis['nonlinearTechnologyApproximation']"
 
-            PWADict[type][breakpointVariable] = breakpoints
-            PWADict[type]["PWAVariables"] = [] # select only those variables that are modeled as PWA
-            PWADict[type]["bounds"] = {} # save bounds of variables
-            # min and max total capacity of technology 
-            minCapacityTech,maxCapacityTech = (0,min(max(tech.capacityLimit.values),max(breakpoints)))
-            for valueVariable in nonlinearValues:
-                if valueVariable == breakpointVariable:
-                    PWADict[type]["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
+        # extract all data values
+        nonlinearValues     = {}
+        assert f"nonlinear{type}.{fileFormat}" in os.listdir(folderPath), f"File 'nonlinear{type}.{fileFormat}' does not exist in {folderPath}"
+        dfInputNonlinear    = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
+        dfInputUnits        = dfInputNonlinear.iloc[-1]
+        dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.getUnitMultiplier(unit))
+        dfInputNonlinear    = dfInputNonlinear.iloc[:-1].astype(float)
+        dfInputNonlinear    = dfInputNonlinear*dfInputMultiplier
+        if type == "Capex":
+            # make absolute capex
+            dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
+        for column in dfInputNonlinear.columns:
+            nonlinearValues[column] = dfInputNonlinear[column].to_list()
+        # extract PWA breakpoints
+        assert f"breakpointsPWA{type}.{fileFormat}" in os.listdir(folderPath), f"File 'breakpointsPWA{type}.{fileFormat}' does not exist in {folderPath}"
+        # TODO devise better way to split string units
+        dfInputBreakpoints          = pd.read_csv(folderPath+"breakpointsPWA" + type + '.'+fileFormat, header=0, index_col=None)
+        dfInputBreakpointsUnits     = dfInputBreakpoints.iloc[-1]
+        dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.getUnitMultiplier(unit))
+        dfInputBreakpoints          = dfInputBreakpoints.iloc[:-1].astype(float)
+        dfInputBreakpoints          = dfInputBreakpoints*dfInputMultiplier
+        # assert that breakpoint variable (x variable in nonlinear input)
+        assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
+        breakpointVariable = dfInputBreakpoints.columns[0]
+        breakpoints = dfInputBreakpoints[breakpointVariable].to_list()
+
+        PWADict[breakpointVariable] = breakpoints
+        PWADict["PWAVariables"] = [] # select only those variables that are modeled as PWA
+        PWADict["bounds"] = {} # save bounds of variables
+        # min and max total capacity of technology
+        minCapacityTech,maxCapacityTech = (0,min(max(tech.capacityLimit.values),max(breakpoints)))
+        for valueVariable in nonlinearValues:
+            if valueVariable == breakpointVariable:
+                PWADict["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
+            else:
+                # conduct linear regress
+                linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
+                # calculate relative intercept (intercept/slope) if slope != 0
+                if linearRegressObject.slope != 0:
+                    _relativeIntercept = np.abs(linearRegressObject.intercept/linearRegressObject.slope)
                 else:
-                    # conduct linear regress
-                    linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
-                    # calculate relative intercept (intercept/slope) if slope != 0
-                    if linearRegressObject.slope != 0:
-                        _relativeIntercept = np.abs(linearRegressObject.intercept/linearRegressObject.slope)
-                    else:
-                        _relativeIntercept = np.abs(linearRegressObject.intercept)
-                    # check if to a reasonable degree linear
-                    if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
-                        # model as linear function
-                        PWADict[type][valueVariable] = linearRegressObject.slope
-                        # save bounds
-                        PWADict[type]["bounds"][valueVariable] = (PWADict[type][valueVariable]*minCapacityTech,PWADict[type][valueVariable]*maxCapacityTech)
-                    else:
-                        # model as PWA function
-                        PWADict[type][valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
-                        PWADict[type]["PWAVariables"].append(valueVariable)
-                        # save bounds
-                        _valuesBetweenBounds = [PWADict[type][valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= minCapacityTech and breakpoint <= maxCapacityTech]
-                        _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[type][valueVariable])))
-                        PWADict[type]["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
+                    _relativeIntercept = np.abs(linearRegressObject.intercept)
+                # check if to a reasonable degree linear
+                if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
+                    # model as linear function
+                    PWADict[valueVariable] = linearRegressObject.slope
+                    # save bounds
+                    PWADict["bounds"][valueVariable] = (PWADict[valueVariable]*minCapacityTech,PWADict[valueVariable]*maxCapacityTech)
+                else:
+                    # model as PWA function
+                    PWADict[valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
+                    PWADict["PWAVariables"].append(valueVariable)
+                    # save bounds
+                    _valuesBetweenBounds = [PWADict[valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= minCapacityTech and breakpoint <= maxCapacityTech]
+                    _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[valueVariable])))
+                    PWADict["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
         return PWADict
 
     def extractBaseUnits(self,folderPath):

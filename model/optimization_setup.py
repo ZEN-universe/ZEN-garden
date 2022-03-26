@@ -1,5 +1,5 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch), Jacob Mannhardt (jmannhardt@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
@@ -11,19 +11,19 @@ Description:  Class defining the Concrete optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ as pe
 import os
-import cProfile, pstats
-import pandas as pd
+import cProfile, pstats ## Paolo, 24.03.2022, TODO: Check unused packages (same holds for pandas).
+import pyomo.environ as pe
+import pandas        as pd
 
-from model.objects.element import Element
-# the order of the following classes defines the order in which they are constructed. Keep this way
+# the order of the following classes defines the order in which they are constructed. Keep this way. ## Paolo, 24.03.2022: I like this a lot, but isn't EnergySystem the first class to be added (and the most general one)?
+from model.objects.element                          import Element
 from model.objects.technology.conversion_technology import ConversionTechnology
-from model.objects.technology.storage_technology import StorageTechnology
-from model.objects.technology.transport_technology import TransportTechnology
-from model.objects.carrier import Carrier
-from model.objects.energy_system import EnergySystem
-from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
+from model.objects.technology.storage_technology    import StorageTechnology
+from model.objects.technology.transport_technology  import TransportTechnology
+from model.objects.carrier                          import Carrier
+from model.objects.energy_system                    import EnergySystem
+from preprocess.functions.time_series_aggregation   import TimeSeriesAggregation
 
 class OptimizationSetup():
 
@@ -33,18 +33,22 @@ class OptimizationSetup():
         :param system: dictionary defining the system
         :param paths: dictionary defining the paths of the model
         :param solver: dictionary defining the solver"""
-        self.analysis   = analysis
-        self.system     = system
-        self.paths      = paths
-        self.solver     = solver
-        self.model      = pe.ConcreteModel()
+        self.analysis = analysis
+        self.system   = system
+        self.paths    = paths
+        self.solver   = solver
+        self.model    = pe.ConcreteModel()
+
         # set optimization attributes (the five set above) to class <EnergySystem>
         EnergySystem.setOptimizationAttributes(analysis, system, paths, solver, self.model)
+
         # add Elements to optimization
         self.addElements()
+
         # define and construct components of self.model
         Element.constructModelComponents()
         logging.info("Apply Big-M GDP ")
+        
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)
 
@@ -73,14 +77,14 @@ class OptimizationSetup():
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """
 
-        solverName = solver['name']
-        solverOptions = solver["solverOptions"]
+        solverName          = solver['name']
+        solverOptions       = solver["solverOptions"]
 
         logging.info(f"\n--- Solve model instance using {solverName} ---\n")
         # disable logger temporarily
         logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
-        # (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
+        #         # (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt            = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels=True)

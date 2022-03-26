@@ -1,5 +1,5 @@
 """===========================================================================================================================================================================
-Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
@@ -131,13 +131,13 @@ class Carrier(Element):
         # carrier import/export cost
         model.costCarrier = pe.Var(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = 'node- and time-dependent carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
         # total carrier import/export cost
         model.costCarrierTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = 'total carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
         # carbon emissions
@@ -205,23 +205,21 @@ class Carrier(Element):
 #%% Constraint rules defined in current class
 def constraintAvailabilityCarrierImportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to import from outside the system boundaries"""
-
     return(model.importCarrierFlow[carrier, node, time] <= model.availabilityCarrierImport[carrier,node,time])
 
 def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to export to outside the system boundaries"""
-
     return(model.exportCarrierFlow[carrier, node, time] <= model.availabilityCarrierExport[carrier,node,time])
 
 def constraintCostCarrierRule(model, carrier, node, time):
-    """ carbon emissions of importing/exporting carrier"""
+    """ cost of importing/exporting carrier"""
     return(model.costCarrier[carrier,node, time] == 
         model.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] - 
         model.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
     )
 
 def constraintCostCarrierTotalRule(model,year):
-    """ total carbon emissions of importing/exporting carrier"""
+    """ total cost of importing/exporting carrier"""
     baseTimeStep = EnergySystem.decodeTimeStep(None, year, "yearly")
     return(model.costCarrierTotal[year] ==
         sum(
@@ -235,10 +233,18 @@ def constraintCostCarrierTotalRule(model,year):
 
 def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
     """ carbon emissions of importing/exporting carrier"""
-    return(model.carbonEmissionsCarrier[carrier,node, time] == 
-        model.carbonIntensityCarrier[carrier,node]*
-        (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
-    )
+    if carrier != "carbon":
+        return (model.carbonEmissionsCarrier[carrier, node, time] ==
+                model.carbonIntensityCarrier[carrier, node] *
+                (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
+                )
+    else:
+        return (model.carbonEmissionsCarrier[carrier, node, time] ==
+                model.carbonIntensityCarrier[carrier, node] *
+                (model.importCarrierFlow[carrier, node, time]
+                 - model.exportCarrierFlow[carrier, node, time]) -
+                model.inputFlow["carbon_storage", carrier, node, time]
+                )
 
 def constraintCarbonEmissionsCarrierTotalRule(model, year):
     """ total carbon emissions of importing/exporting carrier"""

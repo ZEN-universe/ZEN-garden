@@ -1,5 +1,5 @@
 """===========================================================================================================================================================================
-Title:          ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
@@ -39,7 +39,20 @@ class StorageTechnology(Technology):
         self.efficiencyDischarge            = self.dataInput.extractInputData(self.inputPath,"efficiencyDischarge",indexSets=["setNodes"])
         self.selfDischarge                  = self.dataInput.extractInputData(self.inputPath,"selfDischarge",indexSets=["setNodes"]) 
         self.capexSpecific                  = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+        # annualize capex
         self.convertToAnnualizedCapex()
+        # calculate capex of existing capacity
+        self.capexExistingCapacity          = self.calculateCapexOfExistingCapacities()
+
+    def convertToAnnualizedCapex(self):
+        """ this method converts the total capex to annualized capex """
+        fractionalAnnuity   = self.calculateFractionalAnnuity()
+        # annualize capex
+        self.capexSpecific  = self.capexSpecific*fractionalAnnuity
+
+    def calculateCapexOfSingleCapacity(self,capacity,index):
+        """ this method calculates the annualized capex of a single existing capacity. """
+        return self.capexSpecific[index] * capacity
 
     def calculateTimeStepsStorageLevel(self):
         """ this method calculates the number of time steps on the storage level, and the order in which the storage levels are connected """

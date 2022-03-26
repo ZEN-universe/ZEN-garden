@@ -1,5 +1,5 @@
 """===========================================================================================================================================================================
-Title:        ENERGY-CARBON OPTIMIZATION PLATFORM
+Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
@@ -14,7 +14,6 @@ import csv
 import os
 import pickle
 import pandas as pd
-from matplotlib import pyplot as plt
 
 #from postprocess.functions.create_dashboard_dictionary import DashboardDictionary
 
@@ -78,7 +77,10 @@ class Postprocess:
                 # save vars in a dict
                 self.varDict[var.name] = dict()
                 for index in var:
-                    self.varDict[var.name][index] = pe.value(var[index])
+                    try:
+                        self.varDict[var.name][index] = var[index].value
+                    except:
+                        pass
                 # save vars in a DataFrame
                 self.createDataframe(var, self.varDict, self.varDf)
 
