@@ -40,14 +40,14 @@ class Postprocess:
         self.modelName = kwargs.get('modelName', self.modelName)
         self.nameDir   = f'./outputs/results{self.modelName}/'
 
-        if self.analysis['postprocess']:
-            self.makeDirs()
-            self.getVarValues()
-            #self.getParamValues()
-            self.saveResults()
-            self.plotResults()
-        else:
-            self.saveModel(model)
+        # if self.analysis['postprocess']:
+        self.makeDirs()
+        self.getVarValues()
+        #self.getParamValues()
+        self.saveResults()
+        self.plotResults()
+        # else:
+            # self.saveModel()
 
     def makeDirs(self):
         """create results directory"""
@@ -135,10 +135,12 @@ class Postprocess:
         for varName, df in self.varDf.items():
             df.to_csv(f'{self.nameDir}vars/{varName}.csv', index=False)
 
-    def saveModel(self,model):
-        filename = f'{self.nameDir}'+self.system["modelName"]+'.pickle"'
-        with open(filename, 'wb') as file:
-            pickle.dump(model, file, protocol=pickle.HIGHEST_PROTOCOL)
+    def saveModel(self):
+        # filename = f'{self.nameDir}'+self.system["modelName"]+'.pickle"'
+        # print(filename)
+        # with open(filename, 'wb') as file:
+        #     pickle.dump(self.analysis, file, protocol=pickle.HIGHEST_PROTOCOL)
+        return
 
     def plotResults(self):
         for varName, df in self.varDf.items():
