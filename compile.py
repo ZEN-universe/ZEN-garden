@@ -35,24 +35,34 @@ logging.getLogger().addHandler(handler)
 logging.propagate = False
 # CREATE INPUT FILE
 prepare = Prepare(config)
-
 # check if all data inputs exist and remove non-existent
 system = prepare.checkExistingInputData()
+
 # FORMULATE THE OPTIMIZATION PROBLEM
-optimizationSetup = OptimizationSetup(config.analysis, system, prepare.paths, prepare.solver)
+# add the elements and read input data
+optimizationSetup           = OptimizationSetup(config.analysis, system, prepare.paths, prepare.solver)
+# get rolling horizon years
+stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
+# iterate through horizon steps
+for stepHorizon in stepsOptimizationHorizon:
+    # overwrite time indices
+    optimizationSetup.overwriteTimeIndices(stepHorizon)
+    # create optimization problem
+    optimizationSetup.constructOptimizationProblem()
+    # SOLVE THE OPTIMIZATION PROBLEM
+    if config.solver['model'] == 'MILP':
+        # BASED ON MILP SOLVER
+        optimizationSetup.solve(config.solver)
 
-# SOLVE THE OPTIMIZATION PROBLEM
-if config.solver['model'] == 'MILP':
-    # BASED ON MILP SOLVER
-    optimizationSetup.solve(config.solver)
+    elif config.solver['model'] == 'MINLP':
+        # BASED ON HYBRID SOLVER - MASTER METAHEURISTIC AND SLAVE MILP SOLVER
+        master = Metaheuristic(optimizationSetup, prepare.nlpDict)
+        master.solveMINLP(config.solver)
 
-elif config.solver['model'] == 'MINLP':
-    # BASED ON HYBRID SOLVER - MASTER METAHEURISTIC AND SLAVE MILP SOLVER
-    master = Metaheuristic(optimizationSetup, prepare.nlpDict)
-    master.solveMINLP(config.solver)
-
-# EVALUATE RESULTS
-today      = datetime.now()
-modelName  = "model_" + today.strftime("%Y-%m-%d")
-evaluation = Postprocess(optimizationSetup, modelName = modelName)
-a=1
+    # EVALUATE RESULTS
+    today      = datetime.now()
+    modelName  = "model_" + today.strftime("%Y-%m-%d")
+    if len(stepsOptimizationHorizon)>1:
+        modelName += f"_{stepHorizon}"
+    evaluation = Postprocess(optimizationSetup, modelName = modelName)
+    a=1

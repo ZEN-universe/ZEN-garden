@@ -39,7 +39,11 @@ class Element:
     def isAggregated(self):
         """ this method returns the aggregation status """
         return self.aggregated
-        
+
+    def overwriteTimeSteps(self,baseTimeSteps):
+        """ overwrites time steps. Must be implemented in child classes """
+        raise NotImplementedError("overwriteTimeSteps must be implemented in child classes!")
+
     ### --- classmethods --- ###
     # setter/getter classmethods
     @classmethod

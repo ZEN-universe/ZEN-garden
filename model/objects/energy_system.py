@@ -417,6 +417,17 @@ class EnergySystem:
             raise LookupError(f"Currently only implemented for a single element time step, not {elementTimeStep}")
 
     @classmethod
+    def decodeYearlyTimeSteps(cls,elementTimeSteps):
+        """ decodes list of years to base time steps
+        :param elementTimeSteps: time steps of year
+        :return fullBaseTimeSteps: full list of time steps """
+        listBaseTimeSteps = []
+        for year in elementTimeSteps:
+            listBaseTimeSteps.append(cls.decodeTimeStep(None,year,"yearly"))
+        fullBaseTimeSteps = np.concatenate(listBaseTimeSteps)
+        return fullBaseTimeSteps
+
+    @classmethod
     def convertTechnologyTimeStepType(cls,element,elementTimeStep,direction = "operation2invest"):
         """ converts type of technology time step from operation to invest or from invest to operation.
         Carrier has no invest, so irrelevant for carrier
@@ -449,6 +460,27 @@ class EnergySystem:
             convertedTimeSteps = np.unique(orderTimeStepsOut[orderTimeStepsIn == elementTimeStep])
             assert len(convertedTimeSteps) == 1, f"more than one converted time step, not yet implemented"
             return convertedTimeSteps[0]
+
+    @classmethod
+    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None):
+        """ this method initializes a modeling component by extracting the stored input data.
+        :param callingClass: class from where the method is called
+        :param componentName: name of modeling component
+        :param indexNames: names of index sets
+        :return componentData: data to initialize the component """
+        headerSetTimeSteps = cls.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
+        # indexSets = args[1:]
+        # if calling class is EnergySystem
+        if callingClass == cls:
+            component       = getattr(cls.getEnergySystem(),componentName)
+            componentData   = component[setTimeSteps]
+        else:
+            component       = callingClass.getAttributeOfAllElements(componentName)
+            componentData   = pd.Series(component)
+            if indexNames:
+                customSet       = callingClass.createCustomSet(indexNames)
+                componentData   = componentData[customSet]
+        return componentData
 
     @classmethod
     def getFullTimeSeriesOfComponent(cls,component,indexSubsets:tuple,manualOrderName = None):
@@ -519,7 +551,7 @@ class EnergySystem:
         # carbon emissions limit
         model.carbonEmissionsLimit = pe.Param(
             model.setTimeStepsYearly,
-            initialize = cls.getEnergySystem().carbonEmissionsLimit,
+            initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
             doc = 'Parameter which specifies the total limit on carbon emissions'
         )
 

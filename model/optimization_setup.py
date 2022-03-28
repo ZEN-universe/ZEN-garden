@@ -33,20 +33,17 @@ class OptimizationSetup():
         :param system: dictionary defining the system
         :param paths: dictionary defining the paths of the model
         :param solver: dictionary defining the solver"""
-        self.analysis   = analysis
-        self.system     = system
-        self.paths      = paths
-        self.solver     = solver
-        self.model      = pe.ConcreteModel()
+        self.analysis       = analysis
+        self.system         = system
+        self.paths          = paths
+        self.solver         = solver
+        self.model          = pe.ConcreteModel()
+        # step of optimization horizon
+        self.stepHorizon    = 0
         # set optimization attributes (the five set above) to class <EnergySystem>
         EnergySystem.setOptimizationAttributes(analysis, system, paths, solver, self.model)
         # add Elements to optimization
         self.addElements()
-        # define and construct components of self.model
-        Element.constructModelComponents()
-        logging.info("Apply Big-M GDP ")
-        # add transformation factory so that disjuncts are solved
-        pe.TransformationFactory("gdp.bigm").apply_to(self.model)  
 
     def addElements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -68,6 +65,45 @@ class OptimizationSetup():
         # conduct  time series aggregation
         TimeSeriesAggregation.conductTimeSeriesAggregation()
         
+    def constructOptimizationProblem(self):
+        """ constructs the optimization problem """
+        # define and construct components of self.model
+        Element.constructModelComponents()
+        logging.info("Apply Big-M GDP ")
+        # add transformation factory so that disjuncts are solved
+        pe.TransformationFactory("gdp.bigm").apply_to(self.model)
+
+    def getOptimizationHorizon(self):
+        """ returns list of optimization horizon steps """
+        energySystem    = EnergySystem.getEnergySystem()
+        # save "original" full setTimeStepsYearly
+        self.setTimeStepsYearlyFull = energySystem.setTimeStepsYearly
+        # if using rolling horizon
+        if self.system["useRollingHorizon"]:
+            self.yearsInHorizon = self.system["yearsInHorizon"]
+            _timeStepsYearly    = energySystem.setTimeStepsYearly
+            self.stepsHorizon   = {year: list(range(year,min(year + self.yearsInHorizon,max(_timeStepsYearly)+1))) for year in _timeStepsYearly}
+        # if no rolling horizon
+        else:
+            self.yearsInHorizon = len(energySystem.setTimeStepsYearly)
+            self.stepsHorizon   = {0: energySystem.setTimeStepsYearly}
+        return list(self.stepsHorizon.keys())
+
+    def overwriteTimeIndices(self,stepHorizon):
+        """ select subset of time indices, matching the step horizon
+        :param stepHorizon: step of the rolling horizon """
+        energySystem    = EnergySystem.getEnergySystem()
+        self.system     = EnergySystem.getSystem()
+
+        if self.system["useRollingHorizon"]:
+            _timeStepsYearlyHorizon = self.stepsHorizon[stepHorizon]
+            _baseTimeStepsHorizon   = EnergySystem.decodeYearlyTimeSteps(_timeStepsYearlyHorizon)
+            # overwrite time steps of each element
+            for element in Element.getAllElements():
+                element.overwriteTimeSteps(_baseTimeStepsHorizon)
+            # overwrite base time steps and yearly base time steps
+            energySystem.setBaseTimeSteps       = _baseTimeStepsHorizon.squeeze().tolist()
+            energySystem.setTimeStepsYearly     = _timeStepsYearlyHorizon
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
