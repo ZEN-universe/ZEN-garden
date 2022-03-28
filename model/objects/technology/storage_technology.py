@@ -248,7 +248,7 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
     baseTimeStep                = EnergySystem.decodeTimeStep(tech+"StorageLevel",time)
     elementTimeStep             = EnergySystem.encodeTimeStep(tech,baseTimeStep)
     currentLevelTimeStep        = time
-    if time != 0:
+    if time != model.setTimeStepsStorageLevel[tech].at(1):
         previousLevelTimeStep   = time-1
     else:
         previousLevelTimeStep   = model.setTimeStepsStorageLevel[tech].at(-1)

@@ -105,6 +105,8 @@ class Element:
                         dictOfAttributes[(_element.name,)+_key] = _attribute[_key]
                     else:
                         dictOfAttributes[(_element.name,_key)] = _attribute[_key]
+            elif isinstance(_attribute, int):
+                dictOfAttributes[_element.name] = [_attribute]
             else:
                 dictOfAttributes[_element.name] = _attribute
 

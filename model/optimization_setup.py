@@ -15,9 +15,11 @@ import pyomo.environ as pe
 import os
 import cProfile, pstats
 import pandas as pd
+import numpy as np
 
 from model.objects.element import Element
 # the order of the following classes defines the order in which they are constructed. Keep this way
+from model.objects.technology.technology import Technology
 from model.objects.technology.conversion_technology import ConversionTechnology
 from model.objects.technology.storage_technology import StorageTechnology
 from model.objects.technology.transport_technology import TransportTechnology
@@ -37,11 +39,10 @@ class OptimizationSetup():
         self.system         = system
         self.paths          = paths
         self.solver         = solver
-        self.model          = pe.ConcreteModel()
         # step of optimization horizon
         self.stepHorizon    = 0
         # set optimization attributes (the five set above) to class <EnergySystem>
-        EnergySystem.setOptimizationAttributes(analysis, system, paths, solver, self.model)
+        EnergySystem.setOptimizationAttributes(analysis, system, paths, solver)
         # add Elements to optimization
         self.addElements()
 
@@ -67,6 +68,9 @@ class OptimizationSetup():
         
     def constructOptimizationProblem(self):
         """ constructs the optimization problem """
+        # create empty ConcreteModel
+        self.model = pe.ConcreteModel()
+        EnergySystem.setConcreteModel(self.model)
         # define and construct components of self.model
         Element.constructModelComponents()
         logging.info("Apply Big-M GDP ")
@@ -93,7 +97,6 @@ class OptimizationSetup():
         """ select subset of time indices, matching the step horizon
         :param stepHorizon: step of the rolling horizon """
         energySystem    = EnergySystem.getEnergySystem()
-        self.system     = EnergySystem.getSystem()
 
         if self.system["useRollingHorizon"]:
             _timeStepsYearlyHorizon = self.stepsHorizon[stepHorizon]
@@ -124,3 +127,15 @@ class OptimizationSetup():
         # enable logger 
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)
+
+    def addNewlyBuiltCapacity(self,stepHorizon):
+        """ adds the newly built capacity to the existing capacity
+        :param stepHorizon: step of the rolling horizon """
+        _builtCapacity  = pd.Series(self.model.builtCapacity.extract_values())
+        _capex          = pd.Series(self.model.capex.extract_values())
+        _baseTimeSteps  = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
+        for tech in Technology.getAllElements():
+            # new capacity
+            _builtCapacityTech = _builtCapacity.loc[tech.name].unstack()
+            _capexTech          = _capex.loc[tech.name].unstack()
+            tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)

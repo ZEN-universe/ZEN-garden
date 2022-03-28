@@ -45,6 +45,10 @@ optimizationSetup           = OptimizationSetup(config.analysis, system, prepare
 stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
 # iterate through horizon steps
 for stepHorizon in stepsOptimizationHorizon:
+    if len(stepsOptimizationHorizon) == 1:
+        logging.info("\n--- Conduct optimization for perfect foresight --- \n")
+    else:
+        logging.info(f"\n--- Conduct optimization for rolling horizon step {stepHorizon} of {max(stepsOptimizationHorizon)}--- \n")
     # overwrite time indices
     optimizationSetup.overwriteTimeIndices(stepHorizon)
     # create optimization problem
@@ -59,10 +63,14 @@ for stepHorizon in stepsOptimizationHorizon:
         master = Metaheuristic(optimizationSetup, prepare.nlpDict)
         master.solveMINLP(config.solver)
 
+    # add newly builtCapacity of first year to existing capacity
+    optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
     # EVALUATE RESULTS
     today      = datetime.now()
     modelName  = "model_" + today.strftime("%Y-%m-%d")
     if len(stepsOptimizationHorizon)>1:
-        modelName += f"_{stepHorizon}"
+        modelName += f"_rollingHorizon{stepHorizon}"
+    else:
+        modelName += "_perfectForesight"
     evaluation = Postprocess(optimizationSetup, modelName = modelName)
-    a=1
+a=1

@@ -177,7 +177,7 @@ class EnergySystem:
         cls.energySystem = energySystem
 
     @classmethod
-    def setOptimizationAttributes(cls,analysis, system,paths,solver,model):
+    def setOptimizationAttributes(cls,analysis, system,paths,solver):
         """ set attributes of class <EnergySystem> with inputs 
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
@@ -192,11 +192,15 @@ class EnergySystem:
         cls.paths = paths
         # set solver
         cls.solver = solver
-        # set concreteModel
-        cls.concreteModel = model
         # set indexing sets
         cls.setIndexingSets()
-    
+
+    @classmethod
+    def setConcreteModel(cls,concreteModel):
+        """ sets empty concrete model to energySystem
+        :param concreteModel: pe.ConcreteModel"""
+        cls.concreteModel = concreteModel
+
     @classmethod
     def setIndexingSets(cls):
         """ set sets that serve as an index for other sets """
@@ -271,6 +275,7 @@ class EnergySystem:
         """ get paths 
         :return paths: paths to folders of input data """
         return cls.paths
+
     @classmethod
     def getSolver(cls):
         """ get solver 
@@ -466,10 +471,10 @@ class EnergySystem:
         """ this method initializes a modeling component by extracting the stored input data.
         :param callingClass: class from where the method is called
         :param componentName: name of modeling component
-        :param indexNames: names of index sets
+        :param indexNames: names of index sets, only if callingClass is not EnergySystem
+        :param setTimeSteps: time steps, only if callingClass is EnergySystem
         :return componentData: data to initialize the component """
-        headerSetTimeSteps = cls.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
-        # indexSets = args[1:]
+
         # if calling class is EnergySystem
         if callingClass == cls:
             component       = getattr(cls.getEnergySystem(),componentName)
@@ -564,8 +569,14 @@ class EnergySystem:
         # carbon emissions
         model.carbonEmissionsTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain = pe.NonNegativeReals,
-            doc = "total carbon emissions of energy system. Domain: NonNegativeReals"
+            domain = pe.Reals,
+            doc = "total carbon emissions of energy system. Domain: Reals"
+        )
+        # costs
+        model.costTotal = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.Reals,
+            doc="total cost of energy system. Domain: Reals"
         )
 
     @classmethod
@@ -586,7 +597,13 @@ class EnergySystem:
             rule=constraintCarbonEmissionsLimitRule,
             doc="limit of total carbon emissions of energy system"
         )
-    
+        # costs
+        model.constraintCostTotal = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintCostTotalRule,
+            doc="total cost of energy system"
+        )
+
     @classmethod
     def constructObjective(cls):
         """ constructs the pe.Objective of the class <EnergySystem> """
@@ -639,12 +656,23 @@ def constraintCarbonEmissionsLimitRule(model, year):
     else:
         return pe.Constraint.Skip
 
+def constraintCostTotalRule(model,year):
+    """ add up all costs from technologies and carriers"""
+    return(
+        model.costTotal[year] ==
+        # capex
+        model.capexTotal[year] +
+        # opex
+        model.opexTotal[year] +
+        # carrier costs
+        model.costCarrierTotal[year]
+    )
 # objective rules
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
     return(
             sum(
-                model.capexTotal[year] + model.opexTotal[year] + model.costCarrierTotal[year]
+                model.costTotal[year]
             for year in model.setTimeStepsYearly)
     )
 

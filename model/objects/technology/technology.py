@@ -94,8 +94,10 @@ class Technology(Element):
                                                                        tech=self)
 
     def calculateCapexOfExistingCapacities(self):
-        """ this method calculates the annualized capex of the existing capacities. """
+        """ this method calculates the annualized capex of the existing capacities """
         existingCapacities  = self.existingCapacity
+        # TODO fix correlation between setExistingTechnologies and setTimeStepsInvest.
+        #  At the moment the specificCapex is extracted for the id of the existing capacity... should be investTimeStep.at(1) however
         existingCapex       = existingCapacities.to_frame().apply(
             lambda _existingCapacity: self.calculateCapexOfSingleCapacity(_existingCapacity.squeeze(),_existingCapacity.name),axis=1)
         return existingCapex
@@ -121,6 +123,37 @@ class Technology(Element):
         setTimeStepsOperation   = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps,timeStepType="operation",yearly=True)
         setattr(self,"setTimeStepsInvest",setTimeStepsInvest.squeeze().tolist())
         setattr(self, "setTimeStepsOperation", setTimeStepsOperation.squeeze().tolist())
+
+    def addNewlyBuiltCapacityTech(self,builtCapacity,capex,baseTimeSteps):
+        """ adds the newly built capacity to the existing capacity
+        :param builtCapacity: pd.Series of newly built capacity of technology
+        :param capex: pd.Series of capex of newly built capacity of technology
+        :param baseTimeSteps: base time steps of current horizon step """
+        system = EnergySystem.getSystem()
+        # reduce lifetime of existing capacities and add new remaining lifetime
+        self.lifetimeExistingTechnology             = (self.lifetimeExistingTechnology - system["intervalYears"]).clip(lower=0)
+        # new capacity
+        _investTimeSteps                            = EnergySystem.encodeTimeStep(self.name, baseTimeSteps, "invest", yearly=True)
+        # TODO currently summed over all invest time steps, correct for #TS_investPerYear >1
+        _newlyBuiltCapacity                         = builtCapacity[_investTimeSteps].sum(axis=1)
+        _capex                                      = capex[_investTimeSteps].sum(axis=1)
+        # if at least one value unequal to zero
+        if not (_newlyBuiltCapacity == 0).all():
+            # add new index to setExistingTechnologies
+            indexNewTechnology                          = max(self.setExistingTechnologies) + 1
+            self.setExistingTechnologies                = np.append(self.setExistingTechnologies, indexNewTechnology)
+            # add new existing capacity
+            _existingCapacity                           = self.existingCapacity.unstack()
+            _existingCapacity[indexNewTechnology]       = _newlyBuiltCapacity
+            self.existingCapacity                       = _existingCapacity.stack()
+            # add new remaining lifetime
+            _lifetimeTechnology                         = self.lifetimeExistingTechnology.unstack()
+            _lifetimeTechnology[indexNewTechnology]     = self.lifetime
+            self.lifetimeExistingTechnology             = _lifetimeTechnology.stack()
+            # calculate capex of existing capacity
+            _capexExistingCapacity                      = self.capexExistingCapacity.unstack()
+            _capexExistingCapacity[indexNewTechnology]  = _capex
+            self.capexExistingCapacity                  = _capexExistingCapacity.stack()
 
     ### --- classmethods
     @classmethod
@@ -162,8 +195,8 @@ class Technology(Element):
 
         for idExistingCapacity in model.setExistingTechnologies[tech]:
             tStart  = cls.getStartEndTimeOfLifetime(tech, investTimeStep, idExistingCapacity,loc)
-            # if still available at base time step 0, add to list
-            if tStart == 0:
+            # if still available at first base time step, add to list
+            if tStart == model.setBaseTimeSteps.at(1):
                 existingQuantity += existingVariable[tech, loc, idExistingCapacity]
         return existingQuantity
 
@@ -199,11 +232,13 @@ class Technology(Element):
         if int(baseLifetime) != baseLifetime:
             logging.warning(
                 f"The lifetime of {tech} does not translate to an integer lifetime interval in the base time domain ({baseLifetime})")
-        startBaseTimeStep       = int(max(0, baseTimeStep - baseLifetime + 1))
+        # if startBaseTimeStep is further in the past than first base time step, use first base time step
+        startBaseTimeStep       = int(max(model.setBaseTimeSteps.at(1), baseTimeStep - baseLifetime + 1))
         # if lifetime of existing capacity, then only return the start base time step
         if idExistingCapacity is not None:
             return startBaseTimeStep
         startInvestTimeStep     = EnergySystem.encodeTimeStep(tech, startBaseTimeStep, timeStepType="invest", yearly=True)[0]
+
         return startInvestTimeStep, endInvestTimeStep
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
