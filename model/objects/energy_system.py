@@ -532,7 +532,7 @@ class EnergySystem:
         # carbon emissions
         model.carbonEmissionsTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = "total carbon emissions of energy system. Domain: NonNegativeReals"
         )
 
