@@ -25,8 +25,8 @@ analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEffic
 
 ## System - settings update compared to default values
 system["setCarriers"]                               = ["electricity", "hydrogen"] # ,
-system["setStorageTechnologies"]                    = []
-system["setTransportTechnologies"]                  = ["hydrogen_pipeline","hydrogen_train"] # ,"hydrogen_truck_gas", "hydrogen_ship"] # hydrogen_truck_liquid ##, ,
+system["setStorageTechnologies"]                    = ["hydrogen_storage"]
+system["setTransportTechnologies"]                  = ["hydrogen_pipeline"]#,"hydrogen_train"] # ,"hydrogen_truck_gas", "hydrogen_ship"] # hydrogen_truck_liquid ##, ,
 system["setConversionTechnologies"]                 = ["electrolysis"] # ,
 system["setTimeSteps"]                              = list(range(0,24))
 system["multiGridTimeIndex"]                        = False # if True, each element has its own time index; if False, use single time grid approach
