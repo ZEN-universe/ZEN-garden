@@ -312,3 +312,8 @@ class TimeSeriesAggregation():
         # calculate new time steps of energy balance
         for element in Carrier.getAllElements():
             cls.calculateTimeStepsEnergyBalance(element)
+            ### TODO VERYYYYYY HARDCODEDDDDDD
+            if element.name == "natural_gas":
+                _baseTimeStepsYears = EnergySystem.decodeYearlyTimeSteps([4,5,6,7])
+                _elementTimeSteps   = EnergySystem.encodeTimeStep(element.name,_baseTimeStepsYears,timeStepType="operation",yearly="yearly")
+                element.availabilityCarrierImport.loc[(slice(None),_elementTimeSteps)] = 0
