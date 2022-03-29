@@ -29,26 +29,26 @@ logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, 
 logging.captureWarnings(True)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # handler.setFormatter(formatter)
 logging.getLogger().addHandler(handler)
 # prevent double printing
 logging.propagate = False
-# CREATE INPUT FILE
+
+# create a dictionary with the paths to access the model inputs and check if input data exists
 prepare = Prepare(config)
+paths   = prepare.createPaths()
+system  = prepare.checkExistingInputData()
 
-# check if all data inputs exist and remove non-existent
-system = prepare.checkExistingInputData()
-# FORMULATE THE OPTIMIZATION PROBLEM
-optimizationSetup = OptimizationSetup(config.analysis, system, prepare.paths, prepare.solver)
+# formulate the optimization problem
+optimizationSetup = OptimizationSetup(config.analysis, system, paths, prepare.solver)
 
-# SOLVE THE OPTIMIZATION PROBLEM
+# solve the optimization problem
 if config.solver['model'] == 'MILP':
-    # BASED ON MILP SOLVER
+    # using the MILP solver
     optimizationSetup.solve(config.solver)
 
 elif config.solver['model'] == 'MINLP':
-    # BASED ON HYBRID SOLVER - MASTER METAHEURISTIC AND SLAVE MILP SOLVER
+    # using the MINLP solver
     master = Metaheuristic(optimizationSetup, prepare.nlpDict)
     master.solveMINLP(config.solver)
 

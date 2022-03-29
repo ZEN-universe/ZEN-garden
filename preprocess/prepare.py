@@ -28,18 +28,17 @@ class Prepare:
         """
         # instantiate analysis object
         self.analysis = config.analysis
-
         # instantiate system object
-        self.system = config.system
-
+        self.system   = config.system
         # instantiate the solver object
-        self.solver = config.solver
-
-        # create a dictionary with the paths to access the model inputs
-        self.createPaths()
+        self.solver   = config.solver
 
         # only kept for NlpDict
         if self.solver["model"] == "MINLP":
+
+            # create a dictionary with the paths to access the model inputs
+            self.createPaths()
+
             # initialise a dictionary with the keys of the data to be read
             self.initDict()
 
@@ -204,6 +203,5 @@ class Prepare:
                             system[subset].remove(technology)
                     system[technologySubset].extend(system[subset])
                     system["setTechnologies"].extend(system[subset])
-        
-        # return system
+
         return system
