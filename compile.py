@@ -10,7 +10,7 @@ Description:  Compilation  of the optimization problem.
 
 import os
 import logging
-import data.config as config
+import data.NUTS0_HSC.system as config
 import sys
 from datetime import datetime
 from preprocess.prepare import Prepare
