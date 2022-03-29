@@ -309,7 +309,7 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     elementTimeStep = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
     carrierImport = model.importCarrierFlow[carrier, node, elementTimeStep]
     carrierExport = model.exportCarrierFlow[carrier, node, elementTimeStep]
-    carrierDemand = model.demandCarrier[carrier, node, elementTimeStep]
+    #carrierDemand = model.demandCarrier[carrier, node, elementTimeStep]
     quantityCarrierSold = model.quantityCarrierSold[carrier, node, elementTimeStep]
 
     return (

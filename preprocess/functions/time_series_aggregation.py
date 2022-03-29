@@ -127,7 +127,7 @@ class TimeSeriesAggregation():
                 else:
                     NotAggregatedColumns = dfTimeSeries.columns
                 # not aggregated columns
-                dfAggregatedTimeSeries[NotAggregatedColumns] = dfTimeSeries.iloc[0][NotAggregatedColumns]
+                dfAggregatedTimeSeries[NotAggregatedColumns] = dfTimeSeries[NotAggregatedColumns]
                 # reorder
                 dfAggregatedTimeSeries.index.names = [self.headerSetTimeSteps]
                 dfAggregatedTimeSeries.columns.names = _indexNames

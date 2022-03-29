@@ -28,7 +28,7 @@ system["setCarriers"]                               = ["electricity", "hydrogen"
 system["setStorageTechnologies"]                    = ["hydrogen_storage"]
 system["setTransportTechnologies"]                  = ["hydrogen_pipeline"]#,"hydrogen_train"] # ,"hydrogen_truck_gas", "hydrogen_ship"] # hydrogen_truck_liquid ##, ,
 system["setConversionTechnologies"]                 = ["electrolysis"] # ,
-system["setTimeSteps"]                              = list(range(0,24))
+system["setTimeSteps"]                              = list(range(0,3))
 system["multiGridTimeIndex"]                        = False # if True, each element has its own time index; if False, use single time grid approach
 system["numberTimeStepsDefault"]                    = 26 # default number of operational time steps, only used in single-grid time series aggregation # TODO number of time steps per period = 1
 system["setNodes"]                                  = ["IT","DE","AT","FR"]#,"AT","CH","FR"]#, "IT","FR"]
