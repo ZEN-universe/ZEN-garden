@@ -10,13 +10,14 @@ Description:  Compilation  of the optimization problem.
 
 import os
 import logging
-import data.NUTS0_HSC.system as config
 import sys
-from datetime import datetime
-from preprocess.prepare import Prepare
-from model.optimization_setup import OptimizationSetup
-from model.metaheuristic.algorithm import Metaheuristic
-from postprocess.results import Postprocess
+
+import config                       as config
+from datetime                       import datetime
+from preprocess.prepare             import Prepare
+from model.optimization_setup       import OptimizationSetup
+from model.metaheuristic.algorithm  import Metaheuristic
+from postprocess.results            import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
