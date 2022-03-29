@@ -29,8 +29,6 @@ class StorageTechnology(Technology):
         super().__init__(tech)
         # store input data
         self.storeInputData()
-        # add carrier to list of carriers
-        EnergySystem.setTechnologyOfCarrier(self.name, self.referenceCarrier)
         # add StorageTechnology to list
         StorageTechnology.addElement(self)
 

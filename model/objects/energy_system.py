@@ -71,8 +71,8 @@ class EnergySystem:
         self.setNodes                    = self.dataInput.extractLocations()
         self.setNodesOnEdges             = self.calculateEdgesFromNodes()
         self.setEdges                    = list(self.setNodesOnEdges.keys())
-        self.setCarriers                 = system["setCarriers"]
         self.setTechnologies             = system["setTechnologies"]
+        self.setCarriers                 = []
         # base time steps
         self.setBaseTimeSteps            = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
         self.setBaseTimeStepsYearly      = list(range(0, system["timeStepsPerYear"]))
@@ -213,8 +213,10 @@ class EnergySystem:
         for carrier in listTechnologyOfCarrier:
             if carrier not in cls.dictTechnologyOfCarrier:
                 cls.dictTechnologyOfCarrier[carrier] = [technology]
+                cls.energySystem.setCarriers.append(carrier)
             elif technology not in cls.dictTechnologyOfCarrier[carrier]:
                 cls.dictTechnologyOfCarrier[carrier].append(technology)
+
 
     @classmethod
     def setOrderTimeSteps(cls,element,orderTimeSteps,timeStepType = None):

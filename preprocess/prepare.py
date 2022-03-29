@@ -176,32 +176,28 @@ class Prepare:
         This method checks the existing input data and only regards those elements for which folders exist.
         It is called in compile.py after the main Prepare routine.
         """
-        system = deepcopy(self.system)
-
-        # check if carriers exist
-        for carrier in system["setCarriers"]:
-            if carrier not in self.paths["setCarriers"].keys():
-                logging.warning(f"Carrier {carrier} selected in config does not exist in input data, excluded from model.")
-                system["setCarriers"].remove(carrier)
-
         # check if technologies exist
-        system["setTechnologies"] = []
+        self.system["setTechnologies"] = []
         for technologySubset in self.analysis["subsets"]["setTechnologies"]:
-            for technology in system[technologySubset]:
+            for technology in self.system[technologySubset]:
                 if technology not in self.paths[technologySubset].keys():
-                    logging.warning(
-                        f"Technology {technology} selected in config does not exist in input data, excluded from model.")
-                    system[technologySubset].remove(technology)
-            system["setTechnologies"].extend(system[technologySubset])
+                    logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
+                    self.system[technologySubset].remove(technology)
+            self.system["setTechnologies"].extend(self.system[technologySubset])
             # check subsets of technologySubset
             if technologySubset in self.analysis["subsets"].keys():
                 for subset in self.analysis["subsets"][technologySubset]:
-                    for technology in system[subset]:
+                    for technology in self.system[subset]:
                         if technology not in self.paths[subset].keys():
-                            logging.warning(
-                                f"Technology {technology} selected in config does not exist in input data, excluded from model.")
-                            system[subset].remove(technology)
-                    system[technologySubset].extend(system[subset])
-                    system["setTechnologies"].extend(system[subset])
+                            logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
+                            self.system[subset].remove(technology)
+                    self.system[technologySubset].extend(self.system[subset])
+                    self.system["setTechnologies"].extend(self.system[subset])
 
-        return system
+
+    def checkExistingCarrierData(self, system):
+        # check if carriers exist
+        self.system = system
+        for carrier in self.system["setCarriers"]:
+            assert carrier in self.paths["setCarriers"].keys(), f"Carrier {carrier} selected in config does not exist in input data, excluded from model."
+

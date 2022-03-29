@@ -361,9 +361,6 @@ class DataInput():
             _carrierString = self.extractAttributeData(folderPath,_carrierType,skipWarning = True)
             if type(_carrierString) == str:
                 _carrierList = _carrierString.strip().split(" ")
-                for _carrierItem in _carrierList:
-                    # check if carrier in carriers of model
-                    assert _carrierItem in self.system["setCarriers"], f"Carrier '{_carrierItem}' is not in carriers of model ({self.system['setCarriers']})"
             else:
                 _carrierList = []
             carrierDict[_carrierType] = _carrierList

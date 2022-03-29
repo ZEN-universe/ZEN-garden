@@ -25,19 +25,20 @@ from preprocess.functions.time_series_aggregation       import TimeSeriesAggrega
 
 class OptimizationSetup():
 
-    def __init__(self, analysis, system, paths,solver):
+    def __init__(self, analysis, prepare):
         """setup Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
         :param paths: dictionary defining the paths of the model
         :param solver: dictionary defining the solver"""
+        self.prepare    = prepare
         self.analysis   = analysis
-        self.system     = system
-        self.paths      = paths
-        self.solver     = solver
+        self.system     = prepare.system
+        self.paths      = prepare.paths
+        self.solver     = prepare.solver
         self.model      = pe.ConcreteModel()
         # set optimization attributes (the five set above) to class <EnergySystem>
-        EnergySystem.setOptimizationAttributes(analysis, system, paths, solver, self.model)
+        EnergySystem.setOptimizationAttributes(analysis, self.system, self.paths, self.solver, self.model)
         # add Elements to optimization
         self.addElements()
         # define and construct components of self.model
@@ -68,10 +69,13 @@ class OptimizationSetup():
             for tech in setTechnologies:
                 technologyClass(tech)
 
+        # get set of carriers
+        self.system["setCarriers"] = EnergySystem.getAttribute("setCarriers")
+        self.prepare.checkExistingCarrierData(self.system)
         for carrierType in carrierList:
             carrierClass = getattr(sys.modules[__name__], carrierType)
             carrierSet   = carrierClass.label
-            setCarriers  = EnergySystem.dictTechnologyOfCarrier.keys()
+            setCarriers  = self.system[carrierSet]
             # check if carrierSet has a subset and remove subset from setCarriers
             assert (carrierSet not in self.analysis["subsets"].keys()), f"Functionality of adding carrier-subsets are not implemented yet."
             # add carrier classes

@@ -31,8 +31,6 @@ class ConversionTechnology(Technology):
         super().__init__(tech)
         # store input data
         self.storeInputData()
-        # add carrier to list of carriers
-        EnergySystem.setTechnologyOfCarrier(self.name, self.inputCarrier + self.outputCarrier)
         # add ConversionTechnology to list
         ConversionTechnology.addElement(self)
 
@@ -43,6 +41,7 @@ class ConversionTechnology(Technology):
         # define input and output carrier
         self.inputCarrier               = self.dataInput.extractConversionCarriers(self.inputPath)["inputCarrier"]
         self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
+        EnergySystem.setTechnologyOfCarrier(self.name, self.inputCarrier + self.outputCarrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
         # get Capex

@@ -54,6 +54,7 @@ class Technology(Element):
                 EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest")
                 self.inputPath                  = self.getInputPath(system, technologyType)
                 self.referenceCarrier           = [self.dataInput.extractAttributeData(self.inputPath,"referenceCarrier",skipWarning=True)]
+                EnergySystem.setTechnologyOfCarrier(self.name, self.referenceCarrier)
                 self.minBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"minBuiltCapacity")["value"]
                 self.maxBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"maxBuiltCapacity")["value"]
                 self.lifetime                   = self.dataInput.extractAttributeData(self.inputPath,"lifetime")["value"]
