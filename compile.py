@@ -36,11 +36,10 @@ logging.propagate = False
 
 # create a dictionary with the paths to access the model inputs and check if input data exists
 prepare = Prepare(config)
-paths   = prepare.createPaths()
 system  = prepare.checkExistingInputData()
 
 # formulate the optimization problem
-optimizationSetup = OptimizationSetup(config.analysis, system, paths, prepare.solver)
+optimizationSetup = OptimizationSetup(config.analysis, system, prepare.paths, prepare.solver)
 
 # solve the optimization problem
 if config.solver['model'] == 'MILP':

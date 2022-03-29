@@ -33,11 +33,11 @@ class Prepare:
         # instantiate the solver object
         self.solver   = config.solver
 
+        # create a dictionary with the paths to access the model inputs
+        self.createPaths()
+
         # only kept for NlpDict
         if self.solver["model"] == "MINLP":
-
-            # create a dictionary with the paths to access the model inputs
-            self.createPaths()
 
             # initialise a dictionary with the keys of the data to be read
             self.initDict()

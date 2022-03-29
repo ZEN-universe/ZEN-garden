@@ -71,7 +71,7 @@ class OptimizationSetup():
         for carrierType in carrierList:
             carrierClass = getattr(sys.modules[__name__], carrierType)
             carrierSet   = carrierClass.label
-            setCarriers  = self.system[carrierSet]
+            setCarriers  = EnergySystem.dictTechnologyOfCarrier.keys()
             # check if carrierSet has a subset and remove subset from setCarriers
             assert (carrierSet not in self.analysis["subsets"].keys()), f"Functionality of adding carrier-subsets are not implemented yet."
             # add carrier classes

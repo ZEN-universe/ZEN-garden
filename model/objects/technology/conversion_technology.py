@@ -31,6 +31,8 @@ class ConversionTechnology(Technology):
         super().__init__(tech)
         # store input data
         self.storeInputData()
+        # add carrier to list of carriers
+        EnergySystem.setTechnologyOfCarrier(self.name, self.inputCarrier + self.outputCarrier)
         # add ConversionTechnology to list
         ConversionTechnology.addElement(self)
 
