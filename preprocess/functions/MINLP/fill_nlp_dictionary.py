@@ -6,7 +6,6 @@ Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class to add to pyomo dictionary the nonlinear functions
 ==========================================================================================================================================================================="""
-from preprocess.functions.add_parameters import add_function
 from preprocess.functions.extract_input_data import DataInput
 from scipy.interpolate import interp1d
 import numpy as np
@@ -73,3 +72,42 @@ class FillNlpDict:
                             self.nlpDict['data']['LB'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"minBuiltCapacity")
                             self.nlpDict['data']['UB'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"maxBuiltCapacity")
                             # self.nlpDict['data']['DS'][variableName + technologyName] = self.dataInput.extractAttributeData(_inputPath,"deltaBuiltCapacity")
+
+    def add_parameter(dictionary, df, dfIndexNames, dfIndex, dfColumn, key, parameter, element=None):
+
+        if df.empty:
+            pass
+
+        else:
+            df = df.set_index(dfIndexNames)
+
+            value = df.loc[dfIndex, dfColumn]
+
+            if element:
+                # if no element specified
+                if parameter not in dictionary:
+                    # create a new dictionary for the parameter
+                    dictionary[parameter] = {element: {key: value}}
+                else:
+                    if element not in dictionary[parameter]:
+                        # create a new dictionary for the element in the parameter
+                        dictionary[parameter][element] = {key: value}
+                    else:
+                        # add the indexes to the dictionary
+                        dictionary[parameter][element][key] = value
+            else:
+                if parameter not in dictionary:
+                    # create a new dictionary for the parameter
+                    dictionary[parameter] = {key: value}
+                else:
+                    # add the indexes to the dictionary
+                    dictionary[parameter][key] = value
+
+    def add_function(dictionary, function, key, parameterName):
+
+        if parameterName not in dictionary:
+            # create a new dictionary for the function
+            dictionary[parameterName] = {key: function}
+        else:
+            # add the indexes to the dictionary
+            dictionary[parameterName][key] = function
