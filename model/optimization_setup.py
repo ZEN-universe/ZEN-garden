@@ -1,7 +1,8 @@
 """===========================================================================================================================================================================
 Title:        ZEN-GARDEN
 Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch), Jacob Mannhardt (jmannhardt@ethz.ch)
+Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
+                Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class defining the Concrete optimization model.
@@ -13,16 +14,12 @@ Description:  Class defining the Concrete optimization model.
 import logging
 import pyomo.environ as pe
 import os
-import cProfile, pstats
-import pandas as pd
+import sys
 
 from model.objects.element import Element
-# the order of the following classes defines the order in which they are constructed. Keep this way
-from model.objects.technology.conversion_technology     import ConversionTechnology
-#from model.objects.technology.conditioning_technology   import ConditioningTechnology
-from model.objects.technology.storage_technology        import StorageTechnology
-from model.objects.technology.transport_technology      import TransportTechnology
-from model.objects.carrier                              import Carrier
+# import technology and carrier classes from technology and carrier directory, respectively
+from model.objects.technology                           import *
+from model.objects.carrier                              import *
 from model.objects.energy_system                        import EnergySystem
 from preprocess.functions.time_series_aggregation       import TimeSeriesAggregation
 
@@ -56,40 +53,50 @@ class OptimizationSetup():
         logging.info("\n--- Add elements to model--- \n")
         # add energy system to define system
         EnergySystem("energySystem")
-        # add technology 
-        for conversionTech in self.system['setConversionTechnologies']:
-            ConversionTechnology(conversionTech)
-            #if conversionTech in self.system["setConditioningTechnologies"]:
-            #    ConditioningTechnology(conversionTech)
-            #else:
-            #    ConversionTechnology(conversionTech)
-        for transportTech in self.system['setTransportTechnologies']:
-            TransportTechnology(transportTech)
-        for storageTech in self.system['setStorageTechnologies']:
-            StorageTechnology(storageTech)
-        # add carrier 
-        for carrier in self.system["setCarriers"]:
-            Carrier(carrier)
+
+        for technologyType in technologyList:
+            technologyClass = getattr(sys.modules[__name__], technologyType)
+            technologySet   = technologyClass.label
+            setTechnologies = self.system[technologySet]
+            # check if technologySet has a subset and remove subset from setTechnologies
+            if technologySet in self.analysis["subsets"].keys():
+                subsetTechnologies = []
+                for subset in self.analysis["subsets"][technologySet]:
+                        subsetTechnologies += [tech for tech in self.system[subset]]
+                setTechnologies = list(set(setTechnologies)-set(subsetTechnologies))
+            # add technology classes
+            for tech in setTechnologies:
+                technologyClass(tech)
+
+        for carrierType in carrierList:
+            carrierClass = getattr(sys.modules[__name__], carrierType)
+            carrierSet   = carrierClass.label
+            setCarriers  = self.system[carrierSet]
+            # check if carrierSet has a subset and remove subset from setCarriers
+            assert (carrierSet not in self.analysis["subsets"].keys()), f"Functionality of adding carrier-subsets are not implemented yet."
+            # add carrier classes
+            for carrier in setCarriers:
+                carrierClass(carrier)
+
         # conduct  time series aggregation
         TimeSeriesAggregation.conductTimeSeriesAggregation()
-
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """
 
-        solverName          = solver['name']
+        solverName          = solver["name"]
         solverOptions       = solver["solverOptions"]
 
         logging.info(f"\n--- Solve model instance using {solverName} ---\n")
         # disable logger temporarily
         logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
-        #         # (gives Warning: unable to write requested result file './/outputs//logs//model.ilp' if feasible)
+        #         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt            = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels=True)
-        self.results        = self.opt.solve(tee=solver['verbosity'], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
+        self.results        = self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
         # enable logger 
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)

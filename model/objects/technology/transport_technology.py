@@ -16,6 +16,8 @@ from model.objects.energy_system import EnergySystem
 from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class TransportTechnology(Technology):
+    # set label
+    label = "setTransportTechnologies"
     # empty list of elements
     listOfElements = []
     

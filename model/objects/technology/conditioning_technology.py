@@ -2,7 +2,6 @@
 Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
-                Jacob Mannhardt (jmannhardt@ethz.ch)
 Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class defining the parameters, variables and constraints of the conditioning technologies.
@@ -11,13 +10,12 @@ Description:    Class defining the parameters, variables and constraints of the 
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
-import numpy as np
 from model.objects.technology.conversion_technology import ConversionTechnology
-from model.objects.energy_system import EnergySystem
-from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 
 class ConditioningTechnology(ConversionTechnology):
+    # set label
+    label = "setConditioningTechnologies"
     # empty list of elements
     listOfElements = []
 
@@ -33,20 +31,19 @@ class ConditioningTechnology(ConversionTechnology):
         ConditioningTechnology.addElement(self)
 
     def storeInputData(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # get attributes from class <Technology>
         super().storeInputData()
-        # extract PWA parameters: ConverEfficiency
+
+    def getConverEfficiency(self):
+        """retrieves and stores converEfficiency for <ConditioningTechnology>.
+        Create dictionary with input parameters with the same format as PWAConverEfficiency"""
         self.specificHeat         = self.dataInput.extractAttributeData(self.inputPath, "specificHeat", skipWarning=True)["value"]
         self.specificHeatRatio    = self.dataInput.extractAttributeData(self.inputPath, "specificHeatRatio", skipWarning=True)["value"]
         self.pressureIn           = self.dataInput.extractAttributeData(self.inputPath, "pressureIn", skipWarning=True)["value"]
         self.pressureOut          = self.dataInput.extractAttributeData(self.inputPath, "pressureOut", skipWarning=True)["value"]
         self.temperatureIn        = self.dataInput.extractAttributeData(self.inputPath, "temperatureIn", skipWarning=True)["value"]
         self.isentropicEfficiency = self.dataInput.extractAttributeData(self.inputPath, "isentropicEfficiency", skipWarning=True)["value"]
-        self.createConverEfficiencyDict()
-
-    def createConverEfficiencyDict(self):
-        """ create dictionary with input parameters with the same format as PWAConverEfficiency"""
 
         # calculate energy consumption
         _pressureRatio     = self.pressureOut / self.pressureIn
@@ -74,17 +71,4 @@ class ConditioningTechnology(ConversionTechnology):
         self.PWAConverEfficiency["bounds"][_inputCarriers[0]]         = (self.minBuiltCapacity * _energyConsumption, self.maxBuiltCapacity * _energyConsumption)
 
         ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConditioningTechnology --- ###
-        @classmethod
-        def constructSets(cls):
-            """ constructs the pe.Sets of the class <ConversionTechnology> """
-            pass
 
-        @classmethod
-        def constructParams(cls):
-            """ constructs the pe.Params of the class <ConversionTechnology> """
-            pass
-
-        @classmethod
-        def constructConstraints(cls):
-            """ constructs the pe.Params of the class <ConversionTechnology> """
-            pass

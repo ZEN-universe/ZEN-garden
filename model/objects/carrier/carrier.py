@@ -18,6 +18,8 @@ from model.objects.energy_system import EnergySystem
 from model.objects.technology.technology import Technology
 
 class Carrier(Element):
+    # set label
+    label = "setCarriers"
     # empty list of elements
     listOfElements = []
 
@@ -236,14 +238,15 @@ def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
     if carrier != "carbon":
         return (model.carbonEmissionsCarrier[carrier, node, time] ==
                 model.carbonIntensityCarrier[carrier, node] *
-                (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
+                (model.importCarrierFlow[carrier, node, time]
+                 - model.exportCarrierFlow[carrier, node, time])
                 )
     else:
         return (model.carbonEmissionsCarrier[carrier, node, time] ==
                 model.carbonIntensityCarrier[carrier, node] *
                 (model.importCarrierFlow[carrier, node, time]
-                 - model.exportCarrierFlow[carrier, node, time]) -
-                model.inputFlow["carbon_storage", carrier, node, time]
+                 - model.exportCarrierFlow[carrier, node, time]
+                 - model.inputFlow["carbon_storage", carrier, node, time])
                 )
 
 def constraintCarbonEmissionsCarrierTotalRule(model, year):

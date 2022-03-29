@@ -18,6 +18,8 @@ from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 
 class ConversionTechnology(Technology):
+    # set label
+    label = "setConversionTechnologies"
     # empty list of elements
     listOfElements = []
 
@@ -41,18 +43,23 @@ class ConversionTechnology(Technology):
         self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
-        # extract PWA parameters: Capex
-        self.PWACapex                   = self.dataInput.extractPWAData(self.inputPath,"Capex",self)
-        # calculate capex of existing capacity
-        self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
-        self.convertToAnnualizedCapex()
-        # extract PWA parameters: ConverEfficiency
+        # get Capex
+        self.getAnnualizedCapex()
+        self.getConverEfficiency()
+
+    def getConverEfficiency(self):
+        """retrieves and stores converEfficiency for <ConversionTechnology>.
+        Each Child class overwrites method to store different converEfficiency """
+        #TODO read PWA Dict and set Params
         self.PWAConverEfficiency   = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency",self)
 
-    def convertToAnnualizedCapex(self):
-        """ this method converts the total capex to annualized capex """
-        fractionalAnnuity   = self.calculateFractionalAnnuity()
+    def getAnnualizedCapex(self):
+        """ this method retrieves the total capex and converts it to annualized capex """
+        self.PWACapex = self.dataInput.extractPWAData(self.inputPath, "Capex", self)
+        # calculate capex of existing capacity
+        self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
         # annualize capex
+        fractionalAnnuity   = self.calculateFractionalAnnuity()
         # set bounds
         self.PWACapex["bounds"]["capex"] = tuple([bound*fractionalAnnuity for bound in self.PWACapex["bounds"]["capex"]])
         if not self.PWACapex["PWAVariables"]:

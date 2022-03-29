@@ -16,6 +16,8 @@ from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
 
 class StorageTechnology(Technology):
+    # set label
+    label = "setStorageTechnologies"
     # empty list of elements
     listOfElements = []
     
