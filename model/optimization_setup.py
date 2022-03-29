@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
-                Alissa Ganter (aganter@ethz.ch)
+              Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Class defining the Concrete optimization model.
