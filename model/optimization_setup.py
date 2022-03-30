@@ -50,7 +50,7 @@ class OptimizationSetup():
         logging.info("Apply Big-M GDP ")
         
         # add transformation factory so that disjuncts are solved
-        pe.TransformationFactory("gdp.bigm").apply_to(self.model)  
+        pe.TransformationFactory("gdp.bigm").apply_to(self.model)
 
     def addElements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -59,19 +59,19 @@ class OptimizationSetup():
         logging.info("\n--- Add elements to model--- \n")
         # add energy system to define system
         EnergySystem("energySystem")
-        # add technology 
+        # add technology
         for conversionTech in self.system['setConversionTechnologies']:
             ConversionTechnology(conversionTech)
         for transportTech in self.system['setTransportTechnologies']:
             TransportTechnology(transportTech)
         for storageTech in self.system['setStorageTechnologies']:
             StorageTechnology(storageTech)
-        # add carrier 
+        # add carrier
         for carrier in self.system["setCarriers"]:
             Carrier(carrier)
         # conduct  time series aggregation
         TimeSeriesAggregation.conductTimeSeriesAggregation()
-        
+
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
@@ -88,7 +88,12 @@ class OptimizationSetup():
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt            = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels=True)
-        self.results        = self.opt.solve(tee=solver['verbosity'], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
-        # enable logger 
+
+        self.results = self.opt.solve(tee=solver['verbosity'], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
+
+        # TODO: save results
+
+        # enable logger
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)
+        a=1
