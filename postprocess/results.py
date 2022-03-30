@@ -229,7 +229,7 @@ class Postprocess:
                 self.trimZeros(varName, self.varDf, df[varName].columns.values)
                 print(df)
         else:
-            print(f'{obj.name} not evaluated in results.py')
+            print(f'{varName} not evaluated in results.py')
 
     def trimZeros(self, varName, df, c=[0]):
         """ Trims out the zero rows in the dataframe """
