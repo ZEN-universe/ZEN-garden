@@ -10,12 +10,14 @@ Description:  Compilation  of the optimization problem.
 
 import os
 import logging
-import sys
 import data.config as config
-from preprocess.prepare            import Prepare
-from model.optimization_setup      import OptimizationSetup
-from model.metaheuristic.algorithm import Metaheuristic
-from postprocess.results           import Postprocess
+import sys
+
+import config                       as config
+from preprocess.prepare             import Prepare
+from model.optimization_setup       import OptimizationSetup
+from model.metaheuristic.algorithm  import Metaheuristic
+from postprocess.results            import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -27,30 +29,29 @@ logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, 
 logging.captureWarnings(True)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
+# handler.setFormatter(formatter)
 logging.getLogger().addHandler(handler)
 
 # prevent double printing
 logging.propagate = False
 
-# CREATE INPUT FILE
+# create a dictionary with the paths to access the model inputs and check if input data exists
 prepare = Prepare(config)
+prepare.checkExistingInputData()
 
-# check if all data inputs exist and remove non-existent
-system = prepare.checkExistingInputData()
+# formulate the optimization problem
+optimizationSetup = OptimizationSetup(config.analysis, prepare)
 
-# FORMULATE THE OPTIMIZATION PROBLEM
-optimizationSetup = OptimizationSetup(config.analysis, system, prepare.paths, prepare.solver)
-
-# SOLVE THE OPTIMIZATION PROBLEM
+# solve the optimization problem
 if config.solver['model'] == 'MILP':
-    # MILP solver
+    # using the MILP solver
     optimizationSetup.solve(config.solver)
 
 elif config.solver['model'] == 'MINLP':
-    # Hybrid solver - Master metaheuristic and slave MILP
+    # using the MINLP solver
     master = Metaheuristic(optimizationSetup, prepare.nlpDict)
     master.solveMINLP(config.solver)
 
 # EVALUATE RESULTS
+
 evaluation = Postprocess(optimizationSetup, modelName = config.system["modelName"])
-a = 1

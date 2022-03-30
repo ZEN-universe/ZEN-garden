@@ -35,16 +35,18 @@ analysis["discountRate"] = 0.06
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
 analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
-
+# settings for MINLP
+analysis["variablesNonlinearModel"]                 = {"builtCapacity": []}
+analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEfficiency":[]}
 # headers for the generation of input files
-analysis["headerDataInputs"]=   {"setNodes": ["node", "x", "y"],
-                                "setEdges": ["edge"],
-                                "setScenarios":["scenario"],
-                                "setTimeSteps":["time"],
-                                "setCarriers":["demandCarrier", "availabilityCarrier", "exportPriceCarrier", "importPriceCarrier"],
-                                "setConversionTechnologies":["availability"],
-                                "setTransportTechnologies":["availability", "costPerDistance", "distanceEuclidean", "efficiencyPerDistance"],
-                                "setExistingTechnologies": ["existingTechnology"]}
+analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
+                                  "setEdges": ["edge"],
+                                  "setScenarios":["scenario"],
+                                  "setTimeSteps":["time"],
+                                  "setCarriers":["demandCarrier", "availabilityCarrier", "exportPriceCarrier", "importPriceCarrier"],
+                                  "setConversionTechnologies":["availability"],
+                                  "setTransportTechnologies":["availability", "costPerDistance", "distanceEuclidean", "efficiencyPerDistance"],
+                                  "setExistingTechnologies": ["existingTechnology"]}
 
 # file format of input data
 analysis["fileFormat"] = "csv"
@@ -89,9 +91,7 @@ analysis['postprocess'] = False
 
 ## System - Items assignment
 # set of energy carriers
-system["setCarriers"] = ["electricity", "gas", "hydrogen", "biomass", "CO2","water","oxygen"]
-# # set of energy carriers for transport
-# system["setTransportCarriers"] = ["hydrogen"]
+system["setCarriers"] = []
 # set of conversion technologies
 system["setConversionTechnologies"] = []
 # set of storage technologies

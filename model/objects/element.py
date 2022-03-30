@@ -78,7 +78,11 @@ class Element:
     def getAllSubclasses(cls):
         """ get all subclasses (child classes) of cls 
         :return subclasses: subclasses of cls """
+        # TODO sortieren, dass technolgies zuerst gelistet werden
+        # TODO add function to iterate through classes and get "name"
         return cls.__subclasses__()
+
+    #TODO getAllClasses
 
     @classmethod
     def getAttributeOfAllElements(cls,attributeName:str):

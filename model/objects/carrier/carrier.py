@@ -18,6 +18,8 @@ from model.objects.energy_system import EnergySystem
 from model.objects.technology.technology import Technology
 
 class Carrier(Element):
+    # set label
+    label = "setCarriers"
     # empty list of elements
     listOfElements = []
 
@@ -143,13 +145,13 @@ class Carrier(Element):
         # carbon emissions
         model.carbonEmissionsCarrier = pe.Var(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = "carbon emissions of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals"
         )
         # carbon emissions carrier
         model.carbonEmissionsCarrierTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain=pe.NonNegativeReals,
+            domain=pe.Reals,
             doc="total carbon emissions of importing/exporting carrier. Domain: NonNegativeReals"
         )
 

@@ -19,6 +19,8 @@ from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 
 class Technology(Element):
+    # set label
+    label = "setTechnologies"
     # empty list of elements
     listOfElements = []
 
@@ -35,7 +37,6 @@ class Technology(Element):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # get system information
         system              = EnergySystem.getSystem()
-        paths               = EnergySystem.getPaths()
         technologyTypes     = EnergySystem.getAnalysis()['subsets']["setTechnologies"]
         # set attributes of technology
         for technologyType in technologyTypes:
@@ -46,14 +47,14 @@ class Technology(Element):
                 else:
                     _setLocation            = "setNodes"
                     _isTransportTechnology  = False
-                self.inputPath                  = paths[technologyType][self.name]["folder"]
                 setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
-
                 self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(self.name,typeOfTimeSteps="invest")
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
                 self.orderTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
                 EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest")
+                self.inputPath                  = self.getInputPath(system, technologyType)
                 self.referenceCarrier           = [self.dataInput.extractAttributeData(self.inputPath,"referenceCarrier",skipWarning=True)]
+                EnergySystem.setTechnologyOfCarrier(self.name, self.referenceCarrier)
                 self.minBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"minBuiltCapacity")["value"]
                 self.maxBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"maxBuiltCapacity")["value"]
                 self.lifetime                   = self.dataInput.extractAttributeData(self.inputPath,"lifetime")["value"]
@@ -93,6 +94,26 @@ class Technology(Element):
                                                                            "setExistingTechnologies"],
                                                                        tech=self)
 
+    def getInputPath(self, system, technologyType):
+        """ get input path where input data is stroed
+        :param system:          dictionary that contains system parameters
+        :param technologyType:  technology type
+        :return inputPath"""
+        paths = EnergySystem.getPaths()
+        # get input path for current technologyType
+        self.inputPath = paths[technologyType][self.name]["folder"]
+        # check if technologyType has subsets
+        subsets = EnergySystem.getAnalysis()["subsets"]
+        if technologyType in subsets.keys():
+            # iterate through subsets and check if technology belongs to any of the subsets
+            for technologySubset in subsets[technologyType]:
+                if self.name in system[technologySubset]:
+                    self.subset    = technologySubset
+                    self.inputPath = paths[technologySubset][self.name]["folder"]
+                    break
+
+        return self.inputPath
+
     def calculateCapexOfExistingCapacities(self):
         """ this method calculates the annualized capex of the existing capacities. """
         existingCapacities  = self.existingCapacity
@@ -106,14 +127,15 @@ class Technology(Element):
 
     def calculateFractionalAnnuity(self):
         """calculate fraction of annuity to depreciate investment"""
-        system              = EnergySystem.getSystem()
-        _discountRate       = EnergySystem.getAnalysis()["discountRate"]
-        _lifetime           = self.lifetime
-        _annuity            = (((1 + _discountRate) ** _lifetime) * _discountRate) / ((1 + _discountRate) ** _lifetime - 1)
+        system = EnergySystem.getSystem()
+        _discountRate = EnergySystem.getAnalysis()["discountRate"]
+        _lifetime = self.lifetime
+        _annuity = (((1 + _discountRate) ** _lifetime) * _discountRate) / ((1 + _discountRate) ** _lifetime - 1)
         # only account for fraction of year
-        _fractionOfYear     = system["timeStepsPerYear"] / system["totalHoursPerYear"]
-        _fractionalAnnuity  = _annuity*_fractionOfYear
+        _fractionOfYear = system["timeStepsPerYear"] / system["totalHoursPerYear"]
+        _fractionalAnnuity = _annuity * _fractionOfYear
         return _fractionalAnnuity
+
     ### --- classmethods
     @classmethod
     def getLifetimeRange(cls, tech, time, timeStepType: str = None):
@@ -217,7 +239,6 @@ class Technology(Element):
         model.setStorageTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setStorageTechnologies"),
             doc='Set of storage technologies. Subset: setTechnologies')
-
         # existing installed technologies
         model.setExistingTechnologies = pe.Set(
             model.setTechnologies,
@@ -267,6 +288,7 @@ class Technology(Element):
         model.existingCapacity = pe.Param(
             cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
             initialize=cls.getAttributeOfAllElements("existingCapacity"),
+
             doc='Parameter which specifies the existing technology size. Dimensions: setTechnologies')
 
         # minimum capacity

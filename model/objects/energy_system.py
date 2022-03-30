@@ -1,16 +1,15 @@
 """===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      January-2022
-Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Title:          ZEN-GARDEN
+Created:        January-2022
+Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
+                Alissa Ganter (aganter@ethz.ch)
+Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
-              optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
-              optimization model as an input.
+Description:    Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
+                optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
+                optimization model as an input.
 ==========================================================================================================================================================================="""
-
 import logging
-import warnings
 import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
@@ -19,7 +18,6 @@ from preprocess.functions.extract_input_data import DataInput
 from pint.util                               import column_echelon_form
 
 class EnergySystem:
-
     # energySystem
     energySystem = None
     # pe.ConcreteModel
@@ -79,9 +77,8 @@ class EnergySystem:
         self.setNodes                    = self.dataInput.extractLocations()
         self.setNodesOnEdges             = self.calculateEdgesFromNodes()
         self.setEdges                    = list(self.setNodesOnEdges.keys())
-        self.setCarriers                 = system["setCarriers"]
-        self.setTechnologies             = system["setConversionTechnologies"] + system["setTransportTechnologies"] + system["setStorageTechnologies"]
-
+        self.setCarriers                 = []
+        self.setTechnologies             = system["setTechnologies"]
         # base time steps
         self.setBaseTimeSteps            = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
         self.setBaseTimeStepsYearly      = list(range(0, system["timeStepsPerYear"]))
@@ -234,6 +231,7 @@ class EnergySystem:
         for carrier in listTechnologyOfCarrier:
             if carrier not in cls.dictTechnologyOfCarrier:
                 cls.dictTechnologyOfCarrier[carrier] = [technology]
+                cls.energySystem.setCarriers.append(carrier)
             elif technology not in cls.dictTechnologyOfCarrier[carrier]:
                 cls.dictTechnologyOfCarrier[carrier].append(technology)
 
@@ -291,11 +289,18 @@ class EnergySystem:
         """ get paths
         :return paths: paths to folders of input data """
         return cls.paths
+
     @classmethod
     def getSolver(cls):
         """ get solver
         :return solver: dictionary defining the analysis solver """
         return cls.solver
+
+    @classmethod
+    def getEnergySystem(cls):
+        """ get energySystem.
+        :return energySystem: return energySystem  """
+        return cls.energySystem
 
     @classmethod
     def getUnitRegistry(cls):
@@ -546,7 +551,7 @@ class EnergySystem:
         # carbon emissions
         model.carbonEmissionsTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = "total carbon emissions of energy system. Domain: NonNegativeReals"
         )
 
@@ -638,3 +643,4 @@ def objectiveRiskRule(model):
     """objective function to minimize total risk"""
     # TODO implement objective functions for risk
     return pe.Constraint.Skip
+

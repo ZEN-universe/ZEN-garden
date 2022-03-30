@@ -388,9 +388,6 @@ class DataInput():
             _carrierString = self.extractAttributeData(folderPath,_carrierType,skipWarning = True)
             if type(_carrierString) == str:
                 _carrierList = _carrierString.strip().split(" ")
-                for _carrierItem in _carrierList:
-                    # check if carrier in carriers of model
-                    assert _carrierItem in self.system["setCarriers"], f"Carrier '{_carrierItem}' is not in carriers of model ({self.system['setCarriers']})"
             else:
                 _carrierList = []
             carrierDict[_carrierType] = _carrierList
@@ -444,55 +441,13 @@ class DataInput():
 
         return dfOutput
 
-    def extractDataConditioning(self, folderPath, type, tech):
-        """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files
-        :param type: technology approximation type
-        :param tech: technology object
-        :return outputDict: dictionary with output parameters following the structure of the PWA dict"""
-
-        # select data
-        outputDict = {}
-        specificHeat           = self.extractAttributeData(folderPath, "specificHeat", skipWarning=True)["value"]
-        specificHeatRatio      = self.extractAttributeData(folderPath, "specificHeatRatio", skipWarning=True)["value"]
-        pressureIn             = self.extractAttributeData(folderPath, "pressureIn", skipWarning=True)["value"]
-        pressureOut            = self.extractAttributeData(folderPath, "pressureOut", skipWarning=True)["value"]
-        temperatureIn          = self.extractAttributeData(folderPath, "temperatureIn", skipWarning=True)["value"]
-        isentropicEfficiency   = self.extractAttributeData(folderPath, "isentropicEfficiency", skipWarning=True)["value"]
-
-        pressureRatio          = pressureOut/pressureIn
-        exponent               = (specificHeatRatio - 1) / specificHeatRatio
-        energyConsumption      = specificHeat * temperatureIn / isentropicEfficiency * (pressureRatio**exponent - 1)
-
-        # model as linear function
-        inputCarriers    = tech.inputCarrier.copy()
-        outputCarriers   = tech.outputCarrier
-        referenceCarrier = tech.referenceCarrier
-        if referenceCarrier[0] in inputCarriers:
-            inputCarriers.remove(referenceCarrier[0])
-        assert len(inputCarriers) == 1, f"{tech.name} can only have 1 input carrier besides the reference carrier."
-        assert len(outputCarriers) == 1, f"{tech.name} can only have 1 output carrier."
-        # create dictionary
-        outputDict[referenceCarrier[0]] = (tech.minBuiltCapacity, tech.maxBuiltCapacity)
-        outputDict[outputCarriers[0]]   = 1 # TODO losses are not yet accounted for
-        outputDict[inputCarriers[0]]    = energyConsumption
-        # PWA Variables
-        outputDict["PWAVariables"]   = []
-        # bounds
-        outputDict["bounds"] = dict()
-        outputDict["bounds"][referenceCarrier[0]] = (tech.minBuiltCapacity, tech.maxBuiltCapacity)
-        outputDict["bounds"][outputCarriers[0]]    = (tech.minBuiltCapacity, tech.maxBuiltCapacity)
-        outputDict["bounds"][inputCarriers[0]]    = (tech.minBuiltCapacity*energyConsumption, tech.maxBuiltCapacity*energyConsumption)
-
-        return outputDict
-
-
     def extractPWAData(self, folderPath,type,tech):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
         :param type: technology approximation type
         :param tech: technology object
         :return PWADict: dictionary with PWA parameters """
+
         # get system attribute
         fileFormat = self.analysis["fileFormat"]
         # select data
