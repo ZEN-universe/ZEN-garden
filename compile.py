@@ -10,7 +10,6 @@ Description:  Compilation  of the optimization problem.
 
 import os
 import logging
-import data.config as config
 import sys
 
 import config                       as config
