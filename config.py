@@ -18,7 +18,6 @@ analysis = default_config.analysis
 analysis                                            = default_config.analysis         # get default settings from default config
 analysis["dataset"]                                 = "NUTS0_HSC"                     # select a dataset
 analysis["objective"]                               = "TotalCost"                     # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
-analysis["subsets"]["setConversionTechnologies"]    = ["setConditioningTechnologies"] # ConditioningTechnologies are a special case of ConverstionTechnologies
 
 
 ## Solver - settings update compared to default values
