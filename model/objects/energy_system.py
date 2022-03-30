@@ -240,6 +240,14 @@ class EnergySystem:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
 
     @classmethod
+    def setOrderTimeStepsDict(cls,dictAllOrderTimeSteps):
+        """ sets all dicts of order of time steps.
+        :param dictAllOrderTimeSteps: dict of all dictOrderTimeSteps"""
+        cls.dictOrderTimeStepsOperation = dictAllOrderTimeSteps["operation"]
+        cls.dictOrderTimeStepsInvest    = dictAllOrderTimeSteps["invest"]
+        cls.dictOrderTimeStepsYearly    = dictAllOrderTimeSteps["yearly"]
+
+    @classmethod
     def setAggregationObjects(cls,element,aggregationObject):
         """ append aggregation object of element
         :param element: element in model 
@@ -335,6 +343,17 @@ class EnergySystem:
             return cls.dictOrderTimeStepsYearly[element]
         else:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
+
+    @classmethod
+    def getOrderTimeStepsDict(cls):
+        """ returns all dicts of order of time steps.
+        :return dictAllOrderTimeSteps: dict of all dictOrderTimeSteps"""
+        dictAllOrderTimeSteps = {
+            "operation" : cls.dictOrderTimeStepsOperation,
+            "invest"    : cls.dictOrderTimeStepsInvest,
+            "yearly"    : cls.dictOrderTimeStepsYearly
+        }
+        return dictAllOrderTimeSteps
 
     @classmethod
     def getAggregationObjects(cls,element):
@@ -481,7 +500,7 @@ class EnergySystem:
             componentData   = component[setTimeSteps]
         else:
             component       = callingClass.getAttributeOfAllElements(componentName)
-            componentData   = pd.Series(component)
+            componentData   = pd.Series(component,dtype=float)
             if indexNames:
                 customSet       = callingClass.createCustomSet(indexNames)
                 componentData   = componentData[customSet]

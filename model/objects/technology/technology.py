@@ -296,13 +296,13 @@ class Technology(Element):
         # invest time step duration
         model.timeStepsInvestDuration = pe.Param(
             cls.createCustomSet(["setTechnologies","setTimeStepsInvest"]),
-            initialize = EnergySystem.initializeComponent(cls,"timeStepsInvestDuration",indexNames=["setTechnologies","setTimeStepsInvest"]),
+            initialize = EnergySystem.initializeComponent(cls,"timeStepsInvestDuration",indexNames=["setTechnologies","setTimeStepsInvest"]).astype(int),
             doc="Parameter which specifies the time step duration in investment for all technologies. Dimensions: setTechnologies, setTimeStepsInvest"
         )
         # operational time step duration
         model.timeStepsOperationDuration = pe.Param(
             cls.createCustomSet(["setTechnologies","setTimeStepsOperation"]),
-            initialize = EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setTechnologies","setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setTechnologies","setTimeStepsOperation"]).astype(int),
             doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setTechnologies, setTimeStepsOperation"
         )
         # existing capacity

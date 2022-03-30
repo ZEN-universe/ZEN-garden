@@ -80,7 +80,7 @@ class Carrier(Element):
         # time step duration carrier
         model.timeStepsCarrierDuration = pe.Param(
             cls.createCustomSet(["setCarriers","setTimeStepsCarrier"]),
-            initialize = EnergySystem.initializeComponent(cls,"timeStepsCarrierDuration",indexNames=["setCarriers","setTimeStepsCarrier"]),
+            initialize = EnergySystem.initializeComponent(cls,"timeStepsCarrierDuration",indexNames=["setCarriers","setTimeStepsCarrier"]).astype(int),
             doc="Parameter which specifies the time step duration for all carriers. Dimensions: setCarriers, setTimeStepsCarrier"
         )
         # demand of carrier

@@ -100,7 +100,7 @@ class StorageTechnology(Technology):
         # time step duration of storage level
         model.timeStepsStorageLevelDuration = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setTimeStepsStorageLevel"]),
-            initialize = EnergySystem.initializeComponent(cls,"timeStepsStorageLevelDuration",indexNames=["setStorageTechnologies","setTimeStepsStorageLevel"]),
+            initialize = EnergySystem.initializeComponent(cls,"timeStepsStorageLevelDuration",indexNames=["setStorageTechnologies","setTimeStepsStorageLevel"]).astype(int),
             doc="Parameter which specifies the time step duration in StorageLevel for all technologies. Dimensions: setStorageTechnologies, setTimeStepsStorageLevel"
         )
         # efficiency charge
