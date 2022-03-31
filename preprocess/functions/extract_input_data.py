@@ -16,7 +16,7 @@ import pandas as pd
 from scipy.stats import linregress
 
 class DataInput():
-    
+
     def __init__(self,system,analysis,solver,energySystem = None):
         """ data input object to extract input data
         :param system: dictionary defining the system
@@ -49,7 +49,7 @@ class DataInput():
                 if len(fileNames) > 1 and fileName != manualFileName:
                     continue
 
-                # table attributes                     
+                # table attributes
                 dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None) 
                 break 
             return dfInput,fileName
@@ -94,18 +94,20 @@ class DataInput():
         if not timeSteps:
             timeSteps = self.energySystem.setBaseTimeSteps
 
+        # select index
+        indexList,indexNameList = self.constructIndexList(element, indexSets,timeSteps)
+        # create pd.MultiIndex and select data
+        indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
+        # if existing capacities and existing capacities not used
+        if manualFileName == "existingCapacity" and not self.analysis["useExistingCapacities"]:
+            dfOutput = pd.Series(index=indexMultiIndex,data=0, dtype=float)
+            return dfOutput
         # check if default value exists in attributes.csv, with or without "Default" Suffix
         if column:
             defaultName = column
         else:
             defaultName = manualFileName
         defaultValue = self.extractAttributeData(folderPath,defaultName)
-
-        # select index
-        indexList,indexNameList = self.constructIndexList(element, indexSets,timeSteps)
-
-        # create pd.MultiIndex and select data
-        indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
 
         # create output Series filled with default value
         if defaultValue is None:
@@ -186,7 +188,7 @@ class DataInput():
 
         # delete nans
         dfInput     = dfInput.dropna()
-        
+
         # get common index of dfOutput and dfInput
         if not isinstance(dfInput.index, pd.MultiIndex):
             indexList     = dfInput.index.to_list()
@@ -388,9 +390,6 @@ class DataInput():
             _carrierString = self.extractAttributeData(folderPath,_carrierType,skipWarning = True)
             if type(_carrierString) == str:
                 _carrierList = _carrierString.strip().split(" ")
-                for _carrierItem in _carrierList:
-                    # check if carrier in carriers of model
-                    assert _carrierItem in self.system["setCarriers"], f"Carrier '{_carrierItem}' is not in carriers of model ({self.system['setCarriers']})"
             else:
                 _carrierList = []
             carrierDict[_carrierType] = _carrierList
@@ -402,19 +401,22 @@ class DataInput():
             :param folderPath: path to input files
             :param transportTechnology: boolean if data extracted for transport technology
             :return setExistingTechnologies: return set existing technologies"""
-        fileFormat = self.analysis["fileFormat"]
+        if self.analysis["useExistingCapacities"]:
+            fileFormat = self.analysis["fileFormat"]
 
-        if f"existingCapacity.{fileFormat}" not in os.listdir(folderPath):
-            return [0]
+            if f"existingCapacity.{fileFormat}" not in os.listdir(folderPath):
+                return [0]
 
-        dfInput = pd.read_csv(folderPath + "existingCapacity" + '.' + fileFormat, header=0, index_col=None)
+            dfInput = pd.read_csv(folderPath + "existingCapacity" + '.' + fileFormat, header=0, index_col=None)
 
-        if not transportTechnology:
-            location = "node"
+            if not transportTechnology:
+                location = "node"
+            else:
+                location = "edge"
+            maxNodeCount = dfInput[location].value_counts().max()
+            setExistingTechnologies = np.arange(0, maxNodeCount)
         else:
-            location = "edge"
-        maxNodeCount = dfInput[location].value_counts().max()
-        setExistingTechnologies = np.arange(0, maxNodeCount)
+            setExistingTechnologies = np.array([0])
 
         return setExistingTechnologies
 
@@ -428,6 +430,10 @@ class DataInput():
         defaultValue = 0
 
         dfOutput    = pd.Series(index=tech.existingCapacity.index,data=0)
+        # if no existing capacities
+        if not self.analysis["useExistingCapacities"]:
+            return dfOutput
+
         if f"{fileName}.{fileFormat}" in os.listdir(folderPath):
             indexList, indexNameList    = self.constructIndexList(tech, indexSets, None)
             dfInput, fileName           = self.readInputData(folderPath, fileName)
@@ -444,55 +450,13 @@ class DataInput():
 
         return dfOutput
 
-    def extractDataConditioning(self, folderPath, type, tech):
-        """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files
-        :param type: technology approximation type
-        :param tech: technology object
-        :return outputDict: dictionary with output parameters following the structure of the PWA dict"""
-
-        # select data
-        outputDict = {}
-        specificHeat           = self.extractAttributeData(folderPath, "specificHeat", skipWarning=True)["value"]
-        specificHeatRatio      = self.extractAttributeData(folderPath, "specificHeatRatio", skipWarning=True)["value"]
-        pressureIn             = self.extractAttributeData(folderPath, "pressureIn", skipWarning=True)["value"]
-        pressureOut            = self.extractAttributeData(folderPath, "pressureOut", skipWarning=True)["value"]
-        temperatureIn          = self.extractAttributeData(folderPath, "temperatureIn", skipWarning=True)["value"]
-        isentropicEfficiency   = self.extractAttributeData(folderPath, "isentropicEfficiency", skipWarning=True)["value"]
-
-        pressureRatio          = pressureOut/pressureIn
-        exponent               = (specificHeatRatio - 1) / specificHeatRatio
-        energyConsumption      = specificHeat * temperatureIn / isentropicEfficiency * (pressureRatio**exponent - 1)
-
-        # model as linear function
-        inputCarriers    = tech.inputCarrier.copy()
-        outputCarriers   = tech.outputCarrier
-        referenceCarrier = tech.referenceCarrier
-        if referenceCarrier[0] in inputCarriers:
-            inputCarriers.remove(referenceCarrier[0])
-        assert len(inputCarriers) == 1, f"{tech.name} can only have 1 input carrier besides the reference carrier."
-        assert len(outputCarriers) == 1, f"{tech.name} can only have 1 output carrier."
-        # create dictionary
-        outputDict[referenceCarrier[0]] = (tech.minBuiltCapacity, tech.maxBuiltCapacity)
-        outputDict[outputCarriers[0]]   = 1 # TODO losses are not yet accounted for
-        outputDict[inputCarriers[0]]    = energyConsumption
-        # PWA Variables
-        outputDict["PWAVariables"]   = []
-        # bounds
-        outputDict["bounds"] = dict()
-        outputDict["bounds"][referenceCarrier[0]] = (tech.minBuiltCapacity, tech.maxBuiltCapacity)
-        outputDict["bounds"][outputCarriers[0]]    = (tech.minBuiltCapacity, tech.maxBuiltCapacity)
-        outputDict["bounds"][inputCarriers[0]]    = (tech.minBuiltCapacity*energyConsumption, tech.maxBuiltCapacity*energyConsumption)
-
-        return outputDict
-
-
     def extractPWAData(self, folderPath,type,tech):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
         :param type: technology approximation type
         :param tech: technology object
         :return PWADict: dictionary with PWA parameters """
+
         # get system attribute
         fileFormat = self.analysis["fileFormat"]
         # select data

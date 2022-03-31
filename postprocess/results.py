@@ -14,6 +14,8 @@ import csv
 import os
 import pickle
 import pandas as pd
+from datetime import datetime
+from model.objects.energy_system import EnergySystem
 import matplotlib.pyplot as plt
 
 #from postprocess.functions.create_dashboard_dictionary import DashboardDictionary
@@ -134,10 +136,8 @@ class Postprocess:
                 # save vars in a dict
                 self.varDict[var.name] = dict()
                 for index in var:
-                    try:
-                        self.varDict[var.name][index] = var[index].value
-                    except:
-                        pass
+                    if var[index].value:
+                        self.varDict[var.name][index] = pe.value(var[index])
                 # save vars in a DataFrame
                 self.createDataframe(var, self.varDict, self.varDf)
 
@@ -229,7 +229,7 @@ class Postprocess:
                 self.trimZeros(varName, self.varDf, df[varName].columns.values)
                 print(df)
         else:
-            print(f'{obj.name} not evaluated in results.py')
+            print(f'{varName} not evaluated in results.py')
 
     def trimZeros(self, varName, df, c=[0]):
         """ Trims out the zero rows in the dataframe """
@@ -296,6 +296,10 @@ class Postprocess:
                 path = f'{self.nameDir}plots/'+varName+'.png'
                 plt.savefig(path)
 
+        # safe dictOrderTimeSteps
+        dictAllOrderTimeSteps = EnergySystem.getOrderTimeStepsDict()
+        with open(f'{self.nameDir}dictAllOrderTimeSteps.pickle', 'wb') as file:
+            pickle.dump(dictAllOrderTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
     # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))
 

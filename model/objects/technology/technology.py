@@ -19,6 +19,8 @@ from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 
 class Technology(Element):
+    # set label
+    label = "setTechnologies"
     # empty list of elements
     listOfElements = []
 
@@ -35,7 +37,6 @@ class Technology(Element):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # get system information
         system              = EnergySystem.getSystem()
-        paths               = EnergySystem.getPaths()
         technologyTypes     = EnergySystem.getAnalysis()['subsets']["setTechnologies"]
         # set attributes of technology
         for technologyType in technologyTypes:
@@ -46,14 +47,14 @@ class Technology(Element):
                 else:
                     _setLocation            = "setNodes"
                     _isTransportTechnology  = False
-                self.inputPath                  = paths[technologyType][self.name]["folder"]
                 setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
-
                 self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(self.name,typeOfTimeSteps="invest")
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
                 self.orderTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
                 EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest")
+                self.inputPath                  = self.getInputPath(system, technologyType)
                 self.referenceCarrier           = [self.dataInput.extractAttributeData(self.inputPath,"referenceCarrier",skipWarning=True)]
+                EnergySystem.setTechnologyOfCarrier(self.name, self.referenceCarrier)
                 self.minBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"minBuiltCapacity")["value"]
                 self.maxBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"maxBuiltCapacity")["value"]
                 self.lifetime                   = self.dataInput.extractAttributeData(self.inputPath,"lifetime")["value"]
@@ -93,9 +94,31 @@ class Technology(Element):
                                                                            "setExistingTechnologies"],
                                                                        tech=self)
 
+    def getInputPath(self, system, technologyType):
+        """ get input path where input data is stroed
+        :param system:          dictionary that contains system parameters
+        :param technologyType:  technology type
+        :return inputPath"""
+        paths = EnergySystem.getPaths()
+        # get input path for current technologyType
+        self.inputPath = paths[technologyType][self.name]["folder"]
+        # check if technologyType has subsets
+        subsets = EnergySystem.getAnalysis()["subsets"]
+        if technologyType in subsets.keys():
+            # iterate through subsets and check if technology belongs to any of the subsets
+            for technologySubset in subsets[technologyType]:
+                if self.name in system[technologySubset]:
+                    self.subset    = technologySubset
+                    self.inputPath = paths[technologySubset][self.name]["folder"]
+                    break
+
+        return self.inputPath
+
     def calculateCapexOfExistingCapacities(self):
-        """ this method calculates the annualized capex of the existing capacities. """
+        """ this method calculates the annualized capex of the existing capacities """
         existingCapacities  = self.existingCapacity
+        # TODO fix correlation between setExistingTechnologies and setTimeStepsInvest.
+        #  At the moment the specificCapex is extracted for the id of the existing capacity... should be investTimeStep.at(1) however
         existingCapex       = existingCapacities.to_frame().apply(
             lambda _existingCapacity: self.calculateCapexOfSingleCapacity(_existingCapacity.squeeze(),_existingCapacity.name),axis=1)
         return existingCapex
@@ -106,14 +129,53 @@ class Technology(Element):
 
     def calculateFractionalAnnuity(self):
         """calculate fraction of annuity to depreciate investment"""
-        system              = EnergySystem.getSystem()
-        _discountRate       = EnergySystem.getAnalysis()["discountRate"]
-        _lifetime           = self.lifetime
-        _annuity            = (((1 + _discountRate) ** _lifetime) * _discountRate) / ((1 + _discountRate) ** _lifetime - 1)
+        system = EnergySystem.getSystem()
+        _discountRate = EnergySystem.getAnalysis()["discountRate"]
+        _lifetime = self.lifetime
+        _annuity = (((1 + _discountRate) ** _lifetime) * _discountRate) / ((1 + _discountRate) ** _lifetime - 1)
         # only account for fraction of year
-        _fractionOfYear     = system["timeStepsPerYear"] / system["totalHoursPerYear"]
-        _fractionalAnnuity  = _annuity*_fractionOfYear
+        _fractionOfYear = system["timeStepsPerYear"] / system["totalHoursPerYear"]
+        _fractionalAnnuity = _annuity * _fractionOfYear
         return _fractionalAnnuity
+
+    def overwriteTimeSteps(self,baseTimeSteps):
+        """ overwrites setTimeStepsInvest and setTimeStepsOperation """
+        setTimeStepsInvest      = EnergySystem.encodeTimeStep(self.name,baseTimeSteps=baseTimeSteps,timeStepType="invest",yearly=True)
+        setTimeStepsOperation   = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps,timeStepType="operation",yearly=True)
+        setattr(self,"setTimeStepsInvest",setTimeStepsInvest.squeeze().tolist())
+        setattr(self, "setTimeStepsOperation", setTimeStepsOperation.squeeze().tolist())
+
+    def addNewlyBuiltCapacityTech(self,builtCapacity,capex,baseTimeSteps):
+        """ adds the newly built capacity to the existing capacity
+        :param builtCapacity: pd.Series of newly built capacity of technology
+        :param capex: pd.Series of capex of newly built capacity of technology
+        :param baseTimeSteps: base time steps of current horizon step """
+        system = EnergySystem.getSystem()
+        # reduce lifetime of existing capacities and add new remaining lifetime
+        self.lifetimeExistingTechnology             = (self.lifetimeExistingTechnology - system["intervalYears"]).clip(lower=0)
+        # new capacity
+        _investTimeSteps                            = EnergySystem.encodeTimeStep(self.name, baseTimeSteps, "invest", yearly=True)
+        # TODO currently summed over all invest time steps, correct for #TS_investPerYear >1
+        _newlyBuiltCapacity                         = builtCapacity[_investTimeSteps].sum(axis=1)
+        _capex                                      = capex[_investTimeSteps].sum(axis=1)
+        # if at least one value unequal to zero
+        if not (_newlyBuiltCapacity == 0).all():
+            # add new index to setExistingTechnologies
+            indexNewTechnology                          = max(self.setExistingTechnologies) + 1
+            self.setExistingTechnologies                = np.append(self.setExistingTechnologies, indexNewTechnology)
+            # add new existing capacity
+            _existingCapacity                           = self.existingCapacity.unstack()
+            _existingCapacity[indexNewTechnology]       = _newlyBuiltCapacity
+            self.existingCapacity                       = _existingCapacity.stack()
+            # add new remaining lifetime
+            _lifetimeTechnology                         = self.lifetimeExistingTechnology.unstack()
+            _lifetimeTechnology[indexNewTechnology]     = self.lifetime
+            self.lifetimeExistingTechnology             = _lifetimeTechnology.stack()
+            # calculate capex of existing capacity
+            _capexExistingCapacity                      = self.capexExistingCapacity.unstack()
+            _capexExistingCapacity[indexNewTechnology]  = _capex
+            self.capexExistingCapacity                  = _capexExistingCapacity.stack()
+
     ### --- classmethods
     @classmethod
     def getLifetimeRange(cls, tech, time, timeStepType: str = None):
@@ -154,8 +216,8 @@ class Technology(Element):
 
         for idExistingCapacity in model.setExistingTechnologies[tech]:
             tStart  = cls.getStartEndTimeOfLifetime(tech, investTimeStep, idExistingCapacity,loc)
-            # if still available at base time step 0, add to list
-            if tStart == 0:
+            # if still available at first base time step, add to list
+            if tStart == model.setBaseTimeSteps.at(1):
                 existingQuantity += existingVariable[tech, loc, idExistingCapacity]
         return existingQuantity
 
@@ -191,11 +253,13 @@ class Technology(Element):
         if int(baseLifetime) != baseLifetime:
             logging.warning(
                 f"The lifetime of {tech} does not translate to an integer lifetime interval in the base time domain ({baseLifetime})")
-        startBaseTimeStep       = int(max(0, baseTimeStep - baseLifetime + 1))
+        # if startBaseTimeStep is further in the past than first base time step, use first base time step
+        startBaseTimeStep       = int(max(model.setBaseTimeSteps.at(1), baseTimeStep - baseLifetime + 1))
         # if lifetime of existing capacity, then only return the start base time step
         if idExistingCapacity is not None:
             return startBaseTimeStep
         startInvestTimeStep     = EnergySystem.encodeTimeStep(tech, startBaseTimeStep, timeStepType="invest", yearly=True)[0]
+
         return startInvestTimeStep, endInvestTimeStep
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
@@ -217,7 +281,6 @@ class Technology(Element):
         model.setStorageTechnologies = pe.Set(
             initialize=EnergySystem.getAttribute("setStorageTechnologies"),
             doc='Set of storage technologies. Subset: setTechnologies')
-
         # existing installed technologies
         model.setExistingTechnologies = pe.Set(
             model.setTechnologies,
@@ -254,71 +317,71 @@ class Technology(Element):
         # invest time step duration
         model.timeStepsInvestDuration = pe.Param(
             cls.createCustomSet(["setTechnologies","setTimeStepsInvest"]),
-            initialize = cls.getAttributeOfAllElements("timeStepsInvestDuration"),
+            initialize = EnergySystem.initializeComponent(cls,"timeStepsInvestDuration",indexNames=["setTechnologies","setTimeStepsInvest"]).astype(int),
             doc="Parameter which specifies the time step duration in investment for all technologies. Dimensions: setTechnologies, setTimeStepsInvest"
         )
         # operational time step duration
         model.timeStepsOperationDuration = pe.Param(
             cls.createCustomSet(["setTechnologies","setTimeStepsOperation"]),
-            initialize = cls.getAttributeOfAllElements("timeStepsOperationDuration"),
+            initialize = EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setTechnologies","setTimeStepsOperation"]).astype(int),
             doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setTechnologies, setTimeStepsOperation"
         )
         # existing capacity
         model.existingCapacity = pe.Param(
             cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
-            initialize=cls.getAttributeOfAllElements("existingCapacity"),
+            initialize=EnergySystem.initializeComponent(cls,"existingCapacity",indexNames=["setTechnologies", "setLocation", "setExistingTechnologies"]),
             doc='Parameter which specifies the existing technology size. Dimensions: setTechnologies')
 
         # minimum capacity
         model.minBuiltCapacity = pe.Param(
             model.setTechnologies,
-            initialize = cls.getAttributeOfAllElements("minBuiltCapacity"),
+            initialize = EnergySystem.initializeComponent(cls,"minBuiltCapacity"),
             doc = 'Parameter which specifies the minimum technology size that can be installed. Dimensions: setTechnologies')
         # maximum capacity
         model.maxBuiltCapacity = pe.Param(
             model.setTechnologies,
-            initialize = cls.getAttributeOfAllElements("maxBuiltCapacity"),
+            initialize = EnergySystem.initializeComponent(cls,"maxBuiltCapacity"),
             doc = 'Parameter which specifies the maximum technology size that can be installed. Dimensions: setTechnologies')
-        # lifetime existing technologies
+        # lifetime existing technologies # TODO check if something has to be changed in initializeComponent
         model.lifetimeExistingTechnology = pe.Param(
             cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
-            initialize=cls.getAttributeOfAllElements("lifetimeExistingTechnology"),
+            initialize=EnergySystem.initializeComponent(cls,"lifetimeExistingTechnology"),
             doc='Parameter which specifies the remaining lifetime of an existing technology. Dimensions: setTechnologies')
         # lifetime existing technologies
         model.capexExistingCapacity = pe.Param(
             cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
-            initialize=cls.getAttributeOfAllElements("capexExistingCapacity"),
+            initialize=EnergySystem.initializeComponent(cls,"capexExistingCapacity"),
             doc='Parameter which specifies the annualized capex of an existing technology which still has to be paid. Dimensions: setTechnologies')
         # lifetime newly built technologies
         model.lifetimeTechnology = pe.Param(
             model.setTechnologies,
-            initialize = cls.getAttributeOfAllElements("lifetime"),
+            initialize = EnergySystem.initializeComponent(cls,"lifetime"),
             doc = 'Parameter which specifies the lifetime of a newly built technology. Dimensions: setTechnologies')
         # capacityLimit of technologies
         model.capacityLimitTechnology = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation"]),
-            initialize = cls.getAttributeOfAllElements("capacityLimit"),
+            initialize = EnergySystem.initializeComponent(cls,"capacityLimit"),
             doc = 'Parameter which specifies the capacity limit of technologies. Dimensions: setTechnologies, setLocation')
         # minimum load relative to capacity
         model.minLoad = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
-            initialize = cls.getAttributeOfAllElements("minLoad"),
+            initialize = EnergySystem.initializeComponent(cls,"minLoad",indexNames=["setTechnologies","setLocation","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the minimum load of technology relative to installed capacity. Dimensions:setTechnologies, setLocation, setTimeStepsOperation')
         # maximum load relative to capacity
         model.maxLoad = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
-            initialize = cls.getAttributeOfAllElements("maxLoad"),
+            initialize = EnergySystem.initializeComponent(cls,"maxLoad",indexNames=["setTechnologies","setLocation","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the maximum load of technology relative to installed capacity. Dimensions:setTechnologies, setLocation, setTimeStepsOperation')
         # specific opex
         model.opexSpecific = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
-            initialize = cls.getAttributeOfAllElements("opexSpecific"),
+            initialize = EnergySystem.initializeComponent(cls,"opexSpecific",indexNames=["setTechnologies","setLocation","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the specific opex. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
         )
         # carbon intensity
         model.carbonIntensityTechnology = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation"]),
-            initialize = cls.getAttributeOfAllElements("carbonIntensityTechnology"),
+            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityTechnology"),
             doc = 'Parameter which specifies the carbon intensity of each technology. Dimensions: setTechnologies, setLocation'
         )
 

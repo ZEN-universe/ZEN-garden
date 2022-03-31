@@ -16,6 +16,8 @@ from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
 
 class StorageTechnology(Technology):
+    # set label
+    label = "setStorageTechnologies"
     # empty list of elements
     listOfElements = []
     
@@ -74,6 +76,12 @@ class StorageTechnology(Technology):
         # add order to energy system
         EnergySystem.setOrderTimeSteps(self.name+"StorageLevel",self.orderTimeStepsStorageLevel)
 
+    def overwriteTimeSteps(self,baseTimeSteps):
+        """ overwrites setTimeStepsStorageLevel """
+        super().overwriteTimeSteps(baseTimeSteps)
+        setTimeStepsStorageLevel = EnergySystem.encodeTimeStep(self.name+"StorageLevel", baseTimeSteps=baseTimeSteps,timeStepType="operation", yearly=True)
+        setattr(self, "setTimeStepsStorageLevel", setTimeStepsStorageLevel.squeeze().tolist())
+
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to StorageTechnology --- ###
     @classmethod
     def constructSets(cls):
@@ -94,34 +102,33 @@ class StorageTechnology(Technology):
         # time step duration of storage level
         model.timeStepsStorageLevelDuration = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setTimeStepsStorageLevel"]),
-            initialize = cls.getAttributeOfAllElements("timeStepsStorageLevelDuration"),
+            initialize = EnergySystem.initializeComponent(cls,"timeStepsStorageLevelDuration",indexNames=["setStorageTechnologies","setTimeStepsStorageLevel"]).astype(int),
             doc="Parameter which specifies the time step duration in StorageLevel for all technologies. Dimensions: setStorageTechnologies, setTimeStepsStorageLevel"
         )
         # efficiency charge
         model.efficiencyCharge = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes"]),
-            initialize = cls.getAttributeOfAllElements("efficiencyCharge"),
+            initialize = EnergySystem.initializeComponent(cls,"efficiencyCharge"),
             doc = 'efficiency during charging for storage technologies. Dimensions: setStorageTechnologies, setNodes'
         )
         # efficiency discharge
         model.efficiencyDischarge = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes"]),
-            initialize = cls.getAttributeOfAllElements("efficiencyDischarge"),
+            initialize = EnergySystem.initializeComponent(cls,"efficiencyDischarge"),
             doc = 'efficiency during discharging for storage technologies. Dimensions: setStorageTechnologies, setNodes'
         )
         # self discharge
         model.selfDischarge = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes"]),
-            initialize = cls.getAttributeOfAllElements("selfDischarge"),
+            initialize = EnergySystem.initializeComponent(cls,"selfDischarge"),
             doc = 'self discharge of storage technologies. Dimensions: setStorageTechnologies, setNodes'
         )
         # capex specific
         model.capexSpecificStorage = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
-            initialize = cls.getAttributeOfAllElements("capexSpecific"),
+            initialize = EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
             doc = 'specific capex of storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
         )
-        #
 
     @classmethod
     def constructVars(cls):
@@ -243,7 +250,7 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
     baseTimeStep                = EnergySystem.decodeTimeStep(tech+"StorageLevel",time)
     elementTimeStep             = EnergySystem.encodeTimeStep(tech,baseTimeStep)
     currentLevelTimeStep        = time
-    if time != 0:
+    if time != model.setTimeStepsStorageLevel[tech].at(1):
         previousLevelTimeStep   = time-1
     else:
         previousLevelTimeStep   = model.setTimeStepsStorageLevel[tech].at(-1)

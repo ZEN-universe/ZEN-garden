@@ -16,6 +16,8 @@ from model.objects.energy_system import EnergySystem
 from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class TransportTechnology(Technology):
+    # set label
+    label = "setTransportTechnologies"
     # empty list of elements
     listOfElements = []
     
@@ -75,17 +77,17 @@ class TransportTechnology(Technology):
         # distance between nodes
         model.distance = pe.Param(
             cls.createCustomSet(["setTransportTechnologies","setEdges"]),
-            initialize = cls.getAttributeOfAllElements("distance"),
+            initialize = EnergySystem.initializeComponent(cls,"distance"),
             doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
         # cost per distance
         model.capexSpecificTransport = pe.Param(
              cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
-             initialize = cls.getAttributeOfAllElements("capexSpecific"),
+             initialize = EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
              doc = 'capex per unit for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
         # carrier losses
         model.lossFlow = pe.Param(
             model.setTransportTechnologies,
-            initialize = cls.getAttributeOfAllElements("lossFlow"),
+            initialize = EnergySystem.initializeComponent(cls,"lossFlow"),
             doc = 'carrier losses due to transport with transport technologies. Dimensions: setTransportTechnologies')
 
     @classmethod
