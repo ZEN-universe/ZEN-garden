@@ -57,8 +57,6 @@ class ConversionTechnology(Technology):
     def getAnnualizedCapex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
         self.PWACapex = self.dataInput.extractPWAData(self.inputPath, "Capex", self)
-        # calculate capex of existing capacity
-        self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
         # annualize capex
         fractionalAnnuity = self.calculateFractionalAnnuity()
         # set bounds
@@ -68,6 +66,8 @@ class ConversionTechnology(Technology):
             self.PWACapex["capex"] = self.PWACapex["capex"] * fractionalAnnuity
         else:
             self.PWACapex["capex"] = [value * fractionalAnnuity for value in self.PWACapex["capex"]]
+        # calculate capex of existing capacity
+        self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
 
     def calculateCapexOfSingleCapacity(self,capacity,_):
         """ this method calculates the annualized capex of a single existing capacity. """
