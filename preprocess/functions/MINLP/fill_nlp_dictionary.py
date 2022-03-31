@@ -4,18 +4,18 @@ Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
 Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:    Class to add to pyomo dictionary the nonlinear functions
+Description:  Class to add to pyomo dictionary the nonlinear functions
 ==========================================================================================================================================================================="""
-from preprocess.functions.extract_input_data import DataInput
-from scipy.interpolate import interp1d
 import numpy as np
+from preprocess.functions.add_parameters     import add_function
+from preprocess.functions.extract_input_data import DataInput
+from scipy.interpolate                       import interp1d
 
 class FillNlpDict:
     
     def functionNonlinearApproximation(self):
-
         self.nlpDict['data'] = {}
-        technologySubsets = ['setConversionTechnologies']
+        technologySubsets    = ['setConversionTechnologies']
 
         for technologySubset in technologySubsets:
             for technologyName in self.system[technologySubset]:
@@ -27,18 +27,18 @@ class FillNlpDict:
                                                     
                                 # key to use in the Pyomo dictionary
                                 key = (technologyName)
+
                                 # add the function to the Pyomo dictionary based on the key and the function object
                                 add_function(self.nlpDict['data'], interp1d(x, y, kind='linear'), key, parameterName)
 
 
     def configSolver(self):
-
         self.nlpDict['hyperparameters'] = {}
 
         # derive parameters from those in config.solver
         FEMax = self.solver['parametersMetaheuristic']['FEsMax']
-        k = self.solver['parametersMetaheuristic']['kNumber']
-        m = self.solver['parametersMetaheuristic']['mNumber']
+        k     = self.solver['parametersMetaheuristic']['kNumber']
+        m     = self.solver['parametersMetaheuristic']['mNumber']
         self.solver['parametersMetaheuristic']['iterationsNumber'] = np.int(FEMax/(k+m))
 
         # add parameters from solver or create arrays based on them

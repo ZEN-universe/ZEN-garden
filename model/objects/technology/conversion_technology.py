@@ -57,22 +57,22 @@ class ConversionTechnology(Technology):
     def getAnnualizedCapex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
         self.PWACapex = self.dataInput.extractPWAData(self.inputPath, "Capex", self)
+        # annualize capex
+        fractionalAnnuity = self.calculateFractionalAnnuity()
+        # set bounds
+        self.PWACapex["bounds"]["capex"] = tuple(
+            [bound * fractionalAnnuity for bound in self.PWACapex["bounds"]["capex"]])
+        if not self.PWACapex["PWAVariables"]:
+            self.PWACapex["capex"] = self.PWACapex["capex"] * fractionalAnnuity
+        else:
+            self.PWACapex["capex"] = [value * fractionalAnnuity for value in self.PWACapex["capex"]]
         # calculate capex of existing capacity
         self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
-        # annualize capex
-        fractionalAnnuity   = self.calculateFractionalAnnuity()
-        # set bounds
-        self.PWACapex["bounds"]["capex"] = tuple([bound*fractionalAnnuity for bound in self.PWACapex["bounds"]["capex"]])
-        if not self.PWACapex["PWAVariables"]:
-            self.PWACapex["capex"] = self.PWACapex["capex"]*fractionalAnnuity
-        else:
-            self.PWACapex["capex"] = [value*fractionalAnnuity for value in self.PWACapex["capex"]]
 
     def calculateCapexOfSingleCapacity(self,capacity,_):
         """ this method calculates the annualized capex of a single existing capacity. """
         if capacity == 0:
             return 0
-        _PWACapex = self.PWAParameter["Capex"]
         # linear
         if not self.PWACapex["PWAVariables"]:
             capex   = self.PWACapex["capex"]*capacity
@@ -347,5 +347,3 @@ def constraintDependentFlowCouplingRule(disjunct,tech,dependentCarrier,node,time
         return(model.inputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
     else:
         return(model.outputFlow[tech,dependentCarrier,node,time] == model.dependentFlowApproximation[tech,dependentCarrier,node,time])
-
-#%% TODO implement conditioning for e.g. hydrogen

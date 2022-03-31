@@ -28,8 +28,10 @@ class Prepare:
         """
         # instantiate analysis object
         self.analysis = config.analysis
+
         # instantiate system object
         self.system   = config.system
+
         # instantiate the solver object
         self.solver   = config.solver
 
@@ -172,10 +174,9 @@ class Prepare:
         FillNlpDict.collectDomainExtremes(self)
 
     def checkExistingInputData(self):
-        """
-        This method checks the existing input data and only regards those elements for which folders exist.
-        It is called in compile.py after the main Prepare routine.
-        """
+        """This method checks the existing input data and only regards those elements for which folders exist.
+        It is called in compile.py after the main Prepare routine."""
+
         # check if technologies exist
         self.system["setTechnologies"] = []
         for technologySubset in self.analysis["subsets"]["setTechnologies"]:
