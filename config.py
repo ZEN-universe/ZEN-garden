@@ -19,8 +19,6 @@ analysis                                            = default_config.analysis   
 analysis["dataset"]                                 = "NUTS0_HSC"                     # select a dataset
 analysis["objective"]                               = "TotalCost"                     # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
 analysis["useExistingCapacities"]                   = False                           # use greendfield or brownfield approach
-# define subsets (if exist)
-# analysis["subsets"]["setConversionTechnologies"]    = ["setConditioningTechnologies"] # ConditioningTechnologies are a special case of ConverstionTechnologies
 
 
 ## Solver - settings update compared to default values
