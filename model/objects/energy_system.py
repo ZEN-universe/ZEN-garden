@@ -2,7 +2,6 @@
 Title:          ZEN-GARDEN
 Created:        January-2022
 Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-                Alissa Ganter (aganter@ethz.ch)
 Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
@@ -10,6 +9,7 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
                 optimization model as an input.
 ==========================================================================================================================================================================="""
 import logging
+import warnings
 import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
@@ -69,8 +69,8 @@ class EnergySystem:
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
 
-        system                           = EnergySystem.getSystem()
-        self.paths                       = EnergySystem.getPaths()
+        system                          = EnergySystem.getSystem()
+        self.paths                      = EnergySystem.getPaths()
         self.getBaseUnits()
 
         # in class <EnergySystem>, all sets are constructed
@@ -182,25 +182,18 @@ class EnergySystem:
     ### CLASS METHODS ###
     # setter/getter classmethods
     @classmethod
-    def getEnergySystem(cls):
-        """ get energySystem.
-        :return energySystem: return energySystem  """
-        return cls.energySystem
-
-    @classmethod
     def setEnergySystem(cls,energySystem):
-        """ set energySystem.
+        """ set energySystem. 
         :param energySystem: new energySystem that is set """
         cls.energySystem = energySystem
 
     @classmethod
-    def setOptimizationAttributes(cls,analysis, system,paths,solver,model):
-        """ set attributes of class <EnergySystem> with inputs
+    def setOptimizationAttributes(cls,analysis, system,paths,solver):
+        """ set attributes of class <EnergySystem> with inputs 
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
         :param paths: paths to input folders of data
-        :param solver: dictionary defining the solver
-        :param model: empty pe.ConcreteModel """
+        :param solver: dictionary defining the solver"""
         # set analysis
         cls.analysis = analysis
         # set system
@@ -209,10 +202,14 @@ class EnergySystem:
         cls.paths = paths
         # set solver
         cls.solver = solver
-        # set concreteModel
-        cls.concreteModel = model
         # set indexing sets
         cls.setIndexingSets()
+
+    @classmethod
+    def setConcreteModel(cls,concreteModel):
+        """ sets empty concrete model to energySystem
+        :param concreteModel: pe.ConcreteModel"""
+        cls.concreteModel = concreteModel
 
     @classmethod
     def setIndexingSets(cls):
@@ -252,6 +249,14 @@ class EnergySystem:
             cls.dictOrderTimeStepsYearly[element] = orderTimeSteps
         else:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
+
+    @classmethod
+    def setOrderTimeStepsDict(cls,dictAllOrderTimeSteps):
+        """ sets all dicts of order of time steps.
+        :param dictAllOrderTimeSteps: dict of all dictOrderTimeSteps"""
+        cls.dictOrderTimeStepsOperation = dictAllOrderTimeSteps["operation"]
+        cls.dictOrderTimeStepsInvest    = dictAllOrderTimeSteps["invest"]
+        cls.dictOrderTimeStepsYearly    = dictAllOrderTimeSteps["yearly"]
 
     @classmethod
     def setAggregationObjects(cls,element,aggregationObject):
@@ -351,6 +356,17 @@ class EnergySystem:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
 
     @classmethod
+    def getOrderTimeStepsDict(cls):
+        """ returns all dicts of order of time steps.
+        :return dictAllOrderTimeSteps: dict of all dictOrderTimeSteps"""
+        dictAllOrderTimeSteps = {
+            "operation" : cls.dictOrderTimeStepsOperation,
+            "invest"    : cls.dictOrderTimeStepsInvest,
+            "yearly"    : cls.dictOrderTimeStepsYearly
+        }
+        return dictAllOrderTimeSteps
+
+    @classmethod
     def getAggregationObjects(cls,element):
         """ get aggregation object of element
         :param element: element in model
@@ -436,6 +452,17 @@ class EnergySystem:
             raise LookupError(f"Currently only implemented for a single element time step, not {elementTimeStep}")
 
     @classmethod
+    def decodeYearlyTimeSteps(cls,elementTimeSteps):
+        """ decodes list of years to base time steps
+        :param elementTimeSteps: time steps of year
+        :return fullBaseTimeSteps: full list of time steps """
+        listBaseTimeSteps = []
+        for year in elementTimeSteps:
+            listBaseTimeSteps.append(cls.decodeTimeStep(None,year,"yearly"))
+        fullBaseTimeSteps = np.concatenate(listBaseTimeSteps)
+        return fullBaseTimeSteps
+
+    @classmethod
     def convertTechnologyTimeStepType(cls,element,elementTimeStep,direction = "operation2invest"):
         """ converts type of technology time step from operation to invest or from invest to operation.
         Carrier has no invest, so irrelevant for carrier
@@ -468,6 +495,27 @@ class EnergySystem:
             convertedTimeSteps = np.unique(orderTimeStepsOut[orderTimeStepsIn == elementTimeStep])
             assert len(convertedTimeSteps) == 1, f"more than one converted time step, not yet implemented"
             return convertedTimeSteps[0]
+
+    @classmethod
+    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None):
+        """ this method initializes a modeling component by extracting the stored input data.
+        :param callingClass: class from where the method is called
+        :param componentName: name of modeling component
+        :param indexNames: names of index sets, only if callingClass is not EnergySystem
+        :param setTimeSteps: time steps, only if callingClass is EnergySystem
+        :return componentData: data to initialize the component """
+
+        # if calling class is EnergySystem
+        if callingClass == cls:
+            component       = getattr(cls.getEnergySystem(),componentName)
+            componentData   = component[setTimeSteps]
+        else:
+            component       = callingClass.getAttributeOfAllElements(componentName)
+            componentData   = pd.Series(component,dtype=float)
+            if indexNames:
+                customSet       = callingClass.createCustomSet(indexNames)
+                componentData   = componentData[customSet]
+        return componentData
 
     @classmethod
     def getFullTimeSeriesOfComponent(cls,component,indexSubsets:tuple,manualOrderName = None):
@@ -538,7 +586,7 @@ class EnergySystem:
         # carbon emissions limit
         model.carbonEmissionsLimit = pe.Param(
             model.setTimeStepsYearly,
-            initialize = cls.getEnergySystem().carbonEmissionsLimit,
+            initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
             doc = 'Parameter which specifies the total limit on carbon emissions'
         )
 
@@ -552,7 +600,13 @@ class EnergySystem:
         model.carbonEmissionsTotal = pe.Var(
             model.setTimeStepsYearly,
             domain = pe.Reals,
-            doc = "total carbon emissions of energy system. Domain: NonNegativeReals"
+            doc = "total carbon emissions of energy system. Domain: Reals"
+        )
+        # costs
+        model.costTotal = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.Reals,
+            doc="total cost of energy system. Domain: Reals"
         )
 
     @classmethod
@@ -572,6 +626,12 @@ class EnergySystem:
             model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsLimitRule,
             doc="limit of total carbon emissions of energy system"
+        )
+        # costs
+        model.constraintCostTotal = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintCostTotalRule,
+            doc="total cost of energy system"
         )
 
     @classmethod
@@ -626,12 +686,23 @@ def constraintCarbonEmissionsLimitRule(model, year):
     else:
         return pe.Constraint.Skip
 
+def constraintCostTotalRule(model,year):
+    """ add up all costs from technologies and carriers"""
+    return(
+        model.costTotal[year] ==
+        # capex
+        model.capexTotal[year] +
+        # opex
+        model.opexTotal[year] +
+        # carrier costs
+        model.costCarrierTotal[year]
+    )
 # objective rules
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
     return(
             sum(
-                model.capexTotal[year] + model.opexTotal[year] + model.costCarrierTotal[year]
+                model.costTotal[year]
             for year in model.setTimeStepsYearly)
     )
 

@@ -14,6 +14,8 @@ import logging
 import pyomo.environ as pe
 import os
 import sys
+import pandas as pd
+import numpy as np
 # import elements of the optimization problem
 # technology and carrier classes from technology and carrier directory, respectively
 from model.objects.element                              import Element
@@ -35,18 +37,12 @@ class OptimizationSetup():
         self.system     = prepare.system
         self.paths      = prepare.paths
         self.solver     = prepare.solver
-        self.model      = pe.ConcreteModel()
+        # step of optimization horizon
+        self.stepHorizon = 0
         # set optimization attributes (the five set above) to class <EnergySystem>
-        EnergySystem.setOptimizationAttributes(analysis, self.system, self.paths, self.solver, self.model)
+        EnergySystem.setOptimizationAttributes(analysis, self.system, self.paths, self.solver)
         # add Elements to optimization
         self.addElements()
-
-        # define and construct components of self.model
-        Element.constructModelComponents()
-        logging.info("Apply Big-M GDP ")
-
-        # add transformation factory so that disjuncts are solved
-        pe.TransformationFactory("gdp.bigm").apply_to(self.model)
 
     def addElements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -86,6 +82,48 @@ class OptimizationSetup():
         # conduct  time series aggregation
         TimeSeriesAggregation.conductTimeSeriesAggregation()
 
+    def constructOptimizationProblem(self):
+        """ constructs the optimization problem """
+        # create empty ConcreteModel
+        self.model = pe.ConcreteModel()
+        EnergySystem.setConcreteModel(self.model)
+        # define and construct components of self.model
+        Element.constructModelComponents()
+        logging.info("Apply Big-M GDP ")
+        # add transformation factory so that disjuncts are solved
+        pe.TransformationFactory("gdp.bigm").apply_to(self.model)
+
+    def getOptimizationHorizon(self):
+        """ returns list of optimization horizon steps """
+        energySystem    = EnergySystem.getEnergySystem()
+        # save "original" full setTimeStepsYearly
+        self.setTimeStepsYearlyFull = energySystem.setTimeStepsYearly
+        # if using rolling horizon
+        if self.system["useRollingHorizon"]:
+            self.yearsInHorizon = self.system["yearsInHorizon"]
+            _timeStepsYearly    = energySystem.setTimeStepsYearly
+            self.stepsHorizon   = {year: list(range(year,min(year + self.yearsInHorizon,max(_timeStepsYearly)+1))) for year in _timeStepsYearly}
+        # if no rolling horizon
+        else:
+            self.yearsInHorizon = len(energySystem.setTimeStepsYearly)
+            self.stepsHorizon   = {0: energySystem.setTimeStepsYearly}
+        return list(self.stepsHorizon.keys())
+
+    def overwriteTimeIndices(self,stepHorizon):
+        """ select subset of time indices, matching the step horizon
+        :param stepHorizon: step of the rolling horizon """
+        energySystem    = EnergySystem.getEnergySystem()
+
+        if self.system["useRollingHorizon"]:
+            _timeStepsYearlyHorizon = self.stepsHorizon[stepHorizon]
+            _baseTimeStepsHorizon   = EnergySystem.decodeYearlyTimeSteps(_timeStepsYearlyHorizon)
+            # overwrite time steps of each element
+            for element in Element.getAllElements():
+                element.overwriteTimeSteps(_baseTimeStepsHorizon)
+            # overwrite base time steps and yearly base time steps
+            energySystem.setBaseTimeSteps       = _baseTimeStepsHorizon.squeeze().tolist()
+            energySystem.setTimeStepsYearly     = _timeStepsYearlyHorizon
+
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """
@@ -105,3 +143,16 @@ class OptimizationSetup():
         # enable logger 
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)
+
+    def addNewlyBuiltCapacity(self,stepHorizon):
+        """ adds the newly built capacity to the existing capacity
+        :param stepHorizon: step of the rolling horizon """
+        _builtCapacity  = pd.Series(self.model.builtCapacity.extract_values())
+        _capex          = pd.Series(self.model.capex.extract_values())
+        _baseTimeSteps  = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
+        Technology      = getattr(sys.modules[__name__], "Technology")
+        for tech in Technology.getAllElements():
+            # new capacity
+            _builtCapacityTech = _builtCapacity.loc[tech.name].unstack()
+            _capexTech          = _capex.loc[tech.name].unstack()
+            tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)

@@ -16,7 +16,7 @@ import pandas as pd
 from scipy.stats import linregress
 
 class DataInput():
-    
+
     def __init__(self,system,analysis,solver,energySystem = None):
         """ data input object to extract input data
         :param system: dictionary defining the system
@@ -49,7 +49,7 @@ class DataInput():
                 if len(fileNames) > 1 and fileName != manualFileName:
                     continue
 
-                # table attributes                     
+                # table attributes
                 dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None) 
                 break 
             return dfInput,fileName
@@ -94,18 +94,20 @@ class DataInput():
         if not timeSteps:
             timeSteps = self.energySystem.setBaseTimeSteps
 
+        # select index
+        indexList,indexNameList = self.constructIndexList(element, indexSets,timeSteps)
+        # create pd.MultiIndex and select data
+        indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
+        # if existing capacities and existing capacities not used
+        if manualFileName == "existingCapacity" and not self.analysis["useExistingCapacities"]:
+            dfOutput = pd.Series(index=indexMultiIndex,data=0, dtype=float)
+            return dfOutput
         # check if default value exists in attributes.csv, with or without "Default" Suffix
         if column:
             defaultName = column
         else:
             defaultName = manualFileName
         defaultValue = self.extractAttributeData(folderPath,defaultName)
-
-        # select index
-        indexList,indexNameList = self.constructIndexList(element, indexSets,timeSteps)
-
-        # create pd.MultiIndex and select data
-        indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
 
         # create output Series filled with default value
         if defaultValue is None:
@@ -186,7 +188,7 @@ class DataInput():
 
         # delete nans
         dfInput     = dfInput.dropna()
-        
+
         # get common index of dfOutput and dfInput
         if not isinstance(dfInput.index, pd.MultiIndex):
             indexList     = dfInput.index.to_list()
@@ -399,19 +401,22 @@ class DataInput():
             :param folderPath: path to input files
             :param transportTechnology: boolean if data extracted for transport technology
             :return setExistingTechnologies: return set existing technologies"""
-        fileFormat = self.analysis["fileFormat"]
+        if self.analysis["useExistingCapacities"]:
+            fileFormat = self.analysis["fileFormat"]
 
-        if f"existingCapacity.{fileFormat}" not in os.listdir(folderPath):
-            return [0]
+            if f"existingCapacity.{fileFormat}" not in os.listdir(folderPath):
+                return [0]
 
-        dfInput = pd.read_csv(folderPath + "existingCapacity" + '.' + fileFormat, header=0, index_col=None)
+            dfInput = pd.read_csv(folderPath + "existingCapacity" + '.' + fileFormat, header=0, index_col=None)
 
-        if not transportTechnology:
-            location = "node"
+            if not transportTechnology:
+                location = "node"
+            else:
+                location = "edge"
+            maxNodeCount = dfInput[location].value_counts().max()
+            setExistingTechnologies = np.arange(0, maxNodeCount)
         else:
-            location = "edge"
-        maxNodeCount = dfInput[location].value_counts().max()
-        setExistingTechnologies = np.arange(0, maxNodeCount)
+            setExistingTechnologies = np.array([0])
 
         return setExistingTechnologies
 
@@ -425,6 +430,10 @@ class DataInput():
         defaultValue = 0
 
         dfOutput    = pd.Series(index=tech.existingCapacity.index,data=0)
+        # if no existing capacities
+        if not self.analysis["useExistingCapacities"]:
+            return dfOutput
+
         if f"{fileName}.{fileFormat}" in os.listdir(folderPath):
             indexList, indexNameList    = self.constructIndexList(tech, indexSets, None)
             dfInput, fileName           = self.readInputData(folderPath, fileName)

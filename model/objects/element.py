@@ -39,7 +39,11 @@ class Element:
     def isAggregated(self):
         """ this method returns the aggregation status """
         return self.aggregated
-        
+
+    def overwriteTimeSteps(self,baseTimeSteps):
+        """ overwrites time steps. Must be implemented in child classes """
+        raise NotImplementedError("overwriteTimeSteps must be implemented in child classes!")
+
     ### --- classmethods --- ###
     # setter/getter classmethods
     @classmethod
@@ -78,11 +82,7 @@ class Element:
     def getAllSubclasses(cls):
         """ get all subclasses (child classes) of cls 
         :return subclasses: subclasses of cls """
-        # TODO sortieren, dass technolgies zuerst gelistet werden
-        # TODO add function to iterate through classes and get "name"
         return cls.__subclasses__()
-
-    #TODO getAllClasses
 
     @classmethod
     def getAttributeOfAllElements(cls,attributeName:str):
@@ -105,6 +105,8 @@ class Element:
                         dictOfAttributes[(_element.name,)+_key] = _attribute[_key]
                     else:
                         dictOfAttributes[(_element.name, _key)] = _attribute[_key]
+            elif isinstance(_attribute, int):
+                dictOfAttributes[_element.name] = [_attribute]
             else:
                 dictOfAttributes[_element.name] = _attribute
 
