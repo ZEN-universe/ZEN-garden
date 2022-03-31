@@ -12,11 +12,11 @@ import importlib.util
 ## Analysis - Defaul dictionary
 analysis = default_config.analysis
 ## Solver - Defaul dictionary
-
+solver = default_config.solver
 
 ## Analysis - settings update compared to default values
 analysis                                            = default_config.analysis         # get default settings from default config
-analysis["dataset"]                                 = "NUTS0_HSC"                     # select a dataset
+analysis["dataset"]                                 = "Output"                        # select a dataset
 analysis["objective"]                               = "TotalCost"                     # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
 analysis["useExistingCapacities"]                   = False                           # use greendfield or brownfield approach
 
