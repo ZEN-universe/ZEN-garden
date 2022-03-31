@@ -14,10 +14,9 @@ Description:  Class defining the Concrete optimization model.
 import logging
 import pyomo.environ as pe
 import os
-import sys
-
-from model.objects.element import Element
-# import technology and carrier classes from technology and carrier directory, respectively
+# import elements of the optimization problem
+# technology and carrier classes from technology and carrier directory, respectively
+from model.objects.element                              import Element
 from model.objects.technology                           import *
 from model.objects.carrier                              import *
 from model.objects.energy_system                        import EnergySystem
@@ -55,32 +54,27 @@ class OptimizationSetup():
         # add energy system to define system
         EnergySystem("energySystem")
 
-        for technologyType in technologyList:
-            technologyClass = getattr(sys.modules[__name__], technologyType)
-            technologySet   = technologyClass.label
-            setTechnologies = self.system[technologySet]
-            # check if technologySet has a subset and remove subset from setTechnologies
-            if technologySet in self.analysis["subsets"].keys():
-                subsetTechnologies = []
-                for subset in self.analysis["subsets"][technologySet]:
-                        subsetTechnologies += [tech for tech in self.system[subset]]
-                setTechnologies = list(set(setTechnologies)-set(subsetTechnologies))
-            # add technology classes
-            for tech in setTechnologies:
-                technologyClass(tech)
+        for elementName in EnergySystem.getElementList():
+            elementClass = EnergySystem.dictElementClasses[elementName]
+            elementName  = elementClass.label
+            elementSet   = self.system[elementName]
 
-        # get set of carriers
-        self.system["setCarriers"] = EnergySystem.getAttribute("setCarriers")
-        self.prepare.checkExistingCarrierData(self.system)
-        for carrierType in carrierList:
-            carrierClass = getattr(sys.modules[__name__], carrierType)
-            carrierSet   = carrierClass.label
-            setCarriers  = self.system[carrierSet]
-            # check if carrierSet has a subset and remove subset from setCarriers
-            assert (carrierSet not in self.analysis["subsets"].keys()), f"Functionality of adding carrier-subsets are not implemented yet."
-            # add carrier classes
-            for carrier in setCarriers:
-                carrierClass(carrier)
+            # check if elementSet has a subset and remove subset from elementSet
+            if elementName in self.analysis["subsets"].keys():
+                elementSubset = []
+                for subset in self.analysis["subsets"][elementName]:
+                        elementSubset += [item for item in self.system[subset]]
+                elementSet = list(set(elementSet)-set(elementSubset))
+
+            # before adding the carriers, get setCarriers and check if carrier data exists
+            if elementName == "setCarriers":
+                elementSet                 = EnergySystem.getAttribute("setCarriers")
+                self.system["setCarriers"] = elementSet
+                self.prepare.checkExistingCarrierData(self.system)
+
+            # add element class
+            for item in elementSet:
+                elementClass(item)
 
         # conduct  time series aggregation
         TimeSeriesAggregation.conductTimeSeriesAggregation()
