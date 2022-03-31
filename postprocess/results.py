@@ -219,7 +219,11 @@ class Postprocess:
             elif type(list(dict[varName].keys())[0]) == int:
                 # seems like we never come in here
                 print("DID SOMETHING COME IN HERE??")
-                df[varName] = pd.DataFrame(dict[varName].values(), index=list(dict[varName].keys()), columns=self.analysis['headerDataOutputs'][varName])
+                try:
+                    df[varName] = pd.DataFrame(dict[varName].values(), index=list(dict[varName].keys()), columns=self.analysis['headerDataOutputs'][varName])
+                except KeyError:
+                    logging.info(f"create header for variable {varName}")
+                    df[varName] = pd.DataFrame(dict[varName].values(), index=list(dict[varName].keys()))
                 self.trimZeros(varName, self.varDf, df[varName].columns.values)
                 print(df)
             else:

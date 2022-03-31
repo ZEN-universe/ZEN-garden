@@ -178,10 +178,17 @@ class DataInput():
             indexNameList.remove(missingIndex[0])
             dfInput                 = dfInput.set_index(indexNameList)
             requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0]))
-            assert requestedIndexValues.issubset(dfInput.columns), f"The index values {list(requestedIndexValues-set(dfInput.columns))} for index {missingIndex[0]} are missing from {fileName}"
-            dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
-            dfInput                 = dfInput[list(requestedIndexValues)].stack()
-            dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
+            if requestedIndexValues.issubset(dfInput.columns):
+            # assert requestedIndexValues.issubset(dfInput.columns), f"The index values {list(requestedIndexValues-set(dfInput.columns))} for index {missingIndex[0]} are missing from {fileName}"
+                dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
+                dfInput                 = dfInput[list(requestedIndexValues)].stack()
+                dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
+            else:
+                logging.info(f"Missing index {missingIndex[0]} detected in {fileName}. Input dataframe is extended by this index")
+                _dfInputIndexTemp = pd.MultiIndex.from_product([dfInput.index,requestedIndexValues],names=dfInput.index.names +missingIndex)
+                _dfInputTemp = pd.Series(index=_dfInputIndexTemp,dtype=float)
+                dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0]),column]).squeeze()
+                dfInput.index = _dfInputTemp.index
 
         # apply multiplier to input data
         dfInput     = dfInput * defaultValue["multiplier"]
