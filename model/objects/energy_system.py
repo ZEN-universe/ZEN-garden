@@ -46,6 +46,10 @@ class EnergySystem:
     dictOrderTimeStepsYearly = {}
     # empty dict of raw time series, only necessary for single time grid approach
     dictTimeSeriesRaw = {}
+    # empty dict of element classes
+    dictElementClasses = {}
+    # empty list of class names
+    elementList = {}
 
     def __init__(self,nameEnergySystem):
         """ initialization of the energySystem
@@ -284,6 +288,17 @@ class EnergySystem:
         """ get energySystem.
         :return energySystem: return energySystem  """
         return cls.energySystem
+
+    @classmethod
+    def getElementList(cls):
+        """ get attribute value of energySystem
+        :param attributeName: str name of attribute
+        :return attribute: returns attribute values """
+        elementClasses    = cls.dictElementClasses.keys()
+        carrierClasses    = [elementName for elementName in elementClasses if "Carrier" in elementName]
+        technologyClasses = [elementName for elementName in elementClasses if "Technology" in elementName]
+        cls.elementList   = technologyClasses + carrierClasses
+        return cls.elementList
 
     @classmethod
     def getUnitRegistry(cls):
