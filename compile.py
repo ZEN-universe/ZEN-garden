@@ -43,7 +43,7 @@ system = prepare.checkExistingInputData()
 
 # FORMULATE THE OPTIMIZATION PROBLEM
 # add the elements and read input data
-optimizationSetup           = OptimizationSetup(config.analysis, system, prepare.paths, prepare.solver)
+optimizationSetup           = OptimizationSetup(config.analysis, prepare)
 # get rolling horizon years
 stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
 # iterate through horizon steps
