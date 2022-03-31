@@ -73,7 +73,6 @@ class ConversionTechnology(Technology):
         """ this method calculates the annualized capex of a single existing capacity. """
         if capacity == 0:
             return 0
-        _PWACapex = self.PWAParameter["Capex"]
         # linear
         if not self.PWACapex["PWAVariables"]:
             capex   = self.PWACapex["capex"]*capacity
