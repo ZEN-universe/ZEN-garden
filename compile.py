@@ -13,11 +13,11 @@ import os
 import logging
 import sys
 from datetime import datetime
-import data.NUTS0_electricity.config as config
+import data.NUTS0_CCTS.config as config
 from preprocess.prepare import Prepare
 from model.optimization_setup import OptimizationSetup
 from model.metaheuristic.algorithm import Metaheuristic
-from postprocess.results import Postprocess
+from postprocess.results_HB import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -52,6 +52,7 @@ for stepHorizon in stepsOptimizationHorizon:
         logging.info("\n--- Conduct optimization for perfect foresight --- \n")
     else:
         logging.info(f"\n--- Conduct optimization for rolling horizon step {stepHorizon} of {max(stepsOptimizationHorizon)}--- \n")
+
     # overwrite time indices
     optimizationSetup.overwriteTimeIndices(stepHorizon)
     # create optimization problem
