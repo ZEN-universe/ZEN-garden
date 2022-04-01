@@ -184,16 +184,24 @@ class TimeSeriesAggregation():
             element.orderTimeStepsEnergyBalance     = orderTimeStepsCarrier
             # if carrier previously not aggregated
             if not element.isAggregated():
-                # iterate through raw time series data and conduct "manual" time series aggregation
-                for timeSeries in element.rawTimeSeries:
-                    dfTimeSeries = element.rawTimeSeries[timeSeries].loc[(slice(None), setTimeStepsCarrier)]
-                    # save attribute
-                    setattr(element, timeSeries, dfTimeSeries)
+
                 element.setTimeStepsCarrier         = setTimeStepsCarrier
                 element.timeStepsCarrierDuration    = timeStepsCarrierDuration
                 element.orderTimeSteps              = orderTimeStepsCarrier
+            # iterate through raw time series data
+            for timeSeries in element.rawTimeSeries:
+                # if not yet aggregated, conduct "manual" time series aggregation
+                if not element.isAggregated():
+                    dfTimeSeries = element.rawTimeSeries[timeSeries].loc[(slice(None), setTimeStepsCarrier)]
+                else:
+                    dfTimeSeries = getattr(element,timeSeries)
+                # multiply with yearly variation
+                dfTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, dfTimeSeries)
+                # save attribute
+                setattr(element, timeSeries, dfTimeSeries)
             # set aggregation indicator
             TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
+
 
     @classmethod
     def linkTimeSteps(cls, element):
@@ -239,9 +247,37 @@ class TimeSeriesAggregation():
             _newTimeSeries = pd.DataFrame(index=_oldTimeSeries.index, columns=setTimeStepsOperation)
             _idxOld2New = [np.unique(oldOrderTimeSteps[np.argwhere(idx == orderTimeSteps)]) for idx in
                            setTimeStepsOperation]
-            _newTimeSeries = _newTimeSeries.apply(lambda row: _oldTimeSeries[_idxOld2New[row.name][0]], axis=0).stack()
+            _newTimeSeries = _newTimeSeries.apply(lambda row: _oldTimeSeries[_idxOld2New[row.name][0]], axis=0)
+            _newTimeSeries.columns.names = [headerSetTimeSteps]
+            _newTimeSeries = _newTimeSeries.stack()
+            # multiply with yearly variation
+            _newTimeSeries = cls.multiplyYearlyVariation(element,timeSeries,_newTimeSeries)
             # overwrite time series
             setattr(element, timeSeries, _newTimeSeries)
+
+    @classmethod
+    def multiplyYearlyVariation(cls,element,timeSeriesName,timeSeries):
+        """ this method multiplies time series with the yearly variation of the time series
+        The index of the variation is the same as the original time series, just time and year substituted
+        :param element: technology of the optimization
+        :param timeSeriesName: name of time series
+        :param timeSeries: time series
+        :return multipliedTimeSeries: timeSeries multiplied with yearly variation """
+        if hasattr(element.dataInput,timeSeriesName+"YearlyVariation"):
+            _yearlyVariation            = getattr(element.dataInput,timeSeriesName+"YearlyVariation")
+            headerSetTimeSteps          = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
+            headerSetTimeStepsYearly    = EnergySystem.getAnalysis()['headerDataInputs']["setTimeStepsYearly"][0]
+            _timeSeries                 = timeSeries.unstack(headerSetTimeSteps)
+            _yearlyVariation            = _yearlyVariation.unstack(headerSetTimeStepsYearly)
+            for year in EnergySystem.getEnergySystem().setTimeStepsYearly:
+                if not all(_yearlyVariation[year]==1):
+                    _baseTimeSteps      = EnergySystem.decodeTimeStep(None,year,"yearly")
+                    _elementTimeSteps   = EnergySystem.encodeTimeStep(element.name,_baseTimeSteps,yearly=True)
+                    _timeSeries[_elementTimeSteps] = _timeSeries[_elementTimeSteps].multiply(_yearlyVariation[year],axis=0)
+            _timeSeries = _timeSeries.stack()
+            return _timeSeries
+        else:
+            return timeSeries
 
     @classmethod
     def repeatOrderTimeStepsForAllYears(cls):
@@ -255,6 +291,7 @@ class TimeSeriesAggregation():
             EnergySystem.setOrderTimeSteps(element.name, element.orderTimeSteps)
             # calculate the time steps in operation to link with investment and yearly time steps
             cls.linkTimeSteps(element)
+
 
     @classmethod
     def setAggregationIndicators(cls, element, setEnergyBalanceIndicator=False):
