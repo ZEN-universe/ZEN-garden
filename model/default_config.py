@@ -14,7 +14,7 @@ analysis = dict()
 
 ## Solver - dictionary declaration
 # This dictionary contains all the settings related to the solver of the optimisation problem.
-solver = dict()  
+solver = dict()
 
 ## System - dictionary declaration
 # This dictionary defines the configuration of the system by selecting the subset of technologies ot be included into the analysis.
@@ -35,16 +35,18 @@ analysis["discountRate"] = 0.06
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
 analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
-
+# settings for MINLP
+analysis["variablesNonlinearModel"]                 = {"builtCapacity": []}
+analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEfficiency":[]}
 # headers for the generation of input files
-analysis["headerDataInputs"]=   {"setNodes": ["node", "x", "y"],
-                                "setEdges": ["edge"],
-                                "setScenarios":["scenario"],
-                                "setTimeSteps":["time"],
-                                "setCarriers":["demandCarrier", "availabilityCarrier", "exportPriceCarrier", "importPriceCarrier"],
-                                "setConversionTechnologies":["availability"],
-                                "setTransportTechnologies":["availability", "costPerDistance", "distanceEuclidean", "efficiencyPerDistance"],
-                                "setExistingTechnologies": ["existingTechnology"]}
+analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
+                                  "setEdges": ["edge"],
+                                  "setScenarios":["scenario"],
+                                  "setTimeSteps":["time"],
+                                  "setCarriers":["demandCarrier", "availabilityCarrier", "exportPriceCarrier", "importPriceCarrier"],
+                                  "setConversionTechnologies":["availability"],
+                                  "setTransportTechnologies":["availability", "costPerDistance", "distanceEuclidean", "efficiencyPerDistance"],
+                                  "setExistingTechnologies": ["existingTechnology"]}
 
 # file format of input data
 analysis["fileFormat"] = "csv"
@@ -56,11 +58,40 @@ analysis["timeSeriesAggregation"] = {
     "resolution"            : 1
 }
 
+analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
+                                'costCarrierTotal': ['capacity[€]'],
+                                'opexTotal':['capacity[€]'],
+                                'carbonEmissionsCarrierTotal':['capacity[GWh]'],
+                                'carbonEmissionsTechnologyTotal':['capacity[GWh]'],
+                                'carbonEmissionsTotal':['capacity[GWh]'],
+                                'carbonEmissionsCarrier':['carrier','node','time','capacity[GWh]'],
+                                'costCarrier': ['carrier','node','time','capacity[GWh]'],
+                                'exportCarrierFlow':['carrier','node','time','capacity[GWh]'],
+                                'importCarrierFlow':['carrier','node','time','capacity[GWh]'],
+                                'carrierFlow':['transportationTechnology','edge','time','capacity[GWh]'],
+                                'carrierLoss':['transportationTechnology','edge','time','capacity[GWh]'],
+                                'dependentFlowApproximation':['conversionTechnology','carrier','node','time','capacity[GWh]'],
+                                'inputFlow':['conversionTechnology','carrier','node','time','capacity[GWh]'],
+                                'outputFlow':['conversionTechnology','carrier','node','time','capacity[GWh]'],
+                                'referenceFlowApproximation':['conversionTechnology','carrier','node','time','capacity[GWh]'],
+                                'installTechnology':['conversionTechnology','node','time','T/F'],
+                                'builtCapacity':['conversionTechnology','node','time','capacity[GWh]'],
+                                'capacity':['conversionTechnology','node','time','capacity[GWh]'],
+                                'capacityApproximation':['conversionTechnology','node','time','capacity[GWh]'],
+                                'capex':['conversionTechnology','node','time','capacity[GWh]'],
+                                'capexApproximation':['conversionTechnology','node','time','capacity[GWh]'],
+                                'carbonEmissionsTechnology':['conversionTechnology','node','time','capacity[GWh]'],
+                                'opex':['conversionTechnology','node','time','capacity[GWh]'],
+                                'carrierFlowCharge':['?','??','???','????'],
+                                'carrierFlowDischarge':['?','??','???','????'],
+                                'levelCharge':['?','??','???','????'],
+                                }
+
+analysis['postprocess'] = False
+
 ## System - Items assignment
 # set of energy carriers
-system["setCarriers"] = ["electricity", "gas", "hydrogen", "biomass", "CO2","water","oxygen"]
-# # set of energy carriers for transport
-# system["setTransportCarriers"] = ["hydrogen"]
+system["setCarriers"] = []
 # set of conversion technologies
 system["setConversionTechnologies"] = []
 # set of storage technologies
@@ -105,7 +136,7 @@ solver["parametersMetaheuristic"] = {
 solver["convergenceCriterion"] = {"check": True, "conditionDelta":"relative", "restart":True}
 # settings for performance check
 solver["performanceCheck"] = {"printDeltaRun":1, "printDeltaIteration":1}
-# settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly: 
+# settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly:
 # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
 solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
 # rounding to number of decimal points

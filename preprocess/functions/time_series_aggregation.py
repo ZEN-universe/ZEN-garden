@@ -259,20 +259,12 @@ class TimeSeriesAggregation():
     @classmethod
     def setAggregationIndicators(cls, element, setEnergyBalanceIndicator=False):
         """ this method sets the indicators that element is aggregated """
-        system = EnergySystem.getSystem()
         # add order of time steps to Energy System
         EnergySystem.setOrderTimeSteps(element.name, element.orderTimeSteps, timeStepType="operation")
         # if energy balance indicator is set as well, save order of time steps in energy balance as well
         if setEnergyBalanceIndicator:
             EnergySystem.setOrderTimeSteps(element.name + "EnergyBalance", element.orderTimeStepsEnergyBalance,
                                            timeStepType="operation")
-            # if technology, add to technologyOfCarrier list
-        if element.name in system["setTechnologies"]:
-            if element.name in system["setConversionTechnologies"]:
-                EnergySystem.setTechnologyOfCarrier(element.name, element.inputCarrier + element.outputCarrier)
-            else:
-                EnergySystem.setTechnologyOfCarrier(element.name, element.referenceCarrier)
-        # set the aggregation status of element to true
         element.setAggregated()
 
     @classmethod

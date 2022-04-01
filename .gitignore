@@ -5,5 +5,6 @@
 !/data/.gitkeep
 /outputs/
 /data_generation/
+/postprocess/results_horizon_JM.py
 *.pyc
 *.DS_Store
