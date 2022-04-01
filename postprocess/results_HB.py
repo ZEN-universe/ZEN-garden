@@ -148,6 +148,25 @@ class Postprocess:
         # get all the variable values from the model and store in a dict
         for var in self.model.component_objects(pe.Var, active=True):
             if 'constraint' not in var.name and 'gdp' not in var.name:
+                # save vars in a dict
+                self.varDict[var.name] = dict()
+                for index in var:
+                    try:
+                        self.varDict[var.name][index] = var[index].value
+                    except:
+                        pass
+
+        # save the variable dict to a pickle
+        with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
+            pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def saveVar_HB(self):  # My own function to save the variables in better dicts
+        """ Saves the variable values to pickle files which can then be
+        post-processed immediately or loaded and postprocessed at some other time"""
+
+        # get all the variable values from the model and store in a dict
+        for var in self.model.component_objects(pe.Var, active=True):
+            if 'constraint' not in var.name and 'gdp' not in var.name:
                 # create a sub-dict for each variable
                 self.varDict[var.name] = dict()
                 for index in var:
