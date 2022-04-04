@@ -129,13 +129,13 @@ class Technology(Element):
 
     def calculateFractionalAnnuity(self):
         """calculate fraction of annuity to depreciate investment"""
-        system = EnergySystem.getSystem()
-        _discountRate = EnergySystem.getAnalysis()["discountRate"]
-        _lifetime = self.lifetime
-        _annuity = (((1 + _discountRate) ** _lifetime) * _discountRate) / ((1 + _discountRate) ** _lifetime - 1)
+        system              = EnergySystem.getSystem()
+        _discountRate       = EnergySystem.getAnalysis()["discountRate"]
+        _lifetime           = self.lifetime
+        _annuity            = (((1 + _discountRate) ** _lifetime) * _discountRate) / ((1 + _discountRate) ** _lifetime - 1)
         # only account for fraction of year
-        _fractionOfYear = system["timeStepsPerYear"] / system["totalHoursPerYear"]
-        _fractionalAnnuity = _annuity * _fractionOfYear
+        _fractionOfYear     = system["timeStepsPerYear"] / system["totalHoursPerYear"]
+        _fractionalAnnuity  = _annuity * _fractionOfYear
         return _fractionalAnnuity
 
     def overwriteTimeSteps(self,baseTimeSteps):

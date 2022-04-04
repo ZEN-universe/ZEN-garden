@@ -13,7 +13,7 @@ import os
 import logging
 import sys
 
-import config                       as config
+import data.config                  as config
 from datetime                       import datetime
 from preprocess.prepare             import Prepare
 from model.optimization_setup       import OptimizationSetup
@@ -76,3 +76,4 @@ for stepHorizon in stepsOptimizationHorizon:
     else:
         modelName += "_perfectForesight"
     evaluation = Postprocess(optimizationSetup, modelName = modelName)
+    a=1
