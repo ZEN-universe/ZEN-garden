@@ -195,12 +195,13 @@ class TimeSeriesAggregation():
                     dfTimeSeries = element.rawTimeSeries[timeSeries].loc[(slice(None), setTimeStepsCarrier)]
                 else:
                     dfTimeSeries = getattr(element,timeSeries)
-                # multiply with yearly variation
-                dfTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, dfTimeSeries)
                 # save attribute
                 setattr(element, timeSeries, dfTimeSeries)
             # set aggregation indicator
             TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
+            # multiply with yearly variation
+            for timeSeries in element.rawTimeSeries:
+                dfTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, dfTimeSeries)
 
 
     @classmethod
@@ -221,6 +222,8 @@ class TimeSeriesAggregation():
             ]
         setTimeSteps, timeStepsDuration, orderTimeSteps = \
             TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listOrderTimeSteps)
+        # set order time steps
+        EnergySystem.setOrderTimeSteps(element.name, orderTimeSteps)
         # time series parameters
         cls.overwriteTimeSeriesWithExpandedTimeIndex(element,setTimeSteps,orderTimeSteps)
         # set attributes
@@ -232,7 +235,7 @@ class TimeSeriesAggregation():
             element.setTimeStepsCarrier         = setTimeSteps
             element.timeStepsCarrierDuration    = timeStepsDuration
             element.orderTimeSteps              = orderTimeSteps
-        EnergySystem.setOrderTimeSteps(element.name, element.orderTimeSteps)
+
 
     @classmethod
     def overwriteTimeSeriesWithExpandedTimeIndex(cls, element, setTimeStepsOperation, orderTimeSteps):

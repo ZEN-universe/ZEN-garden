@@ -278,18 +278,23 @@ class DataInput():
         manualFileName  += "YearlyVariation"
         # read input data
         _rawInputData   = self.readInputData(folderPath, manualFileName)
-        if _rawInputData[0] is not None and column in _rawInputData[0]:
+        if _rawInputData[0] is not None:
+            if column is not None and column not in _rawInputData[0]:
+                return
             dfOutput, defaultValue, indexMultiIndex, indexNameList, defaultName = self.createDefaultOutput(folderPath,
                                                                                                            manualFileName,
                                                                                                            _indexSets,
                                                                                                            column,
                                                                                                            manualDefaultValue=1)
             dfInput, fileName   = self.readInputData(folderPath, manualFileName)
-            dfOutput            = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
             # set yearlyVariation attribute to dfOutput
             if column is not None:
+                dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column,
+                                                        defaultValue)
                 setattr(self,column+"YearlyVariation",dfOutput)
             else:
+                dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, dfInput.columns[-1],
+                                                        defaultValue)
                 setattr(self,manualFileName,dfOutput)
 
     def extractAttributeData(self, folderPath,attributeName,skipWarning = False):
