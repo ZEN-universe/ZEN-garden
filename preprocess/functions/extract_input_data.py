@@ -201,9 +201,8 @@ class DataInput():
         else:
             indexNameList.remove(missingIndex[0])
             dfInput                 = dfInput.set_index(indexNameList)
-            requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0]))
+            requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0])).intersection(dfInput.columns)
             if requestedIndexValues.issubset(dfInput.columns):
-            # assert requestedIndexValues.issubset(dfInput.columns), f"The index values {list(requestedIndexValues-set(dfInput.columns))} for index {missingIndex[0]} are missing from {fileName}"
                 dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
                 dfInput                 = dfInput[list(requestedIndexValues)].stack()
                 dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
