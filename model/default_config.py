@@ -25,10 +25,6 @@ system = dict()
 analysis["objective"] = "TotalCost"
 # typology of optimisation: minimize or maximize
 analysis["sense"]     = "minimize"
-# length of time horizon
-analysis["timeHorizon"] = 25
-# time resolution
-analysis["timeResolution"] = "yearly"
 # discount rate
 analysis["discountRate"] = 0.06
 # transport distance (euclidean or actual)
@@ -43,6 +39,7 @@ analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
                                   "setEdges": ["edge"],
                                   "setScenarios":["scenario"],
                                   "setTimeSteps":["time"],
+                                  "setTimeStepsYearly":["year"],
                                   "setCarriers":["demandCarrier", "availabilityCarrier", "exportPriceCarrier", "importPriceCarrier"],
                                   "setConversionTechnologies":["availability"],
                                   "setTransportTechnologies":["availability", "costPerDistance", "distanceEuclidean", "efficiencyPerDistance"],
@@ -100,15 +97,8 @@ system["setStorageTechnologies"] = []
 system["setTransportTechnologies"] = []
 # set of nodes
 system["setNodes"] = []
-# time steps
-system["referenceYear"]                             = 2020
-system["timeStepsPerYear"]                          = 1
-system["timeStepsYearly"]                           = 15
-system["intervalYears"]                             = 1
-system['setTimeStepsPerYear']                       = list(range(0,system["timeStepsPerYear"]))
-system["numberTimeStepsPerYearDefault"]             = 1 # default number of operational time steps, only used in single-grid time series aggregation TODO number of time steps per period = 1
-system["totalHoursPerYear"]                         = 8760
-
+# total hours per year
+system["totalHoursPerYear"] = 8760
 # folder output
 system["folderOutput"] = "outputs/results/"
 
@@ -116,13 +106,12 @@ system["folderOutput"] = "outputs/results/"
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
 solver["name"]      = "gurobi_persistent"
 # gurobi options
-solver["solverOptions"] = {}
-# optimality gap
-solver["solverOptions"]["MIPgap"]    = 0.01
-# time limit in seconds
-solver["solverOptions"]["TimeLimit"] = 8760
-# log file of results
-solver["solverOptions"]["logfile"] = ".//outputs//logs//pyomoLogFile.log"
+solver["solverOptions"] = {
+    "logfile":      ".//outputs//logs//pyomoLogFile.log",
+    "MIPGap":       None,
+    "TimeLimit":    None,
+    "Method":       None
+}
 # verbosity
 solver["verbosity"] = True
 # typology of model solved: MILP or MINLP
