@@ -92,8 +92,6 @@ class Element:
         _classElements = cls.getAllElements()
         dictOfAttributes = {}
         for _element in _classElements:
-            if _element.name == 'uranium':
-                print('ERROR')
             assert hasattr(_element,attributeName),f"Element {_element.name} does not have attribute {attributeName}"
             _attribute = getattr(_element,attributeName)
             if isinstance(_attribute,pd.Series):

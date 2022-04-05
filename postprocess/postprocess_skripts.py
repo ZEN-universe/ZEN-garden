@@ -1,4 +1,5 @@
 import pandas as pd
+import geopandas as gpd
 from model.optimization_setup import OptimizationSetup
 from data.NUTS0_CCTS import config
 
@@ -6,8 +7,13 @@ from data.NUTS0_CCTS import config
 if False:
     optimizationSetup = OptimizationSetup(config.analysis, prepare)
 
-installTechnology = pd.Series(optimizationSetup.model.installTechnology.extract_values())
-demandCarrier = pd.Series(optimizationSetup.model.demandCarrier.extract_values())
+
 varSeries = dict()
 for key in evaluation.varDict.keys():
     varSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values())})
+
+paramSeries = dict()
+for key in evaluation.paramDict.keys():
+    paramSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values())})
+
+

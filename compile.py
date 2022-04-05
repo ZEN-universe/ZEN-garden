@@ -10,6 +10,7 @@ Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
 
 import os
+import pandas as pd
 import logging
 import sys
 from datetime import datetime
@@ -71,7 +72,8 @@ for stepHorizon in stepsOptimizationHorizon:
     optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
     # EVALUATE RESULTS
     today      = datetime.now()
-    modelName  = "model_" + today.strftime("%Y-%m-%d")
+    # modelName  = "model_" + today.strftime("%Y-%m-%d")
+    modelName = optimizationSetup.system['modelName']
     if len(stepsOptimizationHorizon)>1:
         modelName += f"_rollingHorizon{stepHorizon}"
     else:

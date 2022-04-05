@@ -87,7 +87,7 @@ analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
                                 'levelCharge':['?','??','???','????'],
                                 }
 
-analysis['postprocess'] = True
+analysis['postprocess'] = False
 
 ## System - Items assignment
 # set of energy carriers
