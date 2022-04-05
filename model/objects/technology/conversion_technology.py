@@ -20,6 +20,7 @@ from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 class ConversionTechnology(Technology):
     # set label
     label = "setConversionTechnologies"
+
     # empty list of elements
     listOfElements = []
 
