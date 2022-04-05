@@ -201,17 +201,22 @@ class DataInput():
         else:
             indexNameList.remove(missingIndex[0])
             dfInput                 = dfInput.set_index(indexNameList)
-            requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0])).intersection(dfInput.columns)
-            if requestedIndexValues.issubset(dfInput.columns):
+            requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0]))
+            # if requested values (or a subset) are a subset of the columns
+            if requestedIndexValues.intersection(dfInput.columns):
+                requestedIndexValues    = requestedIndexValues.intersection(dfInput.columns)
                 dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
                 dfInput                 = dfInput[list(requestedIndexValues)].stack()
                 dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
             else:
                 logging.info(f"Missing index {missingIndex[0]} detected in {fileName}. Input dataframe is extended by this index")
-                _dfInputIndexTemp = pd.MultiIndex.from_product([dfInput.index,requestedIndexValues],names=dfInput.index.names +missingIndex)
+                _dfInputIndexTemp = pd.MultiIndex.from_product([dfInput.index,requestedIndexValues],names=dfInput.index.names + missingIndex)
                 _dfInputIndexTemp = _dfInputIndexTemp.reorder_levels(order = dfOutput.index.names)
                 _dfInputTemp = pd.Series(index=_dfInputIndexTemp,dtype=float)
-                dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0]),column]).squeeze()
+                if column in dfInput.columns:
+                    dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0]),column].squeeze()).squeeze()
+                else:
+                    dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0])].squeeze()).squeeze()
                 dfInput.index = _dfInputTemp.index
 
         # apply multiplier to input data

@@ -6,8 +6,8 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Functions to apply time series aggregation to time series
 ==========================================================================================================================================================================="""
-import numpy as np
 import pandas as pd
+import numpy as np
 import logging
 import tsam.timeseriesaggregation as tsam
 from model.objects.energy_system import EnergySystem
@@ -294,7 +294,6 @@ class TimeSeriesAggregation():
             EnergySystem.setOrderTimeSteps(element.name, element.orderTimeSteps)
             # calculate the time steps in operation to link with investment and yearly time steps
             cls.linkTimeSteps(element)
-
 
     @classmethod
     def setAggregationIndicators(cls, element, setEnergyBalanceIndicator=False):
