@@ -65,7 +65,7 @@ class EnergySystem:
         EnergySystem.setEnergySystem(self)
 
         # create DataInput object
-        self.dataInput = DataInput(EnergySystem.getSystem(), EnergySystem.getAnalysis(), EnergySystem.getSolver(), EnergySystem.getEnergySystem())
+        self.dataInput = DataInput(self,EnergySystem.getSystem(), EnergySystem.getAnalysis(), EnergySystem.getSolver(), EnergySystem.getEnergySystem())
 
         # store input data
         self.storeInputData()
@@ -451,7 +451,7 @@ class EnergySystem:
     def encodeTimeStep(cls,element:str,baseTimeSteps:int,timeStepType:str = None,yearly=False):
         """ encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
         baseTimeStep of model --> timeStep of element
-        :param element: element of model, i.e., carrier or technology
+        :param element: name of element in model, i.e., carrier or technology
         :param baseTimeStep: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""

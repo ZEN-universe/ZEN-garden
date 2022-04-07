@@ -7,7 +7,7 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""
-
+import copy
 import os
 import logging
 import warnings
@@ -17,8 +17,9 @@ from scipy.stats import linregress
 
 class DataInput():
 
-    def __init__(self,system,analysis,solver,energySystem = None):
+    def __init__(self,element,system,analysis,solver,energySystem = None):
         """ data input object to extract input data
+        :param element: element for which data is extracted
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
         :param solver: dictionary defining the solver 
@@ -27,7 +28,7 @@ class DataInput():
         self.analysis       = analysis
         self.solver         = solver
         self.energySystem   = energySystem
-
+        self.element        = element
         # get names of indices
         self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
 
@@ -56,11 +57,10 @@ class DataInput():
         else:
             return None, None
     
-    def constructIndexList(self,element,indexSets,timeSteps):
+    def constructIndexList(self,indexSets,timeSteps):
         """ constructs index list from index sets and returns list of indices and list of index names
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param timeSteps: specific timeSteps of element
-        :param element: element for that the index list is constructed. Element is none if indexSet is not element specific.
         :return indexList: list of indices
         :return indexNameList: list of name of indices
         """
@@ -70,15 +70,47 @@ class DataInput():
         # add rest of indices
         for index in indexSets:
             indexNameList.append(self.indexNames[index])
-            if index == "setEdges":
-                indexList.append(self.energySystem.setEdges)
-            elif index == "setTimeSteps" and timeSteps:
+            # if index == "setEdges":
+            #     indexList.append(self.energySystem.setEdges)
+            if index == "setTimeSteps" and timeSteps:
                 indexList.append(timeSteps)
             elif index == "setExistingTechnologies":
-                indexList.append(element.setExistingTechnologies)
-            else:
+                indexList.append(self.element.setExistingTechnologies)
+            elif index in self.system:
                 indexList.append(self.system[index])
+            elif hasattr(self.energySystem,index):
+                indexList.append(getattr(self.energySystem,index))
         return indexList,indexNameList
+
+    def createDefaultOutput(self, folderPath,manualFileName,indexSets,column,timeSteps=None,manualDefaultValue = None):
+        """ creates default output dataframe
+        :param folderPath: path to input files
+        :param manualFileName: name of selected file. If only one file in folder, not used
+        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param column: select specific column
+        :param timeSteps: specific timeSteps of element """
+        # select index
+        indexList, indexNameList = self.constructIndexList(indexSets, timeSteps)
+        # create pd.MultiIndex and select data
+        indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
+        if manualDefaultValue:
+            defaultValue = {"value":manualDefaultValue,"multiplier":1}
+            defaultName = manualFileName
+        else:
+            # check if default value exists in attributes.csv, with or without "Default" Suffix
+            if column:
+                defaultName = column
+            else:
+                defaultName = manualFileName
+            defaultValue = self.extractAttributeData(folderPath, defaultName)
+
+        # create output Series filled with default value
+        if defaultValue is None:
+            dfOutput = pd.Series(index=indexMultiIndex, dtype=float)
+        else:
+            dfOutput = pd.Series(index=indexMultiIndex, data=defaultValue["value"], dtype=float)
+
+        return dfOutput,defaultValue,indexMultiIndex,indexNameList,defaultName
 
     def extractInputData(self, folderPath,manualFileName,indexSets,column=None,timeSteps=[],transportTechnology=False,element=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
@@ -93,33 +125,25 @@ class DataInput():
         # generic time steps
         if not timeSteps:
             timeSteps = self.energySystem.setBaseTimeSteps
+        # if time steps are the yearly time steps
+        elif timeSteps == self.energySystem.setBaseTimeStepsYearly:
+            self.extractYearlyVariation(folderPath,manualFileName,indexSets,column)
 
-        # select index
-        indexList,indexNameList = self.constructIndexList(element, indexSets,timeSteps)
-        # create pd.MultiIndex and select data
-        indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
         # if existing capacities and existing capacities not used
         if manualFileName == "existingCapacity" and not self.analysis["useExistingCapacities"]:
-            dfOutput = pd.Series(index=indexMultiIndex,data=0, dtype=float)
+            dfOutput,*_ = self.createDefaultOutput(folderPath,manualFileName,indexSets,column,timeSteps,manualDefaultValue=0)
             return dfOutput
-        # check if default value exists in attributes.csv, with or without "Default" Suffix
-        if column:
-            defaultName = column
         else:
-            defaultName = manualFileName
-        defaultValue = self.extractAttributeData(folderPath,defaultName)
-
-        # create output Series filled with default value
-        if defaultValue is None:
-            dfOutput = pd.Series(index=indexMultiIndex, dtype=float)
-        else:
-            dfOutput = pd.Series(index=indexMultiIndex,data=defaultValue["value"],dtype=float)
+            dfOutput, defaultValue, indexMultiIndex, indexNameList, defaultName = self.createDefaultOutput(folderPath,
+                                                                                                           manualFileName,
+                                                                                                           indexSets,
+                                                                                                           column,
+                                                                                                           timeSteps)
 
         # read input file
         dfInput,fileName = self.readInputData(folderPath,manualFileName)
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
-
             # if not extracted for transport technology
             if not transportTechnology:
                 dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
@@ -177,11 +201,18 @@ class DataInput():
         else:
             indexNameList.remove(missingIndex[0])
             dfInput                 = dfInput.set_index(indexNameList)
-            requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0]))
-            assert requestedIndexValues.issubset(dfInput.columns), f"The index values {list(requestedIndexValues-set(dfInput.columns))} for index {missingIndex[0]} are missing from {fileName}"
-            dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
-            dfInput                 = dfInput[list(requestedIndexValues)].stack()
-            dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
+            requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0])).intersection(dfInput.columns)
+            if requestedIndexValues.issubset(dfInput.columns):
+                dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
+                dfInput                 = dfInput[list(requestedIndexValues)].stack()
+                dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
+            else:
+                logging.info(f"Missing index {missingIndex[0]} detected in {fileName}. Input dataframe is extended by this index")
+                _dfInputIndexTemp = pd.MultiIndex.from_product([dfInput.index,requestedIndexValues],names=dfInput.index.names +missingIndex)
+                _dfInputIndexTemp = _dfInputIndexTemp.reorder_levels(order = dfOutput.index.names)
+                _dfInputTemp = pd.Series(index=_dfInputIndexTemp,dtype=float)
+                dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0]),column]).squeeze()
+                dfInput.index = _dfInputTemp.index
 
         # apply multiplier to input data
         dfInput     = dfInput * defaultValue["multiplier"]
@@ -230,6 +261,40 @@ class DataInput():
                 if _nodeFrom in dfInput.index and _nodeTo in dfInput.columns and ~np.isnan(dfInput.loc[_nodeFrom,_nodeTo]):
                     dfOutput.loc[index] = dfInput.loc[_nodeFrom,_nodeTo]
         return dfOutput
+
+    def extractYearlyVariation(self, folderPath,manualFileName,indexSets,column):
+        """ reads the yearly variation of a time dependent quantity
+        :param folderPath: path to input files
+        :param manualFileName: name of selected file. If only one file in folder, not used
+        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param column: select specific column
+        """
+        # remove intrayearly time steps from index set and add interyearly time steps
+        _indexSets = copy.deepcopy(indexSets)
+        _indexSets.remove("setTimeSteps")
+        _indexSets.append("setTimeStepsYearly")
+        # add YearlyVariation to manualFileName
+        manualFileName  += "YearlyVariation"
+        # read input data
+        _rawInputData   = self.readInputData(folderPath, manualFileName)
+        if _rawInputData[0] is not None:
+            if column is not None and column not in _rawInputData[0]:
+                return
+            dfOutput, defaultValue, indexMultiIndex, indexNameList, defaultName = self.createDefaultOutput(folderPath,
+                                                                                                           manualFileName,
+                                                                                                           _indexSets,
+                                                                                                           column,
+                                                                                                           manualDefaultValue=1)
+            dfInput, fileName   = self.readInputData(folderPath, manualFileName)
+            # set yearlyVariation attribute to dfOutput
+            if column is not None:
+                dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column,
+                                                        defaultValue)
+                setattr(self,column+"YearlyVariation",dfOutput)
+            else:
+                dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, dfInput.columns[-1],
+                                                        defaultValue)
+                setattr(self,manualFileName,dfOutput)
 
     def extractAttributeData(self, folderPath,attributeName,skipWarning = False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
@@ -435,7 +500,7 @@ class DataInput():
             return dfOutput
 
         if f"{fileName}.{fileFormat}" in os.listdir(folderPath):
-            indexList, indexNameList    = self.constructIndexList(tech, indexSets, None)
+            indexList, indexNameList    = self.constructIndexList(indexSets, None)
             dfInput, fileName           = self.readInputData(folderPath, fileName)
             indexMultiIndex             = pd.MultiIndex.from_product(indexList, names=indexNameList)
             # if not extracted for transport technology

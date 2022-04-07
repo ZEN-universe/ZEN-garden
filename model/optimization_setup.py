@@ -125,7 +125,8 @@ class OptimizationSetup():
         :param solver: dictionary containing the solver settings """
 
         solverName          = solver["name"]
-        solverOptions       = solver["solverOptions"]
+        # remove options that are None
+        solverOptions       = {key:solver["solverOptions"][key] for key in solver["solverOptions"] if solver["solverOptions"][key] is not None}
 
         logging.info(f"\n--- Solve model instance using {solverName} ---\n")
         # disable logger temporarily

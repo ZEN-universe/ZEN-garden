@@ -13,7 +13,7 @@ import os
 import logging
 import sys
 
-import data.config                       as config
+import data.config                  as config
 from datetime                       import datetime
 from preprocess.prepare             import Prepare
 from model.optimization_setup       import OptimizationSetup
