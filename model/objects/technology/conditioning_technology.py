@@ -47,11 +47,11 @@ class ConditioningTechnology(ConversionTechnology):
 
 
         # calculate energy consumption
-        _lowerHeatingValue = self.dataInput.extractAttributeData(self.inputPath, "lowerHeatingValue", skipWarning=True)["value"]
         _pressureRatio     = self.pressureOut / self.pressureIn
         _exponent          = (self.specificHeatRatio - 1) / self.specificHeatRatio
-        if _lowerHeatingValue:
-            self.specificHeat = self.specificHeat / self.lowerHeatingValue
+        if self.dataInput.ifAttributeExists(self.inputPath, "lowerHeatingValue", column=None):
+            _lowerHeatingValue = self.dataInput.extractAttributeData(self.inputPath, "lowerHeatingValue", skipWarning=True)["value"]
+            self.specificHeat  = self.specificHeat / _lowerHeatingValue
         _energyConsumption = self.specificHeat * self.temperatureIn / self.isentropicEfficiency \
                             * (_pressureRatio ** _exponent - 1)
 
