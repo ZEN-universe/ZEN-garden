@@ -466,18 +466,23 @@ class DataInput():
 
         return carrierDict
 
-    def extractSetExistingTechnologies(self, folderPath, transportTechnology=False):
+    def extractSetExistingTechnologies(self, folderPath, transportTechnology=False,storageEnergy = False):
         """ reads input data and creates setExistingCapacity for each technology
             :param folderPath: path to input files
             :param transportTechnology: boolean if data extracted for transport technology
+            :param storageEnergy: boolean if existing energy capacity of storage technology (instead of power)
             :return setExistingTechnologies: return set existing technologies"""
         if self.analysis["useExistingCapacities"]:
+            if storageEnergy:
+                _energyString = "Energy"
+            else:
+                _energyString = ""
             fileFormat = self.analysis["fileFormat"]
 
-            if f"existingCapacity.{fileFormat}" not in os.listdir(folderPath):
+            if f"existingCapacity{_energyString}.{fileFormat}" not in os.listdir(folderPath):
                 return [0]
 
-            dfInput = pd.read_csv(folderPath + "existingCapacity" + '.' + fileFormat, header=0, index_col=None)
+            dfInput = pd.read_csv(folderPath + f"existingCapacity{_energyString}." + fileFormat, header=0, index_col=None)
 
             if not transportTechnology:
                 location = "node"

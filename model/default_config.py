@@ -89,6 +89,8 @@ analysis['postprocess'] = False
 ## System - Items assignment
 # set of energy carriers
 system["setCarriers"] = []
+# set of capacity types: power-rated or energy-rated
+system["setCapacityTypes"] = ["power","energy"]
 # set of conversion technologies
 system["setConversionTechnologies"] = []
 # set of storage technologies

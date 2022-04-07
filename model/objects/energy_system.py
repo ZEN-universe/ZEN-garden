@@ -512,12 +512,13 @@ class EnergySystem:
             return convertedTimeSteps[0]
 
     @classmethod
-    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None):
+    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None,capacityTypes = False):
         """ this method initializes a modeling component by extracting the stored input data.
         :param callingClass: class from where the method is called
         :param componentName: name of modeling component
         :param indexNames: names of index sets, only if callingClass is not EnergySystem
         :param setTimeSteps: time steps, only if callingClass is EnergySystem
+        :param capacityTypes: boolean if attributes extracted for all capacity types
         :return componentData: data to initialize the component """
 
         # if calling class is EnergySystem
@@ -525,7 +526,7 @@ class EnergySystem:
             component       = getattr(cls.getEnergySystem(),componentName)
             componentData   = component[setTimeSteps]
         else:
-            component       = callingClass.getAttributeOfAllElements(componentName)
+            component       = callingClass.getAttributeOfAllElements(componentName,capacityTypes)
             componentData   = pd.Series(component,dtype=float)
             if indexNames:
                 customSet       = callingClass.createCustomSet(indexNames)
