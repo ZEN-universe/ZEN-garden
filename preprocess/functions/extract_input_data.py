@@ -43,7 +43,7 @@ class DataInput():
         fileFormat  = self.analysis["fileFormat"]
 
         # select data
-        fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1]==fileFormat)]
+        fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1] == fileFormat)]
         if manualFileName in fileNames:
             assert (manualFileName in fileNames or len(fileNames) == 1), "Selection of files was ambiguous. Select folder with single input file or select specific file by name"
             for fileName in fileNames:
@@ -88,7 +88,8 @@ class DataInput():
         :param manualFileName: name of selected file. If only one file in folder, not used
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
-        :param timeSteps: specific timeSteps of element """
+        :param timeSteps: specific timeSteps of element
+        :param manualDefaultValue: if given, use manualDefaultValue instead of searching for default value in attributes.csv"""
         # select index
         indexList, indexNameList = self.constructIndexList(indexSets, timeSteps)
         # create pd.MultiIndex and select data
@@ -112,7 +113,7 @@ class DataInput():
 
         return dfOutput,defaultValue,indexMultiIndex,indexNameList,defaultName
 
-    def extractInputData(self, folderPath,manualFileName,indexSets,column=None,timeSteps=[],transportTechnology=False,element=None):
+    def extractInputData(self, folderPath,manualFileName,indexSets,column=None,timeSteps=[],transportTechnology=False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files 
         :param manualFileName: name of selected file. If only one file in folder, not used
@@ -139,7 +140,6 @@ class DataInput():
                                                                                                            indexSets,
                                                                                                            column,
                                                                                                            timeSteps)
-
         # read input file
         dfInput,fileName = self.readInputData(folderPath,manualFileName)
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
@@ -163,71 +163,32 @@ class DataInput():
 
         # select and drop scenario
         assert dfInput.columns is not None, f"Input file '{fileName}' has no columns"
-        if self.indexNames["setScenarios"] in dfInput.columns:
-            warnings.warn("'setScenarios' will be deprecated.",FutureWarning)
-            dfInput = dfInput[dfInput[self.indexNames["setScenarios"]]==self.system['setScenarios']].drop(self.indexNames["setScenarios"],axis=1)
-
+        assert self.indexNames["setScenarios"] not in dfInput.columns, f"the index '{self.indexNames['setScenarios']}' is depreciated, but still found in input file '{fileName}'"
         # set index by indexNameList
         missingIndex = list(set(indexNameList) - set(indexNameList).intersection(set(dfInput.columns)))
-        assert len(missingIndex)<=1, f"Some of the requested index sets {missingIndex} are missing from input file for {fileName}"
+        assert len(missingIndex) <= 1, f"More than one the requested index sets ({missingIndex}) are missing from input file for {fileName}"
 
         # no indices missing
         if len(missingIndex) == 0:
-            dfInput         = dfInput.set_index(indexNameList)
-            if column:
-                assert column in dfInput.columns, f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {fileName}"
-                dfInput     = dfInput[column]
-            else:
-                # check if only one column remaining
-                assert len(dfInput.columns) == 1, f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
-                dfInput     = dfInput.squeeze(axis=1)
-
-        # check if special case of existing Technology
-        elif "existingTechnology" in missingIndex[0]:
-            indexNameList.remove(missingIndex[0])
-            dfInput             = dfInput.set_index(indexNameList)
-            setLocation         = dfInput.index.unique()
-            for location in setLocation:
-                if location in dfOutput.index.get_level_values(indexNameList[0]):
-                    values      = dfInput[column].loc[location].tolist()
-                    if isinstance(values, int) or isinstance(values,float):
-                        index   =[0]
-                    else:
-                        index   = list(range(len(values)))
-                    dfOutput.loc[location, index] = values
-            return dfOutput
-
-        # check if requested values for missing index are columns of dfInput
+            dfInput = DataInput.extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName)
         else:
-            indexNameList.remove(missingIndex[0])
-            dfInput                 = dfInput.set_index(indexNameList)
-            requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0]))
-            # if requested values (or a subset) are a subset of the columns
-            if requestedIndexValues.intersection(dfInput.columns):
-                requestedIndexValues    = requestedIndexValues.intersection(dfInput.columns)
-                dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
-                dfInput                 = dfInput[list(requestedIndexValues)].stack()
-                dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
+            missingIndex = missingIndex[0]
+            # check if special case of existing Technology
+            if "existingTechnology" in missingIndex:
+                dfOutput = DataInput.extractFromInputForExistingCapacities(dfInput,dfOutput,indexNameList,column,missingIndex)
+                return dfOutput
+            # index missing
             else:
-                logging.info(f"Missing index {missingIndex[0]} detected in {fileName}. Input dataframe is extended by this index")
-                _dfInputIndexTemp = pd.MultiIndex.from_product([dfInput.index,requestedIndexValues],names=dfInput.index.names + missingIndex)
-                _dfInputIndexTemp = _dfInputIndexTemp.reorder_levels(order = dfOutput.index.names)
-                _dfInputTemp = pd.Series(index=_dfInputIndexTemp,dtype=float)
-                if column in dfInput.columns:
-                    dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0]),column].squeeze()).squeeze()
-                else:
-                    dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0])].squeeze()).squeeze()
-                dfInput.index = _dfInputTemp.index
+                dfInput = DataInput.extractFromInputWithMissingIndex(dfInput,dfOutput,indexNameList,column,fileName,missingIndex)
 
         # apply multiplier to input data
         dfInput     = dfInput * defaultValue["multiplier"]
-
         # delete nans
         dfInput     = dfInput.dropna()
 
         # get common index of dfOutput and dfInput
         if not isinstance(dfInput.index, pd.MultiIndex):
-            indexList     = dfInput.index.to_list()
+            indexList               = dfInput.index.to_list()
             if len(indexList) == 1:
                 indexMultiIndex     = pd.MultiIndex.from_tuples([(indexList[0],)], names=[dfInput.index.name])
             else:
@@ -244,6 +205,7 @@ class DataInput():
         :param dfOutput: empty output dataframe, only filled with defaultValue
         :param fileName: name of selected file
         :param indexMultiIndex: multiIndex of dfOutput
+        :param column: select specific column
         :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
 
@@ -381,57 +343,40 @@ class DataInput():
 
     def extractNumberTimeSteps(self):
         """ reads input data and returns number of typical periods and time steps per period for each technology and carrier
-        :return dictNumberOfTimeSteps: number of typical periods and time steps per period """
+        :return dictNumberOfTimeSteps: number of typical periods for each technology """
         # select data
         folderName  = "setTimeSteps"
         fileName    = "setTimeSteps"
         dfInput,_   = self.readInputData(self.energySystem.paths[folderName]["folder"],fileName)
         dfInput     = dfInput.set_index(["element","typeTimeStep"])
-        # default numberTimeStepsPerPeriod
-        # TODO time steps per period necessary?
-        numberTimeStepsPerPeriod = 1
         # create empty dictNumberOfTimeSteps
         dictNumberOfTimeSteps = {}
-        # iterate through technologies
-        typesTimeStepsTechnologies = self.energySystem.typesTimeSteps.copy()
-        typesTimeStepsTechnologies.remove("yearly")
+        # iterate through investment time steps of technologies
+        typeTimeStep = "invest"
         for technology in self.energySystem.setTechnologies:
             assert technology in dfInput.index.get_level_values("element"), f"Technology {technology} is not in {fileName}.{self.analysis['fileFormat']}"
             dictNumberOfTimeSteps[technology] = {}
-            for typeTimeStep in typesTimeStepsTechnologies:
-                assert (technology,typeTimeStep) in dfInput.index, f"Type of time step <{typeTimeStep} for technology {technology} is not in {fileName}.{self.analysis['fileFormat']}"
-                dictNumberOfTimeSteps[technology][typeTimeStep] = (dfInput.loc[(technology,typeTimeStep)].squeeze(),numberTimeStepsPerPeriod)
+            assert (technology,typeTimeStep) in dfInput.index, f"Type of time step <{typeTimeStep} for technology {technology} is not in {fileName}.{self.analysis['fileFormat']}"
+            dictNumberOfTimeSteps[technology][typeTimeStep] = dfInput.loc[(technology,typeTimeStep)].squeeze()
         # iterate through carriers 
         for carrier in self.energySystem.setCarriers:
             assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.{self.analysis['fileFormat']}"
-            dictNumberOfTimeSteps[carrier] = {None: (dfInput.loc[carrier].squeeze(),numberTimeStepsPerPeriod)}
+            dictNumberOfTimeSteps[carrier] = {None: dfInput.loc[carrier].squeeze()}
         # add yearly time steps
-        dictNumberOfTimeSteps[None] = {"yearly": (self.system["timeStepsYearly"],numberTimeStepsPerPeriod)}
+        dictNumberOfTimeSteps[None] = {"yearly": self.system["optimizedYears"]}
 
         # limit number of periods to base time steps of system
         for element in dictNumberOfTimeSteps:
             # if yearly time steps
             if element is None:
                 continue
-            for typeTimeStep in dictNumberOfTimeSteps[element]:
-                # if operation or carrier, limit to timeStepsPerYear
-                if typeTimeStep == "operation" or typeTimeStep is None:
-                    numberTypicalPeriods,numberTimeStepsPerPeriod = dictNumberOfTimeSteps[element][typeTimeStep]
-                    if numberTypicalPeriods*numberTimeStepsPerPeriod > self.system["timeStepsPerYear"]:
-                        if self.system["timeStepsPerYear"]%numberTimeStepsPerPeriod == 0:
-                            numberTypicalPeriods        = int(self.system["timeStepsPerYear"]/numberTimeStepsPerPeriod)
-                        else:
-                            numberTypicalPeriods        = self.system["timeStepsPerYear"]
-                            numberTimeStepsPerPeriod    = 1
-                    dictNumberOfTimeSteps[element][typeTimeStep] = (int(numberTypicalPeriods),int(numberTimeStepsPerPeriod))
-                # if invest, multiply with timeStepsYearly and adjust so that it is an integer number of time steps
-                else:
-                    numberTypicalPeriods, numberTimeStepsPerPeriod = dictNumberOfTimeSteps[element][typeTimeStep]
-                    numberTypicalPeriodsTotal = numberTypicalPeriods*self.system["timeStepsYearly"]
-                    if int(numberTypicalPeriodsTotal) != numberTypicalPeriodsTotal:
-                        logging.warning(f"The requested invest time steps per year ({numberTypicalPeriods}) of {element} do not evaluate to an integer for the entire time horizon ({numberTypicalPeriodsTotal}). Rounded up.")
-                        numberTypicalPeriodsTotal = np.ceil(numberTypicalPeriodsTotal)
-                    dictNumberOfTimeSteps[element][typeTimeStep] = (int(numberTypicalPeriodsTotal), int(numberTimeStepsPerPeriod))
+
+            numberTypicalPeriods = dictNumberOfTimeSteps[element][typeTimeStep]
+            numberTypicalPeriodsTotal = numberTypicalPeriods*self.system["optimizedYears"]
+            if int(numberTypicalPeriodsTotal) != numberTypicalPeriodsTotal:
+                logging.warning(f"The requested invest time steps per year ({numberTypicalPeriods}) of {element} do not evaluate to an integer for the entire time horizon ({numberTypicalPeriodsTotal}). Rounded up.")
+                numberTypicalPeriodsTotal = np.ceil(numberTypicalPeriodsTotal)
+            dictNumberOfTimeSteps[element][typeTimeStep] = int(numberTypicalPeriodsTotal)
 
         return dictNumberOfTimeSteps
 
@@ -440,14 +385,13 @@ class DataInput():
         :param folderPath: path to input files 
         :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
         :return listOfTimeSteps: list of time steps """
-        numberTypicalPeriods,numberTimeStepsPerPeriod = self.energySystem.dictNumberOfTimeSteps[elementName][typeOfTimeSteps]
+        numberTypicalPeriods = self.energySystem.dictNumberOfTimeSteps[elementName][typeOfTimeSteps]
         if getListOfTimeSteps:
             # create range of time steps 
-            #TODO define starting point
-            listOfTimeSteps = list(range(0,numberTypicalPeriods*numberTimeStepsPerPeriod))
+            listOfTimeSteps = list(range(0,numberTypicalPeriods))
             return listOfTimeSteps
         else:
-            return numberTypicalPeriods,numberTimeStepsPerPeriod
+            return numberTypicalPeriods
 
     def extractConversionCarriers(self, folderPath):
         """ reads input data and extracts conversion carriers
@@ -468,10 +412,10 @@ class DataInput():
 
     def extractSetExistingTechnologies(self, folderPath, transportTechnology=False,storageEnergy = False):
         """ reads input data and creates setExistingCapacity for each technology
-            :param folderPath: path to input files
-            :param transportTechnology: boolean if data extracted for transport technology
-            :param storageEnergy: boolean if existing energy capacity of storage technology (instead of power)
-            :return setExistingTechnologies: return set existing technologies"""
+        :param folderPath: path to input files
+        :param transportTechnology: boolean if data extracted for transport technology
+        :param storageEnergy: boolean if existing energy capacity of storage technology (instead of power)
+        :return setExistingTechnologies: return set existing technologies"""
         if self.analysis["useExistingCapacities"]:
             if storageEnergy:
                 _energyString = "Energy"
@@ -679,3 +623,90 @@ class DataInput():
         else:
             isPosNegBoolean = np.array_equal(np.abs(array), np.abs(array).astype(bool))
         return isPosNegBoolean
+
+    @staticmethod
+    def extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName):
+        """ extracts the demanded values from Input dataframe and reformulates dataframe
+        :param dfInput: raw input dataframe
+        :param indexNameList: list of name of indices
+        :param column: select specific column
+        :param fileName: name of selected file
+        :return dfInput: reformulated input dataframe
+        """
+        dfInput = dfInput.set_index(indexNameList)
+        if column:
+            assert column in dfInput.columns,\
+                f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {fileName}"
+            dfInput = dfInput[column]
+        else:
+            # check if only one column remaining
+            assert len(dfInput.columns) == 1,\
+                f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
+            dfInput = dfInput.squeeze(axis=1)
+        return dfInput
+
+    @staticmethod
+    def extractFromInputWithMissingIndex(dfInput,dfOutput, indexNameList, column, fileName,missingIndex):
+        """ extracts the demanded values from Input dataframe and reformulates dataframe if the index is missing.
+        Either, the missing index is the column of dfInput, or it is actually missing in dfInput.
+        Then, the values in dfInput are extended to all missing index values.
+        :param dfInput: raw input dataframe
+        :param dfOutput: default output dataframe
+        :param indexNameList: list of name of indices
+        :param column: select specific column
+        :param fileName: name of selected file
+        :param missingIndex: missing index in dfInput
+        :return dfInput: reformulated input dataframe
+        """
+        indexNameList.remove(missingIndex)
+        dfInput                 = dfInput.set_index(indexNameList)
+        # missing index values
+        requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex))
+        # the missing index is the columns of dfInput
+        _requestedIndexValuesInColumns  = requestedIndexValues.intersection(dfInput.columns)
+        if _requestedIndexValuesInColumns:
+            requestedIndexValues    = _requestedIndexValuesInColumns
+            dfInput.columns         = dfInput.columns.set_names(missingIndex)
+            dfInput                 = dfInput[list(requestedIndexValues)].stack()
+            dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
+        # the missing index does not appear in dfInput
+        # the values in dfInput are extended to all missing index values
+        else:
+            #
+            logging.info(f"Missing index {missingIndex} detected in {fileName}. Input dataframe is extended by this index")
+            _dfInputIndexTemp   = pd.MultiIndex.from_product([dfInput.index, requestedIndexValues],names=dfInput.index.names + [missingIndex])
+            _dfInputIndexTemp   = _dfInputIndexTemp.reorder_levels(order=dfOutput.index.names)
+            _dfInputTemp        = pd.Series(index=_dfInputIndexTemp, dtype=float)
+            if column in dfInput.columns:
+                dfInput         = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[
+                    row.index.get_level_values(dfInput.index.names[0]), column].squeeze())
+            else:
+                dfInput         = _dfInputTemp.to_frame().apply(
+                    lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0])].squeeze())
+            if isinstance(dfInput,pd.DataFrame):
+                dfInput = dfInput.squeeze()
+            dfInput.index       = _dfInputTemp.index
+        return dfInput
+
+    @staticmethod
+    def extractFromInputForExistingCapacities(dfInput,dfOutput, indexNameList, column, missingIndex):
+        """ extracts the demanded values from input dataframe if extracting existing capacities
+        :param dfInput: raw input dataframe
+        :param dfOutput: default output dataframe
+        :param indexNameList: list of name of indices
+        :param column: select specific column
+        :param missingIndex: missing index in dfInput
+        :return dfOutput: filled output dataframe
+        """
+        indexNameList.remove(missingIndex)
+        dfInput = dfInput.set_index(indexNameList)
+        setLocation = dfInput.index.unique()
+        for location in setLocation:
+            if location in dfOutput.index.get_level_values(indexNameList[0]):
+                values = dfInput[column].loc[location].tolist()
+                if isinstance(values, int) or isinstance(values, float):
+                    index = [0]
+                else:
+                    index = list(range(len(values)))
+                dfOutput.loc[location, index] = values
+        return dfOutput

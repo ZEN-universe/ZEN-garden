@@ -50,8 +50,8 @@ class Technology(Element):
                 setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
                 self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(self.name,typeOfTimeSteps="invest")
                 self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
-                self.orderTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
-                EnergySystem.setOrderTimeSteps(self.name,self.orderTimeStepsInvest,timeStepType="invest")
+                self.sequenceTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
+                EnergySystem.setSequenceTimeSteps(self.name,self.sequenceTimeStepsInvest,timeStepType="invest")
                 self.inputPath                  = self.getInputPath(system, technologyType)
                 self.referenceCarrier           = [self.dataInput.extractAttributeData(self.inputPath,"referenceCarrier",skipWarning=True)]
                 EnergySystem.setTechnologyOfCarrier(self.name, self.referenceCarrier)
@@ -86,8 +86,7 @@ class Technology(Element):
                                                                         indexSets=[_setLocation,
                                                                            "setExistingTechnologies"],
                                                                         column= "existingCapacity",
-                                                                        transportTechnology=_isTransportTechnology,
-                                                                        element=self)
+                                                                        transportTechnology=_isTransportTechnology)
                 self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,
                                                                                    "existingCapacity",
                                                                        indexSets=[_setLocation,
@@ -137,7 +136,7 @@ class Technology(Element):
         _lifetime           = self.lifetime
         _annuity            = (((1 + _discountRate) ** _lifetime) * _discountRate) / ((1 + _discountRate) ** _lifetime - 1)
         # only account for fraction of year
-        _fractionOfYear     = system["timeStepsPerYear"] / system["totalHoursPerYear"]
+        _fractionOfYear     = system["unaggregatedTimeStepsPerYear"] / system["totalHoursPerYear"]
         _fractionalAnnuity  = _annuity * _fractionOfYear
         return _fractionalAnnuity
 
@@ -155,10 +154,10 @@ class Technology(Element):
         :param baseTimeSteps: base time steps of current horizon step """
         system = EnergySystem.getSystem()
         # reduce lifetime of existing capacities and add new remaining lifetime
-        self.lifetimeExistingTechnology             = (self.lifetimeExistingTechnology - system["intervalYears"]).clip(lower=0)
+        self.lifetimeExistingTechnology             = (self.lifetimeExistingTechnology - system["intervalBetweenYears"]).clip(lower=0)
         # new capacity
         _investTimeSteps                            = EnergySystem.encodeTimeStep(self.name, baseTimeSteps, "invest", yearly=True)
-        # TODO currently summed over all invest time steps, correct for #TS_investPerYear >1
+        # TODO currently summed over all invest time steps, fix for #TS_investPerYear >1
         _newlyBuiltCapacity                         = builtCapacity[_investTimeSteps].sum(axis=1)
         _capex                                      = capex[_investTimeSteps].sum(axis=1)
         # if at least one value unequal to zero
@@ -271,7 +270,7 @@ class Technology(Element):
             lifetimeYearly = model.lifetimeTechnology[tech]
         else:
             lifetimeYearly = model.lifetimeExistingTechnology[tech,capacityType,loc,idExistingCapacity]
-        baseLifetime =  lifetimeYearly / system["intervalYears"] * system["timeStepsPerYear"]
+        baseLifetime =  lifetimeYearly / system["intervalBetweenYears"] * system["unaggregatedTimeStepsPerYear"]
         if int(baseLifetime) != baseLifetime:
             logging.warning(
                 f"The lifetime of {tech} does not translate to an integer lifetime interval in the base time domain ({baseLifetime})")
@@ -314,12 +313,6 @@ class Technology(Element):
             initialize = cls.getAttributeOfAllElements("setTimeStepsInvest"),
             doc="Set of time steps in investment for all technologies. Dimensions: setTechnologies"
         )
-        # operational time steps
-        model.setTimeStepsOperation = pe.Set(
-            model.setTechnologies,
-            initialize = cls.getAttributeOfAllElements("setTimeStepsOperation"),
-            doc="Set of time steps in operation for all technologies. Dimensions: setTechnologies"
-        )
         # reference carriers
         model.setReferenceCarriers = pe.Set(
             model.setTechnologies,
@@ -341,12 +334,6 @@ class Technology(Element):
             cls.createCustomSet(["setTechnologies","setTimeStepsInvest"]),
             initialize = EnergySystem.initializeComponent(cls,"timeStepsInvestDuration",indexNames=["setTechnologies","setTimeStepsInvest"]).astype(int),
             doc="Parameter which specifies the time step duration in investment for all technologies. Dimensions: setTechnologies, setTimeStepsInvest"
-        )
-        # operational time step duration
-        model.timeStepsOperationDuration = pe.Param(
-            cls.createCustomSet(["setTechnologies","setTimeStepsOperation"]),
-            initialize = EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setTechnologies","setTimeStepsOperation"]).astype(int),
-            doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setTechnologies, setTimeStepsOperation"
         )
         # existing capacity
         model.existingCapacity = pe.Param(

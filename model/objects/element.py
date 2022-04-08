@@ -11,8 +11,8 @@ Description:    Class defining a standard Element. Contains methods to add param
 ==========================================================================================================================================================================="""
 import itertools 
 import logging
-import numpy as np
 import pandas as pd
+import pyomo.environ as pe
 from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
 
@@ -182,6 +182,14 @@ class Element:
         logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
         EnergySystem.constructSets()
+        # construct pe.Sets of class elements
+        model = EnergySystem.getConcreteModel()
+        # operational time steps
+        model.setTimeStepsOperation = pe.Set(
+            model.setElements,
+            initialize=cls.getAttributeOfAllElements("setTimeStepsOperation"),
+            doc="Set of time steps in operation for all technologies. Dimensions: setElements"
+        )
         # construct pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructSets()
@@ -192,6 +200,14 @@ class Element:
         logging.info("Construct pe.Params")
         # construct pe.Params of energy system
         EnergySystem.constructParams()
+        # construct pe.Sets of class elements
+        model = EnergySystem.getConcreteModel()
+        # operational time step duration
+        model.timeStepsOperationDuration = pe.Param(
+            cls.createCustomSet(["setElements","setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]).astype(int),
+            doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setElements, setTimeStepsOperation"
+        )
         # construct pe.Params of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructParams()

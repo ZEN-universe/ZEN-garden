@@ -96,7 +96,7 @@ class OptimizationSetup():
         self.setTimeStepsYearlyFull = energySystem.setTimeStepsYearly
         # if using rolling horizon
         if self.system["useRollingHorizon"]:
-            self.yearsInHorizon = self.system["yearsInHorizon"]
+            self.yearsInHorizon = self.system["yearsInRollingHorizon"]
             _timeStepsYearly    = energySystem.setTimeStepsYearly
             self.stepsHorizon   = {year: list(range(year,min(year + self.yearsInHorizon,max(_timeStepsYearly)+1))) for year in _timeStepsYearly}
         # if no rolling horizon

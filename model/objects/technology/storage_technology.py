@@ -47,14 +47,13 @@ class StorageTechnology(Technology):
         self.capacityLimitEnergy            = self.dataInput.extractInputData(self.inputPath, "capacityLimitEnergy",indexSets=["setNodes"])
         self.setExistingTechnologiesEnergy  = self.dataInput.extractSetExistingTechnologies(self.inputPath,storageEnergy = True)
         self.existingCapacityEnergy         = self.dataInput.extractInputData(self.inputPath,
-                                                                    "existingCapacityEnergy",
-                                                                    indexSets=["setNodes","setExistingTechnologies"],
-                                                                    column="existingCapacity",
-                                                                    element=self)
+                                                                "existingCapacityEnergy",
+                                                                indexSets=["setNodes","setExistingTechnologies"],
+                                                                column="existingCapacity")
         self.lifetimeExistingTechnologyEnergy = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,
-                                                                                           "existingCapacityEnergy",
-                                                                                           indexSets=["setNodes","setExistingTechnologiesEnergy"],
-                                                                                           tech=self)
+                                                               "existingCapacityEnergy",
+                                                               indexSets=["setNodes","setExistingTechnologiesEnergy"],
+                                                               tech=self)
 
         self.capexSpecific                  = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
         self.capexSpecificEnergy            = self.dataInput.extractInputData(self.inputPath,"capexSpecificEnergy",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)
@@ -87,24 +86,22 @@ class StorageTechnology(Technology):
         return _absoluteCapex
 
     def calculateTimeStepsStorageLevel(self):
-        """ this method calculates the number of time steps on the storage level, and the order in which the storage levels are connected """
-        # setTimeSteps                        = self.setTimeStepsOperation
-        orderTimeSteps                      = self.orderTimeSteps
+        """ this method calculates the number of time steps on the storage level, and the sequence in which the storage levels are connected """
+        sequenceTimeSteps                   = self.sequenceTimeSteps
         # calculate connected storage levels, i.e., time steps that are constant for 
-        IdxLastConnectedStorageLevel        = np.append(np.flatnonzero(np.diff(orderTimeSteps)),len(orderTimeSteps)-1)
-        # ConnectedStorageLevels              = orderTimeSteps[IdxLastConnectedStorageLevel]
+        IdxLastConnectedStorageLevel        = np.append(np.flatnonzero(np.diff(sequenceTimeSteps)),len(sequenceTimeSteps)-1)
         # empty setTimeStep
         self.setTimeStepsStorageLevel       = []
         self.timeStepsStorageLevelDuration  = {}
-        self.orderTimeStepsStorageLevel     = np.zeros(np.size(orderTimeSteps)).astype(int)
+        self.sequenceTimeStepsStorageLevel  = np.zeros(np.size(sequenceTimeSteps)).astype(int)
         counterTimeStep                     = 0
         for idxTimeStep,idxStorageLevel in enumerate(IdxLastConnectedStorageLevel):
             self.setTimeStepsStorageLevel.append(idxTimeStep)
             self.timeStepsStorageLevelDuration[idxTimeStep] = len(range(counterTimeStep,idxStorageLevel+1))
-            self.orderTimeStepsStorageLevel[counterTimeStep:idxStorageLevel+1] = idxTimeStep
+            self.sequenceTimeStepsStorageLevel[counterTimeStep:idxStorageLevel+1] = idxTimeStep
             counterTimeStep                 = idxStorageLevel + 1 
-        # add order to energy system
-        EnergySystem.setOrderTimeSteps(self.name+"StorageLevel",self.orderTimeStepsStorageLevel)
+        # add sequence to energy system
+        EnergySystem.setSequenceTimeSteps(self.name+"StorageLevel",self.sequenceTimeStepsStorageLevel)
 
     def overwriteTimeSteps(self,baseTimeSteps):
         """ overwrites setTimeStepsStorageLevel """
@@ -294,7 +291,6 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
 def constraintCapexStorageTechnologyRule(model, tech,capacityType, node, time):
     """ definition of the capital expenditures for the storage technology"""
     return (model.capex[tech,capacityType,node, time] ==
-            # power rated capex
             model.builtCapacity[tech,capacityType,node, time] *
             model.capexSpecificStorage[tech,capacityType,node, time])
 
