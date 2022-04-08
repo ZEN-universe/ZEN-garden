@@ -11,7 +11,6 @@ Description:  Class to read the data from input files, collect them into a dicti
 
 import logging
 import os
-from copy                                           import deepcopy
 from preprocess.functions.MINLP.initialise          import Init
 from preprocess.functions.MINLP.read_data           import Read
 from preprocess.functions.MINLP.fill_nlp_dictionary import FillNlpDict
