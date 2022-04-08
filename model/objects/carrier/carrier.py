@@ -50,7 +50,7 @@ class Carrier(Element):
         self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         # non-time series input data
         self.carbonIntensityCarrier                     = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",["setNodes"])
-        
+
     def overwriteTimeSteps(self,baseTimeSteps):
         """ overwrites setTimeStepsCarrier and  setTimeStepsEnergyBalance"""
         setTimeStepsCarrier         = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps, timeStepType="operation",yearly=True)
@@ -188,7 +188,7 @@ class Carrier(Element):
         model.constraintCostCarrierTotal = pe.Constraint(
             model.setTimeStepsYearly,
             rule = constraintCostCarrierTotalRule,
-            doc = "total cost of importing/exporting carriers. ."
+            doc = "total cost of importing/exporting carriers."
         )
         # carbon emissions
         model.constraintCarbonEmissionsCarrier = pe.Constraint(
