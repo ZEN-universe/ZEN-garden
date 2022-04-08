@@ -185,7 +185,7 @@ class Technology(Element):
             if "energy" in _newlyBuiltCapacity.index.get_level_values(0):
                 # add new existing capacity
                 _existingCapacity                           = self.existingCapacityEnergy.unstack()
-                _existingCapacity[indexNewTechnology]       = _newlyBuiltCapacity.loc["power"]
+                _existingCapacity[indexNewTechnology]       = _newlyBuiltCapacity.loc["energy"]
                 self.existingCapacityEnergy                 = _existingCapacity.stack()
                 # add new remaining lifetime
                 _lifetimeTechnology                         = self.lifetimeExistingTechnologyEnergy.unstack()
@@ -193,7 +193,7 @@ class Technology(Element):
                 self.lifetimeExistingTechnologyEnergy       = _lifetimeTechnology.stack()
                 # calculate capex of existing capacity
                 _capexExistingCapacity                      = self.capexExistingCapacityEnergy.unstack()
-                _capexExistingCapacity[indexNewTechnology]  = _capex.loc["power"]
+                _capexExistingCapacity[indexNewTechnology]  = _capex.loc["energy"]
                 self.capexExistingCapacityEnergy            = _capexExistingCapacity.stack()
 
     ### --- classmethods
