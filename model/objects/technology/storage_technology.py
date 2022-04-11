@@ -52,8 +52,7 @@ class StorageTechnology(Technology):
                                                                 column="existingCapacity")
         self.lifetimeExistingTechnologyEnergy = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,
                                                                "existingCapacityEnergy",
-                                                               indexSets=["setNodes","setExistingTechnologiesEnergy"],
-                                                               tech=self)
+                                                               indexSets=["setNodes","setExistingTechnologiesEnergy"])
 
         self.capexSpecific                  = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
         self.capexSpecificEnergy            = self.dataInput.extractInputData(self.inputPath,"capexSpecificEnergy",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)

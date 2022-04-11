@@ -53,11 +53,11 @@ class ConversionTechnology(Technology):
         """retrieves and stores converEfficiency for <ConversionTechnology>.
         Each Child class overwrites method to store different converEfficiency """
         #TODO read PWA Dict and set Params
-        self.PWAConverEfficiency   = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency",self)
+        self.PWAConverEfficiency   = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency")
 
     def getAnnualizedCapex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
-        self.PWACapex = self.dataInput.extractPWAData(self.inputPath, "Capex", self)
+        self.PWACapex = self.dataInput.extractPWAData(self.inputPath, "Capex")
         # annualize capex
         fractionalAnnuity = self.calculateFractionalAnnuity()
         # set bounds

@@ -28,7 +28,7 @@ class Element:
         # set if aggregated
         self.aggregated = False
         # create DataInput object
-        self.dataInput = DataInput(self,EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
+        self.dataInput = DataInput(self,EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem(),EnergySystem.getUnitHandling())
         # add element to list
         Element.addElement(self)
         

@@ -62,36 +62,29 @@ class Technology(Element):
                 self.rawTimeSeries = {}
                 self.rawTimeSeries["minLoad"]   = self.dataInput.extractInputData(self.inputPath, "minLoad",
                                                                                 indexSets=[_setLocation, "setTimeSteps"],
-                                                                                timeSteps=setBaseTimeStepsYearly,
-                                                                                transportTechnology=_isTransportTechnology)
+                                                                                timeSteps=setBaseTimeStepsYearly)
                 self.rawTimeSeries["maxLoad"]   = self.dataInput.extractInputData(self.inputPath, "maxLoad",
                                                                                 indexSets=[_setLocation, "setTimeSteps"],
-                                                                                timeSteps=setBaseTimeStepsYearly,
-                                                                                transportTechnology=_isTransportTechnology)
+                                                                                timeSteps=setBaseTimeStepsYearly)
                 self.rawTimeSeries["opexSpecific"] = self.dataInput.extractInputData(self.inputPath, "opexSpecific",
                                                                                 indexSets=[_setLocation,"setTimeSteps"],
-                                                                                timeSteps=setBaseTimeStepsYearly,
-                                                                                transportTechnology=_isTransportTechnology)
+                                                                                timeSteps=setBaseTimeStepsYearly)
                 # non-time series input data
                 self.capacityLimit              = self.dataInput.extractInputData(self.inputPath, "capacityLimit",
-                                                                                indexSets=[_setLocation],
-                                                                                transportTechnology=_isTransportTechnology)
+                                                                                indexSets=[_setLocation])
                 self.carbonIntensityTechnology  = self.dataInput.extractInputData(self.inputPath, "carbonIntensity",
                                                                                 indexSets=[_setLocation])
                 # extract existing capacity
-                self.setExistingTechnologies    = self.dataInput.extractSetExistingTechnologies(self.inputPath,
-                                                                                transportTechnology=_isTransportTechnology)
+                self.setExistingTechnologies    = self.dataInput.extractSetExistingTechnologies(self.inputPath)
                 self.existingCapacity           = self.dataInput.extractInputData(self.inputPath,
                                                                                   "existingCapacity",
                                                                         indexSets=[_setLocation,
                                                                            "setExistingTechnologies"],
-                                                                        column= "existingCapacity",
-                                                                        transportTechnology=_isTransportTechnology)
+                                                                        column= "existingCapacity")
                 self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,
                                                                                    "existingCapacity",
                                                                        indexSets=[_setLocation,
-                                                                           "setExistingTechnologies"],
-                                                                       tech=self)
+                                                                           "setExistingTechnologies"])
 
     def getInputPath(self, system, technologyType):
         """ get input path where input data is stroed

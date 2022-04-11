@@ -65,6 +65,9 @@ class EnergySystem:
         # add energySystem to list
         EnergySystem.setEnergySystem(self)
 
+        # create UnitHandling object
+        EnergySystem.createUnitHandling()
+
         # create DataInput object
         self.dataInput = DataInput(self,EnergySystem.getSystem(), EnergySystem.getAnalysis(), EnergySystem.getSolver(), EnergySystem.getEnergySystem(), self.unitHandling)
 
@@ -76,7 +79,6 @@ class EnergySystem:
 
         system                          = EnergySystem.getSystem()
         self.paths                      = EnergySystem.getPaths()
-        self.getBaseUnits()
 
         # in class <EnergySystem>, all sets are constructed
         self.setNodes                    = self.dataInput.extractLocations()
@@ -105,67 +107,6 @@ class EnergySystem:
         self.carbonEmissionsLimit        = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
         _fractionOfYear                  = system["unaggregatedTimeStepsPerYear"]/system["totalHoursPerYear"]
         self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
-
-    def getBaseUnits(self):
-        """ gets base units of energy system """
-        _listBaseUnits                  = self.dataInput.extractBaseUnits(self.paths["setScenarios"]["folder"])
-        ureg                            = EnergySystem.getUnitRegistry()
-
-        # load additional units
-        ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
-
-        # empty base units and dimensionality matrix
-        self.baseUnits                  = {}
-        self.dimMatrix                  = pd.DataFrame(index=_listBaseUnits).astype(int)
-        for _baseUnit in _listBaseUnits:
-            dimUnit                     = ureg.get_dimensionality(ureg(_baseUnit))
-            self.baseUnits[_baseUnit]   = ureg(_baseUnit).dimensionality
-            self.dimMatrix.loc[_baseUnit, list(dimUnit.keys())] = list(dimUnit.values())
-        self.dimMatrix                  = self.dimMatrix.fillna(0).astype(int).T
-
-        # check if unit defined twice or more
-        _duplicateUnits                 = self.dimMatrix.T.duplicated()
-        if _duplicateUnits.any():
-            _dimMatrixDuplicate         = self.dimMatrix.loc[:,_duplicateUnits]
-            for _duplicate in _dimMatrixDuplicate:
-                # if same unit twice (same order of magnitude and same dimensionality)
-                if len(self.dimMatrix[_duplicate].shape) > 1:
-                    logging.warning(f"The base unit <{_duplicate}> was defined more than once. Duplicates are dropped.")
-                    _duplicateDim               = self.dimMatrix[_duplicate].T.drop_duplicates().T
-                    self.dimMatrix              = self.dimMatrix.drop(_duplicate,axis=1)
-                    self.dimMatrix[_duplicate]  = _duplicateDim
-                else:
-                    raise KeyError(f"More than one base unit defined for dimensionality {self.baseUnits[_duplicate]} (e.g., {_duplicate})")
-        # get linearly dependent units
-        M, I, pivot                     = column_echelon_form(np.array(self.dimMatrix), ntype=float)
-        M                               = np.array(M).squeeze()
-        I                               = np.array(I).squeeze()
-        pivot                           = np.array(pivot).squeeze()
-        # index of linearly dependent units in M and I
-        idxLinDep                       = np.squeeze(np.argwhere(np.all(M==0,axis=1)))
-        # index of linearly dependent units in dimensionality matrix
-        _idxPivot                           = range(len(self.baseUnits))
-        idxLinDepDimMatrix                  = list(set(_idxPivot).difference(pivot))
-        self.dimAnalysis                    = {}
-        self.dimAnalysis["dependentUnits"]  = self.dimMatrix.columns[idxLinDepDimMatrix]
-        dependentDims                       = I[idxLinDep,:]
-        # if only one dependent unit
-        if len(self.dimAnalysis["dependentUnits"]) == 1:
-            dependentDims                   = dependentDims.reshape(1,dependentDims.size)
-        # reorder dependent dims to match dependent units
-        DimOfDependentUnits                 = dependentDims[:,idxLinDepDimMatrix]
-        # if not already in correct order (ones on the diagonal of dependentDims)
-        if not np.all(np.diag(DimOfDependentUnits)==1):
-            # get position of ones in DimOfDependentUnits
-            posOnes         = np.argwhere(DimOfDependentUnits==1)
-            assert np.size(posOnes,axis=0) == len(self.dimAnalysis["dependentUnits"]), \
-                f"Cannot determine order of dependent base units {self.dimAnalysis['dependentUnits']}, " \
-                f"because diagonal of dimensions of the dependent units cannot be determined."
-            # pivot dependent dims
-            dependentDims   = dependentDims[posOnes[:,1],:]
-        self.dimAnalysis["dependentDims"]   = dependentDims
-        # check that no base unit can be directly constructed from the others (e.g., GJ from GW and hour)
-        assert ~DataInput.checkIfPosNegBoolean(dependentDims,axis=1), f"At least one of the base units {list(self.baseUnits.keys())} can be directly constructed from the others"
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes

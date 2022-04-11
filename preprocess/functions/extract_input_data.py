@@ -17,18 +17,20 @@ from scipy.stats import linregress
 
 class DataInput():
 
-    def __init__(self,element,system,analysis,solver,energySystem = None):
+    def __init__(self,element,system,analysis,solver,energySystem,unitHandling):
         """ data input object to extract input data
         :param element: element for which data is extracted
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
         :param solver: dictionary defining the solver 
-        :param energySystem: instance of class <EnergySystem> to define energySystem """
+        :param energySystem: instance of class <EnergySystem> to define energySystem
+        :param unitHandling: instance of class <UnitHandling> to convert units """
+        self.element        = element
         self.system         = system
         self.analysis       = analysis
         self.solver         = solver
         self.energySystem   = energySystem
-        self.element        = element
+        self.unitHandling   = unitHandling
         # get names of indices
         self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
 
@@ -80,6 +82,8 @@ class DataInput():
                 indexList.append(self.system[index])
             elif hasattr(self.energySystem,index):
                 indexList.append(getattr(self.energySystem,index))
+            else:
+                raise AttributeError(f"Index <{index}> cannot be found.")
         return indexList,indexNameList
 
     def createDefaultOutput(self, folderPath,manualFileName,indexSets,column,timeSteps=None,manualDefaultValue = None):
@@ -113,14 +117,13 @@ class DataInput():
 
         return dfOutput,defaultValue,indexMultiIndex,indexNameList,defaultName
 
-    def extractInputData(self, folderPath,manualFileName,indexSets,column=None,timeSteps=[],transportTechnology=False):
+    def extractInputData(self, folderPath,manualFileName,indexSets,column=None,timeSteps=[]):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files 
         :param manualFileName: name of selected file. If only one file in folder, not used
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
         :param timeSteps: specific timeSteps of element
-        :param transportTechnology: boolean if data extracted for transport technology
         :return dataDict: dictionary with attribute values """
 
         # generic time steps
@@ -144,15 +147,11 @@ class DataInput():
         dfInput,fileName = self.readInputData(folderPath,manualFileName)
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
-            # if not extracted for transport technology
-            if not transportTechnology:
-                dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
-            else:
-                dfOutput = self.extractTransportInputData(dfInput,dfOutput,fileName,indexMultiIndex,column,defaultValue)
+            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
         return dfOutput 
     
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
-        """ fills dfOutput with data from dfInput with no new index creation (no transport technologies)
+        """ fills dfOutput with data from dfInput with no new index creation
         :param dfInput: raw input dataframe
         :param dfOutput: empty output dataframe, only filled with defaultValue 
         :param fileName: name of selected file
@@ -197,36 +196,6 @@ class DataInput():
         commonIndex                 = dfOutput.index.intersection(dfInput.index)
         assert defaultValue is not None or len(commonIndex) == len(dfOutput.index), f"Input for {fileName} does not provide entire dataset and no default given in attributes.csv"
         dfOutput.loc[commonIndex]   = dfInput.loc[commonIndex]
-        return dfOutput
-
-    def extractTransportInputData(self, dfInput,dfOutput,fileName,indexMultiIndex,column,defaultValue):
-        """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param dfInput: raw input dataframe
-        :param dfOutput: empty output dataframe, only filled with defaultValue
-        :param fileName: name of selected file
-        :param indexMultiIndex: multiIndex of dfOutput
-        :param column: select specific column
-        :param defaultValue: default for dataframe
-        :return dfOutput: filled output dataframe """
-
-        # preferably already edges as index
-        if self.indexNames["setEdges"] in dfInput.columns:
-            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList=list(indexMultiIndex.names),column=column,defaultValue=defaultValue)
-        else:
-            warnings.warn(f"The matrix representation of edges will be deprecated. Change file '{fileName}'",FutureWarning)
-            dfInput = dfInput.set_index(self.indexNames['setNodes'])
-
-            # apply multiplier to input data
-            dfInput = dfInput * defaultValue["multiplier"]
-
-            # fill dfOutput
-            for index in indexMultiIndex:
-                if isinstance(index,tuple):
-                    _nodeFrom,_nodeTo = self.energySystem.setNodesOnEdges[index[0]]
-                else:
-                    _nodeFrom,_nodeTo = self.energySystem.setNodesOnEdges[index]
-                if _nodeFrom in dfInput.index and _nodeTo in dfInput.columns and ~np.isnan(dfInput.loc[_nodeFrom,_nodeTo]):
-                    dfOutput.loc[index] = dfInput.loc[_nodeFrom,_nodeTo]
         return dfOutput
 
     def extractYearlyVariation(self, folderPath,manualFileName,indexSets,column):
@@ -278,10 +247,7 @@ class DataInput():
         # check if attribute in index
         if attributeName+"Default" not in dfInput.index:
             if attributeName not in dfInput.index:
-                warnings.warn(
-                    f"Attribute without default value will be deprecated. \nAdd default value for {attributeName} in attribute file in {folderPath}",
-                    FutureWarning)
-                return None
+                raise AttributeError(f"Attribute without default value will be deprecated. \nAdd default value for {attributeName} in attribute file in {folderPath}")
             elif not skipWarning:
                 warnings.warn(
                     f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attributeName} of attributes in path {folderPath}",
@@ -291,7 +257,7 @@ class DataInput():
 
         # get attribute
         attributeValue = dfInput.loc[attributeName, "value"]
-        multiplier = self.getUnitMultiplier(dfInput.loc[attributeName, "unit"])
+        multiplier = self.unitHandling.getUnitMultiplier(dfInput.loc[attributeName, "unit"])
         try:
             attribute = {"value": float(attributeValue) * multiplier, "multiplier": multiplier}
             return attribute
@@ -328,6 +294,7 @@ class DataInput():
         folderPath = self.energySystem.getPaths()["setNodes"]["folder"]
         if extractNodes:
             setNodesConfig  = self.system["setNodes"]
+            assert len(setNodesConfig) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
             setNodesInput   = self.readInputData(folderPath,"setNodes")[0]["node"]
             _missingNodes   = list(set(setNodesConfig).difference(setNodesInput))
             assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {folderPath+'setNodes'}"
@@ -371,12 +338,12 @@ class DataInput():
             if element is None:
                 continue
 
-            numberTypicalPeriods = dictNumberOfTimeSteps[element][typeTimeStep]
-            numberTypicalPeriodsTotal = numberTypicalPeriods*self.system["optimizedYears"]
-            if int(numberTypicalPeriodsTotal) != numberTypicalPeriodsTotal:
+            numberTypicalPeriods                = dictNumberOfTimeSteps[element][typeTimeStep]
+            numberTypicalPeriodsTotal           = numberTypicalPeriods*self.system["optimizedYears"]
+            if int(numberTypicalPeriodsTotal)   != numberTypicalPeriodsTotal:
                 logging.warning(f"The requested invest time steps per year ({numberTypicalPeriods}) of {element} do not evaluate to an integer for the entire time horizon ({numberTypicalPeriodsTotal}). Rounded up.")
-                numberTypicalPeriodsTotal = np.ceil(numberTypicalPeriodsTotal)
-            dictNumberOfTimeSteps[element][typeTimeStep] = int(numberTypicalPeriodsTotal)
+                numberTypicalPeriodsTotal                   = np.ceil(numberTypicalPeriodsTotal)
+            dictNumberOfTimeSteps[element][typeTimeStep]    = int(numberTypicalPeriodsTotal)
 
         return dictNumberOfTimeSteps
 
@@ -410,10 +377,9 @@ class DataInput():
 
         return carrierDict
 
-    def extractSetExistingTechnologies(self, folderPath, transportTechnology=False,storageEnergy = False):
+    def extractSetExistingTechnologies(self, folderPath, storageEnergy = False):
         """ reads input data and creates setExistingCapacity for each technology
         :param folderPath: path to input files
-        :param transportTechnology: boolean if data extracted for transport technology
         :param storageEnergy: boolean if existing energy capacity of storage technology (instead of power)
         :return setExistingTechnologies: return set existing technologies"""
         if self.analysis["useExistingCapacities"]:
@@ -428,10 +394,10 @@ class DataInput():
 
             dfInput = pd.read_csv(folderPath + f"existingCapacity{_energyString}." + fileFormat, header=0, index_col=None)
 
-            if not transportTechnology:
-                location = "node"
-            else:
+            if self.element.name in self.system["setTransportTechnologies"]:
                 location = "edge"
+            else:
+                location = "node"
             maxNodeCount = dfInput[location].value_counts().max()
             setExistingTechnologies = np.arange(0, maxNodeCount)
         else:
@@ -439,16 +405,15 @@ class DataInput():
 
         return setExistingTechnologies
 
-    def extractLifetimeExistingTechnology(self, folderPath, fileName, indexSets, tech, transportTechnology=False):
+    def extractLifetimeExistingTechnology(self, folderPath, fileName, indexSets):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
-        :param tech: technology object
         :return existingLifetimeDict: return existing Capacity and existing Lifetime """
         fileFormat   = self.analysis["fileFormat"]
         column       = "yearConstruction"
         defaultValue = 0
 
-        dfOutput    = pd.Series(index=tech.existingCapacity.index,data=0)
+        dfOutput    = pd.Series(index=self.element.existingCapacity.index,data=0)
         # if no existing capacities
         if not self.analysis["useExistingCapacities"]:
             return dfOutput
@@ -456,12 +421,8 @@ class DataInput():
         if f"{fileName}.{fileFormat}" in os.listdir(folderPath):
             indexList, indexNameList    = self.constructIndexList(indexSets, None)
             dfInput, fileName           = self.readInputData(folderPath, fileName)
-            indexMultiIndex             = pd.MultiIndex.from_product(indexList, names=indexNameList)
-            # if not extracted for transport technology
-            if not transportTechnology:
-                dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
-            else:
-                dfOutput = self.extractTransportInputData(dfInput, dfOutput, fileName, indexMultiIndex,column, defaultValue)
+            # fill output dataframe
+            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
             # get reference year
             referenceYear               = self.system["referenceYear"]
             # calculate remaining lifetime
@@ -469,11 +430,10 @@ class DataInput():
 
         return dfOutput
 
-    def extractPWAData(self, folderPath,type,tech):
+    def extractPWAData(self, folderPath,type):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
         :param type: technology approximation type
-        :param tech: technology object
         :return PWADict: dictionary with PWA parameters """
 
         # get system attribute
@@ -487,7 +447,7 @@ class DataInput():
         assert f"nonlinear{type}.{fileFormat}" in os.listdir(folderPath), f"File 'nonlinear{type}.{fileFormat}' does not exist in {folderPath}"
         dfInputNonlinear    = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
         dfInputUnits        = dfInputNonlinear.iloc[-1]
-        dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.getUnitMultiplier(unit))
+        dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
         dfInputNonlinear    = dfInputNonlinear.iloc[:-1].astype(float)
         dfInputNonlinear    = dfInputNonlinear*dfInputMultiplier
         if type == "Capex":
@@ -500,7 +460,7 @@ class DataInput():
         # TODO devise better way to split string units
         dfInputBreakpoints          = pd.read_csv(folderPath+"breakpointsPWA" + type + '.'+fileFormat, header=0, index_col=None)
         dfInputBreakpointsUnits     = dfInputBreakpoints.iloc[-1]
-        dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.getUnitMultiplier(unit))
+        dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
         dfInputBreakpoints          = dfInputBreakpoints.iloc[:-1].astype(float)
         dfInputBreakpoints          = dfInputBreakpoints*dfInputMultiplier
         # assert that breakpoint variable (x variable in nonlinear input)
@@ -512,7 +472,7 @@ class DataInput():
         PWADict["PWAVariables"] = [] # select only those variables that are modeled as PWA
         PWADict["bounds"] = {} # save bounds of variables
         # min and max total capacity of technology
-        minCapacityTech,maxCapacityTech = (0,min(max(tech.capacityLimit.values),max(breakpoints)))
+        minCapacityTech,maxCapacityTech = (0,min(max(self.element.capacityLimit.values),max(breakpoints)))
         for valueVariable in nonlinearValues:
             if valueVariable == breakpointVariable:
                 PWADict["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
@@ -539,90 +499,6 @@ class DataInput():
                     _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[valueVariable])))
                     PWADict["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
         return PWADict
-
-    def extractBaseUnits(self,folderPath):
-        """ extracts base units of energy system
-        :param folderPath: path to input files
-        :return listBaseUnits: list of base units """
-        listBaseUnits = pd.read_csv(folderPath +"/baseUnits.csv").squeeze().values.tolist()
-        return listBaseUnits
-
-    def getUnitMultiplier(self,inputUnit):
-        """ calculates the multiplier for converting an inputUnit to the base units
-        :param inputUnit: string of input unit
-        :return multiplier: multiplication factor """
-        ureg        = self.energySystem.ureg
-        baseUnits   = self.energySystem.baseUnits
-        dimMatrix   = self.energySystem.dimMatrix
-        # if input unit is already in base units --> the input unit is base unit, multiplier = 1
-        if inputUnit in baseUnits:
-            return 1
-        # if input unit is nan --> dimensionless
-        elif type(inputUnit) != str and np.isnan(inputUnit):
-            return 1
-        else:
-            # create dimensionality vector for inputUnit
-            dimInput    = ureg.get_dimensionality(ureg(inputUnit))
-            dimVector   = pd.Series(index=dimMatrix.index, data=0)
-            _missingDim = set(dimInput.keys()).difference(dimVector.keys())
-            assert len(_missingDim) == 0, f"No base unit defined for dimensionalities <{_missingDim}>"
-            dimVector[list(dimInput.keys())] = list(dimInput.values())
-            # calculate dimensionless combined unit (e.g., tons and kilotons)
-            combinedUnit = ureg(inputUnit).units
-            # if unit (with a different multiplier) is already in base units
-            if dimMatrix.isin(dimVector).all(axis=0).any():
-                _baseUnit       = ureg(dimMatrix.columns[dimMatrix.isin(dimVector).all(axis=0)][0])
-                combinedUnit    *= _baseUnit**(-1)
-            # if inverse of unit (with a different multiplier) is already in base units (e.g. 1/km and km)
-            elif (dimMatrix*-1).isin(dimVector).all(axis=0).any():
-                _baseUnit       = ureg(dimMatrix.columns[(dimMatrix*-1).isin(dimVector).all(axis=0)][0])
-                combinedUnit    *= _baseUnit
-            else:
-                dimAnalysis         = self.energySystem.dimAnalysis
-                # drop dependent units
-                dimMatrixReduced    = dimMatrix.drop(dimAnalysis["dependentUnits"],axis=1)
-                # solve system of linear equations
-                combinationSolution = np.linalg.solve(dimMatrixReduced,dimVector)
-                # check if only -1, 0, 1
-                if DataInput.checkIfPosNegBoolean(combinationSolution):
-                    # compose relevant units to dimensionless combined unit
-                    for unit,power in zip(dimMatrixReduced.columns,combinationSolution):
-                        combinedUnit *= ureg(unit)**(-1*power)
-                else:
-                    calculatedMultiplier = False
-                    for unit, power in zip(dimMatrixReduced.columns, combinationSolution):
-                        # try to substitute unit with power > 1 by a dependent unit
-                        if np.abs(power) > 1:
-                            # iterate through dependent units
-                            for dependentUnit,dependentDim in zip(dimAnalysis["dependentUnits"],dimAnalysis["dependentDims"]):
-                                idxUnitInMatrixReduced  = list(dimMatrixReduced.columns).index(unit)
-                                # if the power of the unit is the same as of the dimensionality in the dependent unit
-                                if np.abs(dependentDim[idxUnitInMatrixReduced]) == np.abs(power):
-                                    dimMatrixReducedTemp                    = dimMatrixReduced.drop(unit,axis=1)
-                                    dimMatrixReducedTemp[dependentUnit]     = dimMatrix[dependentUnit]
-                                    combinationSolutionTemp                 = np.linalg.solve(dimMatrixReducedTemp, dimVector)
-                                    if DataInput.checkIfPosNegBoolean(combinationSolutionTemp):
-                                        # compose relevant units to dimensionless combined unit
-                                        for unit, power in zip(dimMatrixReducedTemp.columns, combinationSolutionTemp):
-                                            combinedUnit        *= ureg(unit) ** (-1 * power)
-                                        calculatedMultiplier    = True
-                                        break
-                    assert calculatedMultiplier, f"Cannot establish base unit conversion for {inputUnit} from base units {baseUnits.keys()}"
-            # magnitude of combined unit is multiplier
-            multiplier = combinedUnit.to_base_units().magnitude
-            # round to decimal points
-            return round(multiplier,self.solver["roundingDecimalPoints"])
-
-    @classmethod
-    def checkIfPosNegBoolean(cls, array,axis=None):
-        """ checks if the array has only positive or negative booleans (-1,0,1)
-        :param array: numeric numpy array
-        :return isPosNegBoolean """
-        if axis:
-            isPosNegBoolean = np.apply_along_axis(lambda row: np.array_equal(np.abs(row), np.abs(row).astype(bool)),1,array).any()
-        else:
-            isPosNegBoolean = np.array_equal(np.abs(array), np.abs(array).astype(bool))
-        return isPosNegBoolean
 
     @staticmethod
     def extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName):
