@@ -122,11 +122,11 @@ class Postprocess:
         with open(f'{self.nameDir}params/paramDict.pickle', 'wb') as file:
             pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-        # save order time steps
-        dictOrderTimeSteps = EnergySystem.getOrderTimeStepsDict()
+        # save sequence time steps
+        dictSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
         # save the param dict to a pickle
-        with open(f'{self.nameDir}dictAllOrderTimeSteps.pickle', 'wb') as file:
-            pickle.dump(dictOrderTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(f'{self.nameDir}dictAllSequenceTimeSteps.pickle', 'wb') as file:
+            pickle.dump(dictSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def loadParam(self):
         """ Loads the Param values from previously saved pickle files which can then be
@@ -306,10 +306,10 @@ class Postprocess:
                 path = f'{self.nameDir}plots/'+varName+'.png'
                 plt.savefig(path)
 
-        # safe dictOrderTimeSteps
-        dictAllOrderTimeSteps = EnergySystem.getOrderTimeStepsDict()
-        with open(f'{self.nameDir}dictAllOrderTimeSteps.pickle', 'wb') as file:
-            pickle.dump(dictAllOrderTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
+        # safe dictSequenceTimeSteps
+        dictAllSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
+        with open(f'{self.nameDir}dictAllSequenceTimeSteps.pickle', 'wb') as file:
+            pickle.dump(dictAllSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
     # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))
 

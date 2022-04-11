@@ -326,11 +326,11 @@ def constraintLinearConverEfficiencyRule(model,tech,dependentCarrier,node,time):
 
 def constraintCapexCouplingRule(model,tech,node,time):
     """ couples capex variables based on modeling technique"""
-    return(model.capex[tech,node,time] == model.capexApproximation[tech,node,time])
+    return(model.capex[tech,"power",node,time] == model.capexApproximation[tech,node,time])
 
 def constraintCapacityCouplingRule(model,tech,node,time):
     """ couples capacity variables based on modeling technique"""
-    return(model.builtCapacity[tech,node,time] == model.capacityApproximation[tech,node,time])
+    return(model.builtCapacity[tech,"power",node,time] == model.capacityApproximation[tech,node,time])
 
 def constraintReferenceFlowCouplingRule(disjunct,tech,dependentCarrier,node,time):
     """ couples reference flow variables based on modeling technique"""

@@ -96,7 +96,7 @@ class OptimizationSetup():
         self.setTimeStepsYearlyFull = energySystem.setTimeStepsYearly
         # if using rolling horizon
         if self.system["useRollingHorizon"]:
-            self.yearsInHorizon = self.system["yearsInHorizon"]
+            self.yearsInHorizon = self.system["yearsInRollingHorizon"]
             _timeStepsYearly    = energySystem.setTimeStepsYearly
             self.stepsHorizon   = {year: list(range(year,min(year + self.yearsInHorizon,max(_timeStepsYearly)+1))) for year in _timeStepsYearly}
         # if no rolling horizon
@@ -150,6 +150,6 @@ class OptimizationSetup():
         Technology      = getattr(sys.modules[__name__], "Technology")
         for tech in Technology.getAllElements():
             # new capacity
-            _builtCapacityTech = _builtCapacity.loc[tech.name].unstack()
+            _builtCapacityTech  = _builtCapacity.loc[tech.name].unstack()
             _capexTech          = _capex.loc[tech.name].unstack()
             tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)

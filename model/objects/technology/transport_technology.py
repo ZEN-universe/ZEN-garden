@@ -102,7 +102,7 @@ class TransportTechnology(Technology):
             :return bounds: bounds of carrierFlow"""
             # convert operationTimeStep to investTimeStep: operationTimeStep -> baseTimeStep -> investTimeStep
             investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
-            bounds = model.capacity[tech,edge,investTimeStep].bounds
+            bounds = model.capacity[tech,"power",edge,investTimeStep].bounds
             return(bounds)
 
         model = EnergySystem.getConcreteModel()
@@ -166,5 +166,5 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
 
 def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
-    return (model.capex[tech,edge, time] == 
-            model.builtCapacity[tech,edge, time] * model.capexSpecificTransport[tech,edge, time])
+    return (model.capex[tech,"power",edge, time] ==
+            model.builtCapacity[tech,"power",edge, time] * model.capexSpecificTransport[tech,edge, time])

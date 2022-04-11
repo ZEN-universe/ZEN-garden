@@ -76,4 +76,3 @@ for stepHorizon in stepsOptimizationHorizon:
     else:
         modelName += "_perfectForesight"
     evaluation = Postprocess(optimizationSetup, modelName = modelName)
-    a=1

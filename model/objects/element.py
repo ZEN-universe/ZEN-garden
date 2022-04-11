@@ -11,8 +11,8 @@ Description:    Class defining a standard Element. Contains methods to add param
 ==========================================================================================================================================================================="""
 import itertools 
 import logging
-import numpy as np
 import pandas as pd
+import pyomo.environ as pe
 from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
 
@@ -85,31 +85,64 @@ class Element:
         return cls.__subclasses__()
 
     @classmethod
-    def getAttributeOfAllElements(cls,attributeName:str):
+    def getAttributeOfAllElements(cls,attributeName:str,capacityTypes = False):
         """ get attribute values of all elements in this class 
         :param attributeName: str name of attribute
+        :param capacityTypes: boolean if attributes extracted for all capacity types
         :return dictOfAttributes: returns dict of attribute values """
+        system = EnergySystem.getSystem()
         _classElements = cls.getAllElements()
         dictOfAttributes = {}
         for _element in _classElements:
-            assert hasattr(_element,attributeName),f"Element {_element.name} does not have attribute {attributeName}"
-            _attribute = getattr(_element,attributeName)
-            if isinstance(_attribute,pd.Series):
-                _attribute = _attribute.to_dict()
-            elif isinstance(_attribute,pd.DataFrame):
-                raise TypeError("Not yet implemented for pd.DataFrames")
-            if isinstance(_attribute,dict) and "PWA" not in attributeName:
-                # if attribute is dict
-                for _key in _attribute:
-                    if isinstance(_key,tuple):
-                        dictOfAttributes[(_element.name,)+_key] = _attribute[_key]
-                    else:
-                        dictOfAttributes[(_element.name, _key)] = _attribute[_key]
-            elif isinstance(_attribute, int):
+            if not capacityTypes:
+                dictOfAttributes = cls.appendAttributeOfElementToDict(_element,attributeName,dictOfAttributes)
+            # if extracted for both capacity types
+            else:
+                for capacityType in system["setCapacityTypes"]:
+                    # append energy only for storage technologies
+                    if capacityType == system["setCapacityTypes"][0] or _element.name in system["setStorageTechnologies"]:
+                        dictOfAttributes = cls.appendAttributeOfElementToDict(_element, attributeName, dictOfAttributes,capacityType)
+        return dictOfAttributes
+
+    @classmethod
+    def appendAttributeOfElementToDict(cls,_element,attributeName,dictOfAttributes,capacityType = None):
+        """ get attribute values of all elements in this class
+        :param _element: element of class
+        :param attributeName: str name of attribute
+        :param dictOfAttributes: dict of attribute values
+        :param capacityType: capacity type for which attribute extracted. If None, not listed in key
+        :return dictOfAttributes: returns dict of attribute values """
+        system = EnergySystem.getSystem()
+        # add Energy for energy capacity type
+        if capacityType == system["setCapacityTypes"][1]:
+            attributeName += "Energy"
+        assert hasattr(_element, attributeName), f"Element {_element.name} does not have attribute {attributeName}"
+        _attribute = getattr(_element, attributeName)
+        if isinstance(_attribute, pd.Series):
+            _attribute = _attribute.to_dict()
+        elif isinstance(_attribute, pd.DataFrame):
+            raise TypeError("Not yet implemented for pd.DataFrames")
+        if isinstance(_attribute, dict) and "PWA" not in attributeName:
+            if capacityType:
+                _combinedKey = (_element.name,capacityType)
+            else:
+                _combinedKey = (_element.name,)
+            # if attribute is dict
+            for _key in _attribute:
+                if isinstance(_key, tuple):
+                    dictOfAttributes[_combinedKey + _key] = _attribute[_key]
+                else:
+                    dictOfAttributes[_combinedKey + (_key,)] = _attribute[_key]
+        elif isinstance(_attribute, int):
+            if capacityType:
+                dictOfAttributes[(_element.name,capacityType)] = [_attribute]
+            else:
                 dictOfAttributes[_element.name] = [_attribute]
+        else:
+            if capacityType:
+                dictOfAttributes[(_element.name,capacityType)] = _attribute
             else:
                 dictOfAttributes[_element.name] = _attribute
-
         return dictOfAttributes
 
     @classmethod
@@ -149,6 +182,14 @@ class Element:
         logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
         EnergySystem.constructSets()
+        # construct pe.Sets of class elements
+        model = EnergySystem.getConcreteModel()
+        # operational time steps
+        model.setTimeStepsOperation = pe.Set(
+            model.setElements,
+            initialize=cls.getAttributeOfAllElements("setTimeStepsOperation"),
+            doc="Set of time steps in operation for all technologies. Dimensions: setElements"
+        )
         # construct pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructSets()
@@ -159,6 +200,14 @@ class Element:
         logging.info("Construct pe.Params")
         # construct pe.Params of energy system
         EnergySystem.constructParams()
+        # construct pe.Sets of class elements
+        model = EnergySystem.getConcreteModel()
+        # operational time step duration
+        model.timeStepsOperationDuration = pe.Param(
+            cls.createCustomSet(["setElements","setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]).astype(int),
+            doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setElements, setTimeStepsOperation"
+        )
         # construct pe.Params of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructParams()
@@ -305,6 +354,13 @@ class Element:
                                 if not modelOnOff:
                                     appendElement = False
                                     break
+                        # split in capacity types of power and energy
+                        elif index == "setCapacityTypes":
+                            system = EnergySystem.getSystem()
+                            if element in model.setStorageTechnologies:
+                                listSets.append(system["setCapacityTypes"])
+                            else:
+                                listSets.append([system["setCapacityTypes"][0]])
                         else:
                             raise NotImplementedError(f"Index <{index}> not known")
                     # append indices to customSet if element is supposed to be appended
