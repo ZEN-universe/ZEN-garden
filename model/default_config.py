@@ -103,7 +103,8 @@ system["setNodes"] = []
 system["totalHoursPerYear"] = 8760
 # folder output
 system["folderOutput"] = "outputs/results/"
-
+# name of data folder for energy system specification
+system["folderNameSystemSpecification"] = "systemSpecification"
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
 solver["name"]      = "gurobi_persistent"

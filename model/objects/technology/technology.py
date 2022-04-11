@@ -20,7 +20,8 @@ from model.objects.energy_system import EnergySystem
 
 class Technology(Element):
     # set label
-    label = "setTechnologies"
+    label           = "setTechnologies"
+    locationType    = None
     # empty list of elements
     listOfElements = []
 
@@ -35,76 +36,38 @@ class Technology(Element):
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
-        # get system information
-        system              = EnergySystem.getSystem()
-        technologyTypes     = EnergySystem.getAnalysis()['subsets']["setTechnologies"]
         # set attributes of technology
-        for technologyType in technologyTypes:
-            if self.name in system[technologyType]:
-                if technologyType == "setTransportTechnologies":
-                    _setLocation            = "setEdges"
-                    _isTransportTechnology  = True
-                else:
-                    _setLocation            = "setNodes"
-                    _isTransportTechnology  = False
-                setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
-                self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(self.name,typeOfTimeSteps="invest")
-                self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
-                self.sequenceTimeStepsInvest       = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
-                EnergySystem.setSequenceTimeSteps(self.name,self.sequenceTimeStepsInvest,timeStepType="invest")
-                self.inputPath                  = self.getInputPath(system, technologyType)
-                self.referenceCarrier           = [self.dataInput.extractAttributeData(self.inputPath,"referenceCarrier",skipWarning=True)]
-                EnergySystem.setTechnologyOfCarrier(self.name, self.referenceCarrier)
-                self.minBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"minBuiltCapacity")["value"]
-                self.maxBuiltCapacity           = self.dataInput.extractAttributeData(self.inputPath,"maxBuiltCapacity")["value"]
-                self.lifetime                   = self.dataInput.extractAttributeData(self.inputPath,"lifetime")["value"]
-                # add all raw time series to dict
-                self.rawTimeSeries = {}
-                self.rawTimeSeries["minLoad"]   = self.dataInput.extractInputData(self.inputPath, "minLoad",
-                                                                                indexSets=[_setLocation, "setTimeSteps"],
-                                                                                timeSteps=setBaseTimeStepsYearly)
-                self.rawTimeSeries["maxLoad"]   = self.dataInput.extractInputData(self.inputPath, "maxLoad",
-                                                                                indexSets=[_setLocation, "setTimeSteps"],
-                                                                                timeSteps=setBaseTimeStepsYearly)
-                self.rawTimeSeries["opexSpecific"] = self.dataInput.extractInputData(self.inputPath, "opexSpecific",
-                                                                                indexSets=[_setLocation,"setTimeSteps"],
-                                                                                timeSteps=setBaseTimeStepsYearly)
-                # non-time series input data
-                self.capacityLimit              = self.dataInput.extractInputData(self.inputPath, "capacityLimit",
-                                                                                indexSets=[_setLocation])
-                self.carbonIntensityTechnology  = self.dataInput.extractInputData(self.inputPath, "carbonIntensity",
-                                                                                indexSets=[_setLocation])
-                # extract existing capacity
-                self.setExistingTechnologies    = self.dataInput.extractSetExistingTechnologies(self.inputPath)
-                self.existingCapacity           = self.dataInput.extractInputData(self.inputPath,
-                                                                                  "existingCapacity",
-                                                                        indexSets=[_setLocation,
-                                                                           "setExistingTechnologies"],
-                                                                        column= "existingCapacity")
-                self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,
-                                                                                   "existingCapacity",
-                                                                       indexSets=[_setLocation,
-                                                                           "setExistingTechnologies"])
+        _setLocation    = type(self).getClassLocationType()
 
-    def getInputPath(self, system, technologyType):
-        """ get input path where input data is stroed
-        :param system:          dictionary that contains system parameters
-        :param technologyType:  technology type
-        :return inputPath"""
-        paths = EnergySystem.getPaths()
-        # get input path for current technologyType
-        self.inputPath = paths[technologyType][self.name]["folder"]
-        # check if technologyType has subsets
-        subsets = EnergySystem.getAnalysis()["subsets"]
-        if technologyType in subsets.keys():
-            # iterate through subsets and check if technology belongs to any of the subsets
-            for technologySubset in subsets[technologyType]:
-                if self.name in system[technologySubset]:
-                    self.subset    = technologySubset
-                    self.inputPath = paths[technologySubset][self.name]["folder"]
-                    break
+        setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
+        self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(self.name,typeOfTimeSteps="invest")
+        self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
+        self.sequenceTimeStepsInvest    = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
+        EnergySystem.setSequenceTimeSteps(self.name,self.sequenceTimeStepsInvest,timeStepType="invest")
 
-        return self.inputPath
+
+        self.referenceCarrier           = [self.dataInput.extractAttributeData("referenceCarrier",skipWarning=True)]
+        EnergySystem.setTechnologyOfCarrier(self.name, self.referenceCarrier)
+        self.minBuiltCapacity           = self.dataInput.extractAttributeData("minBuiltCapacity")["value"]
+        self.maxBuiltCapacity           = self.dataInput.extractAttributeData("maxBuiltCapacity")["value"]
+        self.lifetime                   = self.dataInput.extractAttributeData("lifetime")["value"]
+        # add all raw time series to dict
+        self.rawTimeSeries = {}
+        self.rawTimeSeries["minLoad"]   = self.dataInput.extractInputData(
+            "minLoad",indexSets=[_setLocation, "setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["maxLoad"]   = self.dataInput.extractInputData(
+            "maxLoad",indexSets=[_setLocation, "setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["opexSpecific"] = self.dataInput.extractInputData(
+            "opexSpecific",indexSets=[_setLocation,"setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+        # non-time series input data
+        self.capacityLimit              = self.dataInput.extractInputData("capacityLimit",indexSets=[_setLocation])
+        self.carbonIntensityTechnology  = self.dataInput.extractInputData("carbonIntensity",indexSets=[_setLocation])
+        # extract existing capacity
+        self.setExistingTechnologies    = self.dataInput.extractSetExistingTechnologies()
+        self.existingCapacity           = self.dataInput.extractInputData(
+            "existingCapacity",indexSets=[_setLocation,"setExistingTechnologies"])
+        self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(
+            "existingCapacity",indexSets=[_setLocation,"setExistingTechnologies"])
 
     def calculateCapexOfExistingCapacities(self,storageEnergy = False):
         """ this method calculates the annualized capex of the existing capacities """
@@ -159,34 +122,33 @@ class Technology(Element):
             indexNewTechnology                              = max(self.setExistingTechnologies) + 1
             self.setExistingTechnologies                    = np.append(self.setExistingTechnologies, indexNewTechnology)
 
+            for typeCapacity in list(set(_newlyBuiltCapacity.index.get_level_values(0))):
             # add power
-            if "power" in _newlyBuiltCapacity.index.get_level_values(0):
+                if typeCapacity == "power":
+                    _energyString = ""
+                elif typeCapacity == "energy":
+                    _energyString = "Energy"
+                _existingCapacity       = getattr(self,"existingCapacity"+_energyString)
+                _lifetimeTechnology     = getattr(self, "lifetimeExistingTechnology" + _energyString)
+                _capexExistingCapacity  = getattr(self, "capexExistingCapacity" + _energyString)
                 # add new existing capacity
-                _existingCapacity                           = self.existingCapacity.unstack()
-                _existingCapacity[indexNewTechnology]       = _newlyBuiltCapacity.loc["power"]
-                self.existingCapacity                       = _existingCapacity.stack()
+                _existingCapacity                           = _existingCapacity.unstack()
+                _existingCapacity[indexNewTechnology]       = _newlyBuiltCapacity.loc[typeCapacity]
+                setattr(self,"existingCapacity"+_energyString,_existingCapacity.stack())
                 # add new remaining lifetime
-                _lifetimeTechnology                         = self.lifetimeExistingTechnology.unstack()
+                _lifetimeTechnology                         = _lifetimeTechnology.unstack()
                 _lifetimeTechnology[indexNewTechnology]     = self.lifetime
-                self.lifetimeExistingTechnology             = _lifetimeTechnology.stack()
+                setattr(self, "lifetimeExistingTechnology" + _energyString,_lifetimeTechnology.stack())
                 # calculate capex of existing capacity
-                _capexExistingCapacity                      = self.capexExistingCapacity.unstack()
-                _capexExistingCapacity[indexNewTechnology]  = _capex.loc["power"]
-                self.capexExistingCapacity                  = _capexExistingCapacity.stack()
-            # add energy
-            if "energy" in _newlyBuiltCapacity.index.get_level_values(0):
-                # add new existing capacity
-                _existingCapacity                           = self.existingCapacityEnergy.unstack()
-                _existingCapacity[indexNewTechnology]       = _newlyBuiltCapacity.loc["energy"]
-                self.existingCapacityEnergy                 = _existingCapacity.stack()
-                # add new remaining lifetime
-                _lifetimeTechnology                         = self.lifetimeExistingTechnologyEnergy.unstack()
-                _lifetimeTechnology[indexNewTechnology]     = self.lifetime
-                self.lifetimeExistingTechnologyEnergy       = _lifetimeTechnology.stack()
-                # calculate capex of existing capacity
-                _capexExistingCapacity                      = self.capexExistingCapacityEnergy.unstack()
-                _capexExistingCapacity[indexNewTechnology]  = _capex.loc["energy"]
-                self.capexExistingCapacityEnergy            = _capexExistingCapacity.stack()
+                _capexExistingCapacity                      = _capexExistingCapacity.unstack()
+                _capexExistingCapacity[indexNewTechnology]  = _capex.loc[typeCapacity]
+                setattr(self, "capexExistingCapacity" + _energyString,_capexExistingCapacity.stack())
+
+    ### --- getter/setter classmethods
+    @classmethod
+    def getClassLocationType(cls):
+        """ returns locationType of class """
+        return cls.locationType
 
     ### --- classmethods
     @classmethod

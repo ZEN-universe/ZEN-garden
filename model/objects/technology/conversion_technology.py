@@ -19,8 +19,8 @@ from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class ConversionTechnology(Technology):
     # set label
-    label = "setConversionTechnologies"
-
+    label           = "setConversionTechnologies"
+    locationType    = "setNodes"
     # empty list of elements
     listOfElements = []
 
@@ -40,8 +40,8 @@ class ConversionTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # define input and output carrier
-        self.inputCarrier               = self.dataInput.extractConversionCarriers(self.inputPath)["inputCarrier"]
-        self.outputCarrier              = self.dataInput.extractConversionCarriers(self.inputPath)["outputCarrier"]
+        self.inputCarrier               = self.dataInput.extractConversionCarriers()["inputCarrier"]
+        self.outputCarrier              = self.dataInput.extractConversionCarriers()["outputCarrier"]
         EnergySystem.setTechnologyOfCarrier(self.name, self.inputCarrier + self.outputCarrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
@@ -53,11 +53,11 @@ class ConversionTechnology(Technology):
         """retrieves and stores converEfficiency for <ConversionTechnology>.
         Each Child class overwrites method to store different converEfficiency """
         #TODO read PWA Dict and set Params
-        self.PWAConverEfficiency   = self.dataInput.extractPWAData(self.inputPath,"ConverEfficiency")
+        self.PWAConverEfficiency   = self.dataInput.extractPWAData("ConverEfficiency")
 
     def getAnnualizedCapex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
-        self.PWACapex = self.dataInput.extractPWAData(self.inputPath, "Capex")
+        self.PWACapex = self.dataInput.extractPWAData( "Capex")
         # annualize capex
         fractionalAnnuity = self.calculateFractionalAnnuity()
         # set bounds

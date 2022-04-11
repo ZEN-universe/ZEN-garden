@@ -13,29 +13,27 @@ from pint                                    import UnitRegistry
 from pint.util                               import column_echelon_form
 
 class UnitHandling:
-    # unit registry
-    ureg = UnitRegistry()
 
-    def __init__(self,paths,roundDecimalPoints):
+    def __init__(self,folderPath,roundDecimalPoints):
         """ initialization of the unitHandling instance"""
-        self.paths                  = paths
+        self.folderPath             = folderPath
         self.roundingDecimalPoints  = roundDecimalPoints
         self.getBaseUnits()
 
     def getBaseUnits(self):
         """ gets base units of energy system """
-        _listBaseUnits                  = self.extractBaseUnits(self.paths["setScenarios"]["folder"])
-        ureg                            = UnitHandling.ureg
+        _listBaseUnits  = self.extractBaseUnits()
+        self.ureg       = UnitRegistry()
 
         # load additional units
-        ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
+        self.ureg.load_definitions(self.folderPath+"/unitDefinitions.txt")
 
         # empty base units and dimensionality matrix
         self.baseUnits                  = {}
         self.dimMatrix                  = pd.DataFrame(index=_listBaseUnits).astype(int)
         for _baseUnit in _listBaseUnits:
-            dimUnit                     = ureg.get_dimensionality(ureg(_baseUnit))
-            self.baseUnits[_baseUnit]   = ureg(_baseUnit).dimensionality
+            dimUnit                     = self.ureg.get_dimensionality(self.ureg(_baseUnit))
+            self.baseUnits[_baseUnit]   = self.ureg(_baseUnit).dimensionality
             self.dimMatrix.loc[_baseUnit, list(dimUnit.keys())] = list(dimUnit.values())
         self.dimMatrix                  = self.dimMatrix.fillna(0).astype(int).T
 
@@ -83,18 +81,16 @@ class UnitHandling:
         # check that no base unit can be directly constructed from the others (e.g., GJ from GW and hour)
         assert ~UnitHandling.checkIfPosNegBoolean(dependentDims,axis=1), f"At least one of the base units {list(self.baseUnits.keys())} can be directly constructed from the others"
 
-    def extractBaseUnits(self,folderPath):
+    def extractBaseUnits(self):
         """ extracts base units of energy system
-        :param folderPath: path to input files
         :return listBaseUnits: list of base units """
-        listBaseUnits = pd.read_csv(folderPath +"/baseUnits.csv").squeeze().values.tolist()
+        listBaseUnits = pd.read_csv(self.folderPath +"/baseUnits.csv").squeeze().values.tolist()
         return listBaseUnits
 
     def getUnitMultiplier(self,inputUnit):
         """ calculates the multiplier for converting an inputUnit to the base units
         :param inputUnit: string of input unit
         :return multiplier: multiplication factor """
-        ureg        = self.ureg
         baseUnits   = self.baseUnits
         dimMatrix   = self.dimMatrix
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
@@ -105,20 +101,20 @@ class UnitHandling:
             return 1
         else:
             # create dimensionality vector for inputUnit
-            dimInput    = ureg.get_dimensionality(ureg(inputUnit))
+            dimInput    = self.ureg.get_dimensionality(self.ureg(inputUnit))
             dimVector   = pd.Series(index=dimMatrix.index, data=0)
             _missingDim = set(dimInput.keys()).difference(dimVector.keys())
             assert len(_missingDim) == 0, f"No base unit defined for dimensionalities <{_missingDim}>"
             dimVector[list(dimInput.keys())] = list(dimInput.values())
             # calculate dimensionless combined unit (e.g., tons and kilotons)
-            combinedUnit = ureg(inputUnit).units
+            combinedUnit = self.ureg(inputUnit).units
             # if unit (with a different multiplier) is already in base units
             if dimMatrix.isin(dimVector).all(axis=0).any():
-                _baseUnit       = ureg(dimMatrix.columns[dimMatrix.isin(dimVector).all(axis=0)][0])
+                _baseUnit       = self.ureg(dimMatrix.columns[dimMatrix.isin(dimVector).all(axis=0)][0])
                 combinedUnit    *= _baseUnit**(-1)
             # if inverse of unit (with a different multiplier) is already in base units (e.g. 1/km and km)
             elif (dimMatrix*-1).isin(dimVector).all(axis=0).any():
-                _baseUnit       = ureg(dimMatrix.columns[(dimMatrix*-1).isin(dimVector).all(axis=0)][0])
+                _baseUnit       = self.ureg(dimMatrix.columns[(dimMatrix*-1).isin(dimVector).all(axis=0)][0])
                 combinedUnit    *= _baseUnit
             else:
                 dimAnalysis         = self.dimAnalysis
@@ -130,7 +126,7 @@ class UnitHandling:
                 if UnitHandling.checkIfPosNegBoolean(combinationSolution):
                     # compose relevant units to dimensionless combined unit
                     for unit,power in zip(dimMatrixReduced.columns,combinationSolution):
-                        combinedUnit *= ureg(unit)**(-1*power)
+                        combinedUnit *= self.ureg(unit)**(-1*power)
                 else:
                     calculatedMultiplier = False
                     for unit, power in zip(dimMatrixReduced.columns, combinationSolution):
@@ -147,7 +143,7 @@ class UnitHandling:
                                     if UnitHandling.checkIfPosNegBoolean(combinationSolutionTemp):
                                         # compose relevant units to dimensionless combined unit
                                         for unit, power in zip(dimMatrixReducedTemp.columns, combinationSolutionTemp):
-                                            combinedUnit        *= ureg(unit) ** (-1 * power)
+                                            combinedUnit        *= self.ureg(unit) ** (-1 * power)
                                         calculatedMultiplier    = True
                                         break
                     assert calculatedMultiplier, f"Cannot establish base unit conversion for {inputUnit} from base units {baseUnits.keys()}"

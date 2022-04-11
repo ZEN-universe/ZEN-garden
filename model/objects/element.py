@@ -17,6 +17,8 @@ from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
 
 class Element:
+    # set label
+    label = "setElements"
     # empty list of elements
     listOfElements = []
 
@@ -27,11 +29,33 @@ class Element:
         self.name = element
         # set if aggregated
         self.aggregated = False
+        # get input path
+        self.getInputPath()
         # create DataInput object
         self.dataInput = DataInput(self,EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem(),EnergySystem.getUnitHandling())
         # add element to list
         Element.addElement(self)
-        
+
+    def getInputPath(self):
+        """ get input path where input data is stored inputPath"""
+        # get system information
+        system      = EnergySystem.getSystem()
+        # get technology type
+        classLabel  = type(self).getClassLabel()
+
+        paths = EnergySystem.getPaths()
+        # get input path for current classLabel
+        self.inputPath = paths[classLabel][self.name]["folder"]
+        # check if class has subsets
+        subsets = EnergySystem.getAnalysis()["subsets"]
+        if classLabel in subsets.keys():
+            # iterate through subsets and check if class belongs to any of the subsets
+            for classSubset in subsets[classLabel]:
+                if self.name in system[classSubset]:
+                    self.subset    = classSubset
+                    self.inputPath = paths[classSubset][self.name]["folder"]
+                    break
+
     def setAggregated(self):
         """ this method sets self.aggregated to True """
         self.aggregated = True
@@ -158,6 +182,11 @@ class Element:
         assert hasattr(_element,attributeName),f"Element {_element} does not have attribute {attributeName}"
         attributeValue = getattr(_element,attributeName)
         return attributeValue
+
+    @classmethod
+    def getClassLabel(cls):
+        """ returns label of class """
+        return cls.label
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
     # Here, after defining EnergySystem-specific components, the components of the other classes are constructed

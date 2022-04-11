@@ -17,7 +17,8 @@ from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class TransportTechnology(Technology):
     # set label
-    label = "setTransportTechnologies"
+    label           = "setTransportTechnologies"
+    locationType    = "setEdges"
     # empty list of elements
     listOfElements = []
     
@@ -36,18 +37,17 @@ class TransportTechnology(Technology):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get attributes from class <Technology>
         super().storeInputData()
-        # get system information
-        paths                               = EnergySystem.getPaths()
-        self.inputPath                     = paths["setTransportTechnologies"][self.name]["folder"]
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
-        self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"])
-        self.lossFlow                       = self.dataInput.extractAttributeData(self.inputPath,"lossFlow")["value"]
-        if self.dataInput.ifAttributeExists(self.inputPath,"capexPerDistance"):
-            self.capexPerDistance           = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+        self.distance                       = self.dataInput.extractInputData("distanceEuclidean",indexSets=["setEdges"])
+        self.lossFlow                       = self.dataInput.extractAttributeData("lossFlow")["value"]
+        if self.dataInput.ifAttributeExists("capexPerDistance"):
+            self.capexPerDistance           = self.dataInput.extractInputData(
+                "capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
             self.capexSpecific              = self.capexPerDistance * self.distance
         else:
-            self.capexSpecific              = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+            self.capexSpecific              = self.dataInput.extractInputData(
+                "capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
         # annualize capex
         self.convertToAnnualizedCapex()
         # calculate capex of existing capacity

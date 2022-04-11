@@ -31,96 +31,15 @@ class DataInput():
         self.solver         = solver
         self.energySystem   = energySystem
         self.unitHandling   = unitHandling
+        # extract folder path
+        self.folderPath = getattr(self.element,"inputPath")
+
         # get names of indices
         self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
 
-    def readInputData(self,folderPath,manualFileName):
-        """ reads input data and returns raw input dataframe
-        :param folderPath: path to input files 
-        :param manualFileName: name of selected file. If only one file in folder, not used
-        :return dfInput: pd.DataFrame with input data 
-        :return fileName: name of file """
-
-        # get system attribute
-        fileFormat  = self.analysis["fileFormat"]
-
-        # select data
-        fileNames = [fileName.split('.')[0] for fileName in os.listdir(folderPath) if (fileName.split('.')[-1] == fileFormat)]
-        if manualFileName in fileNames:
-            assert (manualFileName in fileNames or len(fileNames) == 1), "Selection of files was ambiguous. Select folder with single input file or select specific file by name"
-            for fileName in fileNames:
-                if len(fileNames) > 1 and fileName != manualFileName:
-                    continue
-
-                # table attributes
-                dfInput = pd.read_csv(folderPath+fileName+'.'+fileFormat, header=0, index_col=None) 
-                break 
-            return dfInput,fileName
-        else:
-            return None, None
-    
-    def constructIndexList(self,indexSets,timeSteps):
-        """ constructs index list from index sets and returns list of indices and list of index names
-        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param timeSteps: specific timeSteps of element
-        :return indexList: list of indices
-        :return indexNameList: list of name of indices
-        """
-        indexList     = []
-        indexNameList = []
-
-        # add rest of indices
-        for index in indexSets:
-            indexNameList.append(self.indexNames[index])
-            # if index == "setEdges":
-            #     indexList.append(self.energySystem.setEdges)
-            if index == "setTimeSteps" and timeSteps:
-                indexList.append(timeSteps)
-            elif index == "setExistingTechnologies":
-                indexList.append(self.element.setExistingTechnologies)
-            elif index in self.system:
-                indexList.append(self.system[index])
-            elif hasattr(self.energySystem,index):
-                indexList.append(getattr(self.energySystem,index))
-            else:
-                raise AttributeError(f"Index <{index}> cannot be found.")
-        return indexList,indexNameList
-
-    def createDefaultOutput(self, folderPath,manualFileName,indexSets,column,timeSteps=None,manualDefaultValue = None):
-        """ creates default output dataframe
-        :param folderPath: path to input files
-        :param manualFileName: name of selected file. If only one file in folder, not used
-        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param column: select specific column
-        :param timeSteps: specific timeSteps of element
-        :param manualDefaultValue: if given, use manualDefaultValue instead of searching for default value in attributes.csv"""
-        # select index
-        indexList, indexNameList = self.constructIndexList(indexSets, timeSteps)
-        # create pd.MultiIndex and select data
-        indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
-        if manualDefaultValue:
-            defaultValue = {"value":manualDefaultValue,"multiplier":1}
-            defaultName = manualFileName
-        else:
-            # check if default value exists in attributes.csv, with or without "Default" Suffix
-            if column:
-                defaultName = column
-            else:
-                defaultName = manualFileName
-            defaultValue = self.extractAttributeData(folderPath, defaultName)
-
-        # create output Series filled with default value
-        if defaultValue is None:
-            dfOutput = pd.Series(index=indexMultiIndex, dtype=float)
-        else:
-            dfOutput = pd.Series(index=indexMultiIndex, data=defaultValue["value"], dtype=float)
-
-        return dfOutput,defaultValue,indexMultiIndex,indexNameList,defaultName
-
-    def extractInputData(self, folderPath,manualFileName,indexSets,column=None,timeSteps=[]):
+    def extractInputData(self,fileName,indexSets,column=None,timeSteps=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files 
-        :param manualFileName: name of selected file. If only one file in folder, not used
+        :param fileName: name of selected file.
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
         :param timeSteps: specific timeSteps of element
@@ -131,27 +50,29 @@ class DataInput():
             timeSteps = self.energySystem.setBaseTimeSteps
         # if time steps are the yearly time steps
         elif timeSteps == self.energySystem.setBaseTimeStepsYearly:
-            self.extractYearlyVariation(folderPath,manualFileName,indexSets,column)
+            self.extractYearlyVariation(fileName,indexSets,column)
 
         # if existing capacities and existing capacities not used
-        if manualFileName == "existingCapacity" and not self.analysis["useExistingCapacities"]:
-            dfOutput,*_ = self.createDefaultOutput(folderPath,manualFileName,indexSets,column,timeSteps,manualDefaultValue=0)
+        if fileName == "existingCapacity" and not self.analysis["useExistingCapacities"]:
+            dfOutput,*_ = self.createDefaultOutput(fileName,indexSets,column,timeSteps,manualDefaultValue=0)
             return dfOutput
         else:
-            dfOutput, defaultValue, indexMultiIndex, indexNameList, defaultName = self.createDefaultOutput(folderPath,
-                                                                                                           manualFileName,
-                                                                                                           indexSets,
-                                                                                                           column,
-                                                                                                           timeSteps)
+            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(fileName,indexSets,column,timeSteps)
+        # set defaultName
+        if column:
+            defaultName = column
+        else:
+            defaultName = fileName
         # read input file
-        dfInput,fileName = self.readInputData(folderPath,manualFileName)
+        dfInput = self.readInputData(fileName)
+
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
             dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
         return dfOutput 
     
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
-        """ fills dfOutput with data from dfInput with no new index creation
+        """ fills dfOutput with data from dfInput
         :param dfInput: raw input dataframe
         :param dfOutput: empty output dataframe, only filled with defaultValue 
         :param fileName: name of selected file
@@ -174,7 +95,11 @@ class DataInput():
             missingIndex = missingIndex[0]
             # check if special case of existing Technology
             if "existingTechnology" in missingIndex:
-                dfOutput = DataInput.extractFromInputForExistingCapacities(dfInput,dfOutput,indexNameList,column,missingIndex)
+                if column:
+                    defaultName = column
+                else:
+                    defaultName = fileName
+                dfOutput = DataInput.extractFromInputForExistingCapacities(dfInput,dfOutput,indexNameList,defaultName,missingIndex)
                 return dfOutput
             # index missing
             else:
@@ -198,59 +123,42 @@ class DataInput():
         dfOutput.loc[commonIndex]   = dfInput.loc[commonIndex]
         return dfOutput
 
-    def extractYearlyVariation(self, folderPath,manualFileName,indexSets,column):
-        """ reads the yearly variation of a time dependent quantity
-        :param folderPath: path to input files
-        :param manualFileName: name of selected file. If only one file in folder, not used
-        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param column: select specific column
-        """
-        # remove intrayearly time steps from index set and add interyearly time steps
-        _indexSets = copy.deepcopy(indexSets)
-        _indexSets.remove("setTimeSteps")
-        _indexSets.append("setTimeStepsYearly")
-        # add YearlyVariation to manualFileName
-        manualFileName  += "YearlyVariation"
-        # read input data
-        _rawInputData   = self.readInputData(folderPath, manualFileName)
-        if _rawInputData[0] is not None:
-            if column is not None and column not in _rawInputData[0]:
-                return
-            dfOutput, defaultValue, indexMultiIndex, indexNameList, defaultName = self.createDefaultOutput(folderPath,
-                                                                                                           manualFileName,
-                                                                                                           _indexSets,
-                                                                                                           column,
-                                                                                                           manualDefaultValue=1)
-            dfInput, fileName   = self.readInputData(folderPath, manualFileName)
-            # set yearlyVariation attribute to dfOutput
-            if column is not None:
-                dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column,
-                                                        defaultValue)
-                setattr(self,column+"YearlyVariation",dfOutput)
-            else:
-                dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, dfInput.columns[-1],
-                                                        defaultValue)
-                setattr(self,manualFileName,dfOutput)
+    def readInputData(self,inputFileName):
+        """ reads input data and returns raw input dataframe
+        :param self.folderPath: path to input files
+        :param inputFileName: name of selected file
+        :return dfInput: pd.DataFrame with input data """
 
-    def extractAttributeData(self, folderPath,attributeName,skipWarning = False):
+        # append .csv suffix
+        inputFileName += ".csv"
+
+        # select data
+        fileNames = os.listdir(self.folderPath)
+        if inputFileName in fileNames:
+            dfInput = pd.read_csv(self.folderPath+inputFileName, header=0, index_col=None)
+            return dfInput
+        else:
+            return None
+
+    def extractAttributeData(self,attributeName,skipWarning = False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files
+        :param self.folderPath: path to input files
         :param attributeName: name of selected attribute
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
         fileName    = "attributes.csv"
 
-        if fileName not in os.listdir(folderPath):
+        if fileName not in os.listdir(self.folderPath):
             return None
-        dfInput     = pd.read_csv(folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
+        dfInput     = pd.read_csv(self.folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
 
         # check if attribute in index
         if attributeName+"Default" not in dfInput.index:
             if attributeName not in dfInput.index:
-                raise AttributeError(f"Attribute without default value will be deprecated. \nAdd default value for {attributeName} in attribute file in {folderPath}")
+                raise AttributeError(f"Attribute without default value is deprecated. \nAdd default value for {attributeName} in attribute file in {self.folderPath}")
             elif not skipWarning:
                 warnings.warn(
-                    f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attributeName} of attributes in path {folderPath}",
+                    f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attributeName} of attributes in path {self.folderPath}",
                     FutureWarning)
         else:
             attributeName = attributeName + "Default"
@@ -264,43 +172,47 @@ class DataInput():
         except:
             return attributeValue
 
-    def ifAttributeExists(self, folderPath, manualFileName, column=None):
-        """ checks if default value or timeseries of an attribute exists in the input data
-        :param folderPath: path to input files
-        :param manualFileName: name of selected file. If only one file in folder, not used
+    def extractYearlyVariation(self,fileName,indexSets,column):
+        """ reads the yearly variation of a time dependent quantity
+        :param self.folderPath: path to input files
+        :param fileName: name of selected file.
+        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
         """
-
-        # check if default value exists
-        if column:
-            defaultName = column
-        else:
-            defaultName = manualFileName
-        defaultValue = self.extractAttributeData(folderPath, defaultName)
-
-        # check if input file exists
-        inputData = None
-        if defaultValue is None:
-            inputData, _ = self.readInputData(folderPath, manualFileName)
-
-        if defaultValue is None and inputData is None:
-            return False
-        else:
-            return True
+        # remove intrayearly time steps from index set and add interyearly time steps
+        _indexSets = copy.deepcopy(indexSets)
+        _indexSets.remove("setTimeSteps")
+        _indexSets.append("setTimeStepsYearly")
+        # add YearlyVariation to fileName
+        fileName  += "YearlyVariation"
+        # read input data
+        dfInput         = self.readInputData( fileName)
+        if dfInput is not None:
+            if column is not None and column not in dfInput:
+                return
+            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(fileName,_indexSets,column,manualDefaultValue=1)
+            # set yearlyVariation attribute to dfOutput
+            if column:
+                _selectedColumn         = column
+                _nameYearlyVariation    = column+"YearlyVariation"
+            else:
+                _selectedColumn         = dfInput.columns[-1]
+                _nameYearlyVariation    = fileName
+            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, _selectedColumn,defaultValue)
+            setattr(self,_nameYearlyVariation,dfOutput)
 
     def extractLocations(self,extractNodes = True):
         """ reads input data to extract nodes or edges.
         :param extractNodes: boolean to switch between nodes and edges """
-        folderPath = self.energySystem.getPaths()["setNodes"]["folder"]
         if extractNodes:
             setNodesConfig  = self.system["setNodes"]
             assert len(setNodesConfig) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
-            setNodesInput   = self.readInputData(folderPath,"setNodes")[0]["node"]
+            setNodesInput   = self.readInputData("setNodes")["node"]
             _missingNodes   = list(set(setNodesConfig).difference(setNodesInput))
-            assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {folderPath+'setNodes'}"
+            assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {self.folderPath+'setNodes'}"
             return setNodesConfig
         else:
-            setEdgesInput = self.readInputData(folderPath,"setEdges")[0]
+            setEdgesInput = self.readInputData("setEdges")
             if setEdgesInput is not None:
                 setEdges        = setEdgesInput[(setEdgesInput["nodeFrom"].isin(self.energySystem.setNodes)) & (setEdgesInput["nodeTo"].isin(self.energySystem.setNodes))]
                 setEdges        = setEdges.set_index("edge")
@@ -312,22 +224,21 @@ class DataInput():
         """ reads input data and returns number of typical periods and time steps per period for each technology and carrier
         :return dictNumberOfTimeSteps: number of typical periods for each technology """
         # select data
-        folderName  = "setTimeSteps"
         fileName    = "setTimeSteps"
-        dfInput,_   = self.readInputData(self.energySystem.paths[folderName]["folder"],fileName)
+        dfInput     = self.readInputData(fileName)
         dfInput     = dfInput.set_index(["element","typeTimeStep"])
         # create empty dictNumberOfTimeSteps
         dictNumberOfTimeSteps = {}
         # iterate through investment time steps of technologies
         typeTimeStep = "invest"
         for technology in self.energySystem.setTechnologies:
-            assert technology in dfInput.index.get_level_values("element"), f"Technology {technology} is not in {fileName}.{self.analysis['fileFormat']}"
+            assert technology in dfInput.index.get_level_values("element"), f"Technology {technology} is not in {fileName}.csv"
             dictNumberOfTimeSteps[technology] = {}
-            assert (technology,typeTimeStep) in dfInput.index, f"Type of time step <{typeTimeStep} for technology {technology} is not in {fileName}.{self.analysis['fileFormat']}"
+            assert (technology,typeTimeStep) in dfInput.index, f"Type of time step <{typeTimeStep} for technology {technology} is not in {fileName}.csv"
             dictNumberOfTimeSteps[technology][typeTimeStep] = dfInput.loc[(technology,typeTimeStep)].squeeze()
         # iterate through carriers 
         for carrier in self.energySystem.setCarriers:
-            assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.{self.analysis['fileFormat']}"
+            assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.csv"
             dictNumberOfTimeSteps[carrier] = {None: dfInput.loc[carrier].squeeze()}
         # add yearly time steps
         dictNumberOfTimeSteps[None] = {"yearly": self.system["optimizedYears"]}
@@ -349,7 +260,7 @@ class DataInput():
 
     def extractTimeSteps(self,elementName=None,typeOfTimeSteps=None,getListOfTimeSteps=True):
         """ reads input data and returns range of time steps 
-        :param folderPath: path to input files 
+        :param self.folderPath: path to input files 
         :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
         :return listOfTimeSteps: list of time steps """
         numberTypicalPeriods = self.energySystem.dictNumberOfTimeSteps[elementName][typeOfTimeSteps]
@@ -360,15 +271,15 @@ class DataInput():
         else:
             return numberTypicalPeriods
 
-    def extractConversionCarriers(self, folderPath):
+    def extractConversionCarriers(self):
         """ reads input data and extracts conversion carriers
-        :param folderPath: path to input files 
+        :param self.folderPath: path to input files 
         :return carrierDict: dictionary with input and output carriers of technology """
         carrierDict = {}
         # get carriers
         for _carrierType in ["inputCarrier","outputCarrier"]:
             # TODO implement for multiple carriers
-            _carrierString = self.extractAttributeData(folderPath,_carrierType,skipWarning = True)
+            _carrierString = self.extractAttributeData(_carrierType,skipWarning = True)
             if type(_carrierString) == str:
                 _carrierList = _carrierString.strip().split(" ")
             else:
@@ -377,9 +288,9 @@ class DataInput():
 
         return carrierDict
 
-    def extractSetExistingTechnologies(self, folderPath, storageEnergy = False):
+    def extractSetExistingTechnologies(self, storageEnergy = False):
         """ reads input data and creates setExistingCapacity for each technology
-        :param folderPath: path to input files
+        :param self.folderPath: path to input files
         :param storageEnergy: boolean if existing energy capacity of storage technology (instead of power)
         :return setExistingTechnologies: return set existing technologies"""
         if self.analysis["useExistingCapacities"]:
@@ -387,12 +298,10 @@ class DataInput():
                 _energyString = "Energy"
             else:
                 _energyString = ""
-            fileFormat = self.analysis["fileFormat"]
 
-            if f"existingCapacity{_energyString}.{fileFormat}" not in os.listdir(folderPath):
-                return [0]
-
-            dfInput = pd.read_csv(folderPath + f"existingCapacity{_energyString}." + fileFormat, header=0, index_col=None)
+            dfInput = self.readInputData(f"existingCapacity{_energyString}")
+            if dfInput is None:
+                return  [0]
 
             if self.element.name in self.system["setTransportTechnologies"]:
                 location = "edge"
@@ -405,47 +314,45 @@ class DataInput():
 
         return setExistingTechnologies
 
-    def extractLifetimeExistingTechnology(self, folderPath, fileName, indexSets):
+    def extractLifetimeExistingTechnology(self, fileName, indexSets):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files
-        :return existingLifetimeDict: return existing Capacity and existing Lifetime """
-        fileFormat   = self.analysis["fileFormat"]
-        column       = "yearConstruction"
-        defaultValue = 0
+        :param self.folderPath: path to input files
+        :param fileName:  name of selected file
+        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :return existingLifetimeDict: return existing capacity and existing lifetime """
+        column      = "yearConstruction"
 
         dfOutput    = pd.Series(index=self.element.existingCapacity.index,data=0)
         # if no existing capacities
         if not self.analysis["useExistingCapacities"]:
             return dfOutput
 
-        if f"{fileName}.{fileFormat}" in os.listdir(folderPath):
+        if f"{fileName}.csv" in os.listdir(self.folderPath):
             indexList, indexNameList    = self.constructIndexList(indexSets, None)
-            dfInput, fileName           = self.readInputData(folderPath, fileName)
+            dfInput                     = self.readInputData( fileName)
             # fill output dataframe
-            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue)
+            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue = 0)
             # get reference year
             referenceYear               = self.system["referenceYear"]
             # calculate remaining lifetime
-            dfOutput[dfOutput > 0]      = -referenceYear + dfOutput[dfOutput > 0] + tech.lifetime
+            dfOutput[dfOutput > 0]      = - referenceYear + dfOutput[dfOutput > 0] + self.element.lifetime
 
         return dfOutput
 
-    def extractPWAData(self, folderPath,type):
+    def extractPWAData(self,type):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param folderPath: path to input files
+        :param self.folderPath: path to input files
         :param type: technology approximation type
         :return PWADict: dictionary with PWA parameters """
 
-        # get system attribute
-        fileFormat = self.analysis["fileFormat"]
         # select data
         PWADict = {}
         assert type in self.analysis["nonlinearTechnologyApproximation"], f"{type} is not specified in analysis['nonlinearTechnologyApproximation']"
 
         # extract all data values
         nonlinearValues     = {}
-        assert f"nonlinear{type}.{fileFormat}" in os.listdir(folderPath), f"File 'nonlinear{type}.{fileFormat}' does not exist in {folderPath}"
-        dfInputNonlinear    = pd.read_csv(folderPath+"nonlinear" + type + '.'+fileFormat, header=0, index_col=None)
+        assert f"nonlinear{type}.csv" in os.listdir(self.folderPath), f"File 'nonlinear{type}.csv' does not exist in {self.folderPath}"
+        dfInputNonlinear    = pd.read_csv(f"{self.folderPath}nonlinear{type}.csv", header=0, index_col=None)
         dfInputUnits        = dfInputNonlinear.iloc[-1]
         dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
         dfInputNonlinear    = dfInputNonlinear.iloc[:-1].astype(float)
@@ -456,9 +363,9 @@ class DataInput():
         for column in dfInputNonlinear.columns:
             nonlinearValues[column] = dfInputNonlinear[column].to_list()
         # extract PWA breakpoints
-        assert f"breakpointsPWA{type}.{fileFormat}" in os.listdir(folderPath), f"File 'breakpointsPWA{type}.{fileFormat}' does not exist in {folderPath}"
+        assert f"breakpointsPWA{type}.csv" in os.listdir(self.folderPath), f"File 'breakpointsPWA{type}.csv' does not exist in {self.folderPath}"
         # TODO devise better way to split string units
-        dfInputBreakpoints          = pd.read_csv(folderPath+"breakpointsPWA" + type + '.'+fileFormat, header=0, index_col=None)
+        dfInputBreakpoints          = pd.read_csv(f"{self.folderPath}breakpointsPWA{type}.csv", header=0, index_col=None)
         dfInputBreakpointsUnits     = dfInputBreakpoints.iloc[-1]
         dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
         dfInputBreakpoints          = dfInputBreakpoints.iloc[:-1].astype(float)
@@ -500,6 +407,80 @@ class DataInput():
                     PWADict["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
         return PWADict
 
+    def createDefaultOutput(self,fileName,indexSets,column,timeSteps=None,manualDefaultValue = None):
+        """ creates default output dataframe
+        :param self.folderPath: path to input files
+        :param fileName: name of selected file.
+        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param column: select specific column
+        :param timeSteps: specific timeSteps of element
+        :param manualDefaultValue: if given, use manualDefaultValue instead of searching for default value in attributes.csv"""
+        # select index
+        indexList, indexNameList = self.constructIndexList(indexSets, timeSteps)
+        # create pd.MultiIndex and select data
+        indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
+        if manualDefaultValue:
+            defaultValue = {"value":manualDefaultValue,"multiplier":1}
+        else:
+            # check if default value exists in attributes.csv, with or without "Default" Suffix
+            if column:
+                defaultName = column
+            else:
+                defaultName = fileName
+            defaultValue = self.extractAttributeData( defaultName)
+
+        # create output Series filled with default value
+        if defaultValue is None:
+            dfOutput = pd.Series(index=indexMultiIndex, dtype=float)
+        else:
+            dfOutput = pd.Series(index=indexMultiIndex, data=defaultValue["value"], dtype=float)
+
+        return dfOutput,defaultValue,indexNameList
+
+    def constructIndexList(self,indexSets,timeSteps):
+        """ constructs index list from index sets and returns list of indices and list of index names
+        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param timeSteps: specific timeSteps of element
+        :return indexList: list of indices
+        :return indexNameList: list of name of indices
+        """
+        indexList     = []
+        indexNameList = []
+
+        # add rest of indices
+        for index in indexSets:
+            indexNameList.append(self.indexNames[index])
+            if index == "setTimeSteps" and timeSteps:
+                indexList.append(timeSteps)
+            elif index == "setExistingTechnologies":
+                indexList.append(self.element.setExistingTechnologies)
+            elif index in self.system:
+                indexList.append(self.system[index])
+            elif hasattr(self.energySystem,index):
+                indexList.append(getattr(self.energySystem,index))
+            else:
+                raise AttributeError(f"Index '{index}' cannot be found.")
+        return indexList,indexNameList
+
+    def ifAttributeExists(self, fileName, column=None):
+        """ checks if default value or timeseries of an attribute exists in the input data
+        :param self.folderPath: path to input files
+        :param fileName: name of selected file
+        :param column: select specific column
+        """
+        # check if default value exists
+        if column:
+            defaultName = column
+        else:
+            defaultName = fileName
+        defaultValue = self.extractAttributeData( defaultName)
+
+        if defaultValue is None:
+            _dfInput = self.readInputData( fileName)
+            return (_dfInput is not None)
+        else:
+            return True
+
     @staticmethod
     def extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName):
         """ extracts the demanded values from Input dataframe and reformulates dataframe
@@ -511,13 +492,11 @@ class DataInput():
         """
         dfInput = dfInput.set_index(indexNameList)
         if column:
-            assert column in dfInput.columns,\
-                f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {fileName}"
+            assert column in dfInput.columns, f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {fileName}"
             dfInput = dfInput[column]
         else:
             # check if only one column remaining
-            assert len(dfInput.columns) == 1,\
-                f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
+            assert len(dfInput.columns) == 1,f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
             dfInput = dfInput.squeeze(axis=1)
         return dfInput
 

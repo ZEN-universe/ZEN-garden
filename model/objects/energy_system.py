@@ -65,6 +65,9 @@ class EnergySystem:
         # add energySystem to list
         EnergySystem.setEnergySystem(self)
 
+        # get input path
+        self.getInputPath()
+
         # create UnitHandling object
         EnergySystem.createUnitHandling()
 
@@ -104,7 +107,7 @@ class EnergySystem:
         self.setStorageTechnologies      = system["setStorageTechnologies"]
 
         # carbon emissions limit
-        self.carbonEmissionsLimit        = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
+        self.carbonEmissionsLimit        = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
         _fractionOfYear                  = system["unaggregatedTimeStepsPerYear"]/system["totalHoursPerYear"]
         self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
 
@@ -124,6 +127,14 @@ class EnergySystem:
                     if nodeFrom != nodeTo:
                         setNodesOnEdges[nodeFrom+"-"+nodeTo] = (nodeFrom,nodeTo)
         return setNodesOnEdges
+
+    def getInputPath(self):
+        """ get input path where input data is stored inputPath"""
+        folderLabel = EnergySystem.getSystem()["folderNameSystemSpecification"]
+
+        paths = EnergySystem.getPaths()
+        # get input path of energy system specification
+        self.inputPath = paths[folderLabel]["folder"]
 
     ### CLASS METHODS ###
     # setter/getter classmethods
@@ -348,7 +359,7 @@ class EnergySystem:
     def createUnitHandling(cls):
         """ creates and stores the unit handling object """
         # create UnitHandling object
-        cls.unitHandling = UnitHandling(cls.getEnergySystem().paths,cls.getEnergySystem().solver["roundingDecimalPoints"])
+        cls.unitHandling = UnitHandling(cls.getEnergySystem().inputPath,cls.getEnergySystem().solver["roundingDecimalPoints"])
 
     @classmethod
     def calculateConnectedEdges(cls,node,direction:str):

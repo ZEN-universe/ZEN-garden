@@ -62,14 +62,14 @@ class Prepare:
 
         ## General Paths
         # define path to access dataset related to the current analysis
-        self.pathData = ".//data//{}//".format(self.analysis["dataset"])
+        self.pathData = f".//data//{self.analysis['dataset']}//"
         assert os.path.exists(self.pathData), f"Folder for input data {self.analysis['dataset']} does not exist!"
         self.paths = dict()
         # create a dictionary with the keys based on the folders in pathData
         for folderName in next(os.walk(self.pathData))[1]:
             self.paths[folderName] = dict()
             self.paths[folderName]["folder"] = \
-                self.pathData + "{}//".format(folderName)
+                self.pathData + f"{folderName}//"
 
         ## Carrier Paths
         # add the paths for all the directories in carrier folder
@@ -77,7 +77,7 @@ class Prepare:
         for carrier in next(os.walk(path))[1]:
             self.paths["setCarriers"][carrier] = dict()
             self.paths["setCarriers"][carrier]["folder"] = \
-                path + "{}//".format(carrier)
+                path + f"{carrier}//"
 
         ## Technology Paths
         # add the paths for all the directories in technologies
@@ -86,7 +86,7 @@ class Prepare:
             for technology in next(os.walk(path))[1]:
                 self.paths[technologySubset][technology] = dict()
                 self.paths[technologySubset][technology]["folder"] = \
-                    path + "{}//".format(technology)
+                    path + f"{technology}//"
             # add path for subsets of technologySubset
             if technologySubset in self.analysis["subsets"].keys():
                 for subset in self.analysis["subsets"][technologySubset]:
@@ -94,7 +94,7 @@ class Prepare:
                     for technology in next(os.walk(path))[1]:
                         self.paths[subset][technology] = dict()
                         self.paths[subset][technology]["folder"] = \
-                            path + "{}//".format(technology)
+                            path + f"{technology}//"
 
     def initDict(self):
         """
