@@ -9,8 +9,9 @@ dependencies:
   - geopandas
   - pandas
   - pip
-  - pyomo=6.2
-  - python=3.*
+#  - pyomo=6.2
+  - pyomo=6.*
+  - python=3.9.*
   - scipy
   - sympy
   - ipython

@@ -1,7 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 from model.optimization_setup import OptimizationSetup
-from data.NUTS0_CCTS import config
+from data.Pioneering_CCTS import config
 
 # Ignore this line:
 if False:

@@ -5,6 +5,7 @@
 !/data/.gitkeep
 /outputs/
 /data_generation/
+/Scripts/
 /postprocess/results_JM.py
 *.pyc
 *.DS_Store

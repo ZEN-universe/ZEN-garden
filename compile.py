@@ -8,13 +8,13 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
-
+import numpy as np
 import os
 import pandas as pd
 import logging
 import sys
 from datetime import datetime
-import data.NUTS0_CCTS.config as config
+import data.Pioneering_CCTS.config as config
 from preprocess.prepare import Prepare
 from model.optimization_setup import OptimizationSetup
 from model.metaheuristic.algorithm import Metaheuristic
@@ -76,6 +76,16 @@ for stepHorizon in stepsOptimizationHorizon:
     modelName = optimizationSetup.system['modelName']
     if len(stepsOptimizationHorizon)>1:
         modelName += f"_rollingHorizon{stepHorizon}"
-    else:
-        modelName += "_perfectForesight"
+    # else:
+        # modelName += "_perfectForesight"
     evaluation = Postprocess(optimizationSetup, modelName = modelName)
+
+    varSeries = dict()
+    for key in evaluation.varDict.keys():
+        varSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
+
+    paramSeries = dict()
+    for key in evaluation.paramDict.keys():
+        paramSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
+    print('finished!')
+

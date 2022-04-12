@@ -134,6 +134,8 @@ class DataInput():
             dfOutput,*_ = self.createDefaultOutput(folderPath,manualFileName,indexSets,column,timeSteps,manualDefaultValue=0)
             return dfOutput
         else:
+            if manualFileName == 'demandCarrier':
+                print('demand')
             dfOutput, defaultValue, indexMultiIndex, indexNameList, defaultName = self.createDefaultOutput(folderPath,
                                                                                                            manualFileName,
                                                                                                            indexSets,
@@ -197,25 +199,39 @@ class DataInput():
                     dfOutput.loc[location, index] = values
             return dfOutput
 
+
+
         # check if requested values for missing index are columns of dfInput
         else:
             indexNameList.remove(missingIndex[0])
-            dfInput                 = dfInput.set_index(indexNameList)
-            requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex[0])).intersection(dfInput.columns)
-            if requestedIndexValues.issubset(dfInput.columns):
-                dfInput.columns         = dfInput.columns.set_names(missingIndex[0])
-                dfInput                 = dfInput[list(requestedIndexValues)].stack()
-                dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
-            else:
-                logging.info(f"Missing index {missingIndex[0]} detected in {fileName}. Input dataframe is extended by this index")
-                _dfInputIndexTemp = pd.MultiIndex.from_product([dfInput.index,requestedIndexValues],names=dfInput.index.names +missingIndex)
-                _dfInputIndexTemp = _dfInputIndexTemp.reorder_levels(order = dfOutput.index.names)
-                _dfInputTemp = pd.Series(index=_dfInputIndexTemp,dtype=float)
-                dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0]),column]).squeeze()
-                dfInput.index = _dfInputTemp.index
+            dfInput = dfInput.set_index(indexNameList)
+            requestedIndexValues = set(dfOutput.index.get_level_values(missingIndex[0]))
+            # if requested values (or a subset) are a subset of the columns
+            if requestedIndexValues.intersection(dfInput.columns):
+                requestedIndexValues = requestedIndexValues.intersection(dfInput.columns)
+                dfInput.columns = dfInput.columns.set_names(missingIndex[0])
+                dfInput = dfInput[list(requestedIndexValues)].stack()
+                dfInput = dfInput.reorder_levels(dfOutput.index.names)
 
+            else:
+                logging.info(
+                    f"Missing index {missingIndex[0]} detected in {fileName}. Input dataframe is extended by this index")
+                _dfInputIndexTemp = pd.MultiIndex.from_product([dfInput.index, requestedIndexValues],
+                                                               names=dfInput.index.names + missingIndex)
+                _dfInputIndexTemp = _dfInputIndexTemp.reorder_levels(order=dfOutput.index.names)
+                _dfInputTemp = pd.Series(index=_dfInputIndexTemp, dtype=float)
+
+                if column in dfInput.columns:
+                    dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[
+                        row.index.get_level_values(dfInput.index.names[0]), column].squeeze())
+                else:
+                    dfInput = _dfInputTemp.to_frame().apply(
+                        lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0])].squeeze())
+                if isinstance(dfInput, pd.DataFrame):
+                    dfInput = dfInput.squeeze()
+                dfInput.index = _dfInputTemp.index
         # apply multiplier to input data
-        dfInput     = dfInput * defaultValue["multiplier"]
+        dfInput = dfInput * defaultValue["multiplier"]
 
         # delete nans
         dfInput     = dfInput.dropna()
@@ -366,13 +382,38 @@ class DataInput():
             assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {folderPath+'setNodes'}"
             return setNodesConfig
         else:
-            setEdgesInput = self.readInputData(folderPath,"setEdges")[0]
+            # setEdgesInput = self.readInputData(folderPath,"setEdges")[0]
+            setEdgesInput = self.extractEdgesFromTranport()[0]
             if setEdgesInput is not None:
                 setEdges        = setEdgesInput[(setEdgesInput["nodeFrom"].isin(self.energySystem.setNodes)) & (setEdgesInput["nodeTo"].isin(self.energySystem.setNodes))]
                 setEdges        = setEdges.set_index("edge")
                 return setEdges
             else:
                 return None
+
+    def extractEdgesFromTranport(self):
+        """
+        extracts all allowed node combinations from the transport modes. Edges are only included where at
+        least one transport mode has some allocated transport capacity
+        """
+        folderPath = self.energySystem.getPaths()['setTransportTechnologies']['folder']
+        file_list = []  # collects all distanceEuclidean.csv files
+        for dirpath, dirnames, filenames in os.walk(folderPath):
+            for filename in [f for f in filenames if f.startswith("distanceEuclidean")]:
+                file_list.append(os.path.join(dirpath, filename))
+
+        edge_list = []  # collects the edges only
+        setEdges = []  # final set with start and end nodes
+
+        for f in file_list:
+            distances = pd.read_csv(f)
+            edge_list.extend(distances['edge'].to_list())
+        edge_list = list(dict.fromkeys(edge_list))  # drop all duplicates
+
+        for edge in edge_list:
+            setEdges.append([edge, edge.split('-')[0], edge.split('-')[1]])
+        setEdges = pd.DataFrame(setEdges, columns=['edge', 'nodeFrom', 'nodeTo'])
+        return setEdges, 'setEdges'
 
     def extractNumberTimeSteps(self):
         """ reads input data and returns number of typical periods and time steps per period for each technology and carrier
