@@ -31,6 +31,7 @@ class DataInput():
         self.solver         = solver
         self.energySystem   = energySystem
         self.unitHandling   = unitHandling
+        unitHandling.getUnitMultiplier("kiloEuro/(km*tons/h)")
         # extract folder path
         self.folderPath = getattr(self.element,"inputPath")
 
@@ -125,7 +126,6 @@ class DataInput():
 
     def readInputData(self,inputFileName):
         """ reads input data and returns raw input dataframe
-        :param self.folderPath: path to input files
         :param inputFileName: name of selected file
         :return dfInput: pd.DataFrame with input data """
 
@@ -260,8 +260,9 @@ class DataInput():
 
     def extractTimeSteps(self,elementName=None,typeOfTimeSteps=None,getListOfTimeSteps=True):
         """ reads input data and returns range of time steps 
-        :param self.folderPath: path to input files 
+        :param elementName: name of element
         :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
+        :param getListOfTimeSteps: boolean if list of time steps returned
         :return listOfTimeSteps: list of time steps """
         numberTypicalPeriods = self.energySystem.dictNumberOfTimeSteps[elementName][typeOfTimeSteps]
         if getListOfTimeSteps:
@@ -290,7 +291,6 @@ class DataInput():
 
     def extractSetExistingTechnologies(self, storageEnergy = False):
         """ reads input data and creates setExistingCapacity for each technology
-        :param self.folderPath: path to input files
         :param storageEnergy: boolean if existing energy capacity of storage technology (instead of power)
         :return setExistingTechnologies: return set existing technologies"""
         if self.analysis["useExistingCapacities"]:
@@ -316,7 +316,6 @@ class DataInput():
 
     def extractLifetimeExistingTechnology(self, fileName, indexSets):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param self.folderPath: path to input files
         :param fileName:  name of selected file
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return existingLifetimeDict: return existing capacity and existing lifetime """
@@ -339,37 +338,24 @@ class DataInput():
 
         return dfOutput
 
-    def extractPWAData(self,type):
+    def extractPWAData(self,variableType):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param self.folderPath: path to input files
-        :param type: technology approximation type
+        :param variableType: technology approximation type
         :return PWADict: dictionary with PWA parameters """
 
         # select data
         PWADict = {}
-        assert type in self.analysis["nonlinearTechnologyApproximation"], f"{type} is not specified in analysis['nonlinearTechnologyApproximation']"
-
+        assert variableType in self.analysis["nonlinearTechnologyApproximation"], f"{variableType} is not specified in analysis['nonlinearTechnologyApproximation']"
         # extract all data values
         nonlinearValues     = {}
-        assert f"nonlinear{type}.csv" in os.listdir(self.folderPath), f"File 'nonlinear{type}.csv' does not exist in {self.folderPath}"
-        dfInputNonlinear    = pd.read_csv(f"{self.folderPath}nonlinear{type}.csv", header=0, index_col=None)
-        dfInputUnits        = dfInputNonlinear.iloc[-1]
-        dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
-        dfInputNonlinear    = dfInputNonlinear.iloc[:-1].astype(float)
-        dfInputNonlinear    = dfInputNonlinear*dfInputMultiplier
-        if type == "Capex":
+        dfInputNonlinear = self.readPWAFiles(variableType,fileType="nonlinear")
+        if variableType == "Capex":
             # make absolute capex
             dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
         for column in dfInputNonlinear.columns:
             nonlinearValues[column] = dfInputNonlinear[column].to_list()
         # extract PWA breakpoints
-        assert f"breakpointsPWA{type}.csv" in os.listdir(self.folderPath), f"File 'breakpointsPWA{type}.csv' does not exist in {self.folderPath}"
-        # TODO devise better way to split string units
-        dfInputBreakpoints          = pd.read_csv(f"{self.folderPath}breakpointsPWA{type}.csv", header=0, index_col=None)
-        dfInputBreakpointsUnits     = dfInputBreakpoints.iloc[-1]
-        dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
-        dfInputBreakpoints          = dfInputBreakpoints.iloc[:-1].astype(float)
-        dfInputBreakpoints          = dfInputBreakpoints*dfInputMultiplier
+        dfInputBreakpoints = self.readPWAFiles(variableType, fileType="breakpointsPWA")
         # assert that breakpoint variable (x variable in nonlinear input)
         assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
         breakpointVariable = dfInputBreakpoints.columns[0]
@@ -407,9 +393,21 @@ class DataInput():
                     PWADict["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
         return PWADict
 
+    def readPWAFiles(self,variableType,fileType):
+        """ reads PWA Files
+        :param variableType: technology approximation type
+        :param fileType: either breakpointsPWA or nonlinear
+        :return dfInput: raw input file"""
+        dfInput             = self.readInputData(fileType+variableType)
+        assert (dfInput is not None), f"File '{fileType}{variableType}.csv' does not exist in {self.folderPath}"
+        dfInputUnits        = dfInput.iloc[-1]
+        dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
+        dfInput             = dfInput.iloc[:-1].astype(float)
+        dfInput             = dfInput * dfInputMultiplier
+        return dfInput
+
     def createDefaultOutput(self,fileName,indexSets,column,timeSteps=None,manualDefaultValue = None):
         """ creates default output dataframe
-        :param self.folderPath: path to input files
         :param fileName: name of selected file.
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
@@ -464,7 +462,6 @@ class DataInput():
 
     def ifAttributeExists(self, fileName, column=None):
         """ checks if default value or timeseries of an attribute exists in the input data
-        :param self.folderPath: path to input files
         :param fileName: name of selected file
         :param column: select specific column
         """

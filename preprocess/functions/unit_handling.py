@@ -93,6 +93,8 @@ class UnitHandling:
         :return multiplier: multiplication factor """
         baseUnits   = self.baseUnits
         dimMatrix   = self.dimMatrix
+        # check if "h" and thus "planck_constant" in unit
+        self.checkIfInvalidHourString(inputUnit)
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if inputUnit in baseUnits:
             return 1
@@ -149,6 +151,8 @@ class UnitHandling:
                     assert calculatedMultiplier, f"Cannot establish base unit conversion for {inputUnit} from base units {baseUnits.keys()}"
             # magnitude of combined unit is multiplier
             multiplier = combinedUnit.to_base_units().magnitude
+            # check that multiplier is larger than rounding tolerance
+            assert multiplier >= 10**(-self.roundingDecimalPoints), f"Multiplier {multiplier} of unit {inputUnit} is smaller than rounding tolerance {10**(-self.roundingDecimalPoints)}"
             # round to decimal points
             return round(multiplier,self.roundingDecimalPoints)
 
@@ -163,3 +167,10 @@ class UnitHandling:
         else:
             isPosNegBoolean = np.array_equal(np.abs(array), np.abs(array).astype(bool))
         return isPosNegBoolean
+
+    def checkIfInvalidHourString(self,inputUnit):
+        """ checks if "h" and thus "planck_constant" in inputUnit
+        :param inputUnit: string of inputUnit """
+        _tupleUnits = self.ureg(inputUnit).to_tuple()[1]
+        _listUnits = [_item[0] for _item in _tupleUnits]
+        assert "planck_constant" not in _listUnits, f"Error in input unit '{inputUnit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"

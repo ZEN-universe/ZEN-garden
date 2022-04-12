@@ -119,26 +119,26 @@ class Technology(Element):
         # if at least one value unequal to zero
         if not (_newlyBuiltCapacity == 0).all():
             # add new index to setExistingTechnologies
-            indexNewTechnology                              = max(self.setExistingTechnologies) + 1
-            self.setExistingTechnologies                    = np.append(self.setExistingTechnologies, indexNewTechnology)
+            indexNewTechnology                          = max(self.setExistingTechnologies) + 1
+            self.setExistingTechnologies                = np.append(self.setExistingTechnologies, indexNewTechnology)
+            # add new remaining lifetime
+            _lifetimeTechnology                         = self.lifetimeExistingTechnology.unstack()
+            _lifetimeTechnology[indexNewTechnology]     = self.lifetime
+            self.lifetimeExistingTechnology             = _lifetimeTechnology.stack()
 
             for typeCapacity in list(set(_newlyBuiltCapacity.index.get_level_values(0))):
-            # add power
-                if typeCapacity == "power":
+                # if power
+                if typeCapacity == system["setCapacityTypes"][0]:
                     _energyString = ""
-                elif typeCapacity == "energy":
+                # if energy
+                else:
                     _energyString = "Energy"
                 _existingCapacity       = getattr(self,"existingCapacity"+_energyString)
-                _lifetimeTechnology     = getattr(self, "lifetimeExistingTechnology" + _energyString)
                 _capexExistingCapacity  = getattr(self, "capexExistingCapacity" + _energyString)
                 # add new existing capacity
                 _existingCapacity                           = _existingCapacity.unstack()
                 _existingCapacity[indexNewTechnology]       = _newlyBuiltCapacity.loc[typeCapacity]
                 setattr(self,"existingCapacity"+_energyString,_existingCapacity.stack())
-                # add new remaining lifetime
-                _lifetimeTechnology                         = _lifetimeTechnology.unstack()
-                _lifetimeTechnology[indexNewTechnology]     = self.lifetime
-                setattr(self, "lifetimeExistingTechnology" + _energyString,_lifetimeTechnology.stack())
                 # calculate capex of existing capacity
                 _capexExistingCapacity                      = _capexExistingCapacity.unstack()
                 _capexExistingCapacity[indexNewTechnology]  = _capex.loc[typeCapacity]
@@ -224,7 +224,7 @@ class Technology(Element):
         if idExistingCapacity is None:
             lifetimeYearly = model.lifetimeTechnology[tech]
         else:
-            lifetimeYearly = model.lifetimeExistingTechnology[tech,capacityType,loc,idExistingCapacity]
+            lifetimeYearly = model.lifetimeExistingTechnology[tech,loc,idExistingCapacity]
         baseLifetime =  lifetimeYearly / system["intervalBetweenYears"] * system["unaggregatedTimeStepsPerYear"]
         if int(baseLifetime) != baseLifetime:
             logging.warning(
@@ -308,9 +308,9 @@ class Technology(Element):
             doc = 'Parameter which specifies the maximum technology size that can be installed. Dimensions: setTechnologies')
         # lifetime existing technologies # TODO check if something has to be changed in initializeComponent
         model.lifetimeExistingTechnology = pe.Param(
-            cls.createCustomSet(["setTechnologies","setCapacityTypes", "setLocation", "setExistingTechnologies"]),
-            initialize=EnergySystem.initializeComponent(cls,"lifetimeExistingTechnology",capacityTypes=True),
-            doc='Parameter which specifies the remaining lifetime of an existing technology. Dimensions: setTechnologies')
+            cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
+            initialize=EnergySystem.initializeComponent(cls,"lifetimeExistingTechnology"),
+            doc='Parameter which specifies the remaining lifetime of an existing technology. Dimensions: setTechnologies, setLocation, setExistingTechnologies')
         # lifetime existing technologies
         model.capexExistingCapacity = pe.Param(
             cls.createCustomSet(["setTechnologies","setCapacityTypes", "setLocation", "setExistingTechnologies"]),
@@ -360,25 +360,28 @@ class Technology(Element):
             """ return bounds of capacity for bigM expression
             :param model: pe.ConcreteModel
             :param tech: tech index
+            :param capacityType: either power or energy
+            :param loc: location of capacity
+            :param time: investment time step
             :return bounds: bounds of capacity"""
             # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
             if tech in Technology.createCustomSet(["setTechnologies","setOnOff"]):
                 system = EnergySystem.getSystem()
-                existingCapacities = 0
+
                 if capacityType == system["setCapacityTypes"][0]:
-                    for id in model.setExistingTechnologies[tech]:
-                        if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
-                            existingCapacities += model.existingCapacity[tech, loc, id]
-
-                    maxBuiltCapacity = len(model.setTimeStepsInvest[tech])*model.maxBuiltCapacity[tech]
-                    maxCapacityLimitTechnology = model.capacityLimitTechnology[tech,loc]
+                    _energyString = ""
                 else:
-                    for id in model.setExistingTechnologies[tech]:
-                        if (time - model.lifetimeExistingTechnology[tech, loc, id] + 1) <= 0:
-                            existingCapacities += model.existingCapacityEnergy[tech, loc, id]
+                    _energyString = "Energy"
+                _existingCapacity           = model.find_component("existingCapacity"+_energyString)
+                _maxBuiltCapacity           = model.find_component("maxBuiltCapacity" + _energyString)
+                _capacityLimitTechnology    = model.find_component("capacityLimitTechnology" + _energyString)
+                existingCapacities = 0
+                for idExistingTechnology in model.setExistingTechnologies[tech]:
+                    if (time - model.lifetimeExistingTechnology[tech, loc, idExistingTechnology] + 1) <= 0:
+                        existingCapacities  += _existingCapacity[tech, loc, idExistingTechnology]
 
-                    maxBuiltCapacity = len(model.setTimeStepsInvest[tech]) * model.maxBuiltCapacityEnergy[tech]
-                    maxCapacityLimitTechnology = model.capacityLimitTechnologyEnergy[tech, loc]
+                maxBuiltCapacity            = len(model.setTimeStepsInvest[tech])*_maxBuiltCapacity[tech]
+                maxCapacityLimitTechnology  = _capacityLimitTechnology[tech,loc]
                 boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology)
                 bounds = (0,boundCapacity)
                 return(bounds)
