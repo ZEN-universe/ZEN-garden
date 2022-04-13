@@ -8,6 +8,7 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
                 optimization model as an input.
 ==========================================================================================================================================================================="""
+import copy
 import logging
 import warnings
 import pyomo.environ as pe
@@ -97,6 +98,7 @@ class EnergySystem:
         self.typesTimeSteps              = ["invest", "operation", "yearly"]
         self.dictNumberOfTimeSteps       = self.dataInput.extractNumberTimeSteps()
         self.setTimeStepsYearly          = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
+        self.setTimeStepsYearlyEntireHorizon = copy.deepcopy(self.setTimeStepsYearly)
         self.timeStepsYearlyDuration     = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
         self.sequenceTimeStepsYearly     = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
         self.setSequenceTimeSteps(None, self.sequenceTimeStepsYearly, timeStepType="yearly")
@@ -415,13 +417,16 @@ class EnergySystem:
         """ encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
         baseTimeStep of model --> timeStep of element
         :param element: name of element in model, i.e., carrier or technology
-        :param baseTimeStep: base time step of model for which the corresponding time index is extracted
+        :param baseTimeSteps: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
         # model = cls.getConcreteModel()
         sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
         # get time step duration
-        elementTimeStep = np.unique(sequenceTimeSteps[baseTimeSteps])
+        if np.all(baseTimeSteps >= 0):
+            elementTimeStep = np.unique(sequenceTimeSteps[baseTimeSteps])
+        else:
+            elementTimeStep = [-1]
         if yearly:
             return(elementTimeStep)
         if len(elementTimeStep) == 1:
@@ -561,6 +566,10 @@ class EnergySystem:
         model.setTimeStepsYearly = pe.Set(
             initialize=energySystem.setTimeStepsYearly,
             doc='Set of yearly time-steps')
+        # yearly time steps of entire optimization horizon
+        model.setTimeStepsYearlyEntireHorizon = pe.Set(
+            initialize=energySystem.setTimeStepsYearlyEntireHorizon,
+            doc='Set of yearly time-steps of entire optimization horizon')
 
     @classmethod
     def constructParams(cls):

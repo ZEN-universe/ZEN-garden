@@ -46,11 +46,11 @@ class StorageTechnology(Technology):
         self.minBuiltCapacityEnergy         = self.dataInput.extractAttributeData("minBuiltCapacityEnergy")["value"]
         self.maxBuiltCapacityEnergy         = self.dataInput.extractAttributeData("maxBuiltCapacityEnergy")["value"]
         self.capacityLimitEnergy            = self.dataInput.extractInputData("capacityLimitEnergy",indexSets=["setNodes"])
-        # self.setExistingTechnologiesEnergy  = self.dataInput.extractSetExistingTechnologies(storageEnergy = True)
         self.existingCapacityEnergy         = self.dataInput.extractInputData(
             "existingCapacityEnergy",indexSets=["setNodes","setExistingTechnologies"],column="existingCapacity")
-        # self.lifetimeExistingTechnologyEnergy = self.dataInput.extractLifetimeExistingTechnology(
-        #     "existingCapacityEnergy",indexSets=["setNodes","setExistingTechnologiesEnergy"])
+        self.existingInvestedCapacityEnergy = self.dataInput.extractInputData(
+            "existingInvestedCapacityEnergy", indexSets=["setNodes", "setTimeSteps"],
+            timeSteps=EnergySystem.getEnergySystem().setTimeStepsYearly)
         self.capexSpecific                  = self.dataInput.extractInputData(
             "capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
         self.capexSpecificEnergy            = self.dataInput.extractInputData(
