@@ -93,8 +93,7 @@ class UnitHandling:
         :return multiplier: multiplication factor """
         baseUnits   = self.baseUnits
         dimMatrix   = self.dimMatrix
-        # check if "h" and thus "planck_constant" in unit
-        self.checkIfInvalidHourString(inputUnit)
+
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if inputUnit in baseUnits:
             return 1
@@ -102,6 +101,8 @@ class UnitHandling:
         elif type(inputUnit) != str and np.isnan(inputUnit):
             return 1
         else:
+            # check if "h" and thus "planck_constant" in unit
+            self.checkIfInvalidHourString(inputUnit)
             # create dimensionality vector for inputUnit
             dimInput    = self.ureg.get_dimensionality(self.ureg(inputUnit))
             dimVector   = pd.Series(index=dimMatrix.index, data=0)

@@ -31,7 +31,6 @@ class DataInput():
         self.solver         = solver
         self.energySystem   = energySystem
         self.unitHandling   = unitHandling
-        unitHandling.getUnitMultiplier("kiloEuro/(km*tons/h)")
         # extract folder path
         self.folderPath = getattr(self.element,"inputPath")
 
