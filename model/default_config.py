@@ -30,7 +30,8 @@ analysis["discountRate"] = 0.06
 # transport distance (euclidean or actual)
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
-analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
+analysis["subsets"] = {"setCarriers": [],
+                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
 # settings for MINLP
 analysis["variablesNonlinearModel"]                 = {"builtCapacity": []}
 analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEfficiency":[]}
@@ -83,8 +84,7 @@ analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
                                 'carrierFlowDischarge':['?','??','???','????'],
                                 'levelCharge':['?','??','???','????'],
                                 }
-
-analysis['postprocess'] = False
+analysis['postprocess'] = True
 
 ## System - Items assignment
 # set of energy carriers

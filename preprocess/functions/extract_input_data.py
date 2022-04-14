@@ -343,7 +343,7 @@ class DataInput():
             defaultName = column
         else:
             defaultName = manualFileName
-        defaultValue = self.extractAttributeData(folderPath, defaultName)
+        defaultValue = self.extractAttributeData(folderPath, defaultName, skipWarning=True)
 
         # check if input file exists
         inputData = None

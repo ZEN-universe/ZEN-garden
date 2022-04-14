@@ -314,8 +314,6 @@ class Postprocess:
     # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))
 
 if __name__ == "__main__":
-    # today = datetime.date()
-    # filename = "model_" + today.strftime("%Y-%m-%d")
-    # with open("./outputs/{filename}.pkl", 'rb') as inp:
-    #     tech_companies = pickle.load(inp)
-    evaluation = Postprocess(modelName='Manon_test')
+    today = datetime.date()
+    modelName = "model_" + today.strftime("%Y-%m-%d")
+    evaluation = Postprocess(modelName=modelName)

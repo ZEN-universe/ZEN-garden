@@ -10,6 +10,7 @@ Description:    Class defining the parameters, variables and constraints of the 
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
+from model.objects.energy_system                    import EnergySystem
 from model.objects.technology.conversion_technology import ConversionTechnology
 
 
@@ -34,6 +35,21 @@ class ConditioningTechnology(ConversionTechnology):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # get attributes from class <Technology>
         super().storeInputData()
+        self.setConditioningCarriers()
+
+    def setConditioningCarriers(self):
+        """add conditioning carriers to system"""
+        subset   = "setConditioningCarriers"
+        analysis = EnergySystem.getAnalysis()
+        system   = EnergySystem.getSystem()
+        # add setConditioningCarriers to analysis and indexingSets
+        if subset not in analysis["subsets"]["setCarriers"]:
+            analysis["subsets"]["setCarriers"].append(subset)
+        # add setConditioningCarriers to system
+        if subset not in system.keys():
+            system[subset] = []
+        if self.outputCarrier[0] not in system[subset]:
+            system[subset] += self.outputCarrier
 
     def getConverEfficiency(self):
         """retrieves and stores converEfficiency for <ConditioningTechnology>.
@@ -44,7 +60,6 @@ class ConditioningTechnology(ConversionTechnology):
         self.pressureOut          = self.dataInput.extractAttributeData(self.inputPath, "pressureOut", skipWarning=True)["value"]
         self.temperatureIn        = self.dataInput.extractAttributeData(self.inputPath, "temperatureIn", skipWarning=True)["value"]
         self.isentropicEfficiency = self.dataInput.extractAttributeData(self.inputPath, "isentropicEfficiency", skipWarning=True)["value"]
-
 
         # calculate energy consumption
         _pressureRatio     = self.pressureOut / self.pressureIn
@@ -74,4 +89,46 @@ class ConditioningTechnology(ConversionTechnology):
         self.PWAConverEfficiency["bounds"][self.outputCarrier[0]]     = (self.minBuiltCapacity, self.maxBuiltCapacity)
         self.PWAConverEfficiency["bounds"][_inputCarriers[0]]         = (self.minBuiltCapacity * _energyConsumption, self.maxBuiltCapacity * _energyConsumption)
 
-        ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConditioningTechnology --- ###
+    @classmethod
+    def constructSets(cls):
+        """ constructs the pe.Sets of the class <ConditioningTechnology> """
+        model = EnergySystem.getConcreteModel()
+        # get parent carriers
+        _outputCarriers    = cls.getAttributeOfAllElements("outputCarrier")
+        _referenceCarriers = cls.getAttributeOfAllElements("referenceCarrier")
+        _parentCarriers    = list()
+        _childCarriers     = dict()
+        for tech, carrierRef in _referenceCarriers.items():
+            if carrierRef[0] not in _parentCarriers:
+                _parentCarriers += carrierRef
+                _childCarriers[carrierRef[0]] = list()
+            if _outputCarriers[tech] not in _childCarriers[carrierRef[0]]:
+                _childCarriers[carrierRef[0]] +=_outputCarriers[tech]
+                _conditioningCarriers = list()
+        _conditioningCarriers = _parentCarriers+[carrier[0] for carrier in _childCarriers.values()]
+
+        # update indexing sets
+        EnergySystem.indexingSets.append("setConditioningCarriers")
+        EnergySystem.indexingSets.append("setConditioningCarrierParents")
+
+        # set of conditioning carriers
+        model.setConditioningCarriers = pe.Set(
+            initialize=_conditioningCarriers,
+            doc="set of conditioning carriers. Dimensions: setConditioningCarriers"
+        )
+        # set of parent carriers
+        model.setConditioningCarrierParents = pe.Set(
+            initialize=_parentCarriers,
+            doc="set of parent carriers of conditioning. Dimensions: setConditioningCarrierParents"
+        )
+        # set that maps parent and child carriers
+        model.setConditioningCarrierChildren = pe.Set(
+            model.setConditioningCarrierParents,
+            initialize=_childCarriers,
+            doc="set of child carriers associated with parent carrier used in conditioning. Dimensions: setConditioningCarrierChildren"
+        )
+
+    # def constructParams, Vars and Constraints can be added as well
+    # in this case, add the following to the parent class
+    #    for subclass in cls.getAllSubclasses():
+    #        subclass.constructParams()/Vars()/Constraints()

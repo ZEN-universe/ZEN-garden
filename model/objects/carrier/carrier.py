@@ -161,6 +161,10 @@ class Carrier(Element):
             doc="total carbon emissions of importing/exporting carrier. Domain: NonNegativeReals"
         )
 
+        # add pe.Sets of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.constructVars()
+
     @classmethod
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <Carrier> """
@@ -208,6 +212,10 @@ class Carrier(Element):
             rule=constraintCarbonEmissionsCarrierTotalRule,
             doc="total carbon emissions of importing/exporting carriers."
         )
+
+        # add pe.Sets of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.constructConstraints()
 
 
 #%% Constraint rules defined in current class
@@ -284,8 +292,8 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
         if carrier in model.setReferenceCarriers[tech]:
             elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
             carrierFlowIn   += sum(model.carrierFlow[tech, edge, elementTimeStep]
-                            - model.carrierLoss[tech, edge, elementTimeStep] for edge in setEdgesIn) 
-            carrierFlowOut  += sum(model.carrierFlow[tech, edge, elementTimeStep] for edge in setEdgesOut) 
+                            - model.carrierLoss[tech, edge, elementTimeStep] for edge in setEdgesIn)
+            carrierFlowOut  += sum(model.carrierFlow[tech, edge, elementTimeStep] for edge in setEdgesOut)
     # carrier flow storage technologies
     carrierFlowDischarge, carrierFlowCharge = 0, 0
     for tech in model.setStorageTechnologies:
@@ -295,21 +303,21 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
             carrierFlowCharge       += model.carrierFlowCharge[tech,node,elementTimeStep]
     # carrier import, demand and export
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
-    elementTimeStep     = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
-    carrierImport       = model.importCarrierFlow[carrier, node, elementTimeStep]
-    carrierExport       = model.exportCarrierFlow[carrier, node, elementTimeStep]
-    carrierDemand       = model.demandCarrier[carrier, node, elementTimeStep]
-    
+    elementTimeStep         = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
+    carrierImport           = model.importCarrierFlow[carrier, node, elementTimeStep]
+    carrierExport           = model.exportCarrierFlow[carrier, node, elementTimeStep]
+    carrierDemand           = model.demandCarrier[carrier, node, elementTimeStep]
+
     return (
         # conversion technologies
-        carrierConversionOut - carrierConversionIn 
+        carrierConversionOut - carrierConversionIn
         # transport technologies
         + carrierFlowIn - carrierFlowOut
         # storage technologies
         + carrierFlowDischarge - carrierFlowCharge
-        # import and export 
-        + carrierImport - carrierExport 
+        # import and export
+        + carrierImport - carrierExport
         # demand
-        - carrierDemand 
+        - carrierDemand
         == 0
         )
