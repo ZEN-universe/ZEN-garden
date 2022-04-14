@@ -152,7 +152,7 @@ class OptimizationSetup():
         for tech in Technology.getAllElements():
             # new capacity
             _builtCapacityTech      = _builtCapacity.loc[tech.name].unstack()
-            _investedCapacityTech   = _builtCapacity.loc[tech.name].unstack()
+            _investedCapacityTech   = _investedCapacity.loc[tech.name].unstack()
             _capexTech              = _capex.loc[tech.name].unstack()
             tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)
             tech.addNewlyInvestedCapacityTech(_investedCapacityTech,stepHorizon)

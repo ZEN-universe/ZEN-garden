@@ -9,7 +9,7 @@ Description:    Class defining the parameters, variables and constraints that ho
                 The class takes the abstract optimization model as an input, and returns the parameters, variables and
                 constraints that hold for all technologies.
 ==========================================================================================================================================================================="""
-
+import copy
 import logging
 import sys
 import pyomo.environ as pe
@@ -41,6 +41,8 @@ class Technology(Element):
 
         setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
         self.setTimeStepsInvest         = self.dataInput.extractTimeSteps(self.name,typeOfTimeSteps="invest")
+        self.setTimeStepsInvestEntireHorizon    = copy.deepcopy(self.setTimeStepsInvest)
+
         self.timeStepsInvestDuration    = EnergySystem.calculateTimeStepDuration(self.setTimeStepsInvest)
         self.sequenceTimeStepsInvest    = np.concatenate([[timeStep]*self.timeStepsInvestDuration[timeStep] for timeStep in self.timeStepsInvestDuration])
         EnergySystem.setSequenceTimeSteps(self.name,self.sequenceTimeStepsInvest,timeStepType="invest")
@@ -101,8 +103,10 @@ class Technology(Element):
         """ overwrites setTimeStepsInvest and setTimeStepsOperation """
         setTimeStepsInvest      = EnergySystem.encodeTimeStep(self.name,baseTimeSteps=baseTimeSteps,timeStepType="invest",yearly=True)
         setTimeStepsOperation   = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps,timeStepType="operation",yearly=True)
-        setattr(self,"setTimeStepsInvest",setTimeStepsInvest.squeeze().tolist())
-        setattr(self, "setTimeStepsOperation", setTimeStepsOperation.squeeze().tolist())
+
+        # copy invest time steps
+        self.setTimeStepsInvest                 = setTimeStepsInvest.squeeze().tolist()
+        self.setTimeStepsOperation              = setTimeStepsOperation.squeeze().tolist()
 
     def addNewlyBuiltCapacityTech(self,builtCapacity,capex,baseTimeSteps):
         """ adds the newly built capacity to the existing capacity
@@ -151,6 +155,7 @@ class Technology(Element):
         :param stepHorizon: optimization time step """
         system = EnergySystem.getSystem()
         _newlyInvestedCapacity = investedCapacity[stepHorizon]
+        _newlyInvestedCapacity = _newlyInvestedCapacity.fillna(0)
         if not (_newlyInvestedCapacity == 0).all():
             for typeCapacity in list(set(_newlyInvestedCapacity.index.get_level_values(0))):
                 # if power
@@ -304,6 +309,12 @@ class Technology(Element):
             initialize = cls.getAttributeOfAllElements("setTimeStepsInvest"),
             doc="Set of time steps in investment for all technologies. Dimensions: setTechnologies"
         )
+        # invest time steps
+        model.setTimeStepsInvestEntireHorizon = pe.Set(
+            model.setTechnologies,
+            initialize=cls.getAttributeOfAllElements("setTimeStepsInvestEntireHorizon"),
+            doc="Set of time steps in investment for all technologies of entire horizon. Dimensions: setTechnologies"
+        )
         # reference carriers
         model.setReferenceCarriers = pe.Set(
             model.setTechnologies,
@@ -333,13 +344,13 @@ class Technology(Element):
             doc='Parameter which specifies the existing technology size. Dimensions: setTechnologies')
         # existing capacity
         model.existingInvestedCapacity = pe.Param(
-            cls.createCustomSet(["setTechnologies", "setCapacityTypes", "setLocation", "setTimeStepsYearlyEntireHorizon"]),
+            cls.createCustomSet(["setTechnologies", "setCapacityTypes", "setLocation", "setTimeStepsInvestEntireHorizon"]),
             initialize=EnergySystem.initializeComponent(cls, "existingInvestedCapacity",
                                                         indexNames=["setTechnologies", "setCapacityTypes",
-                                                                    "setLocation", "setTimeStepsYearlyEntireHorizon"],
+                                                                    "setLocation", "setTimeStepsInvestEntireHorizon"],
                                                         capacityTypes=True),
             doc='Parameter which specifies the size of the previously invested capacities. '
-                'Dimensions: setTechnologies, setCapacityTypes, setLocation, setTimeStepsYearlyEntireHorizon')
+                'Dimensions: setTechnologies, setCapacityTypes, setLocation, setTimeStepsInvestEntireHorizon')
 
         # minimum capacity
         model.minBuiltCapacity = pe.Param(
@@ -641,13 +652,12 @@ def constraintTechnologyConstructionTimeRule(model, tech,capacityType, loc, time
     startTimeStep,_     = Technology.getStartEndTimeOfPeriod(tech,time,periodType= "constructionTime",clipToFirstTimeStep=False)
     # TODO correct years and investment time steps
 
-    if startTimeStep in model.setTimeStepsYearly:
+    if startTimeStep in model.setTimeStepsInvest[tech]:
         return (model.builtCapacity[tech,capacityType,loc,time] == model.investedCapacity[tech,capacityType,loc,startTimeStep])
-    elif startTimeStep in model.setTimeStepsYearlyEntireHorizon:
+    elif startTimeStep in model.setTimeStepsInvestEntireHorizon[tech]:
         return (model.builtCapacity[tech,capacityType,loc,time] == model.existingInvestedCapacity[tech,capacityType,loc,startTimeStep])
     else:
         return (model.builtCapacity[tech,capacityType,loc,time] == 0)
-
 
 def constraintTechnologyMaxCapacityRule(model, tech,capacityType, loc, time):
     """max capacity expansion of  technology"""
