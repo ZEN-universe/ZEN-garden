@@ -44,8 +44,8 @@ class TimeSeriesAggregation():
         else:
             self.typicalPeriods = pd.DataFrame()
             _setTimeSteps       = self.setBaseTimeStepsYear
-            _timeStepDuration   = EnergySystem.calculateTimeStepDuration(self.setTimeSteps,self.setBaseTimeStepsYear)
-            _sequenceTimeSteps  = np.concatenate([[timeStep] * self.timeStepsDuration[timeStep] for timeStep in self.timeStepsDuration])
+            _timeStepDuration   = EnergySystem.calculateTimeStepDuration(_setTimeSteps,self.setBaseTimeStepsYear)
+            _sequenceTimeSteps  = np.concatenate([[timeStep] * _timeStepDuration[timeStep] for timeStep in _timeStepDuration])
             TimeSeriesAggregation.setTimeAttributes(self,_setTimeSteps,_timeStepDuration,_sequenceTimeSteps)
             # set aggregated time series
             self.setAggregatedTimeSeriesOfAllElements()

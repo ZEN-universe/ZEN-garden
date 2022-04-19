@@ -61,7 +61,7 @@ class TransportTechnology(Technology):
 
     def calculateCapexOfSingleCapacity(self,capacity,index):
         """ this method calculates the annualized capex of a single existing capacity. """
-        return self.capexSpecific[index] * capacity
+        return self.capexSpecific[index[0]].iloc[0] * capacity
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod

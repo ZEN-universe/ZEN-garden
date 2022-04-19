@@ -263,6 +263,7 @@ class Technology(Element):
             assert periodType == "lifetime", "existing planned capacities not yet implemented"
             periodYearly = model.lifetimeExistingTechnology[tech,loc,idExistingCapacity]
         basePeriod = periodYearly / system["intervalBetweenYears"] * system["unaggregatedTimeStepsPerYear"]
+        basePeriod = round(basePeriod,EnergySystem.getSolver()["roundingDecimalPoints"])
         if int(basePeriod) != basePeriod:
             logging.warning(
                 f"The period {periodType} of {tech} does not translate to an integer time interval in the base time domain ({basePeriod})")
@@ -362,7 +363,7 @@ class Technology(Element):
             cls.createCustomSet(["setTechnologies","setCapacityTypes"]),
             initialize = EnergySystem.initializeComponent(cls,"maxBuiltCapacity",capacityTypes=True),
             doc = 'Parameter which specifies the maximum technology size that can be installed. Dimensions: setTechnologies')
-        # lifetime existing technologies # TODO check if something has to be changed in initializeComponent
+        # lifetime existing technologies
         model.lifetimeExistingTechnology = pe.Param(
             cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
             initialize=EnergySystem.initializeComponent(cls,"lifetimeExistingTechnology"),
@@ -540,7 +541,6 @@ class Technology(Element):
             rule=constraintTechnologyConstructionTimeRule,
             doc='lead time in which invested technology is constructed. Dimensions: setTechnologies,"setCapacityTypes", setLocation, setTimeStepsInvest'
         )
-
         # lifetime
         model.constraintTechnologyLifetime = pe.Constraint(
             cls.createCustomSet(["setTechnologies","setCapacityTypes","setLocation","setTimeStepsInvest"]),
@@ -583,7 +583,6 @@ class Technology(Element):
             rule=constraintCarbonEmissionsTechnologyTotalRule,
             doc="total carbon emissions for each technology at each location and time step"
         )
-
         # disjunct if technology is on
         model.disjunctOnTechnology = pgdp.Disjunct(
             cls.createCustomSet(["setTechnologies","setOnOff","setLocation","setTimeStepsOperation"]),
