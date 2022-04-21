@@ -215,6 +215,19 @@ class TimeSeriesAggregation():
         TimeSeriesAggregation.setTimeAttributes(element,setTimeSteps,timeStepsDuration,sequenceTimeSteps)
 
     @classmethod
+    def calculateTimeStepsOperation2Invest(cls,element):
+        """ calculates the conversion of operational time steps to invest time steps """
+        _setTimeStepsOperation      = getattr(element,"setTimeStepsOperation")
+        _sequenceTimeStepsOperation = getattr(element,"sequenceTimeSteps")
+        _sequenceTimeStepsInvest    = getattr(element, "sequenceTimeStepsInvest")
+        _timeStepsOperation2Invest  = {}
+        for timeStep in _setTimeStepsOperation:
+            convertedTimeSteps = np.unique(_sequenceTimeStepsInvest[_sequenceTimeStepsOperation == timeStep])
+            assert len(convertedTimeSteps) == 1, f"more than one invest time step per operational time step. Impossible, here to debug"
+            _timeStepsOperation2Invest[timeStep] = convertedTimeSteps[0]
+        EnergySystem.setTimeStepsOperation2Invest(element.name,_timeStepsOperation2Invest)
+
+    @classmethod
     def overwriteTimeSeriesWithExpandedTimeIndex(cls, element, setTimeStepsOperation, sequenceTimeSteps):
         """ this method expands the aggregated time series to match the extended operational time steps because of matching the investment and operational time sequences.
         :param element: technology of the optimization
@@ -272,6 +285,9 @@ class TimeSeriesAggregation():
             EnergySystem.setSequenceTimeSteps(element.name, element.sequenceTimeSteps)
             # calculate the time steps in operation to link with investment and yearly time steps
             cls.linkTimeSteps(element)
+            # set operation2invest time step dict
+            if element in Technology.getAllElements():
+                cls.calculateTimeStepsOperation2Invest(element)
 
     @classmethod
     def setAggregationIndicators(cls, element, setEnergyBalanceIndicator=False):

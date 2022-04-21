@@ -633,9 +633,13 @@ class Technology(Element):
 ### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class
 def constraintTechnologyCapacityLimitRule(model, tech,capacityType, loc, time):
-    """limited capacityLimit of  technology"""
+    """limited capacityLimit of technology"""
     if model.capacityLimitTechnology[tech,capacityType, loc] != np.inf:
-        return (model.capacityLimitTechnology[tech,capacityType, loc] >= model.capacity[tech,capacityType, loc, time])
+        existingCapacities = Technology.getAvailableExistingQuantity(tech, capacityType, loc, time,typeExistingQuantity="capacity")
+        if existingCapacities < model.capacityLimitTechnology[tech, capacityType, loc]:
+            return (model.capacityLimitTechnology[tech,capacityType, loc] >= model.capacity[tech,capacityType, loc, time])
+        else:
+            return (existingCapacities >= model.capacity[tech, capacityType, loc, time])
     else:
         return pe.Constraint.Skip
 
@@ -660,22 +664,19 @@ def constraintTechnologyConstructionTimeRule(model, tech,capacityType, loc, time
 
 def constraintTechnologyMaxCapacityRule(model, tech,capacityType, loc, time):
     """max capacity expansion of  technology"""
-    if model.maxBuiltCapacity[tech,capacityType] != np.inf and tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
+    if model.maxBuiltCapacity[tech,capacityType] != np.inf:
         return (model.maxBuiltCapacity[tech,capacityType] >= model.builtCapacity[tech,capacityType, loc, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyLifetimeRule(model, tech,capacityType, loc, time):
     """limited lifetime of the technologies"""
-    if tech not in Technology.createCustomSet(["setTechnologies","setCapexNL"]):
-        # determine existing capacities
-        existingCapacities = Technology.getAvailableExistingQuantity(tech,capacityType,loc,time,typeExistingQuantity="capacity")
 
-        return (model.capacity[tech,capacityType, loc, time]
-                == existingCapacities
-                + sum(model.builtCapacity[tech,capacityType, loc, previousTime] for previousTime in Technology.getLifetimeRange(tech,time)))
-    else:
-        return pe.Constraint.Skip
+    # determine existing capacities
+    existingCapacities = Technology.getAvailableExistingQuantity(tech,capacityType,loc,time,typeExistingQuantity="capacity")
+    return (model.capacity[tech,capacityType, loc, time]
+            == existingCapacities
+            + sum(model.builtCapacity[tech,capacityType, loc, previousTime] for previousTime in Technology.getLifetimeRange(tech,time)))
 
 def constraintCapexTotalRule(model,year):
     """ sums over all technologies to calculate total capex """
@@ -751,7 +752,7 @@ def constraintMaxLoadRule(model, tech,capacityType, loc, time):
     """Load is limited by the installed capacity and the maximum load factor"""
     referenceCarrier = model.setReferenceCarriers[tech].at(1)
     # get invest time step
-    investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
+    investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
     # conversion technology
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:

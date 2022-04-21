@@ -44,6 +44,10 @@ class EnergySystem:
     dictSequenceTimeStepsInvest = {}
     # empty dict of sequence of time steps yearly
     dictSequenceTimeStepsYearly = {}
+    # empty dict of conversion from energy time steps to power time steps for storage technologies
+    dictTimeStepsEnergy2Power = {}
+    # empty dict of conversion from operational time steps to invest time steps for technologies
+    dictTimeStepsOperation2Invest = {}
     # empty dict of raw time series, only necessary for single time grid approach
     dictTimeSeriesRaw = {}
     # empty dict of element classes
@@ -195,6 +199,16 @@ class EnergySystem:
                 cls.dictTechnologyOfCarrier[carrier].append(technology)
 
     @classmethod
+    def setTimeStepsEnergy2Power(cls,element,timeStepsEnergy2Power):
+        """ sets the dict of converting the energy time steps to the power time steps of storage technologies """
+        cls.dictTimeStepsEnergy2Power[element] = timeStepsEnergy2Power
+
+    @classmethod
+    def setTimeStepsOperation2Invest(cls, element, timeStepsOperation2Invest):
+        """ sets the dict of converting the operational time steps to the invest time steps of all technologies """
+        cls.dictTimeStepsOperation2Invest[element] = timeStepsOperation2Invest
+
+    @classmethod
     def setSequenceTimeSteps(cls,element,sequenceTimeSteps,timeStepType = None):
         """ sets sequence of time steps, either of operation, invest, or year
         :param element: name of element in model
@@ -304,6 +318,16 @@ class EnergySystem:
             return cls.dictTechnologyOfCarrier[carrier]
         else:
             return None
+
+    @classmethod
+    def getTimeStepsEnergy2Power(cls, element):
+        """ gets the dict of converting the energy time steps to the power time steps of storage technologies """
+        return cls.dictTimeStepsEnergy2Power[element]
+
+    @classmethod
+    def getTimeStepsOperation2Invest(cls, element):
+        """ gets the dict of converting the operational time steps to the invest time steps of technologies """
+        return cls.dictTimeStepsOperation2Invest[element]
 
     @classmethod
     def getSequenceTimeSteps(cls,element,timeStepType = None):
@@ -444,41 +468,19 @@ class EnergySystem:
         return fullBaseTimeSteps
 
     @classmethod
-    def convertTechnologyTimeStepType(cls,element,elementTimeStep,direction = "operation2invest"):
-        """ converts type of technology time step from operation to invest or from invest to operation.
-        Carrier has no invest, so irrelevant for carrier
-        :param element: element of model (here technology)
-        :param elementTimeStep: time step of element
-        :param direction: conversion direction (operation2invest or invest2operation)
-        :return convertedTimeStep: time of second type """
-        model                   = cls.getConcreteModel()
-        setTimeStepsInvest      = model.setTimeStepsInvest[element]
-        setTimeStepsOperation   = model.setTimeStepsOperation[element]
-        # if only one investment step
-        if len(setTimeStepsInvest) == 1:
-            if direction ==  "operation2invest":
-                return setTimeStepsInvest.at(1)
-            elif direction == "invest2operation":
-                return setTimeStepsOperation.data()
-            else:
-                raise KeyError(f"Direction for time step conversion {direction} is incorrect")
-        # if more than one invest step
-        else:
-            if direction ==  "operation2invest":
-                sequenceTimeStepsIn        = cls.getSequenceTimeSteps(element,"operation")
-                sequenceTimeStepsOut       = cls.getSequenceTimeSteps(element,"invest")
-            elif direction == "invest2operation":
-                sequenceTimeStepsOut       = cls.getSequenceTimeSteps(element,"operation")
-                sequenceTimeStepsIn        = cls.getSequenceTimeSteps(element,"invest")
-            else:
-                raise KeyError(f"Direction for time step conversion {direction} is incorrect")
-            # convert time steps
-            convertedTimeSteps = np.unique(sequenceTimeStepsOut[sequenceTimeStepsIn == elementTimeStep])
-            assert len(convertedTimeSteps) == 1, f"more than one converted time step, not yet implemented"
-            return convertedTimeSteps[0]
+    def convertTimeStepEnergy2Power(cls,element,timeStepEnergy):
+        """ converts the time step of the energy quantities of a storage technology to the time step of the power quantities """
+        _timeStepsEnergy2Power = cls.getTimeStepsEnergy2Power(element)
+        return _timeStepsEnergy2Power[timeStepEnergy]
 
     @classmethod
-    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None,capacityTypes = False):
+    def convertTimeStepOperation2Invest(cls, element, timeStepOperation):
+        """ converts the operational time step to the invest time step """
+        _timeStepsOperation2Invest = cls.getTimeStepsOperation2Invest(element)
+        return _timeStepsOperation2Invest[timeStepOperation]
+
+    @classmethod
+    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None,capacityTypes = False, ):
         """ this method initializes a modeling component by extracting the stored input data.
         :param callingClass: class from where the method is called
         :param componentName: name of modeling component

@@ -89,15 +89,19 @@ class StorageTechnology(Technology):
         # empty setTimeStep
         self.setTimeStepsStorageLevel       = []
         self.timeStepsStorageLevelDuration  = {}
+        timeStepsEnergy2Power               = {}
         self.sequenceTimeStepsStorageLevel  = np.zeros(np.size(sequenceTimeSteps)).astype(int)
         counterTimeStep                     = 0
         for idxTimeStep,idxStorageLevel in enumerate(IdxLastConnectedStorageLevel):
             self.setTimeStepsStorageLevel.append(idxTimeStep)
             self.timeStepsStorageLevelDuration[idxTimeStep] = len(range(counterTimeStep,idxStorageLevel+1))
             self.sequenceTimeStepsStorageLevel[counterTimeStep:idxStorageLevel+1] = idxTimeStep
+            timeStepsEnergy2Power[idxTimeStep]  = sequenceTimeSteps[idxStorageLevel]
             counterTimeStep                 = idxStorageLevel + 1 
         # add sequence to energy system
         EnergySystem.setSequenceTimeSteps(self.name+"StorageLevel",self.sequenceTimeStepsStorageLevel)
+        # set the dict timeStepsEnergy2Power
+        EnergySystem.setTimeStepsEnergy2Power(self.name, timeStepsEnergy2Power)
 
     def overwriteTimeSteps(self,baseTimeSteps):
         """ overwrites setTimeStepsStorageLevel """
@@ -131,13 +135,13 @@ class StorageTechnology(Technology):
         # efficiency charge
         model.efficiencyCharge = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
-            initialize = EnergySystem.initializeComponent(cls,"efficiencyCharge"),
+            initialize = EnergySystem.initializeComponent(cls,"efficiencyCharge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
             doc = 'efficiency during charging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
         )
         # efficiency discharge
         model.efficiencyDischarge = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
-            initialize = EnergySystem.initializeComponent(cls,"efficiencyDischarge"),
+            initialize = EnergySystem.initializeComponent(cls,"efficiencyDischarge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
             doc = 'efficiency during discharging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
         )
         # self discharge
@@ -165,7 +169,7 @@ class StorageTechnology(Technology):
             :param time: time index
             :return bounds: bounds of carrierFlow"""
             # convert operationTimeStep to investTimeStep: operationTimeStep -> baseTimeStep -> investTimeStep
-            investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
+            investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
             bounds = model.capacity[tech,"power",node,investTimeStep].bounds
             return bounds
 
@@ -263,24 +267,21 @@ class StorageTechnology(Technology):
 def constraintStorageLevelMaxRule(model, tech, node, time):
     """limit maximum storage level to capacity"""
     # get invest time step
-    baseTimeStep    = EnergySystem.decodeTimeStep(tech+"StorageLevel",time)
-    elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep)
-    investTimeStep  = EnergySystem.convertTechnologyTimeStepType(tech,elementTimeStep,"operation2invest")
+    elementTimeStep = EnergySystem.convertTimeStepEnergy2Power(tech,time)
+    investTimeStep  = EnergySystem.convertTimeStepOperation2Invest(tech,elementTimeStep)
     return(model.levelCharge[tech, node, time] <= model.capacity[tech,"energy", node, investTimeStep])
 
 def constraintCoupleStorageLevelRule(model, tech, node, time):
     """couple subsequent storage levels (time coupling constraints)"""
-    baseTimeStep                = EnergySystem.decodeTimeStep(tech+"StorageLevel",time)
-    elementTimeStep             = EnergySystem.encodeTimeStep(tech,baseTimeStep)
-    currentLevelTimeStep        = time
+    elementTimeStep             = EnergySystem.convertTimeStepEnergy2Power(tech,time)
     # get invest time step
-    investTimeStep              = EnergySystem.convertTechnologyTimeStepType(tech, time, "operation2invest")
+    investTimeStep              = EnergySystem.convertTimeStepOperation2Invest(tech,elementTimeStep)
     if time != model.setTimeStepsStorageLevel[tech].at(1):
         previousLevelTimeStep   = time-1
     else:
         previousLevelTimeStep   = model.setTimeStepsStorageLevel[tech].at(-1)
     return(
-        model.levelCharge[tech, node, currentLevelTimeStep] ==
+        model.levelCharge[tech, node, time] ==
         model.levelCharge[tech, node, previousLevelTimeStep]*(1-model.selfDischarge[tech,node])**model.timeStepsStorageLevelDuration[tech,time] + 
         (model.carrierFlowCharge[tech, node, elementTimeStep]*model.efficiencyCharge[tech,node,investTimeStep] -
         model.carrierFlowDischarge[tech, node, elementTimeStep]/model.efficiencyDischarge[tech,node,investTimeStep])*sum((1-model.selfDischarge[tech,node])**interimTimeStep for interimTimeStep in range(0,model.timeStepsStorageLevelDuration[tech,time]))

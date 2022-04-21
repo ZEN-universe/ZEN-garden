@@ -90,7 +90,7 @@ class ConversionTechnology(Technology):
 
     ### --- getter/setter classmethods
     @classmethod
-    def getCapexConverEfficiencyOfAllElements(cls, variableType, selectPWA):
+    def getCapexConverEfficiencyOfAllElements(cls, variableType, selectPWA,indexNames = None):
         """ similar to Element.getAttributeOfAllElements but only for capex and converEfficiency.
         If selectPWA, extract PWA attributes, otherwise linear.
         :param variableType: either capex or converEfficiency
@@ -115,7 +115,13 @@ class ConversionTechnology(Technology):
             # extract for linear
             elif not getattr(_element,_isPWAAttribute) and not selectPWA:
                 dictOfAttributes = cls.appendAttributeOfElementToDict(_element, _attributeNameLinear, dictOfAttributes)
-        return dictOfAttributes
+        if not indexNames:
+            return dictOfAttributes
+        else:
+            attributeData = pd.Series(dictOfAttributes, dtype=float)
+            customSet = cls.createCustomSet(indexNames)
+            attributeData = attributeData[customSet]
+            return attributeData
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
@@ -156,13 +162,13 @@ class ConversionTechnology(Technology):
         # slope of linearly modeled capex
         model.capexSpecificConversion = pe.Param(
             cls.createCustomSet(["setConversionTechnologies","setCapexLinear","setNodes","setTimeStepsInvest"]),
-            initialize = cls.getCapexConverEfficiencyOfAllElements("capex",False),
+            initialize = cls.getCapexConverEfficiencyOfAllElements("capex",False,indexNames=["setConversionTechnologies","setCapexLinear","setNodes","setTimeStepsInvest"]),
             doc = "Parameter which specifies the slope of the capex if approximated linearly. Dimensions: setConversionTechnologies, setNodes, setTimeStepsInvest"
         )
         # slope of linearly modeled conversion efficiencies
         model.converEfficiencySpecific = pe.Param(
-            cls.createCustomSet(["setConversionTechnologies","setConverEfficiencyLinear","setNodes","setTimeStepsOperation"]),
-            initialize = cls.getCapexConverEfficiencyOfAllElements("converEfficiency",False),
+            cls.createCustomSet(["setConversionTechnologies","setConverEfficiencyLinear","setNodes","setTimeStepsInvest"]),
+            initialize = cls.getCapexConverEfficiencyOfAllElements("converEfficiency",False,indexNames=["setConversionTechnologies","setConverEfficiencyLinear","setNodes","setTimeStepsInvest"]),
             doc = "Parameter which specifies the slope of the conversion efficiency if approximated linearly. Dimensions: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation"
         )
 
@@ -181,7 +187,7 @@ class ConversionTechnology(Technology):
                 bounds = cls.getAttributeOfSpecificElement(tech,"PWAConverEfficiency")["bounds"][carrier]
             else:
                 # convert operationTimeStep to investTimeStep: operationTimeStep -> baseTimeStep -> investTimeStep
-                investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech, time, "operation2invest")
+                investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
                 if carrier == model.setReferenceCarriers[tech].at(1):
                     _converEfficiency = 1
                 else:
@@ -310,7 +316,7 @@ class ConversionTechnology(Technology):
         else:
             referenceFlow = model.outputFlow[tech,referenceCarrier,node,time]
         # get invest time step
-        investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
+        investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
             expr=referenceFlow >= model.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
@@ -380,7 +386,7 @@ def constraintLinearCapexRule(model,tech,node,time):
 def constraintLinearConverEfficiencyRule(model,tech,dependentCarrier,node,time):
     """ if reference carrier and dependent carrier have a linear relationship"""
     # get invest time step
-    investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech, time, "operation2invest")
+    investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
     return(
         model.dependentFlowApproximation[tech,dependentCarrier,node,time] 
         == model.converEfficiencySpecific[tech,dependentCarrier, node,investTimeStep]*model.referenceFlowApproximation[tech,dependentCarrier,node,time]

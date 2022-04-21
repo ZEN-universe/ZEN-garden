@@ -13,6 +13,7 @@ import itertools
 import logging
 import pandas as pd
 import pyomo.environ as pe
+import cProfile, pstats
 from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
 
@@ -194,6 +195,8 @@ class Element:
     def constructModelComponents(cls):
         """ constructs the model components of the class <Element> """
         logging.info("\n--- Construct model components ---\n")
+        # pr = cProfile.Profile()
+        # pr.enable()
         # construct pe.Sets
         cls.constructSets()
         # construct pe.Params
@@ -204,6 +207,10 @@ class Element:
         cls.constructConstraints()
         # construct pe.Objective
         EnergySystem.constructObjective()
+        # pr.disable()
+        # sortby = pstats.SortKey.CUMULATIVE
+        # ps = pstats.Stats(pr).sort_stats(sortby)
+        # ps.print_stats()
 
     @classmethod
     def constructSets(cls):
