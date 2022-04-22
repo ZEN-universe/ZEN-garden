@@ -96,24 +96,21 @@ class Technology(Element):
                                                                        tech=self)
 
     def getInputPath(self, system, technologyType):
-        """ get input path where input data is stroed
+        """ get input path where input data is stored
         :param system:          dictionary that contains system parameters
         :param technologyType:  technology type
         :return inputPath"""
         paths = EnergySystem.getPaths()
-        # get input path for current technologyType
-        self.inputPath = paths[technologyType][self.name]["folder"]
         # check if technologyType has subsets
         subsets = EnergySystem.getAnalysis()["subsets"]
         if technologyType in subsets.keys():
             # iterate through subsets and check if technology belongs to any of the subsets
             for technologySubset in subsets[technologyType]:
                 if self.name in system[technologySubset]:
-                    self.subset    = technologySubset
-                    self.inputPath = paths[technologySubset][self.name]["folder"]
+                    technologyType    = technologySubset
                     break
 
-        return self.inputPath
+        return paths[technologyType][self.name]["folder"]
 
     def calculateCapexOfExistingCapacities(self):
         """ this method calculates the annualized capex of the existing capacities """
@@ -444,7 +441,7 @@ class Technology(Element):
         # opex
         model.opex = pe.Var(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = "opex for operating technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsOperation. Domain: NonNegativeReals"
         )
         # total opex

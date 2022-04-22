@@ -58,18 +58,18 @@ class OptimizationSetup():
             elementName  = elementClass.label
             elementSet   = self.system[elementName]
 
-            # check if elementSet has a subset and remove subset from elementSet
-            if elementName in self.analysis["subsets"].keys():
-                elementSubset = []
-                for subset in self.analysis["subsets"][elementName]:
-                        elementSubset += [item for item in self.system[subset]]
-                elementSet = list(set(elementSet)-set(elementSubset))
-
             # before adding the carriers, get setCarriers and check if carrier data exists
             if elementName == "setCarriers":
                 elementSet                 = EnergySystem.getAttribute("setCarriers")
                 self.system["setCarriers"] = elementSet
                 self.prepare.checkExistingCarrierData(self.system)
+
+            # check if elementSet has a subset and remove subset from elementSet
+            if elementName in self.analysis["subsets"].keys():
+                elementSubset = []
+                for subset in self.analysis["subsets"][elementName]:
+                    elementSubset += [item for item in self.system[subset]]
+                elementSet = list(set(elementSet) - set(elementSubset))
 
             # add element class
             for item in elementSet:

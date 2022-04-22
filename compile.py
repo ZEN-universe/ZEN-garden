@@ -26,8 +26,7 @@ if not os.path.exists('outputs/logs'):
     if not os.path.exists('outputs'):
         os.mkdir('outputs')
     os.mkdir('outputs/logs')
-logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, format=log_format,
-                    datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename='outputs/logs/valueChain.log', level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
 logging.captureWarnings(True)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
