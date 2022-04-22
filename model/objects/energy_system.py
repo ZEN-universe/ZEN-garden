@@ -48,6 +48,8 @@ class EnergySystem:
     dictTimeStepsEnergy2Power = {}
     # empty dict of conversion from operational time steps to invest time steps for technologies
     dictTimeStepsOperation2Invest = {}
+    # empty dict of matching the last time step of the year in the storage domain to the first
+    dictTimeStepsStorageLevelStartEndYear = {}
     # empty dict of raw time series, only necessary for single time grid approach
     dictTimeSeriesRaw = {}
     # empty dict of element classes
@@ -209,6 +211,17 @@ class EnergySystem:
         cls.dictTimeStepsOperation2Invest[element] = timeStepsOperation2Invest
 
     @classmethod
+    def setTimeStepsStorageStartEnd(cls, element):
+        """ sets the dict of matching the last time step of the year in the storage level domain to the first """
+        system                  = cls.getSystem()
+        _baseTimeStepsPerYear   = system["unaggregatedTimeStepsPerYear"]
+        _numberYears            = system["optimizedYears"]
+        _sequenceTimeSteps      = cls.getSequenceTimeSteps(element+"StorageLevel")
+        _timeStepsStart         = _sequenceTimeSteps[np.array(range(0, _numberYears)) * _baseTimeStepsPerYear]
+        _timeStepsEnd           = _sequenceTimeSteps[np.array(range(1, _numberYears + 1)) * _baseTimeStepsPerYear - 1]
+        cls.dictTimeStepsStorageLevelStartEndYear[element] = {_start:_end for _start,_end in zip(_timeStepsStart,_timeStepsEnd)}
+
+    @classmethod
     def setSequenceTimeSteps(cls,element,sequenceTimeSteps,timeStepType = None):
         """ sets sequence of time steps, either of operation, invest, or year
         :param element: name of element in model
@@ -328,6 +341,14 @@ class EnergySystem:
     def getTimeStepsOperation2Invest(cls, element):
         """ gets the dict of converting the operational time steps to the invest time steps of technologies """
         return cls.dictTimeStepsOperation2Invest[element]
+
+    @classmethod
+    def getTimeStepsStorageStartEnd(cls, element,timeStep):
+        """ gets the dict of converting the operational time steps to the invest time steps of technologies """
+        if timeStep in cls.dictTimeStepsStorageLevelStartEndYear[element].keys():
+            return cls.dictTimeStepsStorageLevelStartEndYear[element][timeStep]
+        else:
+            return None
 
     @classmethod
     def getSequenceTimeSteps(cls,element,timeStepType = None):

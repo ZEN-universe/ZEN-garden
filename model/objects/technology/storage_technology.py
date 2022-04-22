@@ -102,6 +102,8 @@ class StorageTechnology(Technology):
         EnergySystem.setSequenceTimeSteps(self.name+"StorageLevel",self.sequenceTimeStepsStorageLevel)
         # set the dict timeStepsEnergy2Power
         EnergySystem.setTimeStepsEnergy2Power(self.name, timeStepsEnergy2Power)
+        # set the first and last time step of each year
+        EnergySystem.setTimeStepsStorageStartEnd(self.name)
 
     def overwriteTimeSteps(self,baseTimeSteps):
         """ overwrites setTimeStepsStorageLevel """
@@ -276,10 +278,13 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
     elementTimeStep             = EnergySystem.convertTimeStepEnergy2Power(tech,time)
     # get invest time step
     investTimeStep              = EnergySystem.convertTimeStepOperation2Invest(tech,elementTimeStep)
-    if time != model.setTimeStepsStorageLevel[tech].at(1):
-        previousLevelTimeStep   = time-1
+    # get corresponding start time step at beginning of the year, if time is last time step in year
+    timeStepEnd                 = EnergySystem.getTimeStepsStorageStartEnd(tech,time)
+    if timeStepEnd:
+        previousLevelTimeStep   = timeStepEnd
     else:
-        previousLevelTimeStep   = model.setTimeStepsStorageLevel[tech].at(-1)
+        previousLevelTimeStep   = time-1
+
     return(
         model.levelCharge[tech, node, time] ==
         model.levelCharge[tech, node, previousLevelTimeStep]*(1-model.selfDischarge[tech,node])**model.timeStepsStorageLevelDuration[tech,time] + 

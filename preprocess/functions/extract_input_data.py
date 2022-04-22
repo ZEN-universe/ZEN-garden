@@ -563,8 +563,7 @@ class DataInput():
         # the missing index does not appear in dfInput
         # the values in dfInput are extended to all missing index values
         else:
-            #
-            logging.info(f"Missing index {missingIndex} detected in {fileName}. Input dataframe is extended by this index")
+            # logging.info(f"Missing index {missingIndex} detected in {fileName}. Input dataframe is extended by this index")
             _dfInputIndexTemp   = pd.MultiIndex.from_product([dfInput.index, requestedIndexValues],names=dfInput.index.names + [missingIndex])
             _dfInputIndexTemp   = _dfInputIndexTemp.reorder_levels(order=dfOutput.index.names)
             _dfInputTemp        = pd.Series(index=_dfInputIndexTemp, dtype=float)

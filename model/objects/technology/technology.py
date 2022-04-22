@@ -639,7 +639,7 @@ def constraintTechnologyCapacityLimitRule(model, tech,capacityType, loc, time):
         if existingCapacities < model.capacityLimitTechnology[tech, capacityType, loc]:
             return (model.capacityLimitTechnology[tech,capacityType, loc] >= model.capacity[tech,capacityType, loc, time])
         else:
-            return (existingCapacities >= model.capacity[tech, capacityType, loc, time])
+            return (model.builtCapacity[tech, capacityType, loc, time] == 0)
     else:
         return pe.Constraint.Skip
 
