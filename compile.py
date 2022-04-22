@@ -82,10 +82,20 @@ for stepHorizon in stepsOptimizationHorizon:
 
     varSeries = dict()
     for key in evaluation.varDict.keys():
-        varSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
+        tmp_series = pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)
+        # tmp_series = tmp_series[tmp_series > 0.0]
+        if len(tmp_series) == 0:
+            continue
+        # varSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
+        varSeries.update({key: tmp_series})
 
     paramSeries = dict()
     for key in evaluation.paramDict.keys():
-        paramSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
+        tmp_series = pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)
+        # tmp_series = tmp_series[tmp_series > 0.0]
+        if len(tmp_series) == 0:
+            continue
+        # paramSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
+        paramSeries.update({key: tmp_series})
     print('finished!')
 

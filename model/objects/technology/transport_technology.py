@@ -10,6 +10,7 @@ Description:    Class defining the parameters, variables and constraints that ho
                 constraints that hold for the transport technologies.
 ==========================================================================================================================================================================="""
 import logging
+import warnings
 import pyomo.environ as pe
 from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
@@ -44,11 +45,30 @@ class TransportTechnology(Technology):
         # TODO calculate for non Euclidean distance
         self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
         self.lossFlow                       = self.dataInput.extractAttributeData(self.inputPath,"lossFlow")["value"]
-        if self.dataInput.ifAttributeExists(self.inputPath,"capexPerDistance"):
-            self.capexPerDistance           = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
-            self.capexSpecific              = self.capexPerDistance * self.distance
-        else:
-            self.capexSpecific              = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+
+        # In case you want to have separate capex for capacity and distance
+        if EnergySystem.system['DoubleCapexTransport']:
+            self.capexSpecific = self.dataInput.extractInputData(self.inputPath, "capexSpecific",
+                                                                 indexSets=["setEdges", "setTimeSteps"],
+                                                                 timeSteps=self.setTimeStepsInvest,
+                                                                 transportTechnology=True)
+            try:
+                self.capexPerDistance = self.dataInput.extractInputData(self.inputPath, "capexPerDistance",
+                                                                        indexSets=["setEdges", "setTimeSteps"],
+                                                                        timeSteps=self.setTimeStepsInvest,
+                                                                        transportTechnology=True)
+            except AssertionError:
+                self.capexPerDistance = self.capexSpecific * 0.0
+                warnings.warn(f'capexPerDistance is not defined in attributes.csv of {self.name} and no input is given.'
+                              f' This will throw an error in the future!', FutureWarning)
+        else:  # Here only capexSpecific is used and capexPerDistance is set to Zero.
+            if self.dataInput.ifAttributeExists(self.inputPath,"capexPerDistance"):
+                self.capexPerDistance = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+                self.capexSpecific = self.capexPerDistance * self.distance
+            else:
+                self.capexSpecific = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+            self.capexPerDistance = self.capexSpecific.copy(deep=True) * 0.0
+
         # annualize capex
         self.convertToAnnualizedCapex()
         # calculate capex of existing capacity
@@ -59,6 +79,7 @@ class TransportTechnology(Technology):
         fractionalAnnuity   = self.calculateFractionalAnnuity()
         # annualize capex
         self.capexSpecific  = self.capexSpecific*fractionalAnnuity
+        self.capexPerDistance = self.capexPerDistance * fractionalAnnuity
 
     def calculateCapexOfSingleCapacity(self,capacity,index):
         """ this method calculates the annualized capex of a single existing capacity. """
@@ -80,11 +101,16 @@ class TransportTechnology(Technology):
             cls.createCustomSet(["setTransportTechnologies","setEdges"]),
             initialize = EnergySystem.initializeComponent(cls,"distance"),
             doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
-        # cost per distance
+        # cost per capacity
         model.capexSpecificTransport = pe.Param(
              cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
              initialize = EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
              doc = 'capex per unit for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
+        # cost per distance
+        model.capexPerDistance = pe.Param(
+            cls.createCustomSet(['setTransportTechnologies', 'setEdges', 'setTimeStepsInvest']),
+            initialize=EnergySystem.initializeComponent(cls, 'capexPerDistance', indexNames=['setTransportTechnologies', "setEdges", "setTimeStepsInvest"]),
+            doc='capex per distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
         # carrier losses
         model.lossFlow = pe.Param(
             model.setTransportTechnologies,
@@ -137,7 +163,19 @@ class TransportTechnology(Technology):
             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
             rule = constraintCapexTransportTechnologyRule,
             doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
-        ) 
+        )
+        # installTechnology binary (Big-M method), only constructed if DoubleCapexTransport flag is set
+        if EnergySystem.system['DoubleCapexTransport']:
+            model.constraintTransportTechnologyInstallLower = pe.Constraint(
+                cls.createCustomSet(["setTransportTechnologies", "setEdges", "setTimeStepsInvest"]),
+                rule=constraintTransportTechnologyInstallLowerRule,
+                doc='Lower bound for technology installation binary. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
+            )
+            model.constraintTransportTechnologyInstallUpper = pe.Constraint(
+                cls.createCustomSet(["setTransportTechnologies", "setEdges", "setTimeStepsInvest"]),
+                rule=constraintTransportTechnologyInstallUpperRule,
+                doc='Upper bound for technology installation binary. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
+            )
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -168,4 +206,18 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
 def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
     return (model.capex[tech,edge, time] == 
-            model.builtCapacity[tech,edge, time] * model.capexSpecificTransport[tech,edge, time])
+            model.builtCapacity[tech,edge, time] * model.capexSpecificTransport[tech,edge, time] +
+            model.installTechnology[tech, edge, time] * model.distance[tech, edge] * model.capexPerDistance[tech, edge, time])
+
+def constraintTransportTechnologyInstallLowerRule(model, tech, edge, time):
+    """ sets lower bound for installTechnology Binary variable for split capex calculation"""
+    if model.maxBuiltCapacity[tech] != float('+inf'):
+        return model.maxBuiltCapacity[tech] * model.installTechnology[tech, edge, time] >= model.builtCapacity[tech, edge, time]
+    else:
+        return 1e15 * model.installTechnology[tech, edge, time] >= model.builtCapacity[
+            tech, edge, time]
+
+def constraintTransportTechnologyInstallUpperRule(model, tech, edge, time):
+    """ sets upper bound for installTechnology Binary variable for split capex calculation """
+    return model.installTechnology[tech, edge, time] <= model.builtCapacity[tech, edge, time]
+
