@@ -8,17 +8,17 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
-
+import numpy as np
 import os
+import pandas as pd
 import logging
 import sys
-
-import data.config                  as config
-from datetime                       import datetime
-from preprocess.prepare             import Prepare
-from model.optimization_setup       import OptimizationSetup
-from model.metaheuristic.algorithm  import Metaheuristic
-from postprocess.results            import Postprocess
+from datetime import datetime
+import data.Pioneering_CCTS.config as config
+from preprocess.prepare import Prepare
+from model.optimization_setup import OptimizationSetup
+from model.metaheuristic.algorithm import Metaheuristic
+from postprocess.results_HB import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -52,6 +52,7 @@ for stepHorizon in stepsOptimizationHorizon:
         logging.info("\n--- Conduct optimization for perfect foresight --- \n")
     else:
         logging.info(f"\n--- Conduct optimization for rolling horizon step {stepHorizon} of {max(stepsOptimizationHorizon)}--- \n")
+
     # overwrite time indices
     optimizationSetup.overwriteTimeIndices(stepHorizon)
     # create optimization problem
@@ -70,10 +71,30 @@ for stepHorizon in stepsOptimizationHorizon:
     optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
     # EVALUATE RESULTS
     today      = datetime.now()
-    modelName  = "model_" + today.strftime("%Y-%m-%d")
+    # modelName  = "model_" + today.strftime("%Y-%m-%d")
+    modelName = optimizationSetup.system['modelName']
     if len(stepsOptimizationHorizon)>1:
         modelName += f"_rollingHorizon{stepHorizon}"
-    else:
-        modelName += "_perfectForesight"
+    # else:
+        # modelName += "_perfectForesight"
     evaluation = Postprocess(optimizationSetup, modelName = modelName)
-    a=1
+
+    varSeries = dict()
+    for key in evaluation.varDict.keys():
+        tmp_series = pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)
+        # tmp_series = tmp_series[tmp_series > 0.0]
+        if len(tmp_series) == 0:
+            continue
+        # varSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
+        varSeries.update({key: tmp_series})
+
+    paramSeries = dict()
+    for key in evaluation.paramDict.keys():
+        tmp_series = pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)
+        # tmp_series = tmp_series[tmp_series > 0.0]
+        if len(tmp_series) == 0:
+            continue
+        # paramSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
+        paramSeries.update({key: tmp_series})
+    print('finished!')
+
