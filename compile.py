@@ -14,7 +14,7 @@ import pandas as pd
 import logging
 import sys
 from datetime import datetime
-import data.Pioneering_CCTS.config as config
+import config as config
 from preprocess.prepare import Prepare
 from model.optimization_setup import OptimizationSetup
 from model.metaheuristic.algorithm import Metaheuristic
@@ -71,30 +71,10 @@ for stepHorizon in stepsOptimizationHorizon:
     optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
     # EVALUATE RESULTS
     today      = datetime.now()
-    # modelName  = "model_" + today.strftime("%Y-%m-%d")
-    modelName = optimizationSetup.system['modelName']
+    modelName  = "model_" + today.strftime("%Y-%m-%d")
     if len(stepsOptimizationHorizon)>1:
         modelName += f"_rollingHorizon{stepHorizon}"
-    # else:
-        # modelName += "_perfectForesight"
+    else:
+        modelName += "_perfectForesight"
     evaluation = Postprocess(optimizationSetup, modelName = modelName)
-
-    varSeries = dict()
-    for key in evaluation.varDict.keys():
-        tmp_series = pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)
-        # tmp_series = tmp_series[tmp_series > 0.0]
-        if len(tmp_series) == 0:
-            continue
-        # varSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
-        varSeries.update({key: tmp_series})
-
-    paramSeries = dict()
-    for key in evaluation.paramDict.keys():
-        tmp_series = pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)
-        # tmp_series = tmp_series[tmp_series > 0.0]
-        if len(tmp_series) == 0:
-            continue
-        # paramSeries.update({key: pd.Series(optimizationSetup.model.component(key).extract_values(), dtype=np.float64)})
-        paramSeries.update({key: tmp_series})
-    print('finished!')
-
+    a=1
