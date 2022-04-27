@@ -21,6 +21,8 @@ class TransportTechnology(Technology):
     locationType    = "setEdges"
     # empty list of elements
     listOfElements = []
+    # dict of reversed edges
+    dictReversedEdges = {}
     
     def __init__(self, tech):
         """init transport technology object
@@ -38,7 +40,6 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().storeInputData()
         # set attributes for parameters of child class <TransportTechnology>
-        # TODO calculate for non Euclidean distance
         self.distance                       = self.dataInput.extractInputData("distanceEuclidean",indexSets=["setEdges"])
         self.lossFlow                       = self.dataInput.extractAttributeData("lossFlow")["value"]
         if self.dataInput.ifAttributeExists("capexPerDistance"):
@@ -52,6 +53,9 @@ class TransportTechnology(Technology):
         self.convertToAnnualizedCapex()
         # calculate capex of existing capacity
         self.capexExistingCapacity          = self.calculateCapexOfExistingCapacities()
+        # check that existing capacities are equal in both directions if technology is bidirectional
+        if self.name in EnergySystem.getSystem()["setBidirectionalTransportTechnologies"]:
+            self.checkIfBidirectional()
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
@@ -62,6 +66,28 @@ class TransportTechnology(Technology):
     def calculateCapexOfSingleCapacity(self,capacity,index):
         """ this method calculates the annualized capex of a single existing capacity. """
         return self.capexSpecific[index[0]].iloc[0] * capacity
+
+    def checkIfBidirectional(self):
+        """ checks that the existing capacities in both directions of bidirectional capacities are equal """
+        energySystem = EnergySystem.getEnergySystem()
+        for edge in energySystem.setEdges:
+            reversedEdge = EnergySystem.calculateReversedEdge(edge)
+            TransportTechnology.setReversedEdge(edge=edge, reversedEdge=reversedEdge)
+            _existingCapacityEdge = self.existingCapacity[edge]
+            _existingCapacityReversedEdge = self.existingCapacity[reversedEdge]
+            assert (_existingCapacityEdge == _existingCapacityReversedEdge).all(), \
+                f"The existing capacities of the bidirectional transport technology {self.name} are not equal on the edge pair {edge} and {reversedEdge} ({_existingCapacityEdge.to_dict()} and {_existingCapacityReversedEdge.to_dict()})"
+
+    ### --- getter/setter classmethods
+    @classmethod
+    def setReversedEdge(cls,edge,reversedEdge):
+        """ maps the reversed edge to an edge """
+        cls.dictReversedEdges[edge] = reversedEdge
+
+    @classmethod
+    def getReversedEdge(cls, edge):
+        """ get the reversed edge corresponding to an edge """
+        return cls.dictReversedEdges[edge]
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod
@@ -131,12 +157,18 @@ class TransportTechnology(Technology):
             rule = constraintTransportTechnologyLossesFlowRule,
             doc = 'Carrier loss due to transport with through transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsOperation'
         ) 
-        # Linear Capex
-        model.constraintTransportTechnologyLinearCapex = pe.Constraint(
+        # capex of transport technologies
+        model.constraintCapexTransportTechnology = pe.Constraint(
             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
             rule = constraintCapexTransportTechnologyRule,
             doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
-        ) 
+        )
+        # bidirectional transport technologies: capacity on edge must be equal in both directions
+        model.constraintBidirectionalTransportTechnology = pe.Constraint(
+            cls.createCustomSet(["setTransportTechnologies", "setEdges", "setTimeStepsInvest"]),
+            rule=constraintBidirectionalTransportTechnologyRule,
+            doc='Forces that transport technology capacity must be equal in both direction. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
+        )
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -168,3 +200,13 @@ def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
     return (model.capex[tech,"power",edge, time] ==
             model.builtCapacity[tech,"power",edge, time] * model.capexSpecificTransport[tech,edge, time])
+
+def constraintBidirectionalTransportTechnologyRule(model, tech, edge, time):
+    """ Forces that transport technology capacity must be equal in both direction"""
+    system = EnergySystem.getSystem()
+    if tech in system["setBidirectionalTransportTechnologies"]:
+        reversedEdge = TransportTechnology.getReversedEdge(edge)
+        return (model.builtCapacity[tech,"power",edge, time] ==
+                model.builtCapacity[tech,"power",reversedEdge, time])
+    else:
+        return pe.Constraint.Skip

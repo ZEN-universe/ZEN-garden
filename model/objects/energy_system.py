@@ -424,6 +424,18 @@ class EnergySystem:
         return setConnectedEdges
 
     @classmethod
+    def calculateReversedEdge(cls,edge):
+        """ calculates the reversed edge corresponding to an edge
+        :param edge: input edge
+        :return reversedEdge: edge which corresponds to the reversed direction of edge"""
+        energySystem = cls.getEnergySystem()
+        nodeOut, nodeIn = energySystem.setNodesOnEdges[edge]
+        for reversedEdge in energySystem.setNodesOnEdges:
+            if nodeOut == energySystem.setNodesOnEdges[reversedEdge][1] and nodeIn == energySystem.setNodesOnEdges[reversedEdge][0]:
+                return reversedEdge
+        raise KeyError(f"Edge {edge} has no reversed edge. However, at least one transport technology is bidirectional")
+
+    @classmethod
     def calculateTimeStepDuration(cls,inputTimeSteps,manualBaseTimeSteps = None):
         """ calculates (equidistant) time step durations for input time steps
         :param inputTimeSteps: input time steps
