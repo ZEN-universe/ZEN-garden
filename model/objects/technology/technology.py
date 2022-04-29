@@ -233,7 +233,7 @@ class Technology(Element):
         :param loc: location (node or edge) of existing capacity
         :return beganInPast: boolean if the period began before the first optimization step
         :return startInvestTimeStep,endInvestTimeStep: start and end of period in invest time step domain"""
-        
+
         # get model and system
         model   = EnergySystem.getConcreteModel()
         system  = EnergySystem.getSystem()

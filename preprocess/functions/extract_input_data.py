@@ -48,16 +48,16 @@ class DataInput():
         # generic time steps
         if not timeSteps:
             timeSteps = self.energySystem.setBaseTimeSteps
-        # if time steps are the yearly base time steps
+        # if time steps are the yearly time steps
         elif timeSteps == self.energySystem.setBaseTimeStepsYearly:
             self.extractYearlyVariation(fileName,indexSets,column)
 
         # if existing capacities and existing capacities not used
         if fileName == "existingCapacity" and not self.analysis["useExistingCapacities"]:
-            dfOutput,*_ = self.createDefaultOutput(indexSets,column,filename= fileName,timeSteps=timeSteps,manualDefaultValue=0)
+            dfOutput,*_ = self.createDefaultOutput(fileName,indexSets,column,timeSteps,manualDefaultValue=0)
             return dfOutput
         else:
-            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(indexSets,column,fileName =fileName, timeSteps= timeSteps)
+            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(fileName,indexSets,column,timeSteps)
         # set defaultName
         if column:
             defaultName = column
@@ -69,8 +69,8 @@ class DataInput():
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
             dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
-        return dfOutput
-
+        return dfOutput 
+    
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
         """ fills dfOutput with data from dfInput
         :param dfInput: raw input dataframe
@@ -125,6 +125,7 @@ class DataInput():
 
     def readInputData(self,inputFileName):
         """ reads input data and returns raw input dataframe
+        :param self.folderPath: path to input files
         :param inputFileName: name of selected file
         :return dfInput: pd.DataFrame with input data """
 
@@ -141,6 +142,7 @@ class DataInput():
 
     def extractAttributeData(self,attributeName,skipWarning = False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
+        :param self.folderPath: path to input files
         :param attributeName: name of selected attribute
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
@@ -153,7 +155,7 @@ class DataInput():
         # check if attribute in index
         if attributeName+"Default" not in dfInput.index:
             if attributeName not in dfInput.index:
-                return None
+                raise AttributeError(f"Attribute without default value is deprecated. \nAdd default value for {attributeName} in attribute file in {self.folderPath}")
             elif not skipWarning:
                 warnings.warn(
                     f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attributeName} of attributes in path {self.folderPath}",
@@ -184,11 +186,11 @@ class DataInput():
         # add YearlyVariation to fileName
         fileName  += "YearlyVariation"
         # read input data
-        dfInput         = self.readInputData(fileName)
+        dfInput         = self.readInputData( fileName)
         if dfInput is not None:
             if column is not None and column not in dfInput:
                 return
-            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(_indexSets,column,fileName = fileName, manualDefaultValue=1)
+            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(fileName,_indexSets,column,manualDefaultValue=1)
             # set yearlyVariation attribute to dfOutput
             if column:
                 _selectedColumn         = column
@@ -258,9 +260,8 @@ class DataInput():
 
     def extractTimeSteps(self,elementName=None,typeOfTimeSteps=None,getListOfTimeSteps=True):
         """ reads input data and returns range of time steps 
-        :param elementName: name of element
+        :param self.folderPath: path to input files 
         :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
-        :param getListOfTimeSteps: boolean if list of time steps returned
         :return listOfTimeSteps: list of time steps """
         numberTypicalPeriods = self.energySystem.dictNumberOfTimeSteps[elementName][typeOfTimeSteps]
         if getListOfTimeSteps:
@@ -289,6 +290,7 @@ class DataInput():
 
     def extractSetExistingTechnologies(self, storageEnergy = False):
         """ reads input data and creates setExistingCapacity for each technology
+        :param self.folderPath: path to input files
         :param storageEnergy: boolean if existing energy capacity of storage technology (instead of power)
         :return setExistingTechnologies: return set existing technologies"""
         if self.analysis["useExistingCapacities"]:
@@ -314,6 +316,7 @@ class DataInput():
 
     def extractLifetimeExistingTechnology(self, fileName, indexSets):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
+        :param self.folderPath: path to input files
         :param fileName:  name of selected file
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return existingLifetimeDict: return existing capacity and existing lifetime """
@@ -447,6 +450,7 @@ class DataInput():
 
     def createDefaultOutput(self,indexSets,column,fileName=None,timeSteps=None,manualDefaultValue = None):
         """ creates default output dataframe
+        :param self.folderPath: path to input files
         :param fileName: name of selected file.
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
@@ -501,6 +505,7 @@ class DataInput():
 
     def ifAttributeExists(self, fileName, column=None):
         """ checks if default value or timeseries of an attribute exists in the input data
+        :param self.folderPath: path to input files
         :param fileName: name of selected file
         :param column: select specific column
         """
@@ -509,10 +514,10 @@ class DataInput():
             defaultName = column
         else:
             defaultName = fileName
-        defaultValue = self.extractAttributeData(defaultName)
+        defaultValue = self.extractAttributeData( defaultName)
 
         if defaultValue is None:
-            _dfInput = self.readInputData(fileName)
+            _dfInput = self.readInputData( fileName)
             return (_dfInput is not None)
         else:
             return True
@@ -563,7 +568,8 @@ class DataInput():
         # the missing index does not appear in dfInput
         # the values in dfInput are extended to all missing index values
         else:
-            # logging.info(f"Missing index {missingIndex} detected in {fileName}. Input dataframe is extended by this index")
+            #
+            logging.info(f"Missing index {missingIndex} detected in {fileName}. Input dataframe is extended by this index")
             _dfInputIndexTemp   = pd.MultiIndex.from_product([dfInput.index, requestedIndexValues],names=dfInput.index.names + [missingIndex])
             _dfInputIndexTemp   = _dfInputIndexTemp.reorder_levels(order=dfOutput.index.names)
             _dfInputTemp        = pd.Series(index=_dfInputIndexTemp, dtype=float)
