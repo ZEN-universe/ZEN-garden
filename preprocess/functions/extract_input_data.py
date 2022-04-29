@@ -48,16 +48,16 @@ class DataInput():
         # generic time steps
         if not timeSteps:
             timeSteps = self.energySystem.setBaseTimeSteps
-        # if time steps are the yearly time steps
+        # if time steps are the yearly base time steps
         elif timeSteps == self.energySystem.setBaseTimeStepsYearly:
             self.extractYearlyVariation(fileName,indexSets,column)
 
         # if existing capacities and existing capacities not used
         if fileName == "existingCapacity" and not self.analysis["useExistingCapacities"]:
-            dfOutput,*_ = self.createDefaultOutput(fileName,indexSets,column,timeSteps,manualDefaultValue=0)
+            dfOutput,*_ = self.createDefaultOutput(indexSets,column,filename= fileName,timeSteps=timeSteps,manualDefaultValue=0)
             return dfOutput
         else:
-            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(fileName,indexSets,column,timeSteps)
+            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(indexSets,column,fileName =fileName, timeSteps= timeSteps)
         # set defaultName
         if column:
             defaultName = column
@@ -69,8 +69,8 @@ class DataInput():
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
             dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
-        return dfOutput 
-    
+        return dfOutput
+
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
         """ fills dfOutput with data from dfInput
         :param dfInput: raw input dataframe
@@ -125,7 +125,6 @@ class DataInput():
 
     def readInputData(self,inputFileName):
         """ reads input data and returns raw input dataframe
-        :param self.folderPath: path to input files
         :param inputFileName: name of selected file
         :return dfInput: pd.DataFrame with input data """
 
@@ -142,7 +141,6 @@ class DataInput():
 
     def extractAttributeData(self,attributeName,skipWarning = False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param self.folderPath: path to input files
         :param attributeName: name of selected attribute
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
@@ -155,7 +153,7 @@ class DataInput():
         # check if attribute in index
         if attributeName+"Default" not in dfInput.index:
             if attributeName not in dfInput.index:
-                raise AttributeError(f"Attribute without default value is deprecated. \nAdd default value for {attributeName} in attribute file in {self.folderPath}")
+                return None
             elif not skipWarning:
                 warnings.warn(
                     f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attributeName} of attributes in path {self.folderPath}",
@@ -186,11 +184,11 @@ class DataInput():
         # add YearlyVariation to fileName
         fileName  += "YearlyVariation"
         # read input data
-        dfInput         = self.readInputData( fileName)
+        dfInput         = self.readInputData(fileName)
         if dfInput is not None:
             if column is not None and column not in dfInput:
                 return
-            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(fileName,_indexSets,column,manualDefaultValue=1)
+            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(_indexSets,column,fileName = fileName, manualDefaultValue=1)
             # set yearlyVariation attribute to dfOutput
             if column:
                 _selectedColumn         = column
@@ -260,8 +258,9 @@ class DataInput():
 
     def extractTimeSteps(self,elementName=None,typeOfTimeSteps=None,getListOfTimeSteps=True):
         """ reads input data and returns range of time steps 
-        :param self.folderPath: path to input files 
+        :param elementName: name of element
         :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
+        :param getListOfTimeSteps: boolean if list of time steps returned
         :return listOfTimeSteps: list of time steps """
         numberTypicalPeriods = self.energySystem.dictNumberOfTimeSteps[elementName][typeOfTimeSteps]
         if getListOfTimeSteps:
@@ -290,7 +289,6 @@ class DataInput():
 
     def extractSetExistingTechnologies(self, storageEnergy = False):
         """ reads input data and creates setExistingCapacity for each technology
-        :param self.folderPath: path to input files
         :param storageEnergy: boolean if existing energy capacity of storage technology (instead of power)
         :return setExistingTechnologies: return set existing technologies"""
         if self.analysis["useExistingCapacities"]:
@@ -316,7 +314,6 @@ class DataInput():
 
     def extractLifetimeExistingTechnology(self, fileName, indexSets):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param self.folderPath: path to input files
         :param fileName:  name of selected file
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return existingLifetimeDict: return existing capacity and existing lifetime """
@@ -339,77 +336,117 @@ class DataInput():
 
         return dfOutput
 
-    def extractPWAData(self,type):
+    def extractPWAData(self,variableType):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param self.folderPath: path to input files
-        :param type: technology approximation type
+        :param variableType: technology approximation type
         :return PWADict: dictionary with PWA parameters """
+        # attribute names
+        if variableType == "Capex":
+            _attributeName  = "capexSpecific"
+        elif variableType == "ConverEfficiency":
+            _attributeName  = "converEfficiency"
+        else:
+            raise KeyError(f"variable type {variableType} unknown.")
+        _indexSets = ["setNodes", "setTimeSteps"]
+        _timeSteps = self.element.setTimeStepsInvest
+        # import all input data
+        dfInputNonlinear    = self.readPWAFiles(variableType, fileType="nonlinear")
+        dfInputBreakpoints  = self.readPWAFiles(variableType, fileType="breakpointsPWA")
+        ifLinearExist       = self.ifAttributeExists(_attributeName)
+        assert (dfInputNonlinear is not None and dfInputBreakpoints is not None) or ifLinearExist, \
+            f"Neither PWA nor linear data exist for {variableType} of {self.element.name}"
+        # check if capexSpecific exists
+        if (dfInputNonlinear is not None and dfInputBreakpoints is not None):
+            # select data
+            PWADict = {}
+            # extract all data values
+            nonlinearValues     = {}
 
-        # select data
-        PWADict = {}
-        assert type in self.analysis["nonlinearTechnologyApproximation"], f"{type} is not specified in analysis['nonlinearTechnologyApproximation']"
+            if variableType == "Capex":
+                # make absolute capex
+                dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
+            for column in dfInputNonlinear.columns:
+                nonlinearValues[column] = dfInputNonlinear[column].to_list()
 
-        # extract all data values
-        nonlinearValues     = {}
-        assert f"nonlinear{type}.csv" in os.listdir(self.folderPath), f"File 'nonlinear{type}.csv' does not exist in {self.folderPath}"
-        dfInputNonlinear    = pd.read_csv(f"{self.folderPath}nonlinear{type}.csv", header=0, index_col=None)
-        dfInputUnits        = dfInputNonlinear.iloc[-1]
-        dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
-        dfInputNonlinear    = dfInputNonlinear.iloc[:-1].astype(float)
-        dfInputNonlinear    = dfInputNonlinear*dfInputMultiplier
-        if type == "Capex":
-            # make absolute capex
-            dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
-        for column in dfInputNonlinear.columns:
-            nonlinearValues[column] = dfInputNonlinear[column].to_list()
-        # extract PWA breakpoints
-        assert f"breakpointsPWA{type}.csv" in os.listdir(self.folderPath), f"File 'breakpointsPWA{type}.csv' does not exist in {self.folderPath}"
-        # TODO devise better way to split string units
-        dfInputBreakpoints          = pd.read_csv(f"{self.folderPath}breakpointsPWA{type}.csv", header=0, index_col=None)
-        dfInputBreakpointsUnits     = dfInputBreakpoints.iloc[-1]
-        dfInputMultiplier           = dfInputBreakpointsUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
-        dfInputBreakpoints          = dfInputBreakpoints.iloc[:-1].astype(float)
-        dfInputBreakpoints          = dfInputBreakpoints*dfInputMultiplier
-        # assert that breakpoint variable (x variable in nonlinear input)
-        assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
-        breakpointVariable = dfInputBreakpoints.columns[0]
-        breakpoints = dfInputBreakpoints[breakpointVariable].to_list()
+            # assert that breakpoint variable (x variable in nonlinear input)
+            assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
+            breakpointVariable = dfInputBreakpoints.columns[0]
+            breakpoints = dfInputBreakpoints[breakpointVariable].to_list()
 
-        PWADict[breakpointVariable] = breakpoints
-        PWADict["PWAVariables"] = [] # select only those variables that are modeled as PWA
-        PWADict["bounds"] = {} # save bounds of variables
-        # min and max total capacity of technology
-        minCapacityTech,maxCapacityTech = (0,min(max(self.element.capacityLimit.values),max(breakpoints)))
-        for valueVariable in nonlinearValues:
-            if valueVariable == breakpointVariable:
-                PWADict["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
+            PWADict[breakpointVariable] = breakpoints
+            PWADict["PWAVariables"]     = [] # select only those variables that are modeled as PWA
+            PWADict["bounds"]           = {} # save bounds of variables
+            LinearDict                  = {}
+            # min and max total capacity of technology
+            minCapacityTech,maxCapacityTech = (0,min(max(self.element.capacityLimit.values),max(breakpoints)))
+            for valueVariable in nonlinearValues:
+                if valueVariable == breakpointVariable:
+                    PWADict["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
+                else:
+                    # conduct linear regress
+                    linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
+                    # calculate relative intercept (intercept/slope) if slope != 0
+                    if linearRegressObject.slope != 0:
+                        _relativeIntercept = np.abs(linearRegressObject.intercept/linearRegressObject.slope)
+                    else:
+                        _relativeIntercept = np.abs(linearRegressObject.intercept)
+                    # check if to a reasonable degree linear
+                    if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
+                        # model as linear function
+                        slopeLinReg = linearRegressObject.slope
+                        LinearDict[valueVariable] = self.createDefaultOutput(indexSets=_indexSets, column=column, timeSteps=_timeSteps,
+                                                 manualDefaultValue=slopeLinReg)[0]
+                    else:
+                        # model as PWA function
+                        PWADict[valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
+                        PWADict["PWAVariables"].append(valueVariable)
+                        # save bounds
+                        _valuesBetweenBounds = [PWADict[valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= minCapacityTech and breakpoint <= maxCapacityTech]
+                        _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[valueVariable])))
+                        PWADict["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
+            # PWA
+            if (len(PWADict["PWAVariables"]) > 0 and len(LinearDict) == 0):
+                isPWA = True
+                return PWADict, isPWA
+            # linear
+            elif len(LinearDict) > 0 and len(PWADict["PWAVariables"]) == 0:
+                isPWA = False
+                return LinearDict,  isPWA
+            # no dependent carrier
+            elif len(nonlinearValues) == 1:
+                isPWA = False
+                return None, isPWA
             else:
-                # conduct linear regress
-                linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
-                # calculate relative intercept (intercept/slope) if slope != 0
-                if linearRegressObject.slope != 0:
-                    _relativeIntercept = np.abs(linearRegressObject.intercept/linearRegressObject.slope)
-                else:
-                    _relativeIntercept = np.abs(linearRegressObject.intercept)
-                # check if to a reasonable degree linear
-                if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
-                    # model as linear function
-                    PWADict[valueVariable] = linearRegressObject.slope
-                    # save bounds
-                    PWADict["bounds"][valueVariable] = (PWADict[valueVariable]*minCapacityTech,PWADict[valueVariable]*maxCapacityTech)
-                else:
-                    # model as PWA function
-                    PWADict[valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
-                    PWADict["PWAVariables"].append(valueVariable)
-                    # save bounds
-                    _valuesBetweenBounds = [PWADict[valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= minCapacityTech and breakpoint <= maxCapacityTech]
-                    _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[valueVariable])))
-                    PWADict["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
-        return PWADict
+                raise NotImplementedError(f"There are both linearly and nonlinearly modeled variables in {variableType} of {self.element.name}. Not yet implemented")
+        # linear
+        else:
+            isPWA = False
+            LinearDict = {}
+            if variableType == "Capex":
+                LinearDict["capex"] = self.extractInputData("capexSpecific", indexSets=_indexSets, timeSteps=_timeSteps)
+                return LinearDict,isPWA
+            else:
+                _dependentCarrier = list(set(self.element.inputCarrier + self.element.outputCarrier).difference(self.element.referenceCarrier))
+                # TODO implement for more than 1 carrier
+                assert len(_dependentCarrier) <= 1, f"More than one dependent carriers are not yet implemented. Technology {self.element.name}"
+                LinearDict[_dependentCarrier[0]] = self.extractInputData(_attributeName, indexSets=_indexSets, timeSteps=_timeSteps)
+                return LinearDict,isPWA
 
-    def createDefaultOutput(self,fileName,indexSets,column,timeSteps=None,manualDefaultValue = None):
+    def readPWAFiles(self,variableType,fileType):
+        """ reads PWA Files
+        :param variableType: technology approximation type
+        :param fileType: either breakpointsPWA or nonlinear
+        :return dfInput: raw input file"""
+        dfInput             = self.readInputData(fileType+variableType)
+        if dfInput is not None:
+            dfInputUnits        = dfInput.iloc[-1]
+            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
+            dfInput             = dfInput.iloc[:-1].astype(float)
+            dfInput             = dfInput * dfInputMultiplier
+        return dfInput
+
+    def createDefaultOutput(self,indexSets,column,fileName=None,timeSteps=None,manualDefaultValue = None):
         """ creates default output dataframe
-        :param self.folderPath: path to input files
         :param fileName: name of selected file.
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
@@ -464,7 +501,6 @@ class DataInput():
 
     def ifAttributeExists(self, fileName, column=None):
         """ checks if default value or timeseries of an attribute exists in the input data
-        :param self.folderPath: path to input files
         :param fileName: name of selected file
         :param column: select specific column
         """
@@ -473,10 +509,10 @@ class DataInput():
             defaultName = column
         else:
             defaultName = fileName
-        defaultValue = self.extractAttributeData( defaultName)
+        defaultValue = self.extractAttributeData(defaultName)
 
         if defaultValue is None:
-            _dfInput = self.readInputData( fileName)
+            _dfInput = self.readInputData(fileName)
             return (_dfInput is not None)
         else:
             return True
@@ -527,8 +563,7 @@ class DataInput():
         # the missing index does not appear in dfInput
         # the values in dfInput are extended to all missing index values
         else:
-            #
-            logging.info(f"Missing index {missingIndex} detected in {fileName}. Input dataframe is extended by this index")
+            # logging.info(f"Missing index {missingIndex} detected in {fileName}. Input dataframe is extended by this index")
             _dfInputIndexTemp   = pd.MultiIndex.from_product([dfInput.index, requestedIndexValues],names=dfInput.index.names + [missingIndex])
             _dfInputIndexTemp   = _dfInputIndexTemp.reorder_levels(order=dfOutput.index.names)
             _dfInputTemp        = pd.Series(index=_dfInputIndexTemp, dtype=float)

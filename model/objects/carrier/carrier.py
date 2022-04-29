@@ -60,7 +60,7 @@ class Carrier(Element):
     def constructSets(cls):
         """ constructs the pe.Sets of the class <Carrier> """
         model = EnergySystem.getConcreteModel()
-        # time-steps of energy balance of carrier
+         # time-steps of energy balance of carrier
         model.setTimeStepsEnergyBalance = pe.Set(
             model.setCarriers,
             initialize=cls.getAttributeOfAllElements("setTimeStepsEnergyBalance"),

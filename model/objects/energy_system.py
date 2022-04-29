@@ -8,15 +8,14 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
                 optimization model as an input.
 ==========================================================================================================================================================================="""
+import copy
 import logging
 import warnings
 import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
-from pint                                    import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
 from preprocess.functions.unit_handling         import UnitHandling
-from pint.util                               import column_echelon_form
 
 class EnergySystem:
     # energySystem
@@ -45,6 +44,12 @@ class EnergySystem:
     dictSequenceTimeStepsInvest = {}
     # empty dict of sequence of time steps yearly
     dictSequenceTimeStepsYearly = {}
+    # empty dict of conversion from energy time steps to power time steps for storage technologies
+    dictTimeStepsEnergy2Power = {}
+    # empty dict of conversion from operational time steps to invest time steps for technologies
+    dictTimeStepsOperation2Invest = {}
+    # empty dict of matching the last time step of the year in the storage domain to the first
+    dictTimeStepsStorageLevelStartEndYear = {}
     # empty dict of raw time series, only necessary for single time grid approach
     dictTimeSeriesRaw = {}
     # empty dict of element classes
@@ -97,6 +102,7 @@ class EnergySystem:
         self.typesTimeSteps              = ["invest", "operation", "yearly"]
         self.dictNumberOfTimeSteps       = self.dataInput.extractNumberTimeSteps()
         self.setTimeStepsYearly          = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
+        self.setTimeStepsYearlyEntireHorizon = copy.deepcopy(self.setTimeStepsYearly)
         self.timeStepsYearlyDuration     = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
         self.sequenceTimeStepsYearly     = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
         self.setSequenceTimeSteps(None, self.sequenceTimeStepsYearly, timeStepType="yearly")
@@ -193,6 +199,27 @@ class EnergySystem:
                 cls.energySystem.setCarriers.append(carrier)
             elif technology not in cls.dictTechnologyOfCarrier[carrier]:
                 cls.dictTechnologyOfCarrier[carrier].append(technology)
+
+    @classmethod
+    def setTimeStepsEnergy2Power(cls,element,timeStepsEnergy2Power):
+        """ sets the dict of converting the energy time steps to the power time steps of storage technologies """
+        cls.dictTimeStepsEnergy2Power[element] = timeStepsEnergy2Power
+
+    @classmethod
+    def setTimeStepsOperation2Invest(cls, element, timeStepsOperation2Invest):
+        """ sets the dict of converting the operational time steps to the invest time steps of all technologies """
+        cls.dictTimeStepsOperation2Invest[element] = timeStepsOperation2Invest
+
+    @classmethod
+    def setTimeStepsStorageStartEnd(cls, element):
+        """ sets the dict of matching the last time step of the year in the storage level domain to the first """
+        system                  = cls.getSystem()
+        _baseTimeStepsPerYear   = system["unaggregatedTimeStepsPerYear"]
+        _numberYears            = system["optimizedYears"]
+        _sequenceTimeSteps      = cls.getSequenceTimeSteps(element+"StorageLevel")
+        _timeStepsStart         = _sequenceTimeSteps[np.array(range(0, _numberYears)) * _baseTimeStepsPerYear]
+        _timeStepsEnd           = _sequenceTimeSteps[np.array(range(1, _numberYears + 1)) * _baseTimeStepsPerYear - 1]
+        cls.dictTimeStepsStorageLevelStartEndYear[element] = {_start:_end for _start,_end in zip(_timeStepsStart,_timeStepsEnd)}
 
     @classmethod
     def setSequenceTimeSteps(cls,element,sequenceTimeSteps,timeStepType = None):
@@ -306,6 +333,24 @@ class EnergySystem:
             return None
 
     @classmethod
+    def getTimeStepsEnergy2Power(cls, element):
+        """ gets the dict of converting the energy time steps to the power time steps of storage technologies """
+        return cls.dictTimeStepsEnergy2Power[element]
+
+    @classmethod
+    def getTimeStepsOperation2Invest(cls, element):
+        """ gets the dict of converting the operational time steps to the invest time steps of technologies """
+        return cls.dictTimeStepsOperation2Invest[element]
+
+    @classmethod
+    def getTimeStepsStorageStartEnd(cls, element,timeStep):
+        """ gets the dict of converting the operational time steps to the invest time steps of technologies """
+        if timeStep in cls.dictTimeStepsStorageLevelStartEndYear[element].keys():
+            return cls.dictTimeStepsStorageLevelStartEndYear[element][timeStep]
+        else:
+            return None
+
+    @classmethod
     def getSequenceTimeSteps(cls,element,timeStepType = None):
         """ get sequence ot time steps of element
         :param element: name of element in model
@@ -415,13 +460,16 @@ class EnergySystem:
         """ encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
         baseTimeStep of model --> timeStep of element
         :param element: name of element in model, i.e., carrier or technology
-        :param baseTimeStep: base time step of model for which the corresponding time index is extracted
+        :param baseTimeSteps: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
         # model = cls.getConcreteModel()
         sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
         # get time step duration
-        elementTimeStep = np.unique(sequenceTimeSteps[baseTimeSteps])
+        if np.all(baseTimeSteps >= 0):
+            elementTimeStep = np.unique(sequenceTimeSteps[baseTimeSteps])
+        else:
+            elementTimeStep = [-1]
         if yearly:
             return(elementTimeStep)
         if len(elementTimeStep) == 1:
@@ -441,41 +489,19 @@ class EnergySystem:
         return fullBaseTimeSteps
 
     @classmethod
-    def convertTechnologyTimeStepType(cls,element,elementTimeStep,direction = "operation2invest"):
-        """ converts type of technology time step from operation to invest or from invest to operation.
-        Carrier has no invest, so irrelevant for carrier
-        :param element: element of model (here technology)
-        :param elementTimeStep: time step of element
-        :param direction: conversion direction (operation2invest or invest2operation)
-        :return convertedTimeStep: time of second type """
-        model                   = cls.getConcreteModel()
-        setTimeStepsInvest      = model.setTimeStepsInvest[element]
-        setTimeStepsOperation   = model.setTimeStepsOperation[element]
-        # if only one investment step
-        if len(setTimeStepsInvest) == 1:
-            if direction ==  "operation2invest":
-                return setTimeStepsInvest.at(1)
-            elif direction == "invest2operation":
-                return setTimeStepsOperation.data()
-            else:
-                raise KeyError(f"Direction for time step conversion {direction} is incorrect")
-        # if more than one invest step
-        else:
-            if direction ==  "operation2invest":
-                sequenceTimeStepsIn        = cls.getSequenceTimeSteps(element,"operation")
-                sequenceTimeStepsOut       = cls.getSequenceTimeSteps(element,"invest")
-            elif direction == "invest2operation":
-                sequenceTimeStepsOut       = cls.getSequenceTimeSteps(element,"operation")
-                sequenceTimeStepsIn        = cls.getSequenceTimeSteps(element,"invest")
-            else:
-                raise KeyError(f"Direction for time step conversion {direction} is incorrect")
-            # convert time steps
-            convertedTimeSteps = np.unique(sequenceTimeStepsOut[sequenceTimeStepsIn == elementTimeStep])
-            assert len(convertedTimeSteps) == 1, f"more than one converted time step, not yet implemented"
-            return convertedTimeSteps[0]
+    def convertTimeStepEnergy2Power(cls,element,timeStepEnergy):
+        """ converts the time step of the energy quantities of a storage technology to the time step of the power quantities """
+        _timeStepsEnergy2Power = cls.getTimeStepsEnergy2Power(element)
+        return _timeStepsEnergy2Power[timeStepEnergy]
 
     @classmethod
-    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None,capacityTypes = False):
+    def convertTimeStepOperation2Invest(cls, element, timeStepOperation):
+        """ converts the operational time step to the invest time step """
+        _timeStepsOperation2Invest = cls.getTimeStepsOperation2Invest(element)
+        return _timeStepsOperation2Invest[timeStepOperation]
+
+    @classmethod
+    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None,capacityTypes = False, ):
         """ this method initializes a modeling component by extracting the stored input data.
         :param callingClass: class from where the method is called
         :param componentName: name of modeling component
@@ -561,6 +587,10 @@ class EnergySystem:
         model.setTimeStepsYearly = pe.Set(
             initialize=energySystem.setTimeStepsYearly,
             doc='Set of yearly time-steps')
+        # yearly time steps of entire optimization horizon
+        model.setTimeStepsYearlyEntireHorizon = pe.Set(
+            initialize=energySystem.setTimeStepsYearlyEntireHorizon,
+            doc='Set of yearly time-steps of entire optimization horizon')
 
     @classmethod
     def constructParams(cls):

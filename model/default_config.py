@@ -31,9 +31,6 @@ analysis["discountRate"] = 0.06
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
 analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
-# settings for MINLP
-analysis["variablesNonlinearModel"]                 = {"builtCapacity": []}
-analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEfficiency":[]}
 # headers for the generation of input files
 analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
                                   "setEdges": ["edge"],

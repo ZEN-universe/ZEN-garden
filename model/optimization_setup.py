@@ -132,7 +132,7 @@ class OptimizationSetup():
         # disable logger temporarily
         logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
-        #         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
+        # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt            = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels=True)
@@ -144,12 +144,15 @@ class OptimizationSetup():
     def addNewlyBuiltCapacity(self,stepHorizon):
         """ adds the newly built capacity to the existing capacity
         :param stepHorizon: step of the rolling horizon """
-        _builtCapacity  = pd.Series(self.model.builtCapacity.extract_values())
-        _capex          = pd.Series(self.model.capex.extract_values())
-        _baseTimeSteps  = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
-        Technology      = getattr(sys.modules[__name__], "Technology")
+        _builtCapacity      = pd.Series(self.model.builtCapacity.extract_values())
+        _investedCapacity   = pd.Series(self.model.investedCapacity.extract_values())
+        _capex              = pd.Series(self.model.capex.extract_values())
+        _baseTimeSteps      = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
+        Technology          = getattr(sys.modules[__name__], "Technology")
         for tech in Technology.getAllElements():
             # new capacity
-            _builtCapacityTech  = _builtCapacity.loc[tech.name].unstack()
-            _capexTech          = _capex.loc[tech.name].unstack()
+            _builtCapacityTech      = _builtCapacity.loc[tech.name].unstack()
+            _investedCapacityTech   = _investedCapacity.loc[tech.name].unstack()
+            _capexTech              = _capex.loc[tech.name].unstack()
             tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)
+            tech.addNewlyInvestedCapacityTech(_investedCapacityTech,stepHorizon)
