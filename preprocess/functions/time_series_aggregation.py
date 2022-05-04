@@ -266,8 +266,7 @@ class TimeSeriesAggregation():
                 if not all(_yearlyVariation[year] == 1):
                     _baseTimeSteps = EnergySystem.decodeTimeStep(None, year, "yearly")
                     _elementTimeSteps = EnergySystem.encodeTimeStep(element.name, _baseTimeSteps, yearly=True)
-                    _timeSeries[_elementTimeSteps] = _timeSeries[_elementTimeSteps].multiply(_yearlyVariation[year],
-                                                                                             axis=0)
+                    _timeSeries[_elementTimeSteps] = _timeSeries[_elementTimeSteps].multiply(_yearlyVariation[year],axis=0).fillna(0)
             _timeSeries = _timeSeries.stack()
             return _timeSeries
         else:

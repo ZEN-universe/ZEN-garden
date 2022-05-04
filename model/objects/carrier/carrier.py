@@ -174,7 +174,7 @@ class Carrier(Element):
         model.constraintCostCarrierTotal = pe.Constraint(
             model.setTimeStepsYearly,
             rule = constraintCostCarrierTotalRule,
-            doc = "total cost of importing/exporting carriers. ."
+            doc = "total cost of importing/exporting carriers."
         )
         # carbon emissions
         model.constraintCarbonEmissionsCarrier = pe.Constraint(
@@ -206,9 +206,9 @@ def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
     return(model.exportCarrierFlow[carrier, node, time] <= model.availabilityCarrierExport[carrier,node,time])
 
 def constraintCostCarrierRule(model, carrier, node, time):
-    """ cost of importing/exporting carrier"""
-    return(model.costCarrier[carrier,node, time] == 
-        model.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] - 
+    """ carbon cost of importing/exporting carrier"""
+    return(model.costCarrier[carrier,node, time] ==
+        model.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] -
         model.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
     )
 
@@ -218,7 +218,8 @@ def constraintCostCarrierTotalRule(model,year):
     return(model.costCarrierTotal[year] ==
         sum(
             sum(
-                model.costCarrier[carrier,node,time]*model.timeStepsOperationDuration[carrier, time]
+                model.costCarrier[carrier,node,time]
+                * model.timeStepsOperationDuration[carrier, time]
                 for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly=True)
             )
             for carrier,node in Element.createCustomSet(["setCarriers","setNodes"])
