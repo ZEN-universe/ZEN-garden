@@ -618,6 +618,12 @@ class EnergySystem:
             initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
             doc = 'Parameter which specifies the total limit on carbon emissions'
         )
+        # carbon price
+        model.carbonPrice = pe.Param(
+            model.setTimeStepsYearly,
+            initialize=cls.initializeComponent(cls, "carbonPrice", setTimeSteps=model.setTimeStepsYearly),
+            doc='Parameter which specifies the yearly carbon price'
+        )
 
     @classmethod
     def constructVars(cls):
@@ -630,6 +636,12 @@ class EnergySystem:
             model.setTimeStepsYearly,
             domain = pe.Reals,
             doc = "total carbon emissions of energy system. Domain: Reals"
+        )
+        # cost of carbon emissions
+        model.costCarbonEmissionsTotal = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.Reals,
+            doc="total cost of carbon emissions of energy system. Domain: Reals"
         )
         # costs
         model.costTotal = pe.Var(
@@ -649,6 +661,12 @@ class EnergySystem:
             model.setTimeStepsYearly,
             rule = constraintCarbonEmissionsTotalRule,
             doc = "total carbon emissions of energy system"
+        )
+        # cost of carbon emissions
+        model.constraintCarbonCostTotal = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintCarbonCostTotalRule,
+            doc="total carbon cost of energy system"
         )
         # carbon emissions
         model.constraintCarbonEmissionsLimit = pe.Constraint(
@@ -706,6 +724,13 @@ def constraintCarbonEmissionsTotalRule(model,year):
         model.carbonEmissionsCarrierTotal[year]
     )
 
+def constraintCarbonCostTotalRule(model,year):
+    """ carbon cost associated with the carbon emissions of the system in each year """
+    return(
+        model.costCarbonEmissionsTotal[year] ==
+        model.carbonPrice[year] * model.carbonEmissionsTotal[year]
+    )
+
 def constraintCarbonEmissionsLimitRule(model, year):
     """ time dependent carbon emissions limit from technologies and carriers"""
     if model.carbonEmissionsLimit[year] != np.inf:
@@ -724,7 +749,9 @@ def constraintCostTotalRule(model,year):
         # opex
         model.opexTotal[year] +
         # carrier costs
-        model.costCarrierTotal[year]
+        model.costCarrierTotal[year] +
+        # carbon costs
+        model.costCarbonEmissionsTotal[year]
     )
 # objective rules
 def objectiveTotalCostRule(model):
