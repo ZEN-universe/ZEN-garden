@@ -116,6 +116,8 @@ class EnergySystem:
         self.carbonEmissionsLimit        = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
         _fractionOfYear                  = system["unaggregatedTimeStepsPerYear"]/system["totalHoursPerYear"]
         self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
+        # carbon price
+        self.carbonPrice                 = self.dataInput.extractInputData("carbonPrice", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
