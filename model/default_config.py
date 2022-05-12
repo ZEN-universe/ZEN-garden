@@ -48,7 +48,8 @@ analysis["fileFormat"] = "csv"
 analysis["timeSeriesAggregation"] = {
     "clusterMethod"         : "k_means",
     "solver"                : "gurobi",
-    "extremePeriodMethod"   : "new_cluster_center",
+    # "extremePeriodMethod"   : "new_cluster_center",
+    "extremePeriodMethod"   : "None",
     "resolution"            : 1
 }
 

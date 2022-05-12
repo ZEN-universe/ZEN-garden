@@ -194,7 +194,7 @@ class DataInput():
                 _selectedColumn         = column
                 _nameYearlyVariation    = column+"YearlyVariation"
             else:
-                _selectedColumn         = dfInput.columns[-1]
+                _selectedColumn         = None
                 _nameYearlyVariation    = fileName
             dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, _selectedColumn,defaultValue)
             setattr(self,_nameYearlyVariation,dfOutput)
@@ -455,7 +455,10 @@ class DataInput():
         # select index
         indexList, indexNameList = self.constructIndexList(indexSets, timeSteps)
         # create pd.MultiIndex and select data
-        indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
+        if indexSets:
+            indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
+        else:
+            indexMultiIndex = pd.Index([0])
         if manualDefaultValue:
             defaultValue = {"value":manualDefaultValue,"multiplier":1}
         else:
@@ -571,8 +574,10 @@ class DataInput():
                 dfInput         = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[
                     row.index.get_level_values(dfInput.index.names[0]), column].squeeze())
             else:
-                dfInput         = _dfInputTemp.to_frame().apply(
-                    lambda row: dfInput.loc[row.index.get_level_values(dfInput.index.names[0])].squeeze())
+                if dfInput.shape[1] == 1:
+                    dfInput         = dfInput.loc[_dfInputIndexTemp.get_level_values(dfInput.index.names[0])].squeeze()
+                else:
+                    dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.name[0:-1],str(row.name[-1])],axis=1)
             if isinstance(dfInput,pd.DataFrame):
                 dfInput = dfInput.squeeze()
             dfInput.index       = _dfInputTemp.index

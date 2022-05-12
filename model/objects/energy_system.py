@@ -116,6 +116,8 @@ class EnergySystem:
         self.carbonEmissionsLimit        = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
         _fractionOfYear                  = system["unaggregatedTimeStepsPerYear"]/system["totalHoursPerYear"]
         self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
+        self.carbonEmissionsBudget        = self.dataInput.extractInputData("carbonEmissionsBudget", indexSets=[])
+        self.previousCarbonEmissions     = self.dataInput.extractInputData("previousCarbonEmissions", indexSets=[])
         # carbon price
         self.carbonPrice                 = self.dataInput.extractInputData("carbonPrice", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
 
@@ -527,7 +529,10 @@ class EnergySystem:
         # if calling class is EnergySystem
         if callingClass == cls:
             component       = getattr(cls.getEnergySystem(),componentName)
-            componentData   = component[setTimeSteps]
+            if setTimeSteps:
+                componentData   = component[setTimeSteps]
+            else:
+                componentData   = component.squeeze()
         else:
             component       = callingClass.getAttributeOfAllElements(componentName,capacityTypes)
             componentData   = pd.Series(component,dtype=float)
@@ -618,6 +623,16 @@ class EnergySystem:
             initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
             doc = 'Parameter which specifies the total limit on carbon emissions'
         )
+        # carbon emissions budget
+        model.carbonEmissionsBudget = pe.Param(
+            initialize=cls.initializeComponent(cls, "carbonEmissionsBudget"),
+            doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon'
+        )
+        # carbon emissions budget
+        model.previousCarbonEmissions = pe.Param(
+            initialize=cls.initializeComponent(cls, "previousCarbonEmissions"),
+            doc='Parameter which specifies the total previous carbon emissions'
+        )
         # carbon price
         model.carbonPrice = pe.Param(
             model.setTimeStepsYearly,
@@ -636,6 +651,12 @@ class EnergySystem:
             model.setTimeStepsYearly,
             domain = pe.Reals,
             doc = "total carbon emissions of energy system. Domain: Reals"
+        )
+        # carbon emissions
+        model.carbonEmissionsCumulative = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.Reals,
+            doc="cumulative carbon emissions of energy system over time for each year. Domain: Reals"
         )
         # cost of carbon emissions
         model.costCarbonEmissionsTotal = pe.Var(
@@ -662,6 +683,12 @@ class EnergySystem:
             rule = constraintCarbonEmissionsTotalRule,
             doc = "total carbon emissions of energy system"
         )
+        # carbon emissions
+        model.constraintCarbonEmissionsCumulative = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintCarbonEmissionsCumulativeRule,
+            doc="cumulative carbon emissions of energy system over time"
+        )
         # cost of carbon emissions
         model.constraintCarbonCostTotal = pe.Constraint(
             model.setTimeStepsYearly,
@@ -673,6 +700,11 @@ class EnergySystem:
             model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsLimitRule,
             doc="limit of total carbon emissions of energy system"
+        )
+        # carbon emissions
+        model.constraintCarbonEmissionsBudget = pe.Constraint(
+            rule=constraintCarbonEmissionsBudgetRule,
+            doc="Budget of total carbon emissions of energy system"
         )
         # costs
         model.constraintCostTotal = pe.Constraint(
@@ -724,6 +756,22 @@ def constraintCarbonEmissionsTotalRule(model,year):
         model.carbonEmissionsCarrierTotal[year]
     )
 
+def constraintCarbonEmissionsCumulativeRule(model,year):
+    """ cumulative carbon emissions over time """
+    intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
+    if year == model.setTimeStepsYearly.at(1):
+        return (
+            model.carbonEmissionsCumulative[year] ==
+            model.carbonEmissionsTotal[year] * intervalBetweenYears
+            + model.previousCarbonEmissions
+        )
+    else:
+        return (
+            model.carbonEmissionsCumulative[year] ==
+            model.carbonEmissionsCumulative[year - 1]
+            + model.carbonEmissionsTotal[year] * intervalBetweenYears
+        )
+
 def constraintCarbonCostTotalRule(model,year):
     """ carbon cost associated with the carbon emissions of the system in each year """
     return(
@@ -736,6 +784,16 @@ def constraintCarbonEmissionsLimitRule(model, year):
     if model.carbonEmissionsLimit[year] != np.inf:
         return(
             model.carbonEmissionsLimit[year] >= model.carbonEmissionsTotal[year]
+        )
+    else:
+        return pe.Constraint.Skip
+
+def constraintCarbonEmissionsBudgetRule(model):
+    """ carbon emissions budget of entire time horizon from technologies and carriers"""
+    if model.carbonEmissionsBudget != np.inf:
+        return(
+            model.carbonEmissionsBudget >=
+            model.carbonEmissionsCumulative[model.setTimeStepsYearly.at(-1)]
         )
     else:
         return pe.Constraint.Skip

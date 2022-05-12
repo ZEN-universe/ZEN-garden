@@ -156,3 +156,10 @@ class OptimizationSetup():
             _capexTech              = _capex.loc[tech.name].unstack()
             tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)
             tech.addNewlyInvestedCapacityTech(_investedCapacityTech,stepHorizon)
+
+    def addCarbonEmissionsCumulative(self,stepHorizon):
+        """ overwrite previous carbon emissions with cumulative carbon emissions
+        :param stepHorizon: step of the rolling horizon """
+        energySystem = EnergySystem.getEnergySystem()
+        energySystem.previousCarbonEmissions = self.model.carbonEmissionsCumulative.extract_values()[stepHorizon]
+        a=1
