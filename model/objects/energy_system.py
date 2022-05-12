@@ -531,6 +531,8 @@ class EnergySystem:
             component       = getattr(cls.getEnergySystem(),componentName)
             if setTimeSteps:
                 componentData   = component[setTimeSteps]
+            elif type(component) == float:
+                componentData   = component
             else:
                 componentData   = component.squeeze()
         else:
