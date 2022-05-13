@@ -120,6 +120,7 @@ class EnergySystem:
         self.previousCarbonEmissions     = self.dataInput.extractInputData("previousCarbonEmissions", indexSets=[])
         # carbon price
         self.carbonPrice                 = self.dataInput.extractInputData("carbonPrice", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
+        self.carbonPriceOvershoot        = self.dataInput.extractInputData("carbonPriceOvershoot", indexSets=[])
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
@@ -641,6 +642,11 @@ class EnergySystem:
             initialize=cls.initializeComponent(cls, "carbonPrice", setTimeSteps=model.setTimeStepsYearly),
             doc='Parameter which specifies the yearly carbon price'
         )
+        # carbon price of overshoot
+        model.carbonPriceOvershoot = pe.Param(
+            initialize=cls.initializeComponent(cls, "carbonPriceOvershoot"),
+            doc='Parameter which specifies the carbon price for budget overshoot'
+        )
 
     @classmethod
     def constructVars(cls):
@@ -659,6 +665,11 @@ class EnergySystem:
             model.setTimeStepsYearly,
             domain=pe.Reals,
             doc="cumulative carbon emissions of energy system over time for each year. Domain: Reals"
+        )
+        # carbon emissions
+        model.carbonEmissionsOvershoot = pe.Var(
+            domain=pe.Reals,
+            doc="overshoot carbon emissions of energy system at the end of the time horizon. Domain: Reals"
         )
         # cost of carbon emissions
         model.costCarbonEmissionsTotal = pe.Var(
@@ -779,6 +790,8 @@ def constraintCarbonCostTotalRule(model,year):
     return(
         model.costCarbonEmissionsTotal[year] ==
         model.carbonPrice[year] * model.carbonEmissionsTotal[year]
+        # add overshoot price
+        + model.carbonEmissionsOvershoot + model.carbonPriceOvershoot
     )
 
 def constraintCarbonEmissionsLimitRule(model, year):
@@ -794,7 +807,7 @@ def constraintCarbonEmissionsBudgetRule(model):
     """ carbon emissions budget of entire time horizon from technologies and carriers"""
     if model.carbonEmissionsBudget != np.inf:
         return(
-            model.carbonEmissionsBudget >=
+            model.carbonEmissionsBudget + model.carbonEmissionsOvershoot >=
             model.carbonEmissionsCumulative[model.setTimeStepsYearly.at(-1)]
         )
     else:
