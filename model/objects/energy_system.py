@@ -116,7 +116,7 @@ class EnergySystem:
         self.carbonEmissionsLimit        = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
         _fractionOfYear                  = system["unaggregatedTimeStepsPerYear"]/system["totalHoursPerYear"]
         self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
-        self.carbonEmissionsBudget        = self.dataInput.extractInputData("carbonEmissionsBudget", indexSets=[])
+        self.carbonEmissionsBudget       = self.dataInput.extractInputData("carbonEmissionsBudget", indexSets=[])
         self.previousCarbonEmissions     = self.dataInput.extractInputData("previousCarbonEmissions", indexSets=[])
         # carbon price
         self.carbonPrice                 = self.dataInput.extractInputData("carbonPrice", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
@@ -518,7 +518,7 @@ class EnergySystem:
         return _timeStepsOperation2Invest[timeStepOperation]
 
     @classmethod
-    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None,capacityTypes = False, ):
+    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None,capacityTypes = False):
         """ this method initializes a modeling component by extracting the stored input data.
         :param callingClass: class from where the method is called
         :param componentName: name of modeling component
@@ -668,7 +668,7 @@ class EnergySystem:
         )
         # carbon emissions
         model.carbonEmissionsOvershoot = pe.Var(
-            domain=pe.Reals,
+            domain=pe.NonNegativeReals,
             doc="overshoot carbon emissions of energy system at the end of the time horizon. Domain: Reals"
         )
         # cost of carbon emissions

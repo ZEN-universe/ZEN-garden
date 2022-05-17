@@ -38,6 +38,9 @@ class ConversionTechnology(Technology):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get attributes from class <Technology>
         super().storeInputData()
+        # TODO move to Technology
+        # maximum diffusion rate
+        self.maxDiffusionRate           = self.dataInput.extractInputData("maxDiffusionRate",indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsInvest)
         # define input and output carrier
         self.inputCarrier               = self.dataInput.extractConversionCarriers()["inputCarrier"]
         self.outputCarrier              = self.dataInput.extractConversionCarriers()["outputCarrier"]
@@ -159,6 +162,12 @@ class ConversionTechnology(Technology):
     def constructParams(cls):
         """ constructs the pe.Params of the class <ConversionTechnology> """
         model                = EnergySystem.getConcreteModel()
+        # maximum diffusion rate, i.e., increase in capacity
+        model.maxDiffusionRate = pe.Param(
+            cls.createCustomSet(["setConversionTechnologies", "setTimeStepsInvest"]),
+            initialize=EnergySystem.initializeComponent(cls,"maxDiffusionRate",indexNames=["setConversionTechnologies","setTimeStepsInvest"]),
+            doc="Parameter which specifies the maximum diffusion rate, i.e., the maximum increase in capacity between investment steps. Dimensions: setConversionTechnologies, setTimeStepsInvest"
+        )
         # slope of linearly modeled capex
         model.capexSpecificConversion = pe.Param(
             cls.createCustomSet(["setConversionTechnologies","setCapexLinear","setNodes","setTimeStepsInvest"]),
@@ -247,7 +256,12 @@ class ConversionTechnology(Technology):
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <ConversionTechnology> """
         model = EnergySystem.getConcreteModel()
-        
+        # limit diffusion rate
+        model.constraintTechnologyDiffusionLimit = pe.Constraint(
+            cls.createCustomSet(["setConversionTechnologies", "setTimeStepsInvest"]),
+            rule=constraintTechnologyDiffusionLimitRule,
+            doc="Limits the newly built capacity by the total capacity in the previous time step for entire energy system. Dimension: setConversionTechnologies,setTimeStepsInvest.")
+
         # add PWA constraints
         # capex
         setPWACapex    = cls.createCustomSet(["setConversionTechnologies","setCapexPWA","setNodes","setTimeStepsInvest"])
@@ -344,9 +358,9 @@ class ConversionTechnology(Technology):
         model = disjunct.model()
         disjunct.constraintNoLoad = pe.Constraint(
             expr=
-                sum(model.inputFlow[tech,inputCarrier,node,time]     for inputCarrier  in model.setInputCarriers[tech]) +
-                sum(model.outputFlow[tech,outputCarrier,node,time]   for outputCarrier in model.setOutputCarriers[tech])
-                == 0
+            sum(model.inputFlow[tech,inputCarrier,node,time]     for inputCarrier  in model.setInputCarriers[tech]) +
+            sum(model.outputFlow[tech,outputCarrier,node,time]   for outputCarrier in model.setOutputCarriers[tech])
+            == 0
         )
             
     @classmethod
@@ -379,6 +393,36 @@ class ConversionTechnology(Technology):
         return PWABreakpoints,PWAValues
 
 ### --- functions with constraint rules --- ###
+def constraintTechnologyDiffusionLimitRule(model,tech,time):
+    """limited technology diffusion based on the existing capacity in the previous year """
+    intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
+    if model.maxDiffusionRate[tech,time] != np.inf:
+        # if technology has lead time, restrict to current capacity
+        if model.constructionTimeTechnology[tech] > 0:
+            return (
+                sum(model.investedCapacity[tech, "power", node, time] for node in model.setNodes) <=
+                ((1 + model.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1)
+                * sum(model.capacity[tech, "power", node, time] for node in model.setNodes)
+            )
+        # if not first investment period
+        elif time != model.setTimeStepsInvest[tech].at(1):
+            return(
+                sum(model.investedCapacity[tech,"power",node,time] for node in model.setNodes) <=
+                ((1 + model.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1)
+                * sum(model.capacity[tech,"power",node,time-1] for node in model.setNodes)
+            )
+        # if first period, multiply with existingCapacities
+        else:
+            existingCapacitiesTotal = sum(Technology.getAvailableExistingQuantity(tech, "power", node, time, typeExistingQuantity="capacity") for
+                 node in model.setNodes)
+            return (
+                sum(model.investedCapacity[tech, "power", node, time] for node in model.setNodes) <=
+                ((1 + model.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1)
+                * existingCapacitiesTotal
+            )
+    else:
+        return pe.Constraint.Skip
+
 def constraintLinearCapexRule(model,tech,node,time):
     """ if capacity and capex have a linear relationship"""
     return(model.capexApproximation[tech,node,time] == model.capexSpecificConversion[tech,node,time]*model.capacityApproximation[tech,node,time])

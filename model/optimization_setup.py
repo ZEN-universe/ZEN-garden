@@ -162,4 +162,3 @@ class OptimizationSetup():
         :param stepHorizon: step of the rolling horizon """
         energySystem = EnergySystem.getEnergySystem()
         energySystem.previousCarbonEmissions = self.model.carbonEmissionsCumulative.extract_values()[stepHorizon]
-        a=1

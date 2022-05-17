@@ -503,13 +503,13 @@ class Technology(Element):
         # carbon emissions
         model.carbonEmissionsTechnology = pe.Var(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
-            domain = pe.NonNegativeReals,
+            domain = pe.Reals,
             doc = "carbon emissions for operating technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsOperation. Domain: NonNegativeReals"
         )
         # total carbon emissions technology
         model.carbonEmissionsTechnologyTotal = pe.Var(
             model.setTimeStepsYearly,
-            domain=pe.NonNegativeReals,
+            domain=pe.Reals,
             doc="total carbon emissions for operating technology at location l and time t. Domain: NonNegativeReals"
         )
 
@@ -701,7 +701,6 @@ def constraintCapexYearlyRule(model, tech, capacityType, loc, year):
             +
             Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest")
             )
-
 
 def constraintCapexTotalRule(model,year):
     """ sums over all technologies to calculate total capex """
