@@ -49,7 +49,7 @@ class Carrier(Element):
         self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         # non-time series input data
-        self.carbonIntensityCarrier                     = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",["setNodes"])
+        self.carbonIntensityCarrier                     = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",["setNodes","setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
 
     def overwriteTimeSteps(self,baseTimeSteps):
         """ overwrites setTimeStepsCarrier and  setTimeStepsEnergyBalance"""
@@ -114,8 +114,8 @@ class Carrier(Element):
         )
         # carbon intensity
         model.carbonIntensityCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes"]),
-            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier"),
+            cls.createCustomSet(["setCarriers","setNodes", "setTimeStepsCarrier"]),
+            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsCarrier"]),
             doc = 'Parameter which specifies the carbon intensity of carrier. \n\t Dimensions: setCarriers, setNodes'
         )
 
@@ -250,7 +250,7 @@ def constraintCostCarrierTotalRule(model,year):
 def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
     """ carbon emissions of importing/exporting carrier"""
     return (model.carbonEmissionsCarrier[carrier, node, time] ==
-            model.carbonIntensityCarrier[carrier, node] *
+            model.carbonIntensityCarrier[carrier, node, time] *
             (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
             )
 

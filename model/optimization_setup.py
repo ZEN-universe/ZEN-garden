@@ -105,6 +105,29 @@ class OptimizationSetup():
             self.stepsHorizon   = {0: energySystem.setTimeStepsYearly}
         return list(self.stepsHorizon.keys())
 
+    def overwriteParams(self, scenario, elements):
+        """overwrite scenario dependent parameters
+        :param scenario: scenario name
+        :param elements:   dictionary of elements and scenario dependent parameters"""
+        for elementName, params in elements.items():
+            if elementName == "EnergySystem":
+                element = EnergySystem.getEnergySystem()
+                path    = self.paths["setScenarios"]["folder"] # adjust after merge and get input path
+            else:
+                element = Element.getElement(elementName)
+                path    = element.inputPath
+            for param in params:
+                _oldParam   = getattr(element, param)
+                _indexNames = _oldParam.index.names
+                _indexSets  = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
+                if "time" in _indexNames:
+                    _timeSteps      = list(_oldParam.index.unique("time"))
+                if isinstance(_oldParam, pd.Series) or isinstance(element.carbonEmissionsLimit, pd.DataFrame):
+                    _newParam = element.dataInput.extractInputData(path, param, indexSets=_indexSets, timeSteps=_timeSteps, scenario = f"_{scenario}")
+                else:
+                    _newParam = element.dataInput.extractAttributeData(path,param, fileName=f"{param}.csv")["value"]
+                setattr(element, param, _newParam)
+
     def overwriteTimeIndices(self,stepHorizon):
         """ select subset of time indices, matching the step horizon
         :param stepHorizon: step of the rolling horizon """
@@ -144,12 +167,13 @@ class OptimizationSetup():
     def addNewlyBuiltCapacity(self,stepHorizon):
         """ adds the newly built capacity to the existing capacity
         :param stepHorizon: step of the rolling horizon """
-        _builtCapacity  = pd.Series(self.model.builtCapacity.extract_values())
-        _capex          = pd.Series(self.model.capex.extract_values())
-        _baseTimeSteps  = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
-        Technology      = getattr(sys.modules[__name__], "Technology")
-        for tech in Technology.getAllElements():
-            # new capacity
-            _builtCapacityTech = _builtCapacity.loc[tech.name].unstack()
-            _capexTech          = _capex.loc[tech.name].unstack()
-            tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)
+        if self.system["useRollingHorizon"]:
+            _builtCapacity  = pd.Series(self.model.builtCapacity.extract_values())
+            _capex          = pd.Series(self.model.capex.extract_values())
+            _baseTimeSteps  = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
+            Technology      = getattr(sys.modules[__name__], "Technology")
+            for tech in Technology.getAllElements():
+                # new capacity
+                _builtCapacityTech = _builtCapacity.loc[tech.name].unstack()
+                _capexTech          = _capex.loc[tech.name].unstack()
+                tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)

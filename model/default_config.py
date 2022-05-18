@@ -31,7 +31,8 @@ analysis["discountRate"] = 0.06
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
 analysis["subsets"] = {"setCarriers": [],
-                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
+                       "setConditioningCarriers": [],
+                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies", "setConditioningTechnologies"]}
 # settings for MINLP
 analysis["variablesNonlinearModel"]                 = {"builtCapacity": []}
 analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEfficiency":[]}

@@ -112,7 +112,7 @@ class DataInput():
 
         return dfOutput,defaultValue,indexMultiIndex,indexNameList,defaultName
 
-    def extractInputData(self, folderPath,manualFileName,indexSets,column=None,timeSteps=[],transportTechnology=False,element=None):
+    def extractInputData(self, folderPath,manualFileName,indexSets,column=None,timeSteps=[],transportTechnology=False, scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files 
         :param manualFileName: name of selected file. If only one file in folder, not used
@@ -141,7 +141,7 @@ class DataInput():
                                                                                                            timeSteps)
 
         # read input file
-        dfInput,fileName = self.readInputData(folderPath,manualFileName)
+        dfInput,fileName = self.readInputData(folderPath,manualFileName+scenario)
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
             # if not extracted for transport technology
@@ -149,8 +149,10 @@ class DataInput():
                 dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
             else:
                 dfOutput = self.extractTransportInputData(dfInput,dfOutput,fileName,indexMultiIndex,column,defaultValue)
-        return dfOutput 
-    
+        return dfOutput
+
+
+
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
         """ fills dfOutput with data from dfInput with no new index creation (no transport technologies)
         :param dfInput: raw input dataframe
@@ -296,13 +298,14 @@ class DataInput():
                                                         defaultValue)
                 setattr(self,manualFileName,dfOutput)
 
-    def extractAttributeData(self, folderPath,attributeName,skipWarning = False):
+    def extractAttributeData(self, folderPath,attributeName,skipWarning = False, fileName = None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param folderPath: path to input files
         :param attributeName: name of selected attribute
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
-        fileName    = "attributes.csv"
+        if not fileName:
+            fileName    = "attributes.csv"
 
         if fileName not in os.listdir(folderPath):
             return None
@@ -350,7 +353,7 @@ class DataInput():
         if defaultValue is None:
             inputData, _ = self.readInputData(folderPath, manualFileName)
 
-        if defaultValue is None and inputData is None:
+        if defaultValue is None and inputData is None or str(defaultValue['value']) == 'nan':
             return False
         else:
             return True

@@ -86,8 +86,7 @@ class Technology(Element):
                                                                         indexSets=[_setLocation,
                                                                            "setExistingTechnologies"],
                                                                         column="existingCapacity",
-                                                                        transportTechnology=_isTransportTechnology,
-                                                                        element=self)
+                                                                        transportTechnology=_isTransportTechnology)
                 self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(self.inputPath,
                                                                                    "existingCapacity",
                                                                        indexSets=[_setLocation,
@@ -433,6 +432,11 @@ class Technology(Element):
             domain = pe.NonNegativeReals,
             doc = 'capex for installing technology at location l and time t. Dimensions: setTechnologies, setLocation, setTimeStepsInvest. Domain: NonNegativeReals')
         # total capex technology
+        model.capexYearly = pe.Var(
+            cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsYearly"]),
+            domain=pe.NonNegativeReals,
+            doc='yearly capex for installing technology at location l and time t. Domain: NonNegativeReals')
+        # total capex technology
         model.capexTotal = pe.Var(
             model.setTimeStepsYearly,
             domain = pe.NonNegativeReals,
@@ -500,6 +504,12 @@ class Technology(Element):
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             rule = constraintMaxLoadRule,
             doc = 'limit max load by installed capacity. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
+        )
+        # total capex of all technologies
+        model.constraintCapexYearly = pe.Constraint(
+            cls.createCustomSet(["setTechnologies", "setLocation", "setTimeStepsYearly"]),
+            rule=constraintCapexYearlyRule,
+            doc='total capex of all technology that can be installed.'
         )
         # total capex of all technologies
         model.constraintCapexTotal = pe.Constraint(
@@ -614,20 +624,22 @@ def constraintTechnologyLifetimeRule(model, tech, loc, time):
     else:
         return pe.Constraint.Skip
 
+def constraintCapexYearlyRule(model,tech,loc,year):
+    """aggregate the capex of built capacity and existing capacity"""
+    return(model.capexYearly[tech,loc,year]==
+           sum(
+            model.capex[tech, loc, time]
+            for time in Technology.getLifetimeRange(tech, year, timeStepType="invest"))
+           + Technology.getAvailableExistingQuantity(tech, loc, year, typeExistingQuantity="capex", timeStepType="invest")
+           )
+
 def constraintCapexTotalRule(model,year):
     """ sums over all technologies to calculate total capex """
-
     return(model.capexTotal[year] ==
-        sum(
-            sum(
-                model.capex[tech, loc, time]
-                for time in Technology.getLifetimeRange(tech, year, timeStepType="invest")
-            )
-            +
-            Technology.getAvailableExistingQuantity(tech, loc, year, typeExistingQuantity="capex",timeStepType="invest")
-            for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])
-        )
-    )
+           sum(
+               model.capexYearly[tech,loc,year]
+               for tech, loc in Element.createCustomSet(["setTechnologies", "setLocation"]))
+           )
 
 def constraintOpexTechnologyRule(model,tech,loc,time):
     """ calculate opex of each technology"""

@@ -102,6 +102,7 @@ class EnergySystem:
 
         # carbon emissions limit
         self.carbonEmissionsLimit        = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
+        self.carbonEmissionsBudget       = self.dataInput.extractAttributeData(self.paths["setScenarios"]["folder"],"carbonEmissionsBudget")["value"]
         _fractionOfYear                  = system["timeStepsPerYear"]/system["totalHoursPerYear"]
         self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
 
@@ -190,6 +191,10 @@ class EnergySystem:
         """ set energySystem. 
         :param energySystem: new energySystem that is set """
         cls.energySystem = energySystem
+
+    @classmethod
+    def delEnergySystem(cls):
+        delattr(cls, "energySystem")
 
     @classmethod
     def setOptimizationAttributes(cls,analysis, system,paths,solver):
@@ -597,12 +602,18 @@ class EnergySystem:
         """ constructs the pe.Params of the class <EnergySystem> """
         # get model
         model = cls.getConcreteModel()
+        energySystem = cls.getEnergySystem()
 
         # carbon emissions limit
         model.carbonEmissionsLimit = pe.Param(
             model.setTimeStepsYearly,
             initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
             doc = 'Parameter which specifies the total limit on carbon emissions'
+        )
+        # carbon emissions limit
+        model.carbonEmissionsBudget = pe.Param(
+            initialize=energySystem.carbonEmissionsBudget,
+            doc='Parameter which specifies the total limit on carbon emissions'
         )
 
     @classmethod
@@ -636,10 +647,15 @@ class EnergySystem:
             rule = constraintCarbonEmissionsTotalRule,
             doc = "total carbon emissions of energy system"
         )
-        # carbon emissions
+        # carbon emissions limit
         model.constraintCarbonEmissionsLimit = pe.Constraint(
             model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsLimitRule,
+            doc="limit of total carbon emissions of energy system"
+        )
+        # carbon emissions budget
+        model.constraintCarbonEmissionsLimit = pe.Constraint(
+            rule=constraintCarbonEmissionsBudgetRule,
             doc="limit of total carbon emissions of energy system"
         )
         # costs
@@ -697,6 +713,15 @@ def constraintCarbonEmissionsLimitRule(model, year):
     if model.carbonEmissionsLimit[year] != np.inf:
         return(
             model.carbonEmissionsLimit[year] >= model.carbonEmissionsTotal[year]
+        )
+    else:
+        return pe.Constraint.Skip
+
+def constraintCarbonEmissionsBudgetRule(model):
+    """ time dependent carbon emissions limit from technologies and carriers"""
+    if model.carbonEmissionsBudget != np.inf:
+        return(
+            model.carbonEmissionsBudget >= sum(model.carbonEmissionsTotal[year] for year in model.setTimeStepsYearly)
         )
     else:
         return pe.Constraint.Skip
