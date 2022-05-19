@@ -668,6 +668,7 @@ class EnergySystem:
         )
         # carbon emissions
         model.carbonEmissionsOvershoot = pe.Var(
+            model.setTimeStepsYearly,
             domain=pe.NonNegativeReals,
             doc="overshoot carbon emissions of energy system at the end of the time horizon. Domain: Reals"
         )
@@ -716,6 +717,7 @@ class EnergySystem:
         )
         # carbon emissions
         model.constraintCarbonEmissionsBudget = pe.Constraint(
+            model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsBudgetRule,
             doc="Budget of total carbon emissions of energy system"
         )
@@ -775,14 +777,15 @@ def constraintCarbonEmissionsCumulativeRule(model,year):
     if year == model.setTimeStepsYearly.at(1):
         return (
             model.carbonEmissionsCumulative[year] ==
-            model.carbonEmissionsTotal[year] * intervalBetweenYears
+            model.carbonEmissionsTotal[year]
             + model.previousCarbonEmissions
         )
     else:
         return (
             model.carbonEmissionsCumulative[year] ==
             model.carbonEmissionsCumulative[year - 1]
-            + model.carbonEmissionsTotal[year] * intervalBetweenYears
+            + model.carbonEmissionsTotal[year-1] * (intervalBetweenYears-1)
+            + model.carbonEmissionsTotal[year]
         )
 
 def constraintCarbonCostTotalRule(model,year):
@@ -791,7 +794,7 @@ def constraintCarbonCostTotalRule(model,year):
         model.costCarbonEmissionsTotal[year] ==
         model.carbonPrice[year] * model.carbonEmissionsTotal[year]
         # add overshoot price
-        + model.carbonEmissionsOvershoot + model.carbonPriceOvershoot
+        + model.carbonEmissionsOvershoot[year] + model.carbonPriceOvershoot
     )
 
 def constraintCarbonEmissionsLimitRule(model, year):
@@ -803,12 +806,12 @@ def constraintCarbonEmissionsLimitRule(model, year):
     else:
         return pe.Constraint.Skip
 
-def constraintCarbonEmissionsBudgetRule(model):
+def constraintCarbonEmissionsBudgetRule(model,year):
     """ carbon emissions budget of entire time horizon from technologies and carriers"""
     if model.carbonEmissionsBudget != np.inf:
         return(
-            model.carbonEmissionsBudget + model.carbonEmissionsOvershoot >=
-            model.carbonEmissionsCumulative[model.setTimeStepsYearly.at(-1)]
+            model.carbonEmissionsBudget + model.carbonEmissionsOvershoot[year] >=
+            model.carbonEmissionsCumulative[year]
         )
     else:
         return pe.Constraint.Skip
@@ -829,9 +832,12 @@ def constraintCostTotalRule(model,year):
 # objective rules
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
+    system = EnergySystem.getSystem()
     return(
             sum(
-                model.costTotal[year]
+                model.costTotal[year] *
+                # discounted utility function
+                (1/(1+system["timePreferenceRate"]))**(system["intervalBetweenYears"]*(year - model.setTimeStepsYearly.at(1)))
             for year in model.setTimeStepsYearly)
     )
 

@@ -160,5 +160,8 @@ class OptimizationSetup():
     def addCarbonEmissionsCumulative(self,stepHorizon):
         """ overwrite previous carbon emissions with cumulative carbon emissions
         :param stepHorizon: step of the rolling horizon """
-        energySystem = EnergySystem.getEnergySystem()
-        energySystem.previousCarbonEmissions = self.model.carbonEmissionsCumulative.extract_values()[stepHorizon]
+        energySystem                            = EnergySystem.getEnergySystem()
+        intervalBetweenYears                    = EnergySystem.getSystem()["intervalBetweenYears"]
+        _carbonEmissionsCumulative              = self.model.carbonEmissionsCumulative.extract_values()[stepHorizon]
+        _carbonEmissions                        = self.model.carbonEmissionsTotal.extract_values()[stepHorizon]
+        energySystem.previousCarbonEmissions    = _carbonEmissionsCumulative + _carbonEmissions*(intervalBetweenYears-1)
