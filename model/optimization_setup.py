@@ -118,14 +118,15 @@ class OptimizationSetup():
                 path    = element.inputPath
             for param in params:
                 _oldParam   = getattr(element, param)
-                _indexNames = _oldParam.index.names
-                _indexSets  = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
-                if "time" in _indexNames:
-                    _timeSteps      = list(_oldParam.index.unique("time"))
                 if isinstance(_oldParam, pd.Series) or isinstance(element.carbonEmissionsLimit, pd.DataFrame):
+                    _indexNames = _oldParam.index.names
+                    _indexSets = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
+                    _timeSteps = []
+                    if "time" in _indexNames:
+                        _timeSteps = list(_oldParam.index.unique("time"))
                     _newParam = element.dataInput.extractInputData(path, param, indexSets=_indexSets, timeSteps=_timeSteps, scenario = f"_{scenario}")
                 else:
-                    _newParam = element.dataInput.extractAttributeData(path,param, fileName=f"{param}.csv")["value"]
+                    _newParam = element.dataInput.extractAttributeData(path,param, fileName=f"{param}_{scenario}.csv", skipWarning=True)["value"]
                 setattr(element, param, _newParam)
 
     def overwriteTimeIndices(self,stepHorizon):

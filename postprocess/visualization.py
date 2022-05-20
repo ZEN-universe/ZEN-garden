@@ -88,6 +88,16 @@ class VisualizeResults:
             df = df.loc[subset]
         return df
 
+    def updateTimeIndex(self, df, index="time"):
+        """update the time index from numeric values to actual timestamps:
+        index: indicate name of time index that is updated"""
+        baseYear  = 2020
+        yearsDict = {}
+        for year in df.index.unique(index):
+            yearsDict[year] = baseYear+year
+        df = df.rename(index=yearsDict)
+        return df
+
     def getSets(self):
         """ get sets from system"""
         # carriers
@@ -108,22 +118,24 @@ class VisualizeResults:
         self.setStorageTechnologies               = self.system["setStorageTechnologies"]
         self.setStorageTechnologies.append("carbon_storage")
 
-    def barplot(self, name, df, stacked = False):
+    def barplot(self, title, df, stacked = False, ylabel=None, xlabel=None):
         """ stacked barplot"""
         if df.empty:
-            print(f"{name} is empty.")
+            print(f"{title} is empty.")
         elif df[df>0].isna().all().all():
-            print(f"{name} all values are 0")
+            print(f"{title} all values are 0")
         else:
             fig, axs = plt.subplots()
-            axs.set_title(name)
             df.plot.bar(ax=axs, stacked=stacked)
-            fig.savefig(f"{self.nameDir}/plots/{name}.png")
+            axs.set_title(title)
+            axs.set_xlabel(xlabel)
+            axs.set_ylabel(ylabel)
+            fig.savefig(f"{self.nameDir}/plots/{title}.png")
             if self.pltShow:
                 fig.show()
             plt.close(fig)
 
-    def areaplot(self, name, df):
+    def areaplot(self, name, df, ylabel=None, xlabel=None):
         """ area plot of dataframe"""
         if df.empty:
             print(f"{name} is empty.")
@@ -133,6 +145,8 @@ class VisualizeResults:
             fig, axs = plt.subplots()
             axs.set_title(name)
             df.plot.area(ax=axs)
+            axs.set_xlabel(xlabel)
+            axs.set_ylabel(ylabel)
             fig.savefig(f"{self.nameDir}/plots/{name}.png")
             if self.pltShow:
                 fig.show()
@@ -142,14 +156,18 @@ class VisualizeResults:
     def evaluateHydrogenDemand(self):
         """plot hydrogen demand"""
         demand = self.getDataframe("demandCarrier",["carrier", "node", "time"], type="param")
+        demand = demand.unstack("node")
+        demand = demand.apply(lambda row: row*self.timeStepsCarrierDuration)
+        demand = demand.apply(lambda row: row*1e-6) #conversion from GWh in TWh
         # total hydrogen demand per country
-        demandNodes = demand.loc["hydrogen"].groupby("node").sum()
+        demandNodes = demand.loc["hydrogen"].sum()
         demandNodes = demandNodes[demandNodes >= 0.1 * demandNodes.max()]
-        self.barplot("totalHydrogenDemandPerCountry", demandNodes)
+        self.barplot("totalHydrogenDemandPerCountry", demandNodes, ylabel = "Hydrogen Demand in TWh" , xlabel= "years")
         # total hydrogen demand per country
-        demandEvolution = demand.loc["hydrogen"].groupby("time").sum()
+        demandEvolution = demand.loc["hydrogen"].stack().groupby("time").sum()
         demandEvolution = demandEvolution[demandEvolution >= 0.1 * demandEvolution.max()]
-        self.barplot("totalHydrogenDemandTime", demandEvolution)
+        demandEvolution = self.updateTimeIndex(demandEvolution, index="time")
+        self.barplot("totalHydrogenDemandTime", demandEvolution, ylabel = "Hydrogen Demand in TWh", xlabel = "years")
 
     def evaluateBuiltCapacity(self):
         """plot built capacity"""
@@ -264,7 +282,7 @@ class VisualizeResults:
             tmp = tmp * self.timeStepsOperationDuration.loc[tmp.index.unique("technology")]
             self.barplot(f"{carrier}FlowsTransport", tmp.unstack("technology"), stacked=True)
 
-    def evaluateCarbonEmissions(self, decarbScen,carbonMin = 0):
+    def evaluateCarbonEmissions(self, decarbScen):
         """plot carbon emissions
         :param decarbScen: dictionary with information on decarbonization scenarios"""
 
@@ -291,14 +309,15 @@ class VisualizeResults:
                 for i in years[1:]:
                     carbonLimits.loc[i] = carbonMax - reduction*i
                 carbonLimits.to_csv(f"{self.nameDir}/files/carbonEmissionsLimit_{scen}.csv")
-            # compute carbon budget
-            carbonLimits.loc[years[0]] = carbonMax
-            carbonBudget = carbonLimits.sum()
-            carbonBudget = {"value": carbonBudget, "unit": "kilotons"}
-            carbonBudget = pd.DataFrame(carbonBudget, index=[0])
-            carbonBudget.to_csv(f"{self.nameDir}/files/carbonBudget.csv", index=False)
-            carbonLimits.loc[years[-1]].to_csv(f"{self.nameDir}/files/carbonEmissionsLimit_carbonBudget.csv", index=False)
-
+                # compute carbon budget
+                if scen == "linear_100in30":
+                    carbonLimits.loc[years[0]] = carbonMax
+                    carbonBudget = carbonLimits.sum()
+                    carbonBudget = {"index": "carbonEmissionsBudget", "value": carbonBudget, "unit": "kilotons"}
+                    carbonBudget = pd.DataFrame(carbonBudget, index=[0])
+                    carbonBudget.to_csv(f"{self.nameDir}/files/carbonEmissionsBudget.csv", index=False)
+                    tmp = carbonLimits.drop(index=years[:-1])
+                    tmp.to_csv(f"{self.nameDir}/files/carbonEmissionsLimit_carbonBudget.csv", index=False)
 
     def computeLevelizedCost(self, carrier):
         """compute marginal cost"""
@@ -363,8 +382,9 @@ if __name__ == "__main__":
     os.chdir("..")
     dataset = "HSC_NUTS0"
     pltShow = False  # True or False
-    scenarios  = ["default"] #"default_no_REN"
+    #scenarios  = ["default"] #"default_no_REN"
     #scenarios = ["linear_100in30", "linear_75in30", "linear_50in30", "linear_25in30"]
+    scenarios = ["carbonBudget"]
     decarbScen = {"linear_100in30": 1, "linear_75in30": 0.25, "linear_50in30": 0.5, "linear_25in30": 0.25}
     #today      = datetime.now()
     #modelName  = "model_" + today.strftime("%Y-%m-%d") + "_perfectForesight_" + dataset

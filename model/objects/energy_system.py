@@ -654,7 +654,7 @@ class EnergySystem:
             doc="limit of total carbon emissions of energy system"
         )
         # carbon emissions budget
-        model.constraintCarbonEmissionsLimit = pe.Constraint(
+        model.constraintCarbonEmissionsBudget = pe.Constraint(
             rule=constraintCarbonEmissionsBudgetRule,
             doc="limit of total carbon emissions of energy system"
         )
