@@ -111,7 +111,6 @@ class EnergySystem:
         self.setConversionTechnologies   = system["setConversionTechnologies"]
         self.setTransportTechnologies    = system["setTransportTechnologies"]
         self.setStorageTechnologies      = system["setStorageTechnologies"]
-
         # carbon emissions limit
         self.carbonEmissionsLimit        = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
         _fractionOfYear                  = system["unaggregatedTimeStepsPerYear"]/system["totalHoursPerYear"]

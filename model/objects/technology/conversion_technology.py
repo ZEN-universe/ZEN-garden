@@ -395,7 +395,9 @@ class ConversionTechnology(Technology):
 ### --- functions with constraint rules --- ###
 def constraintTechnologyDiffusionLimitRule(model,tech,time):
     """limited technology diffusion based on the existing capacity in the previous year """
-    intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
+    intervalBetweenYears    = EnergySystem.getSystem()["intervalBetweenYears"]
+    unboundedMarketShare    = EnergySystem.getSystem()["unboundedMarketShare"]
+    referenceCarrier        = model.setReferenceCarriers[tech].at(1)
     if model.maxDiffusionRate[tech,time] != np.inf:
         # if technology has lead time, restrict to current capacity
         if model.constructionTimeTechnology[tech] > 0:
@@ -403,6 +405,14 @@ def constraintTechnologyDiffusionLimitRule(model,tech,time):
                 sum(model.investedCapacity[tech, "power", node, time] for node in model.setNodes) <=
                 ((1 + model.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1)
                 * sum(model.capacity[tech, "power", node, time] for node in model.setNodes)
+                # add initial market share until which the diffusion rate is unbounded
+                + unboundedMarketShare *
+                sum(
+                    sum(
+                        model.capacity[otherTech, "power", node, time] for node in model.setNodes
+                    )
+                    for otherTech in model.setConversionTechnologies if model.setReferenceCarriers[otherTech].at(1) == referenceCarrier
+                )
             )
         # if not first investment period
         elif time != model.setTimeStepsInvest[tech].at(1):
@@ -410,15 +420,34 @@ def constraintTechnologyDiffusionLimitRule(model,tech,time):
                 sum(model.investedCapacity[tech,"power",node,time] for node in model.setNodes) <=
                 ((1 + model.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1)
                 * sum(model.capacity[tech,"power",node,time-1] for node in model.setNodes)
+                # add initial market share until which the diffusion rate is unbounded
+                + unboundedMarketShare *
+                sum(
+                    sum(
+                        model.capacity[otherTech, "power", node, time-1] for node in model.setNodes
+                    )
+                    for otherTech in model.setConversionTechnologies if
+                    model.setReferenceCarriers[otherTech].at(1) == referenceCarrier
+                )
             )
         # if first period, multiply with existingCapacities
         else:
             existingCapacitiesTotal = sum(Technology.getAvailableExistingQuantity(tech, "power", node, time, typeExistingQuantity="capacity") for
                  node in model.setNodes)
+            existingCapacitiesTotalAllTechs = \
+                sum(
+                    sum(
+                        Technology.getAvailableExistingQuantity(otherTech, "power", node, time, typeExistingQuantity="capacity") for
+                        node in model.setNodes)
+                    for otherTech in model.setConversionTechnologies if
+                    model.setReferenceCarriers[otherTech].at(1) == referenceCarrier
+                )
             return (
                 sum(model.investedCapacity[tech, "power", node, time] for node in model.setNodes) <=
                 ((1 + model.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1)
                 * existingCapacitiesTotal
+                # add initial market share until which the diffusion rate is unbounded
+                + unboundedMarketShare * existingCapacitiesTotalAllTechs
             )
     else:
         return pe.Constraint.Skip
