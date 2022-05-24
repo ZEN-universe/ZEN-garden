@@ -831,13 +831,16 @@ def constraintCostTotalRule(model,year):
 # objective rules
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
-    system = EnergySystem.getSystem()
+    system          = EnergySystem.getSystem()
+    discountRate    = EnergySystem.getAnalysis()["discountRate"]
     return(
-            sum(
-                model.costTotal[year] *
-                # discounted utility function
-                (1/(1+system["timePreferenceRate"]))**(system["intervalBetweenYears"]*(year - model.setTimeStepsYearly.at(1)))
-            for year in model.setTimeStepsYearly)
+        sum(
+            model.costTotal[year] *
+            # economic discount
+            ((1 / (1 + discountRate)) ** (system["intervalBetweenYears"] * (year - model.setTimeStepsYearly.at(1)))) *
+            # discounted utility function
+            ((1/(1+system["socialDiscountRate"]))**(system["intervalBetweenYears"]*(year - model.setTimeStepsYearly.at(1))))
+        for year in model.setTimeStepsYearly)
     )
 
 def objectiveTotalCarbonEmissionsRule(model):
