@@ -683,6 +683,12 @@ class EnergySystem:
             domain=pe.Reals,
             doc="total cost of energy system. Domain: Reals"
         )
+        # NPV
+        model.NPV = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.Reals,
+            doc="NPV of energy system. Domain: Reals"
+        )
 
     @classmethod
     def constructConstraints(cls):
@@ -725,6 +731,12 @@ class EnergySystem:
             model.setTimeStepsYearly,
             rule=constraintCostTotalRule,
             doc="total cost of energy system"
+        )
+        # NPV
+        model.constraintNPV = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintNPVRule,
+            doc="NPV of energy system"
         )
 
     @classmethod
@@ -828,16 +840,24 @@ def constraintCostTotalRule(model,year):
         # carbon costs
         model.costCarbonEmissionsTotal[year]
     )
+
+def constraintNPVRule(model,year):
+    """ discounts the annual capital flows to calculate the NPV """
+    system          = EnergySystem.getSystem()
+    discountRate    = EnergySystem.getAnalysis()["discountRate"]
+    return(
+        model.NPV[year] ==
+        model.costTotal[year] *
+        # economic discount
+        ((1 / (1 + discountRate)) ** (system["intervalBetweenYears"] * (year - model.setTimeStepsYearly.at(1))))
+    )
 # objective rules
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
     system          = EnergySystem.getSystem()
-    discountRate    = EnergySystem.getAnalysis()["discountRate"]
     return(
         sum(
-            model.costTotal[year] *
-            # economic discount
-            ((1 / (1 + discountRate)) ** (system["intervalBetweenYears"] * (year - model.setTimeStepsYearly.at(1)))) *
+            model.NPV[year] *
             # discounted utility function
             ((1/(1+system["socialDiscountRate"]))**(system["intervalBetweenYears"]*(year - model.setTimeStepsYearly.at(1))))
         for year in model.setTimeStepsYearly)

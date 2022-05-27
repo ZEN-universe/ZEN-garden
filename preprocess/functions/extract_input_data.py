@@ -467,7 +467,7 @@ class DataInput():
                 defaultName = column
             else:
                 defaultName = fileName
-            defaultValue = self.extractAttributeData( defaultName)
+            defaultValue = self.extractAttributeData(defaultName)
 
         # create output Series filled with default value
         if defaultValue is None:

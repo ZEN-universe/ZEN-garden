@@ -11,7 +11,6 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 import copy
 import logging
-import sys
 import pyomo.environ as pe
 import pyomo.gdp as pgdp
 import numpy as np
