@@ -96,6 +96,7 @@ class ETHColors:
     def setManualColors(self):
         self.manualColors = {}
         self.manualColors["Carbon Emission Budget"] = self.getColor("grey","dark")
+        self.manualColors["Carbon Intensity"] = self.getColor("grey", "dark")
 
     def getColor(self,color,shade = 100):
         assert color in self.baseColors, f"color {color} not in base colors. Select from {list(self.baseColors.keys())}."
