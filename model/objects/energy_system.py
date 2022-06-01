@@ -634,6 +634,12 @@ class EnergySystem:
             domain=pe.Reals,
             doc="total cost of energy system. Domain: Reals"
         )
+        # NPV
+        model.NPV = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.Reals,
+            doc="NPV of energy system. Domain: Reals"
+        )
 
     @classmethod
     def constructConstraints(cls):
@@ -664,6 +670,12 @@ class EnergySystem:
             rule=constraintCostTotalRule,
             doc="total cost of energy system"
         )
+        # NPV
+        model.constraintNPV = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintNPVRule,
+            doc="NPV of energy system"
+        )
 
     @classmethod
     def constructObjective(cls):
@@ -675,6 +687,8 @@ class EnergySystem:
         # get selected objective rule
         if cls.getAnalysis()["objective"] == "TotalCost":
             objectiveRule = objectiveTotalCostRule
+        elif cls.getAnalysis()["objective"] == "NPV":
+            objectiveRule = objectiveNPVRule
         elif cls.getAnalysis()["objective"] == "TotalCarbonEmissions":
             objectiveRule = objectiveTotalCarbonEmissionsRule
         elif cls.getAnalysis()["objective"] == "Risk":
@@ -737,12 +751,32 @@ def constraintCostTotalRule(model,year):
         # carrier costs
         model.costCarrierTotal[year]
     )
+
+def constraintNPVRule(model,year):
+    """ discounts the annual capital flows to calculate the NPV """
+    system          = EnergySystem.getSystem()
+    discountRate    = EnergySystem.getAnalysis()["discountRate"]
+    return(
+        model.NPV[year] ==
+        model.costTotal[year] *
+        # economic discount
+        ((1 / (1 + discountRate)) ** (year))
+    )
+
 # objective rules
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
     return(
             sum(
                 model.costTotal[year]
+            for year in model.setTimeStepsYearly)
+    )
+
+def objectiveNPVRule(model,year):
+    """ objective function to minimize NPV """
+    return (
+        sum(
+            model.NPV[year]
             for year in model.setTimeStepsYearly)
     )
 

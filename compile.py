@@ -81,7 +81,7 @@ for scenario, elements in config.scenarios.items():
         if len(stepsOptimizationHorizon)>1:
             modelName += f"_rollingHorizon{stepHorizon}"
         else:
-            modelName += "_" + scenario + config.system["model"]#"_perfectForesight"
+            modelName += "_" + scenario #"_perfectForesight"
         evaluation = Postprocess(optimizationSetup, modelName = modelName)
-        visualization.run(modelName, pltShow=False)
+        visualization.run(config.analysis["dataset"], scenario, pltShow=False)
 

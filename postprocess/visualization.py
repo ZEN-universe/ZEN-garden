@@ -18,14 +18,18 @@ from   datetime             import datetime
 
 class VisualizeResults:
 
-    def __init__(self, modelName = None, pltShow = True):
+    def __init__(self, dataset, scenario = "", pltShow = True):
         """postprocessing of the results of the optimization
         :param model:     optimization model
         :param pyoDict:   input data dictionary
         :param modelName: model name used for the directory to save the results in"""
-        self.name    = modelName
-        self.nameDir = f"outputs/{modelName}"
-        self.pltShow = pltShow
+        # set modelName
+        self.dataset  = dataset
+        self.scenario = scenario
+        self.setModelName()
+        self.nameDir  = f"outputs/{self.name}"
+        # plot settings
+        self.pltShow  = pltShow
         # init directories
         self.initDirectory("plots")
         self.initDirectory("files")
@@ -43,6 +47,13 @@ class VisualizeResults:
         """init directories to store plots and files"""
         if not os.path.exists(f"{self.nameDir}/{folder}"):
             os.makedirs(f"{self.nameDir}/{folder}")
+
+    def setModelName(self):
+        """set model name"""
+        if self.scenario == str():
+            self.name = self.dataset
+        else:
+            self.name = self.dataset + "_" + self.scenario
 
     def setTimeStepsDuration(self):
         """ set timesteps duration"""
@@ -108,7 +119,6 @@ class VisualizeResults:
         # conversion technologies
         self.setConversionTechnologies   = self.system["setHydrogenConversionTechnologies"]
         self.setConversionTechnologies   = list(set(self.setConversionTechnologies) - set(self.setConditioningTechnologies))
-        self.setConversionTechnologies.remove("carbon_storage")
         # electricity generation Technologies
         self.setElectricityGenerationTechnologies = self.system["setElectricityGenerationTechnologies"]
         # transport technologies
@@ -240,26 +250,28 @@ class VisualizeResults:
     def evaluateInputFlow(self):
         """plot carrier flow"""
         inputFlow  = self.getDataframe("inputFlow", ["technology","carrier", "location", "time"])
+        inputFlow  = inputFlow * self.timeStepsCarrierDuration
+        inputFlow  = inputFlow.reorder_levels(["technology", "carrier", "location", "time"]) * 1e-3
 
         # inputFlows Conversion
         inputFlowConversion = inputFlow.loc[self.setConversionTechnologies]
-        inputFlowConversion = inputFlowConversion.reorder_levels(["carrier", "technology", "location", "time"])
-        for carrier in inputFlowConversion.index.unique("carrier"):
-            tmp = inputFlowConversion.loc[carrier].groupby(["technology","time"]).sum() * self.timeStepsOperationDuration.loc[self.setConversionTechnologies]
+        inputFlowConversion = inputFlowConversion.unstack("carrier")
+        inputFlowConversion = self.updateTimeIndex(inputFlowConversion, index="time")
+        self.areaplot(f"inputFlowsConversion", inputFlowConversion.groupby("time").sum(), ylabel = "Input flow in TWh")
+        for carrier in inputFlowConversion.columns:
+            tmp = inputFlowConversion[carrier].groupby(["technology","time"]).sum()
             self.barplot(f"{carrier}InputFlowsConversion", tmp.unstack("technology"), stacked=True)
 
         # inputFlows Conditioning
-        inputFlowCodnitioning = inputFlow.loc[self.setConditioningTechnologies]
-        inputFlowCodnitioning = inputFlowCodnitioning.reorder_levels(["carrier", "technology", "location", "time"])
-        for carrier in inputFlowCodnitioning.index.unique("carrier"):
-            tmp = inputFlowCodnitioning.loc[carrier].groupby(["technology", "time"]).sum() * self.timeStepsOperationDuration.loc[self.setConditioningTechnologies]
+        inputFlowCodnitioning = inputFlow.loc[self.setConditioningTechnologies].unstack("carrier")
+        for carrier in inputFlowCodnitioning.columns:
+            tmp = inputFlowCodnitioning[carrier].groupby(["technology", "time"]).sum()
             self.barplot(f"{carrier}InputFlowsConditioning", tmp.unstack("technology"), stacked=True)
 
         # inputFlows Storage
-        inputFlowStorage = inputFlow.loc[self.setStorageTechnologies]
-        inputFlowStorage = inputFlowStorage.reorder_levels(["carrier", "technology", "location", "time"])
-        for carrier in inputFlowStorage.index.unique("carrier"):
-            tmp = inputFlowStorage.loc[carrier].groupby(["technology", "time"]).sum() * self.timeStepsOperationDuration.loc[self.setStorageTechnologies]
+        inputFlowStorage = inputFlow.loc[self.setStorageTechnologies].unstack("carrier")
+        for carrier in inputFlowStorage.columns:
+            tmp = inputFlowStorage[carrier].groupby(["technology", "time"]).sum()
             self.barplot(f"{carrier}InputFlowsStorage", tmp.unstack("technology"), stacked=True)
 
     def evaluateOutputFlow(self):
@@ -288,36 +300,59 @@ class VisualizeResults:
 
         carbonEmissions = self.getDataframe("carbonEmissionsTotal", ["year"])
         self.barplot("carbonEmissionsYearly", carbonEmissions)
+        carbonEmissions = carbonEmissions *1e3 # kilotons to tons
 
-        if "default" in self.name and decarbScen != {}:
+        if self.scenario == "default" and decarbScen != {}:
             # load min emissions results
             varDictMinEm       = self.loadResults("varDict", nameDir=self.nameDir + "_min_em", )
-            minCarbonEmissions = self.getDataframe("carbonEmissionsTotal", ["year"], dct = varDictMinEm)
-            # years and min and max values
-            years     = carbonEmissions.index.unique("year")
-            carbonMax = max(carbonEmissions)
-            carbonMin = minCarbonEmissions.loc[years[-1]]*0.98
-            if carbonMin < 0 :
-                print(f"minimum carbon emissions that can be reached are {carbonMin}. Thus, in the following, carbonMin = 0 is used.")
-                carbonMin = 0
-            # dataframe for results
-            carbonLimits            = pd.Series(np.nan, index=minCarbonEmissions.index, name="carbonEmissionsLimit")
-            carbonLimits.index.name = "time"
-            carbonLimits.loc[years[0]] = np.Inf
-            for scen, factor in decarbScen.items():
-                reduction    = (carbonMax - carbonMin) * factor/ max(years)
-                for i in years[1:]:
-                    carbonLimits.loc[i] = carbonMax - reduction*i
-                carbonLimits.to_csv(f"{self.nameDir}/files/carbonEmissionsLimit_{scen}.csv")
-                # compute carbon budget
-                if scen == "linear_100in30":
-                    carbonLimits.loc[years[0]] = carbonMax
-                    carbonBudget = carbonLimits.sum()
-                    carbonBudget = {"index": "carbonEmissionsBudget", "value": carbonBudget, "unit": "kilotons"}
-                    carbonBudget = pd.DataFrame(carbonBudget, index=[0])
-                    carbonBudget.to_csv(f"{self.nameDir}/files/carbonEmissionsBudget.csv", index=False)
-                    tmp = carbonLimits.drop(index=years[:-1])
-                    tmp.to_csv(f"{self.nameDir}/files/carbonEmissionsLimit_carbonBudget.csv", index=False)
+            minCarbonEmissions = self.getDataframe("carbonEmissionsTotal", ["year"], dct = varDictMinEm) *1e3 # kilotons to tons
+            for scen, range in decarbScen.items():
+                if scen == "linear":
+                    self.computeCarbonEmissionsLimits(minCarbonEmissions, carbonEmissions, range)
+                if scen == "carbonBudget":
+                    self.computeCarbonBudget(minCarbonEmissions, carbonEmissions, range)
+
+    def computeCarbonEmissionsLimits(self, minCarbonEmissions, carbonEmissions, range):
+        """generate input files linear decarbonization pathway scenarios
+        :param minCarbonEmissions: minimum carbon emissions
+        :param carbonEmissions:    cost minimal carbon emissions"""
+        # years and min and max values
+        years     = carbonEmissions.index.unique("year")
+        carbonMax = min(carbonEmissions)
+        carbonMin = minCarbonEmissions.loc[years[-1]].round(2)
+        # dataframe for results
+        carbonLimits = pd.Series(np.nan, index=minCarbonEmissions.index, name="carbonEmissionsLimit")
+        carbonLimits.index.name = "time"
+        carbonLimits.loc[years[0]] = np.Inf
+        for factor in range:
+            name = str(factor).replace(".","-")
+            if carbonMin != 0:
+                print("Carbon emissions of 0 are not reached. The minimal carbon emissions are", carbonMin)
+                # reduction    = (carbonMax - carbonMin) / max(years)
+                # carbonLimits.loc[years[1:]] = [carbonMax - reduction * y for y in years[1:]]
+                # carbonLimits.to_csv(f"{self.nameDir}/files/carbonEmissionsLimit_linear_min.csv")
+                # carbonMin = 0
+            reduction = (carbonMax - carbonMin) * factor / max(years)
+            carbonLimits.loc[years[1:]] = [carbonMax - reduction * y for y in years[1:]]
+            carbonLimits.to_csv(f"data/{self.dataset}/setScenarios/carbonEmissionsLimit_linear_{name}.csv")
+        return carbonMin, carbonMax
+
+    def computeCarbonBudget(self, minCarbonEmissions, carbonEmissions, range):
+        """generate input files for carbonBudget scenarios"""
+        # initial carbon budget
+        initialCarbonBudget = carbonEmissions.sum()
+        carbonBudget = {"index": "carbonEmissionsBudget", "value": initialCarbonBudget, "unit": "tons"}
+        carbonBudget = pd.DataFrame(carbonBudget, index=[0])
+        # carbon emissions target
+        carbonLimits            = minCarbonEmissions.tail(1)
+        carbonLimits.name       = "carbonEmissionsLimit"
+        carbonLimits.index.name = "time"
+        # carbon budget scenarios
+        for factor in range:
+            name = str(factor).replace(".", "-")
+            carbonBudget["value"] = initialCarbonBudget * factor
+            carbonBudget.to_csv(f"data/{self.dataset}/setScenarios/carbonEmissionsBudget_carbonBudget_{name}.csv", index=False)
+            carbonLimits.to_csv(f"data/{self.dataset}/setScenarios/carbonEmissionsLimit_carbonBudget_{name}.csv", index=True)
 
     def computeLevelizedCost(self, carrier):
         """compute marginal cost"""
@@ -355,9 +390,9 @@ class VisualizeResults:
             self.barplot(f"levelizedCost_{carrier}", LCOE.stack().unstack(0), stacked=False)
 
 ## method to run visualization
-def run(modelName, pltShow=False, decarbScen = {}):
+def run(dataset, scenario, pltShow=False, decarbScen = {}):
     """visualize and evaluate results"""
-    visResults = VisualizeResults(modelName, pltShow=pltShow)
+    visResults = VisualizeResults(dataset, scenario, pltShow=pltShow)
     ## params
     visResults.evaluateHydrogenDemand()
     ## vars
@@ -376,20 +411,17 @@ def run(modelName, pltShow=False, decarbScen = {}):
     visResults.computeLevelizedCost("hydrogen")
 
 
-
-
 if __name__ == "__main__":
     os.chdir("..")
     dataset = "HSC_NUTS0"
     pltShow = False  # True or False
-    #scenarios  = ["default"] #"default_no_REN"
-    #scenarios = ["linear_100in30", "linear_75in30", "linear_50in30", "linear_25in30"]
-    scenarios = ["carbonBudget"]
-    decarbScen = {"linear_100in30": 1, "linear_75in30": 0.25, "linear_50in30": 0.5, "linear_25in30": 0.25}
+    scenarios  = ["default"] #,"default_min_em" #"default_no_REN"
+    #scenarios = ["linear_1.0", "linear_0.95", "carbonBudget_0.1", "carbonBudget_0.5"]
+    # scenarios = ["carbonBudget"]
+    decarbScen = {"linear": np.arange(0.1, 1, 0.1).round(2), "carbonBudget": np.arange(0.4, 0, -0.1).round(2)}
     #today      = datetime.now()
     #modelName  = "model_" + today.strftime("%Y-%m-%d") + "_perfectForesight_" + dataset
     #modelName = "model_" + today.strftime("%Y-%m-%d") + "_" + spatialRes
     for scenario in scenarios:
-        modelName = dataset + "_" + scenario
-        run(modelName, pltShow=pltShow, decarbScen = decarbScen)
+        run(dataset, scenario, pltShow=pltShow, decarbScen = decarbScen)
     a=1

@@ -126,9 +126,9 @@ class Technology(Element):
     def calculateFractionalAnnuity(self):
         """calculate fraction of annuity to depreciate investment"""
         system              = EnergySystem.getSystem()
-        _discountRate       = EnergySystem.getAnalysis()["discountRate"]
+        #_discountRate       = EnergySystem.getAnalysis()["discountRate"]
         _lifetime           = self.lifetime
-        _annuity            = (((1 + _discountRate) ** _lifetime) * _discountRate) / ((1 + _discountRate) ** _lifetime - 1)
+        _annuity            = 1 / _lifetime
         # only account for fraction of year
         _fractionOfYear     = system["timeStepsPerYear"] / system["totalHoursPerYear"]
         _fractionalAnnuity  = _annuity * _fractionOfYear
