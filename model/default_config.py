@@ -50,6 +50,8 @@ analysis["timeSeriesAggregation"] = {
     "solver"                : "gurobi",
     # "extremePeriodMethod"   : "new_cluster_center",
     "extremePeriodMethod"   : "None",
+    "rescaleClusterPeriods" : False,
+    "representationMethod"  : "meanRepresentation",
     "resolution"            : 1
 }
 
