@@ -248,6 +248,7 @@ def constraintTransportTechnologyInstallLowerRule(model, tech, edge, time):
 
 def constraintTransportTechnologyInstallUpperRule(model, tech, edge, time):
     """ sets upper bound for installTechnology Binary variable for split capex calculation """
+    # TODO already in technology constraintTechnologyMinCapacityRule l. 675
     return model.installTechnology[tech,"power", edge, time] <= model.builtCapacity[tech,"power", edge, time]
 
 def constraintBidirectionalTransportTechnologyRule(model, tech, edge, time):

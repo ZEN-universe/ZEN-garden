@@ -692,7 +692,7 @@ def constraintTechnologyConstructionTimeRule(model, tech,capacityType, loc, time
         return (model.builtCapacity[tech,capacityType,loc,time] == 0)
 
 def constraintTechnologyMaxCapacityRule(model, tech,capacityType, loc, time):
-    """max capacity expansion of  technology"""
+    """max capacity expansion of technology"""
     if model.maxBuiltCapacity[tech,capacityType] != np.inf:
         return (model.maxBuiltCapacity[tech,capacityType] >= model.builtCapacity[tech,capacityType, loc, time])
     else:
