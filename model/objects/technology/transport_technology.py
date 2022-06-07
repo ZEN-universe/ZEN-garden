@@ -43,30 +43,28 @@ class TransportTechnology(Technology):
         super().storeInputData()
         # set attributes for parameters of child class <TransportTechnology>
         # TODO calculate for non Euclidean distance
-        self.distance                       = self.dataInput.extractInputData("distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
+        self.distance                       = self.dataInput.extractInputData("distanceEuclidean",indexSets=["setEdges"])
         self.lossFlow                       = self.dataInput.extractAttributeData("lossFlow")["value"]
 
         # In case you want to have separate capex for capacity and distance
         if EnergySystem.system['DoubleCapexTransport']:
             self.capexSpecific = self.dataInput.extractInputData("capexSpecific",
                                                                  indexSets=["setEdges", "setTimeSteps"],
-                                                                 timeSteps=self.setTimeStepsInvest,
-                                                                 transportTechnology=True)
+                                                                 timeSteps=self.setTimeStepsInvest)
             try:
                 self.capexPerDistance = self.dataInput.extractInputData("capexPerDistance",
                                                                         indexSets=["setEdges", "setTimeSteps"],
-                                                                        timeSteps=self.setTimeStepsInvest,
-                                                                        transportTechnology=True)
+                                                                        timeSteps=self.setTimeStepsInvest)
             except AssertionError:
                 self.capexPerDistance = self.capexSpecific * 0.0
                 warnings.warn(f'capexPerDistance is not defined in attributes.csv of {self.name} and no input is given.'
                               f' This will throw an error in the future!', FutureWarning)
         else:  # Here only capexSpecific is used and capexPerDistance is set to Zero.
             if self.dataInput.ifAttributeExists("capexPerDistance"):
-                self.capexPerDistance = self.dataInput.extractInputData("capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+                self.capexPerDistance = self.dataInput.extractInputData("capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
                 self.capexSpecific = self.capexPerDistance * self.distance
             else:
-                self.capexSpecific = self.dataInput.extractInputData("capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+                self.capexSpecific = self.dataInput.extractInputData("capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
             self.capexPerDistance = self.capexSpecific.copy(deep=True) * 0.0
 
         # annualize capex
@@ -236,9 +234,9 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
 
 def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
-    return (model.capex[tech,edge, time] ==
-            model.builtCapacity[tech,edge, time] * model.capexSpecificTransport[tech,edge, time] +
-            model.installTechnology[tech, edge, time] * model.distance[tech, edge] * model.capexPerDistance[tech, edge, time])
+    return (model.capex[tech,"power",edge, time] ==
+            model.builtCapacity[tech,"power",edge, time] * model.capexSpecificTransport[tech,edge, time] +
+            model.installTechnology[tech,"power", edge, time] * model.distance[tech, edge] * model.capexPerDistance[tech, edge, time])
 
 def constraintTransportTechnologyInstallLowerRule(model, tech, edge, time):
     """ sets lower bound for installTechnology Binary variable for split capex calculation"""

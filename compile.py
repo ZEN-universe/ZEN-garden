@@ -14,11 +14,11 @@ import pandas as pd
 import logging
 import sys
 from datetime import datetime
-import config as config
+import data.config as config
 from preprocess.prepare import Prepare
 from model.optimization_setup import OptimizationSetup
 from model.metaheuristic.algorithm import Metaheuristic
-from postprocess.results_HB import Postprocess
+from postprocess.results import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -79,4 +79,3 @@ for stepHorizon in stepsOptimizationHorizon:
     else:
         modelName += "_perfectForesight"
     evaluation = Postprocess(optimizationSetup, modelName = modelName)
-    a=1

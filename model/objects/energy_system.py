@@ -13,6 +13,7 @@ import warnings
 import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
+import copy
 from pint                                    import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
 from preprocess.functions.unit_handling         import UnitHandling
@@ -89,32 +90,40 @@ class EnergySystem:
         self.paths                      = EnergySystem.getPaths()
 
         # in class <EnergySystem>, all sets are constructed
-        self.setNodes                    = self.dataInput.extractLocations()
-        self.setNodesOnEdges             = self.calculateEdgesFromNodes()
-        self.setEdges                    = list(self.setNodesOnEdges.keys())
-        self.setCarriers                 = []
-        self.setTechnologies             = system["setTechnologies"]
+        self.setNodes = self.dataInput.extractLocations()
+        self.setNodesOnEdges = self.calculateEdgesFromNodes()
+        self.setEdges = list(self.setNodesOnEdges.keys())
+        self.setCarriers = []
+        self.setTechnologies = system["setTechnologies"]
         # base time steps
-        self.setBaseTimeSteps            = list(range(0,system["unaggregatedTimeStepsPerYear"]*system["optimizedYears"]))
-        self.setBaseTimeStepsYearly      = list(range(0, system["unaggregatedTimeStepsPerYear"]))
+        self.setBaseTimeSteps = list(range(0, system["unaggregatedTimeStepsPerYear"] * system["optimizedYears"]))
+        self.setBaseTimeStepsYearly = list(range(0, system["unaggregatedTimeStepsPerYear"]))
 
         # yearly time steps
-        self.typesTimeSteps              = ["invest", "operation", "yearly"]
-        self.dictNumberOfTimeSteps       = self.dataInput.extractNumberTimeSteps()
-        self.setTimeStepsYearly          = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
-        self.timeStepsYearlyDuration     = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
-        self.sequenceTimeStepsYearly     = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
+        self.typesTimeSteps = ["invest", "operation", "yearly"]
+        self.dictNumberOfTimeSteps = self.dataInput.extractNumberTimeSteps()
+        self.setTimeStepsYearly = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
+        self.setTimeStepsYearlyEntireHorizon = copy.deepcopy(self.setTimeStepsYearly)
+        self.timeStepsYearlyDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
+        self.sequenceTimeStepsYearly = np.concatenate(
+            [[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
         self.setSequenceTimeSteps(None, self.sequenceTimeStepsYearly, timeStepType="yearly")
 
         # technology-specific
-        self.setConversionTechnologies   = system["setConversionTechnologies"]
-        self.setTransportTechnologies    = system["setTransportTechnologies"]
-        self.setStorageTechnologies      = system["setStorageTechnologies"]
-
+        self.setConversionTechnologies = system["setConversionTechnologies"]
+        self.setTransportTechnologies = system["setTransportTechnologies"]
+        self.setStorageTechnologies = system["setStorageTechnologies"]
         # carbon emissions limit
-        self.carbonEmissionsLimit        = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
-        _fractionOfYear                  = system["unaggregatedTimeStepsPerYear"]/system["totalHoursPerYear"]
-        self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
+        self.carbonEmissionsLimit = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"],
+                                                                    timeSteps=self.setTimeStepsYearly)
+        _fractionOfYear = system["unaggregatedTimeStepsPerYear"] / system["totalHoursPerYear"]
+        self.carbonEmissionsLimit = self.carbonEmissionsLimit * _fractionOfYear  # reduce to fraction of year
+        self.carbonEmissionsBudget = self.dataInput.extractInputData("carbonEmissionsBudget", indexSets=[])
+        self.previousCarbonEmissions = self.dataInput.extractInputData("previousCarbonEmissions", indexSets=[])
+        # carbon price
+        self.carbonPrice = self.dataInput.extractInputData("carbonPrice", indexSets=["setTimeSteps"],
+                                                           timeSteps=self.setTimeStepsYearly)
+        self.carbonPriceOvershoot = self.dataInput.extractInputData("carbonPriceOvershoot", indexSets=[])
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
@@ -198,6 +207,28 @@ class EnergySystem:
                 cls.energySystem.setCarriers.append(carrier)
             elif technology not in cls.dictTechnologyOfCarrier[carrier]:
                 cls.dictTechnologyOfCarrier[carrier].append(technology)
+
+    @classmethod
+    def setTimeStepsEnergy2Power(cls, element, timeStepsEnergy2Power):
+        """ sets the dict of converting the energy time steps to the power time steps of storage technologies """
+        cls.dictTimeStepsEnergy2Power[element] = timeStepsEnergy2Power
+
+    @classmethod
+    def setTimeStepsOperation2Invest(cls, element, timeStepsOperation2Invest):
+        """ sets the dict of converting the operational time steps to the invest time steps of all technologies """
+        cls.dictTimeStepsOperation2Invest[element] = timeStepsOperation2Invest
+
+    @classmethod
+    def setTimeStepsStorageStartEnd(cls, element):
+        """ sets the dict of matching the last time step of the year in the storage level domain to the first """
+        system = cls.getSystem()
+        _baseTimeStepsPerYear = system["unaggregatedTimeStepsPerYear"]
+        _numberYears = system["optimizedYears"]
+        _sequenceTimeSteps = cls.getSequenceTimeSteps(element + "StorageLevel")
+        _timeStepsStart = _sequenceTimeSteps[np.array(range(0, _numberYears)) * _baseTimeStepsPerYear]
+        _timeStepsEnd = _sequenceTimeSteps[np.array(range(1, _numberYears + 1)) * _baseTimeStepsPerYear - 1]
+        cls.dictTimeStepsStorageLevelStartEndYear[element] = {_start: _end for _start, _end in
+                                                              zip(_timeStepsStart, _timeStepsEnd)}
 
     @classmethod
     def setSequenceTimeSteps(cls,element,sequenceTimeSteps,timeStepType = None):
@@ -311,6 +342,24 @@ class EnergySystem:
             return None
 
     @classmethod
+    def getTimeStepsEnergy2Power(cls, element):
+        """ gets the dict of converting the energy time steps to the power time steps of storage technologies """
+        return cls.dictTimeStepsEnergy2Power[element]
+
+    @classmethod
+    def getTimeStepsOperation2Invest(cls, element):
+        """ gets the dict of converting the operational time steps to the invest time steps of technologies """
+        return cls.dictTimeStepsOperation2Invest[element]
+
+    @classmethod
+    def getTimeStepsStorageStartEnd(cls, element, timeStep):
+        """ gets the dict of converting the operational time steps to the invest time steps of technologies """
+        if timeStep in cls.dictTimeStepsStorageLevelStartEndYear[element].keys():
+            return cls.dictTimeStepsStorageLevelStartEndYear[element][timeStep]
+        else:
+            return None
+
+    @classmethod
     def getSequenceTimeSteps(cls,element,timeStepType = None):
         """ get sequence ot time steps of element
         :param element: name of element in model
@@ -382,6 +431,19 @@ class EnergySystem:
         else:
             raise KeyError(f"invalid direction '{direction}'")
         return setConnectedEdges
+
+    @classmethod
+    def calculateReversedEdge(cls, edge):
+        """ calculates the reversed edge corresponding to an edge
+        :param edge: input edge
+        :return reversedEdge: edge which corresponds to the reversed direction of edge"""
+        energySystem = cls.getEnergySystem()
+        nodeOut, nodeIn = energySystem.setNodesOnEdges[edge]
+        for reversedEdge in energySystem.setNodesOnEdges:
+            if nodeOut == energySystem.setNodesOnEdges[reversedEdge][1] and nodeIn == \
+                    energySystem.setNodesOnEdges[reversedEdge][0]:
+                return reversedEdge
+        raise KeyError(f"Edge {edge} has no reversed edge. However, at least one transport technology is bidirectional")
 
     @classmethod
     def calculateTimeStepDuration(cls,inputTimeSteps,manualBaseTimeSteps = None):
@@ -472,14 +534,19 @@ class EnergySystem:
 
         # if calling class is EnergySystem
         if callingClass == cls:
-            component       = getattr(cls.getEnergySystem(),componentName)
-            componentData   = component[setTimeSteps]
+            component = getattr(cls.getEnergySystem(), componentName)
+            if setTimeSteps:
+                componentData = component[setTimeSteps]
+            elif type(component) == float:
+                componentData = component
+            else:
+                componentData = component.squeeze()
         else:
-            component       = callingClass.getAttributeOfAllElements(componentName,capacityTypes)
-            componentData   = pd.Series(component,dtype=float)
+            component = callingClass.getAttributeOfAllElements(componentName, capacityTypes)
+            componentData = pd.Series(component, dtype=float)
             if indexNames:
-                customSet       = callingClass.createCustomSet(indexNames)
-                componentData   = componentData[customSet]
+                customSet = callingClass.createCustomSet(indexNames)
+                componentData = componentData[customSet]
         return componentData
 
     @classmethod
@@ -547,6 +614,10 @@ class EnergySystem:
         model.setTimeStepsYearly = pe.Set(
             initialize=energySystem.setTimeStepsYearly,
             doc='Set of yearly time-steps')
+        # yearly time steps of entire optimization horizon
+        model.setTimeStepsYearlyEntireHorizon = pe.Set(
+            initialize=energySystem.setTimeStepsYearlyEntireHorizon,
+            doc='Set of yearly time-steps of entire optimization horizon')
 
     @classmethod
     def constructParams(cls):
@@ -559,6 +630,27 @@ class EnergySystem:
             model.setTimeStepsYearly,
             initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
             doc = 'Parameter which specifies the total limit on carbon emissions'
+        )
+        # carbon emissions budget
+        model.carbonEmissionsBudget = pe.Param(
+            initialize=cls.initializeComponent(cls, "carbonEmissionsBudget"),
+            doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon'
+        )
+        # carbon emissions budget
+        model.previousCarbonEmissions = pe.Param(
+            initialize=cls.initializeComponent(cls, "previousCarbonEmissions"),
+            doc='Parameter which specifies the total previous carbon emissions'
+        )
+        # carbon price
+        model.carbonPrice = pe.Param(
+            model.setTimeStepsYearly,
+            initialize=cls.initializeComponent(cls, "carbonPrice", setTimeSteps=model.setTimeStepsYearly),
+            doc='Parameter which specifies the yearly carbon price'
+        )
+        # carbon price of overshoot
+        model.carbonPriceOvershoot = pe.Param(
+            initialize=cls.initializeComponent(cls, "carbonPriceOvershoot"),
+            doc='Parameter which specifies the carbon price for budget overshoot'
         )
 
     @classmethod
@@ -573,11 +665,35 @@ class EnergySystem:
             domain = pe.Reals,
             doc = "total carbon emissions of energy system. Domain: Reals"
         )
+        # carbon emissions
+        model.carbonEmissionsCumulative = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.Reals,
+            doc="cumulative carbon emissions of energy system over time for each year. Domain: Reals"
+        )
+        # carbon emissions
+        model.carbonEmissionsOvershoot = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.NonNegativeReals,
+            doc="overshoot carbon emissions of energy system at the end of the time horizon. Domain: Reals"
+        )
+        # cost of carbon emissions
+        model.costCarbonEmissionsTotal = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.Reals,
+            doc="total cost of carbon emissions of energy system. Domain: Reals"
+        )
         # costs
         model.costTotal = pe.Var(
             model.setTimeStepsYearly,
             domain=pe.Reals,
             doc="total cost of energy system. Domain: Reals"
+        )
+        # NPV
+        model.NPV = pe.Var(
+            model.setTimeStepsYearly,
+            domain=pe.Reals,
+            doc="NPV of energy system. Domain: Reals"
         )
 
     @classmethod
@@ -589,8 +705,20 @@ class EnergySystem:
         # carbon emissions
         model.constraintCarbonEmissionsTotal = pe.Constraint(
             model.setTimeStepsYearly,
-            rule = constraintCarbonEmissionsTotalRule,
-            doc = "total carbon emissions of energy system"
+            rule=constraintCarbonEmissionsTotalRule,
+            doc="total carbon emissions of energy system"
+        )
+        # carbon emissions
+        model.constraintCarbonEmissionsCumulative = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintCarbonEmissionsCumulativeRule,
+            doc="cumulative carbon emissions of energy system over time"
+        )
+        # cost of carbon emissions
+        model.constraintCarbonCostTotal = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintCarbonCostTotalRule,
+            doc="total carbon cost of energy system"
         )
         # carbon emissions
         model.constraintCarbonEmissionsLimit = pe.Constraint(
@@ -598,11 +726,23 @@ class EnergySystem:
             rule=constraintCarbonEmissionsLimitRule,
             doc="limit of total carbon emissions of energy system"
         )
+        # carbon emissions
+        model.constraintCarbonEmissionsBudget = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintCarbonEmissionsBudgetRule,
+            doc="Budget of total carbon emissions of energy system"
+        )
         # costs
         model.constraintCostTotal = pe.Constraint(
             model.setTimeStepsYearly,
             rule=constraintCostTotalRule,
             doc="total cost of energy system"
+        )
+        # NPV
+        model.constraintNPV = pe.Constraint(
+            model.setTimeStepsYearly,
+            rule=constraintNPVRule,
+            doc="NPV of energy system"
         )
 
     @classmethod
@@ -633,53 +773,107 @@ class EnergySystem:
 
         # construct objective
         model.objective = pe.Objective(
-            rule    = objectiveRule,
-            sense   = objectiveSense
+            rule=objectiveRule,
+            sense=objectiveSense
         )
 
-def constraintCarbonEmissionsTotalRule(model,year):
+def constraintCarbonEmissionsTotalRule(model, year):
     """ add up all carbon emissions from technologies and carriers """
-    return(
-        model.carbonEmissionsTotal[year] ==
-        # technologies
-        model.carbonEmissionsTechnologyTotal[year]
-        +
-        # carriers
-        model.carbonEmissionsCarrierTotal[year]
+    return (
+            model.carbonEmissionsTotal[year] ==
+            # technologies
+            model.carbonEmissionsTechnologyTotal[year]
+            +
+            # carriers
+            model.carbonEmissionsCarrierTotal[year]
+    )
+
+def constraintCarbonEmissionsCumulativeRule(model, year):
+    """ cumulative carbon emissions over time """
+    intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
+    if year == model.setTimeStepsYearly.at(1):
+        return (
+                model.carbonEmissionsCumulative[year] ==
+                model.carbonEmissionsTotal[year]
+                + model.previousCarbonEmissions
+        )
+    else:
+        return (
+                model.carbonEmissionsCumulative[year] ==
+                model.carbonEmissionsCumulative[year - 1]
+                + model.carbonEmissionsTotal[year - 1] * (intervalBetweenYears - 1)
+                + model.carbonEmissionsTotal[year]
+        )
+
+def constraintCarbonCostTotalRule(model, year):
+    """ carbon cost associated with the carbon emissions of the system in each year """
+    return (
+            model.costCarbonEmissionsTotal[year] ==
+            model.carbonPrice[year] * model.carbonEmissionsTotal[year]
+            # add overshoot price
+            + model.carbonEmissionsOvershoot[year] + model.carbonPriceOvershoot
     )
 
 def constraintCarbonEmissionsLimitRule(model, year):
     """ time dependent carbon emissions limit from technologies and carriers"""
     if model.carbonEmissionsLimit[year] != np.inf:
-        return(
-            model.carbonEmissionsLimit[year] >= model.carbonEmissionsTotal[year]
+        return (
+                model.carbonEmissionsLimit[year] >= model.carbonEmissionsTotal[year]
         )
     else:
         return pe.Constraint.Skip
 
-def constraintCostTotalRule(model,year):
+def constraintCarbonEmissionsBudgetRule(model, year):
+    """ carbon emissions budget of entire time horizon from technologies and carriers"""
+    if model.carbonEmissionsBudget != np.inf:
+        return (
+                model.carbonEmissionsBudget + model.carbonEmissionsOvershoot[year] >=
+                model.carbonEmissionsCumulative[year]
+        )
+    else:
+        return pe.Constraint.Skip
+
+def constraintCostTotalRule(model, year):
     """ add up all costs from technologies and carriers"""
-    return(
-        model.costTotal[year] ==
-        # capex
-        model.capexTotal[year] +
-        # opex
-        model.opexTotal[year] +
-        # carrier costs
-        model.costCarrierTotal[year]
+    return (
+            model.costTotal[year] ==
+            # capex
+            model.capexTotal[year] +
+            # opex
+            model.opexTotal[year] +
+            # carrier costs
+            model.costCarrierTotal[year] +
+            # carbon costs
+            model.costCarbonEmissionsTotal[year]
     )
+
+def constraintNPVRule(model, year):
+    """ discounts the annual capital flows to calculate the NPV """
+    system = EnergySystem.getSystem()
+    discountRate = EnergySystem.getAnalysis()["discountRate"]
+    return (
+            model.NPV[year] ==
+            model.costTotal[year] *
+            # economic discount
+            ((1 / (1 + discountRate)) ** (system["intervalBetweenYears"] * (year - model.setTimeStepsYearly.at(1))))
+    )
+
 # objective rules
 def objectiveTotalCostRule(model):
     """objective function to minimize the total cost"""
-    return(
-            sum(
-                model.costTotal[year]
+    system = EnergySystem.getSystem()
+    return (
+        sum(
+            model.NPV[year] *
+            # discounted utility function
+            ((1 / (1 + system["socialDiscountRate"])) ** (
+                        system["intervalBetweenYears"] * (year - model.setTimeStepsYearly.at(1))))
             for year in model.setTimeStepsYearly)
     )
 
 def objectiveTotalCarbonEmissionsRule(model):
     """objective function to minimize total emissions"""
-    return(sum(model.carbonEmissionsTotal[year] for year in model.setTimeStepsYearly))
+    return (sum(model.carbonEmissionsTotal[year] for year in model.setTimeStepsYearly))
 
 def objectiveRiskRule(model):
     """objective function to minimize total risk"""

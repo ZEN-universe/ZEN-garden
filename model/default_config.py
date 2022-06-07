@@ -89,14 +89,19 @@ analysis['postprocess'] = False
 ## System - Items assignment
 # set of energy carriers
 system["setCarriers"] = []
+# set of conditioning carriers
+system["setConditioningCarriers"] = []
 # set of capacity types: power-rated or energy-rated
 system["setCapacityTypes"] = ["power","energy"]
 # set of conversion technologies
 system["setConversionTechnologies"] = []
+# set of conditioning technologies
+system["setConditioningTechnologies"] = []
 # set of storage technologies
 system["setStorageTechnologies"] = []
 # set of transport technologies
 system["setTransportTechnologies"] = []
+system['DoubleCapexTransport'] = False
 # set of nodes
 system["setNodes"] = []
 # total hours per year
