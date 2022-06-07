@@ -58,18 +58,18 @@ class OptimizationSetup():
             elementName  = elementClass.label
             elementSet   = self.system[elementName]
 
+            # check if elementSet has a subset and remove subset from elementSet
+            if elementName in self.analysis["subsets"].keys():
+                elementSubset = []
+                for subset in self.analysis["subsets"][elementName]:
+                        elementSubset += [item for item in self.system[subset]]
+                elementSet = list(set(elementSet)-set(elementSubset))
+
             # before adding the carriers, get setCarriers and check if carrier data exists
             if elementName == "setCarriers":
                 elementSet                 = EnergySystem.getAttribute("setCarriers")
                 self.system["setCarriers"] = elementSet
                 self.prepare.checkExistingCarrierData(self.system)
-
-            # check if elementSet has a subset and remove subset from elementSet
-            if elementName in self.analysis["subsets"].keys():
-                elementSubset = []
-                for subset in self.analysis["subsets"][elementName]:
-                    elementSubset += [item for item in self.system[subset]]
-                elementSet = list(set(elementSet) - set(elementSubset))
 
             # add element class
             for item in elementSet:
@@ -156,3 +156,12 @@ class OptimizationSetup():
             _capexTech              = _capex.loc[tech.name].unstack()
             tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)
             tech.addNewlyInvestedCapacityTech(_investedCapacityTech,stepHorizon)
+
+    def addCarbonEmissionsCumulative(self,stepHorizon):
+        """ overwrite previous carbon emissions with cumulative carbon emissions
+        :param stepHorizon: step of the rolling horizon """
+        energySystem                            = EnergySystem.getEnergySystem()
+        intervalBetweenYears                    = EnergySystem.getSystem()["intervalBetweenYears"]
+        _carbonEmissionsCumulative              = self.model.carbonEmissionsCumulative.extract_values()[stepHorizon]
+        _carbonEmissions                        = self.model.carbonEmissionsTotal.extract_values()[stepHorizon]
+        energySystem.previousCarbonEmissions    = _carbonEmissionsCumulative + _carbonEmissions*(intervalBetweenYears-1)

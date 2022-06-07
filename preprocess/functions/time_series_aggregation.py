@@ -86,6 +86,8 @@ class TimeSeriesAggregation():
             clusterMethod       = self.analysis["timeSeriesAggregation"]["clusterMethod"],
             solver              = self.analysis["timeSeriesAggregation"]["solver"],
             extremePeriodMethod = self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
+            rescaleClusterPeriods=self.analysis["timeSeriesAggregation"]["rescaleClusterPeriods"],
+            representationMethod = self.analysis["timeSeriesAggregation"]["representationMethod"]
         )
         # create typical periods
         self.typicalPeriods     = self.aggregation.createTypicalPeriods().reset_index(drop=True)

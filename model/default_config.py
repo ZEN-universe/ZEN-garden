@@ -30,11 +30,7 @@ analysis["discountRate"] = 0.06
 # transport distance (euclidean or actual)
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
-analysis["subsets"] = {"setCarriers": [],
-                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
-# settings for MINLP
-analysis["variablesNonlinearModel"]                 = {"builtCapacity": []}
-analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEfficiency":[]}
+analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
 # headers for the generation of input files
 analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
                                   "setEdges": ["edge"],
@@ -52,7 +48,10 @@ analysis["fileFormat"] = "csv"
 analysis["timeSeriesAggregation"] = {
     "clusterMethod"         : "k_means",
     "solver"                : "gurobi",
+    # "extremePeriodMethod"   : "new_cluster_center",
     "extremePeriodMethod"   : "None",
+    "rescaleClusterPeriods" : False,
+    "representationMethod"  : "meanRepresentation",
     "resolution"            : 1
 }
 
@@ -84,11 +83,14 @@ analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
                                 'carrierFlowDischarge':['?','??','???','????'],
                                 'levelCharge':['?','??','???','????'],
                                 }
-analysis['postprocess'] = True
+
+analysis['postprocess'] = False
 
 ## System - Items assignment
 # set of energy carriers
 system["setCarriers"] = []
+# set of capacity types: power-rated or energy-rated
+system["setCapacityTypes"] = ["power","energy"]
 # set of conversion technologies
 system["setConversionTechnologies"] = []
 # set of storage technologies
@@ -101,7 +103,8 @@ system["setNodes"] = []
 system["totalHoursPerYear"] = 8760
 # folder output
 system["folderOutput"] = "outputs/results/"
-
+# name of data folder for energy system specification
+system["folderNameSystemSpecification"] = "systemSpecification"
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
 solver["name"]      = "gurobi_persistent"

@@ -69,6 +69,8 @@ for stepHorizon in stepsOptimizationHorizon:
 
     # add newly builtCapacity of first year to existing capacity
     optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
+    # add cumulative carbon emissions to previous carbon emissions
+    optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
     # EVALUATE RESULTS
     today      = datetime.now()
     modelName  = "model_" + today.strftime("%Y-%m-%d")

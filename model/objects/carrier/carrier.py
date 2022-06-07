@@ -36,26 +36,23 @@ class Carrier(Element):
 
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
-        # get paths
-        paths                           = EnergySystem.getPaths()   
         setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
         # set attributes of carrier
-        self.inputPath                  = paths["setCarriers"][self.name]["folder"]
         # raw import
         self.rawTimeSeries                              = {}
-        self.rawTimeSeries["demandCarrier"]             = self.dataInput.extractInputData(self.inputPath,"demandCarrier",["setNodes","setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
-        self.rawTimeSeries["availabilityCarrierImport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=setBaseTimeStepsYearly)
-        self.rawTimeSeries["availabilityCarrierExport"] = self.dataInput.extractInputData(self.inputPath,"availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=setBaseTimeStepsYearly)
-        self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeStepsYearly)
-        self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData(self.inputPath,"priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["demandCarrier"]             = self.dataInput.extractInputData("demandCarrier",["setNodes","setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["availabilityCarrierImport"] = self.dataInput.extractInputData("availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierImport",timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["availabilityCarrierExport"] = self.dataInput.extractInputData("availabilityCarrier",["setNodes","setTimeSteps"],column="availabilityCarrierExport",timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData("priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData("priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         # non-time series input data
-        self.carbonIntensityCarrier                     = self.dataInput.extractInputData(self.inputPath,"carbonIntensity",["setNodes"])
-
+        self.carbonIntensityCarrier                     = self.dataInput.extractInputData("carbonIntensity",["setNodes"])
+        
     def overwriteTimeSteps(self,baseTimeSteps):
-        """ overwrites setTimeStepsCarrier and  setTimeStepsEnergyBalance"""
-        setTimeStepsCarrier         = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps, timeStepType="operation",yearly=True)
+        """ overwrites setTimeStepsOperation and  setTimeStepsEnergyBalance"""
+        setTimeStepsOperation         = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps, timeStepType="operation",yearly=True)
         setTimeStepsEnergyBalance   = EnergySystem.encodeTimeStep(self.name+"EnergyBalance", baseTimeSteps=baseTimeSteps,timeStepType="operation", yearly=True)
-        setattr(self, "setTimeStepsCarrier", setTimeStepsCarrier.squeeze().tolist())
+        setattr(self, "setTimeStepsOperation", setTimeStepsOperation.squeeze().tolist())
         setattr(self, "setTimeStepsEnergyBalance", setTimeStepsEnergyBalance.squeeze().tolist())
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
@@ -63,12 +60,7 @@ class Carrier(Element):
     def constructSets(cls):
         """ constructs the pe.Sets of the class <Carrier> """
         model = EnergySystem.getConcreteModel()
-        # time-steps of carrier
-        model.setTimeStepsCarrier = pe.Set(
-            model.setCarriers,
-            initialize=cls.getAttributeOfAllElements("setTimeStepsCarrier"),
-            doc='Set of time steps of carriers. Dimensions: setCarriers')
-        # time-steps of energy balance of carrier
+         # time-steps of energy balance of carrier
         model.setTimeStepsEnergyBalance = pe.Set(
             model.setCarriers,
             initialize=cls.getAttributeOfAllElements("setTimeStepsEnergyBalance"),
@@ -79,38 +71,32 @@ class Carrier(Element):
         """ constructs the pe.Params of the class <Carrier> """
         model = EnergySystem.getConcreteModel()
 
-        # time step duration carrier
-        model.timeStepsCarrierDuration = pe.Param(
-            cls.createCustomSet(["setCarriers","setTimeStepsCarrier"]),
-            initialize = EnergySystem.initializeComponent(cls,"timeStepsCarrierDuration",indexNames=["setCarriers","setTimeStepsCarrier"]).astype(int),
-            doc="Parameter which specifies the time step duration for all carriers. Dimensions: setCarriers, setTimeStepsCarrier"
-        )
         # demand of carrier
         model.demandCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            initialize = EnergySystem.initializeComponent(cls,"demandCarrier",indexNames=["setCarriers","setNodes","setTimeStepsCarrier"]),
-            doc = 'Parameter which specifies the carrier demand.\n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier')
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"demandCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+            doc = 'Parameter which specifies the carrier demand.\n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
         # availability of carrier
         model.availabilityCarrierImport = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            initialize = EnergySystem.initializeComponent(cls,"availabilityCarrierImport",indexNames=["setCarriers","setNodes","setTimeStepsCarrier"]),
-            doc = 'Parameter which specifies the maximum energy that can be imported from outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier')
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"availabilityCarrierImport",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+            doc = 'Parameter which specifies the maximum energy that can be imported from outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
         # availability of carrier
         model.availabilityCarrierExport = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            initialize = EnergySystem.initializeComponent(cls,"availabilityCarrierExport",indexNames=["setCarriers","setNodes","setTimeStepsCarrier"]),
-            doc = 'Parameter which specifies the maximum energy that can be exported to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier')
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"availabilityCarrierExport",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+            doc = 'Parameter which specifies the maximum energy that can be exported to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
         # import price
         model.importPriceCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            initialize = EnergySystem.initializeComponent(cls,"importPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsCarrier"]),
-            doc = 'Parameter which specifies the import carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier'
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"importPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+            doc = 'Parameter which specifies the import carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation'
         )
         # export price
         model.exportPriceCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
-            initialize = EnergySystem.initializeComponent(cls,"exportPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsCarrier"]),
-            doc = 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier'
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"exportPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+            doc = 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation'
         )
         # carbon intensity
         model.carbonIntensityCarrier = pe.Param(
@@ -126,33 +112,33 @@ class Carrier(Element):
         
         # flow of imported carrier
         model.importCarrierFlow = pe.Var(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            doc = 'node- and time-dependent carrier import from the grid. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
+            doc = 'node- and time-dependent carrier import from the grid. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals'
         )
         # flow of exported carrier
         model.exportCarrierFlow = pe.Var(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            doc = 'node- and time-dependent carrier export from the grid. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
+            doc = 'node- and time-dependent carrier export from the grid. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals'
         )
         # carrier import/export cost
         model.costCarrier = pe.Var(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.Reals,
-            doc = 'node- and time-dependent carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
+            doc = 'node- and time-dependent carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals'
         )
         # total carrier import/export cost
         model.costCarrierTotal = pe.Var(
             model.setTimeStepsYearly,
             domain = pe.Reals,
-            doc = 'total carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
+            doc = 'total carrier cost due to import and export. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals'
         )
         # carbon emissions
         model.carbonEmissionsCarrier = pe.Var(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.Reals,
-            doc = "carbon emissions of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals"
+            doc = "carbon emissions of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals"
         )
         # carbon emissions carrier
         model.carbonEmissionsCarrierTotal = pe.Var(
@@ -161,10 +147,6 @@ class Carrier(Element):
             doc="total carbon emissions of importing/exporting carrier. Domain: NonNegativeReals"
         )
 
-        # add pe.Sets of the child classes
-        for subclass in cls.getAllSubclasses():
-            subclass.constructVars()
-
     @classmethod
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <Carrier> """
@@ -172,33 +154,33 @@ class Carrier(Element):
 
         # limit import flow by availability
         model.constraintAvailabilityCarrierImport = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             rule = constraintAvailabilityCarrierImportRule,
-            doc = 'node- and time-dependent carrier availability to import from outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
+            doc = 'node- and time-dependent carrier availability to import from outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation',
         )        
         # limit export flow by availability
         model.constraintAvailabilityCarrierExport = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             rule = constraintAvailabilityCarrierExportRule,
-            doc = 'node- and time-dependent carrier availability to export to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier',
+            doc = 'node- and time-dependent carrier availability to export to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation',
         )        
         # cost for carrier 
         model.constraintCostCarrier = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             rule = constraintCostCarrierRule,
-            doc = "cost of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsCarrier."
+            doc = "cost of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsOperation."
         )
         # total cost for carriers
         model.constraintCostCarrierTotal = pe.Constraint(
             model.setTimeStepsYearly,
             rule = constraintCostCarrierTotalRule,
-            doc = "total cost of importing/exporting carriers."
+            doc = "total cost of importing/exporting carriers. ."
         )
         # carbon emissions
         model.constraintCarbonEmissionsCarrier = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             rule = constraintCarbonEmissionsCarrierRule,
-            doc = "carbon emissions of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsCarrier."
+            doc = "carbon emissions of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsOperation."
         )
         # energy balance
         model.constraintNodalEnergyBalance = pe.Constraint(
@@ -212,10 +194,6 @@ class Carrier(Element):
             rule=constraintCarbonEmissionsCarrierTotalRule,
             doc="total carbon emissions of importing/exporting carriers."
         )
-
-        # add pe.Sets of the child classes
-        for subclass in cls.getAllSubclasses():
-            subclass.constructConstraints()
 
 
 #%% Constraint rules defined in current class
@@ -240,7 +218,8 @@ def constraintCostCarrierTotalRule(model,year):
     return(model.costCarrierTotal[year] ==
         sum(
             sum(
-                model.costCarrier[carrier,node,time]*model.timeStepsCarrierDuration[carrier, time]
+                model.costCarrier[carrier,node,time]
+                * model.timeStepsOperationDuration[carrier, time]
                 for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly=True)
             )
             for carrier,node in Element.createCustomSet(["setCarriers","setNodes"])
@@ -260,7 +239,7 @@ def constraintCarbonEmissionsCarrierTotalRule(model, year):
     return(model.carbonEmissionsCarrierTotal[year] ==
         sum(
             sum(
-                model.carbonEmissionsCarrier[carrier, node, time] * model.timeStepsCarrierDuration[carrier, time]
+                model.carbonEmissionsCarrier[carrier, node, time] * model.timeStepsOperationDuration[carrier, time]
                 for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly = True)
             )
             for carrier, node in Element.createCustomSet(["setCarriers", "setNodes"])
@@ -270,7 +249,7 @@ def constraintCarbonEmissionsCarrierTotalRule(model, year):
 def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     """" 
     nodal energy balance for each time step. 
-    The constraint is indexed by setTimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
+    The constraint is indexed by setTimeStepsOperation, which is union of time step sequences of all corresponding technologies and carriers
     timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
     """
     # decode to baseTimeStep
@@ -292,8 +271,8 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
         if carrier in model.setReferenceCarriers[tech]:
             elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
             carrierFlowIn   += sum(model.carrierFlow[tech, edge, elementTimeStep]
-                            - model.carrierLoss[tech, edge, elementTimeStep] for edge in setEdgesIn)
-            carrierFlowOut  += sum(model.carrierFlow[tech, edge, elementTimeStep] for edge in setEdgesOut)
+                            - model.carrierLoss[tech, edge, elementTimeStep] for edge in setEdgesIn) 
+            carrierFlowOut  += sum(model.carrierFlow[tech, edge, elementTimeStep] for edge in setEdgesOut) 
     # carrier flow storage technologies
     carrierFlowDischarge, carrierFlowCharge = 0, 0
     for tech in model.setStorageTechnologies:
@@ -303,21 +282,21 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
             carrierFlowCharge       += model.carrierFlowCharge[tech,node,elementTimeStep]
     # carrier import, demand and export
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
-    elementTimeStep         = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
-    carrierImport           = model.importCarrierFlow[carrier, node, elementTimeStep]
-    carrierExport           = model.exportCarrierFlow[carrier, node, elementTimeStep]
-    carrierDemand           = model.demandCarrier[carrier, node, elementTimeStep]
-
+    elementTimeStep     = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
+    carrierImport       = model.importCarrierFlow[carrier, node, elementTimeStep]
+    carrierExport       = model.exportCarrierFlow[carrier, node, elementTimeStep]
+    carrierDemand       = model.demandCarrier[carrier, node, elementTimeStep]
+    
     return (
         # conversion technologies
-        carrierConversionOut - carrierConversionIn
+        carrierConversionOut - carrierConversionIn 
         # transport technologies
         + carrierFlowIn - carrierFlowOut
         # storage technologies
         + carrierFlowDischarge - carrierFlowCharge
-        # import and export
-        + carrierImport - carrierExport
+        # import and export 
+        + carrierImport - carrierExport 
         # demand
-        - carrierDemand
+        - carrierDemand 
         == 0
         )

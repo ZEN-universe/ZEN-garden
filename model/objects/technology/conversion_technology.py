@@ -251,7 +251,6 @@ class ConversionTechnology(Technology):
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <ConversionTechnology> """
         model = EnergySystem.getConcreteModel()
-        
         # add PWA constraints
         # capex
         setPWACapex    = cls.createCustomSet(["setConversionTechnologies","setCapexPWA","setNodes","setTimeStepsInvest"])
@@ -348,9 +347,9 @@ class ConversionTechnology(Technology):
         model = disjunct.model()
         disjunct.constraintNoLoad = pe.Constraint(
             expr=
-                sum(model.inputFlow[tech,inputCarrier,node,time]     for inputCarrier  in model.setInputCarriers[tech]) +
-                sum(model.outputFlow[tech,outputCarrier,node,time]   for outputCarrier in model.setOutputCarriers[tech])
-                == 0
+            sum(model.inputFlow[tech,inputCarrier,node,time]     for inputCarrier  in model.setInputCarriers[tech]) +
+            sum(model.outputFlow[tech,outputCarrier,node,time]   for outputCarrier in model.setOutputCarriers[tech])
+            == 0
         )
             
     @classmethod

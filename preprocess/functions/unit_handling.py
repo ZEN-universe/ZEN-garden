@@ -134,7 +134,7 @@ class UnitHandling:
                     calculatedMultiplier = False
                     for unit, power in zip(dimMatrixReduced.columns, combinationSolution):
                         # try to substitute unit with power > 1 by a dependent unit
-                        if np.abs(power) > 1:
+                        if np.abs(power) > 1 and not calculatedMultiplier:
                             # iterate through dependent units
                             for dependentUnit,dependentDim in zip(dimAnalysis["dependentUnits"],dimAnalysis["dependentDims"]):
                                 idxUnitInMatrixReduced  = list(dimMatrixReduced.columns).index(unit)
@@ -145,11 +145,12 @@ class UnitHandling:
                                     combinationSolutionTemp                 = np.linalg.solve(dimMatrixReducedTemp, dimVector)
                                     if UnitHandling.checkIfPosNegBoolean(combinationSolutionTemp):
                                         # compose relevant units to dimensionless combined unit
-                                        for unit, power in zip(dimMatrixReducedTemp.columns, combinationSolutionTemp):
-                                            combinedUnit        *= self.ureg(unit) ** (-1 * power)
+                                        for unitTemp, powerTemp in zip(dimMatrixReducedTemp.columns, combinationSolutionTemp):
+                                            combinedUnit        *= self.ureg(unitTemp) ** (-1 * powerTemp)
                                         calculatedMultiplier    = True
                                         break
                     assert calculatedMultiplier, f"Cannot establish base unit conversion for {inputUnit} from base units {baseUnits.keys()}"
+            assert combinedUnit.to_base_units().unitless, f"The unit conversion of unit {inputUnit} did not resolve to a dimensionless conversion factor. Something went wrong."
             # magnitude of combined unit is multiplier
             multiplier = combinedUnit.to_base_units().magnitude
             # check that multiplier is larger than rounding tolerance
