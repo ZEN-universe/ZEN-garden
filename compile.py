@@ -8,17 +8,17 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
-
+import numpy as np
 import os
+import pandas as pd
 import logging
 import sys
-
-import data.config                  as config
-from datetime                       import datetime
-from preprocess.prepare             import Prepare
-from model.optimization_setup       import OptimizationSetup
-from model.metaheuristic.algorithm  import Metaheuristic
-from postprocess.results            import Postprocess
+from datetime import datetime
+import config as config
+from preprocess.prepare import Prepare
+from model.optimization_setup import OptimizationSetup
+from model.metaheuristic.algorithm import Metaheuristic
+from postprocess.results_HB import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -52,6 +52,7 @@ for stepHorizon in stepsOptimizationHorizon:
         logging.info("\n--- Conduct optimization for perfect foresight --- \n")
     else:
         logging.info(f"\n--- Conduct optimization for rolling horizon step {stepHorizon} of {max(stepsOptimizationHorizon)}--- \n")
+
     # overwrite time indices
     optimizationSetup.overwriteTimeIndices(stepHorizon)
     # create optimization problem

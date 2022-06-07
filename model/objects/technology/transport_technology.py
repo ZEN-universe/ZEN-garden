@@ -10,6 +10,7 @@ Description:    Class defining the parameters, variables and constraints that ho
                 constraints that hold for the transport technologies.
 ==========================================================================================================================================================================="""
 import logging
+import warnings
 import pyomo.environ as pe
 from model.objects.technology.technology import Technology
 from model.objects.energy_system import EnergySystem
@@ -17,12 +18,9 @@ from preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 class TransportTechnology(Technology):
     # set label
-    label           = "setTransportTechnologies"
-    locationType    = "setEdges"
+    label = "setTransportTechnologies"
     # empty list of elements
     listOfElements = []
-    # dict of reversed edges
-    dictReversedEdges = {}
     
     def __init__(self, tech):
         """init transport technology object
@@ -36,58 +34,56 @@ class TransportTechnology(Technology):
         TransportTechnology.addElement(self)
 
     def storeInputData(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
+        """ retrieves and stores input data for element as attributes.
+        Each Child class overwrites method to store different attributes """
         # get attributes from class <Technology>
         super().storeInputData()
+        # get system information
+        paths                               = EnergySystem.getPaths()
+        self.inputPath                     = paths["setTransportTechnologies"][self.name]["folder"]
         # set attributes for parameters of child class <TransportTechnology>
-        self.distance                       = self.dataInput.extractInputData("distanceEuclidean",indexSets=["setEdges"])
-        self.lossFlow                       = self.dataInput.extractAttributeData("lossFlow")["value"]
-        if self.dataInput.ifAttributeExists("capexPerDistance"):
-            self.capexPerDistance           = self.dataInput.extractInputData(
-                "capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
-            self.capexSpecific              = self.capexPerDistance * self.distance
-        else:
-            self.capexSpecific              = self.dataInput.extractInputData(
-                "capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+        # TODO calculate for non Euclidean distance
+        self.distance                       = self.dataInput.extractInputData(self.inputPath,"distanceEuclidean",indexSets=["setEdges"],transportTechnology=True)
+        self.lossFlow                       = self.dataInput.extractAttributeData(self.inputPath,"lossFlow")["value"]
+
+        # In case you want to have separate capex for capacity and distance
+        if EnergySystem.system['DoubleCapexTransport']:
+            self.capexSpecific = self.dataInput.extractInputData(self.inputPath, "capexSpecific",
+                                                                 indexSets=["setEdges", "setTimeSteps"],
+                                                                 timeSteps=self.setTimeStepsInvest,
+                                                                 transportTechnology=True)
+            try:
+                self.capexPerDistance = self.dataInput.extractInputData(self.inputPath, "capexPerDistance",
+                                                                        indexSets=["setEdges", "setTimeSteps"],
+                                                                        timeSteps=self.setTimeStepsInvest,
+                                                                        transportTechnology=True)
+            except AssertionError:
+                self.capexPerDistance = self.capexSpecific * 0.0
+                warnings.warn(f'capexPerDistance is not defined in attributes.csv of {self.name} and no input is given.'
+                              f' This will throw an error in the future!', FutureWarning)
+        else:  # Here only capexSpecific is used and capexPerDistance is set to Zero.
+            if self.dataInput.ifAttributeExists(self.inputPath,"capexPerDistance"):
+                self.capexPerDistance = self.dataInput.extractInputData(self.inputPath,"capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+                self.capexSpecific = self.capexPerDistance * self.distance
+            else:
+                self.capexSpecific = self.dataInput.extractInputData(self.inputPath,"capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest,transportTechnology=True)
+            self.capexPerDistance = self.capexSpecific.copy(deep=True) * 0.0
+
         # annualize capex
         self.convertToAnnualizedCapex()
         # calculate capex of existing capacity
         self.capexExistingCapacity          = self.calculateCapexOfExistingCapacities()
-        # check that existing capacities are equal in both directions if technology is bidirectional
-        if self.name in EnergySystem.getSystem()["setBidirectionalTransportTechnologies"]:
-            self.checkIfBidirectional()
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
         fractionalAnnuity   = self.calculateFractionalAnnuity()
         # annualize capex
         self.capexSpecific  = self.capexSpecific*fractionalAnnuity
+        self.capexPerDistance = self.capexPerDistance * fractionalAnnuity
 
     def calculateCapexOfSingleCapacity(self,capacity,index):
         """ this method calculates the annualized capex of a single existing capacity. """
-        return self.capexSpecific[index[0]].iloc[0] * capacity
-
-    def checkIfBidirectional(self):
-        """ checks that the existing capacities in both directions of bidirectional capacities are equal """
-        energySystem = EnergySystem.getEnergySystem()
-        for edge in energySystem.setEdges:
-            reversedEdge = EnergySystem.calculateReversedEdge(edge)
-            TransportTechnology.setReversedEdge(edge=edge, reversedEdge=reversedEdge)
-            _existingCapacityEdge = self.existingCapacity[edge]
-            _existingCapacityReversedEdge = self.existingCapacity[reversedEdge]
-            assert (_existingCapacityEdge == _existingCapacityReversedEdge).all(), \
-                f"The existing capacities of the bidirectional transport technology {self.name} are not equal on the edge pair {edge} and {reversedEdge} ({_existingCapacityEdge.to_dict()} and {_existingCapacityReversedEdge.to_dict()})"
-
-    ### --- getter/setter classmethods
-    @classmethod
-    def setReversedEdge(cls,edge,reversedEdge):
-        """ maps the reversed edge to an edge """
-        cls.dictReversedEdges[edge] = reversedEdge
-
-    @classmethod
-    def getReversedEdge(cls, edge):
-        """ get the reversed edge corresponding to an edge """
-        return cls.dictReversedEdges[edge]
+        return self.capexSpecific[index] * capacity
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod
@@ -105,11 +101,16 @@ class TransportTechnology(Technology):
             cls.createCustomSet(["setTransportTechnologies","setEdges"]),
             initialize = EnergySystem.initializeComponent(cls,"distance"),
             doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
-        # cost per distance
+        # cost per capacity
         model.capexSpecificTransport = pe.Param(
              cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
              initialize = EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
              doc = 'capex per unit for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
+        # cost per distance
+        model.capexPerDistance = pe.Param(
+            cls.createCustomSet(['setTransportTechnologies', 'setEdges', 'setTimeStepsInvest']),
+            initialize=EnergySystem.initializeComponent(cls, 'capexPerDistance', indexNames=['setTransportTechnologies', "setEdges", "setTimeStepsInvest"]),
+            doc='capex per distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
         # carrier losses
         model.lossFlow = pe.Param(
             model.setTransportTechnologies,
@@ -127,8 +128,8 @@ class TransportTechnology(Technology):
             :param time: time index
             :return bounds: bounds of carrierFlow"""
             # convert operationTimeStep to investTimeStep: operationTimeStep -> baseTimeStep -> investTimeStep
-            investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
-            bounds = model.capacity[tech,"power",edge,investTimeStep].bounds
+            investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
+            bounds = model.capacity[tech,edge,investTimeStep].bounds
             return(bounds)
 
         model = EnergySystem.getConcreteModel()
@@ -157,18 +158,24 @@ class TransportTechnology(Technology):
             rule = constraintTransportTechnologyLossesFlowRule,
             doc = 'Carrier loss due to transport with through transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsOperation'
         ) 
-        # capex of transport technologies
-        model.constraintCapexTransportTechnology = pe.Constraint(
+        # Linear Capex
+        model.constraintTransportTechnologyLinearCapex = pe.Constraint(
             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
             rule = constraintCapexTransportTechnologyRule,
             doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
         )
-        # bidirectional transport technologies: capacity on edge must be equal in both directions
-        model.constraintBidirectionalTransportTechnology = pe.Constraint(
-            cls.createCustomSet(["setTransportTechnologies", "setEdges", "setTimeStepsInvest"]),
-            rule=constraintBidirectionalTransportTechnologyRule,
-            doc='Forces that transport technology capacity must be equal in both direction. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
-        )
+        # installTechnology binary (Big-M method), only constructed if DoubleCapexTransport flag is set
+        if EnergySystem.system['DoubleCapexTransport']:
+            model.constraintTransportTechnologyInstallLower = pe.Constraint(
+                cls.createCustomSet(["setTransportTechnologies", "setEdges", "setTimeStepsInvest"]),
+                rule=constraintTransportTechnologyInstallLowerRule,
+                doc='Lower bound for technology installation binary. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
+            )
+            model.constraintTransportTechnologyInstallUpper = pe.Constraint(
+                cls.createCustomSet(["setTransportTechnologies", "setEdges", "setTimeStepsInvest"]),
+                rule=constraintTransportTechnologyInstallUpperRule,
+                doc='Upper bound for technology installation binary. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
+            )
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -176,7 +183,7 @@ class TransportTechnology(Technology):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
         # get invest time step
-        investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
+        investTimeStep = EnergySystem.convertTechnologyTimeStepType(tech,time,"operation2invest")
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
             expr=model.carrierFlow[tech, edge, time] >= model.minLoad[tech,edge,time] * model.capacity[tech,edge, investTimeStep]
@@ -198,15 +205,19 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
 
 def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
-    return (model.capex[tech,"power",edge, time] ==
-            model.builtCapacity[tech,"power",edge, time] * model.capexSpecificTransport[tech,edge, time])
+    return (model.capex[tech,edge, time] == 
+            model.builtCapacity[tech,edge, time] * model.capexSpecificTransport[tech,edge, time] +
+            model.installTechnology[tech, edge, time] * model.distance[tech, edge] * model.capexPerDistance[tech, edge, time])
 
-def constraintBidirectionalTransportTechnologyRule(model, tech, edge, time):
-    """ Forces that transport technology capacity must be equal in both direction"""
-    system = EnergySystem.getSystem()
-    if tech in system["setBidirectionalTransportTechnologies"]:
-        reversedEdge = TransportTechnology.getReversedEdge(edge)
-        return (model.builtCapacity[tech,"power",edge, time] ==
-                model.builtCapacity[tech,"power",reversedEdge, time])
+def constraintTransportTechnologyInstallLowerRule(model, tech, edge, time):
+    """ sets lower bound for installTechnology Binary variable for split capex calculation"""
+    if model.maxBuiltCapacity[tech] != float('+inf'):
+        return model.maxBuiltCapacity[tech] * model.installTechnology[tech, edge, time] >= model.builtCapacity[tech, edge, time]
     else:
-        return pe.Constraint.Skip
+        return 1e15 * model.installTechnology[tech, edge, time] >= model.builtCapacity[
+            tech, edge, time]
+
+def constraintTransportTechnologyInstallUpperRule(model, tech, edge, time):
+    """ sets upper bound for installTechnology Binary variable for split capex calculation """
+    return model.installTechnology[tech, edge, time] <= model.builtCapacity[tech, edge, time]
+

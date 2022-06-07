@@ -155,6 +155,10 @@ class ConversionTechnology(Technology):
             doc = "set of carriers that are an output to a specific conversion technology.\n\t Dimensions: setConversionTechnologies"
         )
 
+        # add pe.Sets of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.constructSets()
+
     @classmethod
     def constructParams(cls):
         """ constructs the pe.Params of the class <ConversionTechnology> """

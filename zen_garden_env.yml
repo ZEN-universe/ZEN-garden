@@ -1,0 +1,27 @@
+name: zen-garden
+channels:
+  - conda-forge
+  - defaults
+  - gurobi
+dependencies:
+  - numpy
+  - gurobi
+  - geopandas
+  - pandas
+  - pip
+#  - pyomo=6.2
+  - pyomo=6.*
+  - python=3.9.*
+  - scipy
+  - sympy
+  - ipython
+  - jupyter
+  - pint
+  - entsoe-py
+  - matplotlib
+  - mpmath
+  - pip:
+      - tsam
+
+# conda env create -f zen_garden_env.yml
+# conda remove --name zen-garden --all

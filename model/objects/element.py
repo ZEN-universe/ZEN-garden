@@ -228,6 +228,7 @@ class Element:
         )
         # construct pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
+            print(subclass.__name__)
             subclass.constructSets()
 
     @classmethod
@@ -272,7 +273,6 @@ class Element:
     def createCustomSet(cls,listIndex):
         """ creates custom set for model component 
         :param listIndex: list of names of indices
-        :param elementName: name of element for which index is created
         :return customSet: custom set index """
         model           = EnergySystem.getConcreteModel()
         indexingSets    = EnergySystem.getIndexingSets()
@@ -282,7 +282,7 @@ class Element:
             listSets = []
             # iterate through indices
             for index in listIndex:
-                # if the set already exist in model
+                # if the set already exists in model
                 if hasattr(model,index):
                     # append set to list
                     listSets.append(model.find_component(index))

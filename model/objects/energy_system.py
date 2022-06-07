@@ -8,14 +8,14 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
                 optimization model as an input.
 ==========================================================================================================================================================================="""
-import copy
 import logging
 import warnings
 import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
+from pint                                    import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
-from preprocess.functions.unit_handling         import UnitHandling
+from pint.util                               import column_echelon_form
 
 class EnergySystem:
     # energySystem
@@ -30,26 +30,20 @@ class EnergySystem:
     paths = None
     # solver
     solver = None
-    # unit handling instance
-    unitHandling = None
+    # unit registry
+    ureg = UnitRegistry()
     # empty list of indexing sets
     indexingSets = []
     # aggregationObjects of element
     aggregationObjectsOfElements = {}
     # empty dict of technologies of carrier
     dictTechnologyOfCarrier = {}
-    # empty dict of sequence of time steps operation
-    dictSequenceTimeStepsOperation = {}
-    # empty dict of sequence of time steps invest
-    dictSequenceTimeStepsInvest = {}
-    # empty dict of sequence of time steps yearly
-    dictSequenceTimeStepsYearly = {}
-    # empty dict of conversion from energy time steps to power time steps for storage technologies
-    dictTimeStepsEnergy2Power = {}
-    # empty dict of conversion from operational time steps to invest time steps for technologies
-    dictTimeStepsOperation2Invest = {}
-    # empty dict of matching the last time step of the year in the storage domain to the first
-    dictTimeStepsStorageLevelStartEndYear = {}
+    # empty dict of order of time steps operation
+    dictOrderTimeStepsOperation = {}
+    # empty dict of order of time steps invest
+    dictOrderTimeStepsInvest = {}
+    # empty dict of order of time steps yearly
+    dictOrderTimeStepsYearly = {}
     # empty dict of raw time series, only necessary for single time grid approach
     dictTimeSeriesRaw = {}
     # empty dict of element classes
@@ -70,14 +64,8 @@ class EnergySystem:
         # add energySystem to list
         EnergySystem.setEnergySystem(self)
 
-        # get input path
-        self.getInputPath()
-
-        # create UnitHandling object
-        EnergySystem.createUnitHandling()
-
         # create DataInput object
-        self.dataInput = DataInput(self,EnergySystem.getSystem(), EnergySystem.getAnalysis(), EnergySystem.getSolver(), EnergySystem.getEnergySystem(), self.unitHandling)
+        self.dataInput = DataInput(self,EnergySystem.getSystem(), EnergySystem.getAnalysis(), EnergySystem.getSolver(), EnergySystem.getEnergySystem())
 
         # store input data
         self.storeInputData()
@@ -87,6 +75,7 @@ class EnergySystem:
 
         system                          = EnergySystem.getSystem()
         self.paths                      = EnergySystem.getPaths()
+        self.getBaseUnits()
 
         # in class <EnergySystem>, all sets are constructed
         self.setNodes                    = self.dataInput.extractLocations()
@@ -95,17 +84,16 @@ class EnergySystem:
         self.setCarriers                 = []
         self.setTechnologies             = system["setTechnologies"]
         # base time steps
-        self.setBaseTimeSteps            = list(range(0,system["unaggregatedTimeStepsPerYear"]*system["optimizedYears"]))
-        self.setBaseTimeStepsYearly      = list(range(0, system["unaggregatedTimeStepsPerYear"]))
+        self.setBaseTimeSteps            = list(range(0,system["timeStepsPerYear"]*system["timeStepsYearly"]))
+        self.setBaseTimeStepsYearly      = list(range(0, system["timeStepsPerYear"]))
 
         # yearly time steps
         self.typesTimeSteps              = ["invest", "operation", "yearly"]
         self.dictNumberOfTimeSteps       = self.dataInput.extractNumberTimeSteps()
         self.setTimeStepsYearly          = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
-        self.setTimeStepsYearlyEntireHorizon = copy.deepcopy(self.setTimeStepsYearly)
         self.timeStepsYearlyDuration     = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
-        self.sequenceTimeStepsYearly     = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
-        self.setSequenceTimeSteps(None, self.sequenceTimeStepsYearly, timeStepType="yearly")
+        self.orderTimeStepsYearly        = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
+        self.setOrderTimeSteps(None, self.orderTimeStepsYearly, timeStepType="yearly")
 
         # technology-specific
         self.setConversionTechnologies   = system["setConversionTechnologies"]
@@ -113,9 +101,70 @@ class EnergySystem:
         self.setStorageTechnologies      = system["setStorageTechnologies"]
 
         # carbon emissions limit
-        self.carbonEmissionsLimit        = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
-        _fractionOfYear                  = system["unaggregatedTimeStepsPerYear"]/system["totalHoursPerYear"]
+        self.carbonEmissionsLimit        = self.dataInput.extractInputData(self.paths["setScenarios"]["folder"], "carbonEmissionsLimit", indexSets=["setTimeSteps"], timeSteps=self.setTimeStepsYearly)
+        _fractionOfYear                  = system["timeStepsPerYear"]/system["totalHoursPerYear"]
         self.carbonEmissionsLimit        = self.carbonEmissionsLimit*_fractionOfYear # reduce to fraction of year
+
+    def getBaseUnits(self):
+        """ gets base units of energy system """
+        _listBaseUnits                  = self.dataInput.extractBaseUnits(self.paths["setScenarios"]["folder"])
+        ureg                            = EnergySystem.getUnitRegistry()
+
+        # load additional units
+        ureg.load_definitions(self.paths["setScenarios"]["folder"]+"/unitDefinitions.txt")
+
+        # empty base units and dimensionality matrix
+        self.baseUnits                  = {}
+        self.dimMatrix                  = pd.DataFrame(index=_listBaseUnits).astype(int)
+        for _baseUnit in _listBaseUnits:
+            dimUnit                     = ureg.get_dimensionality(ureg(_baseUnit))
+            self.baseUnits[_baseUnit]   = ureg(_baseUnit).dimensionality
+            self.dimMatrix.loc[_baseUnit, list(dimUnit.keys())] = list(dimUnit.values())
+        self.dimMatrix                  = self.dimMatrix.fillna(0).astype(int).T
+
+        # check if unit defined twice or more
+        _duplicateUnits                 = self.dimMatrix.T.duplicated()
+        if _duplicateUnits.any():
+            _dimMatrixDuplicate         = self.dimMatrix.loc[:,_duplicateUnits]
+            for _duplicate in _dimMatrixDuplicate:
+                # if same unit twice (same order of magnitude and same dimensionality)
+                if len(self.dimMatrix[_duplicate].shape) > 1:
+                    logging.warning(f"The base unit <{_duplicate}> was defined more than once. Duplicates are dropped.")
+                    _duplicateDim               = self.dimMatrix[_duplicate].T.drop_duplicates().T
+                    self.dimMatrix              = self.dimMatrix.drop(_duplicate,axis=1)
+                    self.dimMatrix[_duplicate]  = _duplicateDim
+                else:
+                    raise KeyError(f"More than one base unit defined for dimensionality {self.baseUnits[_duplicate]} (e.g., {_duplicate})")
+        # get linearly dependent units
+        M, I, pivot                     = column_echelon_form(np.array(self.dimMatrix), ntype=float)
+        M                               = np.array(M).squeeze()
+        I                               = np.array(I).squeeze()
+        pivot                           = np.array(pivot).squeeze()
+        # index of linearly dependent units in M and I
+        idxLinDep                       = np.squeeze(np.argwhere(np.all(M==0,axis=1)))
+        # index of linearly dependent units in dimensionality matrix
+        _idxPivot                           = range(len(self.baseUnits))
+        idxLinDepDimMatrix                  = list(set(_idxPivot).difference(pivot))
+        self.dimAnalysis                    = {}
+        self.dimAnalysis["dependentUnits"]  = self.dimMatrix.columns[idxLinDepDimMatrix]
+        dependentDims                       = I[idxLinDep,:]
+        # if only one dependent unit
+        if len(self.dimAnalysis["dependentUnits"]) == 1:
+            dependentDims                   = dependentDims.reshape(1,dependentDims.size)
+        # reorder dependent dims to match dependent units
+        DimOfDependentUnits                 = dependentDims[:,idxLinDepDimMatrix]
+        # if not already in correct order (ones on the diagonal of dependentDims)
+        if not np.all(np.diag(DimOfDependentUnits)==1):
+            # get position of ones in DimOfDependentUnits
+            posOnes         = np.argwhere(DimOfDependentUnits==1)
+            assert np.size(posOnes,axis=0) == len(self.dimAnalysis["dependentUnits"]), \
+                f"Cannot determine order of dependent base units {self.dimAnalysis['dependentUnits']}, " \
+                f"because diagonal of dimensions of the dependent units cannot be determined."
+            # pivot dependent dims
+            dependentDims   = dependentDims[posOnes[:,1],:]
+        self.dimAnalysis["dependentDims"]   = dependentDims
+        # check that no base unit can be directly constructed from the others (e.g., GJ from GW and hour)
+        assert ~DataInput.checkIfPosNegBoolean(dependentDims,axis=1), f"At least one of the base units {list(self.baseUnits.keys())} can be directly constructed from the others"
 
     def calculateEdgesFromNodes(self):
         """ calculates setNodesOnEdges from setNodes
@@ -133,14 +182,6 @@ class EnergySystem:
                     if nodeFrom != nodeTo:
                         setNodesOnEdges[nodeFrom+"-"+nodeTo] = (nodeFrom,nodeTo)
         return setNodesOnEdges
-
-    def getInputPath(self):
-        """ get input path where input data is stored inputPath"""
-        folderLabel = EnergySystem.getSystem()["folderNameSystemSpecification"]
-
-        paths = EnergySystem.getPaths()
-        # get input path of energy system specification
-        self.inputPath = paths[folderLabel]["folder"]
 
     ### CLASS METHODS ###
     # setter/getter classmethods
@@ -184,11 +225,6 @@ class EnergySystem:
                 cls.indexingSets.append(key)
 
     @classmethod
-    def setManualSetToIndexingSets(cls,set):
-        """ manually set to cls.indexingSets """
-        cls.indexingSets.append(set)
-
-    @classmethod
     def setTechnologyOfCarrier(cls,technology,listTechnologyOfCarrier):
         """ appends technology to carrier in dictTechnologyOfCarrier
         :param technology: name of technology in model
@@ -201,51 +237,30 @@ class EnergySystem:
                 cls.dictTechnologyOfCarrier[carrier].append(technology)
 
     @classmethod
-    def setTimeStepsEnergy2Power(cls,element,timeStepsEnergy2Power):
-        """ sets the dict of converting the energy time steps to the power time steps of storage technologies """
-        cls.dictTimeStepsEnergy2Power[element] = timeStepsEnergy2Power
-
-    @classmethod
-    def setTimeStepsOperation2Invest(cls, element, timeStepsOperation2Invest):
-        """ sets the dict of converting the operational time steps to the invest time steps of all technologies """
-        cls.dictTimeStepsOperation2Invest[element] = timeStepsOperation2Invest
-
-    @classmethod
-    def setTimeStepsStorageStartEnd(cls, element):
-        """ sets the dict of matching the last time step of the year in the storage level domain to the first """
-        system                  = cls.getSystem()
-        _baseTimeStepsPerYear   = system["unaggregatedTimeStepsPerYear"]
-        _numberYears            = system["optimizedYears"]
-        _sequenceTimeSteps      = cls.getSequenceTimeSteps(element+"StorageLevel")
-        _timeStepsStart         = _sequenceTimeSteps[np.array(range(0, _numberYears)) * _baseTimeStepsPerYear]
-        _timeStepsEnd           = _sequenceTimeSteps[np.array(range(1, _numberYears + 1)) * _baseTimeStepsPerYear - 1]
-        cls.dictTimeStepsStorageLevelStartEndYear[element] = {_start:_end for _start,_end in zip(_timeStepsStart,_timeStepsEnd)}
-
-    @classmethod
-    def setSequenceTimeSteps(cls,element,sequenceTimeSteps,timeStepType = None):
-        """ sets sequence of time steps, either of operation, invest, or year
+    def setOrderTimeSteps(cls,element,orderTimeSteps,timeStepType = None):
+        """ sets order of time steps, either of operation, invest, or year
         :param element: name of element in model
-        :param sequenceTimeSteps: list of time steps corresponding to base time step
+        :param orderTimeSteps: list of time steps corresponding to base time step
         :param timeStepType: type of time step (operation, invest or year)"""
         if not timeStepType:
             timeStepType = "operation"
 
         if timeStepType == "operation":
-            cls.dictSequenceTimeStepsOperation[element] = sequenceTimeSteps
+            cls.dictOrderTimeStepsOperation[element] = orderTimeSteps
         elif timeStepType == "invest":
-            cls.dictSequenceTimeStepsInvest[element]    = sequenceTimeSteps
+            cls.dictOrderTimeStepsInvest[element] = orderTimeSteps
         elif timeStepType == "yearly":
-            cls.dictSequenceTimeStepsYearly[element]    = sequenceTimeSteps
+            cls.dictOrderTimeStepsYearly[element] = orderTimeSteps
         else:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
 
     @classmethod
-    def setSequenceTimeStepsDict(cls,dictAllSequenceTimeSteps):
-        """ sets all dicts of sequences of time steps.
-        :param dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps"""
-        cls.dictSequenceTimeStepsOperation = dictAllSequenceTimeSteps["operation"]
-        cls.dictSequenceTimeStepsInvest    = dictAllSequenceTimeSteps["invest"]
-        cls.dictSequenceTimeStepsYearly    = dictAllSequenceTimeSteps["yearly"]
+    def setOrderTimeStepsDict(cls,dictAllOrderTimeSteps):
+        """ sets all dicts of order of time steps.
+        :param dictAllOrderTimeSteps: dict of all dictOrderTimeSteps"""
+        cls.dictOrderTimeStepsOperation = dictAllOrderTimeSteps["operation"]
+        cls.dictOrderTimeStepsInvest    = dictAllOrderTimeSteps["invest"]
+        cls.dictOrderTimeStepsYearly    = dictAllOrderTimeSteps["yearly"]
 
     @classmethod
     def setAggregationObjects(cls,element,aggregationObject):
@@ -308,6 +323,12 @@ class EnergySystem:
         return cls.elementList
 
     @classmethod
+    def getUnitRegistry(cls):
+        """ get the unit registry
+        :return units: unit registry """
+        return cls.ureg
+
+    @classmethod
     def getAttribute(cls,attributeName:str):
         """ get attribute value of energySystem
         :param attributeName: str name of attribute
@@ -333,50 +354,32 @@ class EnergySystem:
             return None
 
     @classmethod
-    def getTimeStepsEnergy2Power(cls, element):
-        """ gets the dict of converting the energy time steps to the power time steps of storage technologies """
-        return cls.dictTimeStepsEnergy2Power[element]
-
-    @classmethod
-    def getTimeStepsOperation2Invest(cls, element):
-        """ gets the dict of converting the operational time steps to the invest time steps of technologies """
-        return cls.dictTimeStepsOperation2Invest[element]
-
-    @classmethod
-    def getTimeStepsStorageStartEnd(cls, element,timeStep):
-        """ gets the dict of converting the operational time steps to the invest time steps of technologies """
-        if timeStep in cls.dictTimeStepsStorageLevelStartEndYear[element].keys():
-            return cls.dictTimeStepsStorageLevelStartEndYear[element][timeStep]
-        else:
-            return None
-
-    @classmethod
-    def getSequenceTimeSteps(cls,element,timeStepType = None):
-        """ get sequence ot time steps of element
+    def getOrderTimeSteps(cls,element,timeStepType = None):
+        """ get order ot time steps of element
         :param element: name of element in model
         :param timeStepType: type of time step (operation or invest)
-        :return sequenceTimeSteps: list of time steps corresponding to base time step"""
+        :return orderTimeSteps: list of time steps corresponding to base time step"""
         if not timeStepType:
             timeStepType = "operation"
         if timeStepType == "operation":
-            return cls.dictSequenceTimeStepsOperation[element]
+            return cls.dictOrderTimeStepsOperation[element]
         elif timeStepType == "invest":
-            return cls.dictSequenceTimeStepsInvest[element]
+            return cls.dictOrderTimeStepsInvest[element]
         elif timeStepType == "yearly":
-            return cls.dictSequenceTimeStepsYearly[element]
+            return cls.dictOrderTimeStepsYearly[element]
         else:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
 
     @classmethod
-    def getSequenceTimeStepsDict(cls):
-        """ returns all dicts of sequence of time steps.
-        :return dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps"""
-        dictAllSequenceTimeSteps = {
-            "operation" : cls.dictSequenceTimeStepsOperation,
-            "invest"    : cls.dictSequenceTimeStepsInvest,
-            "yearly"    : cls.dictSequenceTimeStepsYearly
+    def getOrderTimeStepsDict(cls):
+        """ returns all dicts of order of time steps.
+        :return dictAllOrderTimeSteps: dict of all dictOrderTimeSteps"""
+        dictAllOrderTimeSteps = {
+            "operation" : cls.dictOrderTimeStepsOperation,
+            "invest"    : cls.dictOrderTimeStepsInvest,
+            "yearly"    : cls.dictOrderTimeStepsYearly
         }
-        return dictAllSequenceTimeSteps
+        return dictAllOrderTimeSteps
 
     @classmethod
     def getAggregationObjects(cls,element):
@@ -394,17 +397,6 @@ class EnergySystem:
             return cls.dictTimeSeriesRaw[element]
         else:
             return None
-
-    @classmethod
-    def getUnitHandling(cls):
-        """ returns the unit handling object """
-        return cls.unitHandling
-
-    @classmethod
-    def createUnitHandling(cls):
-        """ creates and stores the unit handling object """
-        # create UnitHandling object
-        cls.unitHandling = UnitHandling(cls.getEnergySystem().inputPath,cls.getEnergySystem().solver["roundingDecimalPoints"])
 
     @classmethod
     def calculateConnectedEdges(cls,node,direction:str):
@@ -443,16 +435,16 @@ class EnergySystem:
         return timeStepDurationDict
 
     @classmethod
-    def decodeTimeStep(cls,element,elementTimeStep:int,timeStepType:str = None):
+    def decodeTimeStep(cls,element:str,elementTimeStep:int,timeStepType:str = None):
         """ decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variableTimeStep of a element.
         timeStep of element --> baseTimeStep of model
         :param element: element of model, i.e., carrier or technology
         :param elementTimeStep: time step of element
         :param timeStepType: invest or operation. Only relevant for technologies, None for carrier
         :return baseTimeStep: baseTimeStep of model """
-        sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
-        # find where elementTimeStep in sequence of element time steps
-        baseTimeSteps = np.argwhere(sequenceTimeSteps == elementTimeStep)
+        orderTimeSteps = cls.getOrderTimeSteps(element,timeStepType)
+        # find where elementTimeStep in order of element time steps
+        baseTimeSteps = np.argwhere(orderTimeSteps == elementTimeStep)
         return baseTimeSteps
 
     @classmethod
@@ -460,16 +452,13 @@ class EnergySystem:
         """ encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
         baseTimeStep of model --> timeStep of element
         :param element: name of element in model, i.e., carrier or technology
-        :param baseTimeSteps: base time step of model for which the corresponding time index is extracted
+        :param baseTimeStep: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
         # model = cls.getConcreteModel()
-        sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
+        orderTimeSteps = cls.getOrderTimeSteps(element,timeStepType)
         # get time step duration
-        if np.all(baseTimeSteps >= 0):
-            elementTimeStep = np.unique(sequenceTimeSteps[baseTimeSteps])
-        else:
-            elementTimeStep = [-1]
+        elementTimeStep = np.unique(orderTimeSteps[baseTimeSteps])
         if yearly:
             return(elementTimeStep)
         if len(elementTimeStep) == 1:
@@ -489,25 +478,46 @@ class EnergySystem:
         return fullBaseTimeSteps
 
     @classmethod
-    def convertTimeStepEnergy2Power(cls,element,timeStepEnergy):
-        """ converts the time step of the energy quantities of a storage technology to the time step of the power quantities """
-        _timeStepsEnergy2Power = cls.getTimeStepsEnergy2Power(element)
-        return _timeStepsEnergy2Power[timeStepEnergy]
+    def convertTechnologyTimeStepType(cls,element,elementTimeStep,direction = "operation2invest"):
+        """ converts type of technology time step from operation to invest or from invest to operation.
+        Carrier has no invest, so irrelevant for carrier
+        :param element: element of model (here technology)
+        :param elementTimeStep: time step of element
+        :param direction: conversion direction (operation2invest or invest2operation)
+        :return convertedTimeStep: time of second type """
+        model                   = cls.getConcreteModel()
+        setTimeStepsInvest      = model.setTimeStepsInvest[element]
+        setTimeStepsOperation   = model.setTimeStepsOperation[element]
+        # if only one investment step
+        if len(setTimeStepsInvest) == 1:
+            if direction ==  "operation2invest":
+                return setTimeStepsInvest.at(1)
+            elif direction == "invest2operation":
+                return setTimeStepsOperation.data()
+            else:
+                raise KeyError(f"Direction for time step conversion {direction} is incorrect")
+        # if more than one invest step
+        else:
+            if direction == "operation2invest":
+                orderTimeStepsIn        = cls.getOrderTimeSteps(element,"operation")
+                orderTimeStepsOut       = cls.getOrderTimeSteps(element,"invest")
+            elif direction == "invest2operation":
+                orderTimeStepsOut       = cls.getOrderTimeSteps(element,"operation")
+                orderTimeStepsIn        = cls.getOrderTimeSteps(element,"invest")
+            else:
+                raise KeyError(f"Direction for time step conversion {direction} is incorrect")
+            # convert time steps
+            convertedTimeSteps = np.unique(orderTimeStepsOut[orderTimeStepsIn == elementTimeStep])
+            assert len(convertedTimeSteps) == 1, f"more than one converted time step, not yet implemented"
+            return convertedTimeSteps[0]
 
     @classmethod
-    def convertTimeStepOperation2Invest(cls, element, timeStepOperation):
-        """ converts the operational time step to the invest time step """
-        _timeStepsOperation2Invest = cls.getTimeStepsOperation2Invest(element)
-        return _timeStepsOperation2Invest[timeStepOperation]
-
-    @classmethod
-    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None,capacityTypes = False, ):
+    def initializeComponent(cls,callingClass,componentName,indexNames = None,setTimeSteps = None):
         """ this method initializes a modeling component by extracting the stored input data.
         :param callingClass: class from where the method is called
         :param componentName: name of modeling component
         :param indexNames: names of index sets, only if callingClass is not EnergySystem
         :param setTimeSteps: time steps, only if callingClass is EnergySystem
-        :param capacityTypes: boolean if attributes extracted for all capacity types
         :return componentData: data to initialize the component """
 
         # if calling class is EnergySystem
@@ -515,7 +525,7 @@ class EnergySystem:
             component       = getattr(cls.getEnergySystem(),componentName)
             componentData   = component[setTimeSteps]
         else:
-            component       = callingClass.getAttributeOfAllElements(componentName,capacityTypes)
+            component       = callingClass.getAttributeOfAllElements(componentName)
             componentData   = pd.Series(component,dtype=float)
             if indexNames:
                 customSet       = callingClass.createCustomSet(indexNames)
@@ -523,20 +533,20 @@ class EnergySystem:
         return componentData
 
     @classmethod
-    def getFullTimeSeriesOfComponent(cls,component,indexSubsets:tuple,manualSequenceName = None):
+    def getFullTimeSeriesOfComponent(cls,component,indexSubsets:tuple,manualOrderName = None):
         """ returns full time series of result component
         :param component: component (parameter or variable) of optimization model
         :param indexSubsets: dict of index subsets {<levelOfSubset>:<value(s)OfSubset>}
         :return fullTimeSeries: full time series """
         # TODO quick fix
-        if manualSequenceName:
-            orderName   = manualSequenceName
+        if manualOrderName:
+            orderName   = manualOrderName
         else:
             orderName   = indexSubsets[0]
         _componentData  = component.extract_values()
         dfData          = pd.Series(_componentData,index=_componentData.keys())
         dfReducedData   = dfData.loc[indexSubsets]
-        orderElement    = EnergySystem.getSequenceTimeSteps(orderName)
+        orderElement    = EnergySystem.getOrderTimeSteps(orderName)
         fullTimeSeries  = np.zeros(np.size(orderElement))
         for timeStep in dfReducedData.index:
             fullTimeSeries[orderElement==timeStep] = dfReducedData[timeStep]
@@ -573,12 +583,6 @@ class EnergySystem:
         model.setTechnologies = pe.Set(
             initialize=energySystem.setTechnologies,
             doc='Set of technologies')
-        # all elements
-        model.setElements = pe.Set(
-            initialize=model.setTechnologies | model.setCarriers,
-            doc='Set of elements')
-        # set setElements to indexingSets
-        cls.setManualSetToIndexingSets("setElements")
         # time-steps
         model.setBaseTimeSteps = pe.Set(
             initialize=energySystem.setBaseTimeSteps,
@@ -587,10 +591,6 @@ class EnergySystem:
         model.setTimeStepsYearly = pe.Set(
             initialize=energySystem.setTimeStepsYearly,
             doc='Set of yearly time-steps')
-        # yearly time steps of entire optimization horizon
-        model.setTimeStepsYearlyEntireHorizon = pe.Set(
-            initialize=energySystem.setTimeStepsYearlyEntireHorizon,
-            doc='Set of yearly time-steps of entire optimization horizon')
 
     @classmethod
     def constructParams(cls):
