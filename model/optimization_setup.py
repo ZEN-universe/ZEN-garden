@@ -105,6 +105,30 @@ class OptimizationSetup():
             self.stepsHorizon   = {0: energySystem.setTimeStepsYearly}
         return list(self.stepsHorizon.keys())
 
+    def overwriteParams(self, scenario, elements):
+        """overwrite scenario dependent parameters
+        :param scenario: scenario name
+        :param elements:   dictionary of elements and scenario dependent parameters"""
+        for elementName, params in elements.items():
+            if elementName == "EnergySystem":
+                element = EnergySystem.getEnergySystem()
+                path    = self.paths["setScenarios"]["folder"] # adjust after merge and get input path
+            else:
+                element = Element.getElement(elementName)
+                path    = element.inputPath
+            for param in params:
+                _oldParam   = getattr(element, param)
+                if isinstance(_oldParam, pd.Series) or isinstance(element.carbonEmissionsLimit, pd.DataFrame):
+                    _indexNames = _oldParam.index.names
+                    _indexSets = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
+                    _timeSteps = []
+                    if "time" in _indexNames:
+                        _timeSteps = list(_oldParam.index.unique("time"))
+                    _newParam = element.dataInput.extractInputData(path, param, indexSets=_indexSets, timeSteps=_timeSteps, scenario = f"_{scenario}")
+                else:
+                    _newParam = element.dataInput.extractAttributeData(path,param, fileName=f"{param}_{scenario}.csv", skipWarning=True)["value"]
+                setattr(element, param, _newParam)
+
     def overwriteTimeIndices(self,stepHorizon):
         """ select subset of time indices, matching the step horizon
         :param stepHorizon: step of the rolling horizon """

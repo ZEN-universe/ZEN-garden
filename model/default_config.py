@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Default settings. Changes from the default values are specified in settings.py
 ==========================================================================================================================================================================="""
@@ -30,7 +30,9 @@ analysis["discountRate"] = 0.06
 # transport distance (euclidean or actual)
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
-analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
+analysis["subsets"] = {"setCarriers": [],
+                       "setConditioningCarriers": [],
+                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies", "setConditioningTechnologies"]}
 # headers for the generation of input files
 analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
                                   "setEdges": ["edge"],
@@ -85,7 +87,6 @@ analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
                                 }
 
 analysis['postprocess'] = False
-
 ## System - Items assignment
 # set of energy carriers
 system["setCarriers"] = []

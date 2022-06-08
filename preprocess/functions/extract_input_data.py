@@ -3,7 +3,7 @@ Title:        ZEN-GARDEN
 Created:      January-2022
 Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
               Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""
@@ -37,7 +37,7 @@ class DataInput():
         # get names of indices
         self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
 
-    def extractInputData(self,fileName,indexSets,column=None,timeSteps=None):
+    def extractInputData(self,fileName,indexSets,column=None,timeSteps=None,scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param fileName: name of selected file.
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
@@ -64,7 +64,7 @@ class DataInput():
         else:
             defaultName = fileName
         # read input file
-        dfInput = self.readInputData(fileName)
+        dfInput = self.readInputData(fileName+scenario)
 
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
@@ -273,7 +273,7 @@ class DataInput():
 
     def extractConversionCarriers(self):
         """ reads input data and extracts conversion carriers
-        :param self.folderPath: path to input files 
+        :param self.folderPath: path to input files
         :return carrierDict: dictionary with input and output carriers of technology """
         carrierDict = {}
         # get carriers
