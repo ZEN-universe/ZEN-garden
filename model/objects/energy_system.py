@@ -549,26 +549,6 @@ class EnergySystem:
                 componentData = componentData[customSet]
         return componentData
 
-    @classmethod
-    def getFullTimeSeriesOfComponent(cls,component,indexSubsets:tuple,manualSequenceName = None):
-        """ returns full time series of result component
-        :param component: component (parameter or variable) of optimization model
-        :param indexSubsets: dict of index subsets {<levelOfSubset>:<value(s)OfSubset>}
-        :return fullTimeSeries: full time series """
-        # TODO quick fix
-        if manualSequenceName:
-            orderName   = manualSequenceName
-        else:
-            orderName   = indexSubsets[0]
-        _componentData  = component.extract_values()
-        dfData          = pd.Series(_componentData,index=_componentData.keys())
-        dfReducedData   = dfData.loc[indexSubsets]
-        orderElement    = EnergySystem.getSequenceTimeSteps(orderName)
-        fullTimeSeries  = np.zeros(np.size(orderElement))
-        for timeStep in dfReducedData.index:
-            fullTimeSeries[orderElement==timeStep] = dfReducedData[timeStep]
-        return fullTimeSeries
-
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
     @classmethod
     def constructSets(cls):

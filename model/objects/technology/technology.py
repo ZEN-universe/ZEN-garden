@@ -75,13 +75,11 @@ class Technology(Element):
             existingCapacities  = self.existingCapacityEnergy
         else:
             existingCapacities  = self.existingCapacity
-        # TODO fix correlation between setExistingTechnologies and setTimeStepsInvest.
-        #  At the moment the specificCapex is extracted for the id of the existing capacity... should be investTimeStep.at(1) however
         if self.__class__.__name__ == "StorageTechnology":
-            existingCapex       = existingCapacities.to_frame().apply(
+            existingCapex   = existingCapacities.to_frame().apply(
                 lambda _existingCapacity: self.calculateCapexOfSingleCapacity(_existingCapacity.squeeze(),_existingCapacity.name,storageEnergy),axis=1)
         else:
-            existingCapex = existingCapacities.to_frame().apply(
+            existingCapex   = existingCapacities.to_frame().apply(
                 lambda _existingCapacity: self.calculateCapexOfSingleCapacity(_existingCapacity.squeeze(),_existingCapacity.name), axis=1)
         return existingCapex
 

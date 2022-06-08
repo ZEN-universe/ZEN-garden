@@ -323,7 +323,7 @@ class Element:
                                 listSets.append(model.setEdges)
                         # if set is built for PWA capex:
                         elif "setCapex" in index:
-                            if element in model.setConversionTechnologies: # TODO or element in model.setStorageTechnologies:
+                            if element in model.setConversionTechnologies:
                                 _capexIsPWA = cls.getAttributeOfSpecificElement(element,"capexIsPWA")
                                 # if technology is modeled as PWA, break for Linear index
                                 if "Linear" in index and _capexIsPWA:
