@@ -672,11 +672,19 @@ def constraintTechnologyMinCapacityRule(model, tech,capacityType, loc, time):
     else:
         return pe.Constraint.Skip
 
+def constraintTechnologyMaxCapacityRule(model, tech,capacityType, loc, time):
+    """max capacity expansion of technology"""
+    system = EnergySystem.getSystem()
+    if model.maxBuiltCapacity[tech,capacityType] != np.inf:
+        return (model.maxBuiltCapacity[tech,capacityType] * model.installTechnology[tech,capacityType, loc, time] >= model.builtCapacity[tech,capacityType, loc, time])
+    elif system['DoubleCapexTransport'] and tech in system["setTransportTechnologies"] and model.maxCapacity[tech,capacityType] != np.inf:
+        return (model.maxCapacity[tech, capacityType] * model.installTechnology[tech, capacityType, loc, time] >= model.builtCapacity[tech, capacityType, loc, time])
+    else:
+        return pe.Constraint.Skip
+
 def constraintTechnologyConstructionTimeRule(model, tech,capacityType, loc, time):
     """ construction time of technology, i.e., time that passes between investment and availability"""
     startTimeStep,_     = Technology.getStartEndTimeOfPeriod(tech,time,periodType= "constructionTime",clipToFirstTimeStep=False)
-    # TODO correct years and investment time steps
-
     if startTimeStep in model.setTimeStepsInvest[tech]:
         return (model.builtCapacity[tech,capacityType,loc,time] == model.investedCapacity[tech,capacityType,loc,startTimeStep])
     elif startTimeStep in model.setTimeStepsInvestEntireHorizon[tech]:
@@ -684,16 +692,8 @@ def constraintTechnologyConstructionTimeRule(model, tech,capacityType, loc, time
     else:
         return (model.builtCapacity[tech,capacityType,loc,time] == 0)
 
-def constraintTechnologyMaxCapacityRule(model, tech,capacityType, loc, time):
-    """max capacity expansion of technology"""
-    if model.maxBuiltCapacity[tech,capacityType] != np.inf:
-        return (model.maxBuiltCapacity[tech,capacityType] >= model.builtCapacity[tech,capacityType, loc, time])
-    else:
-        return pe.Constraint.Skip
-
 def constraintTechnologyLifetimeRule(model, tech,capacityType, loc, time):
     """limited lifetime of the technologies"""
-
     # determine existing capacities
     existingCapacities = Technology.getAvailableExistingQuantity(tech,capacityType,loc,time,typeExistingQuantity="capacity")
     return (model.capacity[tech,capacityType, loc, time]
