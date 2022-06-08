@@ -3,7 +3,7 @@ Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class defining compressable energy carriers.
                 The class takes as inputs the abstract optimization model. The class adds parameters, variables and

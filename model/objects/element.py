@@ -3,7 +3,7 @@ Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class defining a standard Element. Contains methods to add parameters, variables and constraints to the
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete

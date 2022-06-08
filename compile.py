@@ -4,7 +4,7 @@ Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
               Davide Tonelli (davidetonelli@outlook.com)
               Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""

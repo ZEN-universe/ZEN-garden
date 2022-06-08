@@ -2,7 +2,7 @@
 Title:          ZEN-GARDEN
 Created:        January-2022
 Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract

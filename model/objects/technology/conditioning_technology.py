@@ -2,7 +2,7 @@
 Title:          ZEN-GARDEN
 Created:        March-2022
 Authors:        Alissa Ganter (aganter@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class defining the parameters, variables and constraints of the conditioning technologies.
                 The class takes the abstract optimization model as an input, and adds parameters, variables and

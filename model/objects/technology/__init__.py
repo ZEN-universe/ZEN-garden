@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      March-2022
 Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  function that loads all classes and subclasses of technology directory.
 ==========================================================================================================================================================================="""

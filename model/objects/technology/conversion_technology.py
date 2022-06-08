@@ -3,7 +3,7 @@ Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class defining the parameters, variables and constraints of the conversion technologies.
                 The class takes the abstract optimization model as an input, and adds parameters, variables and

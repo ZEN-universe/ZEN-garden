@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class is defining the postprocessing of the results.
               The class takes as inputs the optimization problem (model) and the system configurations (system).

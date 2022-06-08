@@ -3,7 +3,7 @@ Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com
               Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class to read the data from input files, collect them into a dictionary and convert the dictionary into a Pyomo
               compatible dictionary to be passed to the compile routine.

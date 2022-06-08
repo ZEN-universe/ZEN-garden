@@ -3,7 +3,7 @@ Title:        ZEN-GARDEN
 Created:      January-2022
 Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
               Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""

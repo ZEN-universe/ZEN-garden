@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      January-2022
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class defining the methods to print the data stored in performance.
 ==========================================================================================================================================================================="""

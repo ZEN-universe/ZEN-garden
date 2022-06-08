@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      January-2022
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class containing the methods for the creation and modification of the solutions stored in the solution archive.
                 Algorithm based on the paper: "Ant Colony Optimization for Mixed-Variable Optimization Problems",

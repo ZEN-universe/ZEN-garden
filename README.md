@@ -61,7 +61,7 @@ When an issue is opened, it should be assigned to one or more developers and it 
         Title:        ZEN-GARDEN
         Created:      month-20yy
         Authors:      Jane Doe (jdoe@ethz.ch)
-        Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+        Organization: Labratory of Reliability and Risk Engineering, ETH Zurich
 
         Description:  Class defining ...
                       The class takes as inputs ...

@@ -2,7 +2,7 @@
 Title:          ZEN-GARDEN
 Created:        April-2022
 Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class containing the unit handling procedure.
 ==========================================================================================================================================================================="""
