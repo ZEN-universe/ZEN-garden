@@ -55,7 +55,7 @@ class StorageTechnology(Technology):
             "capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
         self.capexSpecificEnergy            = self.dataInput.extractInputData(
             "capexSpecificEnergy",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)
-        # annualize capex
+        self.fixedOpexSpecificEnergy        = self.dataInput.extractInputData("fixedOpexSpecificEnergy", indexSets=["setNodes", "setTimeSteps"], timeSteps=self.setTimeStepsInvest)        # annualize capex
         self.convertToAnnualizedCapex()
         # calculate capex of existing capacity
         self.capexExistingCapacity          = self.calculateCapexOfExistingCapacities()
@@ -70,8 +70,8 @@ class StorageTechnology(Technology):
         """ this method converts the total capex to annualized capex """
         fractionalAnnuity           = self.calculateFractionalAnnuity()
         # annualize capex
-        self.capexSpecific          = self.capexSpecific        * fractionalAnnuity
-        self.capexSpecificEnergy    = self.capexSpecificEnergy  * fractionalAnnuity
+        self.capexSpecific          = self.capexSpecific        * fractionalAnnuity + self.fixedOpexSpecific
+        self.capexSpecificEnergy    = self.capexSpecificEnergy  * fractionalAnnuity + self.fixedOpexSpecificEnergy
 
     def calculateCapexOfSingleCapacity(self,capacity,index,storageEnergy = False):
         """ this method calculates the annualized capex of a single existing capacity. """

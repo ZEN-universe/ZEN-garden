@@ -56,23 +56,18 @@ class Technology(Element):
 
         # add all raw time series to dict
         self.rawTimeSeries = {}
-        self.rawTimeSeries["minLoad"]   = self.dataInput.extractInputData(
-            "minLoad",indexSets=[_setLocation, "setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
-        self.rawTimeSeries["maxLoad"]   = self.dataInput.extractInputData(
-            "maxLoad",indexSets=[_setLocation, "setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
-        self.rawTimeSeries["opexSpecific"] = self.dataInput.extractInputData(
-            "opexSpecific",indexSets=[_setLocation,"setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["minLoad"]       = self.dataInput.extractInputData("minLoad",indexSets=[_setLocation, "setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["maxLoad"]       = self.dataInput.extractInputData("maxLoad",indexSets=[_setLocation, "setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+        self.rawTimeSeries["opexSpecific"]  = self.dataInput.extractInputData("opexSpecific",indexSets=[_setLocation,"setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
         # non-time series input data
+        self.fixedOpexSpecific          = self.dataInput.extractInputData("fixedOpexSpecific",indexSets=[_setLocation,"setTimeSteps"],timeSteps=self.setTimeStepsInvest)
         self.capacityLimit              = self.dataInput.extractInputData("capacityLimit",indexSets=[_setLocation])
         self.carbonIntensityTechnology  = self.dataInput.extractInputData("carbonIntensity",indexSets=[_setLocation])
         # extract existing capacity
         self.setExistingTechnologies    = self.dataInput.extractSetExistingTechnologies()
-        self.existingCapacity           = self.dataInput.extractInputData(
-            "existingCapacity",indexSets=[_setLocation,"setExistingTechnologies"])
-        self.existingInvestedCapacity = self.dataInput.extractInputData(
-            "existingInvestedCapacity", indexSets=[_setLocation, "setTimeSteps"], timeSteps=EnergySystem.getEnergySystem().setTimeStepsYearly)
-        self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology(
-            "existingCapacity",indexSets=[_setLocation,"setExistingTechnologies"])
+        self.existingCapacity           = self.dataInput.extractInputData("existingCapacity",indexSets=[_setLocation,"setExistingTechnologies"])
+        self.existingInvestedCapacity   = self.dataInput.extractInputData("existingInvestedCapacity", indexSets=[_setLocation, "setTimeSteps"], timeSteps=EnergySystem.getEnergySystem().setTimeStepsYearly)
+        self.lifetimeExistingTechnology = self.dataInput.extractLifetimeExistingTechnology("existingCapacity",indexSets=[_setLocation,"setExistingTechnologies"])
 
     def calculateCapexOfExistingCapacities(self,storageEnergy = False):
         """ this method calculates the annualized capex of the existing capacities """
@@ -97,9 +92,7 @@ class Technology(Element):
     def calculateFractionalAnnuity(self):
         """calculate fraction of annuity to depreciate investment"""
         system              = EnergySystem.getSystem()
-        # _discountRate       = EnergySystem.getAnalysis()["discountRate"]
         _lifetime           = self.lifetime
-        # _annuity            = (((1 + _discountRate) ** _lifetime) * _discountRate) / ((1 + _discountRate) ** _lifetime - 1)
         _annuity            = 1/_lifetime
         # only account for fraction of year
         _fractionOfYear     = system["unaggregatedTimeStepsPerYear"] / system["totalHoursPerYear"]

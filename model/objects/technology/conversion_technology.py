@@ -69,11 +69,11 @@ class ConversionTechnology(Technology):
         fractionalAnnuity = self.calculateFractionalAnnuity()
 
         if not self.capexIsPWA:
-            self.capexSpecific = _PWACapex["capex"] * fractionalAnnuity
+            self.capexSpecific = _PWACapex["capex"] * fractionalAnnuity + self.fixedOpexSpecific
         else:
-            self.PWACapex["capex"] = [value * fractionalAnnuity for value in self.PWACapex["capex"]]
+            self.PWACapex["capex"] = [(value * fractionalAnnuity + self.fixedOpexSpecific) for value in self.PWACapex["capex"]]
             # set bounds
-            self.PWACapex["bounds"]["capex"] = tuple([bound * fractionalAnnuity for bound in self.PWACapex["bounds"]["capex"]])
+            self.PWACapex["bounds"]["capex"] = tuple([(bound * fractionalAnnuity + self.fixedOpexSpecific) for bound in self.PWACapex["bounds"]["capex"]])
         # calculate capex of existing capacity
         self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
 

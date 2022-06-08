@@ -52,6 +52,7 @@ class TransportTechnology(Technology):
                                                                  indexSets=["setEdges", "setTimeSteps"],
                                                                  timeSteps=self.setTimeStepsInvest)
             try:
+                # TODO use method self.dataInput.ifAttributeExists instead of try except
                 self.capexPerDistance = self.dataInput.extractInputData("capexPerDistance",
                                                                         indexSets=["setEdges", "setTimeSteps"],
                                                                         timeSteps=self.setTimeStepsInvest)
@@ -61,11 +62,12 @@ class TransportTechnology(Technology):
                               f' This will throw an error in the future!', FutureWarning)
         else:  # Here only capexSpecific is used and capexPerDistance is set to Zero.
             if self.dataInput.ifAttributeExists("capexPerDistance"):
-                self.capexPerDistance = self.dataInput.extractInputData("capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
-                self.capexSpecific = self.capexPerDistance * self.distance
+                self.capexPerDistance   = self.dataInput.extractInputData("capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+                self.capexSpecific      = self.capexPerDistance * self.distance
+                self.fixedOpexSpecific  = self.fixedOpexSpecific * self.distance
             else:
-                self.capexSpecific = self.dataInput.extractInputData("capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
-            self.capexPerDistance = self.capexSpecific.copy(deep=True) * 0.0
+                self.capexSpecific  = self.dataInput.extractInputData("capexSpecific",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+            self.capexPerDistance   = self.capexSpecific.copy(deep=True) * 0.0
 
         # annualize capex
         self.convertToAnnualizedCapex()
@@ -77,10 +79,10 @@ class TransportTechnology(Technology):
 
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
-        fractionalAnnuity   = self.calculateFractionalAnnuity()
+        fractionalAnnuity       = self.calculateFractionalAnnuity()
         # annualize capex
-        self.capexSpecific  = self.capexSpecific*fractionalAnnuity
-        self.capexPerDistance = self.capexPerDistance * fractionalAnnuity
+        self.capexSpecific      = self.capexSpecific*fractionalAnnuity + self.fixedOpexSpecific
+        self.capexPerDistance   = self.capexPerDistance * fractionalAnnuity
 
     def calculateCapexOfSingleCapacity(self,capacity,index):
         """ this method calculates the annualized capex of a single existing capacity. """
