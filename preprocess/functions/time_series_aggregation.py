@@ -79,15 +79,17 @@ class TimeSeriesAggregation():
 
         # create aggregation object
         self.aggregation = tsam.TimeSeriesAggregation(
-            timeSeries          = self.dfTimeSeriesRaw,
-            noTypicalPeriods    = self.numberTypicalPeriods,
-            hoursPerPeriod      = 1,
-            resolution          = self.analysis["timeSeriesAggregation"]["resolution"],
-            clusterMethod       = self.analysis["timeSeriesAggregation"]["clusterMethod"],
-            solver              = self.analysis["timeSeriesAggregation"]["solver"],
-            extremePeriodMethod = self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
-            rescaleClusterPeriods=self.analysis["timeSeriesAggregation"]["rescaleClusterPeriods"],
-            representationMethod = self.analysis["timeSeriesAggregation"]["representationMethod"]
+            timeSeries           = self.dfTimeSeriesRaw,
+            noTypicalPeriods     = self.numberTypicalPeriods,
+            hoursPerPeriod       = self.analysis["timeSeriesAggregation"]["hoursPerPeriod"],
+            resolution           = self.analysis["timeSeriesAggregation"]["resolution"],
+            clusterMethod        = self.analysis["timeSeriesAggregation"]["clusterMethod"],
+            solver               = self.analysis["timeSeriesAggregation"]["solver"],
+            extremePeriodMethod  = self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
+            rescaleClusterPeriods= self.analysis["timeSeriesAggregation"]["rescaleClusterPeriods"],
+            representationMethod = self.analysis["timeSeriesAggregation"]["representationMethod"],
+            segmentation         = self.analysis["timeSeriesAggregation"]["segmentation"],
+            noSegments           = self.analysis["timeSeriesAggregation"]["noSegments"],
         )
         # create typical periods
         self.typicalPeriods     = self.aggregation.createTypicalPeriods().reset_index(drop=True)

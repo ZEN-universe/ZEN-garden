@@ -44,9 +44,9 @@ class ConversionTechnology(Technology):
         EnergySystem.setTechnologyOfCarrier(self.name, self.inputCarrier + self.outputCarrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.referenceCarrier[0] in (self.inputCarrier + self.outputCarrier), f"reference carrier {self.referenceCarrier} of technology {self.name} not in input and output carriers {self.inputCarrier + self.outputCarrier}"
-        # get Capex
-        self.getAnnualizedCapex()
+        # get conversion efficiency and capex
         self.getConverEfficiency()
+        self.getAnnualizedCapex()
 
     def getConverEfficiency(self):
         """retrieves and stores converEfficiency for <ConversionTechnology>.
@@ -56,11 +56,7 @@ class ConversionTechnology(Technology):
         if self.converEfficiencyIsPWA:
             self.PWAConverEfficiency    = _PWAConverEfficiency
         else:
-            _converEfficiency           = pd.DataFrame.from_dict(_PWAConverEfficiency)
-            _converEfficiency.columns.name = "carrier"
-            _converEfficiency           = _converEfficiency.stack()
-            _converEfficiencyLevels     = [_converEfficiency.index.names[-1]] + _converEfficiency.index.names[:-1]
-            self.converEfficiencyLinear = _converEfficiency.reorder_levels(_converEfficiencyLevels)
+            self.converEfficiencyLinear = _PWAConverEfficiency
 
     def getAnnualizedCapex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
@@ -71,6 +67,7 @@ class ConversionTechnology(Technology):
         if not self.capexIsPWA:
             self.capexSpecific = _PWACapex["capex"] * fractionalAnnuity + self.fixedOpexSpecific
         else:
+            self.PWACapex          = _PWACapex
             self.PWACapex["capex"] = [(value * fractionalAnnuity + self.fixedOpexSpecific) for value in self.PWACapex["capex"]]
             # set bounds
             self.PWACapex["bounds"]["capex"] = tuple([(bound * fractionalAnnuity + self.fixedOpexSpecific) for bound in self.PWACapex["bounds"]["capex"]])

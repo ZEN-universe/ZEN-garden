@@ -54,7 +54,7 @@ class DataInput():
 
         # if existing capacities and existing capacities not used
         if fileName == "existingCapacity" and not self.analysis["useExistingCapacities"]:
-            dfOutput,*_ = self.createDefaultOutput(indexSets,column,filename= fileName,timeSteps=timeSteps,manualDefaultValue=0)
+            dfOutput,*_ = self.createDefaultOutput(indexSets,column,fileName= fileName,timeSteps=timeSteps,manualDefaultValue=0)
             return dfOutput
         else:
             dfOutput, defaultValue, indexNameList = self.createDefaultOutput(indexSets,column,fileName =fileName, timeSteps= timeSteps)
@@ -430,7 +430,14 @@ class DataInput():
                 _dependentCarrier = list(set(self.element.inputCarrier + self.element.outputCarrier).difference(self.element.referenceCarrier))
                 # TODO implement for more than 1 carrier
                 assert len(_dependentCarrier) <= 1, f"More than one dependent carriers are not yet implemented. Technology {self.element.name}"
+                if _dependentCarrier == []:
+                    return None, isPWA
                 LinearDict[_dependentCarrier[0]] = self.extractInputData(_attributeName, indexSets=_indexSets, timeSteps=_timeSteps)
+                LinearDict                       = pd.DataFrame.from_dict(LinearDict)
+                LinearDict.columns.name          = "carrier"
+                LinearDict                       = LinearDict.stack()
+                _converEfficiencyLevels          = [LinearDict.index.names[-1]] + LinearDict.index.names[:-1]
+                LinearDict                       = LinearDict.reorder_levels(_converEfficiencyLevels)
                 return LinearDict,isPWA
 
     def readPWAFiles(self,variableType,fileType):

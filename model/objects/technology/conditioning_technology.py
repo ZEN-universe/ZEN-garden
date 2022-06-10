@@ -54,18 +54,19 @@ class ConditioningTechnology(ConversionTechnology):
     def getConverEfficiency(self):
         """retrieves and stores converEfficiency for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as PWAConverEfficiency"""
-        self.specificHeat         = self.dataInput.extractAttributeData(self.inputPath, "specificHeat", skipWarning=True)["value"]
-        self.specificHeatRatio    = self.dataInput.extractAttributeData(self.inputPath, "specificHeatRatio", skipWarning=True)["value"]
-        self.pressureIn           = self.dataInput.extractAttributeData(self.inputPath, "pressureIn", skipWarning=True)["value"]
-        self.pressureOut          = self.dataInput.extractAttributeData(self.inputPath, "pressureOut", skipWarning=True)["value"]
-        self.temperatureIn        = self.dataInput.extractAttributeData(self.inputPath, "temperatureIn", skipWarning=True)["value"]
-        self.isentropicEfficiency = self.dataInput.extractAttributeData(self.inputPath, "isentropicEfficiency", skipWarning=True)["value"]
+        #self.dataInput.extractAttributeData("minBuiltCapacity")["value"]
+        self.specificHeat         = self.dataInput.extractAttributeData("specificHeat")["value"]
+        self.specificHeatRatio    = self.dataInput.extractAttributeData("specificHeatRatio")["value"]
+        self.pressureIn           = self.dataInput.extractAttributeData("pressureIn")["value"]
+        self.pressureOut          = self.dataInput.extractAttributeData("pressureOut")["value"]
+        self.temperatureIn        = self.dataInput.extractAttributeData("temperatureIn")["value"]
+        self.isentropicEfficiency = self.dataInput.extractAttributeData("isentropicEfficiency")["value"]
 
         # calculate energy consumption
         _pressureRatio     = self.pressureOut / self.pressureIn
         _exponent          = (self.specificHeatRatio - 1) / self.specificHeatRatio
-        if self.dataInput.ifAttributeExists(self.inputPath, "lowerHeatingValue", column=None):
-            _lowerHeatingValue = self.dataInput.extractAttributeData(self.inputPath, "lowerHeatingValue", skipWarning=True)["value"]
+        if self.dataInput.ifAttributeExists("lowerHeatingValue", column=None):
+            _lowerHeatingValue = self.dataInput.extractAttributeData("lowerHeatingValue")["value"]
             self.specificHeat  = self.specificHeat / _lowerHeatingValue
         _energyConsumption = self.specificHeat * self.temperatureIn / self.isentropicEfficiency \
                             * (_pressureRatio ** _exponent - 1)

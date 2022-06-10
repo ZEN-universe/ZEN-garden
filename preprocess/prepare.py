@@ -86,14 +86,14 @@ class Prepare:
                 self.paths[technologySubset][technology] = dict()
                 self.paths[technologySubset][technology]["folder"] = \
                     path + f"{technology}//"
-            # add path for subsets of technologySubset
-            if technologySubset in self.analysis["subsets"].keys():
-                for subset in self.analysis["subsets"][technologySubset]:
-                    path = self.paths[subset]["folder"]
-                    for technology in next(os.walk(path))[1]:
-                        self.paths[subset][technology] = dict()
-                        self.paths[subset][technology]["folder"] = \
-                            path + f"{technology}//"
+            # # add path for subsets of technologySubset
+            # if technologySubset in self.analysis["subsets"].keys():
+            #     for subset in self.analysis["subsets"][technologySubset]:
+            #         path = self.paths[subset]["folder"]
+            #         for technology in next(os.walk(path))[1]:
+            #             self.paths[subset][technology] = dict()
+            #             self.paths[subset][technology]["folder"] = \
+            #                 path + f"{technology}//"
 
     def initDict(self):
         """
@@ -188,7 +188,7 @@ class Prepare:
             if technologySubset in self.analysis["subsets"].keys():
                 for subset in self.analysis["subsets"][technologySubset]:
                     for technology in self.system[subset]:
-                        if technology not in self.paths[subset].keys():
+                        if technology not in self.paths[technologySubset].keys():
                             logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
                             self.system[subset].remove(technology)
                     self.system[technologySubset].extend(self.system[subset])

@@ -31,8 +31,7 @@ analysis["discountRate"] = 0.06
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
 analysis["subsets"] = {"setCarriers": [],
-                       "setConditioningCarriers": [],
-                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies", "setConditioningTechnologies"]}
+                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
 # headers for the generation of input files
 analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
                                   "setEdges": ["edge"],
@@ -50,11 +49,13 @@ analysis["fileFormat"] = "csv"
 analysis["timeSeriesAggregation"] = {
     "clusterMethod"         : "k_means",
     "solver"                : "gurobi",
-    # "extremePeriodMethod"   : "new_cluster_center",
+    "hoursPerPeriod"        : 1,
     "extremePeriodMethod"   : "None",
     "rescaleClusterPeriods" : False,
     "representationMethod"  : "meanRepresentation",
-    "resolution"            : 1
+    "resolution"            : 1,
+    "segmentation"          : False,
+    "noSegments"            : 12
 }
 
 analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
@@ -89,15 +90,13 @@ analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
 analysis['postprocess'] = False
 ## System - Items assignment
 # set of energy carriers
-system["setCarriers"] = []
-# set of conditioning carriers
-system["setConditioningCarriers"] = []
+system["setCarriers"] = []#
 # set of capacity types: power-rated or energy-rated
 system["setCapacityTypes"] = ["power","energy"]
 # set of conversion technologies
 system["setConversionTechnologies"] = []
 # set of conditioning technologies
-system["setConditioningTechnologies"] = []
+#system["setConditioningTechnologies"] = []
 # set of storage technologies
 system["setStorageTechnologies"] = []
 # set of transport technologies

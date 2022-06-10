@@ -19,7 +19,7 @@ from preprocess.prepare             import Prepare
 from model.optimization_setup       import OptimizationSetup
 from model.metaheuristic.algorithm  import Metaheuristic
 from postprocess.results            import Postprocess
-import postprocess.visualization    as visualization
+import postprocess.visualization_AG    as visualization
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'
