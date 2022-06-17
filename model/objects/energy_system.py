@@ -791,7 +791,7 @@ def constraintCarbonCostTotalRule(model, year):
             model.costCarbonEmissionsTotal[year] ==
             model.carbonPrice[year] * model.carbonEmissionsTotal[year]
             # add overshoot price
-            + model.carbonEmissionsOvershoot[year] + model.carbonPriceOvershoot
+            + model.carbonEmissionsOvershoot[year] * model.carbonPriceOvershoot
     )
 
 def constraintCarbonEmissionsLimitRule(model, year):
@@ -804,11 +804,14 @@ def constraintCarbonEmissionsLimitRule(model, year):
         return pe.Constraint.Skip
 
 def constraintCarbonEmissionsBudgetRule(model, year):
-    """ carbon emissions budget of entire time horizon from technologies and carriers"""
+    """ carbon emissions budget of entire time horizon from technologies and carriers.
+    The prediction extends until the end of the horizon, i.e.,
+    last optimization time step plus the current carbon emissions until the end of the horizon """
+    intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
     if model.carbonEmissionsBudget != np.inf:
         return (
                 model.carbonEmissionsBudget + model.carbonEmissionsOvershoot[year] >=
-                model.carbonEmissionsCumulative[year]
+                model.carbonEmissionsCumulative[year] + model.carbonEmissionsTotal[year] * (intervalBetweenYears - 1)
         )
     else:
         return pe.Constraint.Skip

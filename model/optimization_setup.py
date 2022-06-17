@@ -147,6 +147,10 @@ class OptimizationSetup():
         _builtCapacity      = pd.Series(self.model.builtCapacity.extract_values())
         _investedCapacity   = pd.Series(self.model.investedCapacity.extract_values())
         _capex              = pd.Series(self.model.capex.extract_values())
+        _roundingValue      = 10 ** (-EnergySystem.getSolver()["roundingDecimalPoints"])
+        _builtCapacity[_builtCapacity <= _roundingValue]        = 0
+        _investedCapacity[_investedCapacity <= _roundingValue]  = 0
+        _capex[_capex <= _roundingValue]                        = 0
         _baseTimeSteps      = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
         Technology          = getattr(sys.modules[__name__], "Technology")
         for tech in Technology.getAllElements():

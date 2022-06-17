@@ -118,7 +118,7 @@ class ConversionTechnology(Technology):
         if not indexNames:
             return dictOfAttributes
         else:
-            attributeData = pd.Series(dictOfAttributes, dtype=float)
+            attributeData = pd.Series(dictOfAttributes)
             customSet = cls.createCustomSet(indexNames)
             attributeData = attributeData[customSet]
             return attributeData

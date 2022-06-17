@@ -80,7 +80,9 @@ class ETHColors:
             "battery": self.getColor("bronze",60),
             "hydrogen_storage": self.getColor("purple",60),
             "natural_gas_storage": self.getColor("petrol",60),
-            "pumped_hydro": self.getColor("blue",60)
+            "pumped_hydro": self.getColor("blue",60),
+            "power_line": self.getColor("blue",60),
+            "natural_gas_pipeline": self.getColor("petrol",60),
         }
 
     def setColorsScenarios(self):

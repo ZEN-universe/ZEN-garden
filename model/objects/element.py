@@ -144,7 +144,10 @@ class Element:
         assert hasattr(_element, attributeName), f"Element {_element.name} does not have attribute {attributeName}"
         _attribute = getattr(_element, attributeName)
         if isinstance(_attribute, pd.Series):
-            _attribute = _attribute.to_dict()
+            if len(_attribute) > 1:
+                _attribute = _attribute.to_dict()
+            else:
+                _attribute = _attribute.squeeze()
         elif isinstance(_attribute, pd.DataFrame):
             raise TypeError("Not yet implemented for pd.DataFrames")
         if isinstance(_attribute, dict) and "PWA" not in attributeName:
