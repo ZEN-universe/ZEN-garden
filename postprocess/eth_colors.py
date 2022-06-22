@@ -87,18 +87,32 @@ class ETHColors:
 
     def setColorsScenarios(self):
         self.colors["scenarios"] = {
+            # TIERS
             "TIER1a": self.getColor("purple",60),
             "TIER0": self.getColor("petrol",60),
             "TIER1": self.getColor("blue",60),
             "TIER2": self.getColor("green",60),
             "TIER3": self.getColor("bronze",60),
             "TIER4": self.getColor("red",60),
+            # Gas phase-out scenarios
+            "ref_PF": self.getColor("blue","dark"),
+            "ref_PF2": self.getColor("blue",80),
+            "ref_MF": self.getColor("blue",40),
+            "ref_MF2": self.getColor("blue",60),
+            "ref_MF3": self.getColor("blue", 20),
+            "noG_PF": self.getColor("red","dark"),
+            "noG_MF": self.getColor("red",60),
+            "noRG_PF": self.getColor("green","dark"),
+            "noRG_PF_noBudget": self.getColor("red","dark"),
+            # "noRG_PF2": self.getColor("green"),
+            "noRG_MF": self.getColor("green",40),
+            "noRG_MF2": self.getColor("green",20),
         }
 
     def setManualColors(self):
         self.manualColors = {}
         self.manualColors["Carbon Emission Budget"] = self.getColor("grey","dark")
-        self.manualColors["Carbon Intensity"] = self.getColor("grey", "dark")
+        self.manualColors["Carbon Intensity"] = self.getColor("BW", 100)
 
     def getColor(self,color,shade = 100):
         assert color in self.baseColors, f"color {color} not in base colors. Select from {list(self.baseColors.keys())}."
@@ -169,6 +183,15 @@ class ETHColors:
             20: "#E2E2E2",
             10: "#F1F1F1",
             "dark": "#575757",
+        }
+        self.baseColors["BW"] = {
+            100: "#000000",
+            80: "#8C8C8C",
+            60: "#A9A9A9",
+            40: "#C5C5C5",
+            20: "#E2E2E2",
+            10: "#F1F1F1",
+            0: "#FFFFFF"
         }
 
     @staticmethod
