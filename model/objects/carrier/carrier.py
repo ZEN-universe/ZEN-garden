@@ -100,8 +100,8 @@ class Carrier(Element):
         )
         # carbon intensity
         model.carbonIntensityCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes", "setTimeStepsCarrier"]),
-            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setCarriers","setNodes", "setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the carbon intensity of carrier. \n\t Dimensions: setCarriers, setNodes'
         )
 
@@ -146,6 +146,10 @@ class Carrier(Element):
             domain=pe.Reals,
             doc="total carbon emissions of importing/exporting carrier. Domain: NonNegativeReals"
         )
+
+        # add pe.Sets of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.constructVars()
 
     @classmethod
     def constructConstraints(cls):

@@ -9,7 +9,8 @@ Description:    Class defining the parameters, variables and constraints of the 
                 constraints of the conversion technologies.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ as pe
+import pyomo.environ                                as pe
+import pandas                                       as pd
 from model.objects.energy_system                    import EnergySystem
 from model.objects.technology.conversion_technology import ConversionTechnology
 
@@ -78,17 +79,22 @@ class ConditioningTechnology(ConversionTechnology):
         assert len(_inputCarriers) == 1, f"{self.name} can only have 1 input carrier besides the reference carrier."
         assert len(self.outputCarrier) == 1, f"{self.name} can only have 1 output carrier."
         # create dictionary
-        self.PWAConverEfficiency                           = dict()
-        self.PWAConverEfficiency[self.referenceCarrier[0]] = (self.minBuiltCapacity, self.maxBuiltCapacity)
-        self.PWAConverEfficiency[self.outputCarrier[0]]    = 1  # TODO losses are not yet accounted for
-        self.PWAConverEfficiency[_inputCarriers[0]]        = _energyConsumption
-        # PWA Variables
-        self.PWAConverEfficiency["PWAVariables"] = []
-        # bounds
-        self.PWAConverEfficiency["bounds"]                            = dict()
-        self.PWAConverEfficiency["bounds"][self.referenceCarrier[0]]  = (self.minBuiltCapacity, self.maxBuiltCapacity)
-        self.PWAConverEfficiency["bounds"][self.outputCarrier[0]]     = (self.minBuiltCapacity, self.maxBuiltCapacity)
-        self.PWAConverEfficiency["bounds"][_inputCarriers[0]]         = (self.minBuiltCapacity * _energyConsumption, self.maxBuiltCapacity * _energyConsumption)
+        self.converEfficiencyIsPWA                            = False
+        self.converEfficiencyLinear                           = dict()
+        self.converEfficiencyLinear[self.outputCarrier[0]]    = self.dataInput.createDefaultOutput(indexSets=["setNodes","setTimeSteps"],
+                                                                                                   column=None,
+                                                                                                   timeSteps=self.setTimeStepsInvest,
+                                                                                                   manualDefaultValue = 1)[0] # TODO losses are not yet accounted for
+        self.converEfficiencyLinear[_inputCarriers[0]]        = self.dataInput.createDefaultOutput(indexSets=["setNodes", "setTimeSteps"],
+                                                                                                   column=None,
+                                                                                                   timeSteps=self.setTimeStepsInvest,
+                                                                                                   manualDefaultValue=_energyConsumption)[0]
+        # dict to dataframe
+        self.converEfficiencyLinear              = pd.DataFrame.from_dict(self.converEfficiencyLinear)
+        self.converEfficiencyLinear.columns.name = "carrier"
+        self.converEfficiencyLinear              = self.converEfficiencyLinear.stack()
+        _converEfficiencyLevels                  = [self.converEfficiencyLinear.index.names[-1]] + self.converEfficiencyLinear.index.names[:-1]
+        self.converEfficiencyLinear              = self.converEfficiencyLinear.reorder_levels(_converEfficiencyLevels)
 
     @classmethod
     def constructSets(cls):

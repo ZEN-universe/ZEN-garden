@@ -11,3 +11,5 @@
 /postprocess/visualization_AG.py
 *.pyc
 *.DS_Store
+test.py
+postprocess/visualization_AG.py

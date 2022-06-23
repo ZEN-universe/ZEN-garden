@@ -12,13 +12,18 @@ Description:  Default settings. Changes from the default values are specified in
 # The dictionary also contains default settings related to the input data.
 analysis = dict()
 
+## System - dictionary declaration
+# This dictionary defines the configuration of the system by selecting the subset of technologies ot be included into the analysis.
+system = dict()
+
 ## Solver - dictionary declaration
 # This dictionary contains all the settings related to the solver of the optimisation problem.
 solver = dict()
 
-## System - dictionary declaration
-# This dictionary defines the configuration of the system by selecting the subset of technologies ot be included into the analysis.
-system = dict()
+## Scenarios - dictionary declaration
+# This dictionary defines the set of scenarios that is evaluated.
+scenarios = dict()
+
 
 ## Analysis - Items assignment
 # objective function definition
@@ -88,6 +93,7 @@ analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
                                 }
 
 analysis['postprocess'] = False
+
 ## System - Items assignment
 # set of energy carriers
 system["setCarriers"] = []#
@@ -106,10 +112,16 @@ system['DoubleCapexTransport'] = False
 system["setNodes"] = []
 # total hours per year
 system["totalHoursPerYear"] = 8760
+# unbounded market share for technology diffusion rate
+system["unboundedMarketShare"] = 0.01
+# social discount rate
+system["socialDiscountRate"] = 1
 # folder output
 system["folderOutput"] = "outputs/results/"
 # name of data folder for energy system specification
 system["folderNameSystemSpecification"] = "systemSpecification"
+
+
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
 solver["name"]      = "gurobi_persistent"
@@ -138,3 +150,7 @@ solver["performanceCheck"] = {"printDeltaRun":1, "printDeltaIteration":1}
 solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
 # rounding to number of decimal points
 solver["roundingDecimalPoints"] = 10
+
+
+## Scenarios - dictionary declaration
+scenarios["base"] = {}
