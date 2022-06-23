@@ -50,6 +50,7 @@ stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
 
 # update input data
 for scenario, elements in config.scenarios.items():
+    optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="base" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
     optimizationSetup.overwriteParams(scenario, elements)
     # iterate through horizon steps
     for stepHorizon in stepsOptimizationHorizon:
@@ -84,6 +85,6 @@ for scenario, elements in config.scenarios.items():
     else:
         modelName += "_" + scenario  # "_perfectForesight"
     evaluation = Postprocess(optimizationSetup, modelName=modelName)
-    visualization.run(config.analysis["dataset"], scenario, pltShow=False)
+#    visualization.run(config.analysis["dataset"], scenario, pltShow=False)
 
 

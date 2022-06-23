@@ -349,8 +349,7 @@ class Technology(Element):
                                                         indexNames=["setTechnologies", "setCapacityTypes",
                                                                     "setLocation", "setTimeStepsInvestEntireHorizon"],
                                                         capacityTypes=True),
-            doc='Parameter which specifies the size of the previously invested capacities. '
-                'Dimensions: setTechnologies, setCapacityTypes, setLocation, setTimeStepsInvestEntireHorizon')
+            doc='Parameter which specifies the size of the previously invested capacities. ''Dimensions: setTechnologies, setCapacityTypes, setLocation, setTimeStepsInvestEntireHorizon')
 
         # minimum capacity
         model.minBuiltCapacity = pe.Param(

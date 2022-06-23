@@ -35,8 +35,6 @@ class EnergySystem:
     unitHandling = None
     # empty list of indexing sets
     indexingSets = []
-    # aggregationObjects of element
-    aggregationObjectsOfElements = {}
     # empty dict of technologies of carrier
     dictTechnologyOfCarrier = {}
     # empty dict of sequence of time steps operation
@@ -51,8 +49,6 @@ class EnergySystem:
     dictTimeStepsOperation2Invest = {}
     # empty dict of matching the last time step of the year in the storage domain to the first
     dictTimeStepsStorageLevelStartEndYear = {}
-    # empty dict of raw time series, only necessary for single time grid approach
-    dictTimeSeriesRaw = {}
     # empty dict of element classes
     dictElementClasses = {}
     # empty list of class names
@@ -256,19 +252,6 @@ class EnergySystem:
         cls.dictSequenceTimeStepsYearly    = dictAllSequenceTimeSteps["yearly"]
 
     @classmethod
-    def setAggregationObjects(cls,element,aggregationObject):
-        """ append aggregation object of element
-        :param element: element in model
-        :param aggregationObject: object of TimeSeriesAggregation"""
-        cls.aggregationObjectsOfElements[element] = aggregationObject
-
-    @classmethod
-    def setTimeSeriesRaw(cls,aggregationObject):
-        """ appends the raw time series of elements
-        :param aggregationObject: object of TimeSeriesAggregation """
-        cls.dictTimeSeriesRaw[aggregationObject.element] = aggregationObject.dfTimeSeriesRaw
-
-    @classmethod
     def getConcreteModel(cls):
         """ get concreteModel of the class <EnergySystem>. Every child class can access model and add components.
         :return concreteModel: pe.ConcreteModel """
@@ -301,7 +284,7 @@ class EnergySystem:
     @classmethod
     def getEnergySystem(cls):
         """ get energySystem.
-        :return energySystem: return energySystem  """
+        :return energySystem: return energySystem """
         return cls.energySystem
 
     @classmethod
@@ -385,23 +368,6 @@ class EnergySystem:
             "yearly"    : cls.dictSequenceTimeStepsYearly
         }
         return dictAllSequenceTimeSteps
-
-    @classmethod
-    def getAggregationObjects(cls,element):
-        """ get aggregation object of element
-        :param element: element in model
-        :return aggregationObject: object of TimeSeriesAggregation """
-        return cls.aggregationObjectsOfElements[element]
-
-    @classmethod
-    def getTimeSeriesRaw(cls,element):
-        """ get the raw time series of element
-        :param element: element in model
-        :return dfTimeSeriesRaw: raw time series of element """
-        if element in cls.dictTimeSeriesRaw:
-            return cls.dictTimeSeriesRaw[element]
-        else:
-            return None
 
     @classmethod
     def getUnitHandling(cls):
