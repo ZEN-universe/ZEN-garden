@@ -27,6 +27,9 @@ from preprocess.functions.time_series_aggregation       import TimeSeriesAggrega
 
 class OptimizationSetup():
 
+    baseScenario      = "base"
+    baseConfiguration = {}
+
     def __init__(self, analysis, prepare):
         """setup Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
@@ -58,18 +61,18 @@ class OptimizationSetup():
             elementName  = elementClass.label
             elementSet   = self.system[elementName]
 
+            # before adding the carriers, get setCarriers and check if carrier data exists
+            if elementName == "setCarriers":
+                elementSet = EnergySystem.getAttribute("setCarriers")
+                self.system["setCarriers"] = elementSet
+                self.prepare.checkExistingCarrierData(self.system)
+
             # check if elementSet has a subset and remove subset from elementSet
             if elementName in self.analysis["subsets"].keys():
                 elementSubset = []
                 for subset in self.analysis["subsets"][elementName]:
                         elementSubset += [item for item in self.system[subset]]
                 elementSet = list(set(elementSet)-set(elementSubset))
-
-            # before adding the carriers, get setCarriers and check if carrier data exists
-            if elementName == "setCarriers":
-                elementSet                 = EnergySystem.getAttribute("setCarriers")
-                self.system["setCarriers"] = elementSet
-                self.prepare.checkExistingCarrierData(self.system)
 
             # add element class
             for item in elementSet:
@@ -105,29 +108,71 @@ class OptimizationSetup():
             self.stepsHorizon   = {0: energySystem.setTimeStepsYearly}
         return list(self.stepsHorizon.keys())
 
+    def setBaseConfiguration(self, scenario, elements):
+        """set base configuration
+        :param scenario: name of base scenario
+        :param elements: elements in base scenario """
+        self.baseScenario      = scenario
+        self.baseConfiguration = elements
+
+    def restoreBaseConfiguration(self, scenario, elements):
+        """restore default configuration
+        :param scenario: scenario name
+        :param elements: dictionary of scenario dependent elements and parameters"""
+        if not scenario == self.baseScenario:
+            # restore base configuration
+            self.overwriteParams(self.baseScenario, self.baseConfiguration)
+            # continuously update baseConfiguration so all parameters are reset to their base value after being changed
+            for elementName, params in elements.items():
+                if elementName not in self.baseConfiguration.keys():
+                    self.baseConfiguration[elementName] = params
+                else:
+                    for param in params:
+                        if param not in self.baseConfiguration[elementName]:
+                            self.baseConfiguration[elementName].append(param)
+
     def overwriteParams(self, scenario, elements):
         """overwrite scenario dependent parameters
         :param scenario: scenario name
-        :param elements:   dictionary of elements and scenario dependent parameters"""
+        :param elements: dictionary of scenario dependent elements and parameters"""
+        if scenario == self.baseScenario:
+            scenario = ""
+        else:
+            scenario = "_" + scenario
+        # get timeSeries dependent parameters
+        values  = [param for params in elements.values() for param in params]
+        values  += [value[1] for value in values if type(value) is tuple] # unzip tuples
+        columns = TimeSeriesAggregation.getTimeSeriesAggregation().columnNamesOriginal
+        timeSeriesParams = [item for column in columns for item in column if item in values]
+        # overwrite scenario dependent parameter values for all elements
         for elementName, params in elements.items():
             if elementName == "EnergySystem":
                 element = EnergySystem.getEnergySystem()
-                path    = self.paths["setScenarios"]["folder"] # adjust after merge and get input path
             else:
                 element = Element.getElement(elementName)
-                path    = element.inputPath
+            # overwrite scenario dependent parameters
             for param in params:
+                if type(param) is tuple:
+                    fileName, param = param
+                # get old param value
                 _oldParam   = getattr(element, param)
+                # set new parameter value
                 if isinstance(_oldParam, pd.Series) or isinstance(element.carbonEmissionsLimit, pd.DataFrame):
                     _indexNames = _oldParam.index.names
                     _indexSets = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
-                    _timeSteps = []
-                    if "time" in _indexNames:
+                    _timeSteps = None
+                    if "time" in _indexNames and not param in timeSeriesParams:
                         _timeSteps = list(_oldParam.index.unique("time"))
-                    _newParam = element.dataInput.extractInputData(path, param, indexSets=_indexSets, timeSteps=_timeSteps, scenario = f"_{scenario}")
+                        _newParam = element.dataInput.extractInputData(param,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
                 else:
-                    _newParam = element.dataInput.extractAttributeData(path,param, fileName=f"{param}_{scenario}.csv", skipWarning=True)["value"]
-                setattr(element, param, _newParam)
+                    _newParam = element.dataInput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
+                if param in timeSeriesParams:
+                    element.rawTimeSeries[param] = element.dataInput.extractInputData(fileName, indexSets=_indexSets, column=param,timeSteps=_timeSteps, scenario=scenario)
+                else:
+                    setattr(element, param, _newParam)
+        # if scenario contains timeSeries dependent params conduct timeSeriesAggregation
+        if timeSeriesParams:
+            TimeSeriesAggregation.conductTimeSeriesAggregation()
 
     def overwriteTimeIndices(self,stepHorizon):
         """ select subset of time indices, matching the step horizon
@@ -189,3 +234,5 @@ class OptimizationSetup():
         _carbonEmissionsCumulative              = self.model.carbonEmissionsCumulative.extract_values()[stepHorizon]
         _carbonEmissions                        = self.model.carbonEmissionsTotal.extract_values()[stepHorizon]
         energySystem.previousCarbonEmissions    = _carbonEmissionsCumulative + _carbonEmissions*(intervalBetweenYears-1)
+
+

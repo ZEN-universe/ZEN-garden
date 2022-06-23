@@ -103,7 +103,7 @@ class DataInput():
                 return dfOutput
             # index missing
             else:
-                dfInput = DataInput.extractFromInputWithMissingIndex(dfInput,dfOutput,indexNameList,column,fileName,missingIndex)
+                dfInput = DataInput.extractFromInputWithMissingIndex(dfInput,dfOutput,copy.deepcopy(indexNameList),column,fileName,missingIndex)
 
         # apply multiplier to input data
         dfInput     = dfInput * defaultValue["multiplier"]
@@ -139,13 +139,13 @@ class DataInput():
         else:
             return None
 
-    def extractAttributeData(self,attributeName,skipWarning = False):
+    def extractAttributeData(self,attributeName,skipWarning = False,scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param self.folderPath: path to input files
         :param attributeName: name of selected attribute
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
-        fileName    = "attributes.csv"
+        fileName    = f"attributes{scenario}.csv"
 
         if fileName not in os.listdir(self.folderPath):
             return None
@@ -412,6 +412,11 @@ class DataInput():
             # linear
             elif len(LinearDict) > 0 and len(PWADict["PWAVariables"]) == 0:
                 isPWA = False
+                LinearDict              = pd.DataFrame.from_dict(LinearDict)
+                LinearDict.columns.name = "carrier"
+                LinearDict              = LinearDict.stack()
+                _converEfficiencyLevels = [LinearDict.index.names[-1]] + LinearDict.index.names[:-1]
+                LinearDict              = LinearDict.reorder_levels(_converEfficiencyLevels)
                 return LinearDict,  isPWA
             # no dependent carrier
             elif len(nonlinearValues) == 1:
@@ -429,28 +434,40 @@ class DataInput():
             else:
                 _dependentCarrier = list(set(self.element.inputCarrier + self.element.outputCarrier).difference(self.element.referenceCarrier))
                 # TODO implement for more than 1 carrier
-                assert len(_dependentCarrier) <= 1, f"More than one dependent carriers are not yet implemented. Technology {self.element.name}"
                 if _dependentCarrier == []:
                     return None, isPWA
-                LinearDict[_dependentCarrier[0]] = self.extractInputData(_attributeName, indexSets=_indexSets, timeSteps=_timeSteps)
-                LinearDict                       = pd.DataFrame.from_dict(LinearDict)
-                LinearDict.columns.name          = "carrier"
-                LinearDict                       = LinearDict.stack()
-                _converEfficiencyLevels          = [LinearDict.index.names[-1]] + LinearDict.index.names[:-1]
-                LinearDict                       = LinearDict.reorder_levels(_converEfficiencyLevels)
+                elif len(_dependentCarrier) == 1:
+                    LinearDict[_dependentCarrier[0]] = self.extractInputData(_attributeName, indexSets=_indexSets, timeSteps=_timeSteps)
+                else:
+                    dfOutput,defaultValue,indexNameList = self.createDefaultOutput(_indexSets, None, timeSteps=_timeSteps, manualDefaultValue=1)
+                    dfInput = self.readPWAFiles("ConverEfficiency", "linear")
+                    assert (dfInput is not None), f"input file for linearConverEfficiency could not be imported."
+                    dfInput = dfInput.rename(columns={'year': 'time'})
+                    for carrier in _dependentCarrier:
+                        LinearDict[carrier]        = self.extractGeneralInputData(dfInput, dfOutput, "linearConverEfficiency", indexNameList, carrier, defaultValue).copy(deep=True)
+                LinearDict = pd.DataFrame.from_dict(LinearDict)
+                LinearDict.columns.name = "carrier"
+                LinearDict = LinearDict.stack()
+                _converEfficiencyLevels = [LinearDict.index.names[-1]] + LinearDict.index.names[:-1]
+                LinearDict = LinearDict.reorder_levels(_converEfficiencyLevels)
                 return LinearDict,isPWA
 
     def readPWAFiles(self,variableType,fileType):
         """ reads PWA Files
         :param variableType: technology approximation type
-        :param fileType: either breakpointsPWA or nonlinear
+        :param fileType: either breakpointsPWA, linear, or nonlinear
         :return dfInput: raw input file"""
         dfInput             = self.readInputData(fileType+variableType)
         if dfInput is not None:
-            dfInputUnits        = dfInput.iloc[-1]
-            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
-            dfInput             = dfInput.iloc[:-1].astype(float)
-            dfInput             = dfInput * dfInputMultiplier
+            if "unit" in dfInput.values:
+                columns = dfInput.iloc[-1][dfInput.iloc[-1] != "unit"].dropna().index
+            else:
+                columns = dfInput.columns
+            dfInputUnits        = dfInput[columns].iloc[-1]
+            dfInput             = dfInput.iloc[:-1]
+            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit)) #if unit !="unit" else unit
+            dfInput[columns]    = dfInput[columns].astype(float) # .apply(lambda row: row. if row[0].isdigit() else row)
+            dfInput[columns]    = dfInput[columns] * dfInputMultiplier
         return dfInput
 
     def createDefaultOutput(self,indexSets,column,fileName=None,timeSteps=None,manualDefaultValue = None):
