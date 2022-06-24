@@ -8,18 +8,14 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
-import numpy as np
 import os
 import logging
 import sys
-import pandas                       as pd
-from datetime                       import datetime
-import data.config                  as config
-from preprocess.prepare             import Prepare
-from model.optimization_setup       import OptimizationSetup
-from model.metaheuristic.algorithm  import Metaheuristic
-from postprocess.results            import Postprocess
-import postprocess.visualization_AG    as visualization
+import data.config                    as config
+from   preprocess.prepare             import Prepare
+from   model.optimization_setup       import OptimizationSetup
+from   model.metaheuristic.algorithm  import Metaheuristic
+from   postprocess.results            import Postprocess
 
 # SETUP LOGGER
 log_format = '%(asctime)s %(filename)s: %(message)s'

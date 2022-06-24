@@ -32,7 +32,7 @@ class TimeSeriesAggregation():
         # set timeSeriesAggregation
         TimeSeriesAggregation.setTimeSeriesAggregation(self)
         # if number of time steps >= number of base time steps, skip aggregation
-        if self.numberTypicalPeriods < np.size(self.setBaseTimeSteps) and self.system["conductTimeSeriesAggregation"]==True:
+        if self.numberTypicalPeriods < np.size(self.setBaseTimeSteps) and self.system["conductTimeSeriesAggregation"]:
             # select time series
             self.selectTimeSeriesOfAllElements()
             if not self.dfTimeSeriesRaw.empty:
