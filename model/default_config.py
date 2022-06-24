@@ -112,6 +112,8 @@ system['DoubleCapexTransport'] = False
 system["setNodes"] = []
 # toggle to use timeSeriesAggregation
 system["conductTimeSeriesAggregation"] = False
+# toggle to perform analysis for multiple scenarios
+system["conductScenarioAnalysis"] = False
 # total hours per year
 system["totalHoursPerYear"] = 8760
 # unbounded market share for technology diffusion rate
