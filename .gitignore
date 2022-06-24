@@ -8,5 +8,8 @@
 /postprocess/results_horizon_JM.py
 /postprocess/results_JM.py
 /postprocess/visualization_JM.py
+/postprocess/visualization_AG.py
 *.pyc
 *.DS_Store
+test.py
+postprocess/visualization_AG.py

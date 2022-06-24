@@ -2,7 +2,7 @@
 Title:          ZEN-GARDEN
 Created:        January-2022
 Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:    Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
@@ -35,8 +35,6 @@ class EnergySystem:
     unitHandling = None
     # empty list of indexing sets
     indexingSets = []
-    # aggregationObjects of element
-    aggregationObjectsOfElements = {}
     # empty dict of technologies of carrier
     dictTechnologyOfCarrier = {}
     # empty dict of sequence of time steps operation
@@ -51,8 +49,6 @@ class EnergySystem:
     dictTimeStepsOperation2Invest = {}
     # empty dict of matching the last time step of the year in the storage domain to the first
     dictTimeStepsStorageLevelStartEndYear = {}
-    # empty dict of raw time series, only necessary for single time grid approach
-    dictTimeSeriesRaw = {}
     # empty dict of element classes
     dictElementClasses = {}
     # empty list of class names
@@ -90,35 +86,34 @@ class EnergySystem:
         self.paths                      = EnergySystem.getPaths()
 
         # in class <EnergySystem>, all sets are constructed
-        self.setNodes = self.dataInput.extractLocations()
-        self.setNodesOnEdges = self.calculateEdgesFromNodes()
-        self.setEdges = list(self.setNodesOnEdges.keys())
-        self.setCarriers = []
-        self.setTechnologies = system["setTechnologies"]
+        self.setNodes               = self.dataInput.extractLocations()
+        self.setNodesOnEdges        = self.calculateEdgesFromNodes()
+        self.setEdges               = list(self.setNodesOnEdges.keys())
+        self.setCarriers            = []
+        self.setTechnologies        = system["setTechnologies"]
         # base time steps
-        self.setBaseTimeSteps = list(range(0, system["unaggregatedTimeStepsPerYear"] * system["optimizedYears"]))
+        self.setBaseTimeSteps       = list(range(0, system["unaggregatedTimeStepsPerYear"] * system["optimizedYears"]))
         self.setBaseTimeStepsYearly = list(range(0, system["unaggregatedTimeStepsPerYear"]))
 
         # yearly time steps
-        self.typesTimeSteps = ["invest", "operation", "yearly"]
-        self.dictNumberOfTimeSteps = self.dataInput.extractNumberTimeSteps()
-        self.setTimeStepsYearly = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
+        self.typesTimeSteps                  = ["invest", "operation", "yearly"]
+        self.dictNumberOfTimeSteps           = self.dataInput.extractNumberTimeSteps()
+        self.setTimeStepsYearly              = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
         self.setTimeStepsYearlyEntireHorizon = copy.deepcopy(self.setTimeStepsYearly)
-        self.timeStepsYearlyDuration = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
-        self.sequenceTimeStepsYearly = np.concatenate(
-            [[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
+        self.timeStepsYearlyDuration         = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
+        self.sequenceTimeStepsYearly         = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
         self.setSequenceTimeSteps(None, self.sequenceTimeStepsYearly, timeStepType="yearly")
 
         # technology-specific
         self.setConversionTechnologies = system["setConversionTechnologies"]
-        self.setTransportTechnologies = system["setTransportTechnologies"]
-        self.setStorageTechnologies = system["setStorageTechnologies"]
+        self.setTransportTechnologies  = system["setTransportTechnologies"]
+        self.setStorageTechnologies    = system["setStorageTechnologies"]
         # carbon emissions limit
-        self.carbonEmissionsLimit = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"],
+        self.carbonEmissionsLimit    = self.dataInput.extractInputData("carbonEmissionsLimit", indexSets=["setTimeSteps"],
                                                                     timeSteps=self.setTimeStepsYearly)
-        _fractionOfYear = system["unaggregatedTimeStepsPerYear"] / system["totalHoursPerYear"]
-        self.carbonEmissionsLimit = self.carbonEmissionsLimit * _fractionOfYear  # reduce to fraction of year
-        self.carbonEmissionsBudget = self.dataInput.extractInputData("carbonEmissionsBudget", indexSets=[])
+        _fractionOfYear              = system["unaggregatedTimeStepsPerYear"] / system["totalHoursPerYear"]
+        self.carbonEmissionsLimit    = self.carbonEmissionsLimit * _fractionOfYear  # reduce to fraction of year
+        self.carbonEmissionsBudget   = self.dataInput.extractInputData("carbonEmissionsBudget", indexSets=[])
         self.previousCarbonEmissions = self.dataInput.extractInputData("previousCarbonEmissions", indexSets=[])
         # carbon price
         self.carbonPrice = self.dataInput.extractInputData("carbonPrice", indexSets=["setTimeSteps"],
@@ -257,19 +252,6 @@ class EnergySystem:
         cls.dictSequenceTimeStepsYearly    = dictAllSequenceTimeSteps["yearly"]
 
     @classmethod
-    def setAggregationObjects(cls,element,aggregationObject):
-        """ append aggregation object of element
-        :param element: element in model
-        :param aggregationObject: object of TimeSeriesAggregation"""
-        cls.aggregationObjectsOfElements[element] = aggregationObject
-
-    @classmethod
-    def setTimeSeriesRaw(cls,aggregationObject):
-        """ appends the raw time series of elements
-        :param aggregationObject: object of TimeSeriesAggregation """
-        cls.dictTimeSeriesRaw[aggregationObject.element] = aggregationObject.dfTimeSeriesRaw
-
-    @classmethod
     def getConcreteModel(cls):
         """ get concreteModel of the class <EnergySystem>. Every child class can access model and add components.
         :return concreteModel: pe.ConcreteModel """
@@ -302,7 +284,7 @@ class EnergySystem:
     @classmethod
     def getEnergySystem(cls):
         """ get energySystem.
-        :return energySystem: return energySystem  """
+        :return energySystem: return energySystem """
         return cls.energySystem
 
     @classmethod
@@ -386,23 +368,6 @@ class EnergySystem:
             "yearly"    : cls.dictSequenceTimeStepsYearly
         }
         return dictAllSequenceTimeSteps
-
-    @classmethod
-    def getAggregationObjects(cls,element):
-        """ get aggregation object of element
-        :param element: element in model
-        :return aggregationObject: object of TimeSeriesAggregation """
-        return cls.aggregationObjectsOfElements[element]
-
-    @classmethod
-    def getTimeSeriesRaw(cls,element):
-        """ get the raw time series of element
-        :param element: element in model
-        :return dfTimeSeriesRaw: raw time series of element """
-        if element in cls.dictTimeSeriesRaw:
-            return cls.dictTimeSeriesRaw[element]
-        else:
-            return None
 
     @classmethod
     def getUnitHandling(cls):
@@ -529,7 +494,6 @@ class EnergySystem:
         :param componentName: name of modeling component
         :param indexNames: names of index sets, only if callingClass is not EnergySystem
         :param setTimeSteps: time steps, only if callingClass is EnergySystem
-        :param capacityTypes: boolean if attributes extracted for all capacity types
         :return componentData: data to initialize the component """
 
         # if calling class is EnergySystem
@@ -868,6 +832,14 @@ def objectiveTotalCostRule(model):
             # discounted utility function
             ((1 / (1 + system["socialDiscountRate"])) ** (
                         system["intervalBetweenYears"] * (year - model.setTimeStepsYearly.at(1))))
+            for year in model.setTimeStepsYearly)
+    )
+
+def objectiveNPVRule(model,year):
+    """ objective function to minimize NPV """
+    return (
+        sum(
+            model.NPV[year]
             for year in model.setTimeStepsYearly)
     )
 

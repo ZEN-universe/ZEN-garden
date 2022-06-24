@@ -18,33 +18,30 @@ from model.objects.technology.storage_technology import StorageTechnology
 
 
 class TimeSeriesAggregation():
+    timeSeriesAggregation = None
+
     def __init__(self):
         """ initializes the time series aggregation. The data is aggregated for a single year and then concatenated"""
         self.system                 = EnergySystem.getSystem()
         self.analysis               = EnergySystem.getAnalysis()
         self.energySystem           = EnergySystem.getEnergySystem()
         self.headerSetTimeSteps     = self.analysis['headerDataInputs']["setTimeSteps"][0]
-        # if setTimeSteps as input (because already aggregated), use this as base time step, otherwise self.setBaseTimeStepsYear
-        self.setBaseTimeStepsYear   = list(range(0, self.system["unaggregatedTimeStepsPerYear"]))
+        # if setTimeSteps as input (because already aggregated), use this as base time step, otherwise self.setBaseTimeSteps
+        self.setBaseTimeSteps       = self.energySystem.setBaseTimeStepsYearly
         self.numberTypicalPeriods   = min(self.system["unaggregatedTimeStepsPerYear"], self.system["aggregatedTimeStepsPerYear"])
+        # set timeSeriesAggregation
+        TimeSeriesAggregation.setTimeSeriesAggregation(self)
         # if number of time steps >= number of base time steps, skip aggregation
-        if self.numberTypicalPeriods < np.size(self.setBaseTimeStepsYear):
+        if self.numberTypicalPeriods < np.size(self.setBaseTimeSteps) and self.system["conductTimeSeriesAggregation"]==True:
             # select time series
             self.selectTimeSeriesOfAllElements()
             if not self.dfTimeSeriesRaw.empty:
-                # conduct time series aggregation
-                # substitute column names
-                self.substituteColumnNames(direction="flatten")
                 # run time series aggregation to create typical periods
                 self.runTimeSeriesAggregation()
-                # resubstitute column names
-                self.substituteColumnNames(direction="raise")
-                # set aggregated time series
-                self.setAggregatedTimeSeriesOfAllElements()
         else:
             self.typicalPeriods = pd.DataFrame()
-            _setTimeSteps       = self.setBaseTimeStepsYear
-            _timeStepDuration   = EnergySystem.calculateTimeStepDuration(_setTimeSteps,self.setBaseTimeStepsYear)
+            _setTimeSteps       = self.setBaseTimeSteps
+            _timeStepDuration   = EnergySystem.calculateTimeStepDuration(_setTimeSteps,self.setBaseTimeSteps)
             _sequenceTimeSteps  = np.concatenate([[timeStep] * _timeStepDuration[timeStep] for timeStep in _timeStepDuration])
             TimeSeriesAggregation.setTimeAttributes(self,_setTimeSteps,_timeStepDuration,_sequenceTimeSteps)
             # set aggregated time series
@@ -67,31 +64,37 @@ class TimeSeriesAggregation():
     def substituteColumnNames(self, direction="flatten"):
         """ this method substitutes the column names to have flat columns names (otherwise sklearn warning) """
         if direction == "flatten":
-            self.columnNamesOriginal        = self.dfTimeSeriesRaw.columns
-            self.columnNamesFlat            = [str(index) for index in self.columnNamesOriginal]
-            self.dfTimeSeriesRaw.columns    = self.columnNamesFlat
+            if not hasattr(self,"columnNamesOriginal"):
+                self.columnNamesOriginal        = self.dfTimeSeriesRaw.columns
+                self.columnNamesFlat            = [str(index) for index in self.columnNamesOriginal]
+                self.dfTimeSeriesRaw.columns    = self.columnNamesFlat
         elif direction == "raise":
             self.typicalPeriods             = self.typicalPeriods[self.columnNamesFlat]
             self.typicalPeriods.columns     = self.columnNamesOriginal
 
     def runTimeSeriesAggregation(self):
         """ this method runs the time series aggregation """
-
+        # substitute column names
+        self.substituteColumnNames(direction="flatten")
         # create aggregation object
         self.aggregation = tsam.TimeSeriesAggregation(
-            timeSeries          = self.dfTimeSeriesRaw,
-            noTypicalPeriods    = self.numberTypicalPeriods,
-            hoursPerPeriod      = 1,
-            resolution          = self.analysis["timeSeriesAggregation"]["resolution"],
-            clusterMethod       = self.analysis["timeSeriesAggregation"]["clusterMethod"],
-            solver              = self.analysis["timeSeriesAggregation"]["solver"],
-            extremePeriodMethod = self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
-            rescaleClusterPeriods=self.analysis["timeSeriesAggregation"]["rescaleClusterPeriods"],
+            timeSeries           = self.dfTimeSeriesRaw,
+            noTypicalPeriods     = self.numberTypicalPeriods,
+            hoursPerPeriod       = self.analysis["timeSeriesAggregation"]["hoursPerPeriod"],
+            resolution           = self.analysis["timeSeriesAggregation"]["resolution"],
+            clusterMethod        = self.analysis["timeSeriesAggregation"]["clusterMethod"],
+            solver               = self.analysis["timeSeriesAggregation"]["solver"],
+            extremePeriodMethod  = self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
+            rescaleClusterPeriods= self.analysis["timeSeriesAggregation"]["rescaleClusterPeriods"],
             representationMethod = self.analysis["timeSeriesAggregation"]["representationMethod"]
         )
         # create typical periods
         self.typicalPeriods     = self.aggregation.createTypicalPeriods().reset_index(drop=True)
         TimeSeriesAggregation.setTimeAttributes(self,self.aggregation.clusterPeriodIdx,self.aggregation.clusterPeriodNoOccur,self.aggregation.clusterOrder)
+        # resubstitute column names
+        self.substituteColumnNames(direction="raise")
+        # set aggregated time series
+        self.setAggregatedTimeSeriesOfAllElements()
 
     def setAggregatedTimeSeriesOfAllElements(self):
         """ this method sets the aggregated time series and sets the necessary attributes after the aggregation to a single time grid """
@@ -308,7 +311,7 @@ class TimeSeriesAggregation():
         combinedSequenceTimeSteps = np.vstack(listSequenceTimeSteps)
         uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedSequenceTimeSteps, axis=1,
                                                                     return_counts=True)
-        setTimeSteps = []
+        setTimeSteps      = []
         timeStepsDuration = {}
         for idxUniqueTimeStep, countUniqueTimeStep in enumerate(countCombinedTimeSteps):
             setTimeSteps.append(idxUniqueTimeStep)
@@ -348,6 +351,18 @@ class TimeSeriesAggregation():
             element.sequenceTimeStepsEnergyBalance  = sequenceTimeSteps
 
     @classmethod
+    def setTimeSeriesAggregation(cls, timeSeriesAggregation):
+        """ sets empty timeSeriesAggregation to timeSeriesAggregation
+        :param timeSeriesAggregation: timeSeriesAggregation """
+        cls.timeSeriesAggregation = timeSeriesAggregation
+
+    @classmethod
+    def getTimeSeriesAggregation(cls):
+        """ get timeSeriesAggregation
+        :return timeSeriesAggregation: return timeSeriesAggregation """
+        return cls.timeSeriesAggregation
+
+    @classmethod
     def conductTimeSeriesAggregation(cls):
         """ this method conducts time series aggregation """
         logging.info("\n--- Time series aggregation ---")
@@ -360,3 +375,4 @@ class TimeSeriesAggregation():
         # calculate new time steps of energy balance
         for element in Carrier.getAllElements():
             cls.calculateTimeStepsEnergyBalance(element)
+

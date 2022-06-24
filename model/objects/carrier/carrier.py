@@ -35,7 +35,7 @@ class Carrier(Element):
         Carrier.addElement(self)
 
     def storeInputData(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
         # set attributes of carrier
         # raw import
@@ -46,11 +46,11 @@ class Carrier(Element):
         self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData("priceCarrier",["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData("priceCarrier",["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         # non-time series input data
-        self.carbonIntensityCarrier                     = self.dataInput.extractInputData("carbonIntensity",["setNodes"])
-        
+        self.carbonIntensityCarrier                     = self.dataInput.extractInputData("carbonIntensity",["setNodes","setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+
     def overwriteTimeSteps(self,baseTimeSteps):
         """ overwrites setTimeStepsOperation and  setTimeStepsEnergyBalance"""
-        setTimeStepsOperation         = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps, timeStepType="operation",yearly=True)
+        setTimeStepsOperation       = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps, timeStepType="operation",yearly=True)
         setTimeStepsEnergyBalance   = EnergySystem.encodeTimeStep(self.name+"EnergyBalance", baseTimeSteps=baseTimeSteps,timeStepType="operation", yearly=True)
         setattr(self, "setTimeStepsOperation", setTimeStepsOperation.squeeze().tolist())
         setattr(self, "setTimeStepsEnergyBalance", setTimeStepsEnergyBalance.squeeze().tolist())
@@ -100,8 +100,8 @@ class Carrier(Element):
         )
         # carbon intensity
         model.carbonIntensityCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes"]),
-            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier"),
+            cls.createCustomSet(["setCarriers","setNodes", "setTimeStepsOperation"]),
+            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the carbon intensity of carrier. \n\t Dimensions: setCarriers, setNodes'
         )
 
@@ -146,6 +146,10 @@ class Carrier(Element):
             domain=pe.Reals,
             doc="total carbon emissions of importing/exporting carrier. Domain: NonNegativeReals"
         )
+
+        # add pe.Sets of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.constructVars()
 
     @classmethod
     def constructConstraints(cls):
@@ -195,6 +199,10 @@ class Carrier(Element):
             doc="total carbon emissions of importing/exporting carriers."
         )
 
+        # add pe.Sets of the child classes
+        for subclass in cls.getAllSubclasses():
+            subclass.constructConstraints()
+
 
 #%% Constraint rules defined in current class
 def constraintAvailabilityCarrierImportRule(model, carrier, node, time):
@@ -229,7 +237,7 @@ def constraintCostCarrierTotalRule(model,year):
 def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
     """ carbon emissions of importing/exporting carrier"""
     return (model.carbonEmissionsCarrier[carrier, node, time] ==
-            model.carbonIntensityCarrier[carrier, node] *
+            model.carbonIntensityCarrier[carrier, node, time] *
             (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
             )
 
@@ -271,8 +279,8 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
         if carrier in model.setReferenceCarriers[tech]:
             elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
             carrierFlowIn   += sum(model.carrierFlow[tech, edge, elementTimeStep]
-                            - model.carrierLoss[tech, edge, elementTimeStep] for edge in setEdgesIn) 
-            carrierFlowOut  += sum(model.carrierFlow[tech, edge, elementTimeStep] for edge in setEdgesOut) 
+                            - model.carrierLoss[tech, edge, elementTimeStep] for edge in setEdgesIn)
+            carrierFlowOut  += sum(model.carrierFlow[tech, edge, elementTimeStep] for edge in setEdgesOut)
     # carrier flow storage technologies
     carrierFlowDischarge, carrierFlowCharge = 0, 0
     for tech in model.setStorageTechnologies:
@@ -286,17 +294,17 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     carrierImport       = model.importCarrierFlow[carrier, node, elementTimeStep]
     carrierExport       = model.exportCarrierFlow[carrier, node, elementTimeStep]
     carrierDemand       = model.demandCarrier[carrier, node, elementTimeStep]
-    
+
     return (
         # conversion technologies
-        carrierConversionOut - carrierConversionIn 
+        carrierConversionOut - carrierConversionIn
         # transport technologies
         + carrierFlowIn - carrierFlowOut
         # storage technologies
         + carrierFlowDischarge - carrierFlowCharge
-        # import and export 
-        + carrierImport - carrierExport 
+        # import and export
+        + carrierImport - carrierExport
         # demand
-        - carrierDemand 
+        - carrierDemand
         == 0
         )
