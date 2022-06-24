@@ -167,12 +167,15 @@ class OptimizationSetup():
                 else:
                     _newParam = element.dataInput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
                 if param in timeSeriesParams:
+                    _timeSteps = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
                     element.rawTimeSeries[param] = element.dataInput.extractInputData(fileName, indexSets=_indexSets, column=param,timeSteps=_timeSteps, scenario=scenario)
                 else:
                     setattr(element, param, _newParam)
         # if scenario contains timeSeries dependent params conduct timeSeriesAggregation
         if timeSeriesParams:
             TimeSeriesAggregation.conductTimeSeriesAggregation()
+            # set sequence timesteps is set in line 107 in TSA
+
 
     def overwriteTimeIndices(self,stepHorizon):
         """ select subset of time indices, matching the step horizon

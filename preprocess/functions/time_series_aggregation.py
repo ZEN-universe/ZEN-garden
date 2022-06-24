@@ -27,12 +27,12 @@ class TimeSeriesAggregation():
         self.energySystem           = EnergySystem.getEnergySystem()
         self.headerSetTimeSteps     = self.analysis['headerDataInputs']["setTimeSteps"][0]
         # if setTimeSteps as input (because already aggregated), use this as base time step, otherwise self.setBaseTimeSteps
-        self.setBaseTimeSteps       = self.energySystem.setBaseTimeSteps
+        self.setBaseTimeSteps       = self.energySystem.setBaseTimeStepsYearly
         self.numberTypicalPeriods   = min(self.system["unaggregatedTimeStepsPerYear"], self.system["aggregatedTimeStepsPerYear"])
         # set timeSeriesAggregation
         TimeSeriesAggregation.setTimeSeriesAggregation(self)
         # if number of time steps >= number of base time steps, skip aggregation
-        if self.numberTypicalPeriods < np.size(self.setBaseTimeSteps):
+        if self.numberTypicalPeriods < np.size(self.setBaseTimeSteps) and self.system["conductTimeSeriesAggregation"]==True:
             # select time series
             self.selectTimeSeriesOfAllElements()
             if not self.dfTimeSeriesRaw.empty:

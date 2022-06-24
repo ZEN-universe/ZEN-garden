@@ -110,12 +110,14 @@ system["setTransportTechnologies"] = []
 system['DoubleCapexTransport'] = False
 # set of nodes
 system["setNodes"] = []
+# toggle to use timeSeriesAggregation
+system["conductTimeSeriesAggregation"] = False
 # total hours per year
 system["totalHoursPerYear"] = 8760
 # unbounded market share for technology diffusion rate
 system["unboundedMarketShare"] = 0.01
 # social discount rate
-system["socialDiscountRate"] = 1
+system["socialDiscountRate"] = 0
 # folder output
 system["folderOutput"] = "outputs/results/"
 # name of data folder for energy system specification
