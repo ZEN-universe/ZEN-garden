@@ -241,17 +241,17 @@ class TimeSeriesAggregation():
         :param element: technology of the optimization
         :param setTimeStepsOperation: new time steps operation
         :param sequenceTimeSteps: new order of operational time steps """
-        headerSetTimeSteps = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
-        oldSequenceTimeSteps = element.sequenceTimeSteps
+        headerSetTimeSteps      = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
+        oldSequenceTimeSteps    = element.sequenceTimeSteps
+        _idxOld2New             = np.array([np.unique(oldSequenceTimeSteps[np.argwhere(idx == sequenceTimeSteps)]) for idx in setTimeStepsOperation]).squeeze()
         for timeSeries in element.rawTimeSeries:
-            _oldTimeSeries = getattr(element, timeSeries).unstack(headerSetTimeSteps)
-            _newTimeSeries = pd.DataFrame(index=_oldTimeSeries.index, columns=setTimeStepsOperation)
-            _idxOld2New = np.array([np.unique(oldSequenceTimeSteps[np.argwhere(idx == sequenceTimeSteps)]) for idx in setTimeStepsOperation]).squeeze()
-            _newTimeSeries = _oldTimeSeries.loc[:,_idxOld2New[_newTimeSeries.columns]].T.reset_index(drop=True).T
-            _newTimeSeries.columns.names = [headerSetTimeSteps]
-            _newTimeSeries = _newTimeSeries.stack()
+            _oldTimeSeries                  = getattr(element, timeSeries).unstack(headerSetTimeSteps)
+            _newTimeSeries                  = pd.DataFrame(index=_oldTimeSeries.index, columns=setTimeStepsOperation)
+            _newTimeSeries                  = _oldTimeSeries.loc[:,_idxOld2New[_newTimeSeries.columns]].T.reset_index(drop=True).T
+            _newTimeSeries.columns.names    = [headerSetTimeSteps]
+            _newTimeSeries                  = _newTimeSeries.stack()
             # multiply with yearly variation
-            _newTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, _newTimeSeries)
+            _newTimeSeries                  = cls.multiplyYearlyVariation(element, timeSeries, _newTimeSeries)
             # overwrite time series
             setattr(element, timeSeries, _newTimeSeries)
 
@@ -290,10 +290,10 @@ class TimeSeriesAggregation():
         """ this method repeats the operational time series for all years."""
         # concatenate the order of time steps for all elements and link with investment and yearly time steps
         for element in Element.getAllElements():
-            optimizedYears = EnergySystem.getSystem()["optimizedYears"]
-            oldSequenceTimeSteps = Element.getAttributeOfSpecificElement(element.name, "sequenceTimeSteps")
-            newSequenceTimeSteps = np.hstack([oldSequenceTimeSteps] * optimizedYears)
-            element.sequenceTimeSteps = newSequenceTimeSteps
+            optimizedYears              = EnergySystem.getSystem()["optimizedYears"]
+            oldSequenceTimeSteps        = Element.getAttributeOfSpecificElement(element.name, "sequenceTimeSteps")
+            newSequenceTimeSteps        = np.hstack([oldSequenceTimeSteps] * optimizedYears)
+            element.sequenceTimeSteps   = newSequenceTimeSteps
             EnergySystem.setSequenceTimeSteps(element.name, element.sequenceTimeSteps)
             # calculate the time steps in operation to link with investment and yearly time steps
             cls.linkTimeSteps(element)
@@ -315,19 +315,18 @@ class TimeSeriesAggregation():
     @classmethod
     def uniqueTimeStepsInMultigrid(cls, listSequenceTimeSteps):
         """ this method returns the unique time steps of multiple time grids """
-        sequenceTimeSteps = np.zeros(np.size(listSequenceTimeSteps, axis=1)).astype(int)
-        combinedSequenceTimeSteps = np.vstack(listSequenceTimeSteps)
-        uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedSequenceTimeSteps, axis=1,
-                                                                    return_counts=True)
+        sequenceTimeSteps           = np.zeros(np.size(listSequenceTimeSteps, axis=1)).astype(int)
+        combinedSequenceTimeSteps   = np.vstack(listSequenceTimeSteps)
+        uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedSequenceTimeSteps, axis=1,return_counts=True)
         setTimeSteps      = []
         timeStepsDuration = {}
         for idxUniqueTimeStep, countUniqueTimeStep in enumerate(countCombinedTimeSteps):
             setTimeSteps.append(idxUniqueTimeStep)
-            timeStepsDuration[idxUniqueTimeStep] = countUniqueTimeStep
-            uniqueTimeStep = uniqueCombinedTimeSteps[:, idxUniqueTimeStep]
-            idxInInput = np.argwhere(np.all(combinedSequenceTimeSteps.T == uniqueTimeStep, axis=1))
+            timeStepsDuration[idxUniqueTimeStep]    = countUniqueTimeStep
+            uniqueTimeStep                          = uniqueCombinedTimeSteps[:, idxUniqueTimeStep]
+            idxInInput                              = np.argwhere(np.all(combinedSequenceTimeSteps.T == uniqueTimeStep, axis=1))
             # fill new order time steps 
-            sequenceTimeSteps[idxInInput] = idxUniqueTimeStep
+            sequenceTimeSteps[idxInInput]           = idxUniqueTimeStep
         return setTimeSteps, timeStepsDuration, sequenceTimeSteps
 
     @classmethod
