@@ -6,11 +6,13 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Functions to apply time series aggregation to time series
 ==========================================================================================================================================================================="""
+import cProfile
+
 import pandas as pd
 import numpy as np
 import logging
 import tsam.timeseriesaggregation as tsam
-
+import pstats
 from model.objects.energy_system import EnergySystem
 from model.objects.element import Element
 from model.objects.carrier import Carrier
@@ -32,6 +34,7 @@ class TimeSeriesAggregation():
         self.numberTypicalPeriods   = min(self.system["unaggregatedTimeStepsPerYear"], self.system["aggregatedTimeStepsPerYear"])
         # set timeSeriesAggregation
         TimeSeriesAggregation.setTimeSeriesAggregation(self)
+        self._conductedTimeSeriesAggregation = False
         # if number of time steps >= number of base time steps, skip aggregation
         if self.numberTypicalPeriods < np.size(self.setBaseTimeSteps) and self.system["conductTimeSeriesAggregation"]:
             # select time series
@@ -96,6 +99,7 @@ class TimeSeriesAggregation():
         self.substituteColumnNames(direction="raise")
         # set aggregated time series
         self.setAggregatedTimeSeriesOfAllElements()
+        self._conductedTimeSeriesAggregation = True
 
     def setAggregatedTimeSeriesOfAllElements(self):
         """ this method sets the aggregated time series and sets the necessary attributes after the aggregation to a single time grid """
@@ -201,7 +205,7 @@ class TimeSeriesAggregation():
 
     @classmethod
     def linkTimeSteps(cls, element):
-        """ calculates the necessary overlapping time steps of the investment and operation of a technology for all year.
+        """ calculates the necessary overlapping time steps of the investment and operation of a technology for all years.
         It sets the union of the time steps for investment, operation and years.
         :param element: technology of the optimization """
         listSequenceTimeSteps = [
@@ -216,9 +220,7 @@ class TimeSeriesAggregation():
         # set sequence time steps
         EnergySystem.setSequenceTimeSteps(element.name, sequenceTimeSteps)
         # time series parameters
-
         cls.overwriteTimeSeriesWithExpandedTimeIndex(element, setTimeSteps, sequenceTimeSteps)
-
         # set attributes
         TimeSeriesAggregation.setTimeAttributes(element,setTimeSteps,timeStepsDuration,sequenceTimeSteps)
 
@@ -228,11 +230,12 @@ class TimeSeriesAggregation():
         _setTimeStepsOperation      = getattr(element,"setTimeStepsOperation")
         _sequenceTimeStepsOperation = getattr(element,"sequenceTimeSteps")
         _sequenceTimeStepsInvest    = getattr(element, "sequenceTimeStepsInvest")
-        _timeStepsOperation2Invest  = {}
-        for timeStep in _setTimeStepsOperation:
-            convertedTimeSteps = np.unique(_sequenceTimeStepsInvest[_sequenceTimeStepsOperation == timeStep])
-            assert len(convertedTimeSteps) == 1, f"more than one invest time step per operational time step. Impossible, here to debug"
-            _timeStepsOperation2Invest[timeStep] = convertedTimeSteps[0]
+        # _timeStepsOperation2Invest  = {}
+        _timeStepsOperation2Invest  = np.unique(np.vstack([_sequenceTimeStepsOperation,_sequenceTimeStepsInvest]),axis=1)
+        # _timeStepsOperation2Invest  = pd.DataFrame([_sequenceTimeStepsOperation,_sequenceTimeStepsInvest]).T
+        # _timeStepsOperation2Invest  = _timeStepsOperation2Invest.drop_duplicates().set_index(0).sort_index()
+        # assert _timeStepsOperation2Invest.index.difference(_setTimeStepsOperation).empty, f"One operational time step corresponds to more than one investment time step, this should be impossible. Debug."
+        _timeStepsOperation2Invest  = dict(enumerate(_timeStepsOperation2Invest[1,_timeStepsOperation2Invest[0,:].argsort()]))
         EnergySystem.setTimeStepsOperation2Invest(element.name,_timeStepsOperation2Invest)
 
     @classmethod
@@ -371,6 +374,8 @@ class TimeSeriesAggregation():
     def conductTimeSeriesAggregation(cls):
         """ this method conducts time series aggregation """
         logging.info("\n--- Time series aggregation ---")
+        pr = cProfile.Profile()
+        pr.enable()
         TimeSeriesAggregation()
         # repeat order of operational time steps and link with investment and yearly time steps
         cls.repeatSequenceTimeStepsForAllYears()
@@ -380,4 +385,7 @@ class TimeSeriesAggregation():
         # calculate new time steps of energy balance
         for element in Carrier.getAllElements():
             cls.calculateTimeStepsEnergyBalance(element)
-
+        pr.disable()
+        ps = pstats.Stats(pr).sort_stats("cumulative")
+        ps.print_stats()
+        a=1
