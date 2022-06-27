@@ -77,9 +77,9 @@ for scenario, elements in config.scenarios.items():
     # modelName  = "model_" + today.strftime("%Y-%m-%d")
     modelName = config.analysis["dataset"]
     if len(stepsOptimizationHorizon) > 1:
-        modelName += f"_rollingHorizon{stepHorizon}"
-    else:
-        modelName += "_" + scenario  # "_perfectForesight"
+        modelName += f"_MF{stepHorizon}"
+    if system["conductScenarioAnalysis"]:
+        modelName += f"_{scenario}"
     evaluation = Postprocess(optimizationSetup, modelName=modelName)
 #    visualization.run(config.analysis["dataset"], scenario, pltShow=False)
 
