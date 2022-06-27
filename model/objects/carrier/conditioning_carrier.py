@@ -24,7 +24,7 @@ class ConditioningCarrier(Carrier):
         """initialization of a generic carrier object
         :param carrier: carrier that is added to the model"""
 
-        logging.info(f'Initialize carrier {carrier}')
+        logging.info(f'Initialize conditioning carrier {carrier}')
         super().__init__(carrier)
         # store input data
         self.storeInputData()
@@ -44,7 +44,7 @@ class ConditioningCarrier(Carrier):
         
         # flow of imported carrier
         model.endogenousCarrierDemand = pe.Var(
-            cls.createCustomSet(["setConditioningCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setConditioningCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent model endogenous carrier demand. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
@@ -56,7 +56,7 @@ class ConditioningCarrier(Carrier):
 
         # limit import flow by availability
         model.constraintCarrierDemandCoupling = pe.Constraint(
-            cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
             rule = constraintCarrierDemandCouplingRule,
             doc = 'coupeling model endogenous and exogenous carrier demand. Dimensions: setConditioningCarriers, setNodes, setTimeStepsCarrier',
         )

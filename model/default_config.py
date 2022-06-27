@@ -20,6 +20,15 @@ solver = dict()
 # This dictionary defines the configuration of the system by selecting the subset of technologies ot be included into the analysis.
 system = dict()
 
+## Solver - dictionary declaration
+# This dictionary contains all the settings related to the solver of the optimisation problem.
+solver = dict()
+
+## Scenarios - dictionary declaration
+# This dictionary defines the set of scenarios that is evaluated.
+scenarios = dict()
+
+
 ## Analysis - Items assignment
 # objective function definition
 analysis["objective"] = "TotalCost"
@@ -30,7 +39,8 @@ analysis["discountRate"] = 0.06
 # transport distance (euclidean or actual)
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
-analysis["subsets"] = {"setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
+analysis["subsets"] = {"setCarriers": [],
+                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
 # headers for the generation of input files
 analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
                                   "setEdges": ["edge"],
@@ -48,11 +58,13 @@ analysis["fileFormat"] = "csv"
 analysis["timeSeriesAggregation"] = {
     "clusterMethod"         : "k_means",
     "solver"                : "gurobi",
-    # "extremePeriodMethod"   : "new_cluster_center",
+    "hoursPerPeriod"        : 1,
     "extremePeriodMethod"   : "None",
     "rescaleClusterPeriods" : False,
     "representationMethod"  : "meanRepresentation",
-    "resolution"            : 1
+    "resolution"            : 1,
+    "segmentation"          : False,
+    "noSegments"            : 12
 }
 
 analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
@@ -88,15 +100,13 @@ analysis['postprocess'] = False
 
 ## System - Items assignment
 # set of energy carriers
-system["setCarriers"] = []
-# set of conditioning carriers
-system["setConditioningCarriers"] = []
+system["setCarriers"] = []#
 # set of capacity types: power-rated or energy-rated
 system["setCapacityTypes"] = ["power","energy"]
 # set of conversion technologies
 system["setConversionTechnologies"] = []
 # set of conditioning technologies
-system["setConditioningTechnologies"] = []
+#system["setConditioningTechnologies"] = []
 # set of storage technologies
 system["setStorageTechnologies"] = []
 # set of transport technologies
@@ -104,12 +114,22 @@ system["setTransportTechnologies"] = []
 system['DoubleCapexTransport'] = False
 # set of nodes
 system["setNodes"] = []
+# toggle to use timeSeriesAggregation
+system["conductTimeSeriesAggregation"] = False
+# toggle to perform analysis for multiple scenarios
+system["conductScenarioAnalysis"] = False
 # total hours per year
 system["totalHoursPerYear"] = 8760
+# unbounded market share for technology diffusion rate
+system["unboundedMarketShare"] = 0.01
+# social discount rate
+system["socialDiscountRate"] = 0
 # folder output
 system["folderOutput"] = "outputs/results/"
 # name of data folder for energy system specification
 system["folderNameSystemSpecification"] = "systemSpecification"
+
+
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
 solver["name"]      = "gurobi_persistent"
@@ -138,3 +158,5 @@ solver["performanceCheck"] = {"printDeltaRun":1, "printDeltaIteration":1}
 solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
 # rounding to number of decimal points
 solver["roundingDecimalPoints"] = 8
+## Scenarios - dictionary declaration
+scenarios["base"] = {}

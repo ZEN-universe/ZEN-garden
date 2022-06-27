@@ -40,7 +40,7 @@ class Postprocess:
         # self.system    = model.system
         # self.analysis  = model.analysis
         self.modelName = kwargs.get('modelName', self.modelName)
-        self.nameDir   = f'./outputs/results{self.modelName}/'
+        self.nameDir   = f'./outputs/{self.modelName}/'
 
         # self.makeDirs()
         # self.getVarValues()
@@ -91,8 +91,6 @@ class Postprocess:
 
         try:
             os.makedirs(f'{self.nameDir}/plots/')
-            os.makedirs(f'{self.nameDir}/params/')
-            os.makedirs(f'{self.nameDir}/vars/')
         except OSError:
             pass
 
@@ -119,7 +117,7 @@ class Postprocess:
                 self.paramDict[param.name][index] = pe.value(param[index])
 
         # save the param dict to a pickle
-        with open(f'{self.nameDir}params/paramDict.pickle', 'wb') as file:
+        with open(f'{self.nameDir}paramDict.pickle', 'wb') as file:
             pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
         # save sequence time steps
@@ -131,7 +129,7 @@ class Postprocess:
     def loadParam(self):
         """ Loads the Param values from previously saved pickle files which can then be
         post-processed """
-        with open(f'{self.nameDir}params/paramDict.pickle', 'rb') as file:
+        with open(f'{self.nameDir}paramDict.pickle', 'rb') as file:
             self.paramDict = pickle.load(file)
 
     def getVarValues(self):
@@ -163,7 +161,7 @@ class Postprocess:
                         pass
 
         # save the variable dict to a pickle
-        with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
+        with open(f'{self.nameDir}varDict.pickle', 'wb') as file:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     # def saveVar_HB(self):  # My own function to save the variables in better dicts
@@ -197,7 +195,7 @@ class Postprocess:
     def loadVar(self):
         """ Loads the variable values from previously saved pickle files which can then be
         post-processed """
-        with open(f'{self.nameDir}vars/varDict.pickle', 'rb') as file:
+        with open(f'{self.nameDir}varDict.pickle', 'rb') as file:
             self.varDict = pickle.load(file)
 
     def saveSystem(self):
@@ -282,22 +280,22 @@ class Postprocess:
         """save the input data (paramDict, paramDf) and the results (varDict, varDf)"""
 
         # Save parameter data
-        with open(f'{self.nameDir}params/paramDict.pickle', 'wb') as file:
+        with open(f'{self.nameDir}paramDict.pickle', 'wb') as file:
             pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for paramName, df in self.paramDf.items():
-            df.to_csv(f'{self.nameDir}params/{paramName}.csv')
+            df.to_csv(f'{self.nameDir}{paramName}.csv')
 
         # Save variable data
-        with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
+        with open(f'{self.nameDir}varDict.pickle', 'wb') as file:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for varName, df in self.varDf.items():
-            df.to_csv(f'{self.nameDir}vars/{varName}.csv', index=False)
+            df.to_csv(f'{self.nameDir}{varName}.csv', index=False)
 
     def process(self):
         print(self.varDict.items())
         for var,dic in self.varDict.items():
             self.createDataframe(var, self.varDict, self.varDf)
-            self.varDf[var].to_csv(f'{self.nameDir}vars/{var}.csv', index=False)
+            self.varDf[var].to_csv(f'{self.nameDir}{var}.csv', index=False)
             self.plotResults()
 
     def plotResults(self):

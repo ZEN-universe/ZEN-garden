@@ -43,19 +43,19 @@ class Element:
         system      = EnergySystem.getSystem()
         # get technology type
         classLabel  = type(self).getClassLabel()
-
+        # get path dictionary
         paths = EnergySystem.getPaths()
+        # check if class is a subset
+        if classLabel not in paths.keys():
+            subsets = EnergySystem.getAnalysis()["subsets"]
+            # iterate through subsets and check if class belongs to any of the subsets
+            for setName, subsetsList in subsets.items():
+                if classLabel in subsetsList:
+                    classLabel = setName
+                    break
         # get input path for current classLabel
         self.inputPath = paths[classLabel][self.name]["folder"]
-        # check if class has subsets
-        subsets = EnergySystem.getAnalysis()["subsets"]
-        if classLabel in subsets.keys():
-            # iterate through subsets and check if class belongs to any of the subsets
-            for classSubset in subsets[classLabel]:
-                if self.name in system[classSubset]:
-                    self.subset    = classSubset
-                    self.inputPath = paths[classSubset][self.name]["folder"]
-                    break
+
 
     def setAggregated(self):
         """ this method sets self.aggregated to True """

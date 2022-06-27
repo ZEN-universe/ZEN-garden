@@ -192,7 +192,6 @@ class Technology(Element):
         """ returns existing quantity of 'tech', that is still available at invest time step 'time'.
         Either capacity or capex.
         :param tech: name of technology
-        :param capacityType: either power or energy
         :param loc: location (node or edge) of existing capacity
         :param time: current time
         :param idExistingCapacity: id of existing capacity
@@ -348,8 +347,7 @@ class Technology(Element):
                                                         indexNames=["setTechnologies", "setCapacityTypes",
                                                                     "setLocation", "setTimeStepsInvestEntireHorizon"],
                                                         capacityTypes=True),
-            doc='Parameter which specifies the size of the previously invested capacities. '
-                'Dimensions: setTechnologies, setCapacityTypes, setLocation, setTimeStepsInvestEntireHorizon')
+            doc='Parameter which specifies the size of the previously invested capacities. ''Dimensions: setTechnologies, setCapacityTypes, setLocation, setTimeStepsInvestEntireHorizon')
 
         # minimum capacity
         model.minBuiltCapacity = pe.Param(
@@ -603,6 +601,7 @@ class Technology(Element):
             rule=constraintCarbonEmissionsTechnologyTotalRule,
             doc="total carbon emissions for each technology at each location and time step"
         )
+
         # disjunct if technology is on
         model.disjunctOnTechnology = pgdp.Disjunct(
             cls.createCustomSet(["setTechnologies","setOnOff","setLocation","setTimeStepsOperation"]),
@@ -799,24 +798,18 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
 
 def constraintCapexYearlyRule(model, tech, capacityType, loc, year):
     """ aggregates the capex of built capacity and of existing capacity """
-
     return (model.capexYearly[tech, capacityType, loc, year] ==
             sum(
                 model.capex[tech, capacityType, loc, time]
-                for time in Technology.getLifetimeRange(tech, year, timeStepType="invest")
-            )
-            +
-            Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest")
-            )
+                for time in Technology.getLifetimeRange(tech, year, timeStepType="invest"))
+            +Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest"))
 
 def constraintCapexTotalRule(model,year):
     """ sums over all technologies to calculate total capex """
-
     return(model.capexTotal[year] ==
         sum(
             model.capexYearly[tech, capacityType, loc, year]
-            for tech,capacityType,loc in Element.createCustomSet(["setTechnologies","setCapacityTypes","setLocation"])
-        )
+            for tech,capacityType,loc in Element.createCustomSet(["setTechnologies","setCapacityTypes","setLocation"]))
     )
 
 def constraintOpexTechnologyRule(model,tech,loc,time):
