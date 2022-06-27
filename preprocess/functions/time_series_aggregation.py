@@ -264,22 +264,20 @@ class TimeSeriesAggregation():
         :param timeSeries: time series
         :return multipliedTimeSeries: timeSeries multiplied with yearly variation """
         if hasattr(element.dataInput, timeSeriesName + "YearlyVariation"):
-            _yearlyVariation = getattr(element.dataInput, timeSeriesName + "YearlyVariation")
-            headerSetTimeSteps = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
-            headerSetTimeStepsYearly = EnergySystem.getAnalysis()['headerDataInputs']["setTimeStepsYearly"][0]
-            _timeSeries = timeSeries.unstack(headerSetTimeSteps)
-            _yearlyVariation = _yearlyVariation.unstack(headerSetTimeStepsYearly)
+            _yearlyVariation            = getattr(element.dataInput, timeSeriesName + "YearlyVariation")
+            headerSetTimeSteps          = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
+            headerSetTimeStepsYearly    = EnergySystem.getAnalysis()['headerDataInputs']["setTimeStepsYearly"][0]
+            _timeSeries                 = timeSeries.unstack(headerSetTimeSteps)
+            _yearlyVariation            = _yearlyVariation.unstack(headerSetTimeStepsYearly)
             # if only one unique value
             if len(np.unique(_yearlyVariation)) == 1:
                 return _timeSeries*np.unique(_yearlyVariation)[0]
             else:
                 for year in EnergySystem.getEnergySystem().setTimeStepsYearly:
                     if not all(_yearlyVariation[year] == 1):
-                        _baseTimeSteps = EnergySystem.decodeTimeStep(None, year, "yearly")
-                        _elementTimeSteps = EnergySystem.encodeTimeStep(element.name, _baseTimeSteps, yearly=True)
-                        # _npTimeSeries = _timeSeries[_elementTimeSteps].to_numpy()
-                        # _npYearlyVariation = np.reshape(_yearlyVariation[year].to_numpy(),(-1,1))
-                        _timeSeries.loc[:,_elementTimeSteps] = _timeSeries[_elementTimeSteps].multiply(_yearlyVariation[year],axis=0).fillna(0)
+                        _baseTimeSteps                          = EnergySystem.decodeTimeStep(None, year, "yearly")
+                        _elementTimeSteps                       = EnergySystem.encodeTimeStep(element.name, _baseTimeSteps, yearly=True)
+                        _timeSeries.loc[:,_elementTimeSteps]    = _timeSeries[_elementTimeSteps].multiply(_yearlyVariation[year],axis=0).fillna(0)
                 timeSeries = _timeSeries.stack()
                 return timeSeries
         else:
