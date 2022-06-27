@@ -16,7 +16,6 @@ import pyomo.environ as pe
 import os
 import sys
 import pandas as pd
-import numpy as np
 # import elements of the optimization problem
 # technology and carrier classes from technology and carrier directory, respectively
 from model.objects.element                              import Element

@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import logging
 import tsam.timeseriesaggregation as tsam
+
 from model.objects.energy_system import EnergySystem
 from model.objects.element import Element
 from model.objects.carrier import Carrier
@@ -215,7 +216,9 @@ class TimeSeriesAggregation():
         # set sequence time steps
         EnergySystem.setSequenceTimeSteps(element.name, sequenceTimeSteps)
         # time series parameters
+
         cls.overwriteTimeSeriesWithExpandedTimeIndex(element, setTimeSteps, sequenceTimeSteps)
+
         # set attributes
         TimeSeriesAggregation.setTimeAttributes(element,setTimeSteps,timeStepsDuration,sequenceTimeSteps)
 
@@ -243,9 +246,8 @@ class TimeSeriesAggregation():
         for timeSeries in element.rawTimeSeries:
             _oldTimeSeries = getattr(element, timeSeries).unstack(headerSetTimeSteps)
             _newTimeSeries = pd.DataFrame(index=_oldTimeSeries.index, columns=setTimeStepsOperation)
-            _idxOld2New = [np.unique(oldSequenceTimeSteps[np.argwhere(idx == sequenceTimeSteps)]) for idx in
-                           setTimeStepsOperation]
-            _newTimeSeries = _newTimeSeries.apply(lambda row: _oldTimeSeries[_idxOld2New[row.name][0]], axis=0)
+            _idxOld2New = np.array([np.unique(oldSequenceTimeSteps[np.argwhere(idx == sequenceTimeSteps)]) for idx in setTimeStepsOperation]).squeeze()
+            _newTimeSeries = _oldTimeSeries.loc[:,_idxOld2New[_newTimeSeries.columns]].T.reset_index(drop=True).T
             _newTimeSeries.columns.names = [headerSetTimeSteps]
             _newTimeSeries = _newTimeSeries.stack()
             # multiply with yearly variation
@@ -267,13 +269,19 @@ class TimeSeriesAggregation():
             headerSetTimeStepsYearly = EnergySystem.getAnalysis()['headerDataInputs']["setTimeStepsYearly"][0]
             _timeSeries = timeSeries.unstack(headerSetTimeSteps)
             _yearlyVariation = _yearlyVariation.unstack(headerSetTimeStepsYearly)
-            for year in EnergySystem.getEnergySystem().setTimeStepsYearly:
-                if not all(_yearlyVariation[year] == 1):
-                    _baseTimeSteps = EnergySystem.decodeTimeStep(None, year, "yearly")
-                    _elementTimeSteps = EnergySystem.encodeTimeStep(element.name, _baseTimeSteps, yearly=True)
-                    _timeSeries[_elementTimeSteps] = _timeSeries[_elementTimeSteps].multiply(_yearlyVariation[year],axis=0).fillna(0)
-            _timeSeries = _timeSeries.stack()
-            return _timeSeries
+            # if only one unique value
+            if len(np.unique(_yearlyVariation)) == 1:
+                return _timeSeries*np.unique(_yearlyVariation)[0]
+            else:
+                for year in EnergySystem.getEnergySystem().setTimeStepsYearly:
+                    if not all(_yearlyVariation[year] == 1):
+                        _baseTimeSteps = EnergySystem.decodeTimeStep(None, year, "yearly")
+                        _elementTimeSteps = EnergySystem.encodeTimeStep(element.name, _baseTimeSteps, yearly=True)
+                        # _npTimeSeries = _timeSeries[_elementTimeSteps].to_numpy()
+                        # _npYearlyVariation = np.reshape(_yearlyVariation[year].to_numpy(),(-1,1))
+                        _timeSeries.loc[:,_elementTimeSteps] = _timeSeries[_elementTimeSteps].multiply(_yearlyVariation[year],axis=0).fillna(0)
+                timeSeries = _timeSeries.stack()
+                return timeSeries
         else:
             return timeSeries
 
