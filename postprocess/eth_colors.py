@@ -103,16 +103,19 @@ class ETHColors:
             "noG_PF": self.getColor("red","dark"),
             "noG_MF": self.getColor("red",60),
             "noRG_PF": self.getColor("green","dark"),
-            "noRG_PF_noBudget": self.getColor("red","dark"),
+            "noRG_PF_noBudget": self.getColor("bronze"),
             # "noRG_PF2": self.getColor("green"),
-            "noRG_MF": self.getColor("green",40),
-            "noRG_MF2": self.getColor("green",20),
+            "noRG_MF": self.getColor("red",80),
+            "noRG_MF2": self.getColor("red",60),
+            "noRG_MF4": self.getColor("red",20),
         }
 
     def setManualColors(self):
         self.manualColors = {}
-        self.manualColors["Carbon Emission Budget"] = self.getColor("grey","dark")
-        self.manualColors["Carbon Intensity"] = self.getColor("BW", 100)
+        self.manualColors["Carbon Emission Budget"]             = self.getColor("grey","dark")
+        self.manualColors["Carbon Intensity"]                   = self.getColor("BW", 100)
+        self.manualColors["Final Cumulative Costs"]             = self.getColor("blue")
+        self.manualColors["Maximum New Electricity Capacities"] = self.getColor("red")
 
     def getColor(self,color,shade = 100):
         assert color in self.baseColors, f"color {color} not in base colors. Select from {list(self.baseColors.keys())}."
