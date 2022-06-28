@@ -295,7 +295,7 @@ class TimeSeriesAggregation():
             _yearlyVariation            = _yearlyVariation.unstack(headerSetTimeStepsYearly)
             # if only one unique value
             if len(np.unique(_yearlyVariation)) == 1:
-                return _timeSeries*np.unique(_yearlyVariation)[0]
+                return _timeSeries.stack()*np.unique(_yearlyVariation)[0]
             else:
                 for year in EnergySystem.getEnergySystem().setTimeStepsYearly:
                     if not all(_yearlyVariation[year] == 1):

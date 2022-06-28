@@ -14,6 +14,8 @@ import logging
 import pyomo.environ as pe
 import pyomo.gdp as pgdp
 import numpy as np
+import cProfile
+import pstats
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 
@@ -326,6 +328,16 @@ class Technology(Element):
     @classmethod
     def constructParams(cls):
         """ constructs the pe.Params of the class <Technology> """
+        pr = cProfile.Profile()
+        pr.enable()
+        # construct pe.Params
+
+        EnergySystem.initializeComponent(cls, "opexSpecific",
+                                         indexNames=["setTechnologies", "setLocation", "setTimeStepsOperation"])
+        pr.disable()
+        sortby = pstats.SortKey.CUMULATIVE
+        ps = pstats.Stats(pr).sort_stats(sortby)
+        ps.print_stats()
         # construct pe.Param of the class <Technology>
         model = EnergySystem.getConcreteModel()
 

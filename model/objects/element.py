@@ -144,11 +144,11 @@ class Element:
         _attribute = getattr(_element, attributeName)
         if isinstance(_attribute, pd.Series):
             if len(_attribute) > 1:
-                _attribute = _attribute.to_dict()
+                _attribute = _attribute.to_dict() # TODO bottleneck here?!?!?
             else:
                 _attribute = _attribute.squeeze()
         elif isinstance(_attribute, pd.DataFrame):
-            raise TypeError("Not yet implemented for pd.DataFrames")
+            raise TypeError(f"Not yet implemented for pd.DataFrames. Wrong format for element {_element.name}")
         if isinstance(_attribute, dict) and "PWA" not in attributeName:
             if capacityType:
                 _combinedKey = (_element.name,capacityType)
