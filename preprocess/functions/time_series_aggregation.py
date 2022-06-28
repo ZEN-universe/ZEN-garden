@@ -179,29 +179,37 @@ class TimeSeriesAggregation():
             for technology in technologiesCarrier:
                 listSequenceTimeSteps.append(Element.getAttributeOfSpecificElement(technology, "sequenceTimeSteps"))
             # get combined time steps, duration and sequence
-            setTimeStepsOperation, timeStepsOperationDuration, sequenceTimeSteps = TimeSeriesAggregation.uniqueTimeStepsInMultigrid(
-                listSequenceTimeSteps)
-            # set attributes
-            TimeSeriesAggregation.setTimeAttributes(element,setTimeStepsOperation,timeStepsOperationDuration,sequenceTimeSteps,isEnergyBalance=True)
+            uniqueTimeStepSequences = TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listSequenceTimeSteps)
+            # if time steps of energy balance differ from carrier flows
+            if uniqueTimeStepSequences:
+                setTimeStepsOperation, timeStepsOperationDuration, sequenceTimeSteps = uniqueTimeStepSequences
+                # set attributes
+                TimeSeriesAggregation.setTimeAttributes(element,setTimeStepsOperation,timeStepsOperationDuration,sequenceTimeSteps,isEnergyBalance=True)
 
-            # if carrier previously not aggregated
-            if not element.isAggregated():
-                TimeSeriesAggregation.setTimeAttributes(element,setTimeStepsOperation,timeStepsOperationDuration,sequenceTimeSteps)
-
-            # iterate through raw time series data
-            for timeSeries in element.rawTimeSeries:
-                # if not yet aggregated, conduct "manual" time series aggregation
+                # if carrier previously not aggregated
                 if not element.isAggregated():
-                    dfTimeSeries = element.rawTimeSeries[timeSeries].loc[(slice(None), setTimeStepsOperation)]
-                else:
-                    dfTimeSeries = getattr(element, timeSeries)
-                # save attribute
-                setattr(element, timeSeries, dfTimeSeries)
-            # set aggregation indicator
-            TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
-            # multiply with yearly variation
-            for timeSeries in element.rawTimeSeries:
-                dfTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, dfTimeSeries)
+                    TimeSeriesAggregation.setTimeAttributes(element,setTimeStepsOperation,timeStepsOperationDuration,sequenceTimeSteps)
+                # set aggregation indicator
+                TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
+                # iterate through raw time series data
+                for timeSeries in element.rawTimeSeries:
+                    # if not yet aggregated, conduct "manual" time series aggregation
+                    if not element.isAggregated():
+                        dfTimeSeries = element.rawTimeSeries[timeSeries].loc[(slice(None), setTimeStepsOperation)]
+                    else:
+                        dfTimeSeries = getattr(element, timeSeries)
+                    # multiply with yearly variation
+                    dfTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, dfTimeSeries)
+                    # save attribute
+                    setattr(element, timeSeries, dfTimeSeries)
+            # no aggregation -> time steps and sequence of energy balance are equal to the carrier time steps and sequence
+            else:
+                # get time attributes of carrier
+                setTimeStepsOperation, timeStepsOperationDuration, sequenceTimeSteps = TimeSeriesAggregation.getTimeAttributes(element)
+                # set time attributes for energy balance
+                TimeSeriesAggregation.setTimeAttributes(element, setTimeStepsOperation, timeStepsOperationDuration,sequenceTimeSteps, isEnergyBalance=True)
+                # set aggregation indicator
+                TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
 
     @classmethod
     def linkTimeSteps(cls, element):
@@ -215,14 +223,18 @@ class TimeSeriesAggregation():
         if element in Technology.getAllElements():
             listSequenceTimeSteps.append(EnergySystem.getSequenceTimeSteps(element.name, "invest"))
 
-        setTimeSteps, timeStepsDuration, sequenceTimeSteps = \
-            TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listSequenceTimeSteps)
-        # set sequence time steps
-        EnergySystem.setSequenceTimeSteps(element.name, sequenceTimeSteps)
-        # time series parameters
-        cls.overwriteTimeSeriesWithExpandedTimeIndex(element, setTimeSteps, sequenceTimeSteps)
-        # set attributes
-        TimeSeriesAggregation.setTimeAttributes(element,setTimeSteps,timeStepsDuration,sequenceTimeSteps)
+        uniqueTimeStepSequences = TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listSequenceTimeSteps)
+        if uniqueTimeStepSequences:
+            setTimeSteps, timeStepsDuration, sequenceTimeSteps = uniqueTimeStepSequences
+            # set sequence time steps
+            EnergySystem.setSequenceTimeSteps(element.name, sequenceTimeSteps)
+            # time series parameters
+            cls.overwriteTimeSeriesWithExpandedTimeIndex(element, setTimeSteps, sequenceTimeSteps)
+            # set attributes
+            TimeSeriesAggregation.setTimeAttributes(element,setTimeSteps,timeStepsDuration,sequenceTimeSteps)
+        else:
+            # check to multiply the time series with the yearly variation
+            cls.yearlyVariationNonaggregatedTimeSeries(element)
 
     @classmethod
     def calculateTimeStepsOperation2Invest(cls,element):
@@ -241,7 +253,7 @@ class TimeSeriesAggregation():
     @classmethod
     def overwriteTimeSeriesWithExpandedTimeIndex(cls, element, setTimeStepsOperation, sequenceTimeSteps):
         """ this method expands the aggregated time series to match the extended operational time steps because of matching the investment and operational time sequences.
-        :param element: technology of the optimization
+        :param element: element of the optimization
         :param setTimeStepsOperation: new time steps operation
         :param sequenceTimeSteps: new order of operational time steps """
         headerSetTimeSteps      = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
@@ -255,6 +267,16 @@ class TimeSeriesAggregation():
             _newTimeSeries                  = _newTimeSeries.stack()
             # multiply with yearly variation
             _newTimeSeries                  = cls.multiplyYearlyVariation(element, timeSeries, _newTimeSeries)
+            # overwrite time series
+            setattr(element, timeSeries, _newTimeSeries)
+
+    @classmethod
+    def yearlyVariationNonaggregatedTimeSeries(cls, element):
+        """ multiply the time series with the yearly variation if the element's time series are not aggregated
+        :param element: element of the optimization """
+        for timeSeries in element.rawTimeSeries:
+            # multiply with yearly variation
+            _newTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, getattr(element, timeSeries))
             # overwrite time series
             setattr(element, timeSeries, _newTimeSeries)
 
@@ -289,6 +311,7 @@ class TimeSeriesAggregation():
     @classmethod
     def repeatSequenceTimeStepsForAllYears(cls):
         """ this method repeats the operational time series for all years."""
+        logging.info("Repeat the time series sequences for all years")
         # concatenate the order of time steps for all elements and link with investment and yearly time steps
         for element in Element.getAllElements():
             optimizedYears              = EnergySystem.getSystem()["optimizedYears"]
@@ -318,7 +341,10 @@ class TimeSeriesAggregation():
         """ this method returns the unique time steps of multiple time grids """
         sequenceTimeSteps           = np.zeros(np.size(listSequenceTimeSteps, axis=1)).astype(int)
         combinedSequenceTimeSteps   = np.vstack(listSequenceTimeSteps)
-        uniqueCombinedTimeSteps, countCombinedTimeSteps = np.unique(combinedSequenceTimeSteps, axis=1,return_counts=True)
+        uniqueCombinedTimeSteps, uniqueIndices, countCombinedTimeSteps = np.unique(combinedSequenceTimeSteps, axis=1,return_counts=True,return_index = True)
+        # if unique sequences are the same as the original sequences
+        if (combinedSequenceTimeSteps[:, uniqueIndices] == uniqueCombinedTimeSteps).all():
+            return None
         setTimeSteps      = []
         timeStepsDuration = {}
         for idxUniqueTimeStep, countUniqueTimeStep in enumerate(countCombinedTimeSteps):
@@ -328,7 +354,7 @@ class TimeSeriesAggregation():
             idxInInput                              = np.argwhere(np.all(combinedSequenceTimeSteps.T == uniqueTimeStep, axis=1))
             # fill new order time steps 
             sequenceTimeSteps[idxInInput]           = idxUniqueTimeStep
-        return setTimeSteps, timeStepsDuration, sequenceTimeSteps
+        return (setTimeSteps, timeStepsDuration, sequenceTimeSteps)
 
     @classmethod
     def overwriteRawTimeSeries(cls, element):
@@ -364,6 +390,18 @@ class TimeSeriesAggregation():
         :param timeSeriesAggregation: timeSeriesAggregation """
         cls.timeSeriesAggregation = timeSeriesAggregation
 
+    @staticmethod
+    def getTimeAttributes(element, isEnergyBalance=False):
+        """ this method returns the operational time attributes of an element.
+        :param element: element of the optimization
+        :param isEnergyBalance: boolean if attributes set for energyBalance """
+        if isinstance(element, TimeSeriesAggregation):
+            return (element.setTimeSteps,element.timeStepsDuration,element.sequenceTimeSteps)
+        elif not isEnergyBalance:
+            return (element.setTimeStepsOperation, element.timeStepsOperationDuration, element.sequenceTimeSteps)
+        else:
+            return (element.setTimeStepsEnergyBalance, element.timeStepsEnergyBalanceDuration, element.sequenceTimeStepsEnergyBalance)
+
     @classmethod
     def getTimeSeriesAggregation(cls):
         """ get timeSeriesAggregation
@@ -374,18 +412,14 @@ class TimeSeriesAggregation():
     def conductTimeSeriesAggregation(cls):
         """ this method conducts time series aggregation """
         logging.info("\n--- Time series aggregation ---")
-        pr = cProfile.Profile()
-        pr.enable()
         TimeSeriesAggregation()
         # repeat order of operational time steps and link with investment and yearly time steps
         cls.repeatSequenceTimeStepsForAllYears()
+        logging.info("Calculate operational time steps for storage levels and energy balances")
         for element in StorageTechnology.getAllElements():
             # calculate time steps of storage levels
             element.calculateTimeStepsStorageLevel()
         # calculate new time steps of energy balance
         for element in Carrier.getAllElements():
             cls.calculateTimeStepsEnergyBalance(element)
-        pr.disable()
-        ps = pstats.Stats(pr).sort_stats("cumulative")
-        ps.print_stats()
-        a=1
+

@@ -84,20 +84,28 @@ class StorageTechnology(Technology):
     def calculateTimeStepsStorageLevel(self):
         """ this method calculates the number of time steps on the storage level, and the sequence in which the storage levels are connected """
         sequenceTimeSteps                   = self.sequenceTimeSteps
-        # calculate connected storage levels, i.e., time steps that are constant for 
-        IdxLastConnectedStorageLevel        = np.append(np.flatnonzero(np.diff(sequenceTimeSteps)),len(sequenceTimeSteps)-1)
-        # empty setTimeStep
-        self.setTimeStepsStorageLevel       = []
-        self.timeStepsStorageLevelDuration  = {}
-        timeStepsEnergy2Power               = {}
-        self.sequenceTimeStepsStorageLevel  = np.zeros(np.size(sequenceTimeSteps)).astype(int)
-        counterTimeStep                     = 0
-        for idxTimeStep,idxStorageLevel in enumerate(IdxLastConnectedStorageLevel):
-            self.setTimeStepsStorageLevel.append(idxTimeStep)
-            self.timeStepsStorageLevelDuration[idxTimeStep] = len(range(counterTimeStep,idxStorageLevel+1))
-            self.sequenceTimeStepsStorageLevel[counterTimeStep:idxStorageLevel+1] = idxTimeStep
-            timeStepsEnergy2Power[idxTimeStep]  = sequenceTimeSteps[idxStorageLevel]
-            counterTimeStep                 = idxStorageLevel + 1 
+        # if time series aggregation was conducted
+        if self.isAggregated():
+            # calculate connected storage levels, i.e., time steps that are constant for
+            IdxLastConnectedStorageLevel        = np.append(np.flatnonzero(np.diff(sequenceTimeSteps)),len(sequenceTimeSteps)-1)
+            # empty setTimeStep
+            self.setTimeStepsStorageLevel       = []
+            self.timeStepsStorageLevelDuration  = {}
+            timeStepsEnergy2Power               = {}
+            self.sequenceTimeStepsStorageLevel  = np.zeros(np.size(sequenceTimeSteps)).astype(int)
+            counterTimeStep                     = 0
+            for idxTimeStep,idxStorageLevel in enumerate(IdxLastConnectedStorageLevel):
+                self.setTimeStepsStorageLevel.append(idxTimeStep)
+                self.timeStepsStorageLevelDuration[idxTimeStep] = len(range(counterTimeStep,idxStorageLevel+1))
+                self.sequenceTimeStepsStorageLevel[counterTimeStep:idxStorageLevel+1] = idxTimeStep
+                timeStepsEnergy2Power[idxTimeStep]  = sequenceTimeSteps[idxStorageLevel]
+                counterTimeStep                 = idxStorageLevel + 1
+        else:
+            self.setTimeStepsStorageLevel       = self.setTimeSteps
+            self.timeStepsStorageLevelDuration  = self.timeStepsOperationDuration
+            self.sequenceTimeStepsStorageLevel  = sequenceTimeSteps
+            timeStepsEnergy2Power               = {idx: idx for idx in self.setTimeSteps}
+
         # add sequence to energy system
         EnergySystem.setSequenceTimeSteps(self.name+"StorageLevel",self.sequenceTimeStepsStorageLevel)
         # set the dict timeStepsEnergy2Power

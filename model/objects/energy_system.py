@@ -217,13 +217,12 @@ class EnergySystem:
     def setTimeStepsStorageStartEnd(cls, element):
         """ sets the dict of matching the last time step of the year in the storage level domain to the first """
         system = cls.getSystem()
-        _baseTimeStepsPerYear = system["unaggregatedTimeStepsPerYear"]
-        _numberYears = system["optimizedYears"]
-        _sequenceTimeSteps = cls.getSequenceTimeSteps(element + "StorageLevel")
-        _timeStepsStart = _sequenceTimeSteps[np.array(range(0, _numberYears)) * _baseTimeStepsPerYear]
-        _timeStepsEnd = _sequenceTimeSteps[np.array(range(1, _numberYears + 1)) * _baseTimeStepsPerYear - 1]
-        cls.dictTimeStepsStorageLevelStartEndYear[element] = {_start: _end for _start, _end in
-                                                              zip(_timeStepsStart, _timeStepsEnd)}
+        _baseTimeStepsPerYear   = system["unaggregatedTimeStepsPerYear"]
+        _numberYears            = system["optimizedYears"]
+        _sequenceTimeSteps      = cls.getSequenceTimeSteps(element + "StorageLevel")
+        _timeStepsStart         = _sequenceTimeSteps[np.array(range(0, _numberYears)) * _baseTimeStepsPerYear]
+        _timeStepsEnd           = _sequenceTimeSteps[np.array(range(1, _numberYears + 1)) * _baseTimeStepsPerYear - 1]
+        cls.dictTimeStepsStorageLevelStartEndYear[element] = {_start: _end for _start, _end in zip(_timeStepsStart, _timeStepsEnd)}
 
     @classmethod
     def setSequenceTimeSteps(cls,element,sequenceTimeSteps,timeStepType = None):
