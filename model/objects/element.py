@@ -197,22 +197,24 @@ class Element:
     def constructModelComponents(cls):
         """ constructs the model components of the class <Element> """
         logging.info("\n--- Construct model components ---\n")
-        # pr = cProfile.Profile()
-        # pr.enable()
+
         # construct pe.Sets
         cls.constructSets()
+        pr = cProfile.Profile()
+        pr.enable()
         # construct pe.Params
         cls.constructParams()
+        pr.disable()
+        sortby = pstats.SortKey.CUMULATIVE
+        ps = pstats.Stats(pr).sort_stats(sortby)
+        ps.print_stats()
         # construct pe.Vars
         cls.constructVars()
         # construct pe.Constraints
         cls.constructConstraints()
         # construct pe.Objective
         EnergySystem.constructObjective()
-        # pr.disable()
-        # sortby = pstats.SortKey.CUMULATIVE
-        # ps = pstats.Stats(pr).sort_stats(sortby)
-        # ps.print_stats()
+
 
     @classmethod
     def constructSets(cls):

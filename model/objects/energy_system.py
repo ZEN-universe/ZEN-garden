@@ -461,7 +461,6 @@ class EnergySystem:
         :param baseTimeStep: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
-        # model = cls.getConcreteModel()
         sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
         # get time step duration
         if np.all(baseTimeSteps >= 0):
@@ -518,11 +517,34 @@ class EnergySystem:
                 componentData = component.squeeze()
         else:
             component = callingClass.getAttributeOfAllElements(componentName, capacityTypes)
-            componentData = pd.Series(component, dtype=float)
+            componentData       = pd.Series(component, dtype=float)
             if indexNames:
-                customSet = callingClass.createCustomSet(indexNames)
-                componentData = componentData[customSet]
+                customSet       = callingClass.createCustomSet(indexNames)
+                componentData   = cls.checkForSubindex(componentData,customSet)
         return componentData
+
+    @classmethod
+    def checkForSubindex(cls,componentData,customSet):
+        """ this method checks if the customSet can be a subindex of componentData and returns subindexed componentData
+        :param componentData: extracted data as pd.Series
+        :param customSet: custom set as subindex of componentData
+        :return componentData: extracted subindexed data as pd.Series """
+        _customIndex    = pd.Index(customSet)
+        # if _customIndex is subindex of componentData, return subset of componentData
+        try:
+            return componentData[_customIndex]
+        # else delete trivial index levels (that have a single value) and try again
+        except KeyError:
+            _reducedCustomIndex = _customIndex.copy()
+            for _level,_shape in enumerate(_customIndex.levshape):
+                if _shape == 1:
+                    _reducedCustomIndex = _reducedCustomIndex.droplevel(_level)
+            try:
+                componentData = componentData[_reducedCustomIndex]
+                componentData.index     = _customIndex
+                return componentData
+            except KeyError:
+                raise KeyError(f"the custom set {customSet} cannot be used as a subindex of {componentData.index}")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
     @classmethod
