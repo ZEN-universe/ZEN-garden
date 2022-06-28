@@ -19,7 +19,6 @@ from model.objects.carrier import Carrier
 from model.objects.technology.technology import Technology
 from model.objects.technology.storage_technology import StorageTechnology
 
-
 class TimeSeriesAggregation():
     timeSeriesAggregation = None
 
@@ -34,7 +33,7 @@ class TimeSeriesAggregation():
         self.numberTypicalPeriods   = min(self.system["unaggregatedTimeStepsPerYear"], self.system["aggregatedTimeStepsPerYear"])
         # set timeSeriesAggregation
         TimeSeriesAggregation.setTimeSeriesAggregation(self)
-        self._conductedTimeSeriesAggregation = False
+        self.conductedTimeSeriesAggregation = False
         # if number of time steps >= number of base time steps, skip aggregation
         if self.numberTypicalPeriods < np.size(self.setBaseTimeSteps) and self.system["conductTimeSeriesAggregation"]:
             # select time series
@@ -99,7 +98,7 @@ class TimeSeriesAggregation():
         self.substituteColumnNames(direction="raise")
         # set aggregated time series
         self.setAggregatedTimeSeriesOfAllElements()
-        self._conductedTimeSeriesAggregation = True
+        self.conductedTimeSeriesAggregation = True
 
     def setAggregatedTimeSeriesOfAllElements(self):
         """ this method sets the aggregated time series and sets the necessary attributes after the aggregation to a single time grid """
@@ -312,9 +311,10 @@ class TimeSeriesAggregation():
     def repeatSequenceTimeStepsForAllYears(cls):
         """ this method repeats the operational time series for all years."""
         logging.info("Repeat the time series sequences for all years")
+        optimizedYears = len(EnergySystem.getEnergySystem().setTimeStepsYearly)
         # concatenate the order of time steps for all elements and link with investment and yearly time steps
         for element in Element.getAllElements():
-            optimizedYears              = EnergySystem.getSystem()["optimizedYears"]
+            # optimizedYears              = EnergySystem.getSystem()["optimizedYears"]
             oldSequenceTimeSteps        = Element.getAttributeOfSpecificElement(element.name, "sequenceTimeSteps")
             newSequenceTimeSteps        = np.hstack([oldSequenceTimeSteps] * optimizedYears)
             element.sequenceTimeSteps   = newSequenceTimeSteps
@@ -412,13 +412,13 @@ class TimeSeriesAggregation():
     def conductTimeSeriesAggregation(cls):
         """ this method conducts time series aggregation """
         logging.info("\n--- Time series aggregation ---")
-        TimeSeriesAggregation()
+        timeSeriesAggregation = TimeSeriesAggregation()
         # repeat order of operational time steps and link with investment and yearly time steps
         cls.repeatSequenceTimeStepsForAllYears()
         logging.info("Calculate operational time steps for storage levels and energy balances")
         for element in StorageTechnology.getAllElements():
             # calculate time steps of storage levels
-            element.calculateTimeStepsStorageLevel()
+            element.calculateTimeStepsStorageLevel(conductedTimeSeriesAggregation = timeSeriesAggregation.conductedTimeSeriesAggregation)
         # calculate new time steps of energy balance
         for element in Carrier.getAllElements():
             cls.calculateTimeStepsEnergyBalance(element)

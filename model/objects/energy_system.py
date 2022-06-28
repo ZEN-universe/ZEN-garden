@@ -14,7 +14,6 @@ import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
 import copy
-from pint                                    import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
 from preprocess.functions.unit_handling         import UnitHandling
 
@@ -92,8 +91,16 @@ class EnergySystem:
         self.setCarriers            = []
         self.setTechnologies        = system["setTechnologies"]
         # base time steps
-        self.setBaseTimeSteps       = list(range(0, system["unaggregatedTimeStepsPerYear"] * system["optimizedYears"]))
-        self.setBaseTimeStepsYearly = list(range(0, system["unaggregatedTimeStepsPerYear"]))
+
+        if not system["useMultiYearData"]:
+            self.setBaseTimeSteps           = list(range(0, system["unaggregatedTimeStepsPerYear"] * system["optimizedYears"]))
+            self.setBaseTimeStepsYearly     = list(range(0, system["unaggregatedTimeStepsPerYear"]))
+        else:
+            _baseTimeSteps                  = []
+            for _year in system["usedYears"]:
+                _baseTimeSteps.extend(list(range(system["unaggregatedTimeStepsPerYear"]*_year, system["unaggregatedTimeStepsPerYear"]*(_year+1))))
+            self.setBaseTimeSteps           = _baseTimeSteps
+            self.setBaseTimeStepsYearly     = copy.deepcopy(self.setBaseTimeSteps)
 
         # yearly time steps
         self.typesTimeSteps                  = ["invest", "operation", "yearly"]
@@ -217,11 +224,16 @@ class EnergySystem:
     def setTimeStepsStorageStartEnd(cls, element):
         """ sets the dict of matching the last time step of the year in the storage level domain to the first """
         system = cls.getSystem()
-        _baseTimeStepsPerYear   = system["unaggregatedTimeStepsPerYear"]
-        _numberYears            = system["optimizedYears"]
+        _unaggregatedTimeSteps  = system["unaggregatedTimeStepsPerYear"]
+        _setBaseTimeSteps       = cls.getEnergySystem().setBaseTimeSteps
         _sequenceTimeSteps      = cls.getSequenceTimeSteps(element + "StorageLevel")
-        _timeStepsStart         = _sequenceTimeSteps[np.array(range(0, _numberYears)) * _baseTimeStepsPerYear]
-        _timeStepsEnd           = _sequenceTimeSteps[np.array(range(1, _numberYears + 1)) * _baseTimeStepsPerYear - 1]
+        _counter = 0
+        _timeStepsStart         = []
+        _timeStepsEnd           = []
+        while _counter < len(_sequenceTimeSteps):
+            _timeStepsStart.append(_sequenceTimeSteps[_counter])
+            _counter += _unaggregatedTimeSteps
+            _timeStepsEnd.append(_sequenceTimeSteps[_counter - 1])
         cls.dictTimeStepsStorageLevelStartEndYear[element] = {_start: _end for _start, _end in zip(_timeStepsStart, _timeStepsEnd)}
 
     @classmethod

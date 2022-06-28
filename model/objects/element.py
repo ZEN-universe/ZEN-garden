@@ -56,7 +56,6 @@ class Element:
         # get input path for current classLabel
         self.inputPath = paths[classLabel][self.name]["folder"]
 
-
     def setAggregated(self):
         """ this method sets self.aggregated to True """
         self.aggregated = True
