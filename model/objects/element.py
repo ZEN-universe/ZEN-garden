@@ -209,14 +209,8 @@ class Element:
 
         # construct pe.Sets
         cls.constructSets()
-        pr = cProfile.Profile()
-        pr.enable()
         # construct pe.Params
         cls.constructParams()
-        pr.disable()
-        sortby = pstats.SortKey.CUMULATIVE
-        ps = pstats.Stats(pr).sort_stats(sortby)
-        ps.print_stats()
         # construct pe.Vars
         cls.constructVars()
         # construct pe.Constraints
