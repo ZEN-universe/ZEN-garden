@@ -333,12 +333,14 @@ class Technology(Element):
         model.timeStepsInvestDuration = pe.Param(
             cls.createCustomSet(["setTechnologies","setTimeStepsInvest"]),
             initialize = EnergySystem.initializeComponent(cls,"timeStepsInvestDuration",indexNames=["setTechnologies","setTimeStepsInvest"]).astype(int),
+            default = 0,
             doc="Parameter which specifies the time step duration in investment for all technologies. Dimensions: setTechnologies, setTimeStepsInvest"
         )
         # existing capacity
         model.existingCapacity = pe.Param(
             cls.createCustomSet(["setTechnologies","setCapacityTypes", "setLocation", "setExistingTechnologies"]),
             initialize=EnergySystem.initializeComponent(cls,"existingCapacity",indexNames=["setTechnologies","setCapacityTypes", "setLocation", "setExistingTechnologies"],capacityTypes=True),
+            default = 0,
             doc='Parameter which specifies the existing technology size. Dimensions: setTechnologies')
         # existing capacity
         model.existingInvestedCapacity = pe.Param(
@@ -347,69 +349,82 @@ class Technology(Element):
                                                         indexNames=["setTechnologies", "setCapacityTypes",
                                                                     "setLocation", "setTimeStepsInvestEntireHorizon"],
                                                         capacityTypes=True),
+            default = 0,
             doc='Parameter which specifies the size of the previously invested capacities. ''Dimensions: setTechnologies, setCapacityTypes, setLocation, setTimeStepsInvestEntireHorizon')
 
         # minimum capacity
         model.minBuiltCapacity = pe.Param(
             cls.createCustomSet(["setTechnologies","setCapacityTypes"]),
             initialize = EnergySystem.initializeComponent(cls,"minBuiltCapacity",capacityTypes=True),
+            default = 0,
             doc = 'Parameter which specifies the minimum technology size that can be installed. Dimensions: setTechnologies')
         # maximum capacity
         model.maxBuiltCapacity = pe.Param(
             cls.createCustomSet(["setTechnologies","setCapacityTypes"]),
             initialize = EnergySystem.initializeComponent(cls,"maxBuiltCapacity",capacityTypes=True),
+            default = 0,
             doc = 'Parameter which specifies the maximum technology size that can be installed. Dimensions: setTechnologies')
         # lifetime existing technologies
         model.lifetimeExistingTechnology = pe.Param(
             cls.createCustomSet(["setTechnologies", "setLocation", "setExistingTechnologies"]),
             initialize=EnergySystem.initializeComponent(cls,"lifetimeExistingTechnology"),
+            default = 0,
             doc='Parameter which specifies the remaining lifetime of an existing technology. Dimensions: setTechnologies, setLocation, setExistingTechnologies')
         # lifetime existing technologies
         model.capexExistingCapacity = pe.Param(
             cls.createCustomSet(["setTechnologies","setCapacityTypes", "setLocation", "setExistingTechnologies"]),
             initialize=EnergySystem.initializeComponent(cls,"capexExistingCapacity",capacityTypes=True),
+            default = 0,
             doc='Parameter which specifies the annualized capex of an existing technology which still has to be paid. Dimensions: setTechnologies')
         # lifetime newly built technologies
         model.lifetimeTechnology = pe.Param(
             model.setTechnologies,
             initialize = EnergySystem.initializeComponent(cls,"lifetime"),
+            default = 0,
             doc = 'Parameter which specifies the lifetime of a newly built technology. Dimensions: setTechnologies')
         # constructionTime newly built technologies
         model.constructionTimeTechnology = pe.Param(
             model.setTechnologies,
             initialize=EnergySystem.initializeComponent(cls, "constructionTime"),
+            default = 0,
             doc='Parameter which specifies the construction time of a newly built technology. Dimensions: setTechnologies')
         # maximum diffusion rate, i.e., increase in capacity
         model.maxDiffusionRate = pe.Param(
             cls.createCustomSet(["setTechnologies", "setTimeStepsInvest"]),
             initialize=EnergySystem.initializeComponent(cls, "maxDiffusionRate",indexNames=["setTechnologies", "setTimeStepsInvest"]),
+            default = 0,
             doc="Parameter which specifies the maximum diffusion rate, i.e., the maximum increase in capacity between investment steps. Dimensions: setTechnologies, setTimeStepsInvest"
         )
         # capacityLimit of technologies
         model.capacityLimitTechnology = pe.Param(
             cls.createCustomSet(["setTechnologies","setCapacityTypes","setLocation"]),
             initialize = EnergySystem.initializeComponent(cls,"capacityLimit",capacityTypes=True),
+            default = 0,
             doc = 'Parameter which specifies the capacity limit of technologies. Dimensions: setTechnologies, setLocation')
         # minimum load relative to capacity
         model.minLoad = pe.Param(
             cls.createCustomSet(["setTechnologies","setCapacityTypes","setLocation","setTimeStepsOperation"]),
             initialize = EnergySystem.initializeComponent(cls,"minLoad",indexNames=["setTechnologies","setCapacityTypes","setLocation","setTimeStepsOperation"],capacityTypes=True),
+            default = 0,
             doc = 'Parameter which specifies the minimum load of technology relative to installed capacity. Dimensions:setTechnologies, setLocation, setTimeStepsOperation')
         # maximum load relative to capacity
         model.maxLoad = pe.Param(
             cls.createCustomSet(["setTechnologies","setCapacityTypes","setLocation","setTimeStepsOperation"]),
             initialize = EnergySystem.initializeComponent(cls,"maxLoad",indexNames=["setTechnologies","setCapacityTypes","setLocation","setTimeStepsOperation"],capacityTypes=True),
+            default = 0,
             doc = 'Parameter which specifies the maximum load of technology relative to installed capacity. Dimensions:setTechnologies, setLocation, setTimeStepsOperation')
         # specific opex
         model.opexSpecific = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation","setTimeStepsOperation"]),
             initialize = EnergySystem.initializeComponent(cls,"opexSpecific",indexNames=["setTechnologies","setLocation","setTimeStepsOperation"]),
+            default = 0,
             doc = 'Parameter which specifies the specific opex. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
         )
         # carbon intensity
         model.carbonIntensityTechnology = pe.Param(
             cls.createCustomSet(["setTechnologies","setLocation"]),
             initialize = EnergySystem.initializeComponent(cls,"carbonIntensityTechnology"),
+            default = 0,
             doc = 'Parameter which specifies the carbon intensity of each technology. Dimensions: setTechnologies, setLocation'
         )
 

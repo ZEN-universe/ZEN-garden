@@ -56,7 +56,6 @@ class Element:
         # get input path for current classLabel
         self.inputPath = paths[classLabel][self.name]["folder"]
 
-
     def setAggregated(self):
         """ this method sets self.aggregated to True """
         self.aggregated = True
@@ -110,24 +109,29 @@ class Element:
         return cls.__subclasses__()
 
     @classmethod
-    def getAttributeOfAllElements(cls,attributeName:str,capacityTypes = False):
+    def getAttributeOfAllElements(cls,attributeName:str,capacityTypes = False,returnAttributeIsSeries = False):
         """ get attribute values of all elements in this class 
         :param attributeName: str name of attribute
         :param capacityTypes: boolean if attributes extracted for all capacity types
-        :return dictOfAttributes: returns dict of attribute values """
+        :param returnAttributeIsSeries: boolean if information on attribute type is returned
+        :return dictOfAttributes: returns dict of attribute values
+        :return attributeIsSeries: return information on attribute type """
         system = EnergySystem.getSystem()
         _classElements = cls.getAllElements()
         dictOfAttributes = {}
         for _element in _classElements:
             if not capacityTypes:
-                dictOfAttributes = cls.appendAttributeOfElementToDict(_element,attributeName,dictOfAttributes)
+                dictOfAttributes,attributeIsSeries = cls.appendAttributeOfElementToDict(_element,attributeName,dictOfAttributes)
             # if extracted for both capacity types
             else:
                 for capacityType in system["setCapacityTypes"]:
                     # append energy only for storage technologies
                     if capacityType == system["setCapacityTypes"][0] or _element.name in system["setStorageTechnologies"]:
-                        dictOfAttributes = cls.appendAttributeOfElementToDict(_element, attributeName, dictOfAttributes,capacityType)
-        return dictOfAttributes
+                        dictOfAttributes,attributeIsSeries = cls.appendAttributeOfElementToDict(_element, attributeName, dictOfAttributes,capacityType)
+        if returnAttributeIsSeries:
+            return dictOfAttributes,attributeIsSeries
+        else:
+            return dictOfAttributes
 
     @classmethod
     def appendAttributeOfElementToDict(cls,_element,attributeName,dictOfAttributes,capacityType = None):
@@ -137,30 +141,34 @@ class Element:
         :param dictOfAttributes: dict of attribute values
         :param capacityType: capacity type for which attribute extracted. If None, not listed in key
         :return dictOfAttributes: returns dict of attribute values """
+        attributeIsSeries = False
         system = EnergySystem.getSystem()
         # add Energy for energy capacity type
         if capacityType == system["setCapacityTypes"][1]:
             attributeName += "Energy"
         assert hasattr(_element, attributeName), f"Element {_element.name} does not have attribute {attributeName}"
         _attribute = getattr(_element, attributeName)
-        if isinstance(_attribute, pd.Series):
-            if len(_attribute) > 1:
-                _attribute = _attribute.to_dict()
-            else:
-                _attribute = _attribute.squeeze()
-        elif isinstance(_attribute, pd.DataFrame):
-            raise TypeError("Not yet implemented for pd.DataFrames")
-        if isinstance(_attribute, dict) and "PWA" not in attributeName:
+        assert not isinstance(_attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {_element.name}"
+        # add attribute to dictOfAttributes
+        if isinstance(_attribute, dict):
+            dictOfAttributes.update({(_element.name,)+(key,):val for key,val in _attribute.items()})
+        elif isinstance(_attribute, pd.Series) and "PWA" not in attributeName:
             if capacityType:
                 _combinedKey = (_element.name,capacityType)
             else:
-                _combinedKey = (_element.name,)
-            # if attribute is dict
-            for _key in _attribute:
-                if isinstance(_key, tuple):
-                    dictOfAttributes[_combinedKey + _key] = _attribute[_key]
-                else:
-                    dictOfAttributes[_combinedKey + (_key,)] = _attribute[_key]
+                _combinedKey = _element.name
+            if len(_attribute) > 1:
+                dictOfAttributes[_combinedKey] = _attribute
+                attributeIsSeries = True
+            else:
+                dictOfAttributes[_combinedKey] = _attribute.squeeze()
+                attributeIsSeries = False
+            # # if attribute is dict
+            # for _key in _attribute:
+            #     if isinstance(_key, tuple):
+            #         dictOfAttributes[_combinedKey + _key] = _attribute[_key]
+            #     else:
+            #         dictOfAttributes[_combinedKey + (_key,)] = _attribute[_key]
         elif isinstance(_attribute, int):
             if capacityType:
                 dictOfAttributes[(_element.name,capacityType)] = [_attribute]
@@ -171,7 +179,7 @@ class Element:
                 dictOfAttributes[(_element.name,capacityType)] = _attribute
             else:
                 dictOfAttributes[_element.name] = _attribute
-        return dictOfAttributes
+        return dictOfAttributes, attributeIsSeries
 
     @classmethod
     def getAttributeOfSpecificElement(cls,elementName:str,attributeName:str):
@@ -198,8 +206,7 @@ class Element:
     def constructModelComponents(cls):
         """ constructs the model components of the class <Element> """
         logging.info("\n--- Construct model components ---\n")
-        # pr = cProfile.Profile()
-        # pr.enable()
+
         # construct pe.Sets
         cls.constructSets()
         # construct pe.Params
@@ -210,10 +217,7 @@ class Element:
         cls.constructConstraints()
         # construct pe.Objective
         EnergySystem.constructObjective()
-        # pr.disable()
-        # sortby = pstats.SortKey.CUMULATIVE
-        # ps = pstats.Stats(pr).sort_stats(sortby)
-        # ps.print_stats()
+
 
     @classmethod
     def constructSets(cls):
@@ -246,6 +250,7 @@ class Element:
         model.timeStepsOperationDuration = pe.Param(
             cls.createCustomSet(["setElements","setTimeStepsOperation"]),
             initialize = EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]).astype(int),
+            default = 0,
             doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setElements, setTimeStepsOperation"
         )
         # construct pe.Params of the child classes
