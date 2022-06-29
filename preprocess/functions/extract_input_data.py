@@ -240,7 +240,10 @@ class DataInput():
             assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.csv"
             dictNumberOfTimeSteps[carrier] = {None: dfInput.loc[carrier].squeeze()}
         # add yearly time steps
-        dictNumberOfTimeSteps[None] = {"yearly": self.system["optimizedYears"]}
+        if not self.system["useMultiYearData"]:
+            dictNumberOfTimeSteps[None] = {"yearly": self.system["optimizedYears"]}
+        else:
+            dictNumberOfTimeSteps[None] = {"yearly": 1}
 
         # limit number of periods to base time steps of system
         for element in dictNumberOfTimeSteps:
@@ -249,7 +252,7 @@ class DataInput():
                 continue
 
             numberTypicalPeriods                = dictNumberOfTimeSteps[element][typeTimeStep]
-            numberTypicalPeriodsTotal           = numberTypicalPeriods*self.system["optimizedYears"]
+            numberTypicalPeriodsTotal           = numberTypicalPeriods*dictNumberOfTimeSteps[None]["yearly"]
             if int(numberTypicalPeriodsTotal)   != numberTypicalPeriodsTotal:
                 logging.warning(f"The requested invest time steps per year ({numberTypicalPeriods}) of {element} do not evaluate to an integer for the entire time horizon ({numberTypicalPeriodsTotal}). Rounded up.")
                 numberTypicalPeriodsTotal                   = np.ceil(numberTypicalPeriodsTotal)

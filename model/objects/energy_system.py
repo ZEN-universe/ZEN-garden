@@ -14,6 +14,7 @@ import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
 import copy
+from pint                                    import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
 from preprocess.functions.unit_handling         import UnitHandling
 
@@ -91,16 +92,8 @@ class EnergySystem:
         self.setCarriers            = []
         self.setTechnologies        = system["setTechnologies"]
         # base time steps
-
-        if not system["useMultiYearData"]:
-            self.setBaseTimeSteps           = list(range(0, system["unaggregatedTimeStepsPerYear"] * system["optimizedYears"]))
-            self.setBaseTimeStepsYearly     = list(range(0, system["unaggregatedTimeStepsPerYear"]))
-        else:
-            _baseTimeSteps                  = []
-            for _year in system["usedYears"]:
-                _baseTimeSteps.extend(list(range(system["unaggregatedTimeStepsPerYear"]*_year, system["unaggregatedTimeStepsPerYear"]*(_year+1))))
-            self.setBaseTimeSteps           = _baseTimeSteps
-            self.setBaseTimeStepsYearly     = copy.deepcopy(self.setBaseTimeSteps)
+        self.setBaseTimeSteps       = list(range(0, system["unaggregatedTimeStepsPerYear"] * system["optimizedYears"]))
+        self.setBaseTimeStepsYearly = list(range(0, system["unaggregatedTimeStepsPerYear"]))
 
         # yearly time steps
         self.typesTimeSteps                  = ["invest", "operation", "yearly"]
@@ -461,6 +454,7 @@ class EnergySystem:
         :param baseTimeStep: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
+        # model = cls.getConcreteModel()
         sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
         # get time step duration
         if np.all(baseTimeSteps >= 0):

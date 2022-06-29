@@ -81,11 +81,12 @@ class StorageTechnology(Technology):
             _absoluteCapex = self.capexSpecific[index[0]].iloc[0] * capacity
         return _absoluteCapex
 
-    def calculateTimeStepsStorageLevel(self):
-        """ this method calculates the number of time steps on the storage level, and the sequence in which the storage levels are connected """
+    def calculateTimeStepsStorageLevel(self,conductedTimeSeriesAggregation):
+        """ this method calculates the number of time steps on the storage level, and the sequence in which the storage levels are connected
+        conductedTimeSeriesAggregation: boolean if the time series were aggregated. If not, the storage level index is the same as the carrier flow indices """
         sequenceTimeSteps                   = self.sequenceTimeSteps
         # if time series aggregation was conducted
-        if self.isAggregated():
+        if conductedTimeSeriesAggregation:
             # calculate connected storage levels, i.e., time steps that are constant for
             IdxLastConnectedStorageLevel        = np.append(np.flatnonzero(np.diff(sequenceTimeSteps)),len(sequenceTimeSteps)-1)
             # empty setTimeStep
@@ -101,10 +102,10 @@ class StorageTechnology(Technology):
                 timeStepsEnergy2Power[idxTimeStep]  = sequenceTimeSteps[idxStorageLevel]
                 counterTimeStep                 = idxStorageLevel + 1
         else:
-            self.setTimeStepsStorageLevel       = self.setTimeSteps
+            self.setTimeStepsStorageLevel       = self.setTimeStepsOperation
             self.timeStepsStorageLevelDuration  = self.timeStepsOperationDuration
             self.sequenceTimeStepsStorageLevel  = sequenceTimeSteps
-            timeStepsEnergy2Power               = {idx: idx for idx in self.setTimeSteps}
+            timeStepsEnergy2Power               = {idx: idx for idx in self.setTimeStepsOperation}
 
         # add sequence to energy system
         EnergySystem.setSequenceTimeSteps(self.name+"StorageLevel",self.sequenceTimeStepsStorageLevel)

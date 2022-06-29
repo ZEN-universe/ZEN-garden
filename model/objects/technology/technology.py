@@ -14,6 +14,8 @@ import logging
 import pyomo.environ as pe
 import pyomo.gdp as pgdp
 import numpy as np
+import cProfile
+import pstats
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 
