@@ -141,30 +141,35 @@ class StorageTechnology(Technology):
         model.timeStepsStorageLevelDuration = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setTimeStepsStorageLevel"]),
             initialize = EnergySystem.initializeComponent(cls,"timeStepsStorageLevelDuration",indexNames=["setStorageTechnologies","setTimeStepsStorageLevel"]).astype(int),
+            default=0,
             doc="Parameter which specifies the time step duration in StorageLevel for all technologies. Dimensions: setStorageTechnologies, setTimeStepsStorageLevel"
         )
         # efficiency charge
         model.efficiencyCharge = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
             initialize = EnergySystem.initializeComponent(cls,"efficiencyCharge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
+            default=0,
             doc = 'efficiency during charging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
         )
         # efficiency discharge
         model.efficiencyDischarge = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
             initialize = EnergySystem.initializeComponent(cls,"efficiencyDischarge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
+            default=0,
             doc = 'efficiency during discharging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
         )
         # self discharge
         model.selfDischarge = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setNodes"]),
             initialize = EnergySystem.initializeComponent(cls,"selfDischarge"),
+            default=0,
             doc = 'self discharge of storage technologies. Dimensions: setStorageTechnologies, setNodes'
         )
         # capex specific
         model.capexSpecificStorage = pe.Param(
             cls.createCustomSet(["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsInvest"]),
             initialize = EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsInvest"],capacityTypes=True),
+            default=0,
             doc = 'specific capex of storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
         )
 

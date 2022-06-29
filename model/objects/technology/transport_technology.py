@@ -119,21 +119,25 @@ class TransportTechnology(Technology):
         model.distance = pe.Param(
             cls.createCustomSet(["setTransportTechnologies","setEdges"]),
             initialize = EnergySystem.initializeComponent(cls,"distance"),
+            default=0,
             doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
         # cost per capacity
         model.capexSpecificTransport = pe.Param(
              cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
              initialize = EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
+             default=0,
              doc = 'capex per unit for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
         # cost per distance
         model.capexPerDistance = pe.Param(
             cls.createCustomSet(['setTransportTechnologies', 'setEdges', 'setTimeStepsInvest']),
             initialize=EnergySystem.initializeComponent(cls, 'capexPerDistance', indexNames=['setTransportTechnologies', "setEdges", "setTimeStepsInvest"]),
+            default=0,
             doc='capex per distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
         # carrier losses
         model.lossFlow = pe.Param(
             model.setTransportTechnologies,
             initialize = EnergySystem.initializeComponent(cls,"lossFlow"),
+            default=0,
             doc = 'carrier losses due to transport with transport technologies. Dimensions: setTransportTechnologies')
 
     @classmethod

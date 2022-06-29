@@ -14,6 +14,8 @@ import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
 import copy
+import cProfile
+import pstats
 from preprocess.functions.extract_input_data import DataInput
 from preprocess.functions.unit_handling         import UnitHandling
 
@@ -516,11 +518,18 @@ class EnergySystem:
             else:
                 componentData = component.squeeze()
         else:
-            component = callingClass.getAttributeOfAllElements(componentName, capacityTypes)
-            componentData       = pd.Series(component, dtype=float)
+            componentData,attributeIsSeries = callingClass.getAttributeOfAllElements(componentName, capacityTypes= capacityTypes, returnAttributeIsSeries=True)
             if indexNames:
+                if attributeIsSeries:
+                    componentData = pd.concat(componentData,keys=componentData.keys())
+                else:
+                    componentData = pd.Series(componentData)
                 customSet       = callingClass.createCustomSet(indexNames)
                 componentData   = cls.checkForSubindex(componentData,customSet)
+            elif attributeIsSeries:
+                componentData = pd.concat(componentData, keys=componentData.keys())
+            if isinstance(componentData,pd.Series):
+                componentData = componentData[componentData != 0]
         return componentData
 
     @classmethod
@@ -529,12 +538,15 @@ class EnergySystem:
         :param componentData: extracted data as pd.Series
         :param customSet: custom set as subindex of componentData
         :return componentData: extracted subindexed data as pd.Series """
-        _customIndex    = pd.Index(customSet)
-        # if _customIndex is subindex of componentData, return subset of componentData
+        # if customSet is subindex of componentData, return subset of componentData
         try:
-            return componentData[_customIndex]
+            if len(componentData) == len(customSet) and len(customSet[0]) == len(componentData.index[0]):
+                return componentData
+            else:
+                return componentData[customSet]
         # else delete trivial index levels (that have a single value) and try again
-        except KeyError:
+        except:
+            _customIndex = pd.Index(customSet)
             _reducedCustomIndex = _customIndex.copy()
             for _level,_shape in enumerate(_customIndex.levshape):
                 if _shape == 1:
@@ -606,27 +618,32 @@ class EnergySystem:
         model.carbonEmissionsLimit = pe.Param(
             model.setTimeStepsYearly,
             initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
+            default=0,
             doc = 'Parameter which specifies the total limit on carbon emissions'
         )
         # carbon emissions budget
         model.carbonEmissionsBudget = pe.Param(
             initialize=cls.initializeComponent(cls, "carbonEmissionsBudget"),
+            default=0,
             doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon'
         )
         # carbon emissions budget
         model.previousCarbonEmissions = pe.Param(
             initialize=cls.initializeComponent(cls, "previousCarbonEmissions"),
+            default=0,
             doc='Parameter which specifies the total previous carbon emissions'
         )
         # carbon price
         model.carbonPrice = pe.Param(
             model.setTimeStepsYearly,
             initialize=cls.initializeComponent(cls, "carbonPrice", setTimeSteps=model.setTimeStepsYearly),
+            default=0,
             doc='Parameter which specifies the yearly carbon price'
         )
         # carbon price of overshoot
         model.carbonPriceOvershoot = pe.Param(
             initialize=cls.initializeComponent(cls, "carbonPriceOvershoot"),
+            default=0,
             doc='Parameter which specifies the carbon price for budget overshoot'
         )
 
