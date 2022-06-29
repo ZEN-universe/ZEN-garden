@@ -36,7 +36,7 @@ logging.propagate = False
 # create a dictionary with the paths to access the model inputs and check if input data exists
 prepare = Prepare(config)
 # check if all data inputs exist and remove non-existent
-system = prepare.checkExistingInputData()
+prepare.checkExistingInputData()
 
 # FORMULATE THE OPTIMIZATION PROBLEM
 # add the elements and read input data
@@ -78,7 +78,7 @@ for scenario, elements in config.scenarios.items():
     modelName = config.analysis["dataset"]
     if len(stepsOptimizationHorizon) > 1:
         modelName += f"_MF{stepHorizon}"
-    if system["conductScenarioAnalysis"]:
+    if config.system["conductScenarioAnalysis"]:
         modelName += f"_{scenario}"
     evaluation = Postprocess(optimizationSetup, modelName=modelName)
 #    visualization.run(config.analysis["dataset"], scenario, pltShow=False)

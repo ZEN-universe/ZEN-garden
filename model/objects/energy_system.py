@@ -14,7 +14,6 @@ import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
 import copy
-from pint                                    import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
 from preprocess.functions.unit_handling         import UnitHandling
 
@@ -454,7 +453,6 @@ class EnergySystem:
         :param baseTimeStep: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
-        # model = cls.getConcreteModel()
         sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
         # get time step duration
         if np.all(baseTimeSteps >= 0):

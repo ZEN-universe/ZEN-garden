@@ -240,10 +240,7 @@ class DataInput():
             assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.csv"
             dictNumberOfTimeSteps[carrier] = {None: dfInput.loc[carrier].squeeze()}
         # add yearly time steps
-        if not self.system["useMultiYearData"]:
-            dictNumberOfTimeSteps[None] = {"yearly": self.system["optimizedYears"]}
-        else:
-            dictNumberOfTimeSteps[None] = {"yearly": 1}
+        dictNumberOfTimeSteps[None] = {"yearly": self.system["optimizedYears"]}
 
         # limit number of periods to base time steps of system
         for element in dictNumberOfTimeSteps:
