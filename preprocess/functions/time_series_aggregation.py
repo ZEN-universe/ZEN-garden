@@ -342,8 +342,9 @@ class TimeSeriesAggregation():
         sequenceTimeSteps           = np.zeros(np.size(listSequenceTimeSteps, axis=1)).astype(int)
         combinedSequenceTimeSteps   = np.vstack(listSequenceTimeSteps)
         uniqueCombinedTimeSteps, uniqueIndices, countCombinedTimeSteps = np.unique(combinedSequenceTimeSteps, axis=1,return_counts=True,return_index = True)
-        # if unique sequences are the same as the original sequences
-        if combinedSequenceTimeSteps.shape == uniqueCombinedTimeSteps.shape:
+        # if unique time steps are the same as original, or if the second until last only have a single unique value
+        # if combinedSequenceTimeSteps.shape == uniqueCombinedTimeSteps.shape:
+        if len(np.unique(combinedSequenceTimeSteps[0,:])) == len(combinedSequenceTimeSteps[0,:]) or len(np.unique(combinedSequenceTimeSteps[1:,:],axis=1)[0]) == 1:
             return None
         setTimeSteps      = []
         timeStepsDuration = {}
