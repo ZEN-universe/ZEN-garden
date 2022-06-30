@@ -14,7 +14,6 @@ import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
 import copy
-from pint                                    import UnitRegistry
 from preprocess.functions.extract_input_data import DataInput
 from preprocess.functions.unit_handling         import UnitHandling
 
@@ -217,13 +216,17 @@ class EnergySystem:
     def setTimeStepsStorageStartEnd(cls, element):
         """ sets the dict of matching the last time step of the year in the storage level domain to the first """
         system = cls.getSystem()
-        _baseTimeStepsPerYear = system["unaggregatedTimeStepsPerYear"]
-        _numberYears = system["optimizedYears"]
-        _sequenceTimeSteps = cls.getSequenceTimeSteps(element + "StorageLevel")
-        _timeStepsStart = _sequenceTimeSteps[np.array(range(0, _numberYears)) * _baseTimeStepsPerYear]
-        _timeStepsEnd = _sequenceTimeSteps[np.array(range(1, _numberYears + 1)) * _baseTimeStepsPerYear - 1]
-        cls.dictTimeStepsStorageLevelStartEndYear[element] = {_start: _end for _start, _end in
-                                                              zip(_timeStepsStart, _timeStepsEnd)}
+        _unaggregatedTimeSteps  = system["unaggregatedTimeStepsPerYear"]
+        _setBaseTimeSteps       = cls.getEnergySystem().setBaseTimeSteps
+        _sequenceTimeSteps      = cls.getSequenceTimeSteps(element + "StorageLevel")
+        _counter = 0
+        _timeStepsStart         = []
+        _timeStepsEnd           = []
+        while _counter < len(_sequenceTimeSteps):
+            _timeStepsStart.append(_sequenceTimeSteps[_counter])
+            _counter += _unaggregatedTimeSteps
+            _timeStepsEnd.append(_sequenceTimeSteps[_counter - 1])
+        cls.dictTimeStepsStorageLevelStartEndYear[element] = {_start: _end for _start, _end in zip(_timeStepsStart, _timeStepsEnd)}
 
     @classmethod
     def setSequenceTimeSteps(cls,element,sequenceTimeSteps,timeStepType = None):
@@ -450,7 +453,6 @@ class EnergySystem:
         :param baseTimeStep: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
-        # model = cls.getConcreteModel()
         sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
         # get time step duration
         if np.all(baseTimeSteps >= 0):
@@ -506,12 +508,45 @@ class EnergySystem:
             else:
                 componentData = component.squeeze()
         else:
-            component = callingClass.getAttributeOfAllElements(componentName, capacityTypes)
-            componentData = pd.Series(component, dtype=float)
+            componentData,attributeIsSeries = callingClass.getAttributeOfAllElements(componentName, capacityTypes= capacityTypes, returnAttributeIsSeries=True)
             if indexNames:
-                customSet = callingClass.createCustomSet(indexNames)
-                componentData = componentData[customSet]
+                if attributeIsSeries:
+                    componentData = pd.concat(componentData,keys=componentData.keys())
+                else:
+                    componentData = pd.Series(componentData)
+                customSet       = callingClass.createCustomSet(indexNames)
+                componentData   = cls.checkForSubindex(componentData,customSet)
+            elif attributeIsSeries:
+                componentData = pd.concat(componentData, keys=componentData.keys())
+            if isinstance(componentData,pd.Series):
+                componentData = componentData[componentData != 0]
         return componentData
+
+    @classmethod
+    def checkForSubindex(cls,componentData,customSet):
+        """ this method checks if the customSet can be a subindex of componentData and returns subindexed componentData
+        :param componentData: extracted data as pd.Series
+        :param customSet: custom set as subindex of componentData
+        :return componentData: extracted subindexed data as pd.Series """
+        # if customSet is subindex of componentData, return subset of componentData
+        try:
+            if len(componentData) == len(customSet) and len(customSet[0]) == len(componentData.index[0]):
+                return componentData
+            else:
+                return componentData[customSet]
+        # else delete trivial index levels (that have a single value) and try again
+        except:
+            _customIndex = pd.Index(customSet)
+            _reducedCustomIndex = _customIndex.copy()
+            for _level,_shape in enumerate(_customIndex.levshape):
+                if _shape == 1:
+                    _reducedCustomIndex = _reducedCustomIndex.droplevel(_level)
+            try:
+                componentData = componentData[_reducedCustomIndex]
+                componentData.index     = _customIndex
+                return componentData
+            except KeyError:
+                raise KeyError(f"the custom set {customSet} cannot be used as a subindex of {componentData.index}")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
     @classmethod
@@ -573,27 +608,32 @@ class EnergySystem:
         model.carbonEmissionsLimit = pe.Param(
             model.setTimeStepsYearly,
             initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
+            default=0,
             doc = 'Parameter which specifies the total limit on carbon emissions'
         )
         # carbon emissions budget
         model.carbonEmissionsBudget = pe.Param(
             initialize=cls.initializeComponent(cls, "carbonEmissionsBudget"),
+            default=0,
             doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon'
         )
         # carbon emissions budget
         model.previousCarbonEmissions = pe.Param(
             initialize=cls.initializeComponent(cls, "previousCarbonEmissions"),
+            default=0,
             doc='Parameter which specifies the total previous carbon emissions'
         )
         # carbon price
         model.carbonPrice = pe.Param(
             model.setTimeStepsYearly,
             initialize=cls.initializeComponent(cls, "carbonPrice", setTimeSteps=model.setTimeStepsYearly),
+            default=0,
             doc='Parameter which specifies the yearly carbon price'
         )
         # carbon price of overshoot
         model.carbonPriceOvershoot = pe.Param(
             initialize=cls.initializeComponent(cls, "carbonPriceOvershoot"),
+            default=0,
             doc='Parameter which specifies the carbon price for budget overshoot'
         )
 

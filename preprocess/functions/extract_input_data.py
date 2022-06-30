@@ -249,7 +249,7 @@ class DataInput():
                 continue
 
             numberTypicalPeriods                = dictNumberOfTimeSteps[element][typeTimeStep]
-            numberTypicalPeriodsTotal           = numberTypicalPeriods*self.system["optimizedYears"]
+            numberTypicalPeriodsTotal           = numberTypicalPeriods*dictNumberOfTimeSteps[None]["yearly"]
             if int(numberTypicalPeriodsTotal)   != numberTypicalPeriodsTotal:
                 logging.warning(f"The requested invest time steps per year ({numberTypicalPeriods}) of {element} do not evaluate to an integer for the entire time horizon ({numberTypicalPeriodsTotal}). Rounded up.")
                 numberTypicalPeriodsTotal                   = np.ceil(numberTypicalPeriodsTotal)

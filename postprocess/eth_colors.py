@@ -97,8 +97,8 @@ class ETHColors:
             # Gas phase-out scenarios
             "ref_PF": self.getColor("blue","dark"),
             "ref_long": self.getColor("blue","dark"),
-            "ref_short": self.getColor("blue",80),
-            "ref_old": self.getColor("blue",40),
+            "ref_short": self.getColor("blue",60),
+            "ref_new": self.getColor("blue",20),
             "ref_PF2": self.getColor("blue",80),
             "ref_MF": self.getColor("blue",40),
             "ref_MF2": self.getColor("blue",60),

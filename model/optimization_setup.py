@@ -16,7 +16,6 @@ import pyomo.environ as pe
 import os
 import sys
 import pandas as pd
-import numpy as np
 # import elements of the optimization problem
 # technology and carrier classes from technology and carrier directory, respectively
 from model.objects.element                              import Element
@@ -71,7 +70,7 @@ class OptimizationSetup():
             if elementName in self.analysis["subsets"].keys():
                 elementSubset = []
                 for subset in self.analysis["subsets"][elementName]:
-                        elementSubset += [item for item in self.system[subset]]
+                    elementSubset += [item for item in self.system[subset]]
                 elementSet = list(set(elementSet)-set(elementSubset))
 
             # add element class
@@ -142,8 +141,12 @@ class OptimizationSetup():
         # get timeSeries dependent parameters
         values  = [param for params in elements.values() for param in params]
         values  += [value[1] for value in values if type(value) is tuple] # unzip tuples
-        columns = TimeSeriesAggregation.getTimeSeriesAggregation().columnNamesOriginal
-        timeSeriesParams = [item for column in columns for item in column if item in values]
+        timeSeriesAggregation = TimeSeriesAggregation.getTimeSeriesAggregation()
+        if timeSeriesAggregation.conductedTimeSeriesAggregation:
+            columns = timeSeriesAggregation.columnNamesOriginal
+            timeSeriesParams = [item for column in columns for item in column if item in values]
+        else:
+            timeSeriesParams = []
         # overwrite scenario dependent parameter values for all elements
         for elementName, params in elements.items():
             if elementName == "EnergySystem":
@@ -175,7 +178,6 @@ class OptimizationSetup():
         if timeSeriesParams:
             TimeSeriesAggregation.conductTimeSeriesAggregation()
             # set sequence timesteps is set in line 107 in TSA
-
 
     def overwriteTimeIndices(self,stepHorizon):
         """ select subset of time indices, matching the step horizon

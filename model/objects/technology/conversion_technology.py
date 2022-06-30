@@ -108,17 +108,17 @@ class ConversionTechnology(Technology):
         for _element in _classElements:
             # extract for PWA
             if getattr(_element,_isPWAAttribute) and selectPWA:
-                dictOfAttributes = cls.appendAttributeOfElementToDict(_element, _attributeNamePWA, dictOfAttributes)
+                dictOfAttributes,_ = cls.appendAttributeOfElementToDict(_element, _attributeNamePWA, dictOfAttributes)
             # extract for linear
             elif not getattr(_element,_isPWAAttribute) and not selectPWA:
-                dictOfAttributes = cls.appendAttributeOfElementToDict(_element, _attributeNameLinear, dictOfAttributes)
+                dictOfAttributes,_ = cls.appendAttributeOfElementToDict(_element, _attributeNameLinear, dictOfAttributes)
+        dictOfAttributes = pd.concat(dictOfAttributes,keys=dictOfAttributes.keys())
         if not indexNames:
             return dictOfAttributes
         else:
-            attributeData = pd.Series(dictOfAttributes)
-            customSet = cls.createCustomSet(indexNames)
-            attributeData = attributeData[customSet]
-            return attributeData
+            customSet           = cls.createCustomSet(indexNames)
+            dictOfAttributes    = EnergySystem.checkForSubindex(dictOfAttributes, customSet)
+            return dictOfAttributes
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
@@ -164,12 +164,14 @@ class ConversionTechnology(Technology):
         model.capexSpecificConversion = pe.Param(
             cls.createCustomSet(["setConversionTechnologies","setCapexLinear","setNodes","setTimeStepsInvest"]),
             initialize = cls.getCapexConverEfficiencyOfAllElements("capex",False,indexNames=["setConversionTechnologies","setCapexLinear","setNodes","setTimeStepsInvest"]),
+            default=0,
             doc = "Parameter which specifies the slope of the capex if approximated linearly. Dimensions: setConversionTechnologies, setNodes, setTimeStepsInvest"
         )
         # slope of linearly modeled conversion efficiencies
         model.converEfficiencySpecific = pe.Param(
             cls.createCustomSet(["setConversionTechnologies","setConverEfficiencyLinear","setNodes","setTimeStepsInvest"]),
             initialize = cls.getCapexConverEfficiencyOfAllElements("converEfficiency",False,indexNames=["setConversionTechnologies","setConverEfficiencyLinear","setNodes","setTimeStepsInvest"]),
+            default=0,
             doc = "Parameter which specifies the slope of the conversion efficiency if approximated linearly. Dimensions: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation"
         )
 
