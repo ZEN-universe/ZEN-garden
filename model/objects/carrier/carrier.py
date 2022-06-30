@@ -37,6 +37,7 @@ class Carrier(Element):
     def storeInputData(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         setBaseTimeStepsYearly          = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
+        setTimeStepsYearly              = EnergySystem.getEnergySystem().setTimeStepsYearly
         # set attributes of carrier
         # raw import
         self.rawTimeSeries                              = {}
@@ -46,7 +47,7 @@ class Carrier(Element):
         self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData("priceCarrier",indexSets = ["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData("priceCarrier",indexSets = ["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         # non-time series input data
-        self.carbonIntensityCarrier                     = self.dataInput.extractInputData("carbonIntensity",indexSets = ["setNodes","setTimeSteps"],timeSteps=setBaseTimeStepsYearly)
+        self.carbonIntensityCarrier                     = self.dataInput.extractInputData("carbonIntensity",indexSets = ["setNodes","setTimeSteps"],timeSteps=setTimeStepsYearly)
         self.shedDemandPrice                            = self.dataInput.extractInputData("shedDemandPrice",indexSets = [])
         
     def overwriteTimeSteps(self,baseTimeSteps):
@@ -113,8 +114,8 @@ class Carrier(Element):
         )
         # carbon intensity
         model.carbonIntensityCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes", "setTimeStepsOperation"]),
-            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+            cls.createCustomSet(["setCarriers","setNodes", "setTimeStepsYearly"]),
+            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsYearly"]),
             default=0,
             doc = 'Parameter which specifies the carbon intensity of carrier. \n\t Dimensions: setCarriers, setNodes'
         )
@@ -280,8 +281,10 @@ def constraintCostCarrierTotalRule(model,year):
 
 def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
     """ carbon emissions of importing/exporting carrier"""
+    baseTimeStep    = EnergySystem.decodeTimeStep(carrier, time)
+    yearlyTimeStep  = EnergySystem.encodeTimeStep(None,baseTimeStep,"yearly")
     return (model.carbonEmissionsCarrier[carrier, node, time] ==
-            model.carbonIntensityCarrier[carrier, node, time] *
+            model.carbonIntensityCarrier[carrier, node, yearlyTimeStep] *
             (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
             )
 
