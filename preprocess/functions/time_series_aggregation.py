@@ -37,7 +37,7 @@ class TimeSeriesAggregation():
         # if number of time steps >= number of base time steps, skip aggregation
         if self.numberTypicalPeriods < np.size(self.setBaseTimeSteps) and self.system["conductTimeSeriesAggregation"]:
             # select time series
-            self.selectTimeSeriesOfAllElements()
+            self.selectTimeSeriesOfAllElements() #TODO speed up
             if not self.dfTimeSeriesRaw.empty:
                 # run time series aggregation to create typical periods
                 self.runTimeSeriesAggregation()
@@ -343,7 +343,7 @@ class TimeSeriesAggregation():
         combinedSequenceTimeSteps   = np.vstack(listSequenceTimeSteps)
         uniqueCombinedTimeSteps, uniqueIndices, countCombinedTimeSteps = np.unique(combinedSequenceTimeSteps, axis=1,return_counts=True,return_index = True)
         # if unique sequences are the same as the original sequences
-        if (combinedSequenceTimeSteps[:, uniqueIndices] == uniqueCombinedTimeSteps).all():
+        if combinedSequenceTimeSteps.shape == uniqueCombinedTimeSteps.shape:
             return None
         setTimeSteps      = []
         timeStepsDuration = {}
