@@ -5,9 +5,10 @@
 !/data/.gitkeep
 /outputs/
 /data_generation/
-/postprocess/results_horizon_JM.py
 /postprocess/results_JM.py
+/postprocess/results_MH.py
 /postprocess/visualization_JM.py
+/postprocess/visualization_MH.py
 /postprocess/visualization_AG.py
 *.pyc
 *.DS_Store

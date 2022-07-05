@@ -95,10 +95,11 @@ class ETHColors:
             "TIER3": self.getColor("bronze",60),
             "TIER4": self.getColor("red",60),
             # Gas phase-out scenarios
-            "ref_PF": self.getColor("blue","dark"),
-            "ref_long": self.getColor("blue","dark"),
-            "ref_short": self.getColor("blue",60),
-            "ref_new": self.getColor("blue",20),
+            "PI": self.getColor("blue"),
+            "PIlong": self.getColor("blue",60),
+            "PD": self.getColor("petrol"),
+            "LI": self.getColor("green"),
+            "LD": self.getColor("red"),
             "ref_PF2": self.getColor("blue",80),
             "ref_MF": self.getColor("blue",40),
             "ref_MF2": self.getColor("blue",60),
@@ -111,6 +112,9 @@ class ETHColors:
             "noRG_MF": self.getColor("red",80),
             "noRG_MF2": self.getColor("red",60),
             "noRG_MF4": self.getColor("red",20),
+            "long": self.getColor("red"),
+            "med": self.getColor("blue"),
+            "short": self.getColor("green"),
         }
 
     def setManualColors(self):

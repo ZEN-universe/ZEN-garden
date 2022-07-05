@@ -68,19 +68,18 @@ for scenario, elements in config.scenarios.items():
             master = Metaheuristic(optimizationSetup, prepare.nlpDict)
             master.solveMINLP(config.solver)
 
-    # add newly builtCapacity of first year to existing capacity
-    optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
-    # add cumulative carbon emissions to previous carbon emissions
-    optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
-    # EVALUATE RESULTS
-    # today      = datetime.now()
-    # modelName  = "model_" + today.strftime("%Y-%m-%d")
-    modelName = config.analysis["dataset"]
-    if len(stepsOptimizationHorizon) > 1:
-        modelName += f"_MF{stepHorizon}"
-    if config.system["conductScenarioAnalysis"]:
-        modelName += f"_{scenario}"
-    evaluation = Postprocess(optimizationSetup, modelName=modelName)
-#    visualization.run(config.analysis["dataset"], scenario, pltShow=False)
+        # add newly builtCapacity of first year to existing capacity
+        optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
+        # add cumulative carbon emissions to previous carbon emissions
+        optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
+        # EVALUATE RESULTS
+        # today      = datetime.now()
+        # modelName  = "model_" + today.strftime("%Y-%m-%d")
+        modelName = config.analysis["dataset"]
+        if len(stepsOptimizationHorizon) > 1:
+            modelName += f"_MF{stepHorizon}"
+        if config.system["conductScenarioAnalysis"]:
+            modelName += f"_{scenario}"
+        evaluation = Postprocess(optimizationSetup, modelName=modelName)
 
 
