@@ -241,12 +241,8 @@ class TimeSeriesAggregation():
         _setTimeStepsOperation      = getattr(element,"setTimeStepsOperation")
         _sequenceTimeStepsOperation = getattr(element,"sequenceTimeSteps")
         _sequenceTimeStepsInvest    = getattr(element, "sequenceTimeStepsInvest")
-        # _timeStepsOperation2Invest  = {}
         _timeStepsOperation2Invest  = np.unique(np.vstack([_sequenceTimeStepsOperation,_sequenceTimeStepsInvest]),axis=1)
-        # _timeStepsOperation2Invest  = pd.DataFrame([_sequenceTimeStepsOperation,_sequenceTimeStepsInvest]).T
-        # _timeStepsOperation2Invest  = _timeStepsOperation2Invest.drop_duplicates().set_index(0).sort_index()
-        # assert _timeStepsOperation2Invest.index.difference(_setTimeStepsOperation).empty, f"One operational time step corresponds to more than one investment time step, this should be impossible. Debug."
-        _timeStepsOperation2Invest  = dict(enumerate(_timeStepsOperation2Invest[1,_timeStepsOperation2Invest[0,:].argsort()]))
+        _timeStepsOperation2Invest  = {key:val for key,val in zip(_timeStepsOperation2Invest[0,:],_timeStepsOperation2Invest[1,:])}
         EnergySystem.setTimeStepsOperation2Invest(element.name,_timeStepsOperation2Invest)
 
     @classmethod
