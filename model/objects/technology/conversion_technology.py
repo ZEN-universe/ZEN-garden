@@ -325,6 +325,8 @@ class ConversionTechnology(Technology):
     def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):
         """definition of disjunct constraints if technology is On"""
         model = disjunct.model()
+        # get parameter object
+        params = Parameter.getParameterObject()
         referenceCarrier = model.setReferenceCarriers[tech].at(1)
         if referenceCarrier in model.setInputCarriers[tech]:
             referenceFlow = model.inputFlow[tech,referenceCarrier,node,time]
@@ -334,7 +336,7 @@ class ConversionTechnology(Technology):
         investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
-            expr=referenceFlow >= model.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
+            expr=referenceFlow >= params.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
         )
         # couple reference flows
         disjunct.constraintReferenceFlowCoupling = pe.Constraint(
@@ -396,15 +398,19 @@ class ConversionTechnology(Technology):
 ### --- functions with constraint rules --- ###
 def constraintLinearCapexRule(model,tech,node,time):
     """ if capacity and capex have a linear relationship"""
-    return(model.capexApproximation[tech,node,time] == model.capexSpecificConversion[tech,node,time]*model.capacityApproximation[tech,node,time])
+    # get parameter object
+    params = Parameter.getParameterObject()
+    return(model.capexApproximation[tech,node,time] == params.capexSpecificConversion[tech,node,time]*model.capacityApproximation[tech,node,time])
 
 def constraintLinearConverEfficiencyRule(model,tech,dependentCarrier,node,time):
     """ if reference carrier and dependent carrier have a linear relationship"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     # get invest time step
     investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
     return(
         model.dependentFlowApproximation[tech,dependentCarrier,node,time] 
-        == model.converEfficiencySpecific[tech,dependentCarrier, node,investTimeStep]*model.referenceFlowApproximation[tech,dependentCarrier,node,time]
+        == params.converEfficiencySpecific[tech,dependentCarrier, node,investTimeStep]*model.referenceFlowApproximation[tech,dependentCarrier,node,time]
     )
 
 def constraintCapexCouplingRule(model,tech,node,time):

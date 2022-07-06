@@ -98,6 +98,7 @@ class ETHColors:
             "PI": self.getColor("blue"),
             "PIlong": self.getColor("blue",60),
             "PD": self.getColor("petrol"),
+            "PD2": self.getColor("petrol",60),
             "LI": self.getColor("green"),
             "LD": self.getColor("red"),
             "ref_PF2": self.getColor("blue",80),

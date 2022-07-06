@@ -280,25 +280,33 @@ class Carrier(Element):
 #%% Constraint rules defined in current class
 def constraintAvailabilityCarrierImportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to import from outside the system boundaries"""
-    return(model.importCarrierFlow[carrier, node, time] <= model.availabilityCarrierImport[carrier,node,time])
+    # get parameter object
+    params = Parameter.getParameterObject()
+    return(model.importCarrierFlow[carrier, node, time] <= params.availabilityCarrierImport[carrier,node,time])
 
 def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to export to outside the system boundaries"""
-    return(model.exportCarrierFlow[carrier, node, time] <= model.availabilityCarrierExport[carrier,node,time])
+    # get parameter object
+    params = Parameter.getParameterObject()
+    return(model.exportCarrierFlow[carrier, node, time] <= params.availabilityCarrierExport[carrier,node,time])
 
 def constraintCostCarrierRule(model, carrier, node, time):
     """ cost of importing/exporting carrier"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     return(model.costCarrier[carrier,node, time] ==
-        model.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] -
-        model.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
+        params.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] -
+        params.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
     )
 
 def constraintCostShedDemandRule(model, carrier, node, time):
     """ cost of shedding demand of carrier """
-    if model.shedDemandPrice[carrier] != np.inf:
+    # get parameter object
+    params = Parameter.getParameterObject()
+    if params.shedDemandPrice[carrier] != np.inf:
         return(
             model.costShedDemandCarrier[carrier,node, time] ==
-            model.shedDemandCarrier[carrier,node,time] * model.shedDemandPrice[carrier]
+            model.shedDemandCarrier[carrier,node,time] * params.shedDemandPrice[carrier]
         )
     else:
         return(
@@ -307,12 +315,14 @@ def constraintCostShedDemandRule(model, carrier, node, time):
 
 def constraintCostCarrierTotalRule(model,year):
     """ total cost of importing/exporting carrier"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     baseTimeStep = EnergySystem.decodeTimeStep(None, year, "yearly")
     return(model.costCarrierTotal[year] ==
         sum(
             sum(
                 (model.costCarrier[carrier,node,time] + model.costShedDemandCarrier[carrier,node, time])
-                * model.timeStepsOperationDuration[carrier, time]
+                * params.timeStepsOperationDuration[carrier, time]
                 for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly=True)
             )
             for carrier,node in Element.createCustomSet(["setCarriers","setNodes"])
@@ -321,20 +331,24 @@ def constraintCostCarrierTotalRule(model,year):
 
 def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
     """ carbon emissions of importing/exporting carrier"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     baseTimeStep    = EnergySystem.decodeTimeStep(carrier, time)
     yearlyTimeStep  = EnergySystem.encodeTimeStep(None,baseTimeStep,"yearly")
     return (model.carbonEmissionsCarrier[carrier, node, time] ==
-            model.carbonIntensityCarrier[carrier, node, yearlyTimeStep] *
+            params.carbonIntensityCarrier[carrier, node, yearlyTimeStep] *
             (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
             )
 
 def constraintCarbonEmissionsCarrierTotalRule(model, year):
     """ total carbon emissions of importing/exporting carrier"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     baseTimeStep = EnergySystem.decodeTimeStep(None,year,"yearly")
     return(model.carbonEmissionsCarrierTotal[year] ==
         sum(
             sum(
-                model.carbonEmissionsCarrier[carrier, node, time] * model.timeStepsOperationDuration[carrier, time]
+                model.carbonEmissionsCarrier[carrier, node, time] * params.timeStepsOperationDuration[carrier, time]
                 for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly = True)
             )
             for carrier, node in Element.createCustomSet(["setCarriers", "setNodes"])
@@ -347,6 +361,8 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     The constraint is indexed by setTimeStepsOperation, which is union of time step sequences of all corresponding technologies and carriers
     timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
     """
+    # get parameter object
+    params = Parameter.getParameterObject()
     # decode to baseTimeStep
     baseTimeStep = EnergySystem.decodeTimeStep(carrier+"EnergyBalance",time)
     # carrier input and output conversion technologies
@@ -380,7 +396,7 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     elementTimeStep     = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
     carrierImport       = model.importCarrierFlow[carrier, node, elementTimeStep]
     carrierExport       = model.exportCarrierFlow[carrier, node, elementTimeStep]
-    carrierDemand       = model.demandCarrier[carrier, node, elementTimeStep]
+    carrierDemand       = params.demandCarrier[carrier, node, elementTimeStep]
     # shed demand
     carrierShedDemand   = model.shedDemandCarrier[carrier, node, elementTimeStep]
     return (

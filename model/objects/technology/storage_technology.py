@@ -270,16 +270,17 @@ class StorageTechnology(Technology):
     def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
+        params = Parameter.getParameterObject()
         # get invest time step
         baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
         investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
         # disjunct constraints min load charge
         disjunct.constraintMinLoadCharge = pe.Constraint(
-            expr=model.carrierFlowCharge[tech, node, time] >= model.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
+            expr=model.carrierFlowCharge[tech, node, time] >= params.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
         )
         # disjunct constraints min load discharge
         disjunct.constraintMinLoadDischarge = pe.Constraint(
-            expr=model.carrierFlowDischarge[tech, node, time] >= model.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
+            expr=model.carrierFlowDischarge[tech, node, time] >= params.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
         )
 
     @classmethod
@@ -320,6 +321,8 @@ def constraintStorageLevelMaxRule(model, tech, node, time):
 
 def constraintCoupleStorageLevelRule(model, tech, node, time):
     """couple subsequent storage levels (time coupling constraints)"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     elementTimeStep             = EnergySystem.convertTimeStepEnergy2Power(tech,time)
     # get invest time step
     investTimeStep              = EnergySystem.convertTimeStepOperation2Invest(tech,elementTimeStep)
@@ -332,13 +335,15 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
 
     return(
         model.levelCharge[tech, node, time] ==
-        model.levelCharge[tech, node, previousLevelTimeStep]*(1-model.selfDischarge[tech,node])**model.timeStepsStorageLevelDuration[tech,time] + 
-        (model.carrierFlowCharge[tech, node, elementTimeStep]*model.efficiencyCharge[tech,node,investTimeStep] -
-        model.carrierFlowDischarge[tech, node, elementTimeStep]/model.efficiencyDischarge[tech,node,investTimeStep])*sum((1-model.selfDischarge[tech,node])**interimTimeStep for interimTimeStep in range(0,model.timeStepsStorageLevelDuration[tech,time]))
+        model.levelCharge[tech, node, previousLevelTimeStep]*(1-params.selfDischarge[tech,node])**params.timeStepsStorageLevelDuration[tech,time] +
+        (model.carrierFlowCharge[tech, node, elementTimeStep]*params.efficiencyCharge[tech,node,investTimeStep] -
+        model.carrierFlowDischarge[tech, node, elementTimeStep]/params.efficiencyDischarge[tech,node,investTimeStep])*sum((1-params.selfDischarge[tech,node])**interimTimeStep for interimTimeStep in range(0,params.timeStepsStorageLevelDuration[tech,time]))
     )
 
 def constraintCapexStorageTechnologyRule(model, tech,capacityType, node, time):
     """ definition of the capital expenditures for the storage technology"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     return (model.capex[tech,capacityType,node, time] ==
             model.builtCapacity[tech,capacityType,node, time] *
-            model.capexSpecificStorage[tech,capacityType,node, time])
+            params.capexSpecificStorage[tech,capacityType,node, time])

@@ -754,44 +754,54 @@ class Technology(Element):
 #%% Constraint rules pre-defined in Technology class
 def constraintTechnologyCapacityLimitRule(model, tech,capacityType, loc, time):
     """limited capacityLimit of technology"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     if model.capacityLimitTechnology[tech,capacityType, loc] != np.inf:
         existingCapacities = Technology.getAvailableExistingQuantity(tech, capacityType, loc, time,typeExistingQuantity="capacity")
-        if existingCapacities < model.capacityLimitTechnology[tech, capacityType, loc]:
-            return (model.capacityLimitTechnology[tech,capacityType, loc] >= model.capacity[tech,capacityType, loc, time])
+        if existingCapacities < params.capacityLimitTechnology[tech, capacityType, loc]:
+            return (params.capacityLimitTechnology[tech,capacityType, loc] >= model.capacity[tech,capacityType, loc, time])
         else:
             return (model.builtCapacity[tech, capacityType, loc, time] == 0)
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyMinCapacityRule(model, tech,capacityType, loc, time):
-    """ min capacity expansion of  technology."""
-    if model.minBuiltCapacity[tech,capacityType] != 0:
-        return (model.minBuiltCapacity[tech,capacityType] * model.installTechnology[tech,capacityType, loc, time] <= model.builtCapacity[tech,capacityType, loc, time])
+    """ min capacity expansion of technology."""
+    # get parameter object
+    params = Parameter.getParameterObject()
+    if params.minBuiltCapacity[tech,capacityType] != 0:
+        return (params.minBuiltCapacity[tech,capacityType] * model.installTechnology[tech,capacityType, loc, time] <= model.builtCapacity[tech,capacityType, loc, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyMaxCapacityRule(model, tech,capacityType, loc, time):
     """max capacity expansion of technology"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     system = EnergySystem.getSystem()
-    if model.maxBuiltCapacity[tech,capacityType] != np.inf:
-        return (model.maxBuiltCapacity[tech,capacityType] * model.installTechnology[tech,capacityType, loc, time] >= model.builtCapacity[tech,capacityType, loc, time])
+    if params.maxBuiltCapacity[tech,capacityType] != np.inf:
+        return (params.maxBuiltCapacity[tech,capacityType] * model.installTechnology[tech,capacityType, loc, time] >= model.builtCapacity[tech,capacityType, loc, time])
     elif system['DoubleCapexTransport'] and tech in system["setTransportTechnologies"] and model.maxCapacity[tech,capacityType] != np.inf:
-        return (model.maxCapacity[tech, capacityType] * model.installTechnology[tech, capacityType, loc, time] >= model.builtCapacity[tech, capacityType, loc, time])
+        return (params.maxCapacity[tech, capacityType] * model.installTechnology[tech, capacityType, loc, time] >= model.builtCapacity[tech, capacityType, loc, time])
     else:
         return pe.Constraint.Skip
 
 def constraintTechnologyConstructionTimeRule(model, tech,capacityType, loc, time):
     """ construction time of technology, i.e., time that passes between investment and availability"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     startTimeStep,_     = Technology.getStartEndTimeOfPeriod(tech,time,periodType= "constructionTime",clipToFirstTimeStep=False)
     if startTimeStep in model.setTimeStepsInvest[tech]:
         return (model.builtCapacity[tech,capacityType,loc,time] == model.investedCapacity[tech,capacityType,loc,startTimeStep])
     elif startTimeStep in model.setTimeStepsInvestEntireHorizon[tech]:
-        return (model.builtCapacity[tech,capacityType,loc,time] == model.existingInvestedCapacity[tech,capacityType,loc,startTimeStep])
+        return (model.builtCapacity[tech,capacityType,loc,time] == params.existingInvestedCapacity[tech,capacityType,loc,startTimeStep])
     else:
         return (model.builtCapacity[tech,capacityType,loc,time] == 0)
 
 def constraintTechnologyLifetimeRule(model, tech,capacityType, loc, time):
     """limited lifetime of the technologies"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     # determine existing capacities
     existingCapacities = Technology.getAvailableExistingQuantity(tech,capacityType,loc,time,typeExistingQuantity="capacity")
     return (model.capacity[tech,capacityType, loc, time]
@@ -800,6 +810,8 @@ def constraintTechnologyLifetimeRule(model, tech,capacityType, loc, time):
 
 def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
     """limited technology diffusion based on the existing capacity in the previous year """
+    # get parameter object
+    params = Parameter.getParameterObject()
     intervalBetweenYears    = EnergySystem.getSystem()["intervalBetweenYears"]
     unboundedMarketShare    = EnergySystem.getSystem()["unboundedMarketShare"]
     referenceCarrier        = model.setReferenceCarriers[tech].at(1)
@@ -814,7 +826,7 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
             else:
                 setTechnology = model.setStorageTechnologies
         # add built capacity of entire previous horizon
-        if model.constructionTimeTechnology[tech] > 0:
+        if params.constructionTimeTechnology[tech] > 0:
             # if technology has lead time, restrict to current capacity
             endTime = max(time,model.setTimeStepsInvest[tech].at(1))
         else:
@@ -855,7 +867,7 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
 
         return (
             sum(model.investedCapacity[tech, capacityType, loc, time] for loc in setLocations) <=
-            ((1 + model.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1) * totalCapacity
+            ((1 + params.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1) * totalCapacity
             # add initial market share until which the diffusion rate is unbounded
             + unboundedMarketShare * totalCapacityAllTechs
         )
@@ -903,7 +915,7 @@ def constraintCapexYearlyRule(model, tech, capacityType, loc, year):
             sum(
                 model.capex[tech, capacityType, loc, time]
                 for time in Technology.getLifetimeRange(tech, year, timeStepType="invest"))
-            +Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest"))
+            + Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest"))
 
 def constraintCapexTotalRule(model,year):
     """ sums over all technologies to calculate total capex """
@@ -915,6 +927,8 @@ def constraintCapexTotalRule(model,year):
 
 def constraintOpexTechnologyRule(model,tech,loc,time):
     """ calculate opex of each technology"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     referenceCarrier = model.setReferenceCarriers[tech].at(1)
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:
@@ -925,10 +939,12 @@ def constraintOpexTechnologyRule(model,tech,loc,time):
         referenceFlow = model.carrierFlow[tech, loc, time]
     else:
         referenceFlow = model.carrierFlowCharge[tech,loc,time] + model.carrierFlowDischarge[tech,loc,time]
-    return(model.opex[tech,loc,time] == model.opexSpecific[tech,loc,time]*referenceFlow)
+    return(model.opex[tech,loc,time] == params.opexSpecific[tech,loc,time]*referenceFlow)
 
 def constraintCarbonEmissionsTechnologyRule(model,tech,loc,time):
     """ calculate carbon emissions of each technology"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     referenceCarrier = model.setReferenceCarriers[tech].at(1)
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:
@@ -939,16 +955,18 @@ def constraintCarbonEmissionsTechnologyRule(model,tech,loc,time):
         referenceFlow = model.carrierFlow[tech, loc, time]
     else:
         referenceFlow = model.carrierFlowCharge[tech,loc,time] + model.carrierFlowDischarge[tech,loc,time]
-    return(model.carbonEmissionsTechnology[tech,loc,time] == model.carbonIntensityTechnology[tech,loc]*referenceFlow)
+    return(model.carbonEmissionsTechnology[tech,loc,time] == params.carbonIntensityTechnology[tech,loc]*referenceFlow)
 
 def constraintCarbonEmissionsTechnologyTotalRule(model, year):
     """ calculate total carbon emissions of each technology"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     baseTimeStep = EnergySystem.decodeTimeStep(None,year,"yearly")
     return(
         model.carbonEmissionsTechnologyTotal[year] ==
         sum(
             sum(
-                model.carbonEmissionsTechnology[tech,loc,time]*model.timeStepsOperationDuration[tech, time]
+                model.carbonEmissionsTechnology[tech,loc,time]*params.timeStepsOperationDuration[tech, time]
                 for time in EnergySystem.encodeTimeStep(tech, baseTimeStep, "operation", yearly = True)
             )
             for tech, loc in Element.createCustomSet(["setTechnologies", "setLocation"])
@@ -957,11 +975,13 @@ def constraintCarbonEmissionsTechnologyTotalRule(model, year):
 
 def constraintOpexTotalRule(model,year):
     """ sums over all technologies to calculate total opex """
+    # get parameter object
+    params = Parameter.getParameterObject()
     baseTimeStep = EnergySystem.decodeTimeStep(None, year, "yearly")
     return(model.opexTotal[year] ==
         sum(
             sum(
-                model.opex[tech, loc, time]*model.timeStepsOperationDuration[tech,time]
+                model.opex[tech, loc, time]*params.timeStepsOperationDuration[tech,time]
                 for time in EnergySystem.encodeTimeStep(tech, baseTimeStep, "operation", yearly=True)
             )
             for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])
@@ -970,24 +990,26 @@ def constraintOpexTotalRule(model,year):
 
 def constraintMaxLoadRule(model, tech,capacityType, loc, time):
     """Load is limited by the installed capacity and the maximum load factor"""
+    # get parameter object
+    params = Parameter.getParameterObject()
     referenceCarrier = model.setReferenceCarriers[tech].at(1)
     # get invest time step
     investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
     # conversion technology
     if tech in model.setConversionTechnologies:
         if referenceCarrier in model.setInputCarriers[tech]:
-            return (model.capacity[tech,capacityType, loc, investTimeStep]*model.maxLoad[tech,capacityType, loc, time] >= model.inputFlow[tech, referenceCarrier, loc, time])
+            return (model.capacity[tech,capacityType, loc, investTimeStep]*params.maxLoad[tech,capacityType, loc, time] >= model.inputFlow[tech, referenceCarrier, loc, time])
         else:
-            return (model.capacity[tech,capacityType, loc, investTimeStep]*model.maxLoad[tech,capacityType, loc, time] >= model.outputFlow[tech, referenceCarrier, loc, time])
+            return (model.capacity[tech,capacityType, loc, investTimeStep]*params.maxLoad[tech,capacityType, loc, time] >= model.outputFlow[tech, referenceCarrier, loc, time])
     # transport technology
     elif tech in model.setTransportTechnologies:
-            return (model.capacity[tech,capacityType, loc, investTimeStep]*model.maxLoad[tech,capacityType, loc, time] >= model.carrierFlow[tech, loc, time])
+            return (model.capacity[tech,capacityType, loc, investTimeStep]*params.maxLoad[tech,capacityType, loc, time] >= model.carrierFlow[tech, loc, time])
     # storage technology
     elif tech in model.setStorageTechnologies:
         system = EnergySystem.getSystem()
         # if limit power
         if capacityType == system["setCapacityTypes"][0]:
-            return (model.capacity[tech,capacityType, loc, investTimeStep]*model.maxLoad[tech,capacityType, loc, time] >= model.carrierFlowCharge[tech, loc, time] + model.carrierFlowDischarge[tech, loc, time])
+            return (model.capacity[tech,capacityType, loc, investTimeStep]*params.maxLoad[tech,capacityType, loc, time] >= model.carrierFlowCharge[tech, loc, time] + model.carrierFlowDischarge[tech, loc, time])
         # TODO integrate level storage here as well
         else:
             return pe.Constraint.Skip

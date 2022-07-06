@@ -804,12 +804,14 @@ def constraintCarbonEmissionsTotalRule(model, year):
 
 def constraintCarbonEmissionsCumulativeRule(model, year):
     """ cumulative carbon emissions over time """
+    # get parameter object
+    params = Parameter.getParameterObject()
     intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
     if year == model.setTimeStepsYearly.at(1):
         return (
                 model.carbonEmissionsCumulative[year] ==
                 model.carbonEmissionsTotal[year]
-                + model.previousCarbonEmissions
+                + params.previousCarbonEmissions
         )
     else:
         return (
@@ -821,18 +823,22 @@ def constraintCarbonEmissionsCumulativeRule(model, year):
 
 def constraintCarbonCostTotalRule(model, year):
     """ carbon cost associated with the carbon emissions of the system in each year """
+    # get parameter object
+    params = Parameter.getParameterObject()
     return (
             model.costCarbonEmissionsTotal[year] ==
-            model.carbonPrice[year] * model.carbonEmissionsTotal[year]
+            params.carbonPrice[year] * model.carbonEmissionsTotal[year]
             # add overshoot price
-            + model.carbonEmissionsOvershoot[year] * model.carbonPriceOvershoot
+            + model.carbonEmissionsOvershoot[year] * params.carbonPriceOvershoot
     )
 
 def constraintCarbonEmissionsLimitRule(model, year):
     """ time dependent carbon emissions limit from technologies and carriers"""
-    if model.carbonEmissionsLimit[year] != np.inf:
+    # get parameter object
+    params = Parameter.getParameterObject()
+    if params.carbonEmissionsLimit[year] != np.inf:
         return (
-                model.carbonEmissionsLimit[year] >= model.carbonEmissionsTotal[year]
+            params.carbonEmissionsLimit[year] >= model.carbonEmissionsTotal[year]
         )
     else:
         return pe.Constraint.Skip
@@ -841,10 +847,12 @@ def constraintCarbonEmissionsBudgetRule(model, year):
     """ carbon emissions budget of entire time horizon from technologies and carriers.
     The prediction extends until the end of the horizon, i.e.,
     last optimization time step plus the current carbon emissions until the end of the horizon """
+    # get parameter object
+    params = Parameter.getParameterObject()
     intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
-    if model.carbonEmissionsBudget != np.inf:
+    if params.carbonEmissionsBudget != np.inf:
         return (
-                model.carbonEmissionsBudget + model.carbonEmissionsOvershoot[year] >=
+                params.carbonEmissionsBudget + model.carbonEmissionsOvershoot[year] >=
                 model.carbonEmissionsCumulative[year] + model.carbonEmissionsTotal[year] * (intervalBetweenYears - 1)
         )
     else:
