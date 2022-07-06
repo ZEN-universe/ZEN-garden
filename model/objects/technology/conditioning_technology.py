@@ -14,7 +14,6 @@ import pandas                                       as pd
 from model.objects.energy_system                    import EnergySystem
 from model.objects.technology.conversion_technology import ConversionTechnology
 
-
 class ConditioningTechnology(ConversionTechnology):
     # set label
     label = "setConditioningTechnologies"

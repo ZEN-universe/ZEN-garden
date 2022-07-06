@@ -16,6 +16,7 @@ import pandas        as pd
 import copy
 from preprocess.functions.extract_input_data import DataInput
 from preprocess.functions.unit_handling         import UnitHandling
+from model.objects.parameter import Parameter
 
 class EnergySystem:
     # energySystem
@@ -518,8 +519,6 @@ class EnergySystem:
                 componentData   = cls.checkForSubindex(componentData,customSet)
             elif attributeIsSeries:
                 componentData = pd.concat(componentData, keys=componentData.keys())
-            if isinstance(componentData,pd.Series):
-                componentData = componentData[componentData != 0]
         return componentData
 
     @classmethod
@@ -605,37 +604,68 @@ class EnergySystem:
         model = cls.getConcreteModel()
 
         # carbon emissions limit
-        model.carbonEmissionsLimit = pe.Param(
-            model.setTimeStepsYearly,
-            initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
-            default=0,
-            doc = 'Parameter which specifies the total limit on carbon emissions'
+        Parameter.addParameter(
+            name="carbonEmissionsLimit",
+            data=cls.initializeComponent(cls, "carbonEmissionsLimit", setTimeSteps=model.setTimeStepsYearly),
+            doc='Parameter which specifies the total limit on carbon emissions'
         )
         # carbon emissions budget
-        model.carbonEmissionsBudget = pe.Param(
-            initialize=cls.initializeComponent(cls, "carbonEmissionsBudget"),
-            default=0,
+        Parameter.addParameter(
+            name="carbonEmissionsBudget",
+            data=cls.initializeComponent(cls, "carbonEmissionsBudget"),
             doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon'
         )
         # carbon emissions budget
-        model.previousCarbonEmissions = pe.Param(
-            initialize=cls.initializeComponent(cls, "previousCarbonEmissions"),
-            default=0,
+        Parameter.addParameter(
+            name="previousCarbonEmissions",
+            data=cls.initializeComponent(cls, "previousCarbonEmissions"),
             doc='Parameter which specifies the total previous carbon emissions'
         )
         # carbon price
-        model.carbonPrice = pe.Param(
-            model.setTimeStepsYearly,
-            initialize=cls.initializeComponent(cls, "carbonPrice", setTimeSteps=model.setTimeStepsYearly),
-            default=0,
+        Parameter.addParameter(
+            name="carbonPrice",
+            data=cls.initializeComponent(cls, "carbonPrice", setTimeSteps=model.setTimeStepsYearly),
             doc='Parameter which specifies the yearly carbon price'
         )
         # carbon price of overshoot
-        model.carbonPriceOvershoot = pe.Param(
-            initialize=cls.initializeComponent(cls, "carbonPriceOvershoot"),
+        Parameter.addParameter(
+            name="carbonPriceOvershoot",
+            data=cls.initializeComponent(cls, "carbonPriceOvershoot"),
             default=0,
             doc='Parameter which specifies the carbon price for budget overshoot'
         )
+        # # carbon emissions limit
+        # model.carbonEmissionsLimit = pe.Param(
+        #     model.setTimeStepsYearly,
+        #     initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
+        #     default=0,
+        #     doc = 'Parameter which specifies the total limit on carbon emissions'
+        # )
+        # # carbon emissions budget
+        # model.carbonEmissionsBudget = pe.Param(
+        #     initialize=cls.initializeComponent(cls, "carbonEmissionsBudget"),
+        #     default=0,
+        #     doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon'
+        # )
+        # # carbon emissions budget
+        # model.previousCarbonEmissions = pe.Param(
+        #     initialize=cls.initializeComponent(cls, "previousCarbonEmissions"),
+        #     default=0,
+        #     doc='Parameter which specifies the total previous carbon emissions'
+        # )
+        # # carbon price
+        # model.carbonPrice = pe.Param(
+        #     model.setTimeStepsYearly,
+        #     initialize=cls.initializeComponent(cls, "carbonPrice", setTimeSteps=model.setTimeStepsYearly),
+        #     default=0,
+        #     doc='Parameter which specifies the yearly carbon price'
+        # )
+        # # carbon price of overshoot
+        # model.carbonPriceOvershoot = pe.Param(
+        #     initialize=cls.initializeComponent(cls, "carbonPriceOvershoot"),
+        #     default=0,
+        #     doc='Parameter which specifies the carbon price for budget overshoot'
+        # )
 
     @classmethod
     def constructVars(cls):

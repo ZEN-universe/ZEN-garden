@@ -16,6 +16,7 @@ import pyomo.environ as pe
 import cProfile, pstats
 from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
+from model.objects.parameter import Parameter
 
 class Element:
     # set label
@@ -242,6 +243,8 @@ class Element:
     def constructParams(cls):
         """ constructs the pe.Params of the class <Element> """
         logging.info("Construct pe.Params")
+        # initialize parameterObject
+        Parameter()
         # construct pe.Params of energy system
         EnergySystem.constructParams()
         # construct pe.Sets of class elements

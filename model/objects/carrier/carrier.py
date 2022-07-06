@@ -16,6 +16,7 @@ import pandas as pd
 from model.objects.element import Element
 from model.objects.energy_system import EnergySystem
 from model.objects.technology.technology import Technology
+from model.objects.parameter import Parameter
 
 class Carrier(Element):
     # set label
@@ -74,51 +75,90 @@ class Carrier(Element):
         model = EnergySystem.getConcreteModel()
 
         # demand of carrier
-        model.demandCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
-            initialize = EnergySystem.initializeComponent(cls,"demandCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
-            default=0,
+        Parameter.addParameter(
+            name="demandCarrier",
+            data= EnergySystem.initializeComponent(cls,"demandCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the carrier demand.\n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
         # availability of carrier
-        model.availabilityCarrierImport = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
-            initialize = EnergySystem.initializeComponent(cls,"availabilityCarrierImport",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
-            default=0,
+        Parameter.addParameter(
+            name="availabilityCarrierImport",
+            data= EnergySystem.initializeComponent(cls,"availabilityCarrierImport",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the maximum energy that can be imported from outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
         # availability of carrier
-        model.availabilityCarrierExport = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
-            initialize = EnergySystem.initializeComponent(cls,"availabilityCarrierExport",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
-            default=0,
+        Parameter.addParameter(
+            name="availabilityCarrierExport",
+            data= EnergySystem.initializeComponent(cls,"availabilityCarrierExport",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the maximum energy that can be exported to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
         # import price
-        model.importPriceCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
-            initialize = EnergySystem.initializeComponent(cls,"importPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
-            default=0,
+        Parameter.addParameter(
+            name="importPriceCarrier",
+            data= EnergySystem.initializeComponent(cls,"importPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the import carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation'
         )
         # export price
-        model.exportPriceCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
-            initialize = EnergySystem.initializeComponent(cls,"exportPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
-            default=0,
+        Parameter.addParameter(
+            name="exportPriceCarrier",
+            data= EnergySystem.initializeComponent(cls,"exportPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation'
         )
         # demand shedding price
-        model.shedDemandPrice = pe.Param(
-            cls.createCustomSet(["setCarriers"]),
-            initialize=EnergySystem.initializeComponent(cls, "shedDemandPrice"),
-            default=0,
+        Parameter.addParameter(
+            name="shedDemandPrice",
+            data=EnergySystem.initializeComponent(cls, "shedDemandPrice"),
             doc='Parameter which specifies the price to shed demand. \n\t Dimensions: setCarriers'
         )
         # carbon intensity
-        model.carbonIntensityCarrier = pe.Param(
-            cls.createCustomSet(["setCarriers","setNodes", "setTimeStepsYearly"]),
-            initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsYearly"]),
-            default=0,
+        Parameter.addParameter(
+            name="carbonIntensityCarrier",
+            data= EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsYearly"]),
             doc = 'Parameter which specifies the carbon intensity of carrier. \n\t Dimensions: setCarriers, setNodes'
         )
+        # # demand of carrier
+        # model.demandCarrier = pe.Param(
+        #     cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     initialize = EnergySystem.initializeComponent(cls,"demandCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     default=0,
+        #     doc = 'Parameter which specifies the carrier demand.\n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
+        # # availability of carrier
+        # model.availabilityCarrierImport = pe.Param(
+        #     cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     initialize = EnergySystem.initializeComponent(cls,"availabilityCarrierImport",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     default=0,
+        #     doc = 'Parameter which specifies the maximum energy that can be imported from outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
+        # # availability of carrier
+        # model.availabilityCarrierExport = pe.Param(
+        #     cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     initialize = EnergySystem.initializeComponent(cls,"availabilityCarrierExport",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     default=0,
+        #     doc = 'Parameter which specifies the maximum energy that can be exported to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
+        # # import price
+        # model.importPriceCarrier = pe.Param(
+        #     cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     initialize = EnergySystem.initializeComponent(cls,"importPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     default=0,
+        #     doc = 'Parameter which specifies the import carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation'
+        # )
+        # # export price
+        # model.exportPriceCarrier = pe.Param(
+        #     cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     initialize = EnergySystem.initializeComponent(cls,"exportPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
+        #     default=0,
+        #     doc = 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation'
+        # )
+        # # demand shedding price
+        # model.shedDemandPrice = pe.Param(
+        #     cls.createCustomSet(["setCarriers"]),
+        #     initialize=EnergySystem.initializeComponent(cls, "shedDemandPrice"),
+        #     default=0,
+        #     doc='Parameter which specifies the price to shed demand. \n\t Dimensions: setCarriers'
+        # )
+        # # carbon intensity
+        # model.carbonIntensityCarrier = pe.Param(
+        #     cls.createCustomSet(["setCarriers","setNodes", "setTimeStepsYearly"]),
+        #     initialize = EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsYearly"]),
+        #     default=0,
+        #     doc = 'Parameter which specifies the carbon intensity of carrier. \n\t Dimensions: setCarriers, setNodes'
+        # )
 
     @classmethod
     def constructVars(cls):
