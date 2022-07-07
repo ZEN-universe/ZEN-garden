@@ -3,7 +3,7 @@ Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com
               Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class to read the data from input files, collect them into a dictionary and convert the dictionary into a Pyomo
               compatible dictionary to be passed to the compile routine.
@@ -61,14 +61,14 @@ class Prepare:
 
         ## General Paths
         # define path to access dataset related to the current analysis
-        self.pathData = ".//data//{}//".format(self.analysis["dataset"])
+        self.pathData = f".//data//{self.analysis['dataset']}//"
         assert os.path.exists(self.pathData), f"Folder for input data {self.analysis['dataset']} does not exist!"
         self.paths = dict()
         # create a dictionary with the keys based on the folders in pathData
         for folderName in next(os.walk(self.pathData))[1]:
             self.paths[folderName] = dict()
             self.paths[folderName]["folder"] = \
-                self.pathData + "{}//".format(folderName)
+                self.pathData + f"{folderName}//"
 
         ## Carrier Paths
         # add the paths for all the directories in carrier folder
@@ -76,7 +76,7 @@ class Prepare:
         for carrier in next(os.walk(path))[1]:
             self.paths["setCarriers"][carrier] = dict()
             self.paths["setCarriers"][carrier]["folder"] = \
-                path + "{}//".format(carrier)
+                path + f"{carrier}//"
 
         ## Technology Paths
         # add the paths for all the directories in technologies
@@ -85,15 +85,15 @@ class Prepare:
             for technology in next(os.walk(path))[1]:
                 self.paths[technologySubset][technology] = dict()
                 self.paths[technologySubset][technology]["folder"] = \
-                    path + "{}//".format(technology)
-            # add path for subsets of technologySubset
-            if technologySubset in self.analysis["subsets"].keys():
-                for subset in self.analysis["subsets"][technologySubset]:
-                    path = self.paths[subset]["folder"]
-                    for technology in next(os.walk(path))[1]:
-                        self.paths[subset][technology] = dict()
-                        self.paths[subset][technology]["folder"] = \
-                            path + "{}//".format(technology)
+                    path + f"{technology}//"
+            # # add path for subsets of technologySubset
+            # if technologySubset in self.analysis["subsets"].keys():
+            #     for subset in self.analysis["subsets"][technologySubset]:
+            #         path = self.paths[subset]["folder"]
+            #         for technology in next(os.walk(path))[1]:
+            #             self.paths[subset][technology] = dict()
+            #             self.paths[subset][technology]["folder"] = \
+            #                 path + f"{technology}//"
 
     def initDict(self):
         """
@@ -188,7 +188,7 @@ class Prepare:
             if technologySubset in self.analysis["subsets"].keys():
                 for subset in self.analysis["subsets"][technologySubset]:
                     for technology in self.system[subset]:
-                        if technology not in self.paths[subset].keys():
+                        if technology not in self.paths[technologySubset].keys():
                             logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
                             self.system[subset].remove(technology)
                     self.system[technologySubset].extend(self.system[subset])

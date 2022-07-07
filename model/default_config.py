@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Default settings. Changes from the default values are specified in settings.py
 ==========================================================================================================================================================================="""
@@ -20,6 +20,15 @@ solver = dict()
 # This dictionary defines the configuration of the system by selecting the subset of technologies ot be included into the analysis.
 system = dict()
 
+## Solver - dictionary declaration
+# This dictionary contains all the settings related to the solver of the optimisation problem.
+solver = dict()
+
+## Scenarios - dictionary declaration
+# This dictionary defines the set of scenarios that is evaluated.
+scenarios = dict()
+
+
 ## Analysis - Items assignment
 # objective function definition
 analysis["objective"] = "TotalCost"
@@ -32,9 +41,6 @@ analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
 analysis["subsets"] = {"setCarriers": [],
                        "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
-# settings for MINLP
-analysis["variablesNonlinearModel"]                 = {"builtCapacity": []}
-analysis["nonlinearTechnologyApproximation"]        = {"Capex": [], "ConverEfficiency":[]}
 # headers for the generation of input files
 analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
                                   "setEdges": ["edge"],
@@ -52,8 +58,13 @@ analysis["fileFormat"] = "csv"
 analysis["timeSeriesAggregation"] = {
     "clusterMethod"         : "k_means",
     "solver"                : "gurobi",
+    "hoursPerPeriod"        : 1,
     "extremePeriodMethod"   : "None",
-    "resolution"            : 1
+    "rescaleClusterPeriods" : False,
+    "representationMethod"  : "meanRepresentation",
+    "resolution"            : 1,
+    "segmentation"          : False,
+    "noSegments"            : 12
 }
 
 analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
@@ -84,23 +95,44 @@ analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
                                 'carrierFlowDischarge':['?','??','???','????'],
                                 'levelCharge':['?','??','???','????'],
                                 }
-analysis['postprocess'] = True
+
+analysis['postprocess'] = False
 
 ## System - Items assignment
 # set of energy carriers
 system["setCarriers"] = []
+# set of conditioning carriers
+system["setConditioningCarriers"] = []
+# set of capacity types: power-rated or energy-rated
+system["setCapacityTypes"] = ["power","energy"]
 # set of conversion technologies
 system["setConversionTechnologies"] = []
+# set of conditioning technologies
+system["setConditioningTechnologies"] = []
 # set of storage technologies
 system["setStorageTechnologies"] = []
 # set of transport technologies
 system["setTransportTechnologies"] = []
+system['DoubleCapexTransport'] = False
 # set of nodes
 system["setNodes"] = []
+# toggle to use timeSeriesAggregation
+system["conductTimeSeriesAggregation"] = False
+# toggle to perform analysis for multiple scenarios
+system["conductScenarioAnalysis"] = False
 # total hours per year
 system["totalHoursPerYear"] = 8760
+# unbounded market share for technology diffusion rate
+system["unboundedMarketShare"] = 0.01
+# rate at which the knowledge stock of existing capacities is depreciated annually
+system["knowledgeDepreciationRate"] = 0.2
+# social discount rate
+system["socialDiscountRate"] = 0
 # folder output
 system["folderOutput"] = "outputs/results/"
+# name of data folder for energy system specification
+system["folderNameSystemSpecification"] = "systemSpecification"
+
 
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
@@ -129,4 +161,6 @@ solver["performanceCheck"] = {"printDeltaRun":1, "printDeltaIteration":1}
 # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
 solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
 # rounding to number of decimal points
-solver["roundingDecimalPoints"] = 10
+solver["roundingDecimalPoints"] = 8
+## Scenarios - dictionary declaration
+scenarios["base"] = {}

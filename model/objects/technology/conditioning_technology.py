@@ -2,17 +2,17 @@
 Title:          ZEN-GARDEN
 Created:        March-2022
 Authors:        Alissa Ganter (aganter@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class defining the parameters, variables and constraints of the conditioning technologies.
                 The class takes the abstract optimization model as an input, and adds parameters, variables and
                 constraints of the conversion technologies.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ as pe
+import pyomo.environ                                as pe
+import pandas                                       as pd
 from model.objects.energy_system                    import EnergySystem
 from model.objects.technology.conversion_technology import ConversionTechnology
-
 
 class ConditioningTechnology(ConversionTechnology):
     # set label
@@ -54,18 +54,19 @@ class ConditioningTechnology(ConversionTechnology):
     def getConverEfficiency(self):
         """retrieves and stores converEfficiency for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as PWAConverEfficiency"""
-        self.specificHeat         = self.dataInput.extractAttributeData(self.inputPath, "specificHeat", skipWarning=True)["value"]
-        self.specificHeatRatio    = self.dataInput.extractAttributeData(self.inputPath, "specificHeatRatio", skipWarning=True)["value"]
-        self.pressureIn           = self.dataInput.extractAttributeData(self.inputPath, "pressureIn", skipWarning=True)["value"]
-        self.pressureOut          = self.dataInput.extractAttributeData(self.inputPath, "pressureOut", skipWarning=True)["value"]
-        self.temperatureIn        = self.dataInput.extractAttributeData(self.inputPath, "temperatureIn", skipWarning=True)["value"]
-        self.isentropicEfficiency = self.dataInput.extractAttributeData(self.inputPath, "isentropicEfficiency", skipWarning=True)["value"]
+        #self.dataInput.extractAttributeData("minBuiltCapacity")["value"]
+        self.specificHeat         = self.dataInput.extractAttributeData("specificHeat")["value"]
+        self.specificHeatRatio    = self.dataInput.extractAttributeData("specificHeatRatio")["value"]
+        self.pressureIn           = self.dataInput.extractAttributeData("pressureIn")["value"]
+        self.pressureOut          = self.dataInput.extractAttributeData("pressureOut")["value"]
+        self.temperatureIn        = self.dataInput.extractAttributeData("temperatureIn")["value"]
+        self.isentropicEfficiency = self.dataInput.extractAttributeData("isentropicEfficiency")["value"]
 
         # calculate energy consumption
         _pressureRatio     = self.pressureOut / self.pressureIn
         _exponent          = (self.specificHeatRatio - 1) / self.specificHeatRatio
-        if self.dataInput.ifAttributeExists(self.inputPath, "lowerHeatingValue", column=None):
-            _lowerHeatingValue = self.dataInput.extractAttributeData(self.inputPath, "lowerHeatingValue", skipWarning=True)["value"]
+        if self.dataInput.ifAttributeExists("lowerHeatingValue", column=None):
+            _lowerHeatingValue = self.dataInput.extractAttributeData("lowerHeatingValue")["value"]
             self.specificHeat  = self.specificHeat / _lowerHeatingValue
         _energyConsumption = self.specificHeat * self.temperatureIn / self.isentropicEfficiency \
                             * (_pressureRatio ** _exponent - 1)
@@ -77,17 +78,22 @@ class ConditioningTechnology(ConversionTechnology):
         assert len(_inputCarriers) == 1, f"{self.name} can only have 1 input carrier besides the reference carrier."
         assert len(self.outputCarrier) == 1, f"{self.name} can only have 1 output carrier."
         # create dictionary
-        self.PWAConverEfficiency                           = dict()
-        self.PWAConverEfficiency[self.referenceCarrier[0]] = (self.minBuiltCapacity, self.maxBuiltCapacity)
-        self.PWAConverEfficiency[self.outputCarrier[0]]    = 1  # TODO losses are not yet accounted for
-        self.PWAConverEfficiency[_inputCarriers[0]]        = _energyConsumption
-        # PWA Variables
-        self.PWAConverEfficiency["PWAVariables"] = []
-        # bounds
-        self.PWAConverEfficiency["bounds"]                            = dict()
-        self.PWAConverEfficiency["bounds"][self.referenceCarrier[0]]  = (self.minBuiltCapacity, self.maxBuiltCapacity)
-        self.PWAConverEfficiency["bounds"][self.outputCarrier[0]]     = (self.minBuiltCapacity, self.maxBuiltCapacity)
-        self.PWAConverEfficiency["bounds"][_inputCarriers[0]]         = (self.minBuiltCapacity * _energyConsumption, self.maxBuiltCapacity * _energyConsumption)
+        self.converEfficiencyIsPWA                            = False
+        self.converEfficiencyLinear                           = dict()
+        self.converEfficiencyLinear[self.outputCarrier[0]]    = self.dataInput.createDefaultOutput(indexSets=["setNodes","setTimeSteps"],
+                                                                                                   column=None,
+                                                                                                   timeSteps=self.setTimeStepsInvest,
+                                                                                                   manualDefaultValue = 1)[0] # TODO losses are not yet accounted for
+        self.converEfficiencyLinear[_inputCarriers[0]]        = self.dataInput.createDefaultOutput(indexSets=["setNodes", "setTimeSteps"],
+                                                                                                   column=None,
+                                                                                                   timeSteps=self.setTimeStepsInvest,
+                                                                                                   manualDefaultValue=_energyConsumption)[0]
+        # dict to dataframe
+        self.converEfficiencyLinear              = pd.DataFrame.from_dict(self.converEfficiencyLinear)
+        self.converEfficiencyLinear.columns.name = "carrier"
+        self.converEfficiencyLinear              = self.converEfficiencyLinear.stack()
+        _converEfficiencyLevels                  = [self.converEfficiencyLinear.index.names[-1]] + self.converEfficiencyLinear.index.names[:-1]
+        self.converEfficiencyLinear              = self.converEfficiencyLinear.reorder_levels(_converEfficiencyLevels)
 
     @classmethod
     def constructSets(cls):

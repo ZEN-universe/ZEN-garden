@@ -3,7 +3,7 @@ Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class defining a standard Element. Contains methods to add parameters, variables and constraints to the
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
@@ -11,12 +11,16 @@ Description:    Class defining a standard Element. Contains methods to add param
 ==========================================================================================================================================================================="""
 import itertools 
 import logging
-import numpy as np
 import pandas as pd
+import pyomo.environ as pe
+import cProfile, pstats
 from preprocess.functions.extract_input_data import DataInput
 from model.objects.energy_system import EnergySystem
+from model.objects.parameter import Parameter
 
 class Element:
+    # set label
+    label = "setElements"
     # empty list of elements
     listOfElements = []
 
@@ -27,11 +31,32 @@ class Element:
         self.name = element
         # set if aggregated
         self.aggregated = False
+        # get input path
+        self.getInputPath()
         # create DataInput object
-        self.dataInput = DataInput(self,EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem())
+        self.dataInput = DataInput(self,EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem(),EnergySystem.getUnitHandling())
         # add element to list
         Element.addElement(self)
-        
+
+    def getInputPath(self):
+        """ get input path where input data is stored inputPath"""
+        # get system information
+        system      = EnergySystem.getSystem()
+        # get technology type
+        classLabel  = type(self).getClassLabel()
+        # get path dictionary
+        paths = EnergySystem.getPaths()
+        # check if class is a subset
+        if classLabel not in paths.keys():
+            subsets = EnergySystem.getAnalysis()["subsets"]
+            # iterate through subsets and check if class belongs to any of the subsets
+            for setName, subsetsList in subsets.items():
+                if classLabel in subsetsList:
+                    classLabel = setName
+                    break
+        # get input path for current classLabel
+        self.inputPath = paths[classLabel][self.name]["folder"]
+
     def setAggregated(self):
         """ this method sets self.aggregated to True """
         self.aggregated = True
@@ -85,32 +110,77 @@ class Element:
         return cls.__subclasses__()
 
     @classmethod
-    def getAttributeOfAllElements(cls,attributeName:str):
+    def getAttributeOfAllElements(cls,attributeName:str,capacityTypes = False,returnAttributeIsSeries = False):
         """ get attribute values of all elements in this class 
         :param attributeName: str name of attribute
-        :return dictOfAttributes: returns dict of attribute values """
+        :param capacityTypes: boolean if attributes extracted for all capacity types
+        :param returnAttributeIsSeries: boolean if information on attribute type is returned
+        :return dictOfAttributes: returns dict of attribute values
+        :return attributeIsSeries: return information on attribute type """
+        system = EnergySystem.getSystem()
         _classElements = cls.getAllElements()
         dictOfAttributes = {}
         for _element in _classElements:
-            assert hasattr(_element,attributeName),f"Element {_element.name} does not have attribute {attributeName}"
-            _attribute = getattr(_element,attributeName)
-            if isinstance(_attribute,pd.Series):
-                _attribute = _attribute.to_dict()
-            elif isinstance(_attribute,pd.DataFrame):
-                raise TypeError("Not yet implemented for pd.DataFrames")
-            if isinstance(_attribute,dict) and "PWA" not in attributeName:
-                # if attribute is dict
-                for _key in _attribute:
-                    if isinstance(_key,tuple):
-                        dictOfAttributes[(_element.name,)+_key] = _attribute[_key]
-                    else:
-                        dictOfAttributes[(_element.name, _key)] = _attribute[_key]
-            elif isinstance(_attribute, int):
+            if not capacityTypes:
+                dictOfAttributes,attributeIsSeries = cls.appendAttributeOfElementToDict(_element,attributeName,dictOfAttributes)
+            # if extracted for both capacity types
+            else:
+                for capacityType in system["setCapacityTypes"]:
+                    # append energy only for storage technologies
+                    if capacityType == system["setCapacityTypes"][0] or _element.name in system["setStorageTechnologies"]:
+                        dictOfAttributes,attributeIsSeries = cls.appendAttributeOfElementToDict(_element, attributeName, dictOfAttributes,capacityType)
+        if returnAttributeIsSeries:
+            return dictOfAttributes,attributeIsSeries
+        else:
+            return dictOfAttributes
+
+    @classmethod
+    def appendAttributeOfElementToDict(cls,_element,attributeName,dictOfAttributes,capacityType = None):
+        """ get attribute values of all elements in this class
+        :param _element: element of class
+        :param attributeName: str name of attribute
+        :param dictOfAttributes: dict of attribute values
+        :param capacityType: capacity type for which attribute extracted. If None, not listed in key
+        :return dictOfAttributes: returns dict of attribute values """
+        attributeIsSeries = False
+        system = EnergySystem.getSystem()
+        # add Energy for energy capacity type
+        if capacityType == system["setCapacityTypes"][1]:
+            attributeName += "Energy"
+        assert hasattr(_element, attributeName), f"Element {_element.name} does not have attribute {attributeName}"
+        _attribute = getattr(_element, attributeName)
+        assert not isinstance(_attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {_element.name}"
+        # add attribute to dictOfAttributes
+        if isinstance(_attribute, dict):
+            dictOfAttributes.update({(_element.name,)+(key,):val for key,val in _attribute.items()})
+        elif isinstance(_attribute, pd.Series) and "PWA" not in attributeName:
+            if capacityType:
+                _combinedKey = (_element.name,capacityType)
+            else:
+                _combinedKey = _element.name
+            if len(_attribute) > 1:
+                dictOfAttributes[_combinedKey] = _attribute
+                attributeIsSeries = True
+            else:
+                dictOfAttributes[_combinedKey] = _attribute.squeeze()
+                attributeIsSeries = False
+            # # if attribute is dict
+            # for _key in _attribute:
+            #     if isinstance(_key, tuple):
+            #         dictOfAttributes[_combinedKey + _key] = _attribute[_key]
+            #     else:
+            #         dictOfAttributes[_combinedKey + (_key,)] = _attribute[_key]
+        elif isinstance(_attribute, int):
+            if capacityType:
+                dictOfAttributes[(_element.name,capacityType)] = [_attribute]
+            else:
                 dictOfAttributes[_element.name] = [_attribute]
+        else:
+            if capacityType:
+                dictOfAttributes[(_element.name,capacityType)] = _attribute
             else:
                 dictOfAttributes[_element.name] = _attribute
-
-        return dictOfAttributes
+        return dictOfAttributes, attributeIsSeries
 
     @classmethod
     def getAttributeOfSpecificElement(cls,elementName:str,attributeName:str):
@@ -122,9 +192,14 @@ class Element:
         _element = cls.getElement(elementName)
         # assert that _element exists and has attribute
         assert _element, f"Element {elementName} not in class {cls}"
-        assert hasattr(_element,attributeName),f"Element {_element} does not have attribute {attributeName}"
+        assert hasattr(_element,attributeName),f"Element {elementName} does not have attribute {attributeName}"
         attributeValue = getattr(_element,attributeName)
         return attributeValue
+
+    @classmethod
+    def getClassLabel(cls):
+        """ returns label of class """
+        return cls.label
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
     # Here, after defining EnergySystem-specific components, the components of the other classes are constructed
@@ -149,6 +224,14 @@ class Element:
         logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
         EnergySystem.constructSets()
+        # construct pe.Sets of class elements
+        model = EnergySystem.getConcreteModel()
+        # operational time steps
+        model.setTimeStepsOperation = pe.Set(
+            model.setElements,
+            initialize=cls.getAttributeOfAllElements("setTimeStepsOperation"),
+            doc="Set of time steps in operation for all technologies. Dimensions: setElements"
+        )
         # construct pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
             print(subclass.__name__)
@@ -158,8 +241,17 @@ class Element:
     def constructParams(cls):
         """ constructs the pe.Params of the class <Element> """
         logging.info("Construct pe.Params")
+        # initialize parameterObject
+        Parameter()
         # construct pe.Params of energy system
         EnergySystem.constructParams()
+        # construct pe.Sets of class elements
+        # operational time step duration
+        Parameter.addParameter(
+            name="timeStepsOperationDuration",
+            data= EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]).astype(int),
+            doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setElements, setTimeStepsOperation"
+        )
         # construct pe.Params of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructParams()
@@ -238,56 +330,35 @@ class Element:
                                 listSets.append(model.setEdges)
                         # if set is built for PWA capex:
                         elif "setCapex" in index:
-                            if element in model.setConversionTechnologies: # TODO or element in model.setStorageTechnologies:
-                                # if technology is approximated (by either PWA or Linear)
-                                if element not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["Capex"] or EnergySystem.getSolver()["model"] == "MILP":
-                                    _PWACapex = cls.getAttributeOfSpecificElement(element,"PWACapex")
-                                    # if technology is modeled as PWA, break for Linear index
-                                    if "Linear" in index and "capex" in _PWACapex["PWAVariables"]:
-                                        appendElement = False
-                                        break
-                                    # if technology is not modeled as PWA, break for PWA index
-                                    elif "PWA" in index and "capex" not in _PWACapex["PWAVariables"]:
-                                        appendElement = False
-                                        break
-                                    # if NL
-                                    elif "NL" in index:
-                                        appendElement = False
-                                        break
-                                # if technology is not approximated (i.e., modeled as NL), break for approximated index 
-                                else:
-                                    if "NL" not in index:
-                                        appendElement = False
-                                        break
-                            # Transport technology
+                            if element in model.setConversionTechnologies:
+                                _capexIsPWA = cls.getAttributeOfSpecificElement(element,"capexIsPWA")
+                                # if technology is modeled as PWA, break for Linear index
+                                if "Linear" in index and _capexIsPWA:
+                                    appendElement = False
+                                    break
+                                # if technology is not modeled as PWA, break for PWA index
+                                elif "PWA" in index and not _capexIsPWA:
+                                    appendElement = False
+                                    break
+                            # Transport or Storage technology
                             else:
                                 appendElement = False
                                 break
                         # if set is built for PWA converEfficiency:
                         elif "setConverEfficiency" in index:
                             if element in model.setConversionTechnologies: # or element in model.setStorageTechnologies:
-                                # if technology is approximated (by either PWA or Linear)
-                                if element not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"] or EnergySystem.getSolver()["model"] == "MILP":
-                                    _PWAConverEfficiency = cls.getAttributeOfSpecificElement(element,"PWAConverEfficiency")
-                                    dependentCarrier     = model.setDependentCarriers[element]
-                                    dependentCarrierPWA = _PWAConverEfficiency["PWAVariables"]
-                                    if "Linear" in index:
-                                        listSets.append(dependentCarrier-dependentCarrierPWA)
-                                    elif "PWA" in index:
-                                        listSets.append(dependentCarrierPWA)
-                                    # if NL
-                                    elif "NL" in index:
-                                        appendElement = False
-                                        break  
-                                    # if approximated, either PWA or Linear
-                                    else:
-                                        listSets.append(dependentCarrier)
-                                # if technology is not approximated (hence modeled as NL), break for approximated index 
+                                _converEfficiencyIsPWA = cls.getAttributeOfSpecificElement(element, "converEfficiencyIsPWA")
+                                dependentCarrier = list(model.setDependentCarriers[element])
+                                # TODO for more than one carrier
+                                # _PWAConverEfficiency = cls.getAttributeOfSpecificElement(element,"PWAConverEfficiency")
+                                # dependentCarrierPWA     = _PWAConverEfficiency["PWAVariables"]
+                                if "Linear" in index and not _converEfficiencyIsPWA:
+                                    listSets.append(dependentCarrier)
+                                elif "PWA" in index and _converEfficiencyIsPWA:
+                                    listSets.append(dependentCarrier)
                                 else:
-                                    if "NL" not in index:
-                                        appendElement = False
-                                        break
-                            # Transport technology
+                                    listSets.append([])
+                            # Transport or Storage technology
                             else:
                                 appendElement = False
                                 break
@@ -305,6 +376,13 @@ class Element:
                                 if not modelOnOff:
                                     appendElement = False
                                     break
+                        # split in capacity types of power and energy
+                        elif index == "setCapacityTypes":
+                            system = EnergySystem.getSystem()
+                            if element in model.setStorageTechnologies:
+                                listSets.append(system["setCapacityTypes"])
+                            else:
+                                listSets.append([system["setCapacityTypes"][0]])
                         else:
                             raise NotImplementedError(f"Index <{index}> not known")
                     # append indices to customSet if element is supposed to be appended
@@ -338,11 +416,12 @@ class Element:
             # if a conversion technology, check if all dependentCarrierFlow at referenceCarrierFlow = 0 equal to 0
             else:
                 # if technology is approximated (by either PWA or Linear)
-                if tech not in EnergySystem.getAnalysis()["nonlinearTechnologyApproximation"]["ConverEfficiency"] or EnergySystem.getSolver()["model"] == "MILP":
+                _isPWA = cls.getAttributeOfSpecificElement(tech,"converEfficiencyIsPWA")
+                # if not modeled as PWA
+                if not _isPWA:
+                    modelOnOff = False
+                else:
                     _PWAParameter = cls.getAttributeOfSpecificElement(tech,"PWAConverEfficiency")
-                    # if not modeled as PWA
-                    if not _PWAParameter["PWAVariables"]:
-                        modelOnOff = False
                     # iterate through all dependent carriers and check if all lower bounds are equal to 0
                     _onlyZeroDependentBound = True
                     for PWAVariable in _PWAParameter["PWAVariables"]:

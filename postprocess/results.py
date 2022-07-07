@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class is defining the postprocessing of the results.
               The class takes as inputs the optimization problem (model) and the system configurations (system).
@@ -40,7 +40,7 @@ class Postprocess:
         # self.system    = model.system
         # self.analysis  = model.analysis
         self.modelName = kwargs.get('modelName', self.modelName)
-        self.nameDir   = f'./outputs/results{self.modelName}/'
+        self.nameDir   = f'./outputs/{self.modelName}/'
 
         # self.makeDirs()
         # self.getVarValues()
@@ -91,8 +91,6 @@ class Postprocess:
 
         try:
             os.makedirs(f'{self.nameDir}/plots/')
-            os.makedirs(f'{self.nameDir}/params/')
-            os.makedirs(f'{self.nameDir}/vars/')
         except OSError:
             pass
 
@@ -119,19 +117,19 @@ class Postprocess:
                 self.paramDict[param.name][index] = pe.value(param[index])
 
         # save the param dict to a pickle
-        with open(f'{self.nameDir}params/paramDict.pickle', 'wb') as file:
+        with open(f'{self.nameDir}paramDict.pickle', 'wb') as file:
             pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-        # save order time steps
-        dictOrderTimeSteps = EnergySystem.getOrderTimeStepsDict()
+        # save sequence time steps
+        dictSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
         # save the param dict to a pickle
-        with open(f'{self.nameDir}dictAllOrderTimeSteps.pickle', 'wb') as file:
-            pickle.dump(dictOrderTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(f'{self.nameDir}dictAllSequenceTimeSteps.pickle', 'wb') as file:
+            pickle.dump(dictSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def loadParam(self):
         """ Loads the Param values from previously saved pickle files which can then be
         post-processed """
-        with open(f'{self.nameDir}params/paramDict.pickle', 'rb') as file:
+        with open(f'{self.nameDir}paramDict.pickle', 'rb') as file:
             self.paramDict = pickle.load(file)
 
     def getVarValues(self):
@@ -163,41 +161,41 @@ class Postprocess:
                         pass
 
         # save the variable dict to a pickle
-        with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
+        with open(f'{self.nameDir}varDict.pickle', 'wb') as file:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def saveVar_HB(self):  # My own function to save the variables in better dicts
-        """ Saves the variable values to pickle files which can then be
-        post-processed immediately or loaded and postprocessed at some other time"""
-
-        # get all the variable values from the model and store in a dict
-        for var in self.model.component_objects(pe.Var, active=True):
-            if 'constraint' not in var.name and 'gdp' not in var.name:
-                # create a sub-dict for each variable
-                self.varDict[var.name] = dict()
-                for index in var:
-                    # if variable is sub-splitted (e.g. for child-classes) create sub-dicts
-                    if type(index) is tuple:
-                        try:
-                            self.varDict[var.name][index[0]][index[1:]] = var[index].value
-                        except KeyError:
-                            self.varDict[var.name][index[0]] = dict()
-                            self.varDict[var.name][index[0]][index[1:]] = var[index].value
-                    # for index in var:
-                    else:
-                        try:
-                            self.varDict[var.name][index] = var[index].value
-                        except:
-                            pass
-
-        # save the variable dict to a pickle
-        with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
-            pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
+    # def saveVar_HB(self):  # My own function to save the variables in better dicts
+    #     """ Saves the variable values to pickle files which can then be
+    #     post-processed immediately or loaded and postprocessed at some other time"""
+    #
+    #     # get all the variable values from the model and store in a dict
+    #     for var in self.model.component_objects(pe.Var, active=True):
+    #         if 'constraint' not in var.name and 'gdp' not in var.name:
+    #             # create a sub-dict for each variable
+    #             self.varDict[var.name] = dict()
+    #             for index in var:
+    #                 # if variable is sub-splitted (e.g. for child-classes) create sub-dicts
+    #                 if type(index) is tuple:
+    #                     try:
+    #                         self.varDict[var.name][index[0]][index[1:]] = var[index].value
+    #                     except KeyError:
+    #                         self.varDict[var.name][index[0]] = dict()
+    #                         self.varDict[var.name][index[0]][index[1:]] = var[index].value
+    #                 # for index in var:
+    #                 else:
+    #                     try:
+    #                         self.varDict[var.name][index] = var[index].value
+    #                     except:
+    #                         pass
+    #
+    #     # save the variable dict to a pickle
+    #     with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
+    #         pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def loadVar(self):
         """ Loads the variable values from previously saved pickle files which can then be
         post-processed """
-        with open(f'{self.nameDir}vars/varDict.pickle', 'rb') as file:
+        with open(f'{self.nameDir}varDict.pickle', 'rb') as file:
             self.varDict = pickle.load(file)
 
     def saveSystem(self):
@@ -282,22 +280,22 @@ class Postprocess:
         """save the input data (paramDict, paramDf) and the results (varDict, varDf)"""
 
         # Save parameter data
-        with open(f'{self.nameDir}params/paramDict.pickle', 'wb') as file:
+        with open(f'{self.nameDir}paramDict.pickle', 'wb') as file:
             pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for paramName, df in self.paramDf.items():
-            df.to_csv(f'{self.nameDir}params/{paramName}.csv')
+            df.to_csv(f'{self.nameDir}{paramName}.csv')
 
         # Save variable data
-        with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
+        with open(f'{self.nameDir}varDict.pickle', 'wb') as file:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for varName, df in self.varDf.items():
-            df.to_csv(f'{self.nameDir}vars/{varName}.csv', index=False)
+            df.to_csv(f'{self.nameDir}{varName}.csv', index=False)
 
     def process(self):
         print(self.varDict.items())
         for var,dic in self.varDict.items():
             self.createDataframe(var, self.varDict, self.varDf)
-            self.varDf[var].to_csv(f'{self.nameDir}vars/{var}.csv', index=False)
+            self.varDf[var].to_csv(f'{self.nameDir}{var}.csv', index=False)
             self.plotResults()
 
     def plotResults(self):
@@ -335,10 +333,10 @@ class Postprocess:
                 path = f'{self.nameDir}plots/'+varName+'.png'
                 plt.savefig(path)
 
-        # safe dictOrderTimeSteps
-        dictAllOrderTimeSteps = EnergySystem.getOrderTimeStepsDict()
-        with open(f'{self.nameDir}dictAllOrderTimeSteps.pickle', 'wb') as file:
-            pickle.dump(dictAllOrderTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
+        # safe dictSequenceTimeSteps
+        dictAllSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
+        with open(f'{self.nameDir}dictAllSequenceTimeSteps.pickle', 'wb') as file:
+            pickle.dump(dictAllSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
     # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))
 

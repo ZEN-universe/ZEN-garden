@@ -3,7 +3,7 @@ Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
               Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class defining the Concrete optimization model.
               The class takes as inputs the properties of the optimization problem. The properties are saved in the
@@ -16,7 +16,6 @@ import pyomo.environ as pe
 import os
 import sys
 import pandas as pd
-import numpy as np
 # import elements of the optimization problem
 # technology and carrier classes from technology and carrier directory, respectively
 from model.objects.element                              import Element
@@ -26,6 +25,9 @@ from model.objects.energy_system                        import EnergySystem
 from preprocess.functions.time_series_aggregation       import TimeSeriesAggregation
 
 class OptimizationSetup():
+
+    baseScenario      = "base"
+    baseConfiguration = {}
 
     def __init__(self, analysis, prepare):
         """setup Pyomo Concrete Model
@@ -60,7 +62,7 @@ class OptimizationSetup():
 
             # before adding the carriers, get setCarriers and check if carrier data exists
             if elementName == "setCarriers":
-                elementSet                 = EnergySystem.getAttribute("setCarriers")
+                elementSet = EnergySystem.getAttribute("setCarriers")
                 self.system["setCarriers"] = elementSet
                 self.prepare.checkExistingCarrierData(self.system)
 
@@ -69,7 +71,7 @@ class OptimizationSetup():
                 elementSubset = []
                 for subset in self.analysis["subsets"][elementName]:
                     elementSubset += [item for item in self.system[subset]]
-                elementSet = list(set(elementSet) - set(elementSubset))
+                elementSet = list(set(elementSet)-set(elementSubset))
 
             # add element class
             for item in elementSet:
@@ -96,7 +98,7 @@ class OptimizationSetup():
         self.setTimeStepsYearlyFull = energySystem.setTimeStepsYearly
         # if using rolling horizon
         if self.system["useRollingHorizon"]:
-            self.yearsInHorizon = self.system["yearsInHorizon"]
+            self.yearsInHorizon = self.system["yearsInRollingHorizon"]
             _timeStepsYearly    = energySystem.setTimeStepsYearly
             self.stepsHorizon   = {year: list(range(year,min(year + self.yearsInHorizon,max(_timeStepsYearly)+1))) for year in _timeStepsYearly}
         # if no rolling horizon
@@ -104,6 +106,78 @@ class OptimizationSetup():
             self.yearsInHorizon = len(energySystem.setTimeStepsYearly)
             self.stepsHorizon   = {0: energySystem.setTimeStepsYearly}
         return list(self.stepsHorizon.keys())
+
+    def setBaseConfiguration(self, scenario, elements):
+        """set base configuration
+        :param scenario: name of base scenario
+        :param elements: elements in base scenario """
+        self.baseScenario      = scenario
+        self.baseConfiguration = elements
+
+    def restoreBaseConfiguration(self, scenario, elements):
+        """restore default configuration
+        :param scenario: scenario name
+        :param elements: dictionary of scenario dependent elements and parameters"""
+        if not scenario == self.baseScenario:
+            # restore base configuration
+            self.overwriteParams(self.baseScenario, self.baseConfiguration)
+            # continuously update baseConfiguration so all parameters are reset to their base value after being changed
+            for elementName, params in elements.items():
+                if elementName not in self.baseConfiguration.keys():
+                    self.baseConfiguration[elementName] = params
+                else:
+                    for param in params:
+                        if param not in self.baseConfiguration[elementName]:
+                            self.baseConfiguration[elementName].append(param)
+
+    def overwriteParams(self, scenario, elements):
+        """overwrite scenario dependent parameters
+        :param scenario: scenario name
+        :param elements: dictionary of scenario dependent elements and parameters"""
+        if scenario == self.baseScenario:
+            scenario = ""
+        else:
+            scenario = "_" + scenario
+        # get timeSeries dependent parameters
+        values  = [param for params in elements.values() for param in params]
+        values  += [value[1] for value in values if type(value) is tuple] # unzip tuples
+        timeSeriesAggregation = TimeSeriesAggregation.getTimeSeriesAggregation()
+        if timeSeriesAggregation.conductedTimeSeriesAggregation:
+            columns = timeSeriesAggregation.columnNamesOriginal
+            timeSeriesParams = [item for column in columns for item in column if item in values]
+        else:
+            timeSeriesParams = []
+        # overwrite scenario dependent parameter values for all elements
+        for elementName, params in elements.items():
+            if elementName == "EnergySystem":
+                element = EnergySystem.getEnergySystem()
+            else:
+                element = Element.getElement(elementName)
+            # overwrite scenario dependent parameters
+            for param in params:
+                if type(param) is tuple:
+                    fileName, param = param
+                # get old param value
+                _oldParam   = getattr(element, param)
+                # set new parameter value
+                if isinstance(_oldParam, pd.Series) or isinstance(element.carbonEmissionsLimit, pd.DataFrame):
+                    _indexNames = _oldParam.index.names
+                    _indexSets = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
+                    _timeSteps = None
+                    if "time" in _indexNames and not param in timeSeriesParams:
+                        _timeSteps = list(_oldParam.index.unique("time"))
+                        _newParam = element.dataInput.extractInputData(param,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
+                else:
+                    _newParam = element.dataInput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
+                if param in timeSeriesParams:
+                    _timeSteps = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
+                    element.rawTimeSeries[param] = element.dataInput.extractInputData(fileName, indexSets=_indexSets, column=param,timeSteps=_timeSteps, scenario=scenario)
+                else:
+                    setattr(element, param, _newParam)
+        # if scenario contains timeSeries dependent params conduct timeSeriesAggregation
+        if timeSeriesParams:
+            TimeSeriesAggregation.conductTimeSeriesAggregation()
+            # set sequence timesteps is set in line 107 in TSA
 
     def overwriteTimeIndices(self,stepHorizon):
         """ select subset of time indices, matching the step horizon
@@ -132,7 +206,7 @@ class OptimizationSetup():
         # disable logger temporarily
         logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
-        #         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
+        # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt            = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels=True)
@@ -144,12 +218,30 @@ class OptimizationSetup():
     def addNewlyBuiltCapacity(self,stepHorizon):
         """ adds the newly built capacity to the existing capacity
         :param stepHorizon: step of the rolling horizon """
-        _builtCapacity  = pd.Series(self.model.builtCapacity.extract_values())
-        _capex          = pd.Series(self.model.capex.extract_values())
-        _baseTimeSteps  = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
-        Technology      = getattr(sys.modules[__name__], "Technology")
+        _builtCapacity      = pd.Series(self.model.builtCapacity.extract_values())
+        _investedCapacity   = pd.Series(self.model.investedCapacity.extract_values())
+        _capex              = pd.Series(self.model.capex.extract_values())
+        _roundingValue      = 10 ** (-EnergySystem.getSolver()["roundingDecimalPoints"])
+        _builtCapacity[_builtCapacity <= _roundingValue]        = 0
+        _investedCapacity[_investedCapacity <= _roundingValue]  = 0
+        _capex[_capex <= _roundingValue]                        = 0
+        _baseTimeSteps      = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
+        Technology          = getattr(sys.modules[__name__], "Technology")
         for tech in Technology.getAllElements():
             # new capacity
-            _builtCapacityTech = _builtCapacity.loc[tech.name].unstack()
-            _capexTech          = _capex.loc[tech.name].unstack()
+            _builtCapacityTech      = _builtCapacity.loc[tech.name].unstack()
+            _investedCapacityTech   = _investedCapacity.loc[tech.name].unstack()
+            _capexTech              = _capex.loc[tech.name].unstack()
             tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)
+            tech.addNewlyInvestedCapacityTech(_investedCapacityTech,stepHorizon)
+
+    def addCarbonEmissionsCumulative(self,stepHorizon):
+        """ overwrite previous carbon emissions with cumulative carbon emissions
+        :param stepHorizon: step of the rolling horizon """
+        energySystem                            = EnergySystem.getEnergySystem()
+        intervalBetweenYears                    = EnergySystem.getSystem()["intervalBetweenYears"]
+        _carbonEmissionsCumulative              = self.model.carbonEmissionsCumulative.extract_values()[stepHorizon]
+        _carbonEmissions                        = self.model.carbonEmissionsTotal.extract_values()[stepHorizon]
+        energySystem.previousCarbonEmissions    = _carbonEmissionsCumulative + _carbonEmissions*(intervalBetweenYears-1)
+
+

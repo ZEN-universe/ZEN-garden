@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
-Organization: Labratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Labratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class to add to pyomo dictionary the nonlinear functions
 ==========================================================================================================================================================================="""

@@ -2,7 +2,7 @@
 Title:        ZEN-GARDEN
 Created:      January-2022
 Authors:      Davide Tonelli (davidetonelli@outlook.com)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class interfacing the declaration of variables and parameters in the slave algorithm with the master algorithm.
 ==========================================================================================================================================================================="""

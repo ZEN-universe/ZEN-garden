@@ -3,16 +3,17 @@ Title:          ZEN-GARDEN
 Created:        October-2021
 Authors:        Alissa Ganter (aganter@ethz.ch)
                 Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:    Class defining compressable energy carriers.
                 The class takes as inputs the abstract optimization model. The class adds parameters, variables and
                 constraints of a generic carrier and returns the abstract optimization model.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ                     as pe
-from model.objects.energy_system         import EnergySystem
-from model.objects.carrier.carrier       import Carrier
+import pyomo.environ                    as pe
+from model.objects.energy_system        import EnergySystem
+from model.objects.carrier.carrier      import Carrier
+from model.objects.parameter            import Parameter
 
 class ConditioningCarrier(Carrier):
     # set label
@@ -24,7 +25,7 @@ class ConditioningCarrier(Carrier):
         """initialization of a generic carrier object
         :param carrier: carrier that is added to the model"""
 
-        logging.info(f'Initialize carrier {carrier}')
+        logging.info(f'Initialize conditioning carrier {carrier}')
         super().__init__(carrier)
         # store input data
         self.storeInputData()
@@ -44,7 +45,7 @@ class ConditioningCarrier(Carrier):
         
         # flow of imported carrier
         model.endogenousCarrierDemand = pe.Var(
-            cls.createCustomSet(["setConditioningCarriers","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setConditioningCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent model endogenous carrier demand. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
@@ -56,7 +57,7 @@ class ConditioningCarrier(Carrier):
 
         # limit import flow by availability
         model.constraintCarrierDemandCoupling = pe.Constraint(
-            cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsCarrier"]),
+            cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
             rule = constraintCarrierDemandCouplingRule,
             doc = 'coupeling model endogenous and exogenous carrier demand. Dimensions: setConditioningCarriers, setNodes, setTimeStepsCarrier',
         )
@@ -81,6 +82,8 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
     The constraint is indexed by setTimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
     timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
     """
+    params = Parameter.getParameterObject()
+
     # decode to baseTimeStep
     baseTimeStep            = EnergySystem.decodeTimeStep(carrier + "EnergyBalance", time)
     # carrier input and output conversion technologies
@@ -114,7 +117,7 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
     elementTimeStep         = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
     carrierImport           = model.importCarrierFlow[carrier, node, elementTimeStep]
     carrierExport           = model.exportCarrierFlow[carrier, node, elementTimeStep]
-    carrierDemand           = model.demandCarrier[carrier, node, elementTimeStep]
+    carrierDemand           = params.demandCarrier[carrier, node, elementTimeStep]
     endogenousCarrierDemand = 0
 
     # check if carrier is conditioning carrier:
