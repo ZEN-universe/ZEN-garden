@@ -10,9 +10,10 @@ Description:    Class defining compressable energy carriers.
                 constraints of a generic carrier and returns the abstract optimization model.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ                     as pe
-from model.objects.energy_system         import EnergySystem
-from model.objects.carrier.carrier       import Carrier
+import pyomo.environ                    as pe
+from model.objects.energy_system        import EnergySystem
+from model.objects.carrier.carrier      import Carrier
+from model.objects.parameter            import Parameter
 
 class ConditioningCarrier(Carrier):
     # set label
@@ -81,6 +82,8 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
     The constraint is indexed by setTimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
     timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
     """
+    params = Parameter.getParameterObject()
+
     # decode to baseTimeStep
     baseTimeStep            = EnergySystem.decodeTimeStep(carrier + "EnergyBalance", time)
     # carrier input and output conversion technologies
@@ -114,7 +117,7 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
     elementTimeStep         = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
     carrierImport           = model.importCarrierFlow[carrier, node, elementTimeStep]
     carrierExport           = model.exportCarrierFlow[carrier, node, elementTimeStep]
-    carrierDemand           = model.demandCarrier[carrier, node, elementTimeStep]
+    carrierDemand           = params.demandCarrier[carrier, node, elementTimeStep]
     endogenousCarrierDemand = 0
 
     # check if carrier is conditioning carrier:

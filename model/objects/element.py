@@ -207,7 +207,6 @@ class Element:
     def constructModelComponents(cls):
         """ constructs the model components of the class <Element> """
         logging.info("\n--- Construct model components ---\n")
-
         # construct pe.Sets
         cls.constructSets()
         # construct pe.Params
@@ -218,7 +217,6 @@ class Element:
         cls.constructConstraints()
         # construct pe.Objective
         EnergySystem.constructObjective()
-
 
     @classmethod
     def constructSets(cls):
@@ -248,12 +246,10 @@ class Element:
         # construct pe.Params of energy system
         EnergySystem.constructParams()
         # construct pe.Sets of class elements
-        model = EnergySystem.getConcreteModel()
         # operational time step duration
-        model.timeStepsOperationDuration = pe.Param(
-            cls.createCustomSet(["setElements","setTimeStepsOperation"]),
-            initialize = EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]).astype(int),
-            default = 0,
+        Parameter.addParameter(
+            name="timeStepsOperationDuration",
+            data= EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]).astype(int),
             doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setElements, setTimeStepsOperation"
         )
         # construct pe.Params of the child classes

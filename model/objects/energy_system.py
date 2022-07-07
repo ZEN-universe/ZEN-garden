@@ -631,41 +631,8 @@ class EnergySystem:
         Parameter.addParameter(
             name="carbonPriceOvershoot",
             data=cls.initializeComponent(cls, "carbonPriceOvershoot"),
-            default=0,
             doc='Parameter which specifies the carbon price for budget overshoot'
         )
-        # # carbon emissions limit
-        # model.carbonEmissionsLimit = pe.Param(
-        #     model.setTimeStepsYearly,
-        #     initialize = cls.initializeComponent(cls,"carbonEmissionsLimit", setTimeSteps =model.setTimeStepsYearly),
-        #     default=0,
-        #     doc = 'Parameter which specifies the total limit on carbon emissions'
-        # )
-        # # carbon emissions budget
-        # model.carbonEmissionsBudget = pe.Param(
-        #     initialize=cls.initializeComponent(cls, "carbonEmissionsBudget"),
-        #     default=0,
-        #     doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon'
-        # )
-        # # carbon emissions budget
-        # model.previousCarbonEmissions = pe.Param(
-        #     initialize=cls.initializeComponent(cls, "previousCarbonEmissions"),
-        #     default=0,
-        #     doc='Parameter which specifies the total previous carbon emissions'
-        # )
-        # # carbon price
-        # model.carbonPrice = pe.Param(
-        #     model.setTimeStepsYearly,
-        #     initialize=cls.initializeComponent(cls, "carbonPrice", setTimeSteps=model.setTimeStepsYearly),
-        #     default=0,
-        #     doc='Parameter which specifies the yearly carbon price'
-        # )
-        # # carbon price of overshoot
-        # model.carbonPriceOvershoot = pe.Param(
-        #     initialize=cls.initializeComponent(cls, "carbonPriceOvershoot"),
-        #     default=0,
-        #     doc='Parameter which specifies the carbon price for budget overshoot'
-        # )
 
     @classmethod
     def constructVars(cls):
