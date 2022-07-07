@@ -812,9 +812,10 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
     """limited technology diffusion based on the existing capacity in the previous year """
     # get parameter object
     params = Parameter.getParameterObject()
-    intervalBetweenYears    = EnergySystem.getSystem()["intervalBetweenYears"]
-    unboundedMarketShare    = EnergySystem.getSystem()["unboundedMarketShare"]
-    referenceCarrier        = model.setReferenceCarriers[tech].at(1)
+    intervalBetweenYears        = EnergySystem.getSystem()["intervalBetweenYears"]
+    unboundedMarketShare        = EnergySystem.getSystem()["unboundedMarketShare"]
+    knowledgeDepreciationRate   = EnergySystem.getSystem()["knowledgeDepreciationRate"]
+    referenceCarrier            = model.setReferenceCarriers[tech].at(1)
     if model.maxDiffusionRate[tech,time] != np.inf:
         if tech in model.setTransportTechnologies:
             setLocations    = model.setEdges
@@ -833,30 +834,36 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
             # else, to capacity in previous time step
             endTime = max(time-1, model.setTimeStepsInvest[tech].at(1))
         rangeTime = range(model.setTimeStepsInvest[tech].at(1),endTime+1)
-
-        # sum up all existing capacities that ever existed
-        totalCapacity = sum(
+        # actual years between first invest time step and endTime
+        deltaTime       = intervalBetweenYears*(endTime-model.setTimeStepsInvest[tech].at(1))
+        # sum up all existing capacities that ever existed and convert to knowledge stock
+        totalCapacityKnowledge = \
             sum(
-                model.existingCapacity[tech,capacityType,loc,existingTime]
-                for existingTime in model.setExistingTechnologies[tech]
+                sum(
+                    model.existingCapacity[tech,capacityType,loc,existingTime] *
+                    (1 - knowledgeDepreciationRate)**(deltaTime + model.lifetimeTechnology[tech] - model.lifetimeExistingTechnology[tech,loc,existingTime])
+                    for existingTime in model.setExistingTechnologies[tech]
+                )
+                +
+                sum(
+                    model.builtCapacity[tech, capacityType, loc, horizonTime] *
+                    (1 - knowledgeDepreciationRate)**(intervalBetweenYears * (endTime - horizonTime))
+                    for horizonTime in rangeTime
+                )
+                for loc in setLocations
             )
-            +
-            sum(
-                model.builtCapacity[tech, capacityType, loc, horizonTime]
-                for horizonTime in rangeTime
-            )
-            for loc in setLocations
-        )
-        totalCapacityAllTechs = \
+        totalCapacityKnowledgeAllTechs = \
             sum(
                 sum(
                     sum(
-                        model.existingCapacity[otherTech, capacityType, loc, existingTime]
+                        model.existingCapacity[otherTech, capacityType, loc, existingTime] *
+                        (1 - knowledgeDepreciationRate)**(deltaTime + model.lifetimeTechnology[otherTech] - model.lifetimeExistingTechnology[otherTech,loc,existingTime])
                         for existingTime in model.setExistingTechnologies[otherTech]
                     )
                     +
                     sum(
-                        model.builtCapacity[otherTech, capacityType, loc, horizonTime]
+                        model.builtCapacity[otherTech, capacityType, loc, horizonTime] *
+                        (1 - knowledgeDepreciationRate)**(intervalBetweenYears * (endTime - horizonTime))
                         for horizonTime in rangeTime
                     )
                     for loc in setLocations
@@ -867,9 +874,9 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
 
         return (
             sum(model.investedCapacity[tech, capacityType, loc, time] for loc in setLocations) <=
-            ((1 + params.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1) * totalCapacity
+            ((1 + model.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1) * totalCapacityKnowledge
             # add initial market share until which the diffusion rate is unbounded
-            + unboundedMarketShare * totalCapacityAllTechs
+            + unboundedMarketShare * totalCapacityKnowledgeAllTechs
         )
         # # if not first investment period
         # elif time != model.setTimeStepsInvest[tech].at(1):

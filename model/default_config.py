@@ -124,6 +124,8 @@ system["conductScenarioAnalysis"] = False
 system["totalHoursPerYear"] = 8760
 # unbounded market share for technology diffusion rate
 system["unboundedMarketShare"] = 0.01
+# rate at which the knowledge stock of existing capacities is depreciated annually
+system["knowledgeDepreciationRate"] = 0.2
 # social discount rate
 system["socialDiscountRate"] = 0
 # folder output
