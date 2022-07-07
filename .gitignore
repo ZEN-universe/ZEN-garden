@@ -7,5 +7,8 @@
 /data_generation/
 /Scripts/
 /postprocess/results_JM.py
+/postprocess/results_MH.py
+/postprocess/visualization_JM.py
+/postprocess/visualization_MH.py
 *.pyc
 *.DS_Store
