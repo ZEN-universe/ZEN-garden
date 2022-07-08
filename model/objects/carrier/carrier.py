@@ -232,13 +232,19 @@ def constraintAvailabilityCarrierImportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to import from outside the system boundaries"""
     # get parameter object
     params = Parameter.getParameterObject()
-    return(model.importCarrierFlow[carrier, node, time] <= params.availabilityCarrierImport[carrier,node,time])
+    if params.availabilityCarrierImport[carrier,node,time] != np.inf:
+        return(model.importCarrierFlow[carrier, node, time] <= params.availabilityCarrierImport[carrier,node,time])
+    else:
+        return pe.Constraint.Skip
 
 def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
     """node- and time-dependent carrier availability to export to outside the system boundaries"""
     # get parameter object
     params = Parameter.getParameterObject()
-    return(model.exportCarrierFlow[carrier, node, time] <= params.availabilityCarrierExport[carrier,node,time])
+    if params.availabilityCarrierExport[carrier,node,time] != np.inf:
+        return(model.exportCarrierFlow[carrier, node, time] <= params.availabilityCarrierExport[carrier,node,time])
+    else:
+        return pe.Constraint.Skip
 
 def constraintCostCarrierRule(model, carrier, node, time):
     """ cost of importing/exporting carrier"""

@@ -16,6 +16,8 @@ import pickle
 import pandas as pd
 from datetime import datetime
 from model.objects.energy_system import EnergySystem
+from model.objects.parameter import Parameter
+
 import matplotlib.pyplot as plt
 
 #from postprocess.functions.create_dashboard_dictionary import DashboardDictionary
@@ -58,9 +60,10 @@ class Postprocess:
         # case where we are called from compile but should not perform the post-processing
         elif model.analysis['postprocess']==False:
 
-            self.model     = model.model
-            self.system    = model.system
-            self.analysis  = model.analysis
+            self.model      = model.model
+            self.system     = model.system
+            self.analysis   = model.analysis
+            self.params     = Parameter.getParameterObject()
 
             self.makeDirs()
             self.saveParam()
@@ -110,11 +113,13 @@ class Postprocess:
         post-processed immediately or loaded and postprocessed at some other time"""
 
         # get all the param values from the model and store in a dict
-        for param in self.model.component_objects(pe.Param, active=True):
-            # sava params in a dict
-            self.paramDict[param.name] = dict()
-            for index in param:
-                self.paramDict[param.name][index] = pe.value(param[index])
+        # for param in self.model.component_objects(pe.Param, active=True):
+        #     # sava params in a dict
+        #     self.paramDict[param.name] = dict()
+        #     for index in param:
+        #         self.paramDict[param.name][index] = pe.value(param[index])
+        for param in self.params.parameterList:
+            self.paramDict[param] = getattr(self.params,param)
 
         # save the param dict to a pickle
         with open(f'{self.nameDir}paramDict.pickle', 'wb') as file:
