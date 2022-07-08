@@ -53,8 +53,8 @@ class DataInput():
             self.extractYearlyVariation(fileName,indexSets,column)
 
         # if existing capacities and existing capacities not used
-        if fileName == "existingCapacity" and not self.analysis["useExistingCapacities"]:
-            dfOutput,*_ = self.createDefaultOutput(indexSets,column,fileName= fileName,timeSteps=timeSteps,manualDefaultValue=0)
+        if (fileName == "existingCapacity" or fileName == "existingCapacityEnergy") and not self.analysis["useExistingCapacities"]:
+            dfOutput,*_ = self.createDefaultOutput(indexSets,column,fileName= fileName,timeSteps=timeSteps,manualDefaultValue=0,scenario=scenario)
             return dfOutput
         else:
             dfOutput, defaultValue, indexNameList = self.createDefaultOutput(indexSets,column,fileName =fileName, timeSteps= timeSteps)
@@ -69,6 +69,8 @@ class DataInput():
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
             dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
+        # save parameter values for analysis of numerics
+        self.saveValuesOfAttribute(dfOutput=dfOutput,fileName=defaultName)
         return dfOutput
 
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
@@ -141,18 +143,30 @@ class DataInput():
 
     def extractAttributeData(self,attributeName,skipWarning = False,scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param self.folderPath: path to input files
         :param attributeName: name of selected attribute
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
-        fileName    = f"attributes{scenario}.csv"
-
-        if fileName not in os.listdir(self.folderPath):
+        dfInput = self.readInputData("attributes"+scenario)
+        if dfInput is not None:
+            dfInput = dfInput.set_index("index").squeeze(axis=1)
+        else:
             return None
-        dfInput     = pd.read_csv(self.folderPath+fileName, header=0, index_col=None).set_index("index").squeeze(axis=1)
+        attributeName = self.adaptAttributeName(attributeName,dfInput,skipWarning)
+        if attributeName is not None:
+            # get attribute
+            attributeValue = dfInput.loc[attributeName, "value"]
+            multiplier = self.unitHandling.getUnitMultiplier(dfInput.loc[attributeName, "unit"])
+            try:
+                attribute = {"value": float(attributeValue) * multiplier, "multiplier": multiplier}
+                return attribute
+            except:
+                return attributeValue
+        else:
+            return None
 
-        # check if attribute in index
-        if attributeName+"Default" not in dfInput.index:
+    def adaptAttributeName(self,attributeName,dfInput,skipWarning=False):
+        """ check if attribute in index"""
+        if attributeName + "Default" not in dfInput.index:
             if attributeName not in dfInput.index:
                 return None
             elif not skipWarning:
@@ -161,15 +175,7 @@ class DataInput():
                     FutureWarning)
         else:
             attributeName = attributeName + "Default"
-
-        # get attribute
-        attributeValue = dfInput.loc[attributeName, "value"]
-        multiplier = self.unitHandling.getUnitMultiplier(dfInput.loc[attributeName, "unit"])
-        try:
-            attribute = {"value": float(attributeValue) * multiplier, "multiplier": multiplier}
-            return attribute
-        except:
-            return attributeValue
+        return attributeName
 
     def extractYearlyVariation(self,fileName,indexSets,column):
         """ reads the yearly variation of a time dependent quantity
@@ -470,12 +476,13 @@ class DataInput():
             dfInput[columns]    = dfInput[columns] * dfInputMultiplier
         return dfInput
 
-    def createDefaultOutput(self,indexSets,column,fileName=None,timeSteps=None,manualDefaultValue = None):
+    def createDefaultOutput(self,indexSets,column,fileName=None,timeSteps=None,manualDefaultValue = None,scenario = ""):
         """ creates default output dataframe
         :param fileName: name of selected file.
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
         :param timeSteps: specific timeSteps of element
+        :param scenario: investigated scenario
         :param manualDefaultValue: if given, use manualDefaultValue instead of searching for default value in attributes.csv"""
         # select index
         indexList, indexNameList = self.constructIndexList(indexSets, timeSteps)
@@ -486,6 +493,7 @@ class DataInput():
             indexMultiIndex = pd.Index([0])
         if manualDefaultValue:
             defaultValue = {"value":manualDefaultValue,"multiplier":1}
+            defaultName  = None
         else:
             # check if default value exists in attributes.csv, with or without "Default" Suffix
             if column:
@@ -499,8 +507,29 @@ class DataInput():
             dfOutput = pd.Series(index=indexMultiIndex, dtype=float)
         else:
             dfOutput = pd.Series(index=indexMultiIndex, data=defaultValue["value"], dtype=float)
-
+        # save unit of attribute of element converted to base unit
+        self.saveUnitOfAttribute(defaultName,scenario)
         return dfOutput,defaultValue,indexNameList
+
+    def saveUnitOfAttribute(self,fileName,scenario=""):
+        """ saves the unit of an attribute, converted to the base unit """
+        # if numerics analyzed
+        if self.solver["analyzeNumerics"]:
+            if fileName:
+                dfInput = self.readInputData("attributes" + scenario).set_index("index").squeeze(axis=1)
+                # get attribute
+                attributeName = self.adaptAttributeName(fileName,dfInput)
+                inputUnit = dfInput.loc[attributeName, "unit"]
+                self.unitHandling.setBaseUnitCombination(inputUnit=inputUnit,attribute=(self.element.name,fileName))
+
+    def saveValuesOfAttribute(self,dfOutput,fileName):
+        """ saves the values of an attribute """
+        # if numerics analyzed
+        if self.solver["analyzeNumerics"]:
+            if fileName:
+                dfOutputReduced = dfOutput[(dfOutput != 0) & (dfOutput.abs() != np.inf)]
+                if not dfOutputReduced.empty:
+                    self.unitHandling.setAttributeValues(dfOutput= dfOutputReduced,attribute=(self.element.name,fileName))
 
     def constructIndexList(self,indexSets,timeSteps):
         """ constructs index list from index sets and returns list of indices and list of index names

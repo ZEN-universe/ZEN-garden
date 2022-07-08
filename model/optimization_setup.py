@@ -78,7 +78,8 @@ class OptimizationSetup():
             # add element class
             for item in elementSet:
                 elementClass(item)
-
+        if EnergySystem.getSolver()["analyzeNumerics"]:
+            EnergySystem.getUnitHandling().recommendBaseUnits()
         # conduct  time series aggregation
         TimeSeriesAggregation.conductTimeSeriesAggregation()
 
@@ -93,7 +94,7 @@ class OptimizationSetup():
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)
         # find smallest and largest coefficient and RHS
-        self.getNumericRanges()
+        self.analyzeNumerics()
 
     def getOptimizationHorizon(self):
         """ returns list of optimization horizon steps """
@@ -198,9 +199,9 @@ class OptimizationSetup():
             energySystem.setBaseTimeSteps       = _baseTimeStepsHorizon.squeeze().tolist()
             energySystem.setTimeStepsYearly     = _timeStepsYearlyHorizon
 
-    def getNumericRanges(self):
+    def analyzeNumerics(self):
         """ get largest and smallest matrix coefficients and RHS """
-        if EnergySystem.getSolver()["getNumericRanges"]:
+        if EnergySystem.getSolver()["analyzeNumerics"]:
             largestRHS      = [None,0]
             smallestRHS     = [None,np.inf]
             largestCoeff    = [None,0]
