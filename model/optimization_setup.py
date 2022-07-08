@@ -13,9 +13,11 @@ Description:  Class defining the Concrete optimization model.
 ==========================================================================================================================================================================="""
 import logging
 import pyomo.environ as pe
+from pyomo.core.expr.current import decompose_term
 import os
 import sys
 import pandas as pd
+import numpy as np
 # import elements of the optimization problem
 # technology and carrier classes from technology and carrier directory, respectively
 from model.objects.element                              import Element
@@ -90,6 +92,8 @@ class OptimizationSetup():
         logging.info("Apply Big-M GDP ")
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)
+        # find smallest and largest coefficient and RHS
+        self.getNumericRanges()
 
     def getOptimizationHorizon(self):
         """ returns list of optimization horizon steps """
@@ -194,6 +198,46 @@ class OptimizationSetup():
             energySystem.setBaseTimeSteps       = _baseTimeStepsHorizon.squeeze().tolist()
             energySystem.setTimeStepsYearly     = _timeStepsYearlyHorizon
 
+    def getNumericRanges(self):
+        """ get largest and smallest matrix coefficients and RHS """
+        if EnergySystem.getSolver()["getNumericRanges"]:
+            largestRHS      = [None,0]
+            smallestRHS     = [None,np.inf]
+            largestCoeff    = [None,0]
+            smallestCoeff   = [None,np.inf]
+
+            for cons in self.model.component_objects(pe.Constraint):
+                for idx in cons:
+                    decoLHS     = decompose_term(cons[idx].expr.args[0])
+                    decoRHS     = decompose_term(cons[idx].expr.args[1])
+                    decoComb    = []
+                    if decoLHS[0]:
+                        decoComb += decoLHS[1]
+                    if decoRHS[0]:
+                        decoComb += decoRHS[1]
+                    _RHS = 0
+                    for item in decoComb:
+                        _abs = abs(item[0])
+                        if _abs != 0:
+                            if item[1] is not None:
+                                if _abs > largestCoeff[1]:
+                                    largestCoeff[0] = (cons[idx].name,item[1].name)
+                                    largestCoeff[1] = _abs
+                                if _abs < smallestCoeff[1]:
+                                    smallestCoeff[0] = (cons[idx].name,item[1].name)
+                                    smallestCoeff[1] = _abs
+                            else:
+                                _RHS += item[0]
+                    _RHS = abs(_RHS)
+                    if _RHS != 0:
+                        if _RHS > largestRHS[1]:
+                            largestRHS[0] = cons[idx].name
+                            largestRHS[1] = _RHS
+                        if _RHS < smallestRHS[1]:
+                            smallestRHS[0] = cons[idx].name
+                            smallestRHS[1] = _RHS
+            logging.info(f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largestCoeff[1]} in {largestCoeff[0]}\nSmallest Matrix Coefficient: {smallestCoeff[1]} in {smallestCoeff[0]}\nLargest RHS: {largestRHS[1]} in {largestRHS[0]}\nSmallest RHS: {smallestRHS[1]} in {smallestRHS[0]}")
+
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """
@@ -209,7 +253,7 @@ class OptimizationSetup():
         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt            = pe.SolverFactory(solverName, options=solverOptions)
-        self.opt.set_instance(self.model,symbolic_solver_labels=True)
+        self.opt.set_instance(self.model,symbolic_solver_labels=solver["useSymbolicLabels"])
         self.results        = self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
         # enable logger 
         logging.disable(logging.NOTSET)

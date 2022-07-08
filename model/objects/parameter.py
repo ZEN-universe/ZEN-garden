@@ -19,7 +19,7 @@ class Parameter:
         """ initialization of the parameter object """
         self.minParameterValue  = {"name":None,"value":None}
         self.maxParameterValue  = {"name":None,"value":None}
-        self.numParameter       = 0
+        self.parameterList      = []
         self.docs               = {}
         # set parameter object
         Parameter.setParameterObject(self)
@@ -39,7 +39,7 @@ class Parameter:
             # set parameter
             setattr(parameterObject, name, data)
             # save additional parameters
-            parameterObject.numParameter    += 1
+            parameterObject.parameterList.append(name)
             parameterObject.docs[name]      = doc
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")

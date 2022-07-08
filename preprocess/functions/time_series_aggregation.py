@@ -291,7 +291,7 @@ class TimeSeriesAggregation():
             _yearlyVariation            = _yearlyVariation.unstack(headerSetTimeStepsYearly)
             # if only one unique value
             if len(np.unique(_yearlyVariation)) == 1:
-                return _timeSeries.stack()*np.unique(_yearlyVariation)[0]
+                timeSeries = _timeSeries.stack()*np.unique(_yearlyVariation)[0]
             else:
                 for year in EnergySystem.getEnergySystem().setTimeStepsYearly:
                     if not all(_yearlyVariation[year] == 1):
@@ -299,9 +299,10 @@ class TimeSeriesAggregation():
                         _elementTimeSteps                       = EnergySystem.encodeTimeStep(element.name, _baseTimeSteps, yearly=True)
                         _timeSeries.loc[:,_elementTimeSteps]    = _timeSeries[_elementTimeSteps].multiply(_yearlyVariation[year],axis=0).fillna(0)
                 timeSeries = _timeSeries.stack()
-                return timeSeries
-        else:
-            return timeSeries
+        # round down if lower than decimal points
+        _roundingValue                                  = 10 ** (-EnergySystem.getSolver()["roundingDecimalPointsTS"])
+        timeSeries[timeSeries.abs() < _roundingValue]   = 0
+        return timeSeries
 
     @classmethod
     def repeatSequenceTimeStepsForAllYears(cls):

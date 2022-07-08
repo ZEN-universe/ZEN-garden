@@ -125,7 +125,7 @@ system["totalHoursPerYear"] = 8760
 # unbounded market share for technology diffusion rate
 system["unboundedMarketShare"] = 0.01
 # rate at which the knowledge stock of existing capacities is depreciated annually
-system["knowledgeDepreciationRate"] = 0.2
+system["knowledgeDepreciationRate"] = 0.1
 # social discount rate
 system["socialDiscountRate"] = 0
 # folder output
@@ -144,6 +144,15 @@ solver["solverOptions"] = {
     "TimeLimit":    None,
     "Method":       None
 }
+# use symbolic labels, only sensible for debugging infeasible problems. Adds overhead
+solver["useSymbolicLabels"] = False
+# iterate through constraints to get numerics ranges
+solver["getNumericRanges"] = False
+
+# round down to number of decimal points, for new capacity and unit multipliers
+solver["roundingDecimalPoints"]     = 8
+# round down to number of decimal points, for time series after TSA
+solver["roundingDecimalPointsTS"]   = 3
 # verbosity
 solver["verbosity"] = True
 # typology of model solved: MILP or MINLP
@@ -160,7 +169,6 @@ solver["performanceCheck"] = {"printDeltaRun":1, "printDeltaIteration":1}
 # settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly:
 # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
 solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
-# rounding to number of decimal points
-solver["roundingDecimalPoints"] = 8
+
 ## Scenarios - dictionary declaration
 scenarios["base"] = {}
