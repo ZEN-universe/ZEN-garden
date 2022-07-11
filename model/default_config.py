@@ -146,9 +146,10 @@ solver["solverOptions"] = {
 }
 # use symbolic labels, only sensible for debugging infeasible problems. Adds overhead
 solver["useSymbolicLabels"] = False
-# iterate through constraints to get numerics ranges
-solver["getNumericRanges"] = False
-
+# analyze numerics
+solver["analyzeNumerics"]   = False
+solver["immutableUnit"]     = []
+solver["rangeUnitExponents"]    = {"min":-3,"max":3,"stepWidth":1}
 # round down to number of decimal points, for new capacity and unit multipliers
 solver["roundingDecimalPoints"]     = 8
 # round down to number of decimal points, for time series after TSA
