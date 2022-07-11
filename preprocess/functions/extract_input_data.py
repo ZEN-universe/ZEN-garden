@@ -102,6 +102,8 @@ class DataInput():
                 else:
                     defaultName = fileName
                 dfOutput = DataInput.extractFromInputForExistingCapacities(dfInput,dfOutput,indexNameList,defaultName,missingIndex)
+                if isinstance(defaultValue,dict):
+                    dfOutput = dfOutput * defaultValue["multiplier"]
                 return dfOutput
             # index missing
             else:
@@ -211,10 +213,14 @@ class DataInput():
         :param extractNodes: boolean to switch between nodes and edges """
         if extractNodes:
             setNodesConfig  = self.system["setNodes"]
-            assert len(setNodesConfig) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
             setNodesInput   = self.readInputData("setNodes")["node"]
-            _missingNodes   = list(set(setNodesConfig).difference(setNodesInput))
-            assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {self.folderPath+'setNodes'}"
+            # if no nodes specified in system, use all nodes
+            if len(setNodesConfig) == 0 and setNodesInput:
+                setNodesConfig = setNodesInput
+            else:
+                assert len(setNodesConfig) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
+                _missingNodes   = list(set(setNodesConfig).difference(setNodesInput))
+                assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {self.folderPath+'setNodes'}"
             return setNodesConfig
         else:
             setEdgesInput = self.readInputData("setEdges")

@@ -9,9 +9,10 @@ Description:    Class containing the unit handling procedure.
 import logging
 import numpy         as np
 import pandas        as pd
+import itertools
 from pint                                    import UnitRegistry
 from pint.util                               import column_echelon_form
-
+import copy
 class UnitHandling:
 
     def __init__(self,folderPath,roundDecimalPoints):
@@ -193,20 +194,52 @@ class UnitHandling:
         if attribute in self.dictAttributeValues.keys():
             self.dictAttributeValues[attribute]["values"] = dfOutput
 
-    def recommendBaseUnits(self):
+    def recommendBaseUnits(self,immutableUnit,unitExps):
         """ gets the best base units based on the input parameter values """
+        logging.info(f"Check for best base unit combination between 10^{unitExps['min']} and 10^{unitExps['max']} (interval: 10^{unitExps['stepWidth']})")
+        smallestRange   = {"comb":None,"val":np.inf,"originalVal":np.inf}
         dictValues  = {}
         dictUnits   = {}
+        baseUnits   = self.dimMatrix.columns.copy()
         for item in self.dictAttributeValues:
             if self.dictAttributeValues[item]["values"] is not None:
-                _dfValuesTemp           = self.dictAttributeValues[item]["values"].reset_index(drop=True).to_frame(name="value")
-                _dfUnitsTemp            = pd.DataFrame(index=_dfValuesTemp.index,columns=self.dimMatrix.columns)
-                _dfUnitsTemp.loc[_dfValuesTemp.index,:] = self.dictAttributeValues[item]["baseCombination"][self.dimMatrix.columns].values
+                _dfValuesTemp           = self.dictAttributeValues[item]["values"].reset_index(drop=True)
+                _dfUnitsTemp            = pd.DataFrame(index=_dfValuesTemp.index,columns=baseUnits)
+                _dfUnitsTemp.loc[_dfValuesTemp.index,:] = self.dictAttributeValues[item]["baseCombination"][baseUnits].values
                 dictValues[item]    = _dfValuesTemp
                 dictUnits[item]     = _dfUnitsTemp
-        dfValues    = pd.concat(dictValues,ignore_index=True)
+        dfValues    = pd.concat(dictValues,ignore_index=True).abs()
         dfUnits     = pd.concat(dictUnits, ignore_index=True)
-        a=1
+        dfDupl      = pd.concat([dfValues,dfUnits],axis=1).drop_duplicates()
+        dfValues    = dfValues.loc[dfDupl.index]
+        dfUnits     = dfUnits.loc[dfDupl.index,:]
+        # original var and range
+        smallestRange["originalVal"]    = np.log10(dfValues.max()) - np.log10(dfValues.min())
+        smallestRange["val"]    = copy.copy(smallestRange["originalVal"])
+        smallestRange["comb"]   = "original"
+        minExp      = unitExps["min"]
+        maxExp      = unitExps["max"]
+        stepWidth   = unitExps["stepWidth"]
+        rangeExp    = range(minExp,maxExp+1,stepWidth)
+        mutableUnit = self.dimMatrix.columns[self.dimMatrix.columns.isin(baseUnits.difference(immutableUnit))]
+        dfUnits = dfUnits.loc[:,mutableUnit]
+        combMult    = itertools.product(rangeExp,repeat = len(mutableUnit))
+        for comb in combMult:
+            dfScaled    = dfUnits.multiply(comb,axis=1)*(-1)
+            dfScaled    = 10**dfScaled.sum(axis=1).astype(float)
+            scaledVals  = dfValues*dfScaled
+            valRange    = np.log10(scaledVals.max()) - np.log10(scaledVals.min())
+            if valRange < smallestRange["val"]:
+                smallestRange["comb"]   = comb
+                smallestRange["val"]    = valRange
+        if smallestRange["val"] == smallestRange["originalVal"]:
+            logging.info("The current base unit setting is the best in the given search interval")
+        else:
+            listUnits = []
+            for exp,unit in zip(smallestRange["comb"],mutableUnit):
+                if exp != 0:
+                    listUnits.append(str(self.ureg(f"{10**exp} {unit}").to_compact()))
+            logging.info(f"A better base unit combination is {', '.join(listUnits)}. This reduces the parameter range by 10^{int(np.round(smallestRange['originalVal']-smallestRange['val']))}")
 
     def checkIfInvalidHourString(self,inputUnit):
         """ checks if "h" and thus "planck_constant" in inputUnit

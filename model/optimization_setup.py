@@ -79,7 +79,8 @@ class OptimizationSetup():
             for item in elementSet:
                 elementClass(item)
         if EnergySystem.getSolver()["analyzeNumerics"]:
-            EnergySystem.getUnitHandling().recommendBaseUnits()
+            EnergySystem.getUnitHandling().recommendBaseUnits(immutableUnit = EnergySystem.getSolver()["immutableUnit"],
+                                                              unitExps = EnergySystem.getSolver()["rangeUnitExponents"])
         # conduct  time series aggregation
         TimeSeriesAggregation.conductTimeSeriesAggregation()
 

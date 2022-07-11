@@ -204,7 +204,13 @@ class StorageTechnology(Technology):
         model.levelCharge = pe.Var(
             cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             domain = pe.NonNegativeReals,
-            doc = 'carrier flow through storage technology on node i and time t. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel. Domain: NonNegativeReals'
+            doc = 'storage level of storage technology ón node in each storage time step. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel. Domain: NonNegativeReals'
+        )
+        # slack variable
+        model.slackVariableStorage = pe.Var(
+            cls.createCustomSet(["setStorageTechnologies", "setNodes", "setTimeStepsStorageLevel"]),
+            domain=pe.NonNegativeReals,
+            doc='slack variable of storage level of storage technology ón node in each storage time step. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel. Domain: NonNegativeReals'
         )
         
     @classmethod
@@ -303,6 +309,8 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
         model.levelCharge[tech, node, previousLevelTimeStep]*(1-params.selfDischarge[tech,node])**params.timeStepsStorageLevelDuration[tech,time] +
         (model.carrierFlowCharge[tech, node, elementTimeStep]*params.efficiencyCharge[tech,node,investTimeStep] -
         model.carrierFlowDischarge[tech, node, elementTimeStep]/params.efficiencyDischarge[tech,node,investTimeStep])*sum((1-params.selfDischarge[tech,node])**interimTimeStep for interimTimeStep in range(0,params.timeStepsStorageLevelDuration[tech,time]))
+        # slack variable
+        - model.slackVariableStorage[tech,node,time]
     )
 
 def constraintCapexStorageTechnologyRule(model, tech,capacityType, node, time):
