@@ -257,6 +257,8 @@ class Technology(Element):
             investTimeStep = investTimeStep[0]
         # decode to base time steps
         baseTimeSteps = EnergySystem.decodeTimeStep(tech, investTimeStep, timeStepType="invest")
+        if len(baseTimeSteps) == 0:
+            return model.setBaseTimeSteps.at(1), model.setBaseTimeSteps.at(1)-1
         baseTimeStep = baseTimeSteps[0]
         # convert period to interval of base time steps
         if idExistingCapacity is None:
@@ -704,8 +706,6 @@ def constraintTechnologyConstructionTimeRule(model, tech,capacityType, loc, time
 
 def constraintTechnologyLifetimeRule(model, tech,capacityType, loc, time):
     """limited lifetime of the technologies"""
-    # get parameter object
-    params = Parameter.getParameterObject()
     # determine existing capacities
     existingCapacities = Technology.getAvailableExistingQuantity(tech,capacityType,loc,time,typeExistingQuantity="capacity")
     return (model.capacity[tech,capacityType, loc, time]
@@ -733,10 +733,13 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
         # add built capacity of entire previous horizon
         if params.constructionTimeTechnology[tech] > 0:
             # if technology has lead time, restrict to current capacity
-            endTime = max(time,model.setTimeStepsInvest[tech].at(1))
+            endTime             = max(time,model.setTimeStepsInvest[tech].at(1))
+            timeBuiltCapacity   = time
         else:
             # else, to capacity in previous time step
-            endTime = max(time-1, model.setTimeStepsInvest[tech].at(1))
+            endTime             = max(time-1, model.setTimeStepsInvest[tech].at(1))
+            timeBuiltCapacity   = time - 1
+
         rangeTime = range(model.setTimeStepsInvest[tech].at(1),endTime+1)
         # actual years between first invest time step and endTime
         deltaTime       = intervalBetweenYears*(endTime-model.setTimeStepsInvest[tech].at(1))
@@ -756,31 +759,49 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
                 )
                 for loc in setLocations
             )
-        totalCapacityKnowledgeAllTechs = \
+        # totalCapacityKnowledgeAllTechs = \
+        #     sum(
+        #         sum(
+        #             sum(
+        #                 params.existingCapacity[otherTech, capacityType, loc, existingTime] *
+        #                 (1 - knowledgeDepreciationRate)**(deltaTime + params.lifetimeTechnology[otherTech] - params.lifetimeExistingTechnology[otherTech,loc,existingTime])
+        #                 for existingTime in model.setExistingTechnologies[otherTech]
+        #             )
+        #             +
+        #             sum(
+        #                 model.builtCapacity[otherTech, capacityType, loc, horizonTime] *
+        #                 (1 - knowledgeDepreciationRate)**(intervalBetweenYears * (endTime - horizonTime))
+        #                 for horizonTime in rangeTime
+        #             )
+        #             for loc in setLocations
+        #         )
+        #         for otherTech in setTechnology if
+        #         model.setReferenceCarriers[otherTech].at(1) == referenceCarrier
+        #     )
+        # totalCapacityAllTechs = \
+        #     sum(
+        #         sum(
+        #             model.capacity[otherTech,capacityType,loc,endTime]
+        #             for loc in setLocations
+        #         )
+        #         for otherTech in setTechnology if
+        #         model.setReferenceCarriers[otherTech].at(1) == referenceCarrier
+        #     )
+        totalCapacityAllTechs = sum(
             sum(
-                sum(
-                    sum(
-                        params.existingCapacity[otherTech, capacityType, loc, existingTime] *
-                        (1 - knowledgeDepreciationRate)**(deltaTime + params.lifetimeTechnology[otherTech] - params.lifetimeExistingTechnology[otherTech,loc,existingTime])
-                        for existingTime in model.setExistingTechnologies[otherTech]
-                    )
-                    +
-                    sum(
-                        model.builtCapacity[otherTech, capacityType, loc, horizonTime] *
-                        (1 - knowledgeDepreciationRate)**(intervalBetweenYears * (endTime - horizonTime))
-                        for horizonTime in rangeTime
-                    )
-                    for loc in setLocations
-                )
-                for otherTech in setTechnology if
-                model.setReferenceCarriers[otherTech].at(1) == referenceCarrier
+                (Technology.getAvailableExistingQuantity(otherTech, capacityType, loc, time,typeExistingQuantity="capacity")
+                + sum(model.builtCapacity[otherTech, capacityType, loc, previousTime] for previousTime in Technology.getLifetimeRange(tech, timeBuiltCapacity)))
+                for loc in setLocations
             )
+            for otherTech in setTechnology if
+            model.setReferenceCarriers[otherTech].at(1) == referenceCarrier
+        )
 
         return (
             sum(model.investedCapacity[tech, capacityType, loc, time] for loc in setLocations) <=
             ((1 + params.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1) * totalCapacityKnowledge
             # add initial market share until which the diffusion rate is unbounded
-            + unboundedMarketShare * totalCapacityKnowledgeAllTechs
+            + unboundedMarketShare * totalCapacityAllTechs
         )
     else:
         return pe.Constraint.Skip
