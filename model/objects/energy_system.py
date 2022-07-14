@@ -863,7 +863,7 @@ def objectiveTotalCostRule(model):
             for year in model.setTimeStepsYearly)
     )
 
-def objectiveNPVRule(model,year):
+def objectiveNPVRule(model):
     """ objective function to minimize NPV """
     return (
         sum(

@@ -96,6 +96,7 @@ class ETHColors:
             "TIER4": self.getColor("red",60),
             # Gas phase-out scenarios
             "PI": self.getColor("blue"),
+            "PI2": self.getColor("blue",60),
             "PD": self.getColor("petrol"),
             "PD2": self.getColor("petrol",60),
             "LI": self.getColor("green"),
