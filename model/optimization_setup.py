@@ -144,15 +144,8 @@ class OptimizationSetup():
             scenario = ""
         else:
             scenario = "_" + scenario
-        # get timeSeries dependent parameters
-        values  = [param for params in elements.values() for param in params]
-        values  += [value[1] for value in values if type(value) is tuple] # unzip tuples
-        timeSeriesAggregation = TimeSeriesAggregation.getTimeSeriesAggregation()
-        if timeSeriesAggregation.conductedTimeSeriesAggregation:
-            columns = timeSeriesAggregation.columnNamesOriginal
-            timeSeriesParams = [item for column in columns for item in column if item in values]
-        else:
-            timeSeriesParams = []
+        # list of parameters with rawTimeSeries
+        conductTimeSeriesAggregation = False
         # overwrite scenario dependent parameter values for all elements
         for elementName, params in elements.items():
             if elementName == "EnergySystem":
@@ -166,24 +159,24 @@ class OptimizationSetup():
                 # get old param value
                 _oldParam   = getattr(element, param)
                 # set new parameter value
-                if isinstance(_oldParam, pd.Series) or isinstance(element.carbonEmissionsLimit, pd.DataFrame):
-                    _indexNames = _oldParam.index.names
-                    _indexSets = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
-                    _timeSteps = None
-                    if "time" in _indexNames and not param in timeSeriesParams:
-                        _timeSteps = list(_oldParam.index.unique("time"))
-                        _newParam = element.dataInput.extractInputData(param,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
-                else:
-                    _newParam = element.dataInput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
-                if param in timeSeriesParams:
+                if param in element.rawTimeSeries.keys():
+                    conductTimeSeriesAggregation = True
                     _timeSteps = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
-                    element.rawTimeSeries[param] = element.dataInput.extractInputData(fileName, indexSets=_indexSets, column=param,timeSteps=_timeSteps, scenario=scenario)
+                    element.rawTimeSeries[param] = element.dataInput.extractInputData(fileName, indexSets=_indexSets,column=param,timeSteps=_timeSteps,scenario=scenario)
                 else:
+                    if isinstance(_oldParam, pd.Series) or isinstance(_oldParam, pd.DataFrame):
+                        _indexNames = _oldParam.index.names
+                        _indexSets  = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
+                        _timeSteps  = None
+                        if "time" in _indexNames:
+                            _timeSteps = list(_oldParam.index.unique("time"))
+                            _newParam  = element.dataInput.extractInputData(param,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
+                    else:
+                        _newParam = element.dataInput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
                     setattr(element, param, _newParam)
         # if scenario contains timeSeries dependent params conduct timeSeriesAggregation
-        if timeSeriesParams:
+        if conductTimeSeriesAggregation:
             TimeSeriesAggregation.conductTimeSeriesAggregation()
-            # set sequence timesteps is set in line 107 in TSA
 
     def overwriteTimeIndices(self,stepHorizon):
         """ select subset of time indices, matching the step horizon
