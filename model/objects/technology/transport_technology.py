@@ -44,15 +44,23 @@ class TransportTechnology(Technology):
         # set attributes for parameters of child class <TransportTechnology>
         self.distance                       = self.dataInput.extractInputData("distanceEuclidean",indexSets=["setEdges"])
         self.lossFlow                       = self.dataInput.extractAttributeData("lossFlow")["value"]
-        # In case you want to have separate capex for capacity and distance
+        # get capex of transport technology
+        self.getCapexTransport()
+        # annualize capex
+        self.convertToAnnualizedCapex()
+        # calculate capex of existing capacity
+        self.capexExistingCapacity          = self.calculateCapexOfExistingCapacities()
+        # check that existing capacities are equal in both directions if technology is bidirectional
+        if self.name in EnergySystem.getSystem()["setBidirectionalTransportTechnologies"]:
+            self.checkIfBidirectional()
+
+    def getCapexTransport(self):
+        """get capex of transport technology"""
+        #check if there are separate capex for capacity and distance
         if EnergySystem.system['DoubleCapexTransport']:
             # both capex terms must be specified
-            self.capexSpecific = self.dataInput.extractInputData("capexSpecific",
-                                                                 indexSets=["setEdges", "setTimeSteps"],
-                                                                 timeSteps=self.setTimeStepsInvest)
-            self.capexPerDistance = self.dataInput.extractInputData("capexPerDistance",
-                                                                    indexSets=["setEdges", "setTimeSteps"],
-                                                                    timeSteps=self.setTimeStepsInvest)
+            self.capexSpecific    = self.dataInput.extractInputData("capexSpecific",indexSets=["setEdges", "setTimeSteps"],timeSteps=self.setTimeStepsInvest)
+            self.capexPerDistance = self.dataInput.extractInputData("capexPerDistance",indexSets=["setEdges", "setTimeSteps"],timeSteps=self.setTimeStepsInvest)
         else:  # Here only capexSpecific is used, and capexPerDistance is set to Zero.
             if self.dataInput.ifAttributeExists("capexPerDistance"):
                 self.capexPerDistance   = self.dataInput.extractInputData("capexPerDistance",indexSets=["setEdges","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
@@ -64,19 +72,11 @@ class TransportTechnology(Technology):
                 raise AttributeError(f"The transport technology {self.name} has neither capexPerDistance nor capexSpecific attribute.")
             self.capexPerDistance   = self.capexSpecific * 0.0
 
-        # annualize capex
-        self.convertToAnnualizedCapex()
-        # calculate capex of existing capacity
-        self.capexExistingCapacity          = self.calculateCapexOfExistingCapacities()
-        # check that existing capacities are equal in both directions if technology is bidirectional
-        if self.name in EnergySystem.getSystem()["setBidirectionalTransportTechnologies"]:
-            self.checkIfBidirectional()
-
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
         fractionalAnnuity       = self.calculateFractionalAnnuity()
         # annualize capex
-        self.capexSpecific      = self.capexSpecific*fractionalAnnuity + self.fixedOpexSpecific
+        self.capexSpecific      = self.capexSpecific * fractionalAnnuity + self.fixedOpexSpecific
         self.capexPerDistance   = self.capexPerDistance * fractionalAnnuity
 
     def calculateCapexOfSingleCapacity(self,capacity,index):
@@ -121,12 +121,12 @@ class TransportTechnology(Technology):
             name="distance",
             data= EnergySystem.initializeComponent(cls,"distance"),
             doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
-        # cost per capacity
+        # capital cost per unit
         Parameter.addParameter(
             name="capexSpecificTransport",
             data= EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setTransportTechnologies","setEdges","setTimeStepsInvest"]),
             doc = 'capex per unit for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest')
-        # cost per distance
+        # capital cost per distance
         Parameter.addParameter(
             name="capexPerDistance",
             data=EnergySystem.initializeComponent(cls, 'capexPerDistance', indexNames=['setTransportTechnologies', "setEdges", "setTimeStepsInvest"]),

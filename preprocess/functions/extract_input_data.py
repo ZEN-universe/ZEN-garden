@@ -11,6 +11,7 @@ import copy
 import os
 import logging
 import warnings
+import math
 import numpy  as np
 import pandas as pd
 from scipy.stats import linregress
@@ -215,8 +216,9 @@ class DataInput():
             setNodesConfig  = self.system["setNodes"]
             setNodesInput   = self.readInputData("setNodes")["node"]
             # if no nodes specified in system, use all nodes
-            if len(setNodesConfig) == 0 and setNodesInput:
-                setNodesConfig = setNodesInput
+            if len(setNodesConfig) == 0 and not setNodesInput.empty:
+                self.system["setNodes"] = setNodesInput
+                setNodesConfig          = setNodesInput
             else:
                 assert len(setNodesConfig) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
                 _missingNodes   = list(set(setNodesConfig).difference(setNodesInput))
@@ -363,10 +365,13 @@ class DataInput():
         _indexSets = ["setNodes", "setTimeSteps"]
         _timeSteps = self.element.setTimeStepsInvest
         # import all input data
-        dfInputNonlinear    = self.readPWAFiles(variableType, fileType="nonlinear")
+        dfInputNonlinear    = self.readPWAFiles(variableType, fileType="")
         dfInputBreakpoints  = self.readPWAFiles(variableType, fileType="breakpointsPWA")
+        dfInputLinear       = self.readPWAFiles(variableType, fileType="linear")
         ifLinearExist       = self.ifAttributeExists(_attributeName)
-        assert (dfInputNonlinear is not None and dfInputBreakpoints is not None) or ifLinearExist, \
+        assert (dfInputNonlinear is not None and dfInputBreakpoints is not None) \
+               or ifLinearExist \
+               or dfInputLinear is not None, \
             f"Neither PWA nor linear data exist for {variableType} of {self.element.name}"
         # check if capexSpecific exists
         if (dfInputNonlinear is not None and dfInputBreakpoints is not None):
@@ -448,15 +453,14 @@ class DataInput():
                 # TODO implement for more than 1 carrier
                 if _dependentCarrier == []:
                     return None, isPWA
-                elif len(_dependentCarrier) == 1:
+                elif len(_dependentCarrier) == 1 and dfInputLinear is None:
                     LinearDict[_dependentCarrier[0]] = self.extractInputData(_attributeName, indexSets=_indexSets, timeSteps=_timeSteps)
                 else:
                     dfOutput,defaultValue,indexNameList = self.createDefaultOutput(_indexSets, None, timeSteps=_timeSteps, manualDefaultValue=1)
-                    dfInput = self.readPWAFiles("ConverEfficiency", "linear")
-                    assert (dfInput is not None), f"input file for linearConverEfficiency could not be imported."
-                    dfInput = dfInput.rename(columns={'year': 'time'})
+                    assert (dfInputLinear is not None), f"input file for linearConverEfficiency could not be imported."
+                    dfInputLinear = dfInputLinear.rename(columns={'year': 'time'})
                     for carrier in _dependentCarrier:
-                        LinearDict[carrier]        = self.extractGeneralInputData(dfInput, dfOutput, "linearConverEfficiency", indexNameList, carrier, defaultValue).copy(deep=True)
+                        LinearDict[carrier]        = self.extractGeneralInputData(dfInputLinear, dfOutput, "linearConverEfficiency", indexNameList, carrier, defaultValue).copy(deep=True)
                 LinearDict = pd.DataFrame.from_dict(LinearDict)
                 LinearDict.columns.name = "carrier"
                 LinearDict = LinearDict.stack()
@@ -477,8 +481,9 @@ class DataInput():
                 columns = dfInput.columns
             dfInputUnits        = dfInput[columns].iloc[-1]
             dfInput             = dfInput.iloc[:-1]
-            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit)) #if unit !="unit" else unit
-            dfInput[columns]    = dfInput[columns].astype(float) # .apply(lambda row: row. if row[0].isdigit() else row)
+            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
+            #dfInput[columns]    = dfInput[columns].astype(float
+            dfInput             = dfInput.apply(lambda column: pd.to_numeric(column, errors='coerce'))
             dfInput[columns]    = dfInput[columns] * dfInputMultiplier
         return dfInput
 
@@ -574,11 +579,13 @@ class DataInput():
             defaultName = fileName
         defaultValue = self.extractAttributeData(defaultName)
 
-        if defaultValue is None:
+        if defaultValue is None or math.isnan(defaultValue["value"]): # if no default value exists or default value is nan
             _dfInput = self.readInputData(fileName)
             return (_dfInput is not None)
-        else:
+        elif defaultValue and not math.isnan(defaultValue["value"]): # if default value exists and is not nan
             return True
+        else:
+            return False
 
     @staticmethod
     def extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName):

@@ -511,12 +511,13 @@ class EnergySystem:
         else:
             componentData,attributeIsSeries = callingClass.getAttributeOfAllElements(componentName, capacityTypes= capacityTypes, returnAttributeIsSeries=True)
             if indexNames:
-                if attributeIsSeries:
-                    componentData = pd.concat(componentData,keys=componentData.keys())
-                else:
-                    componentData = pd.Series(componentData)
-                customSet       = callingClass.createCustomSet(indexNames)
-                componentData   = cls.checkForSubindex(componentData,customSet)
+                customSet = callingClass.createCustomSet(indexNames)
+                if np.size(customSet):
+                    if attributeIsSeries:
+                        componentData = pd.concat(componentData,keys=componentData.keys())
+                    else:
+                        componentData = pd.Series(componentData)
+                    componentData   = cls.checkForSubindex(componentData,customSet)
             elif attributeIsSeries:
                 componentData = pd.concat(componentData, keys=componentData.keys())
         return componentData
@@ -562,14 +563,12 @@ class EnergySystem:
         # edges
         model.setEdges = pe.Set(
             initialize = energySystem.setEdges,
-            doc = 'Set of edges'
-        )
+            doc = 'Set of edges')
         # nodes on edges
         model.setNodesOnEdges = pe.Set(
             model.setEdges,
             initialize = energySystem.setNodesOnEdges,
-            doc = 'Set of nodes that constitute an edge. Edge connects first node with second node.'
-        )
+            doc = 'Set of nodes that constitute an edge. Edge connects first node with second node.')
         # carriers
         model.setCarriers = pe.Set(
             initialize=energySystem.setCarriers,

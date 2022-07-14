@@ -11,6 +11,7 @@ Description:    Class defining the parameters, variables and constraints of the 
 import logging
 import pyomo.environ                                as pe
 import pandas                                       as pd
+import numpy                                        as np
 from model.objects.energy_system                    import EnergySystem
 from model.objects.technology.conversion_technology import ConversionTechnology
 
@@ -133,8 +134,3 @@ class ConditioningTechnology(ConversionTechnology):
             initialize=_childCarriers,
             doc="set of child carriers associated with parent carrier used in conditioning. Dimensions: setConditioningCarrierChildren"
         )
-
-    # def constructParams, Vars and Constraints can be added as well
-    # in this case, add the following to the parent class
-    #    for subclass in cls.getAllSubclasses():
-    #        subclass.constructParams()/Vars()/Constraints()

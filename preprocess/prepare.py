@@ -86,15 +86,7 @@ class Prepare:
                 self.paths[technologySubset][technology] = dict()
                 self.paths[technologySubset][technology]["folder"] = \
                     path + f"{technology}//"
-            # # add path for subsets of technologySubset
-            # if technologySubset in self.analysis["subsets"].keys():
-            #     for subset in self.analysis["subsets"][technologySubset]:
-            #         path = self.paths[subset]["folder"]
-            #         for technology in next(os.walk(path))[1]:
-            #             self.paths[subset][technology] = dict()
-            #             self.paths[subset][technology]["folder"] = \
-            #                 path + f"{technology}//"
-
+        
     def initDict(self):
         """
         This method initialises a dictionary containing all the input data

@@ -40,7 +40,7 @@ class Parameter:
             setattr(parameterObject, name, data)
             # save additional parameters
             parameterObject.parameterList.append(name)
-            parameterObject.docs[name]      = doc
+            parameterObject.docs[name] = doc
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")
 
@@ -57,7 +57,7 @@ class Parameter:
     @staticmethod
     def saveMinMax(parameterObject,data,name):
         """ stores min and max parameter """
-        if isinstance(data,dict):
+        if isinstance(data,dict) and data:
             data = pd.Series(data)
         if isinstance(data,pd.Series):
             _abs = data.abs()
@@ -70,9 +70,9 @@ class Parameter:
             else:
                 return
         else:
-            _abs = abs(data)
-            if (_abs == 0) or (_abs == np.inf):
+            if not data or (abs(data) == 0) or (abs(data) == np.inf):
                 return
+            _abs    = abs(data)
             _idxmax = name
             _valmax = _abs
             _idxmin = name
@@ -89,7 +89,6 @@ class Parameter:
             if _valmin < parameterObject.minParameterValue["value"]:
                 parameterObject.minParameterValue["name"]   = _idxmin
                 parameterObject.minParameterValue["value"]  = _valmin
-
 
     @staticmethod
     def convertToDict(data):
