@@ -151,7 +151,7 @@ solver["analyzeNumerics"]   = False
 solver["immutableUnit"]     = []
 solver["rangeUnitExponents"]    = {"min":-3,"max":3,"stepWidth":1}
 # round down to number of decimal points, for new capacity and unit multipliers
-solver["roundingDecimalPoints"]     = 8
+solver["roundingDecimalPoints"]     = 5
 # round down to number of decimal points, for time series after TSA
 solver["roundingDecimalPointsTS"]   = 3
 # verbosity

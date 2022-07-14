@@ -255,20 +255,22 @@ class Technology(Element):
         else:
             endInvestTimeStep = investTimeStep[-1]
             investTimeStep = investTimeStep[0]
-        # decode to base time steps
-        baseTimeSteps = EnergySystem.decodeTimeStep(tech, investTimeStep, timeStepType="invest")
-        baseTimeStep = baseTimeSteps[0]
         # convert period to interval of base time steps
         if idExistingCapacity is None:
             periodYearly = periodTime[tech]
         else:
-            assert periodType == "lifetime", "existing planned capacities not yet implemented"
-            periodYearly = params.lifetimeExistingTechnology[tech,loc,idExistingCapacity]
+            assert periodType == "lifetime", "Existing planned capacities not yet implemented"
+            periodYearly = params.lifetimeExistingTechnology[tech, loc, idExistingCapacity]
         basePeriod = periodYearly / system["intervalBetweenYears"] * system["unaggregatedTimeStepsPerYear"]
-        basePeriod = round(basePeriod,EnergySystem.getSolver()["roundingDecimalPoints"])
+        basePeriod = round(basePeriod, EnergySystem.getSolver()["roundingDecimalPoints"])
         if int(basePeriod) != basePeriod:
             logging.warning(
                 f"The period {periodType} of {tech} does not translate to an integer time interval in the base time domain ({basePeriod})")
+        # decode to base time steps
+        baseTimeSteps = EnergySystem.decodeTimeStep(tech, investTimeStep, timeStepType="invest")
+        if len(baseTimeSteps) == 0:
+            return model.setBaseTimeSteps.at(1), model.setBaseTimeSteps.at(1) - 1
+        baseTimeStep = baseTimeSteps[0]
 
         # if startBaseTimeStep is further in the past than first base time step, use first base time step
         if clipToFirstTimeStep:
@@ -697,8 +699,6 @@ def constraintTechnologyConstructionTimeRule(model, tech,capacityType, loc, time
 
 def constraintTechnologyLifetimeRule(model, tech,capacityType, loc, time):
     """limited lifetime of the technologies"""
-    # get parameter object
-    params = Parameter.getParameterObject()
     # determine existing capacities
     existingCapacities = Technology.getAvailableExistingQuantity(tech,capacityType,loc,time,typeExistingQuantity="capacity")
     return (model.capacity[tech,capacityType, loc, time]
@@ -726,10 +726,13 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
         # add built capacity of entire previous horizon
         if params.constructionTimeTechnology[tech] > 0:
             # if technology has lead time, restrict to current capacity
-            endTime = max(time,model.setTimeStepsInvest[tech].at(1))
+            endTime             = max(time,model.setTimeStepsInvest[tech].at(1))
+            timeBuiltCapacity   = time
         else:
             # else, to capacity in previous time step
-            endTime = max(time-1, model.setTimeStepsInvest[tech].at(1))
+            endTime             = max(time-1, model.setTimeStepsInvest[tech].at(1))
+            timeBuiltCapacity   = time - 1
+
         rangeTime = range(model.setTimeStepsInvest[tech].at(1),endTime+1)
         # actual years between first invest time step and endTime
         deltaTime       = intervalBetweenYears*(endTime-model.setTimeStepsInvest[tech].at(1))
@@ -749,40 +752,33 @@ def constraintTechnologyDiffusionLimitRule(model,tech,capacityType,time):
                 )
                 for loc in setLocations
             )
-        totalCapacityKnowledgeAllTechs = \
+        totalCapacityAllTechs = sum(
             sum(
-                sum(
-                    sum(
-                        params.existingCapacity[otherTech, capacityType, loc, existingTime] *
-                        (1 - knowledgeDepreciationRate)**(deltaTime + params.lifetimeTechnology[otherTech] - params.lifetimeExistingTechnology[otherTech,loc,existingTime])
-                        for existingTime in model.setExistingTechnologies[otherTech]
-                    )
-                    +
-                    sum(
-                        model.builtCapacity[otherTech, capacityType, loc, horizonTime] *
-                        (1 - knowledgeDepreciationRate)**(intervalBetweenYears * (endTime - horizonTime))
-                        for horizonTime in rangeTime
-                    )
-                    for loc in setLocations
-                )
-                for otherTech in setTechnology if
-                model.setReferenceCarriers[otherTech].at(1) == referenceCarrier
+                (Technology.getAvailableExistingQuantity(otherTech, capacityType, loc, time,typeExistingQuantity="capacity")
+                + sum(model.builtCapacity[otherTech, capacityType, loc, previousTime] for previousTime in Technology.getLifetimeRange(tech, timeBuiltCapacity)))
+                for loc in setLocations
             )
+            for otherTech in setTechnology if
+            model.setReferenceCarriers[otherTech].at(1) == referenceCarrier
+        )
 
         return (
             sum(model.investedCapacity[tech, capacityType, loc, time] for loc in setLocations) <=
             ((1 + params.maxDiffusionRate[tech, time]) ** intervalBetweenYears - 1) * totalCapacityKnowledge
             # add initial market share until which the diffusion rate is unbounded
-            + unboundedMarketShare * totalCapacityKnowledgeAllTechs
+            + unboundedMarketShare * totalCapacityAllTechs
         )
     else:
         return pe.Constraint.Skip
 
 def constraintCapexYearlyRule(model, tech, capacityType, loc, year):
     """ aggregates the capex of built capacity and of existing capacity """
-    return (model.capexYearly[tech, capacityType, loc, year] ==
+    system          = EnergySystem.getSystem()
+    discountRate    = EnergySystem.getAnalysis()["discountRate"]
+    return (model.capexYearly[tech, capacityType, loc, year] == (1 + discountRate) ** (system["intervalBetweenYears"] * (year - model.setTimeStepsYearly.at(1))) *
             sum(
-                model.capex[tech, capacityType, loc, time]
+                model.capex[tech, capacityType, loc, time] *
+                (1/(1 + discountRate)) ** (system["intervalBetweenYears"] * (time - model.setTimeStepsYearly.at(1)))
                 for time in Technology.getLifetimeRange(tech, year, timeStepType="invest"))
             + Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest"))
 
