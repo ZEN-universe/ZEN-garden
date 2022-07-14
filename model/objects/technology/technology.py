@@ -339,8 +339,7 @@ class Technology(Element):
         Parameter.addParameter(
             name="timeStepsInvestDuration",
             data= EnergySystem.initializeComponent(cls,"timeStepsInvestDuration",indexNames=["setTechnologies","setTimeStepsInvest"]).astype(int),
-            doc="Parameter which specifies the time step duration in investment for all technologies. Dimensions: setTechnologies, setTimeStepsInvest"
-        )
+            doc="Parameter which specifies the time step duration in investment for all technologies. Dimensions: setTechnologies, setTimeStepsInvest")
         # existing capacity
         Parameter.addParameter(
             name="existingCapacity",
@@ -349,12 +348,8 @@ class Technology(Element):
         # existing capacity
         Parameter.addParameter(
             name="existingInvestedCapacity",
-            data=EnergySystem.initializeComponent(cls, "existingInvestedCapacity",
-                                                        indexNames=["setTechnologies", "setCapacityTypes",
-                                                                    "setLocation", "setTimeStepsInvestEntireHorizon"],
-                                                        capacityTypes=True),
+            data=EnergySystem.initializeComponent(cls, "existingInvestedCapacity",indexNames=["setTechnologies", "setCapacityTypes","setLocation", "setTimeStepsInvestEntireHorizon"],capacityTypes=True),
             doc='Parameter which specifies the size of the previously invested capacities. ''Dimensions: setTechnologies, setCapacityTypes, setLocation, setTimeStepsInvestEntireHorizon')
-
         # minimum capacity
         Parameter.addParameter(
             name="minBuiltCapacity",
@@ -410,14 +405,12 @@ class Technology(Element):
         Parameter.addParameter(
             name="opexSpecific",
             data= EnergySystem.initializeComponent(cls,"opexSpecific",indexNames=["setTechnologies","setLocation","setTimeStepsOperation"]),
-            doc = 'Parameter which specifies the specific opex. Dimensions: setTechnologies, setLocation, setTimeStepsOperation'
-        )
+            doc = 'Parameter which specifies the specific opex. Dimensions: setTechnologies, setLocation, setTimeStepsOperation')
         # carbon intensity
         Parameter.addParameter(
             name="carbonIntensityTechnology",
             data= EnergySystem.initializeComponent(cls,"carbonIntensityTechnology"),
-            doc = 'Parameter which specifies the carbon intensity of each technology. Dimensions: setTechnologies, setLocation'
-        )
+            doc = 'Parameter which specifies the carbon intensity of each technology. Dimensions: setTechnologies, setLocation')
         # add pe.Param of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructParams()

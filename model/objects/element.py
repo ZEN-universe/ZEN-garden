@@ -117,9 +117,10 @@ class Element:
         :param returnAttributeIsSeries: boolean if information on attribute type is returned
         :return dictOfAttributes: returns dict of attribute values
         :return attributeIsSeries: return information on attribute type """
-        system = EnergySystem.getSystem()
-        _classElements = cls.getAllElements()
-        dictOfAttributes = {}
+        system            = EnergySystem.getSystem()
+        _classElements    = cls.getAllElements()
+        dictOfAttributes  = {}
+        attributeIsSeries = False
         for _element in _classElements:
             if not capacityTypes:
                 dictOfAttributes,attributeIsSeries = cls.appendAttributeOfElementToDict(_element,attributeName,dictOfAttributes)
