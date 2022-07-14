@@ -155,7 +155,8 @@ class ConversionTechnology(Technology):
 
         # add pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.constructSets()
+            if np.size(EnergySystem.getSystem()[subclass.label]):
+                subclass.constructSets()
 
     @classmethod
     def constructParams(cls):
@@ -305,7 +306,7 @@ class ConversionTechnology(Technology):
             cls.createCustomSet(["setConversionTechnologies","setNoOnOff","setDependentCarriers","setLocation","setTimeStepsOperation"]),
             rule = constraintDependentFlowCouplingRule,
             doc = "couples the real dependent flow variables with the approximated variables. Dimension: setConversionTechnologies, setDependentCarriers, setNodes, setTimeStepsOperation.")
-        
+
     # defines disjuncts if technology on/off
     @classmethod
     def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):

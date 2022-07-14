@@ -166,7 +166,8 @@ class Carrier(Element):
 
         # add pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.constructVars()
+            if np.size(EnergySystem.getSystem()[subclass.label]):
+                subclass.constructVars()
 
     @classmethod
     def constructConstraints(cls):
@@ -224,7 +225,8 @@ class Carrier(Element):
         )
         # add pe.Sets of the child classes
         for subclass in cls.getAllSubclasses():
-            subclass.constructConstraints()
+            if np.size(EnergySystem.getSystem()[subclass.label]):
+                subclass.constructConstraints()
 
 
 #%% Constraint rules defined in current class
