@@ -365,7 +365,7 @@ class DataInput():
         _indexSets = ["setNodes", "setTimeSteps"]
         _timeSteps = self.element.setTimeStepsInvest
         # import all input data
-        dfInputNonlinear    = self.readPWAFiles(variableType, fileType="")
+        dfInputNonlinear    = self.readPWAFiles(variableType, fileType="nonlinear")
         dfInputBreakpoints  = self.readPWAFiles(variableType, fileType="breakpointsPWA")
         dfInputLinear       = self.readPWAFiles(variableType, fileType="linear")
         ifLinearExist       = self.ifAttributeExists(_attributeName)
