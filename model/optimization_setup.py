@@ -28,7 +28,7 @@ from preprocess.functions.time_series_aggregation       import TimeSeriesAggrega
 
 class OptimizationSetup():
 
-    baseScenario      = "base"
+    baseScenario      = ""
     baseConfiguration = {}
 
     def __init__(self, analysis, prepare):
@@ -158,21 +158,20 @@ class OptimizationSetup():
                     fileName, param = param
                 # get old param value
                 _oldParam   = getattr(element, param)
+                _indexNames = _oldParam.index.names
+                _indexSets  = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
+                _timeSteps  = None
                 # set new parameter value
-                if param in element.rawTimeSeries.keys():
+                if hasattr(element, "rawTimeSeries") and param in element.rawTimeSeries.keys():
                     conductTimeSeriesAggregation = True
-                    _timeSteps = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
+                    _timeSteps                   = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
                     element.rawTimeSeries[param] = element.dataInput.extractInputData(fileName, indexSets=_indexSets,column=param,timeSteps=_timeSteps,scenario=scenario)
                 else:
                     if isinstance(_oldParam, pd.Series) or isinstance(_oldParam, pd.DataFrame):
-                        _indexNames = _oldParam.index.names
-                        _indexSets  = [indexSet for indexSet, indexName in element.dataInput.indexNames.items() if indexName in _indexNames]
-                        _timeSteps  = None
                         if "time" in _indexNames:
                             _timeSteps = list(_oldParam.index.unique("time"))
-                            _newParam  = element.dataInput.extractInputData(param,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
-                    else:
-                        _newParam = element.dataInput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
+                        _newParam  = element.dataInput.extractInputData(param,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
+                    #else: _newParam = element.dataInput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
                     setattr(element, param, _newParam)
         # if scenario contains timeSeries dependent params conduct timeSeriesAggregation
         if conductTimeSeriesAggregation:
