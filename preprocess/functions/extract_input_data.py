@@ -58,7 +58,7 @@ class DataInput():
             dfOutput,*_ = self.createDefaultOutput(indexSets,column,fileName= fileName,timeSteps=timeSteps,manualDefaultValue=0,scenario=scenario)
             return dfOutput
         else:
-            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(indexSets,column,fileName =fileName, timeSteps= timeSteps)
+            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(indexSets,column,fileName =fileName, timeSteps= timeSteps,scenario=scenario)
         # set defaultName
         if column:
             defaultName = column
@@ -149,11 +149,17 @@ class DataInput():
         :param attributeName: name of selected attribute
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
-        dfInput = self.readInputData("attributes"+scenario)
+        filename = "attributes"
+        dfInput  = self.readInputData(filename+scenario)
         if dfInput is not None:
             dfInput = dfInput.set_index("index").squeeze(axis=1)
-        else:
-            return None
+            name    = self.adaptAttributeName(attributeName, dfInput, skipWarning)
+        if dfInput is None or name is None:
+            dfInput = self.readInputData(filename)
+            if dfInput is not None:
+                dfInput = dfInput.set_index("index").squeeze(axis=1)
+            else:
+                return None
         attributeName = self.adaptAttributeName(attributeName,dfInput,skipWarning)
         if attributeName is not None:
             # get attribute
@@ -332,22 +338,21 @@ class DataInput():
         :param fileName:  name of selected file
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return existingLifetimeDict: return existing capacity and existing lifetime """
-        column      = "yearConstruction"
-
-        dfOutput    = pd.Series(index=self.element.existingCapacity.index,data=0)
+        column   = "yearConstruction"
+        dfOutput = pd.Series(index=self.element.existingCapacity.index,data=0)
         # if no existing capacities
         if not self.analysis["useExistingCapacities"]:
             return dfOutput
 
         if f"{fileName}.csv" in os.listdir(self.folderPath):
-            indexList, indexNameList    = self.constructIndexList(indexSets, None)
-            dfInput                     = self.readInputData( fileName)
+            indexList, indexNameList = self.constructIndexList(indexSets, None)
+            dfInput                  = self.readInputData( fileName)
             # fill output dataframe
             dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue = 0)
             # get reference year
-            referenceYear               = self.system["referenceYear"]
+            referenceYear            = self.system["referenceYear"]
             # calculate remaining lifetime
-            dfOutput[dfOutput > 0]      = - referenceYear + dfOutput[dfOutput > 0] + self.element.lifetime
+            dfOutput[dfOutput > 0]   = - referenceYear + dfOutput[dfOutput > 0] + self.element.lifetime
 
         return dfOutput
 
@@ -511,7 +516,7 @@ class DataInput():
                 defaultName = column
             else:
                 defaultName = fileName
-            defaultValue = self.extractAttributeData(defaultName)
+            defaultValue = self.extractAttributeData(defaultName,scenario=scenario)
 
         # create output Series filled with default value
         if defaultValue is None:
@@ -634,20 +639,24 @@ class DataInput():
         # the values in dfInput are extended to all missing index values
         else:
             # logging.info(f"Missing index {missingIndex} detected in {fileName}. Input dataframe is extended by this index")
-            _dfInputIndexTemp   = pd.MultiIndex.from_product([dfInput.index, requestedIndexValues],names=dfInput.index.names + [missingIndex])
-            _dfInputIndexTemp   = _dfInputIndexTemp.reorder_levels(order=dfOutput.index.names)
+            _dfInputIndexTemp   = pd.MultiIndex.from_product([dfInput.index,requestedIndexValues],names=dfInput.index.names+[missingIndex])
             _dfInputTemp        = pd.Series(index=_dfInputIndexTemp, dtype=float)
             if column in dfInput.columns:
-                dfInput         = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[
-                    row.index.get_level_values(dfInput.index.names[0]), column].squeeze())
+                dfInput = dfInput[column].loc[_dfInputIndexTemp.get_level_values(dfInput.index.names[0])].squeeze()
+                # much slower than overwriting index:
+                # dfInput         = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.name[0], column].squeeze(),axis=1)
             else:
+                if isinstance(dfInput,pd.Series):
+                    dfInput = dfInput.to_frame()
                 if dfInput.shape[1] == 1:
                     dfInput         = dfInput.loc[_dfInputIndexTemp.get_level_values(dfInput.index.names[0])].squeeze()
                 else:
+                    assert _dfInputTemp.index.names[-1] != "time", f"Only works if columns contain time index and not for {_dfInputTemp.index.names[-1]}"
                     dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.name[0:-1],str(row.name[-1])],axis=1)
+            dfInput.index = _dfInputTemp.index
+            dfInput = dfInput.reorder_levels(order=dfOutput.index.names)
             if isinstance(dfInput,pd.DataFrame):
                 dfInput = dfInput.squeeze()
-            dfInput.index       = _dfInputTemp.index
         return dfInput
 
     @staticmethod
