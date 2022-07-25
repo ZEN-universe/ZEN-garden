@@ -126,6 +126,8 @@ system["totalHoursPerYear"] = 8760
 system["unboundedMarketShare"] = 0.01
 # rate at which the knowledge stock of existing capacities is depreciated annually
 system["knowledgeDepreciationRate"] = 0.1
+# spillover rate of knowledge stock to another
+system["knowledgeSpilloverRate"] = 0.05
 # social discount rate
 system["socialDiscountRate"] = 0
 # folder output
