@@ -9,7 +9,7 @@ Description:  Class is defining the postprocessing of the results.
 ==========================================================================================================================================================================="""
 import os
 import pickle
-import math
+import shutil
 import copy
 import numpy as np
 import pandas as pd
@@ -46,9 +46,10 @@ class VisualizeResults:
 
     ## general methods
     def initDirectory(self,folder):
-        """init directories to store plots and files"""
-        if not os.path.exists(f"{self.nameDir}/{folder}"):
-            os.makedirs(f"{self.nameDir}/{folder}")
+        """clear directories to store plots and files"""
+        if os.path.exists(f"{self.nameDir}/{folder}"):
+            shutil.rmtree(f"{self.nameDir}/{folder}")
+        os.makedirs(f"{self.nameDir}/{folder}")
 
     def setModelName(self):
         """set model name"""
@@ -59,7 +60,7 @@ class VisualizeResults:
 
     def setTimeStepsDuration(self):
         """ set timesteps duration"""
-        self.timeStepsCarrierDuration   = self.getDataframe("timeStepsOperationDuration", indexNames=["technology", "time"], type="param", subset=self.setCarriers)
+        self.timeStepsCarrierDuration   = self.getDataframe("timeStepsOperationDuration", indexNames=["carrier", "time"], type="param", subset=self.setCarriers)
         self.timeStepsOperationDuration = self.getDataframe("timeStepsOperationDuration", indexNames=["technology", "time"], type="param", subset=self.system["setTechnologies"])
         self.timeStepsInvestDuration    = self.getDataframe("timeStepsInvestDuration", indexNames=["technology", "year"], type="param")
 
@@ -121,6 +122,8 @@ class VisualizeResults:
         # conversion technologies
         self.setConversionTechnologies   = copy.deepcopy(self.system["setHydrogenConversionTechnologies"])
         self.setConversionTechnologies   = list(set(self.setConversionTechnologies) - set(self.setConditioningTechnologies))
+        if "carbon_storage" in self.setConversionTechnologies:
+            self.setConversionTechnologies.remove("carbon_storage")
         # electricity generation Technologies
         self.setElectricityGenerationTechnologies = copy.deepcopy(self.system["setElectricityGenerationTechnologies"])
         # transport technologies
@@ -231,13 +234,11 @@ class VisualizeResults:
     def evaluateCarrierImports(self):
         """plot carrier imports"""
         carrierImports = self.getDataframe("importCarrierFlow", ["carrier", "location", "time"])
-        carrierImports = carrierImports.reorder_levels(["carrier", "time", "location"]).unstack()
-        carrierImports = carrierImports.apply(lambda row: row*self.timeStepsCarrierDuration)
-        carrierImports = carrierImports.reorder_levels(["carrier", "time", "technology"])
-        self.areaplot(f"carrierImports", carrierImports.stack().groupby(["carrier","time"]).sum().unstack("carrier"))
+        carrierImports = carrierImports.groupby(["carrier", "time"]).sum() * self.timeStepsCarrierDuration
+        self.areaplot(f"carrierImports", carrierImports.unstack("carrier"))
         # electricity and natural gas imports
         for carrier in carrierImports.index.unique("carrier"):
-            imports = carrierImports.loc[carrier].sum()
+            imports = carrierImports.loc[carrier]
             imports = imports[imports >= 0.1 * imports.max()]
             self.barplot(f"{carrier}Imports", imports, stacked=False)
 
@@ -252,7 +253,7 @@ class VisualizeResults:
     def evaluateInputFlow(self):
         """plot carrier flow"""
         inputFlow  = self.getDataframe("inputFlow", ["technology","carrier","location","time"])
-        inputFlow  = inputFlow * self.timeStepsCarrierDuration
+        inputFlow  = inputFlow * self.timeStepsOperationDuration
         inputFlow  = inputFlow.reorder_levels(["technology", "carrier", "location", "time"]) * 1e-3
 
         # inputFlows Conversion
@@ -336,6 +337,7 @@ class VisualizeResults:
             else:
                 if carbonMin != 0:
                     print("Carbon emissions of 0 are not reached. The minimal carbon emissions are", carbonMin)
+                    carbonMin = 0
                 reduction = (carbonMax - carbonMin) * factor / max(years)
                 carbonLimits.loc[years[1:]] = [carbonMax - reduction * y for y in years[1:]]
             name = str(factor).replace(".", "-")
@@ -350,6 +352,8 @@ class VisualizeResults:
         carbonBudget = pd.DataFrame(carbonBudget, index=[0])
         # carbon emissions target
         carbonLimits            = minCarbonEmissions.tail(1)
+        if carbonLimits.iloc[-1] < 0:
+            carbonLimits.iloc[-1] = 0
         carbonLimits.name       = "carbonEmissionsLimit"
         carbonLimits.index.name = "time"
         # carbon budget scenarios
@@ -435,7 +439,7 @@ def run(dataset, scenario, pltShow=False, decarbScen = {}):
     visResults.evaluateCarrierImports()
     # visResults.checkCarrierExports()
     visResults.evaluateInputFlow()
-    # visResults.evaluateOutputFlow()
+    visResults.evaluateOutputFlow()
     visResults.evaluateCarrierFlowsTransport()
     ## compute levelized cost
     visResults.computeLevelizedCost("electricity")
@@ -448,8 +452,9 @@ if __name__ == "__main__":
     os.chdir("..")
     dataset = "HSC_NUTS2"
     pltShow = False  # True or False
-    scenarios  = [""] #
-    decarbScen = {"linear": np.arange(0, 1.1, 0.1).round(2),
+    scenarios  = ["","min_em"] #
+    #scenarios  = scenarios + [f"linear_" + str(path).replace(".","-") for path in np.arange(0, 1.1, 0.1).round(2)]
+    decarbScen = {"linear":  np.arange(0, 1.25, 0.25).round(2), # np.arange(0, 1.1, 0.1).round(2),
                   "carbonBudget": np.arange(0.4, 0, -0.1).round(2)}
     for scenario in scenarios:
         run(dataset, scenario, pltShow=pltShow, decarbScen = decarbScen)

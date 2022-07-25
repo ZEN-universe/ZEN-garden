@@ -65,7 +65,7 @@ class ConditioningCarrier(Carrier):
         model.constraintNodalEnergyBalance.deactivate()
         model.constraintNodalEnergyBalanceConditioning = pe.Constraint(
             cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsEnergyBalance"]),
-            rule=constraintNodalEnergyBalanceWithConditioningRule,
+            rule=constraintNodalEnergyBalanceConditioningRule,
             doc='node- and time-dependent energy balance for each carrier. Dimensions: setCarriers, setNodes, setTimeStepsEnergyBalance',
         )
 
@@ -76,7 +76,7 @@ def constraintCarrierDemandCouplingRule(model, parentCarrier, node, time):
            sum(model.endogenousCarrierDemand[conditioningCarrier,node,time]
                  for conditioningCarrier in model.setConditioningCarrierChildren[parentCarrier]))
 
-def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time):
+def constraintNodalEnergyBalanceConditioningRule(model, carrier, node, time):
     """" 
     nodal energy balance for each time step. 
     The constraint is indexed by setTimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
