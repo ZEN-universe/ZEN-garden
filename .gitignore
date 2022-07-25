@@ -12,3 +12,4 @@
 /postprocess/visualization_AG.py
 *.pyc
 *.DS_Store
+compileAG.py

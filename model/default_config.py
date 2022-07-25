@@ -174,4 +174,4 @@ solver["performanceCheck"] = {"printDeltaRun":1, "printDeltaIteration":1}
 solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
 
 ## Scenarios - dictionary declaration
-scenarios["base"] = {}
+scenarios[""] = {}

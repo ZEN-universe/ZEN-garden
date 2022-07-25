@@ -227,7 +227,7 @@ class Technology(Element):
             else:
                 discountFactor = 1
             # if still available at first base time step, add to list
-            if tStart == model.setBaseTimeSteps.at(1):
+            if tStart == model.setBaseTimeSteps.at(1) or tStart == investTimeStep:
                 existingQuantity += existingVariable[tech,capacityType, loc, idExistingCapacity]*discountFactor
         return existingQuantity
 
@@ -262,12 +262,17 @@ class Technology(Element):
         # if more than one investment time step
         else:
             endInvestTimeStep = investTimeStep[-1]
-            investTimeStep = investTimeStep[0]
+            investTimeStep    = investTimeStep[0]
         # convert period to interval of base time steps
         if idExistingCapacity is None:
             periodYearly = periodTime[tech]
         else:
-            assert periodType == "lifetime", "Existing planned capacities not yet implemented"
+            deltaLifetime =  params.lifetimeExistingTechnology[tech, loc, idExistingCapacity] - periodTime[tech]
+            if deltaLifetime >= 0:
+                if deltaLifetime <= (investTimeStep - model.setTimeStepsInvest[tech].at(1))*system["intervalBetweenYears"]:
+                    return investTimeStep
+                else:
+                    return -1
             periodYearly = params.lifetimeExistingTechnology[tech, loc, idExistingCapacity]
         basePeriod = periodYearly / system["intervalBetweenYears"] * system["unaggregatedTimeStepsPerYear"]
         basePeriod = round(basePeriod, EnergySystem.getSolver()["roundingDecimalPoints"])
@@ -392,8 +397,7 @@ class Technology(Element):
         Parameter.addParameter(
             name="maxDiffusionRate",
             data=EnergySystem.initializeComponent(cls, "maxDiffusionRate",indexNames=["setTechnologies", "setTimeStepsInvest"]),
-            doc="Parameter which specifies the maximum diffusion rate, i.e., the maximum increase in capacity between investment steps. Dimensions: setTechnologies, setTimeStepsInvest"
-        )
+            doc="Parameter which specifies the maximum diffusion rate, i.e., the maximum increase in capacity between investment steps. Dimensions: setTechnologies, setTimeStepsInvest")
         # capacityLimit of technologies
         Parameter.addParameter(
             name="capacityLimitTechnology",
@@ -447,7 +451,10 @@ class Technology(Element):
                 _capacityLimitTechnology    = model.find_component("capacityLimitTechnology" + _energyString)
                 existingCapacities = 0
                 for idExistingTechnology in model.setExistingTechnologies[tech]:
-                    if (time - model.lifetimeExistingTechnology[tech, loc, idExistingTechnology] + 1) <= 0:
+                    if model.lifetimeExistingTechnology[tech, loc, idExistingTechnology] > model.lifetimeTechnology[tech]:
+                        if time > model.lifetimeExistingTechnology[tech, loc, idExistingTechnology] - model.lifetimeTechnology[tech]:
+                            existingCapacities += _existingCapacity[tech, loc, idExistingTechnology]
+                    elif time <= model.lifetimeExistingTechnology[tech, loc, idExistingTechnology] + 1:
                         existingCapacities  += _existingCapacity[tech, loc, idExistingTechnology]
 
                 maxBuiltCapacity            = len(model.setTimeStepsInvest[tech])*_maxBuiltCapacity[tech]
