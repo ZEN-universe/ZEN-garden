@@ -95,20 +95,36 @@ class ETHColors:
             "TIER3": self.getColor("bronze",60),
             "TIER4": self.getColor("red",60),
             # Gas phase-out scenarios
+            "PF": self.getColor("green"),
+            "MF": self.getColor("red"),
             "PI": self.getColor("blue"),
             "PI2": self.getColor("blue",60),
             "PD": self.getColor("petrol"),
             "PD2": self.getColor("petrol",60),
-            "LI": self.getColor("green"),
-            "LD": self.getColor("red"),
-            "LD2": self.getColor("red",60),
-            "ref_PF2": self.getColor("blue",80),
+            "MI": self.getColor("green"),
+            "MD": self.getColor("red"),
+            "MD2": self.getColor("red",60),
+            "ref_PI": self.getColor("blue"),
+            "ref_PD": self.getColor("green","dark"),
+            "ref_MD": self.getColor("red","dark"),
+            "ref_MI": self.getColor("petrol","dark"),
             "ref_MF": self.getColor("blue",40),
             "ref_MF2": self.getColor("blue",60),
             "ref_MF3": self.getColor("blue", 20),
             "noG_PF": self.getColor("red","dark"),
             "noG_MF": self.getColor("red",60),
-            "noRG_PF": self.getColor("green","dark"),
+            "noRG_PI": self.getColor("blue",60),
+            "noRG_PD": self.getColor("green",80),
+            "noRG_PD2": self.getColor("green",60),
+            "noRG_PD3": self.getColor("green",40),
+            "noRG_PD4": self.getColor("green",20),
+            "noRG_MD": self.getColor("red",80),
+            "noRG_MI": self.getColor("petrol",80),
+            "noRG_MI2": self.getColor("petrol",60),
+            "noRG_MI4": self.getColor("petrol",40),
+            "noRG_MD2": self.getColor("red",60),
+            "noRG_MD3": self.getColor("red",40),
+            "noRG_MD4": self.getColor("red",20),
             "noRG_PF_noBudget": self.getColor("bronze"),
             # "noRG_PF2": self.getColor("green"),
             "noRG_MF": self.getColor("red",80),
@@ -125,6 +141,7 @@ class ETHColors:
         self.manualColors["Carbon Intensity"]                   = self.getColor("BW", 100)
         self.manualColors["Final Cumulative Costs"]             = self.getColor("blue")
         self.manualColors["Maximum New Electricity Capacities"] = self.getColor("red")
+        self.manualColors["Spillover Rate Impact"]              = [self.getColor("red"), self.getColor("green")]
 
     def getColor(self,color,shade = 100):
         assert color in self.baseColors, f"color {color} not in base colors. Select from {list(self.baseColors.keys())}."

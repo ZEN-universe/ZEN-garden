@@ -816,7 +816,7 @@ def constraintCarbonEmissionsBudgetRule(model, year):
     # get parameter object
     params = Parameter.getParameterObject()
     intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
-    if params.carbonEmissionsBudget != np.inf:
+    if params.carbonEmissionsBudget != np.inf: #TODO check for last year - without last term?
         return (
                 params.carbonEmissionsBudget + model.carbonEmissionsOvershoot[year] >=
                 model.carbonEmissionsCumulative[year] + model.carbonEmissionsTotal[year] * (intervalBetweenYears - 1)
