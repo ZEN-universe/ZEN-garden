@@ -201,6 +201,8 @@ class Technology(Element):
         :return existingQuantity: existing capacity or capex of existing capacity
         """
         params = Parameter.getParameterObject()
+        system = EnergySystem.getSystem()
+        discountRate = EnergySystem.getAnalysis()["discountRate"]
         if timeStepType:
             baseTimeSteps   = EnergySystem.decodeTimeStep(None, time, "yearly")
             investTimeStep  = EnergySystem.encodeTimeStep(tech, baseTimeSteps, timeStepType, yearly=True)
@@ -218,9 +220,15 @@ class Technology(Element):
 
         for idExistingCapacity in model.setExistingTechnologies[tech]:
             tStart  = cls.getStartEndTimeOfPeriod(tech, investTimeStep, idExistingCapacity=idExistingCapacity,loc= loc)
+            # discount existing capex
+            if typeExistingQuantity == "capex":
+                yearConstruction = max(0,time*system["intervalBetweenYears"] - params.lifetimeTechnology[tech] + params.lifetimeExistingTechnology[tech,loc,idExistingCapacity])
+                discountFactor = (1 + discountRate)**(time*system["intervalBetweenYears"] - yearConstruction)
+            else:
+                discountFactor = 1
             # if still available at first base time step, add to list
             if tStart == model.setBaseTimeSteps.at(1):
-                existingQuantity += existingVariable[tech,capacityType, loc, idExistingCapacity]
+                existingQuantity += existingVariable[tech,capacityType, loc, idExistingCapacity]*discountFactor
         return existingQuantity
 
     @classmethod
@@ -784,8 +792,8 @@ def constraintCapexYearlyRule(model, tech, capacityType, loc, year):
             (sum(
                 model.capex[tech, capacityType, loc, time] *
                 (1/(1 + discountRate)) ** (system["intervalBetweenYears"] * (time - model.setTimeStepsYearly.at(1)))
-                for time in Technology.getLifetimeRange(tech, year, timeStepType="invest"))
-            + Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest")))
+                for time in Technology.getLifetimeRange(tech, year, timeStepType="invest")))
+            + Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest"))
 
 def constraintCapexTotalRule(model,year):
     """ sums over all technologies to calculate total capex """
