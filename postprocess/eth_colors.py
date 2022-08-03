@@ -57,7 +57,7 @@ class ETHColors:
             "natural_gas_turbine_CCS": self.getColor("petrol",60),
             "hard_coal_plant_CCS": self.getColor("grey"),
             "coal": self.getColor("bronze","dark"),
-            "nuclear": self.getColor("red",60),
+            "nuclear": self.getColor("purple"),
             "lignite_coal_plant": self.getColor("bronze","dark"),
             "oil_plant": self.getColor("grey"),
             "lng_terminal": self.getColor("grey",40),
@@ -87,52 +87,39 @@ class ETHColors:
 
     def setColorsScenarios(self):
         self.colors["scenarios"] = {
-            # TIERS
-            "TIER1a": self.getColor("purple",60),
-            "TIER0": self.getColor("petrol",60),
-            "TIER1": self.getColor("blue",60),
-            "TIER2": self.getColor("green",60),
-            "TIER3": self.getColor("bronze",60),
-            "TIER4": self.getColor("red",60),
             # Gas phase-out scenarios
-            "PF": self.getColor("green"),
+            "PF": self.getColor("blue"),
             "MF": self.getColor("red"),
-            "PI": self.getColor("blue"),
-            "PI2": self.getColor("blue",60),
-            "PD": self.getColor("petrol"),
-            "PD2": self.getColor("petrol",60),
-            "MI": self.getColor("green"),
+            "PI": self.getColor("green"),
+            "PD": self.getColor("blue"),
+            "MI": self.getColor("petrol"),
             "MD": self.getColor("red"),
-            "MD2": self.getColor("red",60),
-            "ref_PI": self.getColor("blue"),
-            "ref_PD": self.getColor("green","dark"),
-            "ref_MD": self.getColor("red","dark"),
-            "ref_MI": self.getColor("petrol","dark"),
+            "ref_PI": self.getColor("green"),
+            "ref_PD": self.getColor("blue"),
+            "ref_MD": self.getColor("red"),
+            "ref_MI": self.getColor("petrol"),
             "ref_MF": self.getColor("blue",40),
             "ref_MF2": self.getColor("blue",60),
             "ref_MF3": self.getColor("blue", 20),
             "noG_PF": self.getColor("red","dark"),
             "noG_MF": self.getColor("red",60),
-            "noRG_PI": self.getColor("blue",60),
-            "noRG_PD": self.getColor("green",80),
-            "noRG_PD2": self.getColor("green",60),
-            "noRG_PD3": self.getColor("green",40),
-            "noRG_PD4": self.getColor("green",20),
-            "noRG_MD": self.getColor("red",80),
-            "noRG_MI": self.getColor("petrol",80),
+            "noRG_PI": self.getColor("green"),
+            "noRG_PD1": self.getColor("blue"),
+            "noRG_PD2": self.getColor("blue",80),
+            "noRG_PD3": self.getColor("blue",60),
+            "noRG_PD4": self.getColor("blue",40),
+            "noRG_MD1": self.getColor("red"),
+            "noRG_MI": self.getColor("petrol"),
             "noRG_MI2": self.getColor("petrol",60),
             "noRG_MI4": self.getColor("petrol",40),
-            "noRG_MD2": self.getColor("red",60),
-            "noRG_MD3": self.getColor("red",40),
-            "noRG_MD4": self.getColor("red",20),
+            "noRG_MD2": self.getColor("red",80),
+            "noRG_MD3": self.getColor("red",60),
+            "noRG_MD4": self.getColor("red",40),
             "noRG_PF_noBudget": self.getColor("bronze"),
             # "noRG_PF2": self.getColor("green"),
             "noRG_MF": self.getColor("red",80),
             "noRG_MF2": self.getColor("red",60),
             "noRG_MF4": self.getColor("red",20),
-            "long": self.getColor("red"),
-            "med": self.getColor("blue"),
-            "short": self.getColor("green"),
         }
 
     def setManualColors(self):
@@ -140,6 +127,7 @@ class ETHColors:
         self.manualColors["Carbon Emission Budget"]             = self.getColor("grey","dark")
         self.manualColors["Carbon Intensity"]                   = self.getColor("BW", 100)
         self.manualColors["Final Cumulative Costs"]             = self.getColor("blue")
+        self.manualColors["Final Cumulative NPC"]             = self.getColor("blue")
         self.manualColors["Maximum New Electricity Capacities"] = self.getColor("red")
         self.manualColors["Spillover Rate Impact"]              = [self.getColor("red"), self.getColor("green")]
 
