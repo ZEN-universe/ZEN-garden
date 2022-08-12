@@ -500,6 +500,11 @@ class Technology(Element):
             cls.createCustomSet(["setTechnologies", "setCapacityTypes", "setLocation", "setTimeStepsYearly"]),
             domain=pe.NonNegativeReals,
             doc='annual capex for having technology at location l. Dimensions: setTechnologies,setCapacityTypes, setLocation, setTimeStepsYearly. Domain: NonNegativeReals')
+        # annual capex of having capacity
+        model.capexYearlyAux = pe.Var(
+            cls.createCustomSet(["setTechnologies", "setCapacityTypes", "setLocation", "setTimeStepsYearly"]),
+            domain=pe.NonNegativeReals,
+            doc='annual capex for having technology at location l. Dimensions: setTechnologies,setCapacityTypes, setLocation, setTimeStepsYearly. Domain: NonNegativeReals')
         # total capex
         model.capexTotal = pe.Var(
             model.setTimeStepsYearly,
@@ -529,7 +534,6 @@ class Technology(Element):
             domain=pe.Reals,
             doc="total carbon emissions for operating technology at location l and time t. Domain: NonNegativeReals"
         )
-
         # add pe.Vars of the child classes
         for subclass in cls.getAllSubclasses():
             subclass.constructVars()
@@ -584,6 +588,12 @@ class Technology(Element):
         model.constraintCapexYearly = pe.Constraint(
             cls.createCustomSet(["setTechnologies", "setCapacityTypes", "setLocation", "setTimeStepsYearly"]),
             rule=constraintCapexYearlyRule,
+            doc='annual capex of having capacity of technology. Dimensions: setTechnologies,setCapacityTypes, setLocation, setTimeStepsYearly.'
+        )
+        # annual capex of having capacity
+        model.constraintCapexYearlyAux = pe.Constraint(
+            cls.createCustomSet(["setTechnologies", "setCapacityTypes", "setLocation", "setTimeStepsYearly"]),
+            rule=constraintCapexYearlyAuxRule,
             doc='annual capex of having capacity of technology. Dimensions: setTechnologies,setCapacityTypes, setLocation, setTimeStepsYearly.'
         )
         # total capex of all technologies
@@ -801,6 +811,14 @@ def constraintCapexYearlyRule(model, tech, capacityType, loc, year):
                 (1/(1 + discountRate)) ** (system["intervalBetweenYears"] * (time - model.setTimeStepsYearly.at(1)))
                 for time in Technology.getLifetimeRange(tech, year, timeStepType="invest")))
             + Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest"))
+
+def constraintCapexYearlyAuxRule(model, tech, capacityType, loc, year):
+    """ aggregates the capex of built capacity and of existing capacity w/o discounting """
+    return (model.capexYearlyAux[tech, capacityType, loc, year] == sum(
+                model.capex[tech, capacityType, loc, time]
+                for time in Technology.getLifetimeRange(tech, year, timeStepType="invest"))
+            + Technology.getAvailableExistingQuantity(tech, capacityType, loc, year, typeExistingQuantity="capex",timeStepType="invest"))
+
 
 def constraintCapexTotalRule(model,year):
     """ sums over all technologies to calculate total capex """

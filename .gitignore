@@ -13,3 +13,6 @@
 *.pyc
 *.DS_Store
 compileAG.py
+postprocess/visualization_AG.py
+postprocess/eth_colorsAG.py
+postprocess/visualization_AG.py
