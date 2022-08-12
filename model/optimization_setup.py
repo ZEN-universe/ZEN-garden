@@ -256,30 +256,32 @@ class OptimizationSetup():
     def addNewlyBuiltCapacity(self,stepHorizon):
         """ adds the newly built capacity to the existing capacity
         :param stepHorizon: step of the rolling horizon """
-        _builtCapacity      = pd.Series(self.model.builtCapacity.extract_values())
-        _investedCapacity   = pd.Series(self.model.investedCapacity.extract_values())
-        _capex              = pd.Series(self.model.capex.extract_values())
-        _roundingValue      = 10 ** (-EnergySystem.getSolver()["roundingDecimalPoints"])
-        _builtCapacity[_builtCapacity <= _roundingValue]        = 0
-        _investedCapacity[_investedCapacity <= _roundingValue]  = 0
-        _capex[_capex <= _roundingValue]                        = 0
-        _baseTimeSteps      = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
-        Technology          = getattr(sys.modules[__name__], "Technology")
-        for tech in Technology.getAllElements():
-            # new capacity
-            _builtCapacityTech      = _builtCapacity.loc[tech.name].unstack()
-            _investedCapacityTech   = _investedCapacity.loc[tech.name].unstack()
-            _capexTech              = _capex.loc[tech.name].unstack()
-            tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)
-            tech.addNewlyInvestedCapacityTech(_investedCapacityTech,stepHorizon)
+        if self.system["useRollingHorizon"]:
+            _builtCapacity      = pd.Series(self.model.builtCapacity.extract_values())
+            _investedCapacity   = pd.Series(self.model.investedCapacity.extract_values())
+            _capex              = pd.Series(self.model.capex.extract_values())
+            _roundingValue      = 10 ** (-EnergySystem.getSolver()["roundingDecimalPoints"])
+            _builtCapacity[_builtCapacity <= _roundingValue]        = 0
+            _investedCapacity[_investedCapacity <= _roundingValue]  = 0
+            _capex[_capex <= _roundingValue]                        = 0
+            _baseTimeSteps      = EnergySystem.decodeYearlyTimeSteps([stepHorizon])
+            Technology          = getattr(sys.modules[__name__], "Technology")
+            for tech in Technology.getAllElements():
+                # new capacity
+                _builtCapacityTech      = _builtCapacity.loc[tech.name].unstack()
+                _investedCapacityTech   = _investedCapacity.loc[tech.name].unstack()
+                _capexTech              = _capex.loc[tech.name].unstack()
+                tech.addNewlyBuiltCapacityTech(_builtCapacityTech,_capexTech,_baseTimeSteps)
+                tech.addNewlyInvestedCapacityTech(_investedCapacityTech,stepHorizon)
 
     def addCarbonEmissionsCumulative(self,stepHorizon):
         """ overwrite previous carbon emissions with cumulative carbon emissions
         :param stepHorizon: step of the rolling horizon """
-        energySystem                            = EnergySystem.getEnergySystem()
-        intervalBetweenYears                    = EnergySystem.getSystem()["intervalBetweenYears"]
-        _carbonEmissionsCumulative              = self.model.carbonEmissionsCumulative.extract_values()[stepHorizon]
-        _carbonEmissions                        = self.model.carbonEmissionsTotal.extract_values()[stepHorizon]
-        energySystem.previousCarbonEmissions    = _carbonEmissionsCumulative + _carbonEmissions*(intervalBetweenYears-1)
+        if self.system["useRollingHorizon"]:
+            energySystem                            = EnergySystem.getEnergySystem()
+            intervalBetweenYears                    = EnergySystem.getSystem()["intervalBetweenYears"]
+            _carbonEmissionsCumulative              = self.model.carbonEmissionsCumulative.extract_values()[stepHorizon]
+            _carbonEmissions                        = self.model.carbonEmissionsTotal.extract_values()[stepHorizon]
+            energySystem.previousCarbonEmissions    = _carbonEmissionsCumulative + _carbonEmissions*(intervalBetweenYears-1)
 
 
