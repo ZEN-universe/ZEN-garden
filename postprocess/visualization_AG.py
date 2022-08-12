@@ -14,13 +14,14 @@ import copy
 import numpy as np
 import pandas as pd
 
-import matplotlib.pyplot    as plt
+import matplotlib.pyplot          as plt
+from   postprocess.eth_colorsAG   import ETHColors
 from   datetime             import datetime
 
 
 class VisualizeResults:
 
-    def __init__(self, dataset, scenario = "", pltShow = True):
+    def __init__(self, dataset, scenario = "", pltShow = False, outputDir = "outputs"):
         """postprocessing of the results of the optimization
         :param model:     optimization model
         :param pyoDict:   input data dictionary
@@ -28,8 +29,8 @@ class VisualizeResults:
         # set modelName
         self.dataset  = dataset
         self.scenario = scenario
-        self.setModelName()
-        self.nameDir  = f"outputs/{self.name}"
+        self.setModelName(scenario)
+        self.setOutputDir(outputDir)
         # plot settings
         self.pltShow  = pltShow
         # init directories
@@ -43,6 +44,14 @@ class VisualizeResults:
         # get sets and set time-step duration
         self.getSets()
         self.setTimeStepsDuration()
+        # plot settings
+        self.colormap = ETHColors()
+
+    def setOutputDir(self, outputDir):
+        """set name of output directory"""
+        self.outputDir = outputDir
+        self.nameDir   = f"{self.outputDir}/{self.name}"
+
 
     ## general methods
     def initDirectory(self,folder):
@@ -51,19 +60,18 @@ class VisualizeResults:
             shutil.rmtree(f"{self.nameDir}/{folder}")
         os.makedirs(f"{self.nameDir}/{folder}")
 
-    def setModelName(self):
+    def setModelName(self, name):
         """set model name"""
-        if self.scenario == str():
+        if name == str():
             self.name = self.dataset
         else:
-            self.name = self.dataset + "_" + self.scenario
+            self.name = self.dataset + "_" + name
 
     def setTimeStepsDuration(self):
         """ set timesteps duration"""
         self.timeStepsCarrierDuration   = self.getDataframe("timeStepsOperationDuration", indexNames=["carrier", "time"], type="param", subset=self.setCarriers)
         self.timeStepsOperationDuration = self.getDataframe("timeStepsOperationDuration", indexNames=["technology", "time"], type="param", subset=self.system["setTechnologies"])
         self.timeStepsInvestDuration    = self.getDataframe("timeStepsInvestDuration", indexNames=["technology", "year"], type="param")
-
 
     def loadResults(self, name, nameDir = None):
         """ load results from results folder"""
@@ -140,7 +148,10 @@ class VisualizeResults:
             print(f"{title} all values are 0")
         else:
             fig, axs = plt.subplots()
-            df.plot.bar(ax=axs, stacked=stacked)
+            if isinstance(df, pd.Series) or len(df.columns)>1:
+                df.plot.bar(ax=axs, stacked=stacked)
+            else:
+                df.plot.bar(ax=axs, stacked=stacked, color= self.colormap.retrieveColorsDict(df.columns))
             axs.set_title(title)
             axs.set_xlabel(xlabel)
             axs.set_ylabel(ylabel)
@@ -151,14 +162,20 @@ class VisualizeResults:
 
     def areaplot(self, name, df, ylabel=None, xlabel=None):
         """ area plot of dataframe"""
+        if isinstance(df, pd.Series):
+            df = df.to_frame()
         if df.empty:
             print(f"{name} is empty.")
-        elif df[df>0].isna().all().all():
+        elif df[df.round(2)>0].isna().all().all():
             print(f"{name} all values are 0")
         else:
+            df = df.round(2)
             fig, axs = plt.subplots()
             axs.set_title(name)
-            df.plot.area(ax=axs)
+            if isinstance(df, pd.Series) or len(df.columns) == 1:
+                df.plot.area(ax=axs, linewidth=0)
+            else:
+                df.plot.area(ax=axs, color=self.colormap.retrieveColorsDict(df.columns), linewidth=0)
             axs.set_xlabel(xlabel)
             axs.set_ylabel(ylabel)
             fig.savefig(f"{self.nameDir}/plots/{name}.png")
@@ -203,8 +220,8 @@ class VisualizeResults:
         self.barplot("totalBuiltCapacityTransport", totalBuiltCapacity.unstack("technology"), stacked=True)
 
         # storage technologies
-        totalBuiltCapacity = builtCapacity.loc[self.setStorageTechnologies].groupby(level=["technology","time"]).sum()
-        self.barplot("totalBuiltCapacityStorage", totalBuiltCapacity.unstack("technology"), stacked=True)
+        # totalBuiltCapacity = builtCapacity.loc[self.setStorageTechnologies].groupby(level=["technology","time"]).sum()
+        # self.barplot("totalBuiltCapacityStorage", totalBuiltCapacity.unstack("technology"), stacked=True)
 
     def evaluateCapacity(self):
         """plot installed capacity"""
@@ -231,71 +248,112 @@ class VisualizeResults:
         totalCapacity = capacity.loc[self.setStorageTechnologies].groupby(level=["technology","time"]).sum()
         self.barplot("totalCapacityStorage", totalCapacity.unstack("technology"), stacked=True)
 
-    def evaluateCarrierImports(self):
+    def evaluateCarrierImportsExports(self):
         """plot carrier imports"""
         carrierImports = self.getDataframe("importCarrierFlow", ["carrier", "location", "time"])
         carrierImports = carrierImports.groupby(["carrier", "time"]).sum() * self.timeStepsCarrierDuration
         self.areaplot(f"carrierImports", carrierImports.unstack("carrier"))
         # electricity and natural gas imports
-        for carrier in carrierImports.index.unique("carrier"):
-            imports = carrierImports.loc[carrier]
-            imports = imports[imports >= 0.1 * imports.max()]
-            self.barplot(f"{carrier}Imports", imports, stacked=False)
+        # for carrier in carrierImports.index.unique("carrier"):
+        #     imports = carrierImports.loc[carrier]
+        #     imports = imports[imports >= 0.1 * imports.max()]
+        #     self.barplot(f"{carrier}Imports", imports, stacked=False)
 
-    def checkCarrierExports(self):
-        """check if carrier exports are zero"""
+        #check if carrier exports are zero
         carrierExports = self.getDataframe("exportCarrierFlow", ["carrier", "location", "time"])
         carrierExports = carrierExports.reorder_levels(["carrier", "time", "location"]).unstack()
         carrierExports = carrierExports.apply(lambda row: row * self.timeStepsCarrierDuration)
         if carrierExports.sum(axis=0).sum().round(2) != 0:
             print("Carrier exports are not 0.")
 
-    def evaluateInputFlow(self):
+    def evaluateCarrierFlow(self):
         """plot carrier flow"""
-        inputFlow  = self.getDataframe("inputFlow", ["technology","carrier","location","time"])
-        inputFlow  = inputFlow * self.timeStepsOperationDuration
-        inputFlow  = inputFlow.reorder_levels(["technology", "carrier", "location", "time"]) * 1e-3
-
-        # inputFlows Conversion
-        inputFlowConversion = inputFlow.loc[self.setConversionTechnologies]
-        inputFlowConversion = inputFlowConversion.unstack("carrier")
-        inputFlowConversion = self.updateTimeIndex(inputFlowConversion, index="time")
-        self.areaplot(f"inputFlowsConversion", inputFlowConversion.groupby("time").sum(), ylabel = "Input flow in TWh")
-        for carrier in inputFlowConversion.columns:
-            tmp = inputFlowConversion[carrier].groupby(["technology","time"]).sum()
-            self.barplot(f"{carrier}InputFlowsConversion", tmp.unstack("technology"), stacked=True)
-
-        # inputFlows Conditioning
-        inputFlowCodnitioning = inputFlow.loc[self.setConditioningTechnologies].unstack("carrier")
-        for carrier in inputFlowCodnitioning.columns:
-            tmp = inputFlowCodnitioning[carrier].groupby(["technology", "time"]).sum()
-            self.barplot(f"{carrier}InputFlowsConditioning", tmp.unstack("technology"), stacked=True)
-
-        # inputFlows Storage
-        inputFlowStorage = inputFlow.loc[self.setStorageTechnologies].unstack("carrier")
-        for carrier in inputFlowStorage.columns:
-            tmp = inputFlowStorage[carrier].groupby(["technology", "time"]).sum()
-            self.barplot(f"{carrier}InputFlowsStorage", tmp.unstack("technology"), stacked=True)
-
-    def evaluateOutputFlow(self):
-        """evaluation output flows"""
+        unit = {"tons": ["wet_biomass","carbon","carbon_liquid"],
+                "TWh": ["natural_gas", "biomethane", "dry_biomass", "hydrogen", "hydrogen_liquid", "hydrogen_high", "electricity"]}
+        unitDict = {carrier: unit for unit, carriers in unit.items() for carrier in carriers}
+        # outputFlows
         outputFlow = self.getDataframe("outputFlow", ["technology", "carrier", "location", "time"])
-        tsDuration = self.timeStepsOperationDuration.loc[self.setConversionTechnologies]
-        # inputFlows Conversion
-        outputFlow = outputFlow.loc[self.setConversionTechnologies]
-        outputFlow = outputFlow.reorder_levels(["carrier", "technology", "location", "time"])
+        outputFlow = outputFlow * self.timeStepsOperationDuration.loc[outputFlow.index.unique("technology")]
+        # anaerobic digestion
+        outputFlow = outputFlow.unstack(level="carrier")
+        outputFlow.loc["anaerobic_digestion", "biomethane"]  = outputFlow.loc["anaerobic_digestion", "natural_gas"].values
+        outputFlow.loc["anaerobic_digestion", "natural_gas"] = np.nan
+        outputFlow = outputFlow.stack().reorder_levels(["carrier", "technology", "location", "time"])
+        # unit conversion
+        carriers = [carrier for carrier in unit["TWh"] if carrier in outputFlow.index.unique("carrier")]
+        outputFlow.loc[carriers] = outputFlow.loc[carriers] * 1e-6  # MWh to TWh
         for carrier in outputFlow.index.unique("carrier"):
-            output = outputFlow.loc[carrier].groupby(["technology", "time"]).sum() * tsDuration
-            self.barplot(f"{carrier}OutputFlowsConversion", output.unstack("technology"), stacked=True)
+            output = outputFlow.loc[carrier].groupby(["technology", "time"]).sum()
+            self.areaplot(f"{carrier}OutputFlows", output.unstack("technology"), ylabel=f"Output flow {carrier} in {unitDict[carrier]}")
 
-    def evaluateCarrierFlowsTransport(self):
-        """evaluate carrier flows transport techs"""
+        inputFlow  = self.getDataframe("inputFlow", ["technology","carrier","location","time"])
+        inputFlow  = inputFlow * self.timeStepsOperationDuration.loc[inputFlow.index.unique("technology")]
+        inputFlow = inputFlow.unstack(level="carrier")
+        # unit conversion
+        carriers = [carrier for carrier in unit["TWh"] if carrier in inputFlow.columns]
+        inputFlow[carriers] = inputFlow[carriers] * 1e-6  # MWh to TWh
+        # anaerobic digestion
+        if outputFlow.loc["biomethane","anaerobic_digestion",:,:].sum() > 0:
+            inputFlow["biomethane"] = np.nan
+            # biomethane used in SMR and SMR90
+            if "SMR" in inputFlow.index.unique("technology"):
+                deltaSMR = inputFlow["natural_gas"].loc["SMR",:,:].values - outputFlow.loc["biomethane","anaerobic_digestion",:,:].values
+                if (deltaSMR >= 0).all():
+                    inputFlow["natural_gas"].loc["SMR", :, :] = deltaSMR
+                    inputFlow["biomethane"].loc["SMR", :, :]  = outputFlow.loc["biomethane", "anaerobic_digestion", :,:].values
+            # biomethane used in SMR
+            if "SMR90" in inputFlow.index.unique("technology") and inputFlow["biomethane"].isna().all():
+                deltaSMR90 = inputFlow["natural_gas"].loc["SMR90", :, :].values - outputFlow.loc["biomethane","anaerobic_digestion",:,:].values
+                if (deltaSMR90 >= 0).all():
+                    inputFlow["natural_gas"].loc["SMR90", :, :] = deltaSMR90
+                    inputFlow["biomethane"].loc["SMR90", :, :]  = outputFlow.loc["biomethane", "anaerobic_digestion", :, :].values
+            # biomethane used in SMR and SMR90
+            if inputFlow["biomethane"].isna().all():
+                totalGas = inputFlow["natural_gas"].loc["SMR", :, :].values + inputFlow["natural_gas"].loc["SMR90", :, :].values
+                # biomethane SMR
+                biomethaneSMR   = inputFlow["natural_gas"].loc["SMR", :, :].values
+                biomethaneTotal = outputFlow.loc["biomethane", "anaerobic_digestion", :,:].values
+                naturalGasSMR   = deltaSMR
+                # only biomethane
+                biomethaneSMR[deltaSMR>0] = biomethaneSMR[deltaSMR>0] - deltaSMR[deltaSMR>0]
+                naturalGasSMR[deltaSMR<0] = 0
+                # update input flows
+                inputFlow["biomethane"].loc["SMR", :, :] = biomethaneSMR
+                inputFlow["natural_gas"].loc["SMR", :, :] = naturalGasSMR
+                # determine remaining biomethane
+                biomethaneSMR90 = (biomethaneTotal - biomethaneSMR).round(5)
+                assert (biomethaneSMR90>=0).all(), "Error in biomethane calculations."
+                deltaSMR90      = inputFlow["natural_gas"].loc["SMR90", :, :].values - biomethaneSMR90
+                # remaining NG
+                naturalGasSMR[deltaSMR<0]     = 0
+                # now determine how much of both is used
+                inputFlow["biomethane"].loc["SMR90", :, :]  = biomethaneSMR90
+                inputFlow["natural_gas"].loc["SMR90", :, :] = deltaSMR90
+                newTotalGas = inputFlow["biomethane"].loc["SMR", :, :].values+inputFlow["biomethane"].loc["SMR90", :, :].values\
+                              +inputFlow["natural_gas"].loc["SMR", :, :].values+inputFlow["natural_gas"].loc["SMR90", :, :].values
+                assert (totalGas-newTotalGas).sum()==0, "Error in biomethane calculations"
+        inputFlow  = inputFlow.stack() #.reorder_levels(["technology","carrier", "location", "time"])
+        inputFlow  = self.updateTimeIndex(inputFlow, index="time")
+        input      = inputFlow.loc[self.setConversionTechnologies].groupby(["technology", "time"]).sum()
+        self.areaplot(f"CarrierInputFlowsConversion", input.unstack("technology"),ylabel=f"Inputs conversion in TWh")
+        input = inputFlow.loc[self.setConversionTechnologies].groupby(["carrier", "time"]).sum().round(4)
+        self.areaplot(f"CarrierInputFlowsConversion", input.unstack("carrier"), ylabel=f"Carrier inputs conversion in TWh")
+        # hydrogen production technologies
+        inputFlow  = inputFlow.reorder_levels(["carrier", "technology", "location", "time"])
+        for carrier in inputFlow.index.unique("carrier"):
+            input = inputFlow.loc[carrier].groupby(["technology", "time"]).sum()
+            self.areaplot(f"{carrier}InputFlows", input.unstack("technology"), ylabel=f"Input flow {carrier} in {unitDict[carrier]}")
+
+        # outputFlows Transport
         carrierFlow = self.getDataframe("carrierFlow", ["technology", "location", "time"])
+        carrierFlow = carrierFlow * self.timeStepsOperationDuration.loc[carrierFlow.index.unique("technology")]
         for carrier in ["hydrogen", "carbon", "electricity"]:
             tmp = [tech for tech in carrierFlow.index.unique("technology") if carrier in tech]
-            tmp = carrierFlow.loc[tmp].groupby(["technology", "time"]).sum()
-            tmp = tmp * self.timeStepsOperationDuration.loc[tmp.index.unique("technology")]
-            self.barplot(f"{carrier}FlowsTransport", tmp.unstack("technology"), stacked=True)
+            flow = carrierFlow.loc[tmp].groupby(["technology", "time"]).sum() * 1e-6
+            self.areaplot(f"{carrier}CarrierFlowsTransport", flow.unstack("technology"), ylabel=f"Carrier flow {carrier} in {unitDict[carrier]}")
+        tmp = [tech for tech in carrierFlow.index.unique("technology") if "dry_biomass" in tech]
+        flow = carrierFlow.loc[tmp].groupby(["technology", "time"]).sum()
+        self.areaplot(f"dry_biomassCarrierFlowsTransport", flow.unstack("technology"),ylabel=f"Carrier flow dry_biomass in tons")
 
     def evaluateCarbonEmissions(self, decarbScen):
         """plot carbon emissions
@@ -303,20 +361,22 @@ class VisualizeResults:
 
         carbonEmissions = self.getDataframe("carbonEmissionsTotal", ["year"])
         self.barplot("carbonEmissionsYearly", carbonEmissions)
-        carbonEmissions = carbonEmissions *1e3 # kilotons to tons
+        carbonEmissions = carbonEmissions #*1e3 # kilotons to tons
 
         if self.scenario in ["base","default",""] and decarbScen:
             # load min emissions results
             varDictMinEm       = self.loadResults("varDict", nameDir=self.nameDir + "_min_em", )
-            minCarbonEmissions = self.getDataframe("carbonEmissionsTotal", ["year"], dct = varDictMinEm) *1e3 # kilotons to tons
+            minCarbonEmissions = self.getDataframe("carbonEmissionsTotal", ["year"], dct = varDictMinEm) *  1.005 # kilotons to tons
             for scen, range in decarbScen.items():
                 if scen == "linear":
                     self.computeCarbonEmissionsLimits(minCarbonEmissions, carbonEmissions, range)
                 if scen == "carbonBudget":
                     self.computeCarbonBudget(minCarbonEmissions, carbonEmissions, range)
-        if self.scenario == "min_em":
+        if "min_em" in self.scenario:
             carbonEmissions.name = "carbonEmissionsLimit"
             carbonEmissions.index.name = "time"
+            carbonEmissions[carbonEmissions>0] = carbonEmissions[carbonEmissions>0] * 1.001
+            carbonEmissions[carbonEmissions<0] = carbonEmissions[carbonEmissions<0] * 0.991
             carbonEmissions.to_csv(f"data/{self.dataset}/systemSpecification/carbonEmissionsLimit_{self.scenario}.csv")
 
     def computeCarbonEmissionsLimits(self, minCarbonEmissions, carbonEmissions, range):
@@ -327,6 +387,10 @@ class VisualizeResults:
         years     = carbonEmissions.index.unique("year")
         carbonMax = min(carbonEmissions)
         carbonMin = minCarbonEmissions.loc[years[-1]].round(2)
+        if carbonMin != 0:
+            print("The minimal carbon emissions are", carbonMin)
+            if carbonMin < 0:
+                carbonMin = 0
         # dataframe for results
         carbonLimits = pd.Series(np.nan, index=minCarbonEmissions.index, name="carbonEmissionsLimit")
         carbonLimits.index.name = "time"
@@ -335,9 +399,6 @@ class VisualizeResults:
             if factor == 0:
                 carbonLimits.loc[years] = np.Inf
             else:
-                if carbonMin != 0:
-                    print("Carbon emissions of 0 are not reached. The minimal carbon emissions are", carbonMin)
-                    carbonMin = 0
                 reduction = (carbonMax - carbonMin) * factor / max(years)
                 carbonLimits.loc[years[1:]] = [carbonMax - reduction * y for y in years[1:]]
             name = str(factor).replace(".", "-")
@@ -424,37 +485,49 @@ class VisualizeResults:
                         os.mkdir(f"data/{self.dataset}/{set}/{tech}/existingCapacity")
                     existingCapacity.to_csv(f"data/{self.dataset}/{set}/{tech}/existingCapacity/existingCapacity_{self.scenario}.csv", index=False)
 
-## method to run visualization
-def run(dataset, scenario, pltShow=False, decarbScen = {}):
-    """visualize and evaluate results"""
-    visResults = VisualizeResults(dataset, scenario, pltShow=pltShow)
-    ## params
-    # visResults.evaluateHydrogenDemand()
-    ## vars
-    # installed capacities
-    visResults.evaluateBuiltCapacity()
-    # visResults.evaluateCapacity()
-    visResults.evaluateCarbonEmissions(decarbScen)
-    # carrier flows
-    visResults.evaluateCarrierImports()
-    # visResults.checkCarrierExports()
-    visResults.evaluateInputFlow()
-    visResults.evaluateOutputFlow()
-    visResults.evaluateCarrierFlowsTransport()
-    ## compute levelized cost
-    visResults.computeLevelizedCost("electricity")
-    visResults.computeLevelizedCost("hydrogen")
-    ## compute invested capacities
-    visResults.determineExistingCapacities()
+    ## method to run visualization
+    def run(self, decarbScen = {}):
+        """visualize and evaluate results"""
+
+        ## params
+        self.evaluateHydrogenDemand()
+
+        ## vars
+        # carbon emissions
+        self.evaluateCarbonEmissions(decarbScen)
+
+        # installed capacities
+        self.evaluateBuiltCapacity()
+        # self.evaluateCapacity()
+
+        # carrier flows
+        self.evaluateCarrierImportsExports()
+        self.evaluateCarrierFlow()
+
+        ## compute levelized cost
+        self.computeLevelizedCost("electricity")
+        self.computeLevelizedCost("hydrogen")
+
+        ## compute invested capacities
+        self.determineExistingCapacities()
 
 
 if __name__ == "__main__":
     os.chdir("..")
-    dataset = "HSC_NUTS2"
     pltShow = False  # True or False
+    outputFolder = "outputs" #
+    #outputFolder = "outputs"
+
+    datasets = [0,1,2]
     scenarios  = ["","min_em"] #
-    #scenarios  = scenarios + [f"linear_" + str(path).replace(".","-") for path in np.arange(0, 1.1, 0.1).round(2)]
-    decarbScen = {"linear":  np.arange(0, 1.25, 0.25).round(2), # np.arange(0, 1.1, 0.1).round(2),
-                  "carbonBudget": np.arange(0.4, 0, -0.1).round(2)}
-    for scenario in scenarios:
-        run(dataset, scenario, pltShow=pltShow, decarbScen = decarbScen)
+    #scenarios  = scenarios + [f"linear_" + str(path).replace(".","-") for path in np.arange(0, 1.2, 0.2).round(2)]
+
+
+    decarbScen = {"linear":  np.arange(0, 1.1, 0.1).round(2), # np.arange(0, 1.1, 0.1).round(2),
+                  #"carbonBudget": np.arange(0.4, 0, -0.1).round(2)
+                 }
+    for dataset in datasets:
+        dataset = f"HSC_NUTS{dataset}"
+        for scenario in scenarios:
+            visResults = VisualizeResults(dataset, scenario, pltShow=pltShow, outputDir=outputFolder)
+            visResults.run(decarbScen = decarbScen)
