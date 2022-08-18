@@ -51,8 +51,10 @@ class Carrier(Element):
         self.availabilityCarrierImportYearly            = self.dataInput.extractInputData("availabilityCarrierYearly",indexSets = ["setNodes","setTimeSteps"],column="availabilityCarrierImportYearly",timeSteps=setTimeStepsYearly)
         self.availabilityCarrierExportYearly            = self.dataInput.extractInputData("availabilityCarrierYearly",indexSets = ["setNodes","setTimeSteps"],column="availabilityCarrierExportYearly",timeSteps=setTimeStepsYearly)
         self.carbonIntensityCarrier                     = self.dataInput.extractInputData("carbonIntensity",indexSets = ["setNodes","setTimeSteps"],timeSteps=setTimeStepsYearly)
-        self.shedDemandPrice                            = self.dataInput.extractInputData("shedDemandPrice",indexSets = [])
-        
+        self.shedDemandPriceHigh                        = self.dataInput.extractInputData("shedDemandPriceHigh",indexSets = [])
+        self.shedDemandPriceLow                         = self.dataInput.extractInputData("shedDemandPriceLow",indexSets = [])
+        self.maxShedDemandLow                           = self.dataInput.extractInputData("maxShedDemandLow",indexSets = [])
+
     def overwriteTimeSteps(self,baseTimeSteps):
         """ overwrites setTimeStepsOperation and  setTimeStepsEnergyBalance"""
         setTimeStepsOperation       = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps, timeStepType="operation",yearly=True)
@@ -111,11 +113,21 @@ class Carrier(Element):
             name="exportPriceCarrier",
             data= EnergySystem.initializeComponent(cls,"exportPriceCarrier",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the export carrier price. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
-        # demand shedding price
+        # demand shedding price low
         Parameter.addParameter(
-            name="shedDemandPrice",
-            data=EnergySystem.initializeComponent(cls, "shedDemandPrice"),
-            doc='Parameter which specifies the price to shed demand. \n\t Dimensions: setCarriers')
+            name="shedDemandPriceLow",
+            data=EnergySystem.initializeComponent(cls, "shedDemandPriceLow"),
+            doc='Parameter which specifies the low price to shed demand. \n\t Dimensions: setCarriers')
+        # demand shedding price high
+        Parameter.addParameter(
+            name="shedDemandPriceHigh",
+            data=EnergySystem.initializeComponent(cls, "shedDemandPriceHigh"),
+            doc='Parameter which specifies the high price to shed demand. \n\t Dimensions: setCarriers')
+        # maximum fraction of shed demand low
+        Parameter.addParameter(
+            name="maxShedDemandLow",
+            data=EnergySystem.initializeComponent(cls, "maxShedDemandLow"),
+            doc='Parameter which specifies the maximum fraction of shed demand at low price. \n\t Dimensions: setCarriers')
         # carbon intensity
         Parameter.addParameter(
             name="carbonIntensityCarrier",
@@ -163,17 +175,29 @@ class Carrier(Element):
             domain=pe.Reals,
             doc="total carbon emissions of importing/exporting carrier. Domain: NonNegativeReals"
         )
-        # shed demand
-        model.shedDemandCarrier = pe.Var(
+        # shed demand at low price
+        model.shedDemandCarrierLow = pe.Var(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain=pe.NonNegativeReals,
-            doc="shed demand of carrier. Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals"
+            doc="shed demand of carrier at low price. Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals"
         )
-        # cost of shed demand
-        model.costShedDemandCarrier = pe.Var(
+        # cost of shed demand at low price
+        model.costShedDemandCarrierLow = pe.Var(
             cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
             domain=pe.NonNegativeReals,
-            doc="shed demand of carrier. Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals"
+            doc="shed demand of carrier at low price. Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals"
+        )
+        # shed demand at high price
+        model.shedDemandCarrierHigh = pe.Var(
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+            domain=pe.NonNegativeReals,
+            doc="shed demand of carrier at high price. Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals"
+        )
+        # cost of shed demand at high price
+        model.costShedDemandCarrierHigh = pe.Var(
+            cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            domain=pe.NonNegativeReals,
+            doc="shed demand of carrier at high price. Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals"
         )
 
         # add pe.Sets of the child classes
@@ -216,11 +240,23 @@ class Carrier(Element):
             rule = constraintCostCarrierRule,
             doc = "cost of importing/exporting carrier. Dimensions: setCarriers, setNodes, setTimeStepsOperation."
         )
-        # cost for carrier
-        model.constraintCostShedDemand = pe.Constraint(
+        # cost for demand shedding at low price
+        model.constraintCostShedDemandLow = pe.Constraint(
             cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
-            rule=constraintCostShedDemandRule,
-            doc="cost of shedding carrier demand. Dimensions: setCarriers, setNodes, setTimeStepsOperation."
+            rule=constraintCostShedDemandLowRule,
+            doc="cost of shedding carrier demand at low price. Dimensions: setCarriers, setNodes, setTimeStepsOperation."
+        )
+        # cost for demand shedding
+        model.constraintCostShedDemandHigh = pe.Constraint(
+            cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            rule=constraintCostShedDemandHighRule,
+            doc="cost of shedding carrier demand at high price. Dimensions: setCarriers, setNodes, setTimeStepsOperation."
+        )
+        # limit demand shedding at low price
+        model.constraintLimitShedDemandLow = pe.Constraint(
+            cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            rule=constraintLimitShedDemandLowRule,
+            doc="limit on shedding carrier demand at low price as fraction of demand. Dimensions: setCarriers, setNodes, setTimeStepsOperation."
         )
         # total cost for carriers
         model.constraintCostCarrierTotal = pe.Constraint(
@@ -315,18 +351,45 @@ def constraintCostCarrierRule(model, carrier, node, time):
         params.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
     )
 
-def constraintCostShedDemandRule(model, carrier, node, time):
-    """ cost of shedding demand of carrier """
+def constraintCostShedDemandLowRule(model, carrier, node, time):
+    """ cost of shedding demand of carrier at low price"""
     # get parameter object
     params = Parameter.getParameterObject()
-    if params.shedDemandPrice[carrier] != np.inf:
+    if params.shedDemandPriceLow[carrier] != np.inf:
         return(
-            model.costShedDemandCarrier[carrier,node, time] ==
-            model.shedDemandCarrier[carrier,node,time] * params.shedDemandPrice[carrier]
+            model.costShedDemandCarrierLow[carrier,node, time] ==
+            model.shedDemandCarrierLow[carrier,node,time] * params.shedDemandPriceLow[carrier]
         )
     else:
         return(
-            model.shedDemandCarrier[carrier, node, time] == 0
+            model.shedDemandCarrierLow[carrier, node, time] == 0
+        )
+
+def constraintCostShedDemandHighRule(model, carrier, node, time):
+    """ cost of shedding demand of carrier at high price"""
+    # get parameter object
+    params = Parameter.getParameterObject()
+    if params.shedDemandPriceHigh[carrier] != np.inf:
+        return(
+            model.costShedDemandCarrierHigh[carrier,node, time] ==
+            model.shedDemandCarrierHigh[carrier,node,time] * params.shedDemandPriceHigh[carrier]
+        )
+    else:
+        return(
+            model.shedDemandCarrierHigh[carrier, node, time] == 0
+        )
+
+def constraintLimitShedDemandLowRule(model, carrier, node, time):
+    """ limit demand shedding at low price """
+    # get parameter object
+    params = Parameter.getParameterObject()
+    if params.maxShedDemandLow[carrier] < 1:
+        return(
+            model.shedDemandCarrierLow[carrier,node,time] <= params.demandCarrier[carrier, node, time] * params.maxShedDemandLow[carrier]
+        )
+    else:
+        return(
+            pe.Constraint.Skip
         )
 
 def constraintCostCarrierTotalRule(model,year):
@@ -337,7 +400,9 @@ def constraintCostCarrierTotalRule(model,year):
     return(model.costCarrierTotal[year] ==
         sum(
             sum(
-                (model.costCarrier[carrier,node,time] + model.costShedDemandCarrier[carrier,node, time])
+                (model.costCarrier[carrier,node,time]
+                 + model.costShedDemandCarrierLow[carrier,node, time]
+                 + model.costShedDemandCarrierHigh[carrier,node, time])
                 * params.timeStepsOperationDuration[carrier, time]
                 for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly=True)
             )
@@ -414,7 +479,8 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
     carrierExport       = model.exportCarrierFlow[carrier, node, elementTimeStep]
     carrierDemand       = params.demandCarrier[carrier, node, elementTimeStep]
     # shed demand
-    carrierShedDemand   = model.shedDemandCarrier[carrier, node, elementTimeStep]
+    carrierShedDemandLow    = model.shedDemandCarrierLow[carrier, node, elementTimeStep]
+    carrierShedDemandHigh   = model.shedDemandCarrierHigh[carrier, node, elementTimeStep]
     return (
         # conversion technologies
         carrierConversionOut - carrierConversionIn
@@ -426,7 +492,9 @@ def constraintNodalEnergyBalanceRule(model, carrier, node, time):
         + carrierImport - carrierExport
         # demand
         - carrierDemand
-        # shed demand
-        + carrierShedDemand
+        # shed demand at low price
+        + carrierShedDemandLow
+        # shed demand at high price
+        + carrierShedDemandHigh
         == 0
     )
