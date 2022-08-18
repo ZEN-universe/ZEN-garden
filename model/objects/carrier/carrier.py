@@ -48,6 +48,8 @@ class Carrier(Element):
         self.rawTimeSeries["exportPriceCarrier"]        = self.dataInput.extractInputData("priceCarrier",indexSets = ["setNodes","setTimeSteps"],column="exportPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         self.rawTimeSeries["importPriceCarrier"]        = self.dataInput.extractInputData("priceCarrier",indexSets = ["setNodes","setTimeSteps"],column="importPriceCarrier",timeSteps=setBaseTimeStepsYearly)
         # non-time series input data
+        self.availabilityCarrierImportYearly            = self.dataInput.extractInputData("availabilityCarrierYearly",indexSets = ["setNodes","setTimeSteps"],column="availabilityCarrierImportYearly",timeSteps=setTimeStepsYearly)
+        self.availabilityCarrierExportYearly            = self.dataInput.extractInputData("availabilityCarrierYearly",indexSets = ["setNodes","setTimeSteps"],column="availabilityCarrierExportYearly",timeSteps=setTimeStepsYearly)
         self.carbonIntensityCarrier                     = self.dataInput.extractInputData("carbonIntensity",indexSets = ["setNodes","setTimeSteps"],timeSteps=setTimeStepsYearly)
         self.shedDemandPrice                            = self.dataInput.extractInputData("shedDemandPrice",indexSets = [])
         
@@ -89,6 +91,16 @@ class Carrier(Element):
             name="availabilityCarrierExport",
             data= EnergySystem.initializeComponent(cls,"availabilityCarrierExport",indexNames=["setCarriers","setNodes","setTimeStepsOperation"]),
             doc = 'Parameter which specifies the maximum energy that can be exported to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation')
+        # availability of carrier
+        Parameter.addParameter(
+            name="availabilityCarrierImportYearly",
+            data= EnergySystem.initializeComponent(cls,"availabilityCarrierImportYearly",indexNames=["setCarriers","setNodes","setTimeStepsYearly"]),
+            doc = 'Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year. \n\t Dimensions: setCarriers, setNodes, setTimeStepsYearly')
+        # availability of carrier
+        Parameter.addParameter(
+            name="availabilityCarrierExportYearly",
+            data= EnergySystem.initializeComponent(cls,"availabilityCarrierExportYearly",indexNames=["setCarriers","setNodes","setTimeStepsYearly"]),
+            doc = 'Parameter which specifies the maximum energy that can be exported to outside the system boundaries for the entire year. \n\t Dimensions: setCarriers, setNodes, setTimeStepsYearly')
         # import price
         Parameter.addParameter(
             name="importPriceCarrier",
@@ -108,7 +120,7 @@ class Carrier(Element):
         Parameter.addParameter(
             name="carbonIntensityCarrier",
             data= EnergySystem.initializeComponent(cls,"carbonIntensityCarrier",indexNames=["setCarriers","setNodes","setTimeStepsYearly"]),
-            doc = 'Parameter which specifies the carbon intensity of carrier. \n\t Dimensions: setCarriers, setNodes')
+            doc = 'Parameter which specifies the carbon intensity of carrier. \n\t Dimensions: setCarriers, setNodes, setTimeStepsYearly')
 
     @classmethod
     def constructVars(cls):
@@ -186,6 +198,18 @@ class Carrier(Element):
             rule = constraintAvailabilityCarrierExportRule,
             doc = 'node- and time-dependent carrier availability to export to outside the system boundaries. \n\t Dimensions: setCarriers, setNodes, setTimeStepsOperation',
         )
+        # limit import flow by availability for each year
+        model.constraintAvailabilityCarrierImportYearly = pe.Constraint(
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsYearly"]),
+            rule = constraintAvailabilityCarrierImportYearlyRule,
+            doc = 'node- and time-dependent carrier availability to import from outside the system boundaries, summed over entire year. \n\t Dimensions: setCarriers, setNodes, setTimeStepsYearly',
+        )
+        # limit export flow by availability for each year
+        model.constraintAvailabilityCarrierExportYearly = pe.Constraint(
+            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsYearly"]),
+            rule = constraintAvailabilityCarrierExportYearlyRule,
+            doc = 'node- and time-dependent carrier availability to export to outside the system boundaries, summed over entire year. \n\t Dimensions: setCarriers, setNodes, setTimeStepsYearly',
+        )
         # cost for carrier
         model.constraintCostCarrier = pe.Constraint(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
@@ -245,6 +269,40 @@ def constraintAvailabilityCarrierExportRule(model, carrier, node, time):
     params = Parameter.getParameterObject()
     if params.availabilityCarrierExport[carrier,node,time] != np.inf:
         return(model.exportCarrierFlow[carrier, node, time] <= params.availabilityCarrierExport[carrier,node,time])
+    else:
+        return pe.Constraint.Skip
+
+def constraintAvailabilityCarrierImportYearlyRule(model, carrier, node, year):
+    """node- and year-dependent carrier availability to import from outside the system boundaries"""
+    # get parameter object
+    params = Parameter.getParameterObject()
+    baseTimeStep = EnergySystem.decodeTimeStep(None, year, "yearly")
+    if params.availabilityCarrierImportYearly[carrier,node,year] != np.inf:
+        return(
+            params.availabilityCarrierImportYearly[carrier, node, year] >=
+            sum(
+                model.importCarrierFlow[carrier, node, time]
+                * params.timeStepsOperationDuration[carrier, time]
+                for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly=True)
+                )
+        )
+    else:
+        return pe.Constraint.Skip
+
+def constraintAvailabilityCarrierExportYearlyRule(model, carrier, node, year):
+    """node- and year-dependent carrier availability to export to outside the system boundaries"""
+    # get parameter object
+    params = Parameter.getParameterObject()
+    baseTimeStep = EnergySystem.decodeTimeStep(None, year, "yearly")
+    if params.availabilityCarrierExportYearly[carrier,node,year] != np.inf:
+        return (
+            params.availabilityCarrierExportYearly[carrier, node, year] >=
+            sum(
+                model.exportCarrierFlow[carrier, node, time]
+                * params.timeStepsOperationDuration[carrier, time]
+                for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly=True)
+            )
+        )
     else:
         return pe.Constraint.Skip
 
