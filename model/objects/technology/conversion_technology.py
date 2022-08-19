@@ -309,7 +309,7 @@ class ConversionTechnology(Technology):
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):
+    def disjunctOnTechnologyRule(cls,disjunct, tech,capacityType, node, time):
         """definition of disjunct constraints if technology is On"""
         model = disjunct.model()
         # get parameter object
@@ -323,7 +323,7 @@ class ConversionTechnology(Technology):
         investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
-            expr=referenceFlow >= params.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
+            expr=referenceFlow >= params.minLoad[tech,capacityType,node,time] * model.capacity[tech,capacityType,node, investTimeStep]
         )
         # couple reference flows
         disjunct.constraintReferenceFlowCoupling = pe.Constraint(
@@ -343,7 +343,7 @@ class ConversionTechnology(Technology):
             doc = "couples the real dependent flow variables with the approximated variables. Dimension: tech, setDependentCarriers[tech], node, time.")
 
     @classmethod
-    def disjunctOffTechnologyRule(cls,disjunct, tech, node, time):
+    def disjunctOffTechnologyRule(cls,disjunct, tech, capacityType, node, time):
         """definition of disjunct constraints if technology is off"""
         model = disjunct.model()
         disjunct.constraintNoLoad = pe.Constraint(
