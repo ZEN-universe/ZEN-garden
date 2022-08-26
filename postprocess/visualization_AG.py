@@ -220,8 +220,8 @@ class VisualizeResults:
         self.barplot("totalBuiltCapacityTransport", totalBuiltCapacity.unstack("technology"), stacked=True)
 
         # storage technologies
-        # totalBuiltCapacity = builtCapacity.loc[self.setStorageTechnologies].groupby(level=["technology","time"]).sum()
-        # self.barplot("totalBuiltCapacityStorage", totalBuiltCapacity.unstack("technology"), stacked=True)
+        totalBuiltCapacity = builtCapacity.loc[self.setStorageTechnologies].groupby(level=["technology","time"]).sum()
+        self.barplot("totalBuiltCapacityStorage", totalBuiltCapacity.unstack("technology"), stacked=True)
 
     def evaluateCapacity(self):
         """plot installed capacity"""
@@ -518,8 +518,8 @@ if __name__ == "__main__":
     outputFolder = "outputs" #
     #outputFolder = "outputs"
 
-    datasets = [0,1,2]
-    scenarios  = ["","min_em"] #
+    datasets = [0,2]
+    scenarios  = ["", "min_em"] #
     #scenarios  = scenarios + [f"linear_" + str(path).replace(".","-") for path in np.arange(0, 1.2, 0.2).round(2)]
 
 

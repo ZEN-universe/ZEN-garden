@@ -113,7 +113,8 @@ system["setConditioningTechnologies"] = []
 system["setStorageTechnologies"] = []
 # set of transport technologies
 system["setTransportTechnologies"] = []
-system['DoubleCapexTransport'] = False
+system["DoubleCapexTransport"] = False
+system["setBidirectionalTransportTechnologies"] = []
 # set of nodes
 system["setNodes"] = []
 # toggle to use timeSeriesAggregation

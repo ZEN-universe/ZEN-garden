@@ -113,6 +113,8 @@ class ConversionTechnology(Technology):
             # extract for linear
             elif not getattr(_element,_isPWAAttribute) and not selectPWA:
                 dictOfAttributes,_ = cls.appendAttributeOfElementToDict(_element, _attributeNameLinear, dictOfAttributes)
+        if not dictOfAttributes:
+            return dictOfAttributes
         dictOfAttributes = pd.concat(dictOfAttributes,keys=dictOfAttributes.keys())
         if not indexNames:
             return dictOfAttributes
