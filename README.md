@@ -1,3 +1,5 @@
+![PyTest with Conda](https://github.com/RRE-ETH/ZEN-garden/actions/workflows/pytest_with_conda.yml/badge.svg?branch=development_JF)
+
 # ZEN-garden
 
 Optimization model of European energy systems and value chains. It includes the electricity system, hydrogen value chains, and carbon capture, storage and utilization (CCUS) value chains. 
