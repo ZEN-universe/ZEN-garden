@@ -518,7 +518,7 @@ if __name__ == "__main__":
     outputFolder = "outputs" #
     #outputFolder = "outputs"
 
-    datasets = [0,2]
+    datasets = [0]
     scenarios  = ["", "min_em"] #
     #scenarios  = scenarios + [f"linear_" + str(path).replace(".","-") for path in np.arange(0, 1.2, 0.2).round(2)]
 

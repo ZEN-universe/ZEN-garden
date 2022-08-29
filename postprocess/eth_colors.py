@@ -14,7 +14,7 @@ class ETHColors:
         # set colors
         self.setColors()
 
-    def retrieveColors(self,inputComponents,category):
+    def retrieveColors(self,inputComponents,category=None):
         assert category in self.colors.keys(),f"category {category} not known. Currently categories {list(self.colors.keys())} available."
         _listColors = []
         if type(inputComponents) == "str":
@@ -24,7 +24,7 @@ class ETHColors:
                 _listColors.append(self.retrieveSpecificColor(component,category))
         return _listColors
 
-    def retrieveSpecificColor(self,component,category):
+    def retrieveSpecificColor(self,component,category=None):
         if component in self.colors[category]:
             _color = self.colors[category][component]
         elif component in self.manualColors:
