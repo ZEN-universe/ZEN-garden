@@ -316,7 +316,7 @@ class Postprocess:
                 print('not implemented')
             elif varName=='carbonEmissionsCarrierTotal' or varName=='capexTotal' or varName=='carbonEmissionsTechnologyTotal' or varName=='carbonEmissionsTotal' or varName=='costCarrierTotal' or varName=='opexTotal':
                 print('not implemented')
-            elif varName=='carrierFlowCharge' or varName=='carrierFlowDischarge' or varName=='levelCharge':
+            elif varName=='carrierFlowCharge' or varName=='carrierFlowDischarge' or varName=='storageLevel':
                 print('not implemented')
             else: # --> 3)
                 c = df.columns

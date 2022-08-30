@@ -93,7 +93,7 @@ analysis['headerDataOutputs']=   {'capexTotal': ['capacity[€]'],
                                 'opex':['conversionTechnology','node','time','capacity[GWh]'],
                                 'carrierFlowCharge':['?','??','???','????'],
                                 'carrierFlowDischarge':['?','??','???','????'],
-                                'levelCharge':['?','??','???','????'],
+                                'storageLevel':['?','??','???','????'],
                                 }
 
 analysis['postprocess'] = False
@@ -111,6 +111,7 @@ system["setConversionTechnologies"] = []
 system["setConditioningTechnologies"] = []
 # set of storage technologies
 system["setStorageTechnologies"] = []
+system["storagePeriodicity"] = True # enforces that storage level at end of the year equals the level at the beginning
 # set of transport technologies
 system["setTransportTechnologies"] = []
 system['DoubleCapexTransport'] = False
