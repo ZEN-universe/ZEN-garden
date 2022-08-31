@@ -13,3 +13,4 @@
 *.pyc
 *.DS_Store
 compileAG.py
+postprocess/eth_colorsAG.py
