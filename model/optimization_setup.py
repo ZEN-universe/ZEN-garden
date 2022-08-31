@@ -246,10 +246,15 @@ class OptimizationSetup():
         # write an ILP file to print the IIS if infeasible
         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
-        self.opt            = pe.SolverFactory(solverName, options=solverOptions)
-        self.opt.set_instance(self.model,symbolic_solver_labels=solver["useSymbolicLabels"])
-        self.results        = self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
-        # enable logger 
+
+        if solverName == "gurobi_persistent":
+            self.opt = pe.SolverFactory(solverName, options=solverOptions)
+            self.opt.set_instance(self.model,symbolic_solver_labels=solver["useSymbolicLabels"])
+            self.results    = self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
+        else:
+            self.opt = pe.SolverFactory(solverName)
+            self.results    = self.opt.solve(self.model,tee=solver["verbosity"], keepfiles=True, logfile=solver["solverOptions"]["logfile"])
+        # enable logger
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)
 
