@@ -69,9 +69,10 @@ class ConversionTechnology(Technology):
             self.capexSpecific = _PWACapex["capex"] * fractionalAnnuity + self.fixedOpexSpecific
         else:
             self.PWACapex          = _PWACapex
-            self.PWACapex["capex"] = [(value * fractionalAnnuity + self.fixedOpexSpecific) for value in self.PWACapex["capex"]]
+            assert (self.fixedOpexSpecific==self.fixedOpexSpecific).all(), "PWACapex is only implemented for constant values of fixed Opex"
+            self.PWACapex["capex"] = [(value * fractionalAnnuity + self.fixedOpexSpecific[0]) for value in self.PWACapex["capex"]]
             # set bounds
-            self.PWACapex["bounds"]["capex"] = tuple([(bound * fractionalAnnuity + self.fixedOpexSpecific) for bound in self.PWACapex["bounds"]["capex"]])
+            self.PWACapex["bounds"]["capex"] = tuple([(bound * fractionalAnnuity + self.fixedOpexSpecific[0]) for bound in self.PWACapex["bounds"]["capex"]])
         # calculate capex of existing capacity
         self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
 
@@ -113,6 +114,8 @@ class ConversionTechnology(Technology):
             # extract for linear
             elif not getattr(_element,_isPWAAttribute) and not selectPWA:
                 dictOfAttributes,_ = cls.appendAttributeOfElementToDict(_element, _attributeNameLinear, dictOfAttributes)
+            if not dictOfAttributes:
+                return dictOfAttributes
         dictOfAttributes = pd.concat(dictOfAttributes,keys=dictOfAttributes.keys())
         if not indexNames:
             return dictOfAttributes
