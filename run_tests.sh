@@ -24,6 +24,7 @@ for d in ./data/test_*/
   echo "Running test: $d"
   echo "===================================="
   current_test=$(basename $d)
-  sed -e "s/analysis\[\"dataset\"\].*/analysis\[\"dataset\"\] \= \"${current_test}\"/g" -i "./data/config.py"
+  # -i in MaxOS need a file extension for backup fule -i '' would work on MacOS but not on Linux
+  sed -i'.original' -e "s/analysis\[\"dataset\"\].*/analysis\[\"dataset\"\] \= \"${current_test}\"/g" ./data/config.py
   coverage run --source="./model,./preprocess,./postprocess" -a compile.py
 done
