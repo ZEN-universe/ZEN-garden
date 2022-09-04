@@ -24,6 +24,6 @@ for d in ./data/test_*/
   echo "Running test: $d"
   echo "===================================="
   current_test=$(basename $d)
-  sed -i "s/analysis\[\"dataset\"\].*/analysis\[\"dataset\"\] \= \"${current_test}\"/g" ./data/config.py
+  sed -e "s/analysis\[\"dataset\"\].*/analysis\[\"dataset\"\] \= \"${current_test}\"/g" -i "./data/config.py"
   coverage run --source="./model,./preprocess,./postprocess" -a compile.py
 done
