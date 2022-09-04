@@ -12,5 +12,6 @@
 /postprocess/visualization_AG.py
 *.pyc
 *.DS_Store
+.coverage
 compileAG.py
 postprocess/eth_colorsAG.py
