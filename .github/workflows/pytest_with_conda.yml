@@ -10,11 +10,12 @@ jobs:
     
 # setup the matrix for testing
     strategy:
+      fail-fast: false # if true all jobs are cancelled if one fails
       matrix:
         include:
-          - os: ubuntu-latest
-            label: linux-64
-            prefix: /usr/share/miniconda3/envs/zen-garden
+          - os: windows-latest
+            label: windows-64
+            prefix: C:\Miniconda3\envs\zen-garden
 
           - os: macos-latest
             label: osx-64
@@ -51,6 +52,11 @@ jobs:
         run: mamba env update -f zen_garden_env.yml
         if: steps.cache.outputs.cache-hit != 'true'
 
-      - name: Run tests
+      - name: Run tests Windows
+        if: ${{ matrix.label == 'windows-64' }}
+        run: .\run_tests.bat
+
+      - name: Run tests OSX
+        if: ${{ matrix.label == 'osx-64' }}
         shell: bash -l {0}
         run: ./run_tests.sh
