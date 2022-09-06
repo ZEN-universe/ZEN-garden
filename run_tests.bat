@@ -7,6 +7,9 @@ if "%~1" equ ":main" (
 cmd /d /c "%~f0" :main %*
 Rem This will be executed even if main fails
 
+Rem The coverage error should determine the errorcode of the main shell
+set coverage_err=!errorlevel!
+
 Rem This gets the directory name of the batch file, i.e. ZEN-garden
 set current=%~dp0
 for %%a in ("%~dp0\.") do set "parent=%%~nxa"
@@ -17,7 +20,7 @@ coverage report -m
 cd %current%
 
 Rem Error level probagation from before
-if !errorlevel! neq 0 exit /b 1
+if !coverage_err! neq 0 exit /b 1
 exit /b
 
 :main
