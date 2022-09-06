@@ -1,4 +1,6 @@
-![PyTest with Conda](https://github.com/RRE-ETH/ZEN-garden/actions/workflows/pytest_with_conda.yml/badge.svg?branch=development_JF)
+<table><tr><td valign="center"> 
+  <img align="left" height="25px" src="https://github.com/RRE-ETH/ZEN-garden/actions/workflows/pytest_with_conda.yml/badge.svg?branch=development_JF"> <b> (Development Branch) </b>
+</td></tr></table>
 
 # ZEN-garden
 
