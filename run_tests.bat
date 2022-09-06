@@ -5,6 +5,12 @@ if "%~1" equ ":main" (
 )
 cmd /d /c "%~f0" :main %*
 Rem This will be executed even if main fails
+
+Rem This gets the directory name of the batch file, i.e. ZEN-garden
+for %%a in ("%~dp0\.") do set "parent=%%~nxa"
+Rem go to the dir
+cd %temp%\%parent%
+Rem Report coverage
 coverage report -m
 exit /b
 
