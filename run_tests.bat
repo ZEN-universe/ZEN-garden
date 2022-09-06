@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 if "%~1" equ ":main" (
   shift /1
   goto main
@@ -78,4 +79,4 @@ for /f "tokens=*" %%G in ('dir /b /s /a:d "data\test_*"') do (
     if !errorlevel! neq 0 exit /b !errorlevel!
   )
 )
-exit /b
+exit /b 0
