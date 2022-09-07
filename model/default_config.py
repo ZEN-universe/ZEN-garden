@@ -148,7 +148,7 @@ solver["solverOptions"] = {
     "Method":       None
 }
 # use symbolic labels, only sensible for debugging infeasible problems. Adds overhead
-solver["useSymbolicLabels"] = True
+solver["useSymbolicLabels"] = False
 # analyze numerics
 solver["analyzeNumerics"]   = False
 solver["immutableUnit"]     = []

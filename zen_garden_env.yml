@@ -20,6 +20,8 @@ dependencies:
   - entsoe-py
   - matplotlib
   - mpmath
+  - pyogrio
+  - openpyxl
   - pip:
       - tsam
 
