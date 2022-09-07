@@ -35,10 +35,11 @@ Rem we copy everything to the temp dir
 Rem This gets the directory name of the batch file, i.e. ZEN-garden
 for %%a in ("%~dp0\.") do set "parent=%%~nxa"
 Rem Copy everything except the .git folder and data folder
-robocopy %~dp0 %temp%\%parent% /E /Z /R:5 /W:5 /TBD /NP /V /NFL /NDL /NJH /NJS /nc /ns /np /XD %~dp0.git
+robocopy %~dp0 %temp%\%parent% /E /Z /R:5 /W:5 /TBD /NP /V /MIR /XD %~dp0.git %~dp0data > nul
 Rem go to the dir
 cd %temp%\%parent%
 Rem create data dir and copy test cases
+rd /s /q ".\data"
 robocopy .\tests\testcases\ .\data /E /Z /R:5 /W:5 /TBD /NP /V /NFL /NDL /NJH /NJS /nc /ns /np
 
 Rem erase current coverage
