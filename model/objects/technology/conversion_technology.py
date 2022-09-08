@@ -262,7 +262,7 @@ class ConversionTechnology(Technology):
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(setPWACapex,"Capex")
             model.constraintPWACapex = pe.Piecewise(setPWACapex,
                 model.capexApproximation,model.capacityApproximation,
-                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False)
+                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False,pw_repn="BIGM_BIN")
         if setLinearCapex:
             # if setLinearCapex contains technologies:
             model.constraintLinearCapex = pe.Constraint(
@@ -278,7 +278,7 @@ class ConversionTechnology(Technology):
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(setPWAConverEfficiency,"ConverEfficiency")
             model.constraintPWAConverEfficiency = pe.Piecewise(setPWAConverEfficiency,
                 model.dependentFlowApproximation,model.referenceFlowApproximation,
-                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False)
+                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False,pw_repn="BIGM_BIN")
         if setLinearConverEfficiency:
             # if setLinearConverEfficiency contains technologies:
             model.constraintLinearConverEfficiency = pe.Constraint(

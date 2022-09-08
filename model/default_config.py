@@ -139,7 +139,7 @@ system["folderNameSystemSpecification"] = "systemSpecification"
 
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
-solver["name"]      = "gurobi_persistent"
+solver["name"]      = "glpk"
 # gurobi options
 solver["solverOptions"] = {
     "logfile":      ".//outputs//logs//pyomoLogFile.log",
