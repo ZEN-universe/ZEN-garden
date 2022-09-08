@@ -189,7 +189,10 @@ class OptimizationSetup():
             for element in Element.getAllElements():
                 element.overwriteTimeSteps(_baseTimeStepsHorizon)
             # overwrite base time steps and yearly base time steps
-            energySystem.setBaseTimeSteps       = _baseTimeStepsHorizon.squeeze().tolist()
+            _newBaseTimeStepsHorizon            = _baseTimeStepsHorizon.squeeze().tolist()
+            if not isinstance(_newBaseTimeStepsHorizon,list):
+                _newBaseTimeStepsHorizon        = [_newBaseTimeStepsHorizon]
+            energySystem.setBaseTimeSteps       = _newBaseTimeStepsHorizon
             energySystem.setTimeStepsYearly     = _timeStepsYearlyHorizon
 
     def analyzeNumerics(self):
