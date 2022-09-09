@@ -152,7 +152,7 @@ solver["useSymbolicLabels"] = False
 # analyze numerics
 solver["analyzeNumerics"]   = False
 solver["immutableUnit"]     = []
-solver["rangeUnitExponents"]    = {"min":-3,"max":3,"stepWidth":1}
+solver["rangeUnitExponents"]    = {"min":-1,"max":1,"stepWidth":1}
 # round down to number of decimal points, for new capacity and unit multipliers
 solver["roundingDecimalPoints"]     = 5
 # round down to number of decimal points, for time series after TSA

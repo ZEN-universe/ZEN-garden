@@ -35,7 +35,7 @@ solver["solverOptions"]["Threads"]      = 46
 # solver["solverOptions"]["CrossoverBasis"]   = 0
 # solver["solverOptions"]["Crossover"]    = 0
 solver["solverOptions"]["ScaleFlag"]    = 2
-solver["analyzeNumerics"]               = False
+solver["analyzeNumerics"]               = True
 solver["immutableUnit"]                 = ["hour","km"]
 
 ## System - load system configurations
