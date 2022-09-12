@@ -1,6 +1,9 @@
 name: PyTest with Conda
 
-on: [push]
+on:
+  push:
+    branches:
+      - development
 
 env:
   CACHE_NUMBER: 0  # increase to reset cache manually
