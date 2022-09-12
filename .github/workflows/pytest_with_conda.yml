@@ -20,9 +20,9 @@ jobs:
             label: windows-64
             prefix: C:\Miniconda3\envs\zen-garden
 
-          - os: macos-latest
-            label: osx-64
-            prefix: /Users/runner/miniconda3/envs/zen-garden
+          - os: ubuntu-latest
+            label: linux-64
+            prefix: /usr/share/miniconda3/envs/my-env
 
 # the testing
     name: ${{ matrix.label }}
@@ -59,7 +59,7 @@ jobs:
         if: ${{ matrix.label == 'windows-64' }}
         run: .\run_tests.bat
 
-      - name: Run tests OSX
-        if: ${{ matrix.label == 'osx-64' }}
+      - name: Run tests Linux
+        if: ${{ matrix.label == 'linux-64' }}
         shell: bash -l {0}
         run: ./run_tests.sh
