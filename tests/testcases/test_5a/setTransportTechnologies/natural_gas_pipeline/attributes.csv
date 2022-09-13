@@ -7,7 +7,7 @@ minLoadDefault,0,
 maxLoadDefault,1,
 lifetimeDefault,50,
 opexSpecificDefault,0,kiloEuro/GWh
-referenceCarrier,natural_gas,GW
+referenceCarrier,natural_gas_high,GW
 carbonIntensityDefault,0,kilotons/GWh
 constructionTimeDefault,0,
 existingInvestedCapacityDefault,0,GW

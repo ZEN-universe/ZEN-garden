@@ -1,7 +1,7 @@
 index,value,unit
 minBuiltCapacityDefault,0,GW
 maxBuiltCapacityDefault,inf,GW
-existingCapacityDefault,0,GW
+existingCapacityDefault,50,GW
 capacityLimitDefault,inf,GW
 minLoadDefault,0,
 maxLoadDefault,1,
@@ -11,8 +11,8 @@ referenceCarrier,natural_gas,GW
 carbonIntensityDefault,0,kilotons/GWh
 constructionTimeDefault,0,
 existingInvestedCapacityDefault,0,GW
-fixedOpexSpecificDefault,0.0,Euro/km/MW
-maxDiffusionRateDefault,0.15,
-lossFlowDefault,5e-05,1/km
-capexPerDistanceDefault,265.0,Euro/km/MW
+fixedOpexSpecificDefault,0,Euro/km/MW
+maxDiffusionRateDefault,inf,
+lossFlowDefault,5.00E-05,1/km
+capexPerDistanceDefault,265,Euro/km/MW
 distanceEuclideanDefault,inf,km
