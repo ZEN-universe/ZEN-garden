@@ -1,0 +1,14 @@
+[
+    {
+        "os":"ubuntu-latest",
+        "label":"linux-64",
+        "prefix":"/usr/share/miniconda3/envs/my-env",
+        "runs_when":"always"
+    },
+    {
+        "os":"windows-latest",
+        "label":"windows-64",
+        "prefix":"C:\\Miniconda3\\envs\\zen-garden",
+        "runs_when":"env_change"
+    }
+]
