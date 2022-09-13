@@ -290,6 +290,7 @@ class Technology(Element):
             startBaseTimeStep   = int(max(model.setBaseTimeSteps.at(1), baseTimeStep - basePeriod + 1))
         else:
             startBaseTimeStep   = int(baseTimeStep - basePeriod + 1)
+        startBaseTimeStep = min(startBaseTimeStep,model.setBaseTimeSteps.at(-1))
         # if period of existing capacity, then only return the start base time step
         if idExistingCapacity is not None:
             return startBaseTimeStep
@@ -441,24 +442,24 @@ class Technology(Element):
             # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
             if tech in techsOnOff:
                 system = EnergySystem.getSystem()
-
+                params = Parameter.getParameterObject()
                 if capacityType == system["setCapacityTypes"][0]:
                     _energyString = ""
                 else:
                     _energyString = "Energy"
-                _existingCapacity           = model.find_component("existingCapacity"+_energyString)
-                _maxBuiltCapacity           = model.find_component("maxBuiltCapacity" + _energyString)
-                _capacityLimitTechnology    = model.find_component("capacityLimitTechnology" + _energyString)
+                _existingCapacity           = getattr(params,"existingCapacity"+_energyString)
+                _maxBuiltCapacity           = getattr(params,"maxBuiltCapacity"+_energyString)
+                _capacityLimitTechnology    = getattr(params,"capacityLimitTechnology"+_energyString)
                 existingCapacities = 0
                 for idExistingTechnology in model.setExistingTechnologies[tech]:
-                    if model.lifetimeExistingTechnology[tech, loc, idExistingTechnology] > model.lifetimeTechnology[tech]:
-                        if time > model.lifetimeExistingTechnology[tech, loc, idExistingTechnology] - model.lifetimeTechnology[tech]:
-                            existingCapacities += _existingCapacity[tech, loc, idExistingTechnology]
-                    elif time <= model.lifetimeExistingTechnology[tech, loc, idExistingTechnology] + 1:
-                        existingCapacities  += _existingCapacity[tech, loc, idExistingTechnology]
+                    if params.lifetimeExistingTechnology[tech, loc, idExistingTechnology] > params.lifetimeTechnology[tech]:
+                        if time > params.lifetimeExistingTechnology[tech, loc, idExistingTechnology] - params.lifetimeTechnology[tech]:
+                            existingCapacities += _existingCapacity[tech,capacityType, loc, idExistingTechnology]
+                    elif time <= params.lifetimeExistingTechnology[tech, loc, idExistingTechnology] + 1:
+                        existingCapacities  += _existingCapacity[tech,capacityType, loc, idExistingTechnology]
 
-                maxBuiltCapacity            = len(model.setTimeStepsInvest[tech])*_maxBuiltCapacity[tech]
-                maxCapacityLimitTechnology  = _capacityLimitTechnology[tech,loc]
+                maxBuiltCapacity            = len(model.setTimeStepsInvest[tech])*_maxBuiltCapacity[tech,capacityType]
+                maxCapacityLimitTechnology  = _capacityLimitTechnology[tech,capacityType, loc]
                 boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology)
                 bounds = (0,boundCapacity)
                 return(bounds)
@@ -629,19 +630,19 @@ class Technology(Element):
 
         # disjunct if technology is on
         model.disjunctOnTechnology = pgdp.Disjunct(
-            cls.createCustomSet(["setTechnologies","setOnOff","setLocation","setTimeStepsOperation"]),
+            cls.createCustomSet(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOnTechnologyRule,
             doc = "disjunct to indicate that technology is On. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
         )
         # disjunct if technology is off
         model.disjunctOffTechnology = pgdp.Disjunct(
-            cls.createCustomSet(["setTechnologies","setOnOff","setLocation","setTimeStepsOperation"]),
+            cls.createCustomSet(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOffTechnologyRule,
             doc = "disjunct to indicate that technology is off. Dimensions: setTechnologies, setLocation, setTimeStepsOperation"
         )
         # disjunction
         model.disjunctionDecisionOnOffTechnology = pgdp.Disjunction(
-            cls.createCustomSet(["setTechnologies","setOnOff","setLocation","setTimeStepsOperation"]),
+            cls.createCustomSet(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
             rule = cls.expressionLinkDisjunctsRule,
             doc = "disjunction to link the on off disjuncts. Dimensions: setTechnologyLocation, setTimeStep")
 
@@ -650,29 +651,29 @@ class Technology(Element):
             subclass.constructConstraints()
 
     @classmethod
-    def disjunctOnTechnologyRule(cls,disjunct, tech, loc, time):
+    def disjunctOnTechnologyRule(cls,disjunct, tech, capacityType, loc, time):
         """definition of disjunct constraints if technology is On
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
         for subclass in cls.getAllSubclasses():
             if tech in subclass.getAllNamesOfElements():
                 # disjunct is defined in corresponding subclass
-                subclass.disjunctOnTechnologyRule(disjunct,tech,loc,time)
+                subclass.disjunctOnTechnologyRule(disjunct,tech, capacityType,loc,time)
                 break
 
     @classmethod
-    def disjunctOffTechnologyRule(cls,disjunct, tech, loc, time):
+    def disjunctOffTechnologyRule(cls,disjunct, tech, capacityType, loc, time):
         """definition of disjunct constraints if technology is off
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
         for subclass in cls.getAllSubclasses():
             if tech in subclass.getAllNamesOfElements():
                 # disjunct is defined in corresponding subclass
-                subclass.disjunctOffTechnologyRule(disjunct,tech,loc,time)
+                subclass.disjunctOffTechnologyRule(disjunct,tech, capacityType,loc,time)
                 break
 
     @classmethod
-    def expressionLinkDisjunctsRule(cls,model, tech, loc, time):
+    def expressionLinkDisjunctsRule(cls,model, tech, capacityType, loc, time):
         """ link disjuncts for technology is on and technology is off """
-        return ([model.disjunctOnTechnology[tech,loc,time],model.disjunctOffTechnology[tech,loc,time]])
+        return ([model.disjunctOnTechnology[tech, capacityType,loc,time],model.disjunctOffTechnology[tech, capacityType,loc,time]])
 
 ### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class

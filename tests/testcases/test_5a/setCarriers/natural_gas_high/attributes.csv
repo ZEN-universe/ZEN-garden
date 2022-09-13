@@ -1,0 +1,8 @@
+index,value,unit
+carbonIntensityDefault,0.201959946,kilotons/GWh
+demandCarrierDefault,0,GW
+shedDemandPriceDefault,inf,kiloEuro/GWh
+availabilityCarrierImportDefault,0,GW
+availabilityCarrierExportDefault,0,GW
+exportPriceCarrierDefault,0,kiloEuro/GWh
+importPriceCarrierDefault,23.58,kiloEuro/GWh

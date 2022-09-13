@@ -154,6 +154,7 @@ class OptimizationSetup():
                 element = Element.getElement(elementName)
             # overwrite scenario dependent parameters
             for param in params:
+                fileName = param
                 if type(param) is tuple:
                     fileName, param = param
                 # get old param value
@@ -170,7 +171,7 @@ class OptimizationSetup():
                     if isinstance(_oldParam, pd.Series) or isinstance(_oldParam, pd.DataFrame):
                         if "time" in _indexNames:
                             _timeSteps = list(_oldParam.index.unique("time"))
-                        _newParam  = element.dataInput.extractInputData(param,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
+                        _newParam  = element.dataInput.extractInputData(fileName,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
                     #else: _newParam = element.dataInput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
                     setattr(element, param, _newParam)
         # if scenario contains timeSeries dependent params conduct timeSeriesAggregation
@@ -189,7 +190,10 @@ class OptimizationSetup():
             for element in Element.getAllElements():
                 element.overwriteTimeSteps(_baseTimeStepsHorizon)
             # overwrite base time steps and yearly base time steps
-            energySystem.setBaseTimeSteps       = _baseTimeStepsHorizon.squeeze().tolist()
+            _newBaseTimeStepsHorizon            = _baseTimeStepsHorizon.squeeze().tolist()
+            if not isinstance(_newBaseTimeStepsHorizon,list):
+                _newBaseTimeStepsHorizon        = [_newBaseTimeStepsHorizon]
+            energySystem.setBaseTimeSteps       = _newBaseTimeStepsHorizon
             energySystem.setTimeStepsYearly     = _timeStepsYearlyHorizon
 
     def analyzeNumerics(self):
@@ -246,10 +250,15 @@ class OptimizationSetup():
         # write an ILP file to print the IIS if infeasible
         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
-        self.opt            = pe.SolverFactory(solverName, options=solverOptions)
-        self.opt.set_instance(self.model,symbolic_solver_labels=solver["useSymbolicLabels"])
-        self.results        = self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
-        # enable logger 
+
+        if solverName == "gurobi_persistent":
+            self.opt = pe.SolverFactory(solverName, options=solverOptions)
+            self.opt.set_instance(self.model,symbolic_solver_labels=solver["useSymbolicLabels"])
+            self.results    = self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
+        else:
+            self.opt = pe.SolverFactory(solverName)
+            self.results    = self.opt.solve(self.model,tee=solver["verbosity"], keepfiles=True, logfile=solver["solverOptions"]["logfile"])
+        # enable logger
         logging.disable(logging.NOTSET)
         self.model.solutions.load_from(self.results)
 

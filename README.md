@@ -1,3 +1,7 @@
+<table><tr><td valign="center"> 
+  <img align="left" height="25px" src="https://github.com/RRE-ETH/ZEN-garden/actions/workflows/pytest_with_conda.yml/badge.svg?branch=development"> <b> (Development Branch) </b>
+</td></tr></table>
+
 # ZEN-garden
 
 Optimization model of European energy systems and value chains. It includes the electricity system, hydrogen value chains, and carbon capture, storage and utilization (CCUS) value chains. 

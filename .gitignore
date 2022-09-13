@@ -8,11 +8,11 @@
 /postprocess/results_JM.py
 /postprocess/results_MH.py
 /postprocess/visualization_JM.py
+/postprocess/visualization_JM_maps.py
 /postprocess/visualization_MH.py
 /postprocess/visualization_AG.py
 *.pyc
 *.DS_Store
+.coverage
 compileAG.py
-postprocess/visualization_AG.py
 postprocess/eth_colorsAG.py
-postprocess/visualization_AG.py

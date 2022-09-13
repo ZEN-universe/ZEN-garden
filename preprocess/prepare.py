@@ -11,10 +11,6 @@ Description:  Class to read the data from input files, collect them into a dicti
 
 import logging
 import os
-from preprocess.functions.MINLP.initialise          import Init
-from preprocess.functions.MINLP.read_data           import Read
-from preprocess.functions.MINLP.fill_nlp_dictionary import FillNlpDict
-
 
 class Prepare:
 
@@ -36,21 +32,6 @@ class Prepare:
 
         # create a dictionary with the paths to access the model inputs
         self.createPaths()
-
-        # only kept for NlpDict
-        if self.solver["model"] == "MINLP":
-
-            # initialise a dictionary with the keys of the data to be read
-            self.initDict()
-
-            # read data and store in the initialised dictionary
-            self.readData()
-
-            # update system and analysis with derived settings
-            self.configUpdate()
-
-            # collect data for nonlinear solver
-            self.createNlpDict()
 
     def createPaths(self):
         """
@@ -86,83 +67,6 @@ class Prepare:
                 self.paths[technologySubset][technology] = dict()
                 self.paths[technologySubset][technology]["folder"] = \
                     path + f"{technology}//"
-        
-    def initDict(self):
-        """
-        This method initialises a dictionary containing all the input data
-        split by carriers, networks, technologies
-        :return: dictionary initialised with keys
-        """
-        self.data = dict()
-
-        # initialise the keys with the input carriers' name
-        Init.carriers(self)
-
-        # initialise the keys with the technologies' name
-        Init.technologies(self)
-
-        # initialise the key of nodes
-        Init.nodes(self)
-
-        # initialise the key of times
-        Init.times(self)
-
-        # initialise the key of scenarios
-        Init.scenarios(self)
-
-    def readData(self):
-        """
-        This method fills in the dictionary with all the input data
-        split by carriers, networks, technologies
-        :return: dictionary containing all the input data
-        """
-        # fill the initialised dictionary by reading the input carriers' data
-        Read.carriers(self)
-
-        # fill the initialised dictionary by reading the technologies' data
-        Read.technologies(self)
-
-        # fill the initialised dictionary by reading the nodes' data
-        Read.nodes(self)
-
-        # fill the initialised dictionary by reading the times' data
-        Read.times(self)
-
-        # fill the initialised dictionary by reading the scenarios' data
-        Read.scenarios(self)
-
-    def configUpdate(self):
-        """
-        This method creates new entries in the dictionaries of config
-        :return: dictionaries in config with additional entries
-        """
-        # create new list of sets from subsets
-        # create a new list per set name
-        for setName in self.analysis['subsets'].keys():
-            self.system[setName] = []
-
-        # extend the list of elements in the set with all the items of the single subset
-        for setName in self.analysis['subsets'].keys():
-            for subsetName in self.analysis['subsets'][setName]:
-                self.system[setName].extend(self.system[subsetName])
-
-    def createNlpDict(self):
-        """
-        This method creates the dictionary of data passed to the nonlinear solver (nlpDict)
-        :param system: dictionary defining the system framework
-        :param data: dictionary containing all the input data
-        :return: dictionary with data
-        """
-        self.nlpDict = {}
-
-        # create input arrays based on solver configuration
-        FillNlpDict.configSolver(self)
-
-        # attach to the dictionary the interpolated functions
-        FillNlpDict.functionNonlinearApproximation(self)
-
-        # collect data concerning the variables' domain
-        FillNlpDict.collectDomainExtremes(self)
 
     def checkExistingInputData(self):
         """This method checks the existing input data and only regards those elements for which folders exist.
@@ -185,7 +89,6 @@ class Prepare:
                             self.system[subset].remove(technology)
                     self.system[technologySubset].extend(self.system[subset])
                     self.system["setTechnologies"].extend(self.system[subset])
-
 
     def checkExistingCarrierData(self, system):
         # check if carriers exist

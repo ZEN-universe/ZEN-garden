@@ -14,7 +14,6 @@ import sys
 import data.config                    as config
 from   preprocess.prepare             import Prepare
 from   model.optimization_setup       import OptimizationSetup
-from   model.metaheuristic.algorithm  import Metaheuristic
 from   postprocess.results            import Postprocess
 
 # SETUP LOGGER
@@ -46,7 +45,7 @@ stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
 
 # update input data
 for scenario, elements in config.scenarios.items():
-    optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="base" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
+    optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
     optimizationSetup.overwriteParams(scenario, elements)
     # iterate through horizon steps
     for stepHorizon in stepsOptimizationHorizon:
@@ -59,15 +58,7 @@ for scenario, elements in config.scenarios.items():
         # create optimization problem
         optimizationSetup.constructOptimizationProblem()
         # SOLVE THE OPTIMIZATION PROBLEM
-        if config.solver['model'] == 'MILP':
-            # BASED ON MILP SOLVER
-            optimizationSetup.solve(config.solver)
-
-        elif config.solver['model'] == 'MINLP':
-            # BASED ON HYBRID SOLVER - MASTER METAHEURISTIC AND SLAVE MILP SOLVER
-            master = Metaheuristic(optimizationSetup, prepare.nlpDict)
-            master.solveMINLP(config.solver)
-
+        optimizationSetup.solve(config.solver)
         # add newly builtCapacity of first year to existing capacity
         optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
         # add cumulative carbon emissions to previous carbon emissions
