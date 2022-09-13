@@ -16,3 +16,4 @@
 .coverage
 compileAG.py
 postprocess/eth_colorsAG.py
+postprocess/visualizationAG.py
