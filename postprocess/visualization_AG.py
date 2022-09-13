@@ -331,7 +331,7 @@ class VisualizeResults:
                 inputFlow["natural_gas"].loc["SMR90", :, :] = deltaSMR90
                 newTotalGas = inputFlow["biomethane"].loc["SMR", :, :].values+inputFlow["biomethane"].loc["SMR90", :, :].values\
                               +inputFlow["natural_gas"].loc["SMR", :, :].values+inputFlow["natural_gas"].loc["SMR90", :, :].values
-                assert (totalGas-newTotalGas).sum()==0, "Error in biomethane calculations"
+                assert (totalGas-newTotalGas).sum().round(10)==0, "Error in biomethane calculations"
         inputFlow  = inputFlow.stack() #.reorder_levels(["technology","carrier", "location", "time"])
         inputFlow  = self.updateTimeIndex(inputFlow, index="time")
         input      = inputFlow.loc[self.setConversionTechnologies].groupby(["technology", "time"]).sum()
@@ -385,7 +385,7 @@ class VisualizeResults:
         :param carbonEmissions:    cost minimal carbon emissions"""
         # years and min and max values
         years     = carbonEmissions.index.unique("year")
-        carbonMax = min(carbonEmissions)
+        carbonMax = carbonEmissions.mean()
         carbonMin = minCarbonEmissions.loc[years[-1]].round(2)
         if carbonMin != 0:
             print("The minimal carbon emissions are", carbonMin)
@@ -520,7 +520,7 @@ if __name__ == "__main__":
 
     datasets = [0]
     scenarios  = ["", "min_em"] #
-    #scenarios  = scenarios + [f"linear_" + str(path).replace(".","-") for path in np.arange(0, 1.2, 0.2).round(2)]
+    scenarios  = [f"linear_" + str(path).replace(".","-") for path in np.arange(1, 1.1, 0.1).round(2)]
 
 
     decarbScen = {"linear":  np.arange(0, 1.1, 0.1).round(2), # np.arange(0, 1.1, 0.1).round(2),
