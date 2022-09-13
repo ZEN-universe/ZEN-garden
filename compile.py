@@ -45,7 +45,7 @@ stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
 
 # update input data
 for scenario, elements in config.scenarios.items():
-    optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="base" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
+    optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
     optimizationSetup.overwriteParams(scenario, elements)
     # iterate through horizon steps
     for stepHorizon in stepsOptimizationHorizon:

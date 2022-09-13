@@ -154,6 +154,7 @@ class OptimizationSetup():
                 element = Element.getElement(elementName)
             # overwrite scenario dependent parameters
             for param in params:
+                fileName = param
                 if type(param) is tuple:
                     fileName, param = param
                 # get old param value
@@ -170,7 +171,7 @@ class OptimizationSetup():
                     if isinstance(_oldParam, pd.Series) or isinstance(_oldParam, pd.DataFrame):
                         if "time" in _indexNames:
                             _timeSteps = list(_oldParam.index.unique("time"))
-                        _newParam  = element.dataInput.extractInputData(param,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
+                        _newParam  = element.dataInput.extractInputData(fileName,indexSets=_indexSets,timeSteps=_timeSteps,scenario=scenario)
                     #else: _newParam = element.dataInput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
                     setattr(element, param, _newParam)
         # if scenario contains timeSeries dependent params conduct timeSeriesAggregation
