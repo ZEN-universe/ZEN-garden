@@ -114,6 +114,7 @@ system["setStorageTechnologies"] = []
 system["storagePeriodicity"] = True # enforces that storage level at end of the year equals the level at the beginning
 # set of transport technologies
 system["setTransportTechnologies"] = []
+system["setBidirectionalTransportTechnologies"] = []
 system['DoubleCapexTransport'] = False
 # set of nodes
 system["setNodes"] = []
