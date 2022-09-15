@@ -64,13 +64,9 @@ for scenario, elements in config.scenarios.items():
         # add cumulative carbon emissions to previous carbon emissions
         optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
         # EVALUATE RESULTS
-        # today      = datetime.now()
-        # modelName  = "model_" + today.strftime("%Y-%m-%d")
         modelName = config.analysis["dataset"]
         if len(stepsOptimizationHorizon) > 1:
             modelName += f"_MF{stepHorizon}"
         if config.system["conductScenarioAnalysis"]:
             modelName += f"_{scenario}"
         evaluation = Postprocess(optimizationSetup, modelName=modelName)
-
-
