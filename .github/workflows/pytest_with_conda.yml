@@ -4,7 +4,6 @@ name: Tests
 on:
   schedule:
     - cron:  '30 4 1 * *'
-#   - cron '0 5 1 * *'
   push:
     branches:
       - development
