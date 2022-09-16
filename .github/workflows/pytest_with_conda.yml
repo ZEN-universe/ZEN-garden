@@ -20,24 +20,27 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v3
-
-      - name: Check file
-        id: filter
-        uses: tony84727/changed-file-filter@v0.2.0
         with:
-          filters: |
-            env:
-              - 'zen_garden_env.yml'
+          ref: development
+          fetch-depth: 0
+
+      - name: Check Env File
+        id: check-env-file
+        uses: tj-actions/changed-files@v29.0.7
+        with:
+          files: |
+            zen_garden_env.yml
 
       - name: Set Env
-        if: steps.filter.outputs.env == 'true'
+        # trigger if env file change or on schedule
+        if: ${{ steps.check-env-file.outputs.any_changed == 'true' || github.event_name == 'schedule' }}
         run: echo "ENV_STATE=env_change" >> $GITHUB_ENV
 
       - id: set-matrix
         uses: JoshuaTheMiller/conditional-build-matrix@main
         with:
           # Run filter -> see matrix_includes.json!
-          filter: '[?runs_when==`${{ env.ENV_STATE }}` || runs_when==`always`]'
+          filter: '[?runs_when==`${{ env.ENV_STATE }}` || runs_when==`${{ github.event_name }}` || runs_when==`always`]'
 
   build:
     # the testing
@@ -49,7 +52,10 @@ jobs:
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3 # checkout the repo
+      # checkout the dev branch
+      - uses: actions/checkout@v3
+        with:
+          ref: development
 
       # setup the conda env
       - name: Setup Mambaforge
@@ -80,7 +86,28 @@ jobs:
         if: ${{ matrix.label == 'windows-64' }}
         run: .\run_tests.bat
 
-      - name: Run tests Linux
-        if: ${{ matrix.label == 'linux-64' }}
+      - name: Run tests Linux or MacOS
+        if: ${{ matrix.label == 'linux-64' || matrix.label == 'osx-64' }}
         shell: bash -l {0}
         run: ./run_tests.sh
+
+      # TODO: Add coverage badge
+
+  # Auto merge into master if build succeeds
+  auto_merge:
+    name: Auto Merge
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name != 'schedule' }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: development
+
+      - name: Merge develop -> master
+        uses: devmasx/merge-branch@master
+        with:
+          type: now
+          from_branch: development
+          target_branch: master
+          github_token: ${{ github.token }}
