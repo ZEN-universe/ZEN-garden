@@ -3,7 +3,7 @@ name: Tests
 # Define when to run
 on:
   schedule:
-    - cron:  '* 17 * * *'
+    - cron:  '30 4 1 * *'
 #   - cron '0 5 1 * *'
   push:
     branches:
