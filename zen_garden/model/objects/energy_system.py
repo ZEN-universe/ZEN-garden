@@ -14,9 +14,9 @@ import pyomo.environ as pe
 import numpy         as np
 import pandas        as pd
 import copy
-from preprocess.functions.extract_input_data import DataInput
-from preprocess.functions.unit_handling         import UnitHandling
-from model.objects.parameter import Parameter
+from zen_garden.preprocess.functions.extract_input_data import DataInput
+from zen_garden.preprocess.functions.unit_handling         import UnitHandling
+from .parameter import Parameter
 
 class EnergySystem:
     # energySystem

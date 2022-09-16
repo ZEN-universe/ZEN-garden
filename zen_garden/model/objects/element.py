@@ -14,9 +14,9 @@ import logging
 import pandas as pd
 import pyomo.environ as pe
 import cProfile, pstats
-from preprocess.functions.extract_input_data import DataInput
-from model.objects.energy_system import EnergySystem
-from model.objects.parameter import Parameter
+from zen_garden.preprocess.functions.extract_input_data import DataInput
+from .energy_system import EnergySystem
+from .parameter import Parameter
 
 class Element:
     # set label

@@ -13,10 +13,10 @@ import logging
 import pyomo.environ as pe
 import numpy as np
 import pandas as pd
-from model.objects.element import Element
-from model.objects.energy_system import EnergySystem
-from model.objects.technology.technology import Technology
-from model.objects.parameter import Parameter
+from ..element import Element
+from ..energy_system import EnergySystem
+from ..technology.technology import Technology
+from ..parameter import Parameter
 
 class Carrier(Element):
     # set label

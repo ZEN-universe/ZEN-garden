@@ -15,8 +15,8 @@ import os
 import pickle
 import pandas as pd
 from datetime import datetime
-from model.objects.energy_system import EnergySystem
-from model.objects.parameter import Parameter
+from ..model.objects.energy_system import EnergySystem
+from ..model.objects.parameter import Parameter
 
 import matplotlib.pyplot as plt
 
