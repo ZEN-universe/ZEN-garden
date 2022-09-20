@@ -6,10 +6,9 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Model settings. Overwrite default values defined in default_config.py here.
 ==========================================================================================================================================================================="""
-from model import default_config
 
 ## System - Default dictionary
-system = default_config.system
+system = dict()
 
 ## System - settings update compared to default values
 system['setConversionTechnologies']     = ["natural_gas_boiler"] #, "natural_gas_expander"
