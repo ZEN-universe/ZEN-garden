@@ -12,7 +12,7 @@ import os
 import logging
 import sys
 import pytest
-from   config_6a                                 import config
+from   config                                    import config
 from   zen_garden.preprocess.prepare             import Prepare
 from   zen_garden.model.optimization_setup       import OptimizationSetup
 from   zen_garden.postprocess.results            import Postprocess

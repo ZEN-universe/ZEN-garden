@@ -39,7 +39,7 @@ solver["analyzeNumerics"]               = True
 solver["immutableUnit"]                 = ["hour","km"]
 
 ## System - load system configurations
-from system_6a import system
+from system import system
 config.system.update(system)
 system  = config.system
 ## overwrite default system and scenario dictionaries
