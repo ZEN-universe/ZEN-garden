@@ -11,6 +11,7 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
 import logging
 import warnings
 import pyomo.environ as pe
+import pyomo.gdp     as pgdp
 import numpy         as np
 import pandas        as pd
 import copy

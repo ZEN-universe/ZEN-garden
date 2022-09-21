@@ -435,24 +435,25 @@ class Technology(Element):
             :param time: investment time step
             :return bounds: bounds of capacity"""
             # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
-            if tech in techsOnOff:
-                system = EnergySystem.getSystem()
-
+            # or if transportTechnology and enforceEgoisticBehavior
+            system = EnergySystem.getSystem()
+            if tech in techsOnOff or ("enforceEgoisticBehavior" in system.keys() and system["enforceEgoisticBehavior"] and tech in system["setTransportTechnologies"]):
+                params = Parameter.getParameterObject()
                 if capacityType == system["setCapacityTypes"][0]:
                     _energyString = ""
                 else:
                     _energyString = "Energy"
-                _existingCapacity           = model.find_component("existingCapacity"+_energyString)
-                _maxBuiltCapacity           = model.find_component("maxBuiltCapacity" + _energyString)
-                _capacityLimitTechnology    = model.find_component("capacityLimitTechnology" + _energyString)
+                _existingCapacity           = getattr(params,"existingCapacity"+_energyString)
+                _maxBuiltCapacity           = getattr(params,"maxBuiltCapacity" + _energyString)
+                _capacityLimitTechnology    = getattr(params,"capacityLimitTechnology" + _energyString)
                 existingCapacities = 0
                 for idExistingTechnology in model.setExistingTechnologies[tech]:
-                    if (time - model.lifetimeExistingTechnology[tech, loc, idExistingTechnology] + 1) <= 0:
-                        existingCapacities  += _existingCapacity[tech, loc, idExistingTechnology]
+                    if (time - params.lifetimeExistingTechnology[tech, loc, idExistingTechnology] + 1) <= 0:
+                        existingCapacities  += _existingCapacity[tech, capacityType, loc, idExistingTechnology]
 
-                maxBuiltCapacity            = len(model.setTimeStepsInvest[tech])*_maxBuiltCapacity[tech]
-                maxCapacityLimitTechnology  = _capacityLimitTechnology[tech,loc]
-                boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology)
+                maxBuiltCapacity            = len(model.setTimeStepsInvest[tech])*_maxBuiltCapacity[tech,capacityType]
+                maxCapacityLimitTechnology  = _capacityLimitTechnology[tech,capacityType, loc]
+                boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology + existingCapacities)
                 bounds = (0,boundCapacity)
                 return(bounds)
             else:

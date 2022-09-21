@@ -137,6 +137,23 @@ class Carrier(Element):
     @classmethod
     def constructVars(cls):
         """ constructs the pe.Vars of the class <Carrier> """
+        def shedDemandCarrierBounds(model,carrier,node, time):
+            """ return bounds of shed demand carrier for bigM expression
+            :param model: pe.ConcreteModel
+            :param carrier: carrier index
+            :param node: node
+            :param time: operational time step
+            :return bounds: bounds of shedDemandCarrierLow"""
+            # bounds only needed for Big-M formulation, if enforceEgoisticBehavior
+            system = EnergySystem.getSystem()
+            if "enforceEgoisticBehavior" in system.keys() and system["enforceEgoisticBehavior"]:
+                params = Parameter.getParameterObject()
+                demandCarrier = params.demandCarrier[carrier,node,time]
+                bounds = (0,demandCarrier)
+                return(bounds)
+            else:
+                return(None,None)
+
         model = EnergySystem.getConcreteModel()
         
         # flow of imported carrier
@@ -179,6 +196,7 @@ class Carrier(Element):
         model.shedDemandCarrierLow = pe.Var(
             cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain=pe.NonNegativeReals,
+            bounds=shedDemandCarrierBounds,
             doc="shed demand of carrier at low price. Dimensions: setCarriers, setNodes, setTimeStepsOperation. Domain: NonNegativeReals"
         )
         # cost of shed demand at low price

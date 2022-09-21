@@ -12,8 +12,10 @@ Description:    Class defining the parameters, variables and constraints that ho
 import logging
 import warnings
 import pyomo.environ as pe
+import pyomo.gdp as pgdp
 import numpy as np
 from model.objects.technology.technology import Technology
+from model.objects.technology.conversion_technology import ConversionTechnology
 from model.objects.energy_system import EnergySystem
 from model.objects.parameter import Parameter
 
@@ -190,6 +192,23 @@ class TransportTechnology(Technology):
             rule=constraintBidirectionalTransportTechnologyRule,
             doc='Forces that transport technology capacity must be equal in both direction. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
         )
+        # disjunct to enforce egoistic behavior
+        if "enforceEgoisticBehavior" in system.keys() and system["enforceEgoisticBehavior"]:
+            model.disjunctEgoisticBehaviorNoFlow = pgdp.Disjunct(
+                cls.createCustomSet(["setTransportTechnologies", "setNodes","setTimeStepsOperation"]),
+                rule=cls.disjunctEgoisticBehaviorNoFlowRule,
+                doc="disjunct to enforce egoistic behavior, no flow. Dimensions: setTechnologies, setNodes, setTimeStepsOperation"
+            )
+            model.disjunctEgoisticBehaviorNoShedDemandLow = pgdp.Disjunct(
+                cls.createCustomSet(["setTransportTechnologies", "setNodes", "setTimeStepsOperation"]),
+                rule=cls.disjunctEgoisticBehaviorNoShedDemandLowRule,
+                doc="disjunct to enforce egoistic behavior, no shed demand at low cost. Dimensions: setTechnologies, setNodes, setTimeStepsOperation"
+            )
+            model.disjunctionEgoisticBehavior = pgdp.Disjunction(
+                cls.createCustomSet(["setTransportTechnologies", "setNodes", "setTimeStepsOperation"]),
+                rule=cls.disjunctionEgoisticBehaviorRule,
+                doc="disjunction to enforce egoistic behavior, no flow. Dimensions: setTechnologies, setNodes, setTimeStepsOperation"
+            )
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -212,6 +231,38 @@ class TransportTechnology(Technology):
         disjunct.constraintNoLoad = pe.Constraint(
             expr=model.carrierFlow[tech, edge, time] == 0
         )
+
+    @classmethod
+    def disjunctEgoisticBehaviorNoFlowRule(cls,disjunct,tech,node,time):
+        """ definition of disjunct constraint to enforce that reducing own voluntarily shed demand is preferred over transporting to other nodes - no flow"""
+        model       = disjunct.model()
+        edgesOut    = EnergySystem.calculateConnectedEdges(node,direction="out")
+        disjunct.constraintNoFlowOut = pe.Constraint(
+            expr= sum(model.carrierFlow[tech, edge, time] for edge in edgesOut) == 0
+        )
+
+    @classmethod
+    def disjunctEgoisticBehaviorNoShedDemandLowRule(cls, disjunct, tech, node, time):
+        """ definition of disjunct constraint to enforce that reducing own voluntarily shed demand is preferred over transporting to other nodes - no flow"""
+        model = disjunct.model()
+        # set shedDemandCarrierLow of all carriers that are either transported (referenceCarrier)
+        # or that are the output of conversionTechnologies with the referenceCarrier of this transportTechnology as the inputCarrier
+        referenceCarrier            = cls.getAttributeOfSpecificElement(tech,"referenceCarrier")[0]
+        listConnectedCarriers       = [referenceCarrier]
+        setConversionTechnologies   = EnergySystem.getEnergySystem().setConversionTechnologies
+        for conversionTechnology in setConversionTechnologies:
+            if referenceCarrier in ConversionTechnology.getAttributeOfSpecificElement(conversionTechnology,"inputCarrier"):
+                listConnectedCarriers.extend(ConversionTechnology.getAttributeOfSpecificElement(conversionTechnology,"outputCarrier"))
+        listUniqueConnectedCarriers = list(set(listConnectedCarriers))
+        # TODO different time steps
+        disjunct.constraintNoShedDemandCarrierLow = pe.Constraint(
+            expr= sum(model.shedDemandCarrierLow[connectedCarrier,node,time] for connectedCarrier in listUniqueConnectedCarriers) == 0
+        )
+
+    @classmethod
+    def disjunctionEgoisticBehaviorRule(cls,model,tech,node,time):
+        """ definition that enforces egoistic behavior disjuncts """
+        return([model.disjunctEgoisticBehaviorNoFlow[tech,node,time],model.disjunctEgoisticBehaviorNoShedDemandLow[tech,node,time]])
 
 ### --- functions with constraint rules --- ###
 def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
