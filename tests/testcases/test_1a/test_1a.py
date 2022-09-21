@@ -12,14 +12,13 @@ import os
 import logging
 import sys
 import pytest
-from   config                                    import config
+from   config_1a                                 import config
+from   zen_garden                                import restore_default_state
 from   zen_garden.preprocess.prepare             import Prepare
 from   zen_garden.model.optimization_setup       import OptimizationSetup
 from   zen_garden.postprocess.results            import Postprocess
 from   zen_garden.model.objects.energy_system    import EnergySystem
 
-# wrap in function for pytest
-@pytest.mark.forked
 def test_1a():
 
     # SETUP LOGGER
@@ -38,8 +37,8 @@ def test_1a():
     # prevent double printing
     logging.propagate = False
 
-    # reset the energy system
-    EnergySystem.reset_system()
+    # restore defaults
+    restore_default_state()
     
     # create a dictionary with the paths to access the model inputs and check if input data exists
     prepare = Prepare(config)
@@ -73,12 +72,12 @@ def test_1a():
             # add cumulative carbon emissions to previous carbon emissions
             optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
             # EVALUATE RESULTS
-            modelName = config.analysis["dataset"]
+            nameDir = os.path.join(config.analysis["dataset"], "outputs")
             if len(stepsOptimizationHorizon) > 1:
-                modelName += f"_MF{stepHorizon}"
+                nameDir += f"_MF{stepHorizon}"
             if config.system["conductScenarioAnalysis"]:
-                modelName += f"_{scenario}"
-            evaluation = Postprocess(optimizationSetup, modelName=modelName)
+                nameDir += f"_{scenario}"
+            evaluation = Postprocess(optimizationSetup, nameDir=nameDir)
 
 if __name__ == "__main__":
     test_1a()
