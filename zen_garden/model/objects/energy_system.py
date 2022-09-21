@@ -757,46 +757,6 @@ class EnergySystem:
             sense=objectiveSense
         )
 
-    @classmethod
-    def reset_system(cls):
-        """
-        Resets the EnergySystem to its initial state
-        """
-
-        # energySystem
-        cls.energySystem = None
-        # pe.ConcreteModel
-        cls.concreteModel = None
-        # analysis
-        cls.analysis = None
-        # system
-        cls.system = None
-        # paths
-        cls.paths = None
-        # solver
-        cls.solver = None
-        # unit handling instance
-        cls.unitHandling = None
-        # empty list of indexing sets
-        cls.indexingSets = []
-        # empty dict of technologies of carrier
-        cls.dictTechnologyOfCarrier = {}
-        # empty dict of sequence of time steps operation
-        cls.dictSequenceTimeStepsOperation = {}
-        # empty dict of sequence of time steps invest
-        cls.dictSequenceTimeStepsInvest = {}
-        # empty dict of sequence of time steps yearly
-        cls.dictSequenceTimeStepsYearly = {}
-        # empty dict of conversion from energy time steps to power time steps for storage technologies
-        cls.dictTimeStepsEnergy2Power = {}
-        # empty dict of conversion from operational time steps to invest time steps for technologies
-        cls.dictTimeStepsOperation2Invest = {}
-        # empty dict of matching the last time step of the year in the storage domain to the first
-        cls.dictTimeStepsStorageLevelStartEndYear = {}
-        # empty dict of element classes
-        #cls.dictElementClasses = {}
-        # empty list of class names
-        cls.elementList = {}
 
 def constraintCarbonEmissionsTotalRule(model, year):
     """ add up all carbon emissions from technologies and carriers """
