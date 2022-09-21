@@ -5,7 +5,7 @@
 /data/*/
 /data/*
 !/data/.gitkeep
-outputs/
+outputs*/
 /data_generation/
 /postprocess/results_JM.py
 /postprocess/results_MH.py
