@@ -144,9 +144,9 @@ class Carrier(Element):
             :param node: node
             :param time: operational time step
             :return bounds: bounds of shedDemandCarrierLow"""
-            # bounds only needed for Big-M formulation, if enforceEgoisticBehavior
+            # bounds only needed for Big-M formulation, if enforceSelfishBehavior
             system = EnergySystem.getSystem()
-            if "enforceEgoisticBehavior" in system.keys() and system["enforceEgoisticBehavior"]:
+            if "enforceSelfishBehavior" in system.keys() and system["enforceSelfishBehavior"]:
                 params = Parameter.getParameterObject()
                 demandCarrier = params.demandCarrier[carrier,node,time]
                 bounds = (0,demandCarrier)

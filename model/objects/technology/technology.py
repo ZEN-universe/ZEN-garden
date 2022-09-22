@@ -435,9 +435,9 @@ class Technology(Element):
             :param time: investment time step
             :return bounds: bounds of capacity"""
             # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
-            # or if transportTechnology and enforceEgoisticBehavior
+            # or if transportTechnology and enforceSelfishBehavior
             system = EnergySystem.getSystem()
-            if tech in techsOnOff or ("enforceEgoisticBehavior" in system.keys() and system["enforceEgoisticBehavior"] and tech in system["setTransportTechnologies"]):
+            if tech in techsOnOff or ("enforceSelfishBehavior" in system.keys() and system["enforceSelfishBehavior"] and tech in system["setTransportTechnologies"]):
                 params = Parameter.getParameterObject()
                 if capacityType == system["setCapacityTypes"][0]:
                     _energyString = ""

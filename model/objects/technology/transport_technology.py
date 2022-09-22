@@ -192,22 +192,22 @@ class TransportTechnology(Technology):
             rule=constraintBidirectionalTransportTechnologyRule,
             doc='Forces that transport technology capacity must be equal in both direction. Dimensions: setTransportTechnologies, setEdges, setTimeStepsInvest'
         )
-        # disjunct to enforce egoistic behavior
-        if "enforceEgoisticBehavior" in system.keys() and system["enforceEgoisticBehavior"]:
-            model.disjunctEgoisticBehaviorNoFlow = pgdp.Disjunct(
-                cls.createCustomSet(["setTransportTechnologies", "setNodes","setTimeStepsOperation"]),
-                rule=cls.disjunctEgoisticBehaviorNoFlowRule,
-                doc="disjunct to enforce egoistic behavior, no flow. Dimensions: setTechnologies, setNodes, setTimeStepsOperation"
+        # disjunct to enforce Selfish behavior
+        if "enforceSelfishBehavior" in system.keys() and system["enforceSelfishBehavior"]:
+            model.disjunctSelfishBehaviorNoFlow = pgdp.Disjunct(
+                cls.createCustomSet(["setTransportTechnologies", "setSelfishNodes","setTimeStepsOperation"]),
+                rule=cls.disjunctSelfishBehaviorNoFlowRule,
+                doc="disjunct to enforce Selfish behavior, no flow. Dimensions: setTechnologies, setSelfishNodes, setTimeStepsOperation"
             )
-            model.disjunctEgoisticBehaviorNoShedDemandLow = pgdp.Disjunct(
-                cls.createCustomSet(["setTransportTechnologies", "setNodes", "setTimeStepsOperation"]),
-                rule=cls.disjunctEgoisticBehaviorNoShedDemandLowRule,
-                doc="disjunct to enforce egoistic behavior, no shed demand at low cost. Dimensions: setTechnologies, setNodes, setTimeStepsOperation"
+            model.disjunctSelfishBehaviorNoShedDemandLow = pgdp.Disjunct(
+                cls.createCustomSet(["setTransportTechnologies", "setSelfishNodes", "setTimeStepsOperation"]),
+                rule=cls.disjunctSelfishBehaviorNoShedDemandLowRule,
+                doc="disjunct to enforce Selfish behavior, no shed demand at low cost. Dimensions: setTechnologies, setSelfishNodes, setTimeStepsOperation"
             )
-            model.disjunctionEgoisticBehavior = pgdp.Disjunction(
-                cls.createCustomSet(["setTransportTechnologies", "setNodes", "setTimeStepsOperation"]),
-                rule=cls.disjunctionEgoisticBehaviorRule,
-                doc="disjunction to enforce egoistic behavior, no flow. Dimensions: setTechnologies, setNodes, setTimeStepsOperation"
+            model.disjunctionSelfishBehavior = pgdp.Disjunction(
+                cls.createCustomSet(["setTransportTechnologies", "setSelfishNodes", "setTimeStepsOperation"]),
+                rule=cls.disjunctionSelfishBehaviorRule,
+                doc="disjunction to enforce Selfish behavior, no flow. Dimensions: setTechnologies, setSelfishNodes, setTimeStepsOperation"
             )
 
     # defines disjuncts if technology on/off
@@ -233,7 +233,7 @@ class TransportTechnology(Technology):
         )
 
     @classmethod
-    def disjunctEgoisticBehaviorNoFlowRule(cls,disjunct,tech,node,time):
+    def disjunctSelfishBehaviorNoFlowRule(cls,disjunct,tech,node,time):
         """ definition of disjunct constraint to enforce that reducing own voluntarily shed demand is preferred over transporting to other nodes - no flow"""
         model       = disjunct.model()
         edgesOut    = EnergySystem.calculateConnectedEdges(node,direction="out")
@@ -242,7 +242,7 @@ class TransportTechnology(Technology):
         )
 
     @classmethod
-    def disjunctEgoisticBehaviorNoShedDemandLowRule(cls, disjunct, tech, node, time):
+    def disjunctSelfishBehaviorNoShedDemandLowRule(cls, disjunct, tech, node, time):
         """ definition of disjunct constraint to enforce that reducing own voluntarily shed demand is preferred over transporting to other nodes - no flow"""
         model = disjunct.model()
         # set shedDemandCarrierLow of all carriers that are either transported (referenceCarrier)
@@ -260,9 +260,9 @@ class TransportTechnology(Technology):
         )
 
     @classmethod
-    def disjunctionEgoisticBehaviorRule(cls,model,tech,node,time):
-        """ definition that enforces egoistic behavior disjuncts """
-        return([model.disjunctEgoisticBehaviorNoFlow[tech,node,time],model.disjunctEgoisticBehaviorNoShedDemandLow[tech,node,time]])
+    def disjunctionSelfishBehaviorRule(cls,model,tech,node,time):
+        """ definition that enforces Selfish behavior disjuncts """
+        return([model.disjunctSelfishBehaviorNoFlow[tech,node,time],model.disjunctSelfishBehaviorNoShedDemandLow[tech,node,time]])
 
 ### --- functions with constraint rules --- ###
 def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):

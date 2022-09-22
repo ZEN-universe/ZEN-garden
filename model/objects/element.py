@@ -283,6 +283,7 @@ class Element:
         :param listIndex: list of names of indices
         :return customSet: custom set index """
         model           = EnergySystem.getConcreteModel()
+        system          = EnergySystem.getSystem()
         indexingSets    = EnergySystem.getIndexingSets()
         # check if all index sets are already defined in model and no set is indexed
         if all([(hasattr(model,index) and not model.find_component(index).is_indexed()) for index in listIndex]):
@@ -329,6 +330,12 @@ class Element:
                             # if element in setTransportTechnologies
                             elif element in model.setTransportTechnologies:
                                 listSets.append(model.setEdges)
+                        elif index == "setSelfishNodes":
+                            if "setSelfishNodes" in system:
+                                setSelfishNodes = sorted(list(set(model.setNodes).intersection(system["setSelfishNodes"])))
+                                listSets.append(setSelfishNodes)
+                            else:
+                                listSets.append(model.setNodes)
                         # if set is built for PWA capex:
                         elif "setCapex" in index:
                             if element in model.setConversionTechnologies:

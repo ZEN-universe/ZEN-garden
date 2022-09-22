@@ -249,10 +249,9 @@ class OptimizationSetup():
         solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
         self.opt            = pe.SolverFactory(solverName, options=solverOptions)
         self.opt.set_instance(self.model,symbolic_solver_labels=solver["useSymbolicLabels"])
-        self.results        = self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
+        self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
         # enable logger 
         logging.disable(logging.NOTSET)
-        self.model.solutions.load_from(self.results)
 
     def addNewlyBuiltCapacity(self,stepHorizon):
         """ adds the newly built capacity to the existing capacity
