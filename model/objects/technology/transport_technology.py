@@ -195,19 +195,22 @@ class TransportTechnology(Technology):
         # disjunct to enforce Selfish behavior
         if "enforceSelfishBehavior" in system.keys() and system["enforceSelfishBehavior"]:
             model.disjunctSelfishBehaviorNoFlow = pgdp.Disjunct(
-                cls.createCustomSet(["setTransportTechnologies", "setSelfishNodes","setTimeStepsOperation"]),
+                cls.createCustomSet(["setTransportTechnologies","setSelfishNodes"]),
+                # system["setSelfishNodes"],
                 rule=cls.disjunctSelfishBehaviorNoFlowRule,
-                doc="disjunct to enforce Selfish behavior, no flow. Dimensions: setTechnologies, setSelfishNodes, setTimeStepsOperation"
+                doc="disjunct to enforce Selfish behavior, no flow. Dimensions: setSelfishNodes"
             )
             model.disjunctSelfishBehaviorNoShedDemandLow = pgdp.Disjunct(
-                cls.createCustomSet(["setTransportTechnologies", "setSelfishNodes", "setTimeStepsOperation"]),
+                cls.createCustomSet(["setTransportTechnologies","setSelfishNodes"]),
+                # system["setSelfishNodes"],
                 rule=cls.disjunctSelfishBehaviorNoShedDemandLowRule,
-                doc="disjunct to enforce Selfish behavior, no shed demand at low cost. Dimensions: setTechnologies, setSelfishNodes, setTimeStepsOperation"
+                doc="disjunct to enforce Selfish behavior, no shed demand at low cost. Dimensions: setSelfishNodes"
             )
             model.disjunctionSelfishBehavior = pgdp.Disjunction(
-                cls.createCustomSet(["setTransportTechnologies", "setSelfishNodes", "setTimeStepsOperation"]),
+                cls.createCustomSet(["setTransportTechnologies","setSelfishNodes"]),
+                # system["setSelfishNodes"],
                 rule=cls.disjunctionSelfishBehaviorRule,
-                doc="disjunction to enforce Selfish behavior, no flow. Dimensions: setTechnologies, setSelfishNodes, setTimeStepsOperation"
+                doc="disjunction to enforce Selfish behavior, no flow. Dimensions: setSelfishNodes"
             )
 
     # defines disjuncts if technology on/off
@@ -233,22 +236,35 @@ class TransportTechnology(Technology):
         )
 
     @classmethod
-    def disjunctSelfishBehaviorNoFlowRule(cls,disjunct,tech,node,time):
+    def disjunctSelfishBehaviorNoFlowRule(cls,disjunct,tech,node):
         """ definition of disjunct constraint to enforce that reducing own voluntarily shed demand is preferred over transporting to other nodes - no flow"""
         model       = disjunct.model()
+        solver      = EnergySystem.getSolver()
         edgesOut    = EnergySystem.calculateConnectedEdges(node,direction="out")
         disjunct.constraintNoFlowOut = pe.Constraint(
-            expr= sum(model.carrierFlow[tech, edge, time] for edge in edgesOut) == 0
+            expr= sum(
+                sum(
+                    # sum(
+                    model.carrierFlow[tech, edge, time]
+                    for time in model.setTimeStepsOperation[tech]
+                    # )
+                    # for tech in model.setTransportTechnologies
+                )
+                for edge in edgesOut
+            ) <= 10**(-solver["roundingDecimalPointsTS"])
         )
 
     @classmethod
-    def disjunctSelfishBehaviorNoShedDemandLowRule(cls, disjunct, tech, node, time):
+    def disjunctSelfishBehaviorNoShedDemandLowRule(cls, disjunct,tech, node):
         """ definition of disjunct constraint to enforce that reducing own voluntarily shed demand is preferred over transporting to other nodes - no flow"""
-        model = disjunct.model()
+        model   = disjunct.model()
+        solver  = EnergySystem.getSolver()
         # set shedDemandCarrierLow of all carriers that are either transported (referenceCarrier)
         # or that are the output of conversionTechnologies with the referenceCarrier of this transportTechnology as the inputCarrier
+        listConnectedCarriers = []
+        # for tech in model.setTransportTechnologies:
         referenceCarrier            = cls.getAttributeOfSpecificElement(tech,"referenceCarrier")[0]
-        listConnectedCarriers       = [referenceCarrier]
+        listConnectedCarriers.extend([referenceCarrier])
         setConversionTechnologies   = EnergySystem.getEnergySystem().setConversionTechnologies
         for conversionTechnology in setConversionTechnologies:
             if referenceCarrier in ConversionTechnology.getAttributeOfSpecificElement(conversionTechnology,"inputCarrier"):
@@ -256,13 +272,19 @@ class TransportTechnology(Technology):
         listUniqueConnectedCarriers = list(set(listConnectedCarriers))
         # TODO different time steps
         disjunct.constraintNoShedDemandCarrierLow = pe.Constraint(
-            expr= sum(model.shedDemandCarrierLow[connectedCarrier,node,time] for connectedCarrier in listUniqueConnectedCarriers) == 0
+            expr= sum(
+                sum(
+                    model.shedDemandCarrierLow[connectedCarrier, node, time]
+                    for time in model.setTimeStepsOperation[connectedCarrier]
+                )
+                for connectedCarrier in listUniqueConnectedCarriers
+            ) <= 10**(-solver["roundingDecimalPointsTS"])
         )
 
     @classmethod
-    def disjunctionSelfishBehaviorRule(cls,model,tech,node,time):
+    def disjunctionSelfishBehaviorRule(cls,model,tech,node):
         """ definition that enforces Selfish behavior disjuncts """
-        return([model.disjunctSelfishBehaviorNoFlow[tech,node,time],model.disjunctSelfishBehaviorNoShedDemandLow[tech,node,time]])
+        return([model.disjunctSelfishBehaviorNoFlow[tech,node],model.disjunctSelfishBehaviorNoShedDemandLow[tech,node]])
 
 ### --- functions with constraint rules --- ###
 def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
