@@ -267,7 +267,7 @@ class Technology(Element):
         if idExistingCapacity is None:
             periodYearly = periodTime[tech]
         else:
-            deltaLifetime =  params.lifetimeExistingTechnology[tech, loc, idExistingCapacity] - periodTime[tech]
+            deltaLifetime = params.lifetimeExistingTechnology[tech, loc, idExistingCapacity] - periodTime[tech]
             if deltaLifetime >= 0:
                 if deltaLifetime <= (investTimeStep - model.setTimeStepsInvest[tech].at(1))*system["intervalBetweenYears"]:
                     return investTimeStep
