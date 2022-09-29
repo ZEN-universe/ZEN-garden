@@ -2,11 +2,12 @@ name: Tests
 
 # Define when to run
 on:
-  schedule:
-    - cron:  '30 4 1 * *'
+        #  schedule:
+          #    - cron:  '30 4 1 * *'
   push:
     branches:
-      - development
+            #      - development
+      - None
 
 # Env variables
 env:
