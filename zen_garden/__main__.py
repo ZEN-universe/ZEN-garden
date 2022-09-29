@@ -25,7 +25,7 @@ def main(args=None):
     # parse the args
     description = "Run ZEN-Garden with a given config file. Per default, the config file will be read out from the " \
                   "current working directory. You can specify a config file with the --config argument. However, " \
-                  "not that the output directory will always be the current working directory, independent of the " \
+                  "note that the output directory will always be the current working directory, independent of the " \
                   "dataset specified in the config file."
     parser = argparse.ArgumentParser(description=description, add_help=True,
                                      usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET]")
