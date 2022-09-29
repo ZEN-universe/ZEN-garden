@@ -14,6 +14,7 @@ outputs*/
 /postprocess/visualization_MH.py
 /postprocess/visualization_AG.py
 *.swp
+*~
 *.pyc
 *.DS_Store
 .coverage
