@@ -113,6 +113,11 @@ def test_5a(config):
 def test_6a(config):
     # run the test
     restore_default_state()
+
+    # Change the config according to Alissa's settings
+    # Slack message 30/09/22
+    config.solver["analyzeNumerics"]                           = False
+
     compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_6a"))
 
 
