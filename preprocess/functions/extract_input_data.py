@@ -229,6 +229,8 @@ class DataInput():
                 assert len(setNodesConfig) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
                 _missingNodes   = list(set(setNodesConfig).difference(setNodesInput))
                 assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {self.folderPath+'setNodes'}"
+            if not isinstance(setNodesConfig, list):
+                setNodesConfig = setNodesConfig.to_list()
             setNodesConfig.sort()
             return setNodesConfig
         else:

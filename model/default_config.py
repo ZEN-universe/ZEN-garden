@@ -40,7 +40,8 @@ analysis["discountRate"] = 0.06
 analysis["transportDistance"] = "Euclidean"
 # dictionary with subsets related to set
 analysis["subsets"] = {"setCarriers": [],
-                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"]}
+                       "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"],
+                       "setConversionTechnologies": ["setConditioningTechnologies"]}
 # headers for the generation of input files
 analysis["headerDataInputs"] =   {"setNodes": ["node", "x", "y"],
                                   "setEdges": ["edge"],
@@ -114,6 +115,7 @@ system["setStorageTechnologies"] = []
 # set of transport technologies
 system["setTransportTechnologies"] = []
 system['DoubleCapexTransport'] = False
+system["setBidirectionalTransportTechnologies"] = []
 # set of nodes
 system["setNodes"] = []
 # toggle to use timeSeriesAggregation
@@ -138,7 +140,7 @@ system["folderNameSystemSpecification"] = "systemSpecification"
 
 ## Solver - Items assignment
 # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
-solver["name"]      = "gurobi_persistent"
+solver["name"]      = "glpk"
 # gurobi options
 solver["solverOptions"] = {
     "logfile":      ".//outputs//logs//pyomoLogFile.log",
@@ -151,7 +153,7 @@ solver["useSymbolicLabels"] = False
 # analyze numerics
 solver["analyzeNumerics"]   = False
 solver["immutableUnit"]     = []
-solver["rangeUnitExponents"]    = {"min":-3,"max":3,"stepWidth":1}
+solver["rangeUnitExponents"]    = {"min":-1,"max":1,"stepWidth":1}
 # round down to number of decimal points, for new capacity and unit multipliers
 solver["roundingDecimalPoints"]     = 5
 # round down to number of decimal points, for time series after TSA

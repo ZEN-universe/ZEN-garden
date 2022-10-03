@@ -842,11 +842,19 @@ def constraintNPVRule(model, year):
     """ discounts the annual capital flows to calculate the NPV """
     system = EnergySystem.getSystem()
     discountRate = EnergySystem.getAnalysis()["discountRate"]
+    if system["optimizedYears"] > 1:
+        intervalBetweenYears = system["intervalBetweenYears"]
+    else:
+        intervalBetweenYears = 1
+
     return (
             model.NPV[year] ==
             model.costTotal[year] *
-            # economic discount
-            ((1 / (1 + discountRate)) ** (system["intervalBetweenYears"] * (year - model.setTimeStepsYearly.at(1))))
+            sum(
+                # economic discount
+                ((1 / (1 + discountRate)) ** (intervalBetweenYears * (year - model.setTimeStepsYearly.at(1))+intermediateTimeStep))
+                for intermediateTimeStep in range(0,intervalBetweenYears)
+            )
     )
 
 # objective rules

@@ -69,9 +69,10 @@ class ConversionTechnology(Technology):
             self.capexSpecific = _PWACapex["capex"] * fractionalAnnuity + self.fixedOpexSpecific
         else:
             self.PWACapex          = _PWACapex
-            self.PWACapex["capex"] = [(value * fractionalAnnuity + self.fixedOpexSpecific) for value in self.PWACapex["capex"]]
+            assert (self.fixedOpexSpecific==self.fixedOpexSpecific).all(), "PWACapex is only implemented for constant values of fixed Opex"
+            self.PWACapex["capex"] = [(value * fractionalAnnuity + self.fixedOpexSpecific[0]) for value in self.PWACapex["capex"]]
             # set bounds
-            self.PWACapex["bounds"]["capex"] = tuple([(bound * fractionalAnnuity + self.fixedOpexSpecific) for bound in self.PWACapex["bounds"]["capex"]])
+            self.PWACapex["bounds"]["capex"] = tuple([(bound * fractionalAnnuity + self.fixedOpexSpecific[0]) for bound in self.PWACapex["bounds"]["capex"]])
         # calculate capex of existing capacity
         self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
 
@@ -113,6 +114,8 @@ class ConversionTechnology(Technology):
             # extract for linear
             elif not getattr(_element,_isPWAAttribute) and not selectPWA:
                 dictOfAttributes,_ = cls.appendAttributeOfElementToDict(_element, _attributeNameLinear, dictOfAttributes)
+            if not dictOfAttributes:
+                return dictOfAttributes
         dictOfAttributes = pd.concat(dictOfAttributes,keys=dictOfAttributes.keys())
         if not indexNames:
             return dictOfAttributes
@@ -259,7 +262,7 @@ class ConversionTechnology(Technology):
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(setPWACapex,"Capex")
             model.constraintPWACapex = pe.Piecewise(setPWACapex,
                 model.capexApproximation,model.capacityApproximation,
-                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False)
+                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False,pw_repn="BIGM_BIN")
         if setLinearCapex:
             # if setLinearCapex contains technologies:
             model.constraintLinearCapex = pe.Constraint(
@@ -275,7 +278,7 @@ class ConversionTechnology(Technology):
             PWABreakpoints,PWAValues = cls.calculatePWABreakpointsValues(setPWAConverEfficiency,"ConverEfficiency")
             model.constraintPWAConverEfficiency = pe.Piecewise(setPWAConverEfficiency,
                 model.dependentFlowApproximation,model.referenceFlowApproximation,
-                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False)
+                pw_pts = PWABreakpoints,pw_constr_type = "EQ", f_rule = PWAValues,unbounded_domain_var = True, warn_domain_coverage =False,pw_repn="BIGM_BIN")
         if setLinearConverEfficiency:
             # if setLinearConverEfficiency contains technologies:
             model.constraintLinearConverEfficiency = pe.Constraint(
@@ -309,7 +312,7 @@ class ConversionTechnology(Technology):
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):
+    def disjunctOnTechnologyRule(cls,disjunct, tech,capacityType, node, time):
         """definition of disjunct constraints if technology is On"""
         model = disjunct.model()
         # get parameter object
@@ -323,7 +326,7 @@ class ConversionTechnology(Technology):
         investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
-            expr=referenceFlow >= params.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
+            expr=referenceFlow >= params.minLoad[tech,capacityType,node,time] * model.capacity[tech,capacityType,node, investTimeStep]
         )
         # couple reference flows
         disjunct.constraintReferenceFlowCoupling = pe.Constraint(
@@ -343,7 +346,7 @@ class ConversionTechnology(Technology):
             doc = "couples the real dependent flow variables with the approximated variables. Dimension: tech, setDependentCarriers[tech], node, time.")
 
     @classmethod
-    def disjunctOffTechnologyRule(cls,disjunct, tech, node, time):
+    def disjunctOffTechnologyRule(cls,disjunct, tech, capacityType, node, time):
         """definition of disjunct constraints if technology is off"""
         model = disjunct.model()
         disjunct.constraintNoLoad = pe.Constraint(
