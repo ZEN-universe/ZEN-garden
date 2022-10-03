@@ -95,6 +95,8 @@ jobs:
         if: ${{ always() && matrix.label == 'linux-64' }} # include always to overwrite cancel on failure of previous step
         shell: bash -l {0}
         run: |
+          # move to the correct dir
+          cd /tmp/$(basename $(pwd))
           echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
           echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
 
