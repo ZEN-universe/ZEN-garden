@@ -15,8 +15,8 @@ import os
 import pickle
 import pandas as pd
 from datetime import datetime
-from model.objects.energy_system import EnergySystem
-from model.objects.parameter import Parameter
+from ..model.objects.energy_system import EnergySystem
+from ..model.objects.parameter import Parameter
 
 import matplotlib.pyplot as plt
 
@@ -42,7 +42,8 @@ class Postprocess:
         # self.system    = model.system
         # self.analysis  = model.analysis
         self.modelName = kwargs.get('modelName', self.modelName)
-        self.nameDir   = f'./outputs/{self.modelName}/'
+        # if specified we get the output dir from the kwargs otherwise we do it the old way
+        self.nameDir = kwargs.get('nameDir', os.path.join('./outputs', self.modelName))
 
         # self.makeDirs()
         # self.getVarValues()
@@ -93,7 +94,7 @@ class Postprocess:
             pass
 
         try:
-            os.makedirs(f'{self.nameDir}/plots/')
+            os.makedirs(os.path.join(self.nameDir, 'plots'))
         except OSError:
             pass
 
@@ -122,19 +123,19 @@ class Postprocess:
             self.paramDict[param] = getattr(self.params,param)
 
         # save the param dict to a pickle
-        with open(f'{self.nameDir}paramDict.pickle', 'wb') as file:
+        with open(os.path.join(self.nameDir, 'paramDict.pickle'), 'wb') as file:
             pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
         # save sequence time steps
         dictSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
         # save the param dict to a pickle
-        with open(f'{self.nameDir}dictAllSequenceTimeSteps.pickle', 'wb') as file:
+        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.pickle'), 'wb') as file:
             pickle.dump(dictSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def loadParam(self):
         """ Loads the Param values from previously saved pickle files which can then be
         post-processed """
-        with open(f'{self.nameDir}paramDict.pickle', 'rb') as file:
+        with open(os.path.join(self.nameDir, 'paramDict.pickle'), 'rb') as file:
             self.paramDict = pickle.load(file)
 
     def getVarValues(self):
@@ -166,7 +167,7 @@ class Postprocess:
                         pass
 
         # save the variable dict to a pickle
-        with open(f'{self.nameDir}varDict.pickle', 'wb') as file:
+        with open(os.path.join(self.nameDir, 'varDict.pickle'), 'wb') as file:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     # def saveVar_HB(self):  # My own function to save the variables in better dicts
@@ -200,27 +201,27 @@ class Postprocess:
     def loadVar(self):
         """ Loads the variable values from previously saved pickle files which can then be
         post-processed """
-        with open(f'{self.nameDir}varDict.pickle', 'rb') as file:
+        with open(os.path.join(self.nameDir, 'varDict.pickle'), 'rb') as file:
             self.varDict = pickle.load(file)
 
     def saveSystem(self):
-        with open(f'{self.nameDir}System.pickle', 'wb') as file:
+        with open(os.path.join(self.nameDir, 'System.pickle'), 'wb') as file:
             pickle.dump(self.system, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def saveAnalysis(self):
-        with open(f'{self.nameDir}Analysis.pickle', 'wb') as file:
+        with open(os.path.join(self.nameDir, 'Analysis.pickle'), 'wb') as file:
             pickle.dump(self.analysis, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def loadSystem(self):
         """ Loads the system object from previously saved pickle files which can then be
         post-processed """
-        with open(f'{self.nameDir}System.pickle', 'rb') as file:
+        with open(os.path.join(self.nameDir, 'System.pickle'), 'rb') as file:
             self.system = pickle.load(file)
 
     def loadAnalysis(self):
         """ Loads the analysis object from previously saved pickle files which can then be
         post-processed """
-        with open(f'{self.nameDir}Analysis.pickle', 'rb') as file:
+        with open(os.path.join(self.nameDir, 'Analysis.pickle'), 'rb') as file:
             self.analysis = pickle.load(file)
 
     # def createDataframe(self, obj, dict, df):
@@ -285,22 +286,22 @@ class Postprocess:
         """save the input data (paramDict, paramDf) and the results (varDict, varDf)"""
 
         # Save parameter data
-        with open(f'{self.nameDir}paramDict.pickle', 'wb') as file:
+        with open(os.path.join(self.nameDir, 'paramDict.pickle'), 'wb') as file:
             pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for paramName, df in self.paramDf.items():
-            df.to_csv(f'{self.nameDir}{paramName}.csv')
+            df.to_csv(os.path.join(self.nameDir, f'{paramName}.csv'))
 
         # Save variable data
-        with open(f'{self.nameDir}varDict.pickle', 'wb') as file:
+        with open(os.path.join(self.nameDir, 'varDict.pickle'), 'wb') as file:
             pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
         for varName, df in self.varDf.items():
-            df.to_csv(f'{self.nameDir}{varName}.csv', index=False)
+            df.to_csv(os.path.join(self.nameDir, f'{varName}.csv'), index=False)
 
     def process(self):
         print(self.varDict.items())
         for var,dic in self.varDict.items():
             self.createDataframe(var, self.varDict, self.varDf)
-            self.varDf[var].to_csv(f'{self.nameDir}{var}.csv', index=False)
+            self.varDf[var].to_csv(os.path.join(self.nameDir, f'{var}.csv'), index=False)
             self.plotResults()
 
     def plotResults(self):
@@ -335,12 +336,12 @@ class Postprocess:
                             leg.append(la)
                 plt.legend(leg)
 
-                path = f'{self.nameDir}plots/'+varName+'.png'
+                path = os.oath.join(self.nameDir, 'plots', varName+'.png')
                 plt.savefig(path)
 
         # safe dictSequenceTimeSteps
         dictAllSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
-        with open(f'{self.nameDir}dictAllSequenceTimeSteps.pickle', 'wb') as file:
+        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.pickle'), 'wb') as file:
             pickle.dump(dictAllSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
     # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))

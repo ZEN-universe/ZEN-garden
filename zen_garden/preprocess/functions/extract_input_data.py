@@ -139,7 +139,7 @@ class DataInput():
         # select data
         fileNames = os.listdir(self.folderPath)
         if inputFileName in fileNames:
-            dfInput = pd.read_csv(self.folderPath+inputFileName, header=0, index_col=None)
+            dfInput = pd.read_csv(os.path.join(self.folderPath, inputFileName), header=0, index_col=None)
             return dfInput
         else:
             return None

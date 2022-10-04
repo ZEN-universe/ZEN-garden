@@ -42,22 +42,20 @@ class Prepare:
 
         ## General Paths
         # define path to access dataset related to the current analysis
-        self.pathData = f".//data//{self.analysis['dataset']}//"
+        self.pathData = self.analysis['dataset']
         assert os.path.exists(self.pathData), f"Folder for input data {self.analysis['dataset']} does not exist!"
         self.paths = dict()
         # create a dictionary with the keys based on the folders in pathData
         for folderName in next(os.walk(self.pathData))[1]:
             self.paths[folderName] = dict()
-            self.paths[folderName]["folder"] = \
-                self.pathData + f"{folderName}//"
+            self.paths[folderName]["folder"] = os.path.join(self.pathData, folderName)
 
         ## Carrier Paths
         # add the paths for all the directories in carrier folder
         path = self.paths["setCarriers"]["folder"]
         for carrier in next(os.walk(path))[1]:
             self.paths["setCarriers"][carrier] = dict()
-            self.paths["setCarriers"][carrier]["folder"] = \
-                path + f"{carrier}//"
+            self.paths["setCarriers"][carrier]["folder"] = os.path.join(path, carrier)
 
         ## Technology Paths
         # add the paths for all the directories in technologies
@@ -65,8 +63,7 @@ class Prepare:
             path = self.paths[technologySubset]["folder"]
             for technology in next(os.walk(path))[1]:
                 self.paths[technologySubset][technology] = dict()
-                self.paths[technologySubset][technology]["folder"] = \
-                    path + f"{technology}//"
+                self.paths[technologySubset][technology]["folder"] = os.path.join(path, technology)
 
     def checkExistingInputData(self):
         """This method checks the existing input data and only regards those elements for which folders exist.

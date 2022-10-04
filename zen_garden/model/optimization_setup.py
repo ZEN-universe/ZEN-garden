@@ -20,11 +20,11 @@ import pandas as pd
 import numpy as np
 # import elements of the optimization problem
 # technology and carrier classes from technology and carrier directory, respectively
-from model.objects.element                              import Element
-from model.objects.technology                           import *
-from model.objects.carrier                              import *
-from model.objects.energy_system                        import EnergySystem
-from preprocess.functions.time_series_aggregation       import TimeSeriesAggregation
+from .objects.element                              import Element
+from .objects.technology                           import *
+from .objects.carrier                              import *
+from .objects.energy_system                        import EnergySystem
+from ..preprocess.functions.time_series_aggregation       import TimeSeriesAggregation
 
 class OptimizationSetup():
 

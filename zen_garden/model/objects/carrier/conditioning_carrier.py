@@ -10,10 +10,10 @@ Description:    Class defining compressable energy carriers.
                 constraints of a generic carrier and returns the abstract optimization model.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ                    as pe
-from model.objects.energy_system        import EnergySystem
-from model.objects.carrier.carrier      import Carrier
-from model.objects.parameter            import Parameter
+import pyomo.environ            as pe
+from ..energy_system        import EnergySystem
+from .carrier               import Carrier
+from ..parameter            import Parameter
 
 class ConditioningCarrier(Carrier):
     # set label
