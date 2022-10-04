@@ -82,21 +82,22 @@ jobs:
         run: mamba env update -f zen_garden_env.yml
         if: steps.cache.outputs.cache-hit != 'true'
 
+      - name: Install package
+        run: pip install -e .
+
       - name: Run tests Windows
         if: ${{ matrix.label == 'windows-64' }}
-        run: .\run_tests.bat
+        run: coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
 
       - name: Run tests Linux or MacOS
         if: ${{ matrix.label == 'linux-64' || matrix.label == 'osx-64' }}
         shell: bash -l {0}
-        run: ./run_tests.sh
+        run: coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
 
       - name: Extract Coverage
         if: ${{ always() && matrix.label == 'linux-64' }} # include always to overwrite cancel on failure of previous step
         shell: bash -l {0}
         run: |
-          # move to the correct dir
-          cd /tmp/$(basename $(pwd))
           echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
           echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
 
