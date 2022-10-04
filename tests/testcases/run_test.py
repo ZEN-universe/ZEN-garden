@@ -38,6 +38,18 @@ def test_1b(config):
     compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1b"))
 
 
+def test_2a(config):
+    # run the test
+    restore_default_state()
+    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2a"))
+
+
+def test_2b(config):
+    # run the test
+    restore_default_state()
+    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2b"))
+
+
 def test_2c(config):
     # run the test
     restore_default_state()
