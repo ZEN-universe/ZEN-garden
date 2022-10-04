@@ -12,9 +12,9 @@ Description:    Class defining the parameters, variables and constraints that ho
 import logging
 import pyomo.environ as pe
 import numpy as np
-from model.objects.technology.technology import Technology
-from model.objects.energy_system import EnergySystem
-from model.objects.parameter import Parameter
+from .technology import Technology
+from ..energy_system import EnergySystem
+from ..parameter import Parameter
 
 class StorageTechnology(Technology):
     # set label

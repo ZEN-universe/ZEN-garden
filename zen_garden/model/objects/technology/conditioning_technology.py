@@ -12,8 +12,8 @@ import logging
 import pyomo.environ                                as pe
 import pandas                                       as pd
 import numpy                                        as np
-from model.objects.energy_system                    import EnergySystem
-from model.objects.technology.conversion_technology import ConversionTechnology
+from ..energy_system                    import EnergySystem
+from .conversion_technology import ConversionTechnology
 
 class ConditioningTechnology(ConversionTechnology):
     # set label

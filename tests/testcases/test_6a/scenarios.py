@@ -6,9 +6,9 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 
 Description:  Scenario settings settings.
 ==========================================================================================================================================================================="""
-from model.default_config   import scenarios
 import numpy                as np
 
 # scenario analysis
+scenarios                 = {}
 scenarios["2"]            = {"EnergySystem": ["carbonEmissionsLimit"]}
 scenarios["3"]            = {"natural_gas": ["demandCarrier"]}
