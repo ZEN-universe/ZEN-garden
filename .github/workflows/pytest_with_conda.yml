@@ -87,12 +87,16 @@ jobs:
 
       - name: Run tests Windows
         if: ${{ matrix.label == 'windows-64' }}
-        run: coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
+        run: |
+          coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
+          coverage report -m
 
       - name: Run tests Linux or MacOS
         if: ${{ matrix.label == 'linux-64' || matrix.label == 'osx-64' }}
         shell: bash -l {0}
-        run: coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
+        run: |
+          coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
+          coverage report -m
 
       - name: Extract Coverage
         if: ${{ always() && matrix.label == 'linux-64' }} # include always to overwrite cancel on failure of previous step
