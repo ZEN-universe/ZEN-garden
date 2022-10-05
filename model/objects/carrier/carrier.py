@@ -364,10 +364,13 @@ def constraintCostCarrierRule(model, carrier, node, time):
     """ cost of importing/exporting carrier"""
     # get parameter object
     params = Parameter.getParameterObject()
-    return(model.costCarrier[carrier,node, time] ==
-        params.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] -
-        params.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
-    )
+    if params.availabilityCarrierImport[carrier, node, time] != 0 or params.availabilityCarrierExport[carrier, node, time] != 0:
+        return(model.costCarrier[carrier,node, time] ==
+            params.importPriceCarrier[carrier, node, time]*model.importCarrierFlow[carrier, node, time] -
+            params.exportPriceCarrier[carrier, node, time]*model.exportCarrierFlow[carrier, node, time]
+        )
+    else:
+        return (model.costCarrier[carrier, node, time] == 0)
 
 def constraintCostShedDemandLowRule(model, carrier, node, time):
     """ cost of shedding demand of carrier at low price"""
@@ -434,10 +437,13 @@ def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
     params = Parameter.getParameterObject()
     baseTimeStep    = EnergySystem.decodeTimeStep(carrier, time)
     yearlyTimeStep  = EnergySystem.encodeTimeStep(None,baseTimeStep,"yearly")
-    return (model.carbonEmissionsCarrier[carrier, node, time] ==
-            params.carbonIntensityCarrier[carrier, node, yearlyTimeStep] *
-            (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
-            )
+    if params.availabilityCarrierImport[carrier,node,time] != 0 or params.availabilityCarrierExport[carrier,node,time] != 0:
+        return (model.carbonEmissionsCarrier[carrier, node, time] ==
+                params.carbonIntensityCarrier[carrier, node, yearlyTimeStep] *
+                (model.importCarrierFlow[carrier, node, time] - model.exportCarrierFlow[carrier, node, time])
+                )
+    else:
+        return (model.carbonEmissionsCarrier[carrier, node, time] == 0)
 
 def constraintCarbonEmissionsCarrierTotalRule(model, year):
     """ total carbon emissions of importing/exporting carrier"""
