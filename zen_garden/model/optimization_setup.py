@@ -25,6 +25,7 @@ from .objects.technology                           import *
 from .objects.carrier                              import *
 from .objects.energy_system                        import EnergySystem
 from ..preprocess.functions.time_series_aggregation       import TimeSeriesAggregation
+#from ..utils                                       import RedirectStdStreams
 
 class OptimizationSetup():
 
@@ -257,10 +258,16 @@ class OptimizationSetup():
             self.results    = self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
         else:
             self.opt = pe.SolverFactory(solverName)
-            self.results    = self.opt.solve(self.model,tee=solver["verbosity"], keepfiles=True, logfile=solver["solverOptions"]["logfile"])
+            self.results    = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solverOptions"]["logfile"])
         # enable logger
         logging.disable(logging.NOTSET)
-        self.model.solutions.load_from(self.results)
+
+        # store the solution into the results
+        self.model.solutions.store_to(self.results, skip_stale_vars=True)
+
+        # write results to file
+        #with RedirectStdStreams(open("huhu.yml", "w+")):
+        #    self.results.write()
 
     def addNewlyBuiltCapacity(self,stepHorizon):
         """ adds the newly built capacity to the existing capacity

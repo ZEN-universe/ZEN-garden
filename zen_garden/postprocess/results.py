@@ -14,6 +14,8 @@ import csv
 import os
 import pickle
 import pandas as pd
+import json
+
 from datetime import datetime
 from ..model.objects.energy_system import EnergySystem
 from ..model.objects.parameter import Parameter
@@ -32,71 +34,47 @@ class Postprocess:
     modelName = str()
 
 
-    def __init__(self, model=None, **kwargs):
+    def __init__(self, model, **kwargs):
         """postprocessing of the results of the optimization
         :param model:     optimization model
         :param pyoDict:   input data dictionary
         :param modelName: model name used for the directory to save the results in"""
 
-        # self.model     = model.model
-        # self.system    = model.system
-        # self.analysis  = model.analysis
-        self.modelName = kwargs.get('modelName', self.modelName)
-        # if specified we get the output dir from the kwargs otherwise we do it the old way
+        self.modelName = kwargs.get('modelName', "")
         self.nameDir = kwargs.get('nameDir', os.path.join('./outputs', self.modelName))
 
-        # self.makeDirs()
-        # self.getVarValues()
-        # self.saveResults()
-        # self.plotResults()
+        # get the necessary stuff from the model
+        self.model = model.model
+        self.system = model.system
+        self.analysis = model.analysis
+        self.params = Parameter.getParameterObject()
 
-        # case where the class is called from the command line
-        if model==None:
-            self.loadParam()
-            self.loadVar()
-            self.loadSystem()
-            self.loadAnalysis()
+        # create output directories
+        os.makedirs(os.path.join(self.nameDir, 'plots'), exist_ok=True)
+
+        # save everything
+        self.saveParam()
+        self.saveVar()
+        exit(0)
+
+        # case where we should run the post-process as normal
+        if model.analysis['postprocess']:
+
+
+            self.saveParam()
+            self.saveVar()
+            self.saveSystem()
+            self.saveAnalysis()
             self.process()
 
         # case where we are called from compile but should not perform the post-processing
-        elif model.analysis['postprocess']==False:
-
-            self.model      = model.model
-            self.system     = model.system
-            self.analysis   = model.analysis
-            self.params     = Parameter.getParameterObject()
-
-            self.makeDirs()
-            self.saveParam()
-            self.saveVar()
-            self.saveSystem()
-            self.saveAnalysis()
-
-        # case where we should run the post-process as normal
         else:
 
-            self.model     = model.model
-            self.system    = model.system
-            self.analysis  = model.analysis
-
             self.makeDirs()
             self.saveParam()
             self.saveVar()
             self.saveSystem()
             self.saveAnalysis()
-            self.process()
-
-    def makeDirs(self):
-        """create results directory"""
-        try:
-            os.makedirs(self.nameDir)
-        except OSError:
-            pass
-
-        try:
-            os.makedirs(os.path.join(self.nameDir, 'plots'))
-        except OSError:
-            pass
 
     def getParamValues(self):
         """get the values assigned to each variable"""
@@ -119,16 +97,36 @@ class Postprocess:
         #     self.paramDict[param.name] = dict()
         #     for index in param:
         #         self.paramDict[param.name][index] = pe.value(param[index])
+        # dataframe serialization
+        data_frames = {}
         for param in self.params.parameterList:
-            self.paramDict[param] = getattr(self.params,param)
+            # get the values
+            vals = getattr(self.params, param)
+            # create a dictionary if necessary
+            if not isinstance(vals, dict):
+                indices = [(0, )]
+                data = [vals]
+            else:
+                indices = [k if isinstance(k, tuple) else (k, ) for k in vals.keys()]
+                data = [v for v in vals.values()]
 
-        # save the param dict to a pickle
-        with open(os.path.join(self.nameDir, 'paramDict.pickle'), 'wb') as file:
-            pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
+            # create dataframe
+            df = pd.DataFrame(data=data, columns=["value"], index=pd.MultiIndex.from_tuples(indices))
+
+            # update dict
+            data_frames[param] = {"dataframe": {f"{k}": v for k, v in df.to_dict(orient="index").items()},
+                                  "docstring": self.params.docs[param]}
+
+        # write to json
+        with open(os.path.join(self.nameDir, 'paramDict.json'), 'w+') as outfile:
+            json.dump(data_frames, outfile, indent=2)
 
         # save sequence time steps
         dictSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
-        # save the param dict to a pickle
+        # save the param dict to a json
+        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.json'), 'w+') as outfile:
+            json.dump(dictSequenceTimeSteps, outfile, indent=2)
+
         with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.pickle'), 'wb') as file:
             pickle.dump(dictSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -155,48 +153,23 @@ class Postprocess:
         """ Saves the variable values to pickle files which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
 
-        # get all the variable values from the model and store in a dict
+        # dataframe serialization
+        data_frames = {}
         for var in self.model.component_objects(pe.Var, active=True):
-            if 'constraint' not in var.name and 'gdp' not in var.name:
-                # save vars in a dict
-                self.varDict[var.name] = dict()
-                for index in var:
-                    try:
-                        self.varDict[var.name][index] = var[index].value
-                    except:
-                        pass
+            # get indices and values
+            indices = [index if isinstance(index, tuple) else (index, ) for index in var]
+            values = [getattr(var[index], "value", None) for index in indices]
 
-        # save the variable dict to a pickle
-        with open(os.path.join(self.nameDir, 'varDict.pickle'), 'wb') as file:
-            pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
+            # create dataframe
+            df = pd.DataFrame(data=values, columns=["value"], index=pd.MultiIndex.from_tuples(indices))
 
-    # def saveVar_HB(self):  # My own function to save the variables in better dicts
-    #     """ Saves the variable values to pickle files which can then be
-    #     post-processed immediately or loaded and postprocessed at some other time"""
-    #
-    #     # get all the variable values from the model and store in a dict
-    #     for var in self.model.component_objects(pe.Var, active=True):
-    #         if 'constraint' not in var.name and 'gdp' not in var.name:
-    #             # create a sub-dict for each variable
-    #             self.varDict[var.name] = dict()
-    #             for index in var:
-    #                 # if variable is sub-splitted (e.g. for child-classes) create sub-dicts
-    #                 if type(index) is tuple:
-    #                     try:
-    #                         self.varDict[var.name][index[0]][index[1:]] = var[index].value
-    #                     except KeyError:
-    #                         self.varDict[var.name][index[0]] = dict()
-    #                         self.varDict[var.name][index[0]][index[1:]] = var[index].value
-    #                 # for index in var:
-    #                 else:
-    #                     try:
-    #                         self.varDict[var.name][index] = var[index].value
-    #                     except:
-    #                         pass
-    #
-    #     # save the variable dict to a pickle
-    #     with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
-    #         pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
+            # save to dict, we transform the multiindex tuples to strings such that we can use standard json to dump
+            data_frames[var.name] = {"dataframe": {f"{k}": v for k, v in df.to_dict(orient="index").items()},
+                                     "docstring": var.doc}
+
+        with open(os.path.join(self.nameDir, 'varDict.json'), 'w+') as outfile:
+            json.dump(data_frames, outfile, indent=2)
+
 
     def loadVar(self):
         """ Loads the variable values from previously saved pickle files which can then be
@@ -346,7 +319,8 @@ class Postprocess:
     # indexNames  = self.getProperties(getattr(self.model, varName).doc)
     # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))
 
-if __name__ == "__main__":
-    today = datetime.date()
-    modelName = "model_" + today.strftime("%Y-%m-%d")
-    evaluation = Postprocess(modelName=modelName)
+class Results(object):
+    """
+    This class reads in the results after the pipeline has run
+    """
+    pass
