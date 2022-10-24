@@ -6,12 +6,15 @@ channels:
 dependencies:
   - numpy
   - gurobi
+  - glpk
   - geopandas
   - pandas
   - pip
 #  - pyomo=6.2
   - pyomo=6.*
   - python=3.9.*
+  - coverage
+  - pytest
   - scipy
   - sympy
   - ipython
