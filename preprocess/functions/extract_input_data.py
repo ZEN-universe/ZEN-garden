@@ -93,7 +93,10 @@ class DataInput():
 
         # no indices missing
         if len(missingIndex) == 0:
-            dfInput = DataInput.extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName)
+            if column not in dfInput.columns and column is not None:
+                return dfOutput
+            else:
+                dfInput = DataInput.extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName)
         else:
             missingIndex = missingIndex[0]
             # check if special case of existing Technology

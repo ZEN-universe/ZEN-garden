@@ -54,6 +54,7 @@ class Carrier(Element):
         self.shedDemandPriceHigh                        = self.dataInput.extractInputData("shedDemandPriceHigh",indexSets = [])
         self.shedDemandPriceLow                         = self.dataInput.extractInputData("shedDemandPriceLow",indexSets = [])
         self.maxShedDemandLow                           = self.dataInput.extractInputData("maxShedDemandLow",indexSets = [])
+        self.maxShedDemandHigh                          = self.dataInput.extractInputData("maxShedDemandHigh",indexSets = [])
 
     def overwriteTimeSteps(self,baseTimeSteps):
         """ overwrites setTimeStepsOperation and  setTimeStepsEnergyBalance"""
@@ -128,6 +129,11 @@ class Carrier(Element):
             name="maxShedDemandLow",
             data=EnergySystem.initializeComponent(cls, "maxShedDemandLow"),
             doc='Parameter which specifies the maximum fraction of shed demand at low price. \n\t Dimensions: setCarriers')
+        # maximum fraction of shed demand high
+        Parameter.addParameter(
+            name="maxShedDemandHigh",
+            data=EnergySystem.initializeComponent(cls, "maxShedDemandHigh"),
+            doc='Parameter which specifies the maximum fraction of shed demand at high price. \n\t Dimensions: setCarriers')
         # carbon intensity
         Parameter.addParameter(
             name="carbonIntensityCarrier",
@@ -276,6 +282,12 @@ class Carrier(Element):
             rule=constraintLimitShedDemandLowRule,
             doc="limit on shedding carrier demand at low price as fraction of demand. Dimensions: setCarriers, setNodes, setTimeStepsOperation."
         )
+        # limit demand shedding at high price
+        model.constraintLimitShedDemandHigh = pe.Constraint(
+            cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            rule=constraintLimitShedDemandHighRule,
+            doc="limit on shedding carrier demand at high price as fraction of demand. Dimensions: setCarriers, setNodes, setTimeStepsOperation."
+        )
         # total cost for carriers
         model.constraintCostCarrierTotal = pe.Constraint(
             model.setTimeStepsYearly,
@@ -407,6 +419,19 @@ def constraintLimitShedDemandLowRule(model, carrier, node, time):
     if params.maxShedDemandLow[carrier] < 1:
         return(
             model.shedDemandCarrierLow[carrier,node,time] <= params.demandCarrier[carrier, node, time] * params.maxShedDemandLow[carrier]
+        )
+    else:
+        return(
+            pe.Constraint.Skip
+        )
+
+def constraintLimitShedDemandHighRule(model, carrier, node, time):
+    """ limit demand shedding at high price """
+    # get parameter object
+    params = Parameter.getParameterObject()
+    if params.maxShedDemandHigh[carrier] < 1:
+        return(
+            model.shedDemandCarrierHigh[carrier,node,time] <= params.demandCarrier[carrier, node, time] * params.maxShedDemandHigh[carrier]
         )
     else:
         return(
