@@ -77,8 +77,10 @@ class TransportTechnology(Technology):
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
         fractionalAnnuity       = self.calculateFractionalAnnuity()
+        system                  = EnergySystem.getSystem()
+        _fractionOfYear         = system["unaggregatedTimeStepsPerYear"] / system["totalHoursPerYear"]
         # annualize capex
-        self.capexSpecific      = self.capexSpecific * fractionalAnnuity + self.fixedOpexSpecific
+        self.capexSpecific      = self.capexSpecific * fractionalAnnuity + self.fixedOpexSpecific * _fractionOfYear
         self.capexPerDistance   = self.capexPerDistance * fractionalAnnuity
 
     def calculateCapexOfSingleCapacity(self,capacity,index):
