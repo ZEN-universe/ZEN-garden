@@ -63,16 +63,17 @@ class ConversionTechnology(Technology):
         """ this method retrieves the total capex and converts it to annualized capex """
         _PWACapex,self.capexIsPWA = self.dataInput.extractPWAData("Capex")
         # annualize capex
-        fractionalAnnuity = self.calculateFractionalAnnuity()
-
+        fractionalAnnuity   = self.calculateFractionalAnnuity()
+        system              = EnergySystem.getSystem()
+        _fractionOfYear     = system["unaggregatedTimeStepsPerYear"] / system["totalHoursPerYear"]
         if not self.capexIsPWA:
-            self.capexSpecific = (_PWACapex["capex"] + self.fixedOpexSpecific)* fractionalAnnuity
+            self.capexSpecific = _PWACapex["capex"] * fractionalAnnuity + self.fixedOpexSpecific*_fractionOfYear
         else:
             self.PWACapex          = _PWACapex
             assert (self.fixedOpexSpecific==self.fixedOpexSpecific).all(), "PWACapex is only implemented for constant values of fixed Opex"
-            self.PWACapex["capex"] = [(value + self.fixedOpexSpecific[0])* fractionalAnnuity for value in self.PWACapex["capex"]]
+            self.PWACapex["capex"] = [(value * fractionalAnnuity + self.fixedOpexSpecific[0]*_fractionOfYear) for value in self.PWACapex["capex"]]
             # set bounds
-            self.PWACapex["bounds"]["capex"] = tuple([(bound + self.fixedOpexSpecific[0]) * fractionalAnnuity for bound in self.PWACapex["bounds"]["capex"]])
+            self.PWACapex["bounds"]["capex"] = tuple([(bound * fractionalAnnuity + self.fixedOpexSpecific[0]*_fractionOfYear) for bound in self.PWACapex["bounds"]["capex"]])
         # calculate capex of existing capacity
         self.capexExistingCapacity = self.calculateCapexOfExistingCapacities()
 

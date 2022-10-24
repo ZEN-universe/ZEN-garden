@@ -70,9 +70,11 @@ class StorageTechnology(Technology):
     def convertToAnnualizedCapex(self):
         """ this method converts the total capex to annualized capex """
         fractionalAnnuity           = self.calculateFractionalAnnuity()
+        system                      = EnergySystem.getSystem()
+        _fractionOfYear             = system["unaggregatedTimeStepsPerYear"] / system["totalHoursPerYear"]
         # annualize capex
-        self.capexSpecific          = self.capexSpecific        * fractionalAnnuity + self.fixedOpexSpecific
-        self.capexSpecificEnergy    = self.capexSpecificEnergy  * fractionalAnnuity + self.fixedOpexSpecificEnergy
+        self.capexSpecific          = self.capexSpecific        * fractionalAnnuity + self.fixedOpexSpecific * _fractionOfYear
+        self.capexSpecificEnergy    = self.capexSpecificEnergy  * fractionalAnnuity + self.fixedOpexSpecificEnergy * _fractionOfYear
 
     def calculateCapexOfSingleCapacity(self,capacity,index,storageEnergy = False):
         """ this method calculates the annualized capex of a single existing capacity. """
