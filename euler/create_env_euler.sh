@@ -21,3 +21,4 @@ source zen_garden_env/bin/activate
 # install the requirements
 pip install -U pip
 pip install -r requirements.txt
+pip install -e ..
