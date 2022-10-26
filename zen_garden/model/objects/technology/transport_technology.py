@@ -253,8 +253,8 @@ class TransportTechnology(Technology):
                     # for tech in model.setTransportTechnologies
                 )
                 for edge in edgesOut
-            # ) <= 10**(-solver["roundingDecimalPointsTS"])
-            ) == 0
+            ) <= 10**(-solver["roundingDecimalPointsTS"])
+            # ) == 0
         )
 
     @classmethod
@@ -281,8 +281,8 @@ class TransportTechnology(Technology):
                     for time in model.setTimeStepsOperation[connectedCarrier]
                 )
                 for connectedCarrier in listUniqueConnectedCarriers
-            # ) <= 10**(-solver["roundingDecimalPointsTS"])
-            ) == 0
+            ) <= 10**(-solver["roundingDecimalPointsTS"])
+            # ) == 0
         )
 
     @classmethod
