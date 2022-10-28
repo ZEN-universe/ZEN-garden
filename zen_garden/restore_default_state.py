@@ -142,16 +142,6 @@ def restore_default_state():
     OptimizationSetup.baseScenario      = ""
     OptimizationSetup.baseConfiguration = {}
 
-    # Postprocess
-    #############
-
-    Postprocess.system    = dict()
-    Postprocess.varDict   = dict()
-    Postprocess.varDf     = dict()
-    Postprocess.paramDict = dict()
-    Postprocess.paramDf   = dict()
-    Postprocess.modelName = str()
-
     # TimeSeriesAggregation
     #######################
 

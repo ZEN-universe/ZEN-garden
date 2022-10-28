@@ -8,38 +8,27 @@ Description:  Class is defining the postprocessing of the results.
               The class takes as inputs the optimization problem (model) and the system configurations (system).
               The class contains methods to read the results and save them in a result dictionary (resultDict).
 ==========================================================================================================================================================================="""
-import logging
+
 import pyomo.environ as pe
-import csv
 import os
 import pickle
 import pandas as pd
 import json
 
-from datetime import datetime
 from ..model.objects.energy_system import EnergySystem
 from ..model.objects.parameter import Parameter
-
-import matplotlib.pyplot as plt
-
-#from postprocess.functions.create_dashboard_dictionary import DashboardDictionary
+from ..utils import RedirectStdStreams
 
 class Postprocess:
 
-    system    = dict()
-    varDict   = dict()
-    varDf     = dict()
-    paramDict = dict()
-    paramDf   = dict()
-    modelName = str()
-
-
     def __init__(self, model, **kwargs):
         """postprocessing of the results of the optimization
-        :param model:     optimization model
-        :param pyoDict:   input data dictionary
-        :param modelName: model name used for the directory to save the results in"""
+        :param model: optimization model
+        :param results: the results instance of the optimization model
+        :param **kwargs: Additional keyword arguments such as the model name used for the directory to save the
+                         results in"""
 
+        # get name or directory
         self.modelName = kwargs.get('modelName', "")
         self.nameDir = kwargs.get('nameDir', os.path.join('./outputs', self.modelName))
 
@@ -49,43 +38,31 @@ class Postprocess:
         self.analysis = model.analysis
         self.params = Parameter.getParameterObject()
 
-        # create output directories
-        os.makedirs(os.path.join(self.nameDir, 'plots'), exist_ok=True)
+        # create the output directory
+        os.makedirs(self.nameDir, exist_ok=True)
+
+        # save the pyomo yml
+        with RedirectStdStreams(open(os.path.join(self.nameDir, "results.yml"), "w+")):
+            model.results.write()
 
         # save everything
         self.saveParam()
         self.saveVar()
-        exit(0)
+        self.saveSystem()
+        self.saveAnalysis()
+
+        # TODO: Find a better format for this
+        # save sequence time steps
+        dictSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
+
+        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.pickle'), 'wb') as file:
+            pickle.dump(dictSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
 
         # case where we should run the post-process as normal
         if model.analysis['postprocess']:
-
-
-            self.saveParam()
-            self.saveVar()
-            self.saveSystem()
-            self.saveAnalysis()
-            self.process()
-
-        # case where we are called from compile but should not perform the post-processing
-        else:
-
-            self.makeDirs()
-            self.saveParam()
-            self.saveVar()
-            self.saveSystem()
-            self.saveAnalysis()
-
-    def getParamValues(self):
-        """get the values assigned to each variable"""
-
-        for param in self.model.component_objects(pe.Param, active=True):
-            # sava params in a dict
-            self.paramDict[param.name] = dict()
-            for index in param:
-                self.paramDict[param.name][index] = pe.value(param[index])
-            # save params in a dataframe
-            self.createDataframe(param, self.paramDict, self.paramDf)
+            pass
+            # TODO: implement this...
+            #self.process()
 
     def saveParam(self):
         """ Saves the Param values to pickle files which can then be
@@ -106,6 +83,10 @@ class Postprocess:
             if not isinstance(vals, dict):
                 indices = [(0, )]
                 data = [vals]
+            # if the returned dict is emtpy we create a None value
+            elif len(vals) == 0:
+                indices = [(0,)]
+                data = [None]
             else:
                 indices = [k if isinstance(k, tuple) else (k, ) for k in vals.keys()]
                 data = [v for v in vals.values()]
@@ -120,34 +101,6 @@ class Postprocess:
         # write to json
         with open(os.path.join(self.nameDir, 'paramDict.json'), 'w+') as outfile:
             json.dump(data_frames, outfile, indent=2)
-
-        # save sequence time steps
-        dictSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
-        # save the param dict to a json
-        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.json'), 'w+') as outfile:
-            json.dump(dictSequenceTimeSteps, outfile, indent=2)
-
-        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.pickle'), 'wb') as file:
-            pickle.dump(dictSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
-
-    def loadParam(self):
-        """ Loads the Param values from previously saved pickle files which can then be
-        post-processed """
-        with open(os.path.join(self.nameDir, 'paramDict.pickle'), 'rb') as file:
-            self.paramDict = pickle.load(file)
-
-    def getVarValues(self):
-        """get the values assigned to each variable"""
-
-        for var in self.model.component_objects(pe.Var, active=True):
-            if 'constraint' not in var.name and 'gdp' not in var.name:
-                # save vars in a dict
-                self.varDict[var.name] = dict()
-                for index in var:
-                    if var[index].value:
-                        self.varDict[var.name][index] = pe.value(var[index])
-                # save vars in a DataFrame
-                self.createDataframe(var, self.varDict, self.varDf)
 
     def saveVar(self):
         """ Saves the variable values to pickle files which can then be
@@ -170,157 +123,135 @@ class Postprocess:
         with open(os.path.join(self.nameDir, 'varDict.json'), 'w+') as outfile:
             json.dump(data_frames, outfile, indent=2)
 
-
-    def loadVar(self):
-        """ Loads the variable values from previously saved pickle files which can then be
-        post-processed """
-        with open(os.path.join(self.nameDir, 'varDict.pickle'), 'rb') as file:
-            self.varDict = pickle.load(file)
-
     def saveSystem(self):
-        with open(os.path.join(self.nameDir, 'System.pickle'), 'wb') as file:
-            pickle.dump(self.system, file, protocol=pickle.HIGHEST_PROTOCOL)
+        """
+        Saves the system dict as json
+        """
+        with open(os.path.join(self.nameDir, 'System.json'), 'w+') as outfile:
+            json.dump(self.system, outfile, indent=2)
 
     def saveAnalysis(self):
-        with open(os.path.join(self.nameDir, 'Analysis.pickle'), 'wb') as file:
-            pickle.dump(self.analysis, file, protocol=pickle.HIGHEST_PROTOCOL)
+        """
+        Saves the analysis dict as json
+        """
+        with open(os.path.join(self.nameDir, 'Analysis.json'), 'w+') as outfile:
+            json.dump(self.analysis, outfile, indent=2)
 
-    def loadSystem(self):
-        """ Loads the system object from previously saved pickle files which can then be
-        post-processed """
-        with open(os.path.join(self.nameDir, 'System.pickle'), 'rb') as file:
-            self.system = pickle.load(file)
-
-    def loadAnalysis(self):
-        """ Loads the analysis object from previously saved pickle files which can then be
-        post-processed """
-        with open(os.path.join(self.nameDir, 'Analysis.pickle'), 'rb') as file:
-            self.analysis = pickle.load(file)
-
-    # def createDataframe(self, obj, dict, df):
-    #     """ save data in dataframe"""
-    #     if dict[obj.name]:
-    #         if list(dict[obj.name].keys())[0] == None:
-    #             # [index, capacity]
-    #             df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=self.analysis['headerDataOutputs'][obj.name])
-    #             self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
-    #             print(df)
-    #         elif type(list(dict[obj.name].keys())[0]) == int:
-    #             # seems like we never come in here
-    #             print("DID SOMETHING COME IN HERE??")
-    #             df[obj.name] = pd.DataFrame(dict[obj.name].values(), index=list(dict[obj.name].keys()), columns=self.analysis['headerDataOutputs'][obj.name])
-    #             self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
-    #             print(df)
-    #         else:
-    #             # [tech, node, time, capacity]
-    #             df[obj.name] = pd.DataFrame(dict[obj.name].values(),index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
-    #             df[obj.name].columns = self.analysis['headerDataOutputs'][obj.name]
-    #             self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
-    #             print(df)
-    #     else:
-    #         print(f'{obj.name} not evaluated in results_HB.py')
-
-    def createDataframe(self, varName, dict, df):
-        """ save data in dataframe"""
-        if dict[varName]:
-            if list(dict[varName].keys())[0] == None:
-                # [index, capacity]
-                df[varName] = pd.DataFrame(dict[varName].values(), columns=self.analysis['headerDataOutputs'][varName])
-                self.trimZeros(varName, self.varDf, df[varName].columns.values)
-                print(df)
-            elif type(list(dict[varName].keys())[0]) == int:
-                # seems like we never come in here
-                print("DID SOMETHING COME IN HERE??")
-                try:
-                    df[varName] = pd.DataFrame(dict[varName].values(), index=list(dict[varName].keys()), columns=self.analysis['headerDataOutputs'][varName])
-                except KeyError:
-                    logging.info(f"create header for variable {varName}")
-                    df[varName] = pd.DataFrame(dict[varName].values(), index=list(dict[varName].keys()))
-                self.trimZeros(varName, self.varDf, df[varName].columns.values)
-                print(df)
-            else:
-                # [tech, node, time, capacity]
-                df[varName] = pd.DataFrame(dict[varName].values(),index=pd.MultiIndex.from_tuples(dict[varName].keys())).reset_index()
-                df[varName].columns = self.analysis['headerDataOutputs'][varName]
-                self.trimZeros(varName, self.varDf, df[varName].columns.values)
-                print(df)
-        else:
-            print(f'{varName} not evaluated in results.py')
-
-    def trimZeros(self, varName, df, c=[0]):
-        """ Trims out the zero rows in the dataframe """
-        df[varName] = df[varName].loc[~(df[varName][c[-1]]==0)]
-
-        # TODO: handle the case where you are left with an empty dataframe
-        # --> maybe put the check in saveResults() and either have no csv for
-        #   empty dataframe or create a list to keep track of which variables are empty
-
-    def saveResults(self):
-        """save the input data (paramDict, paramDf) and the results (varDict, varDf)"""
-
-        # Save parameter data
-        with open(os.path.join(self.nameDir, 'paramDict.pickle'), 'wb') as file:
-            pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
-        for paramName, df in self.paramDf.items():
-            df.to_csv(os.path.join(self.nameDir, f'{paramName}.csv'))
-
-        # Save variable data
-        with open(os.path.join(self.nameDir, 'varDict.pickle'), 'wb') as file:
-            pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
-        for varName, df in self.varDf.items():
-            df.to_csv(os.path.join(self.nameDir, f'{varName}.csv'), index=False)
-
-    def process(self):
-        print(self.varDict.items())
-        for var,dic in self.varDict.items():
-            self.createDataframe(var, self.varDict, self.varDf)
-            self.varDf[var].to_csv(os.path.join(self.nameDir, f'{var}.csv'), index=False)
-            self.plotResults()
-
-    def plotResults(self):
-        for varName, df in self.varDf.items():
-            # Need to catch here the empty dataframes because we cant plot something that isnt there
-            if df.empty:
-                continue
-            elif varName=='installTechnology':    # --> 1)
-                print('not implemented')
-            elif varName=='carrierFlow' or varName=='carrierLoss': # --> 2)
-                print('not implemented')
-            elif varName=='dependentFlowApproximation' or varName=='inputFlow' or varName=='outputFlow' or varName=='referenceFlowApproximation': # --> 4)
-                print('not implemented')
-            elif varName=='carbonEmissionsCarrierTotal' or varName=='capexTotal' or varName=='carbonEmissionsTechnologyTotal' or varName=='carbonEmissionsTotal' or varName=='costCarrierTotal' or varName=='opexTotal':
-                print('not implemented')
-            elif varName=='carrierFlowCharge' or varName=='carrierFlowDischarge' or varName=='levelCharge':
-                print('not implemented')
-            else: # --> 3)
-                c = df.columns
-                t = 0
-                labels = df[c[0]].unique()
-
-                df = df.sort_values(by=['node',c[0]])
-                df = df.set_index(['node',c[0],'time'])
-                df.loc[(slice(None),slice(None),t), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar', stacked=True, title=varName+'\ntimeStep='+str(t))
-
-                hand, lab = plt.gca().get_legend_handles_labels()
-                leg = []
-                for l in lab:
-                    for la in labels:
-                        if la in l:
-                            leg.append(la)
-                plt.legend(leg)
-
-                path = os.oath.join(self.nameDir, 'plots', varName+'.png')
-                plt.savefig(path)
-
-        # safe dictSequenceTimeSteps
-        dictAllSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
-        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.pickle'), 'wb') as file:
-            pickle.dump(dictAllSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
-    # indexNames  = self.getProperties(getattr(self.model, varName).doc)
-    # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))
 
 class Results(object):
     """
     This class reads in the results after the pipeline has run
     """
-    pass
+
+    def __init__(self, path):
+        """
+        Initializes the Results class with a given path
+        :param path: Path to the output of the optimization problem
+        """
+
+        self.path = os.path.abspath(path)
+
+        # check if the path exists
+        if not os.path.exists(self.path):
+            raise FileNotFoundError(f"No such file or directory: {self.path}")
+
+        # load everything
+        self.dictParam = self.load_params(self.path)
+        self.dictVar = self.load_vars(self.path)
+        self.system = self.load_system(self.path)
+        self.analysis = self.load_analysis(self.path)
+        self.dictSequenceTimeSteps = self.load_sequence_time_steps(self.path)
+
+    @classmethod
+    def _dict2df(cls, dict_raw):
+        """
+        Transforms a parameter or variable dict to a dict containing actual pandas dataframes and not serialized jsons
+        :param dict_raw: The raw dict to parse
+        :return: A dict containing actual dataframes in the dataframe keys
+        """
+
+        # transform back to dataframes
+        dict_df = dict()
+        for key, value in dict_raw.items():
+            # init the dict for the variable
+            dict_df[key] = dict()
+
+            # the docstring we keep
+            dict_df[key]['docstring'] = dict_raw[key]['docstring']
+
+            # the dataframe we transform to an actual dataframe
+            dict_df[key]['dataframe'] = pd.read_json(json.dumps(dict_raw[key]['dataframe']),
+                                                     orient="index")
+
+        return dict_df
+
+    @classmethod
+    def load_params(cls, path):
+        """
+        Loads the parameter dict from a given path
+        :param path: Path to load the parameter dict from
+        :return: The parameter dict
+        """
+
+        # load the raw dict
+        with open(os.path.join(path, "paramDict.json"), "r") as f:
+            paramDict_raw = json.load(f)
+
+        return cls._dict2df(paramDict_raw)
+
+    @classmethod
+    def load_vars(cls, path):
+        """
+        Loads the var dict from a given path
+        :param path: Path to load the var dict from
+        :return: The var dict
+        """
+
+        # load the raw dict
+        with open(os.path.join(path, "varDict.json"), "r") as f:
+            varDict_raw = json.load(f)
+
+        return cls._dict2df(varDict_raw)
+
+    @classmethod
+    def load_system(cls, path):
+        """
+        Loads the system dict from a given path
+        :param path: Directory to load the dictionary from
+        :return: The system dictionary
+        """
+
+        with open(os.path.join(path, "System.json"), "r") as f:
+            system_dict = json.load(f)
+
+        return system_dict
+
+    @classmethod
+    def load_analysis(cls, path):
+        """
+        Loads the analysis dict from a given path
+        :param path: Directory to load the dictionary from
+        :return: The analysis dictionary
+        """
+
+        with open(os.path.join(path, "Analysis.json"), "r") as f:
+            analysis_dict = json.load(f)
+
+        return analysis_dict
+
+    @classmethod
+    def load_sequence_time_steps(cls, path):
+        """
+        Loads the dictSequenceTimeSteps from a given path
+        :param path: Path to load the dict from
+        :return: dictSequenceTimeSteps
+        """
+
+        with open(os.path.join(path, "dictAllSequenceTimeSteps.pickle"), "rb") as f:
+            dictSequenceTimeSteps = pickle.load(f)
+
+        return dictSequenceTimeSteps
+
+    def __str__(self):
+        return f"Results of '{self.path}'"
+    

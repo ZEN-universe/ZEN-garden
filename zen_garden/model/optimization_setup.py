@@ -25,7 +25,6 @@ from .objects.technology                           import *
 from .objects.carrier                              import *
 from .objects.energy_system                        import EnergySystem
 from ..preprocess.functions.time_series_aggregation       import TimeSeriesAggregation
-#from ..utils                                       import RedirectStdStreams
 
 class OptimizationSetup():
 
@@ -264,10 +263,6 @@ class OptimizationSetup():
 
         # store the solution into the results
         self.model.solutions.store_to(self.results, skip_stale_vars=True)
-
-        # write results to file
-        #with RedirectStdStreams(open("huhu.yml", "w+")):
-        #    self.results.write()
 
     def addNewlyBuiltCapacity(self,stepHorizon):
         """ adds the newly built capacity to the existing capacity
