@@ -83,16 +83,10 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
 
       - name: Install package
+        shell: bash -l {0}
         run: pip install -e .
 
-      - name: Run tests Windows
-        if: ${{ matrix.label == 'windows-64' }}
-        run: |
-          coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
-          coverage report -m
-
-      - name: Run tests Linux or MacOS
-        if: ${{ matrix.label == 'linux-64' || matrix.label == 'osx-64' }}
+      - name: Run Tests
         shell: bash -l {0}
         run: |
           coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
