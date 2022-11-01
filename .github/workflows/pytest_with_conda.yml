@@ -7,6 +7,9 @@ on:
   push:
     branches:
       - development
+  pull_request:
+    branches:
+      - development
 
 # Env variables
 env:
@@ -21,7 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: development
           fetch-depth: 0
 
       - name: Check Env File
@@ -54,8 +56,6 @@ jobs:
     steps:
       # checkout the dev branch
       - uses: actions/checkout@v3
-        with:
-          ref: development
 
       # setup the conda env
       - name: Setup Mambaforge
@@ -118,7 +118,7 @@ jobs:
     name: Auto Merge
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ github.event_name != 'schedule' }}
+    if: ${{ github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v3
         with:
