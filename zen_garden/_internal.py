@@ -45,8 +45,9 @@ def compile(config, dataset_path=None):
 
     # overwrite the path if necessary
     if dataset_path is not None:
-        logging.info(f"Overwriting dataset to: {dataset_path}")
+        # logging.info(f"Overwriting dataset to: {dataset_path}")
         config.analysis["dataset"] = dataset_path
+    logging.info(f"Optimizing for dataset {config.analysis['dataset']}")
     # get the abs path to avoid working dir stuff
     config.analysis["dataset"] = os.path.abspath(config.analysis['dataset'])
 
@@ -59,7 +60,6 @@ def compile(config, dataset_path=None):
     spec.loader.exec_module(module)
     system  = module.system
     config.system.update(system)
-
     ### overwrite default system and scenario dictionaries
     if config.system["conductScenarioAnalysis"]:
         scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
