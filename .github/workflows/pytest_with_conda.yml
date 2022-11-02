@@ -7,6 +7,9 @@ on:
   push:
     branches:
       - development
+  pull_request:
+    branches:
+      - development
 
 # Env variables
 env:
@@ -21,7 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: development
           fetch-depth: 0
 
       - name: Check Env File
@@ -54,8 +56,6 @@ jobs:
     steps:
       # checkout the dev branch
       - uses: actions/checkout@v3
-        with:
-          ref: development
 
       # setup the conda env
       - name: Setup Mambaforge
@@ -93,14 +93,14 @@ jobs:
           coverage report -m
 
       - name: Extract Coverage
-        if: ${{ always() && matrix.label == 'linux-64' }} # include always to overwrite cancel on failure of previous step
+        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }} # include always to overwrite cancel on failure of previous step
         shell: bash -l {0}
         run: |
           echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
           echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
 
       - name: Create Coverage Badge
-        if: ${{ always() && matrix.label == 'linux-64' }}
+        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
         uses: schneegans/dynamic-badges-action@v1.4.0
         with:
           auth: ${{ secrets.COVERAGE_SECRET }}
@@ -118,7 +118,7 @@ jobs:
     name: Auto Merge
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ github.event_name != 'schedule' }}
+    if: ${{ github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v3
         with:
