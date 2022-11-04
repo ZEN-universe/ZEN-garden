@@ -14,6 +14,7 @@ import os
 import pickle
 import pandas as pd
 import json
+import yaml
 
 from ..model.objects.energy_system import EnergySystem
 from ..model.objects.parameter import Parameter
@@ -143,13 +144,16 @@ class Results(object):
     This class reads in the results after the pipeline has run
     """
 
-    def __init__(self, path):
+    # TODO: if option to iterate
+    def __init__(self, path, expand=True):
         """
         Initializes the Results class with a given path
         :param path: Path to the output of the optimization problem
+        :param expand: Expand the path to all scenarios via glob, i.e. path*
         """
 
-        self.path = os.path.abspath(path)
+        if expand:
+            self.paths = os.path.abspath(path)
 
         # check if the path exists
         if not os.path.exists(self.path):
@@ -254,4 +258,3 @@ class Results(object):
 
     def __str__(self):
         return f"Results of '{self.path}'"
-    
