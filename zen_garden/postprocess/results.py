@@ -14,6 +14,7 @@ import os
 import pickle
 import pandas as pd
 import json
+import zlib
 
 from ..model.objects.energy_system import EnergySystem
 from ..model.objects.parameter import Parameter
@@ -24,7 +25,6 @@ class Postprocess:
     def __init__(self, model, **kwargs):
         """postprocessing of the results of the optimization
         :param model: optimization model
-        :param results: the results instance of the optimization model
         :param **kwargs: Additional keyword arguments such as the model name used for the directory to save the
                          results in"""
 
@@ -38,12 +38,16 @@ class Postprocess:
         self.analysis = model.analysis
         self.params = Parameter.getParameterObject()
 
+        # get the compression param
+        self.compress = self.system["compressOutput"]
+
         # create the output directory
         os.makedirs(self.nameDir, exist_ok=True)
 
         # save the pyomo yml
-        with RedirectStdStreams(open(os.path.join(self.nameDir, "results.yml"), "w+")):
-            model.results.write()
+        if self.system["writeResultsYML"]:
+            with RedirectStdStreams(open(os.path.join(self.nameDir, "results.yml"), "w+")):
+                model.results.write()
 
         # save everything
         self.saveParam()
@@ -60,6 +64,27 @@ class Postprocess:
             pass
             # TODO: implement this...
             #self.process()
+
+    def write_file(self, name, dictionary):
+        """
+        Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
+        and saved as binary file
+        :param name: Filename without extension
+        :param dictionary: The dictionary to save
+        """
+
+        # serialize to string
+        serialized_dict = json.dumps(dictionary, indent=2)
+
+        if self.compress:
+            # compress and write
+            compressed = zlib.compress(serialized_dict.encode())
+            with open(f"{name}.gzip", "wb") as outfile:
+                outfile.write(compressed)
+        else:
+            # write normal json
+            with open(f"{name}.json", "w+") as outfile:
+                outfile.write(serialized_dict)
 
     def saveParam(self):
         """ Saves the Param values to a json file which can then be
@@ -90,8 +115,7 @@ class Postprocess:
                                   "docstring": self.params.docs[param]}
 
         # write to json
-        with open(os.path.join(self.nameDir, 'paramDict.json'), 'w+') as outfile:
-            json.dump(data_frames, outfile, indent=2)
+        self.write_file(os.path.join(self.nameDir, 'paramDict'), data_frames)
 
     def saveVar(self):
         """ Saves the variable values to a json file which can then be
@@ -111,29 +135,25 @@ class Postprocess:
             data_frames[var.name] = {"dataframe": {f"{k}": v for k, v in df.to_dict(orient="index").items()},
                                      "docstring": var.doc}
 
-        with open(os.path.join(self.nameDir, 'varDict.json'), 'w+') as outfile:
-            json.dump(data_frames, outfile, indent=2)
+        self.write_file(os.path.join(self.nameDir, 'varDict'), data_frames)
 
     def saveSystem(self):
         """
         Saves the system dict as json
         """
-        with open(os.path.join(self.nameDir, 'System.json'), 'w+') as outfile:
-            json.dump(self.system, outfile, indent=2)
+        self.write_file(os.path.join(self.nameDir, 'System'), self.system)
 
     def saveAnalysis(self):
         """
         Saves the analysis dict as json
         """
-        with open(os.path.join(self.nameDir, 'Analysis.json'), 'w+') as outfile:
-            json.dump(self.analysis, outfile, indent=2)
+        self.write_file(os.path.join(self.nameDir, 'Analysis'), self.analysis)
 
     def saveSequenceTimeSteps(self):
         """
         Saves the dictAllSequenceTimeSteps dict as json
         """
-        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.json'), 'w+') as outfile:
-            json.dump(self.dictSequenceTimeSteps, outfile, indent=2)
+        self.write_file(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps'), self.dictSequenceTimeSteps)
 
     def flatten_dict(self, dictionary):
         """
@@ -159,7 +179,6 @@ class Postprocess:
                 dictionary[k] = v
 
         return dictionary
-
 
 
 class Results(object):
