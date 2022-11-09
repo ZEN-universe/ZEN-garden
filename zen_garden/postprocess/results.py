@@ -194,8 +194,8 @@ class Results(object):
         :param expand: Expand the path to all scenarios via glob, i.e. path*
         """
 
-        if expand:
-            self.paths = os.path.abspath(path)
+        # TODO: implement expansion
+        self.path = os.path.abspath(path)
 
         # check if the path exists
         if not os.path.exists(self.path):
@@ -207,6 +207,29 @@ class Results(object):
         self.system = self.load_system(self.path)
         self.analysis = self.load_analysis(self.path)
         self.dictSequenceTimeSteps = self.load_sequence_time_steps(self.path)
+
+    @classmethod
+    def _read_file(cls, name):
+        """
+        Reads out a file and decompresses it if necessary
+        :param name: File name without extension
+        :return: The decompressed content of the file as string
+        """
+
+        # compressed version
+        if os.path.exists(f"{name}.gzip"):
+            with open(f"{name}.gzip", "rb") as f:
+                content_compressed = f.read()
+            return zlib.decompress(content_compressed).decode()
+
+        # normal version
+        if os.path.exists(f"{name}.json"):
+            with open(f"{name}.json", "r") as f:
+                content = f.read()
+            return content
+
+        # raise Error if nothing is found
+        raise FileNotFoundError(f"The file does not exists as json or gzip: {name}")
 
     @classmethod
     def _dict2df(cls, dict_raw):
@@ -240,8 +263,8 @@ class Results(object):
         """
 
         # load the raw dict
-        with open(os.path.join(path, "paramDict.json"), "r") as f:
-            paramDict_raw = json.load(f)
+        raw_dict = cls._read_file(os.path.join(path, "paramDict"))
+        paramDict_raw = json.loads(raw_dict)
 
         return cls._dict2df(paramDict_raw)
 
@@ -254,8 +277,8 @@ class Results(object):
         """
 
         # load the raw dict
-        with open(os.path.join(path, "varDict.json"), "r") as f:
-            varDict_raw = json.load(f)
+        raw_dict = cls._read_file(os.path.join(path, "varDict"))
+        varDict_raw = json.loads(raw_dict)
 
         return cls._dict2df(varDict_raw)
 
@@ -267,8 +290,9 @@ class Results(object):
         :return: The system dictionary
         """
 
-        with open(os.path.join(path, "System.json"), "r") as f:
-            system_dict = json.load(f)
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "System"))
+        system_dict = json.loads(raw_dict)
 
         return system_dict
 
@@ -280,8 +304,9 @@ class Results(object):
         :return: The analysis dictionary
         """
 
-        with open(os.path.join(path, "Analysis.json"), "r") as f:
-            analysis_dict = json.load(f)
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "Analysis"))
+        analysis_dict = json.loads(raw_dict)
 
         return analysis_dict
 
@@ -293,8 +318,9 @@ class Results(object):
         :return: dictSequenceTimeSteps
         """
 
-        with open(os.path.join(path, "dictAllSequenceTimeSteps.pickle"), "rb") as f:
-            dictSequenceTimeSteps = pickle.load(f)
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "dictAllSequenceTimeSteps"))
+        dictSequenceTimeSteps = json.loads(raw_dict)
 
         return dictSequenceTimeSteps
 
