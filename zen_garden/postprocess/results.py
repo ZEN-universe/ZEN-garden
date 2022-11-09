@@ -8,13 +8,12 @@ Description:  Class is defining the postprocessing of the results.
               The class takes as inputs the optimization problem (model) and the system configurations (system).
               The class contains methods to read the results and save them in a result dictionary (resultDict).
 ==========================================================================================================================================================================="""
-
+import numpy as np
 import pyomo.environ as pe
 import os
 import pickle
 import pandas as pd
 import json
-import yaml
 
 from ..model.objects.energy_system import EnergySystem
 from ..model.objects.parameter import Parameter
@@ -52,12 +51,9 @@ class Postprocess:
         self.saveSystem()
         self.saveAnalysis()
 
-        # TODO: Find a better format for this
-        # save sequence time steps
-        dictSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
-
-        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.pickle'), 'wb') as file:
-            pickle.dump(dictSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
+        # extract and save sequence time steps, we transform the arrays to lists
+        self.dictSequenceTimeSteps = self.flatten_dict(EnergySystem.getSequenceTimeStepsDict())
+        self.saveSequenceTimeSteps()
 
         # case where we should run the post-process as normal
         if model.analysis['postprocess']:
@@ -66,15 +62,9 @@ class Postprocess:
             #self.process()
 
     def saveParam(self):
-        """ Saves the Param values to pickle files which can then be
+        """ Saves the Param values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
 
-        # get all the param values from the model and store in a dict
-        # for param in self.model.component_objects(pe.Param, active=True):
-        #     # sava params in a dict
-        #     self.paramDict[param.name] = dict()
-        #     for index in param:
-        #         self.paramDict[param.name][index] = pe.value(param[index])
         # dataframe serialization
         data_frames = {}
         for param in self.params.parameterList:
@@ -104,7 +94,7 @@ class Postprocess:
             json.dump(data_frames, outfile, indent=2)
 
     def saveVar(self):
-        """ Saves the variable values to pickle files which can then be
+        """ Saves the variable values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
 
         # dataframe serialization
@@ -137,6 +127,39 @@ class Postprocess:
         """
         with open(os.path.join(self.nameDir, 'Analysis.json'), 'w+') as outfile:
             json.dump(self.analysis, outfile, indent=2)
+
+    def saveSequenceTimeSteps(self):
+        """
+        Saves the dictAllSequenceTimeSteps dict as json
+        """
+        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.json'), 'w+') as outfile:
+            json.dump(self.dictSequenceTimeSteps, outfile, indent=2)
+
+    def flatten_dict(self, dictionary):
+        """
+        Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can
+        be saved as json file
+        :param dictionary: The input dictionary
+        :return: A copy of the dictionary containing lists instead of arrays
+        """
+        # create a copy of the dict to avoid overwrite
+        dictionary = dictionary.copy()
+
+        # faltten all arrays
+        for k, v in dictionary.items():
+            # recursive call
+            if isinstance(v, dict):
+                dictionary[k] = self.flatten_dict(v)
+                # flatten the array to list
+            elif isinstance(v, np.ndarray):
+                # Note: list(v) creates a list of np objects v.tolist() not
+                dictionary[k] = v.tolist()
+            # take as is
+            else:
+                dictionary[k] = v
+
+        return dictionary
+
 
 
 class Results(object):
