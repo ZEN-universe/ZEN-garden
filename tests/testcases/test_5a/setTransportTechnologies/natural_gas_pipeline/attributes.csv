@@ -1,7 +1,7 @@
 index,value,unit
 minBuiltCapacityDefault,0,GW
 maxBuiltCapacityDefault,inf,GW
-existingCapacityDefault,50,GW
+existingCapacityDefault,0,GW
 capacityLimitDefault,inf,GW
 minLoadDefault,0,
 maxLoadDefault,1,

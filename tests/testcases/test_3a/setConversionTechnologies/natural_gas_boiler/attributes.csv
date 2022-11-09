@@ -11,9 +11,9 @@ referenceCarrier,heat,GW
 carbonIntensityDefault,0,kilotons/GWh
 constructionTimeDefault,0,
 existingInvestedCapacityDefault,0,GW
-fixedOpexSpecificDefault,2,Euro/kW
+fixedOpexSpecificDefault,87.6,Euro/kW
 maxDiffusionRateDefault,inf,
 inputCarrier,natural_gas,GW
 outputCarrier,heat carbon,GW
-converEfficiencyDefault,1.075268817,
-capexSpecificDefault,100,Euro/kW
+converEfficiencyDefault,1.1,
+capexSpecificDefault,876,Euro/kW
