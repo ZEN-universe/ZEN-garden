@@ -123,6 +123,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: development
+          fetch-depth: 0
 
       - name: Pull Request develop -> master
         uses: devops-infra/action-pull-request@v0.5.3
@@ -132,4 +133,3 @@ jobs:
           title: "AUTO PR"
           body: "**This is an automated pull request triggered by successfull tests of the dev branch!**"
           label: 'automated pr'
-          allow_no_diff: true
