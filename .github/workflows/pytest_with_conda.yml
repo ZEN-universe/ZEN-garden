@@ -132,3 +132,4 @@ jobs:
           title: "AUTO PR"
           body: "**This is an automated pull request triggered by successfull tests of the dev branch!**"
           label: 'automated pr'
+          allow_no_diff: true
