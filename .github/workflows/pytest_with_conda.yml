@@ -57,61 +57,61 @@ jobs:
       # checkout the dev branch
       - uses: actions/checkout@v3
 
-#      # setup the conda env
-#      - name: Setup Mambaforge
-#        uses: conda-incubator/setup-miniconda@v2
-#        with:
-#            miniforge-variant: Mambaforge
-#            miniforge-version: latest
-#            activate-environment: zen-garden
-#            use-mamba: true
-#
-#      # date for the cache
-#      - name: Set cache date
-#        run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
-#
-#      # reset cache if env file changed
-#      - uses: actions/cache@v2
-#        with:
-#          path: ${{ matrix.prefix }}
-#          key: ${{ matrix.label }}-conda-${{ hashFiles('zen_garden_env.yml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
-#        id: cache
-#
-#      # This step is cached in case the env file was not changed
-#      - name: Update environment
-#        run: mamba env update -f zen_garden_env.yml
-#        if: steps.cache.outputs.cache-hit != 'true'
-#
-#      - name: Install package
-#        shell: bash -l {0}
-#        run: pip install -e .
-#
-#      - name: Run Tests
-#        shell: bash -l {0}
-#        run: |
-#          coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
-#          coverage report -m
-#
-#      - name: Extract Coverage
-#        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }} # include always to overwrite cancel on failure of previous step
-#        shell: bash -l {0}
-#        run: |
-#          echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
-#          echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
-#
-#      - name: Create Coverage Badge
-#        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
-#        uses: schneegans/dynamic-badges-action@v1.4.0
-#        with:
-#          auth: ${{ secrets.COVERAGE_SECRET }}
-#          gistID: 5d0d79e86182cd9ccd785d824b1f9ac7
-#          filename: zen_coverage.json
-#          label: Coverage
-#          message: ${{ env.COVERAGE_FLT }}%
-#          valColorRange: ${{ env.COVERAGE_INT }}
-#          maxColorRange: 100
-#          minColorRange: 0
-#
+      # setup the conda env
+      - name: Setup Mambaforge
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+            miniforge-variant: Mambaforge
+            miniforge-version: latest
+            activate-environment: zen-garden
+            use-mamba: true
+
+      # date for the cache
+      - name: Set cache date
+        run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
+
+      # reset cache if env file changed
+      - uses: actions/cache@v2
+        with:
+          path: ${{ matrix.prefix }}
+          key: ${{ matrix.label }}-conda-${{ hashFiles('zen_garden_env.yml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
+        id: cache
+
+      # This step is cached in case the env file was not changed
+      - name: Update environment
+        run: mamba env update -f zen_garden_env.yml
+        if: steps.cache.outputs.cache-hit != 'true'
+
+      - name: Install package
+        shell: bash -l {0}
+        run: pip install -e .
+
+      - name: Run Tests
+        shell: bash -l {0}
+        run: |
+          coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
+          coverage report -m
+
+      - name: Extract Coverage
+        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }} # include always to overwrite cancel on failure of previous step
+        shell: bash -l {0}
+        run: |
+          echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
+          echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
+
+      - name: Create Coverage Badge
+        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
+        uses: schneegans/dynamic-badges-action@v1.4.0
+        with:
+          auth: ${{ secrets.COVERAGE_SECRET }}
+          gistID: 5d0d79e86182cd9ccd785d824b1f9ac7
+          filename: zen_coverage.json
+          label: Coverage
+          message: ${{ env.COVERAGE_FLT }}%
+          valColorRange: ${{ env.COVERAGE_INT }}
+          maxColorRange: 100
+          minColorRange: 0
+
 
   # Auto pull request into master if build succeeds
   auto_pr:
