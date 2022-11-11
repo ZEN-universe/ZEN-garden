@@ -10,11 +10,10 @@ Description:  Class is defining the postprocessing of the results.
 ==========================================================================================================================================================================="""
 import numpy as np
 import pyomo.environ as pe
-import os
-import pickle
 import pandas as pd
 import json
 import zlib
+import os
 
 from ..model.objects.energy_system import EnergySystem
 from ..model.objects.parameter import Parameter
