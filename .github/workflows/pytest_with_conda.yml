@@ -121,13 +121,13 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: development
 
-      - name: Merge develop -> master
-        uses: devmasx/merge-branch@master
+      - name: Pull Request develop -> master
+        uses: peter-evans/create-pull-request@v4
         with:
-          type: now
-          from_branch: development
-          target_branch: master
           github_token: ${{ github.token }}
+          source_branch: development
+          target_branch: master
+          title: "AUTO PR"
+          body: "**This is an automated pull request triggered by successfull tests of the dev branch!**"
+          label: 'automated pr'
