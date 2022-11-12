@@ -112,36 +112,51 @@ def compile(config, dataset_path=None):
 
 
     #adaption LK
-    return optimizationSetup
-    """
+    #return optimizationSetup
+    #"""
     #adaption_2
     import pandas as pd
     #import csv file containing selected variable values of test model collection
     testVariables = pd.read_csv(os.path.dirname(os.path.abspath(__file__)) + '\\test_variables_readable.csv', header=0, index_col=None)
 
     def compareVariables(testModel):
-        # list to store variable names and indices of variables which don't match the test values
-        failedVariables = []
-        for i in range(testVariables.shape[0]):
-            #skip line if data doesn't correspond to selected test model
-            if testVariables['test'][i] != testModel:
+        # dictionary to store variable names, indices, values and test values of variables which don't match the test values
+        failedVariables = {}
+        #iterate through dataframe rows
+        for dataRow in testVariables.values:
+            #skip row if data doesn't correspond to selected test model
+            if dataRow[0] != testModel:
                 continue
-            variableName = testVariables['variableName'][i]
-            index = testVariables['index'][i]
-            class_method = getattr(optimizationSetup.model,variableName)
-            #iterate over indices of current variable
-            for x in class_method.extract_values():
-                if str(x) == index:
-                    if class_method.extract_values()[x] != 0:
-                        #check if relative error exceeds limit of 10^-3
-                        if abs(class_method.extract_values()[x] - testVariables['value'][i]) / class_method.extract_values()[x] > 10**(-3):
-                            failedVariables.append(testVariables['variableName'][i] + ' ' + testVariables['index'][i])
+            #get variable attribute of optimizationSetup object by using string of the variable's name (e.g. optimizationSetup.model.importCarrierFLow)
+            variableAttribute = getattr(optimizationSetup.model,dataRow[1])
+            #iterate through indices of current variable
+            for variableIndex in variableAttribute.extract_values():
+                #ensure equality of dataRow index and variable index
+                if str(variableIndex) == dataRow[2]:
+                    #check if variable value at current index differs from zero such that relative error can be computed
+                    if variableAttribute.extract_values()[variableIndex] != 0:
+                        #check if relative error exceeds limit of 10^-3, i.e. value differs from test value
+                        if abs(variableAttribute.extract_values()[variableIndex] - dataRow[3]) / variableAttribute.extract_values()[variableIndex] > 10**(-3):
+                            if dataRow[1] in failedVariables:
+                                failedVariables[dataRow[1]][dataRow[2]] = {'computedValue' : variableAttribute.extract_values()[variableIndex]}
+                            else:
+                                failedVariables[dataRow[1]] = {dataRow[2] : {'computedValue' : variableAttribute.extract_values()[variableIndex]} }#variableAttribute.extract_values()[variableIndex]
+                            failedVariables[dataRow[1]][dataRow[2]]['testValue'] = dataRow[3]
                     else:
-                        #check if variable and test variable aren't equal
-                        if class_method.extract_values()[x] != testVariables['value'][i]:
-                            failedVariables.append(testVariables['variableName'][i] + testVariables['index'][i])
-        assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+                        #check if absolute error exceeds specified limit
+                        if abs(variableAttribute.extract_values()[variableIndex] - dataRow[3]) > 10**(-3):
+                            if dataRow[1] in failedVariables:
+                                failedVariables[dataRow[1]][dataRow[2]] = {'computedValue' : variableAttribute.extract_values()[variableIndex]}
+                            else:
+                                failedVariables[dataRow[1]] = {dataRow[2] : {'computedValue' : variableAttribute.extract_values()[variableIndex]} }#variableAttribute.extract_values()[variableIndex]
+                            failedVariables[dataRow[1]][dataRow[2]]['testValue'] = dataRow[3]
+        assertionString = str()
+        for x in failedVariables:
+            assertionString += f"\n{x}{failedVariables[x]}"
+
+        assert len(failedVariables) == 0, f"The variables {assertionString} \ndon't match their test values"
 
     compareVariables('test_1a')
+
     compareVariables('test_1b')
-    """
+    #"""
