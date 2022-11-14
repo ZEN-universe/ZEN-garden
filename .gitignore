@@ -22,6 +22,7 @@ zen_garden_env/
 compileAG.py
 postprocess/eth_colorsAG.py
 postprocess/visualizationAG.py
+preprocess_HB
 
 # Standard python stuff
 # Byte-compiled / optimized / DLL files
