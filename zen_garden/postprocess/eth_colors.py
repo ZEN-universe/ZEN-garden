@@ -80,7 +80,7 @@ class ETHColors:
             "natural_gas_boiler": self.getColor("petrol",60),
             "oil_boiler": self.getColor("bronze",60),
             "electrode_boiler": self.getColor("blue",60),
-            "others": self.getColor("grey",60),
+            "others": self.getColor("red",60),
             "battery": self.getColor("bronze",60),
             "hydrogen_storage": self.getColor("purple",60),
             "natural_gas_storage": self.getColor("petrol",60),
@@ -146,9 +146,11 @@ class ETHColors:
         self.manualColors["Carbon Emission Budget"]             = self.getColor("grey","dark")
         self.manualColors["Carbon Intensity"]                   = self.getColor("BW", 100)
         self.manualColors["Final Cumulative Costs"]             = self.getColor("blue")
-        self.manualColors["Final Cumulative NPC"]             = self.getColor("blue")
+        self.manualColors["Final Cumulative NPC"]               = self.getColor("blue")
         self.manualColors["Maximum New Electricity Capacities"] = self.getColor("red")
         self.manualColors["Spillover Rate Impact"]              = [self.getColor("red"), self.getColor("green")]
+        self.manualColors["reduced electrified heat"]           = self.getColor("green",60)
+        self.manualColors["reduced electricity demand"]         = self.getColor("red","dark")
 
     def getColor(self,color,shade = 100):
         assert color in self.baseColors, f"color {color} not in base colors. Select from {list(self.baseColors.keys())}."
