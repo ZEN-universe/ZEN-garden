@@ -13,6 +13,6 @@ constructionTimeDefault,0,
 existingInvestedCapacityDefault,0,GW
 fixedOpexSpecificDefault,0,Euro/km/MW
 maxDiffusionRateDefault,inf,
-lossFlowDefault,5.00E-05,1/km
+lossFlowDefault,0,1/km
 capexPerDistanceDefault,265,Euro/km/MW
 distanceEuclideanDefault,inf,km

@@ -8,6 +8,7 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
+import copy
 import os
 import sys
 import logging
@@ -83,6 +84,7 @@ def compile(config, dataset_path=None):
     stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
 
     # update input data
+    optimizationSetupList = []
     for scenario, elements in config.scenarios.items():
         optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
         optimizationSetup.overwriteParams(scenario, elements)
@@ -112,8 +114,12 @@ def compile(config, dataset_path=None):
 
 
     #adaption LK
-    #return optimizationSetup
-    #"""
+    #        optimizationSetupCopy = copy.deepcopy(optimizationSetup)
+    #        optimizationSetupList.append(optimizationSetupCopy)
+    #if len(optimizationSetupList) == 1:
+    #    optimizationSetupList = optimizationSetupList[0]
+    #return optimizationSetupList
+    """
     #adaption_2
     import pandas as pd
     #import csv file containing selected variable values of test model collection
@@ -151,12 +157,11 @@ def compile(config, dataset_path=None):
                                 failedVariables[dataRow[1]] = {dataRow[2] : {'computedValue' : variableAttribute.extract_values()[variableIndex]} }#variableAttribute.extract_values()[variableIndex]
                             failedVariables[dataRow[1]][dataRow[2]]['testValue'] = dataRow[3]
         assertionString = str()
-        for x in failedVariables:
-            assertionString += f"\n{x}{failedVariables[x]}"
+        for failedVar in failedVariables:
+            assertionString += f"\n{failedVar}{failedVariables[failedVar]}"
 
         assert len(failedVariables) == 0, f"The variables {assertionString} \ndon't match their test values"
 
-    compareVariables('test_1a')
+    compareVariables('test_6a')
 
-    compareVariables('test_1b')
-    #"""
+    """

@@ -26,32 +26,46 @@ def config():
 #adaption LK
 import pandas as pd
 
-
 def compareVariables(testModel,optimizationSetup):
     # import csv file containing selected variable values of test model collection
-    testVariables = pd.read_csv(os.path.dirname(os.path.abspath(__file__)) + '\\test_variables_readable.csv', header=0,index_col=None)
-    # list to store variable names and indices of variables which don't match the test values
-    failedVariables = []
-    for i in range(testVariables.shape[0]):
-        # skip line if data doesn't correspond to selected test model
-        if testVariables['test'][i] != testModel:
+    testVariables = pd.read_csv(os.path.dirname(os.path.abspath(__file__)) + '\\test_variables_readable.csv',
+                                header=0, index_col=None)
+    # dictionary to store variable names, indices, values and test values of variables which don't match the test values
+    failedVariables = {}
+    #iterate through dataframe rows
+    for dataRow in testVariables.values:
+        #skip row if data doesn't correspond to selected test model
+        if dataRow[0] != testModel:
             continue
-        variableName = testVariables['variableName'][i]
-        index = testVariables['index'][i]
-        class_method = getattr(optimizationSetup.model, variableName)
-        # iterate over indices of current variable
-        for x in class_method.extract_values():
-            if str(x) == index:
-                if class_method.extract_values()[x] != 0:
-                    # check if relative error exceeds limit of 10^-3
-                    if abs(class_method.extract_values()[x] - testVariables['value'][i]) / \
-                            class_method.extract_values()[x] > 10 ** (-3):
-                        failedVariables.append(testVariables['variableName'][i] + ' ' + testVariables['index'][i])
+        #get variable attribute of optimizationSetup object by using string of the variable's name (e.g. optimizationSetup.model.importCarrierFLow)
+        variableAttribute = getattr(optimizationSetup.model,dataRow[1])
+        #iterate through indices of current variable
+        for variableIndex in variableAttribute.extract_values():
+            #ensure equality of dataRow index and variable index
+            if str(variableIndex) == dataRow[2]:
+                #check if variable value at current index differs from zero such that relative error can be computed
+                if variableAttribute.extract_values()[variableIndex] != 0:
+                    #check if relative error exceeds limit of 10^-3, i.e. value differs from test value
+                    if abs(variableAttribute.extract_values()[variableIndex] - dataRow[3]) / variableAttribute.extract_values()[variableIndex] > 10**(-3):
+                        if dataRow[1] in failedVariables:
+                            failedVariables[dataRow[1]][dataRow[2]] = {'computedValue' : variableAttribute.extract_values()[variableIndex]}
+                        else:
+                            failedVariables[dataRow[1]] = {dataRow[2] : {'computedValue' : variableAttribute.extract_values()[variableIndex]} }
+                        failedVariables[dataRow[1]][dataRow[2]]['testValue'] = dataRow[3]
                 else:
-                    # check if variable and test variable aren't equal
-                    if class_method.extract_values()[x] != testVariables['value'][i]:
-                        failedVariables.append(testVariables['variableName'][i] + testVariables['index'][i])
-    return  failedVariables
+                    #check if absolute error exceeds specified limit
+                    if abs(variableAttribute.extract_values()[variableIndex] - dataRow[3]) > 10**(-3):
+                        if dataRow[1] in failedVariables:
+                            failedVariables[dataRow[1]][dataRow[2]] = {'computedValue' : variableAttribute.extract_values()[variableIndex]}
+                        else:
+                            failedVariables[dataRow[1]] = {dataRow[2] : {'computedValue' : variableAttribute.extract_values()[variableIndex]} }
+                        failedVariables[dataRow[1]][dataRow[2]]['testValue'] = dataRow[3]
+    assertionString = str()
+    for failedVar in failedVariables:
+        assertionString += f"\n{failedVar}{failedVariables[failedVar]}"
+
+    return failedVariables, assertionString
+
 
 # All the tests
 ###############
@@ -61,16 +75,16 @@ def test_1a(config):
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1a"))
 
-    failedVariables = compareVariables('test_1a',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_1a',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_1b(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1b"))
 
-    failedVariables = compareVariables('test_1b',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_1b',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 
 def test_2a(config):
@@ -78,72 +92,72 @@ def test_2a(config):
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2a"))
 
-    failedVariables = compareVariables('test_2a',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_2a',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_2b(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2b"))
 
-    failedVariables = compareVariables('test_2b',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_2b',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_2c(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2c"))
 
-    failedVariables = compareVariables('test_2c',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_2c',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_2d(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2d"))
 
-    failedVariables = compareVariables('test_2d',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_2d',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_3a(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_3a"))
 
-    failedVariables = compareVariables('test_3a',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_3a',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_3b(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_3b"))
 
-    failedVariables = compareVariables('test_3b',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
-
+    failedVariables, assertionString = compareVariables('test_3b',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
+"""
 def test_4a(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4a"))
 
-    failedVariables = compareVariables('test_4a',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
-
+    failedVariables, assertionString = compareVariables('test_4a',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
+"""
 def test_4b(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4b"))
 
-    failedVariables = compareVariables('test_4b',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_4b',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_4c(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4c"))
 
-    failedVariables = compareVariables('test_4c',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_4c',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 
 def test_4d(config):
@@ -151,40 +165,40 @@ def test_4d(config):
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4d"))
 
-    failedVariables = compareVariables('test_4d',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_4d',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_4e(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4e"))
 
-    failedVariables = compareVariables('test_4e',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_4e',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_4f(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4f"))
 
-    failedVariables = compareVariables('test_4f',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_4f',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_4g(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4g"))
 
-    failedVariables = compareVariables('test_4g',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_4g',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_5a(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_5a"))
 
-    failedVariables = compareVariables('test_5a',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_5a',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_6a(config):
     # run the test
@@ -194,15 +208,17 @@ def test_6a(config):
     # Slack message 30/09/22
     config.solver["analyzeNumerics"]                           = False
 
-    optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_6a"))
+    optimizationSetupList = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_6a"))
 
-    failedVariables = compareVariables('test_6a',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
-
+    counter = 1
+    for optimizationSetup in optimizationSetupList:
+        failedVariables, assertionString = compareVariables('test_6a'+ str(counter),optimizationSetup)
+        assert len(failedVariables) == 0, f"The variables {assertionString}{counter} don't match their test values"
+        counter += 1
 def test_7a(config):
     # run the test
     restore_default_state()
     optimizationSetup = compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_7a"))
 
-    failedVariables = compareVariables('test_7a',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {failedVariables} don't match their test values"
+    failedVariables, assertionString = compareVariables('test_7a',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
