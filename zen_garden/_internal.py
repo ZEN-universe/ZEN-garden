@@ -18,7 +18,7 @@ from   .model.optimization_setup       import OptimizationSetup
 from   .postprocess.results            import Postprocess
 
 
-def compile(config, dataset_path=None):
+def main(config, dataset_path=None):
     """
     This function runs the compile.py script that was used in ZEN-Garden prior to the package build, it is executed
     in the __main__.py script

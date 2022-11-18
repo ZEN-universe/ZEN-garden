@@ -10,7 +10,7 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
 from zen_garden.restore_default_state import restore_default_state
-from zen_garden._internal import compile
+from zen_garden._internal import main
 
 import pytest
 from copy import deepcopy
@@ -29,97 +29,97 @@ def config():
 def test_1a(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1a"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1a"))
 
 
 def test_1b(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1b"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1b"))
 
 
 def test_2a(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2a"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2a"))
 
 
 def test_2b(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2b"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2b"))
 
 
 def test_2c(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2c"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2c"))
 
 
 def test_2d(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2d"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_2d"))
 
 
 def test_3a(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_3a"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_3a"))
 
 
 def test_3b(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_3b"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_3b"))
 
 
 def test_4a(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4a"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4a"))
 
 
 def test_4b(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4b"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4b"))
 
 
 def test_4c(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4c"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4c"))
 
 
 def test_4d(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4d"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4d"))
 
 
 def test_4e(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4e"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4e"))
 
 
 def test_4f(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4f"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4f"))
 
 
 def test_4g(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4g"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_4g"))
 
 
 def test_5a(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_5a"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_5a"))
 
 
 def test_6a(config):
@@ -130,10 +130,10 @@ def test_6a(config):
     # Slack message 30/09/22
     config.solver["analyzeNumerics"]                           = False
 
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_6a"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_6a"))
 
 
 def test_7a(config):
     # run the test
     restore_default_state()
-    compile(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_7a"))
+    main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_7a"))

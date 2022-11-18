@@ -9,14 +9,14 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
-from ._internal import compile
+from ._internal import main
 import importlib.util
 import argparse
 import sys
 
-def main(args=None):
+def run_module(args=None):
     """
-    main function of ZEN-Garden
+    Runs the main function of ZEN-Garden
     :param args: Arguments to parse
     """
     if args is None:
@@ -45,7 +45,7 @@ def main(args=None):
     config = module.config
 
     ### run
-    compile(config=config, dataset_path=args.dataset)
+    main(config=config, dataset_path=args.dataset)
 
 if __name__ == "__main__":
-    main()
+    run_module()
