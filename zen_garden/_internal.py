@@ -105,8 +105,11 @@ def main(config, dataset_path=None):
             optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
             # EVALUATE RESULTS
             modelName = os.path.basename(config.analysis["dataset"])
-            if len(stepsOptimizationHorizon) > 1:
-                modelName += f"_MF{stepHorizon}"
+            subfolder = ""
             if config.system["conductScenarioAnalysis"]:
-                modelName += f"_{scenario}"
-            evaluation = Postprocess(optimizationSetup, modelName=modelName)
+                subfolder += f"scenario_{scenario}."
+            if len(stepsOptimizationHorizon) > 1:
+                if len(subfolder) > 0:
+                    subfolder += f"_"
+                subfolder += f"MF_{stepHorizon}"
+            evaluation = Postprocess(optimizationSetup, subfolder=subfolder, modelName=modelName)

@@ -13,6 +13,7 @@ import sys
 import numpy as np
 import pyomo.environ as pe
 import pandas as pd
+import pathlib
 import shutil
 import json
 import zlib
@@ -24,7 +25,7 @@ from ..utils import RedirectStdStreams
 
 class Postprocess:
 
-    def __init__(self, model, **kwargs):
+    def __init__(self, model, subfolder=None, **kwargs):
         """postprocessing of the results of the optimization
         :param model: optimization model
         :param **kwargs: Additional keyword arguments such as the model name used for the directory to save the
@@ -32,7 +33,14 @@ class Postprocess:
 
         # get name or directory
         self.modelName = kwargs.get('modelName', "")
-        self.nameDir = kwargs.get('nameDir', os.path.join('./outputs', self.modelName))
+        self.nameDir = pathlib.Path(kwargs.get('nameDir', os.path.join('./outputs', self.modelName)))
+
+        # deal with the subfolder
+        self.subfolder = subfolder
+        # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
+        if self.subfolder:
+            self.nameDir = self.nameDir.joinpath(self.subfolder)
+            os.makedirs(self.nameDir, exist_ok=True)
 
         # get the necessary stuff from the model
         self.model = model.model
@@ -128,7 +136,7 @@ class Postprocess:
                                   "docstring": self.params.docs[param]}
 
         # write to json
-        self.write_file(os.path.join(self.nameDir, 'paramDict'), data_frames)
+        self.write_file(self.nameDir.joinpath('paramDict'), data_frames)
 
     def saveVar(self):
         """ Saves the variable values to a json file which can then be
@@ -148,31 +156,31 @@ class Postprocess:
             data_frames[var.name] = {"dataframe": {f"{k}": v for k, v in df.to_dict(orient="index").items()},
                                      "docstring": var.doc}
 
-        self.write_file(os.path.join(self.nameDir, 'varDict'), data_frames)
+        self.write_file(self.nameDir.joinpath('varDict'), data_frames)
 
     def saveSystem(self):
         """
         Saves the system dict as json
         """
-        self.write_file(os.path.join(self.nameDir, 'System'), self.system)
+        self.write_file(self.nameDir.joinpath('System'), self.system)
 
     def saveAnalysis(self):
         """
         Saves the analysis dict as json
         """
-        self.write_file(os.path.join(self.nameDir, 'Analysis'), self.analysis)
+        self.write_file(self.nameDir.joinpath('Analysis'), self.analysis)
 
     def saveSolver(self):
         """
         Saves the solver dict as json
         """
-        self.write_file(os.path.join(self.nameDir, 'Solver'), self.solver)
+        self.write_file(self.nameDir.joinpath('Solver'), self.solver)
 
     def saveOpt(self):
         """
         Saves the opt dict as json
         """
-        self.write_file(os.path.join(self.nameDir, 'optDict'), self.opt.__dict__)
+        self.write_file(self.nameDir.joinpath('optDict'), self.opt.__dict__)
 
         # copy the log file
         shutil.copy2(os.path.abspath(self.opt._log_file), self.nameDir)
@@ -181,7 +189,12 @@ class Postprocess:
         """
         Saves the dictAllSequenceTimeSteps dict as json
         """
-        self.write_file(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps'), self.dictSequenceTimeSteps)
+
+        # This we only need to save once
+        if self.subfolder:
+            self.write_file(self.nameDir.parent.joinpath('dictAllSequenceTimeSteps'), self.dictSequenceTimeSteps)
+        else:
+            self.write_file(self.nameDir.joinpath('dictAllSequenceTimeSteps'), self.dictSequenceTimeSteps)
 
     def flatten_dict(self, dictionary):
         """

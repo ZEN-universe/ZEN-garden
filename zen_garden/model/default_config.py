@@ -209,4 +209,4 @@ class Config(object):
         self.solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
 
         ## Scenarios - dictionary declaration
-        self.scenarios[""] = {}
+        self.scenarios["1"] = {}
