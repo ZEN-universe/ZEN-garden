@@ -25,36 +25,37 @@ from ..utils import RedirectStdStreams
 
 class Postprocess:
 
-    def __init__(self, model, subfolder=None, **kwargs):
+    def __init__(self, model, scenarios, modelName, subfolder=None):
         """postprocessing of the results of the optimization
         :param model: optimization model
-        :param **kwargs: Additional keyword arguments such as the model name used for the directory to save the
-                         results in"""
-
-        # get name or directory
-        self.modelName = kwargs.get('modelName', "")
-        self.nameDir = pathlib.Path(kwargs.get('nameDir', os.path.join('./outputs', self.modelName)))
-
-        # deal with the subfolder
-        self.subfolder = subfolder
-        # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
-        if self.subfolder:
-            self.nameDir = self.nameDir.joinpath(self.subfolder)
-            os.makedirs(self.nameDir, exist_ok=True)
+        :param modelName: The name of the model used to name the output folder
+        :param subfolder: The subfolder used for the results
+        """
 
         # get the necessary stuff from the model
         self.model = model.model
+        self.scenarios = scenarios
         self.system = model.system
         self.analysis = model.analysis
         self.solver = model.solver
         self.opt = model.opt
         self.params = Parameter.getParameterObject()
 
-        # get the compression param
-        self.compress = self.system["compressOutput"]
+        # get name or directory
+        self.modelName = modelName
+        self.nameDir = pathlib.Path(self.system["folderOutput"]).joinpath(self.modelName)
 
+        # deal with the subfolder
+        self.subfolder = subfolder
+        # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
+        if self.subfolder:
+            self.nameDir = self.nameDir.joinpath(self.subfolder)
         # create the output directory
         os.makedirs(self.nameDir, exist_ok=True)
+
+
+        # get the compression param
+        self.compress = self.system["compressOutput"]
 
         # save the pyomo yml
         if self.system["writeResultsYML"]:
@@ -66,6 +67,7 @@ class Postprocess:
         self.saveVar()
         self.saveSystem()
         self.saveAnalysis()
+        self.saveScenarios()
         self.saveSolver()
         self.saveOpt()
 
@@ -162,19 +164,53 @@ class Postprocess:
         """
         Saves the system dict as json
         """
-        self.write_file(self.nameDir.joinpath('System'), self.system)
+
+        # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath('System')
+        else:
+            fname = self.nameDir.joinpath('System')
+        if not fname.exists():
+            self.write_file(fname, self.system)
 
     def saveAnalysis(self):
         """
         Saves the analysis dict as json
         """
-        self.write_file(self.nameDir.joinpath('Analysis'), self.analysis)
+
+        # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath('Analysis')
+        else:
+            fname = self.nameDir.joinpath('Analysis')
+        if not fname.exists():
+            self.write_file(fname, self.analysis)
+
+    def saveScenarios(self):
+        """
+        Saves the analysis dict as json
+        """
+
+        # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath('Scenarios')
+        else:
+            fname = self.nameDir.joinpath('Scenarios')
+        if not fname.exists():
+            self.write_file(fname, self.scenarios)
 
     def saveSolver(self):
         """
         Saves the solver dict as json
         """
-        self.write_file(self.nameDir.joinpath('Solver'), self.solver)
+
+        # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath('dictAllSequenceTimeSteps')
+        else:
+            fname = self.nameDir.joinpath('dictAllSequenceTimeSteps')
+        if not fname.exists():
+            self.write_file(fname, self.solver)
 
     def saveOpt(self):
         """
@@ -192,9 +228,11 @@ class Postprocess:
 
         # This we only need to save once
         if self.subfolder:
-            self.write_file(self.nameDir.parent.joinpath('dictAllSequenceTimeSteps'), self.dictSequenceTimeSteps)
+            fname = self.nameDir.parent.joinpath('dictAllSequenceTimeSteps')
         else:
-            self.write_file(self.nameDir.joinpath('dictAllSequenceTimeSteps'), self.dictSequenceTimeSteps)
+            fname = self.nameDir.joinpath('dictAllSequenceTimeSteps')
+        if not fname.exists():
+            self.write_file(fname, self.dictSequenceTimeSteps)
 
     def flatten_dict(self, dictionary):
         """
@@ -235,8 +273,12 @@ class Results(object):
         :param expand: Expand the path to all scenarios via glob, i.e. path*
         """
 
-        # TODO: implement expansion
+        # get the abs path
         self.path = os.path.abspath(path)
+
+        # check what type of results we have
+        dir_content = os.listdir(self.path)
+        self.has_scenarios = np.all([f.startswith("")])
 
         # check if the path exists
         if not os.path.exists(self.path):

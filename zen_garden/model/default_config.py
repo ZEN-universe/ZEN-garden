@@ -163,7 +163,8 @@ class Config(object):
         # social discount rate
         self.system["socialDiscountRate"] = 0
         # folder output
-        self.system["folderOutput"] = "outputs/results/"
+        self.system["folderOutput"] = "./outputs/"
+        self.system["overwriteOutput"] = True
         self.system["compressOutput"] = True
         self.system["writeResultsYML"] = False
         self.system["maxOutputSizeMB"] = 500
@@ -209,4 +210,4 @@ class Config(object):
         self.solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
 
         ## Scenarios - dictionary declaration
-        self.scenarios["1"] = {}
+        self.scenarios[""] = {}

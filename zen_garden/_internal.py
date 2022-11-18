@@ -13,6 +13,9 @@ import sys
 import logging
 import importlib.util
 import pkg_resources
+
+from shutil import rmtree
+
 from   .preprocess.prepare             import Prepare
 from   .model.optimization_setup       import OptimizationSetup
 from   .postprocess.results            import Postprocess
@@ -83,6 +86,15 @@ def main(config, dataset_path=None):
     # get rolling horizon years
     stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
 
+    # get the name of the dataset
+    modelName = os.path.basename(config.analysis["dataset"])
+    if os.path.exists(out_folder := os.path.join(config.system["folderOutput"], modelName)):
+        if config.system["overwriteOutput"]:
+            logging.info(f"Removing existing output folder: {out_folder}")
+            rmtree(out_folder)
+        else:
+            logging.warning(f"The outputfolder {out_folder} already exists")
+
     # update input data
     for scenario, elements in config.scenarios.items():
         optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
@@ -104,12 +116,18 @@ def main(config, dataset_path=None):
             # add cumulative carbon emissions to previous carbon emissions
             optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
             # EVALUATE RESULTS
-            modelName = os.path.basename(config.analysis["dataset"])
             subfolder = ""
             if config.system["conductScenarioAnalysis"]:
-                subfolder += f"scenario_{scenario}."
+                # handle scenarios
+                if scenario == "":
+                    subfolder += f"scenario_1"
+                else:
+                    subfolder += f"scenario_{scenario}"
+            # handle myopic foresight
             if len(stepsOptimizationHorizon) > 1:
                 if len(subfolder) > 0:
                     subfolder += f"_"
                 subfolder += f"MF_{stepHorizon}"
-            evaluation = Postprocess(optimizationSetup, subfolder=subfolder, modelName=modelName)
+            # write results
+            evaluation = Postprocess(optimizationSetup, scenarios=config.scenarios, subfolder=subfolder,
+                                     modelName=modelName)
