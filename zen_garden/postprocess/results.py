@@ -8,9 +8,12 @@ Description:  Class is defining the postprocessing of the results.
               The class takes as inputs the optimization problem (model) and the system configurations (system).
               The class contains methods to read the results and save them in a result dictionary (resultDict).
 ==========================================================================================================================================================================="""
+import sys
+
 import numpy as np
 import pyomo.environ as pe
 import pandas as pd
+import shutil
 import json
 import zlib
 import os
@@ -35,6 +38,8 @@ class Postprocess:
         self.model = model.model
         self.system = model.system
         self.analysis = model.analysis
+        self.solver = model.solver
+        self.opt = model.opt
         self.params = Parameter.getParameterObject()
 
         # get the compression param
@@ -53,6 +58,8 @@ class Postprocess:
         self.saveVar()
         self.saveSystem()
         self.saveAnalysis()
+        self.saveSolver()
+        self.saveOpt()
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dictSequenceTimeSteps = self.flatten_dict(EnergySystem.getSequenceTimeStepsDict())
@@ -75,7 +82,14 @@ class Postprocess:
         # serialize to string
         serialized_dict = json.dumps(dictionary, indent=2)
 
-        if self.compress:
+        # if the string is larger than the max output size we compress anyway
+        force_compression = False
+        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.system["maxOutputSizeMB"]:
+            print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
+                  f"{self.system['maxOutputSizeMB']}MB, compressing...")
+            force_compression = True
+
+        if self.compress or force_compression:
             # compress and write
             compressed = zlib.compress(serialized_dict.encode())
             with open(f"{name}.gzip", "wb") as outfile:
@@ -148,6 +162,21 @@ class Postprocess:
         """
         self.write_file(os.path.join(self.nameDir, 'Analysis'), self.analysis)
 
+    def saveSolver(self):
+        """
+        Saves the solver dict as json
+        """
+        self.write_file(os.path.join(self.nameDir, 'Solver'), self.solver)
+
+    def saveOpt(self):
+        """
+        Saves the opt dict as json
+        """
+        self.write_file(os.path.join(self.nameDir, 'optDict'), self.opt.__dict__)
+
+        # copy the log file
+        shutil.copy2(os.path.abspath(self.opt._log_file), self.nameDir)
+
     def saveSequenceTimeSteps(self):
         """
         Saves the dictAllSequenceTimeSteps dict as json
@@ -186,7 +215,7 @@ class Results(object):
     """
 
     # TODO: if option to iterate
-    def __init__(self, path, expand=True):
+    def __init__(self, path, expand=True, load_opt=False):
         """
         Initializes the Results class with a given path
         :param path: Path to the output of the optimization problem
@@ -205,7 +234,12 @@ class Results(object):
         self.dictVar = self.load_vars(self.path)
         self.system = self.load_system(self.path)
         self.analysis = self.load_analysis(self.path)
+        self.solver = self.load_solver(self.path)
         self.dictSequenceTimeSteps = self.load_sequence_time_steps(self.path)
+
+        # the opt we only load when requested
+        if load_opt:
+            self.optdict = self.load_opt(self.path)
 
     @classmethod
     def _read_file(cls, name):
@@ -308,6 +342,34 @@ class Results(object):
         analysis_dict = json.loads(raw_dict)
 
         return analysis_dict
+
+    @classmethod
+    def load_solver(cls, path):
+        """
+        Loads the solver dict from a given path
+        :param path: Directory to load the dictionary from
+        :return: The analysis dictionary
+        """
+
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "Solver"))
+        solver_dict = json.loads(raw_dict)
+
+        return solver_dict
+
+    @classmethod
+    def load_opt(cls, path):
+        """
+        Loads the opt dict from a given path
+        :param path: Directory to load the dictionary from
+        :return: The analysis dictionary
+        """
+
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "optDict"))
+        opt_dict = json.loads(raw_dict)
+
+        return opt_dict
 
     @classmethod
     def load_sequence_time_steps(cls, path):
