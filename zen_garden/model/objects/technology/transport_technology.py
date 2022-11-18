@@ -83,7 +83,11 @@ class TransportTechnology(Technology):
 
     def calculateCapexOfSingleCapacity(self,capacity,index):
         """ this method calculates the annualized capex of a single existing capacity. """
-        return self.capexSpecific[index[0]].iloc[0] * capacity
+        #TODO check existing capex of transport techs -> Hannes
+        if np.isnan(self.capexSpecific[index[0]].iloc[0]):
+            return 0
+        else:
+            return self.capexSpecific[index[0]].iloc[0] * capacity
 
     def checkIfBidirectional(self):
         """ checks that the existing capacities in both directions of bidirectional capacities are equal """
@@ -220,16 +224,22 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
     """compute the flow losses for a carrier through a transport technology"""
     # get parameter object
     params = Parameter.getParameterObject()
-    return(model.carrierLoss[tech, edge, time] ==
-           params.distance[tech,edge] * params.lossFlow[tech] * model.carrierFlow[tech, edge, time])
+    if np.isinf(params.distance[tech,edge]):
+        return model.carrierLoss[tech, edge, time] == 0
+    else:
+        return(model.carrierLoss[tech, edge, time] ==
+               params.distance[tech,edge] * params.lossFlow[tech] * model.carrierFlow[tech, edge, time])
 
 def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
     # get parameter object
     params = Parameter.getParameterObject()
-    return (model.capex[tech,"power",edge, time] ==
-            model.builtCapacity[tech,"power",edge, time] * params.capexSpecificTransport[tech,edge, time] +
-            model.installTechnology[tech,"power", edge, time] * params.distance[tech, edge] * params.capexPerDistance[tech, edge, time])
+    if np.isinf(params.distance[tech, edge]):
+        return model.builtCapacity[tech,"power",edge, time] == 0
+    else:
+        return (model.capex[tech,"power",edge, time] ==
+                model.builtCapacity[tech,"power",edge, time] * params.capexSpecificTransport[tech,edge, time] +
+                model.installTechnology[tech,"power", edge, time] * params.distance[tech, edge] * params.capexPerDistance[tech, edge, time])
 
 def constraintBidirectionalTransportTechnologyRule(model, tech, edge, time):
     """ Forces that transport technology capacity must be equal in both direction"""
