@@ -119,6 +119,7 @@ def compile(config, dataset_path=None):
     #if len(optimizationSetupList) == 1:
     #    optimizationSetupList = optimizationSetupList[0]
     #return optimizationSetupList
+    return optimizationSetup
     """
     #adaption_2
     import pandas as pd
