@@ -278,7 +278,7 @@ class Results(object):
         """
         Initializes the Results class with a given path
         :param path: Path to the output of the optimization problem
-        :param load_opt: Optionally load the opt dictionary as well 
+        :param load_opt: Optionally load the opt dictionary as well
         """
 
         # get the abs path
@@ -536,12 +536,14 @@ class Results(object):
 
         return dictionary
 
-    def get_dataframe(self, name, isStorage=False, scenario=None):
+    def get_dataframe(self, name, isStorage=False, scenario=None, to_csv=None, csv_kwargs=None):
         """
         Extracts the dataframe from the results
         :param name: The name of the dataframe to extract
         :param isStorage: Whether it is a storage or not
         :param scenario: If multiple scenarios are in the results, only consider this one
+        :param to_csv: Save the dataframes to a csv file
+        :param csv_kwargs: additional keyword arguments forwarded to the to_csv method of pandas
         :return: The dataframe that should have been extracted. If multiple scenarios are present a dictionary
                  with scenarios as keys and dataframes as value is returned
         """
@@ -649,18 +651,34 @@ class Results(object):
                 # set
                 _data[k] = series
 
+        # get the path to the csv file
+        if to_csv is not None:
+            fname, _ = os.path.splitext(to_csv)
+
+            # deal with additional args
+            if csv_kwargs is None:
+                csv_kwargs = {}
+
         # if we only had a single scenario no need for the wrapper
         if len(scenarios) == 1:
+            # save if necessary
+            if to_csv is not None:
+                _data[scenario].to_csv(f"{fname}.csv", **csv_kwargs)
             return _data[scenario]
+
         # return the dict
         else:
+            # save if necessary
+            if to_csv is not None:
+                for scenario in scenarios:
+                    _data[scenario].to_csv(f"{fname}_{scenario}.csv", **csv_kwargs)
             return _data
 
     def loadTimeStepDuration(self):
         """
         Loads duration of time steps
         """
-        return self.get_dataframe("timeStepsOperationDuration").unstack()
+        return self.get_dataframe("timeStepsOperationDuration")
 
     def calculateFullTimeSeries(self, inputDf, elementName=None):
         """
@@ -697,26 +715,40 @@ class Results(object):
         outputDf = pd.concat(_outputTemp,axis=0,keys = _outputTemp.keys())
         return outputDf
 
-    def calculateTotalValue(self, component, elementName=None, year=None):
+    def calculateTotalValue(self, component, elementName=None, year=None, scenario=None):
         """
         Calculates the total Value of a component
         :param component: Either a dataframe as returned from <get_dataframe> or the name of the component
         :param elementName: The element name to calculate the value for, defaults to all elements
         :param year: The year to calculate the value for, defaults to all years
+        :param scenario: The scenario to calculate the total value for
         :return: A dataframe containing the total value with the specified paramters
         """
+
+        # extract the right timestep duration
+        if self.has_scenarios:
+            if scenario is None:
+                raise ValueError("Please specify a scenario!")
+            else:
+                timeStepDuration = self.timeStepDuration[scenario].unstack()
+        else:
+            timeStepDuration = self.timeStepDuration.unstack()
 
         # extract the data
         if isinstance(component, str):
             component_name = component
-            component_data = self.get_dataframe(component).unstack()
+            # only use the data from one scenario if specified
+            if scenario is not None:
+                component_data = self.get_dataframe(component)[scenario].unstack()
+            else:
+                component_data = self.get_dataframe(component).unstack()
         elif isinstance(component, pd.Series):
             component_name = component.name
             component_data = component.unstack()
 
         # check
-        assert (isinstance(component_data, pd.DataFrame) and component_data.shape[1] == self.timeStepDuration.shape[1]) \
-               or len(component_data) == self.timeStepDuration.shape[1], \
+        assert (isinstance(component_data, pd.DataFrame) and component_data.shape[1] == timeStepDuration.shape[1]) \
+               or len(component_data) == timeStepDuration.shape[1], \
             f"Lengths of {component_name} and the operational time step duration do not match"
 
         # If we have an element name
@@ -726,7 +758,7 @@ class Results(object):
                 f"element {elementName} is not found in index of {component_name}"
             # get the index
             component_data = component_data.loc[elementName]
-            timeStepDuration_ele = self.timeStepDuration.loc[elementName]
+            timeStepDuration_ele = timeStepDuration.loc[elementName]
 
             if year is not None:
                 # only for the given year
@@ -740,7 +772,7 @@ class Results(object):
 
         # if we do not have an element name
         else:
-            totalValue  = component_data.apply(lambda row: row*self.timeStepDuration.loc[row.name[0]],axis=1)
+            totalValue  = component_data.apply(lambda row: row*timeStepDuration.loc[row.name[0]],axis=1)
             if year is not None:
                 # set a proxy for the element name
                 elementName_proxy = component_data.index.get_level_values(level=0)[0]
