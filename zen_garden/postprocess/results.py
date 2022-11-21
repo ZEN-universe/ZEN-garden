@@ -278,7 +278,7 @@ class Results(object):
         """
         Initializes the Results class with a given path
         :param path: Path to the output of the optimization problem
-        :param expand: Expand the path to all scenarios via glob, i.e. path*
+        :param load_opt: Optionally load the opt dictionary as well 
         """
 
         # get the abs path
@@ -698,6 +698,13 @@ class Results(object):
         return outputDf
 
     def calculateTotalValue(self, component, elementName=None, year=None):
+        """
+        Calculates the total Value of a component
+        :param component: Either a dataframe as returned from <get_dataframe> or the name of the component
+        :param elementName: The element name to calculate the value for, defaults to all elements
+        :param year: The year to calculate the value for, defaults to all years
+        :return: A dataframe containing the total value with the specified paramters
+        """
 
         # extract the data
         if isinstance(component, str):
