@@ -650,6 +650,10 @@ class Results(object):
                 series.name = name
                 # set
                 _data[k] = series
+            # we just make sure the name is right
+            else:
+                v.name = name
+                _data[k] = v
 
         # get the path to the csv file
         if to_csv is not None:
@@ -680,20 +684,32 @@ class Results(object):
         """
         return self.get_dataframe("timeStepsOperationDuration")
 
-    def calculateFullTimeSeries(self, inputDf, elementName=None):
+    def calculateFullTimeSeries(self, component, elementName=None, scenario=None):
         """
         Calculates the full timeseries for a given element
-        :param inputDf: The input dataframe as pandas.Series
+        :param component: Either the dataframe of a component as pandas.Series or the name of the component
         :param elementName: The name of the element
+        :param scenario: The scenario for with the component should be extracted (only if needed)
         :return: A dataframe containing the full timeseries of the element
         """
 
         # set the timesteps
         EnergySystem.setSequenceTimeStepsDict(self.results["dictSequenceTimeSteps"])
 
+        # readout the component if necessary
+        if isinstance(component, str):
+            # make sure we have a scenario if it is needed
+            if self.has_scenarios:
+                if scenario is None:
+                    raise ValueError("You need to specify a scenario!")
+                else:
+                    component = self.get_dataframe(component)[scenario]
+            else:
+                component = self.get_dataframe(component)[scenario]
+
         # some checks
-        assert isinstance(inputDf,pd.Series), "inputDf is not pd.Series"
-        inputDf = inputDf.unstack()
+        assert isinstance(component, pd.Series), "inputDf is not pd.Series"
+        inputDf = component.unstack()
         assert elementName or inputDf.index.get_level_values(0).isin(self.results["system"]["setConversionTechnologies"]).all(), \
             "the first index of inputDf contains values that are not conversion technologies and no manual element specified"
 
