@@ -67,6 +67,8 @@ class DataInput():
         # read input file
         dfInput = self.readInputData(fileName+scenario)
 
+        #dfInput = self.convertYearlyIndicesToTimeSteps(dfInput,timeSteps,fileName)
+
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
             dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
@@ -594,6 +596,23 @@ class DataInput():
             return True
         else:
             return False
+
+    def convertYearlyIndicesToTimeSteps(self,dfInput,timeSteps,fileName):
+        """convert yearly time indices to time steps
+        """
+        #check if there isn't any time dependent input data
+        if dfInput is None:
+            return None
+        bannedFileNames = ['distanceEuclidean','demandCarrier']
+        if fileName in bannedFileNames:
+            return dfInput
+        #check if there is as much yearly data as there are time steps
+        if dfInput.shape[0] == len(timeSteps):
+            for i in range(len(timeSteps)):
+                dfInput.at[i,'time'] = timeSteps[i]
+        else:
+            extrapolateData, interpolate = 1
+        return dfInput
 
     @staticmethod
     def extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName):
