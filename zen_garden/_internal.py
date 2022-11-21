@@ -119,13 +119,10 @@ def main(config, dataset_path=None):
             subfolder = ""
             if config.system["conductScenarioAnalysis"]:
                 # handle scenarios
-                if scenario == "":
-                    subfolder += f"scenario_1"
-                else:
-                    subfolder += f"scenario_{scenario}"
+                subfolder += f"scenario_{scenario}"
             # handle myopic foresight
             if len(stepsOptimizationHorizon) > 1:
-                if len(subfolder) > 0:
+                if subfolder != "":
                     subfolder += f"_"
                 subfolder += f"MF_{stepHorizon}"
             # write results
