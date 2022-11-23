@@ -460,7 +460,7 @@ class Technology(Element):
 
                 maxBuiltCapacity            = len(model.setTimeStepsInvest[tech])*_maxBuiltCapacity[tech,capacityType]
                 maxCapacityLimitTechnology  = _capacityLimitTechnology[tech,capacityType, loc]
-                boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology)
+                boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology + existingCapacities)
                 bounds = (0,boundCapacity)
                 return(bounds)
             else:
