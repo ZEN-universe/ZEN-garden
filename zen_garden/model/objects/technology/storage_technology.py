@@ -38,25 +38,23 @@ class StorageTechnology(Technology):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
         # get attributes from class <Technology>
         super().storeInputData()
-        setBaseTimeStepsYearly = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
+        setBaseTimeStepsYearly  = EnergySystem.getEnergySystem().setBaseTimeStepsYearly
+        setTimeStepsYearly      = EnergySystem.getEnergySystem().setTimeStepsYearly
         # set attributes for parameters of child class <StorageTechnology>
-        self.efficiencyCharge               = self.dataInput.extractInputData("efficiencyCharge",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
-        self.efficiencyDischarge            = self.dataInput.extractInputData("efficiencyDischarge",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+        self.efficiencyCharge               = self.dataInput.extractInputData("efficiencyCharge",indexSets=["setNodes","setTimeSteps"],timeSteps= setTimeStepsYearly)
+        self.efficiencyDischarge            = self.dataInput.extractInputData("efficiencyDischarge",indexSets=["setNodes","setTimeSteps"],timeSteps= setTimeStepsYearly)
         self.selfDischarge                  = self.dataInput.extractInputData("selfDischarge",indexSets=["setNodes"])
         # extract existing energy capacity
         self.minBuiltCapacityEnergy         = self.dataInput.extractAttributeData("minBuiltCapacityEnergy")["value"]
         self.maxBuiltCapacityEnergy         = self.dataInput.extractAttributeData("maxBuiltCapacityEnergy")["value"]
         self.capacityLimitEnergy            = self.dataInput.extractInputData("capacityLimitEnergy",indexSets=["setNodes"])
-        self.existingCapacityEnergy         = self.dataInput.extractInputData(
-            "existingCapacityEnergy",indexSets=["setNodes","setExistingTechnologies"],column="existingCapacityEnergy")
-        self.existingInvestedCapacityEnergy = self.dataInput.extractInputData(
-            "existingInvestedCapacityEnergy", indexSets=["setNodes", "setTimeSteps"],
-            timeSteps=EnergySystem.getEnergySystem().setTimeStepsYearly)
+        self.existingCapacityEnergy         = self.dataInput.extractInputData("existingCapacityEnergy",indexSets=["setNodes","setExistingTechnologies"],column="existingCapacityEnergy")
+        self.existingInvestedCapacityEnergy = self.dataInput.extractInputData("existingInvestedCapacityEnergy", indexSets=["setNodes", "setTimeSteps"],timeSteps=setTimeStepsYearly)
         self.capexSpecific                  = self.dataInput.extractInputData(
-            "capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= self.setTimeStepsInvest)
+            "capexSpecific",indexSets=["setNodes","setTimeSteps"],timeSteps= setTimeStepsYearly)
         self.capexSpecificEnergy            = self.dataInput.extractInputData(
-            "capexSpecificEnergy",indexSets=["setNodes","setTimeSteps"],timeSteps=self.setTimeStepsInvest)
-        self.fixedOpexSpecificEnergy        = self.dataInput.extractInputData("fixedOpexSpecificEnergy", indexSets=["setNodes", "setTimeSteps"], timeSteps=self.setTimeStepsInvest)        # annualize capex
+            "capexSpecificEnergy",indexSets=["setNodes","setTimeSteps"],timeSteps=setTimeStepsYearly)
+        self.fixedOpexSpecificEnergy        = self.dataInput.extractInputData("fixedOpexSpecificEnergy", indexSets=["setNodes", "setTimeSteps"], timeSteps=setTimeStepsYearly)        # annualize capex
         self.convertToAnnualizedCapex()
         # calculate capex of existing capacity
         self.capexExistingCapacity          = self.calculateCapexOfExistingCapacities()
@@ -149,14 +147,14 @@ class StorageTechnology(Technology):
         # efficiency charge
         Parameter.addParameter(
             name="efficiencyCharge",
-            data= EnergySystem.initializeComponent(cls,"efficiencyCharge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
-            doc = 'efficiency during charging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
+            data= EnergySystem.initializeComponent(cls,"efficiencyCharge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsYearly"]),
+            doc = 'efficiency during charging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsYearly'
         )
         # efficiency discharge
         Parameter.addParameter(
             name="efficiencyDischarge",
-            data= EnergySystem.initializeComponent(cls,"efficiencyDischarge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsInvest"]),
-            doc = 'efficiency during discharging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
+            data= EnergySystem.initializeComponent(cls,"efficiencyDischarge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsYearly"]),
+            doc = 'efficiency during discharging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsYearly'
         )
         # self discharge
         Parameter.addParameter(
@@ -167,8 +165,8 @@ class StorageTechnology(Technology):
         # capex specific
         Parameter.addParameter(
             name="capexSpecificStorage",
-            data= EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsInvest"],capacityTypes=True),
-            doc = 'specific capex of storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsInvest'
+            data= EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsYearly"],capacityTypes=True),
+            doc = 'specific capex of storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsYearly'
         )
 
     @classmethod
@@ -182,9 +180,9 @@ class StorageTechnology(Technology):
             :param node: node index
             :param time: time index
             :return bounds: bounds of carrierFlow"""
-            # convert operationTimeStep to investTimeStep: operationTimeStep -> baseTimeStep -> investTimeStep
-            investTimeStep = EnergySystem.convertTimeStepOperation2Invest(tech,time)
-            bounds = model.capacity[tech,"power",node,investTimeStep].bounds
+            # convert operationTimeStep to timeStepYear: operationTimeStep -> baseTimeStep -> timeStepYear
+            timeStepYear = EnergySystem.convertTimeStepOperation2Invest(tech,time)
+            bounds = model.capacity[tech,"power",node,timeStepYear].bounds
             return bounds
 
         model = EnergySystem.getConcreteModel()
@@ -227,31 +225,31 @@ class StorageTechnology(Technology):
         )
         # Linear Capex
         model.constraintStorageTechnologyLinearCapex = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsInvest"]),
+            cls.createCustomSet(["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsYearly"]),
             rule = constraintCapexStorageTechnologyRule,
-            doc = 'Capital expenditures for installing storage technology. Dimensions: setStorageTechnologies,"setCapacityTypes", setNodes, setTimeStepsInvest'
+            doc = 'Capital expenditures for installing storage technology. Dimensions: setStorageTechnologies,"setCapacityTypes", setNodes, setTimeStepsYearly'
         ) 
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunctOnTechnologyRule(cls,disjunct, tech, node, time):
+    def disjunctOnTechnologyRule(cls,disjunct, tech,capacityType, node, time):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
         params = Parameter.getParameterObject()
         # get invest time step
         baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
-        investTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"invest")
+        timeStepYear = EnergySystem.encodeTimeStep(tech,baseTimeStep,"yearly")
         # disjunct constraints min load charge
         disjunct.constraintMinLoadCharge = pe.Constraint(
-            expr=model.carrierFlowCharge[tech, node, time] >= params.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
+            expr=model.carrierFlowCharge[tech, node, time] >= params.minLoad[tech,capacityType,node,time] * model.capacity[tech,capacityType,node, timeStepYear]
         )
         # disjunct constraints min load discharge
         disjunct.constraintMinLoadDischarge = pe.Constraint(
-            expr=model.carrierFlowDischarge[tech, node, time] >= params.minLoad[tech,node,time] * model.capacity[tech,node, investTimeStep]
+            expr=model.carrierFlowDischarge[tech, node, time] >= params.minLoad[tech,capacityType,node,time] * model.capacity[tech,capacityType,node, timeStepYear]
         )
 
     @classmethod
-    def disjunctOffTechnologyRule(cls,disjunct, tech, node, time):
+    def disjunctOffTechnologyRule(cls,disjunct, tech, capacityType, node, time):
         """definition of disjunct constraints if technology is off"""
         model = disjunct.model()
         # off charging
@@ -283,8 +281,8 @@ def constraintStorageLevelMaxRule(model, tech, node, time):
     """limit maximum storage level to capacity"""
     # get invest time step
     elementTimeStep = EnergySystem.convertTimeStepEnergy2Power(tech,time)
-    investTimeStep  = EnergySystem.convertTimeStepOperation2Invest(tech,elementTimeStep)
-    return(model.levelCharge[tech, node, time] <= model.capacity[tech,"energy", node, investTimeStep])
+    timeStepYear  = EnergySystem.convertTimeStepOperation2Invest(tech,elementTimeStep)
+    return(model.levelCharge[tech, node, time] <= model.capacity[tech,"energy", node, timeStepYear])
 
 def constraintCoupleStorageLevelRule(model, tech, node, time):
     """couple subsequent storage levels (time coupling constraints)"""
@@ -292,7 +290,7 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
     params = Parameter.getParameterObject()
     elementTimeStep             = EnergySystem.convertTimeStepEnergy2Power(tech,time)
     # get invest time step
-    investTimeStep              = EnergySystem.convertTimeStepOperation2Invest(tech,elementTimeStep)
+    timeStepYear              = EnergySystem.convertTimeStepOperation2Invest(tech,elementTimeStep)
     # get corresponding start time step at beginning of the year, if time is last time step in year
     timeStepEnd                 = EnergySystem.getTimeStepsStorageStartEnd(tech,time)
     if timeStepEnd is not None:
@@ -303,8 +301,8 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
     return(
         model.levelCharge[tech, node, time] ==
         model.levelCharge[tech, node, previousLevelTimeStep]*(1-params.selfDischarge[tech,node])**params.timeStepsStorageLevelDuration[tech,time] +
-        (model.carrierFlowCharge[tech, node, elementTimeStep]*params.efficiencyCharge[tech,node,investTimeStep] -
-        model.carrierFlowDischarge[tech, node, elementTimeStep]/params.efficiencyDischarge[tech,node,investTimeStep])*sum((1-params.selfDischarge[tech,node])**interimTimeStep for interimTimeStep in range(0,params.timeStepsStorageLevelDuration[tech,time]))
+        (model.carrierFlowCharge[tech, node, elementTimeStep]*params.efficiencyCharge[tech,node,timeStepYear] -
+        model.carrierFlowDischarge[tech, node, elementTimeStep]/params.efficiencyDischarge[tech,node,timeStepYear])*sum((1-params.selfDischarge[tech,node])**interimTimeStep for interimTimeStep in range(0,params.timeStepsStorageLevelDuration[tech,time]))
     )
 
 def constraintCapexStorageTechnologyRule(model, tech,capacityType, node, time):

@@ -219,8 +219,6 @@ class TimeSeriesAggregation():
             EnergySystem.getSequenceTimeSteps(element.name, "operation"),
             EnergySystem.getSequenceTimeSteps(None, "yearly")
         ]
-        if element in Technology.getAllElements():
-            listSequenceTimeSteps.append(EnergySystem.getSequenceTimeSteps(element.name, "invest"))
 
         uniqueTimeStepSequences = TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listSequenceTimeSteps)
         if uniqueTimeStepSequences:
@@ -240,8 +238,8 @@ class TimeSeriesAggregation():
         """ calculates the conversion of operational time steps to invest time steps """
         _setTimeStepsOperation      = getattr(element,"setTimeStepsOperation")
         _sequenceTimeStepsOperation = getattr(element,"sequenceTimeSteps")
-        _sequenceTimeStepsInvest    = getattr(element, "sequenceTimeStepsInvest")
-        _timeStepsOperation2Invest  = np.unique(np.vstack([_sequenceTimeStepsOperation,_sequenceTimeStepsInvest]),axis=1)
+        _sequenceTimeStepsYearly    = getattr(EnergySystem.getEnergySystem(),"sequenceTimeStepsYearly")
+        _timeStepsOperation2Invest  = np.unique(np.vstack([_sequenceTimeStepsOperation,_sequenceTimeStepsYearly]),axis=1)
         _timeStepsOperation2Invest  = {key:val for key,val in zip(_timeStepsOperation2Invest[0,:],_timeStepsOperation2Invest[1,:])}
         EnergySystem.setTimeStepsOperation2Invest(element.name,_timeStepsOperation2Invest)
 
