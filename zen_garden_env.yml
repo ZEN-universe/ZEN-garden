@@ -6,12 +6,15 @@ channels:
 dependencies:
   - numpy
   - gurobi
+  - glpk
   - geopandas
   - pandas
   - pip
 #  - pyomo=6.2
   - pyomo=6.*
   - python=3.9.*
+  - coverage
+  - pytest
   - scipy
   - sympy
   - ipython
@@ -22,6 +25,7 @@ dependencies:
   - mpmath
   - pip:
       - tsam
+      - -e .
 
 # conda env create -f zen_garden_env.yml
 # conda remove --name zen-garden --all

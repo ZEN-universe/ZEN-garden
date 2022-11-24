@@ -1,0 +1,25 @@
+index,value,unit
+minBuiltCapacityDefault,0,GW
+maxBuiltCapacityDefault,inf,GW
+existingCapacityDefault,0,GW
+capacityLimitDefault,inf,GW
+minLoadDefault,0,
+maxLoadDefault,1,
+lifetimeDefault,20,
+opexSpecificDefault,0,kiloEuro/GWh
+referenceCarrier,natural_gas,GW
+carbonIntensityDefault,0,kilotons/GWh
+constructionTimeDefault,0,
+existingInvestedCapacityDefault,0,GW
+fixedOpexSpecificDefault,2,Euro/kW
+maxDiffusionRateDefault,inf,
+inputCarrier,natural_gas electricity,
+outputCarrier,natural_gas_high,
+capexSpecificDefault,100,Euro/kW
+pressureInDefault,30,bar
+pressureOutDefault,300,bar
+specificHeatDefault,3.98,kWh/(tons*K)
+specificHeatRatioDefault,1.41,
+temperatureInDefault,300,K
+isentropicEfficiencyDefault,0.65,
+converEfficiencyDefault,0.95,
