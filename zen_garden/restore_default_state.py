@@ -69,8 +69,6 @@ def restore_default_state():
     EnergySystem.dictTechnologyOfCarrier = {}
     # empty dict of sequence of time steps operation
     EnergySystem.dictSequenceTimeStepsOperation = {}
-    # empty dict of sequence of time steps invest
-    EnergySystem.dictSequenceTimeStepsInvest = {}
     # empty dict of sequence of time steps yearly
     EnergySystem.dictSequenceTimeStepsYearly = {}
     # empty dict of conversion from energy time steps to power time steps for storage technologies

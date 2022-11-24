@@ -39,8 +39,6 @@ class EnergySystem:
     dictTechnologyOfCarrier = {}
     # empty dict of sequence of time steps operation
     dictSequenceTimeStepsOperation = {}
-    # empty dict of sequence of time steps invest
-    dictSequenceTimeStepsInvest = {}
     # empty dict of sequence of time steps yearly
     dictSequenceTimeStepsYearly = {}
     # empty dict of conversion from energy time steps to power time steps for storage technologies
@@ -96,9 +94,8 @@ class EnergySystem:
         self.setBaseTimeStepsYearly = list(range(0, system["unaggregatedTimeStepsPerYear"]))
 
         # yearly time steps
-        self.typesTimeSteps                  = ["invest", "operation", "yearly"]
-        self.dictNumberOfTimeSteps           = self.dataInput.extractNumberTimeSteps()
-        self.setTimeStepsYearly              = self.dataInput.extractTimeSteps(typeOfTimeSteps="yearly")
+        self.typesTimeSteps                  = ["operation", "yearly"]
+        self.setTimeStepsYearly              = list(range(self.system["optimizedYears"]))
         self.setTimeStepsYearlyEntireHorizon = copy.deepcopy(self.setTimeStepsYearly)
         self.timeStepsYearlyDuration         = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
         self.sequenceTimeStepsYearly         = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
@@ -234,14 +231,12 @@ class EnergySystem:
         """ sets sequence of time steps, either of operation, invest, or year
         :param element: name of element in model
         :param sequenceTimeSteps: list of time steps corresponding to base time step
-        :param timeStepType: type of time step (operation, invest or year)"""
+        :param timeStepType: type of time step (operation or yearly)"""
         if not timeStepType:
             timeStepType = "operation"
 
         if timeStepType == "operation":
             cls.dictSequenceTimeStepsOperation[element] = sequenceTimeSteps
-        elif timeStepType == "invest":
-            cls.dictSequenceTimeStepsInvest[element]    = sequenceTimeSteps
         elif timeStepType == "yearly":
             cls.dictSequenceTimeStepsYearly[element]    = sequenceTimeSteps
         else:
@@ -252,7 +247,6 @@ class EnergySystem:
         """ sets all dicts of sequences of time steps.
         :param dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps"""
         cls.dictSequenceTimeStepsOperation = dictAllSequenceTimeSteps["operation"]
-        cls.dictSequenceTimeStepsInvest    = dictAllSequenceTimeSteps["invest"]
         cls.dictSequenceTimeStepsYearly    = dictAllSequenceTimeSteps["yearly"]
 
     @classmethod
@@ -355,10 +349,8 @@ class EnergySystem:
             timeStepType = "operation"
         if timeStepType == "operation":
             return cls.dictSequenceTimeStepsOperation[element]
-        elif timeStepType == "invest":
-            return cls.dictSequenceTimeStepsInvest[element]
         elif timeStepType == "yearly":
-            return cls.dictSequenceTimeStepsYearly[element]
+            return cls.dictSequenceTimeStepsYearly[None]
         else:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
 
@@ -368,7 +360,6 @@ class EnergySystem:
         :return dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps"""
         dictAllSequenceTimeSteps = {
             "operation" : cls.dictSequenceTimeStepsOperation,
-            "invest"    : cls.dictSequenceTimeStepsInvest,
             "yearly"    : cls.dictSequenceTimeStepsYearly
         }
         return dictAllSequenceTimeSteps

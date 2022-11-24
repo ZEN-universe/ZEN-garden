@@ -242,58 +242,6 @@ class DataInput():
             else:
                 return None
 
-    def extractNumberTimeSteps(self):
-        """ reads input data and returns number of typical periods and time steps per period for each technology and carrier
-        :return dictNumberOfTimeSteps: number of typical periods for each technology """
-        # select data
-        fileName    = "setTimeSteps"
-        dfInput     = self.readInputData(fileName)
-        dfInput     = dfInput.set_index(["element","typeTimeStep"])
-        # create empty dictNumberOfTimeSteps
-        dictNumberOfTimeSteps = {}
-        # iterate through investment time steps of technologies
-        typeTimeStep = "invest"
-        for technology in self.energySystem.setTechnologies:
-            assert technology in dfInput.index.get_level_values("element"), f"Technology {technology} is not in {fileName}.csv"
-            dictNumberOfTimeSteps[technology] = {}
-            assert (technology,typeTimeStep) in dfInput.index, f"Type of time step <{typeTimeStep} for technology {technology} is not in {fileName}.csv"
-            dictNumberOfTimeSteps[technology][typeTimeStep] = dfInput.loc[(technology,typeTimeStep)].squeeze()
-        # iterate through carriers 
-        for carrier in self.energySystem.setCarriers:
-            assert carrier in dfInput.index.get_level_values("element"), f"Carrier {carrier} is not in {fileName}.csv"
-            dictNumberOfTimeSteps[carrier] = {None: dfInput.loc[carrier].squeeze()}
-        # add yearly time steps
-        dictNumberOfTimeSteps[None] = {"yearly": self.system["optimizedYears"]}
-
-        # limit number of periods to base time steps of system
-        for element in dictNumberOfTimeSteps:
-            # if yearly time steps
-            if element is None:
-                continue
-
-            numberTypicalPeriods                = dictNumberOfTimeSteps[element][typeTimeStep]
-            numberTypicalPeriodsTotal           = numberTypicalPeriods*dictNumberOfTimeSteps[None]["yearly"]
-            if int(numberTypicalPeriodsTotal)   != numberTypicalPeriodsTotal:
-                logging.warning(f"The requested invest time steps per year ({numberTypicalPeriods}) of {element} do not evaluate to an integer for the entire time horizon ({numberTypicalPeriodsTotal}). Rounded up.")
-                numberTypicalPeriodsTotal                   = np.ceil(numberTypicalPeriodsTotal)
-            dictNumberOfTimeSteps[element][typeTimeStep]    = int(numberTypicalPeriodsTotal)
-
-        return dictNumberOfTimeSteps
-
-    def extractTimeSteps(self,elementName=None,typeOfTimeSteps=None,getListOfTimeSteps=True):
-        """ reads input data and returns range of time steps 
-        :param elementName: name of element
-        :param typeOfTimeSteps: type of time steps (invest, operational). If None, type column does not exist
-        :param getListOfTimeSteps: boolean if list of time steps returned
-        :return listOfTimeSteps: list of time steps """
-        numberTypicalPeriods = self.energySystem.dictNumberOfTimeSteps[elementName][typeOfTimeSteps]
-        if getListOfTimeSteps:
-            # create range of time steps 
-            listOfTimeSteps = list(range(0,numberTypicalPeriods))
-            return listOfTimeSteps
-        else:
-            return numberTypicalPeriods
-
     def extractConversionCarriers(self):
         """ reads input data and extracts conversion carriers
         :param self.folderPath: path to input files
@@ -371,7 +319,7 @@ class DataInput():
         else:
             raise KeyError(f"variable type {variableType} unknown.")
         _indexSets = ["setNodes", "setTimeSteps"]
-        _timeSteps = self.element.setTimeStepsInvest
+        _timeSteps = self.energySystem.setTimeStepsYearly
         # import all input data
         dfInputNonlinear    = self.readPWAFiles(variableType, fileType="nonlinear")
         dfInputBreakpoints  = self.readPWAFiles(variableType, fileType="breakpointsPWA")

@@ -225,10 +225,11 @@ class Postprocess:
         """
         Saves the opt dict as json
         """
-        self.write_file(self.nameDir.joinpath('optDict'), self.opt.__dict__)
+        if self.solver["name"] != "gurobi_persistent":
+            self.write_file(self.nameDir.joinpath('optDict'), self.opt.__dict__)
 
-        # copy the log file
-        shutil.copy2(os.path.abspath(self.opt._log_file), self.nameDir)
+            # copy the log file
+            shutil.copy2(os.path.abspath(self.opt._log_file), self.nameDir)
 
     def saveSequenceTimeSteps(self):
         """
