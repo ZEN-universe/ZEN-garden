@@ -13,12 +13,15 @@ import sys
 import logging
 import importlib.util
 import pkg_resources
+
+from shutil import rmtree
+
 from   .preprocess.prepare             import Prepare
 from   .model.optimization_setup       import OptimizationSetup
 from   .postprocess.results            import Postprocess
 
 
-def compile(config, dataset_path=None):
+def main(config, dataset_path=None):
     """
     This function runs the compile.py script that was used in ZEN-Garden prior to the package build, it is executed
     in the __main__.py script
@@ -49,6 +52,7 @@ def compile(config, dataset_path=None):
         config.analysis["dataset"] = dataset_path
     # get the abs path to avoid working dir stuff
     config.analysis["dataset"] = os.path.abspath(config.analysis['dataset'])
+    config.system["folderOutput"] = os.path.abspath(config.system['folderOutput'])
 
     ### System - load system configurations
     system_path = os.path.join(config.analysis['dataset'], "system.py")
@@ -82,6 +86,15 @@ def compile(config, dataset_path=None):
     # get rolling horizon years
     stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
 
+    # get the name of the dataset
+    modelName = os.path.basename(config.analysis["dataset"])
+    if os.path.exists(out_folder := os.path.join(config.system["folderOutput"], modelName)):
+        if config.system["overwriteOutput"]:
+            logging.info(f"Removing existing output folder: {out_folder}")
+            rmtree(out_folder)
+        else:
+            logging.warning(f"The outputfolder {out_folder} already exists")
+
     # update input data
     for scenario, elements in config.scenarios.items():
         optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
@@ -103,9 +116,15 @@ def compile(config, dataset_path=None):
             # add cumulative carbon emissions to previous carbon emissions
             optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
             # EVALUATE RESULTS
-            modelName = os.path.basename(config.analysis["dataset"])
-            if len(stepsOptimizationHorizon) > 1:
-                modelName += f"_MF{stepHorizon}"
+            subfolder = ""
             if config.system["conductScenarioAnalysis"]:
-                modelName += f"_{scenario}"
-            evaluation = Postprocess(optimizationSetup, modelName=modelName)
+                # handle scenarios
+                subfolder += f"scenario_{scenario}"
+            # handle myopic foresight
+            if len(stepsOptimizationHorizon) > 1:
+                if subfolder != "":
+                    subfolder += f"_"
+                subfolder += f"MF_{stepHorizon}"
+            # write results
+            evaluation = Postprocess(optimizationSetup, scenarios=config.scenarios, subfolder=subfolder,
+                                     modelName=modelName)

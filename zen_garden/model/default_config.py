@@ -163,7 +163,11 @@ class Config(object):
         # social discount rate
         self.system["socialDiscountRate"] = 0
         # folder output
-        self.system["folderOutput"] = "outputs/results/"
+        self.system["folderOutput"] = "./outputs/"
+        self.system["overwriteOutput"] = True
+        self.system["compressOutput"] = True
+        self.system["writeResultsYML"] = False
+        self.system["maxOutputSizeMB"] = 500
         # name of data folder for energy system specification
         self.system["folderNameSystemSpecification"] = "systemSpecification"
 

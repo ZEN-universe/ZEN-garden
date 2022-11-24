@@ -8,345 +8,797 @@ Description:  Class is defining the postprocessing of the results.
               The class takes as inputs the optimization problem (model) and the system configurations (system).
               The class contains methods to read the results and save them in a result dictionary (resultDict).
 ==========================================================================================================================================================================="""
-import logging
+import sys
+
+import numpy as np
 import pyomo.environ as pe
-import csv
-import os
-import pickle
 import pandas as pd
-from datetime import datetime
+import pathlib
+import shutil
+import json
+import zlib
+import os
+
 from ..model.objects.energy_system import EnergySystem
 from ..model.objects.parameter import Parameter
-
-import matplotlib.pyplot as plt
-
-#from postprocess.functions.create_dashboard_dictionary import DashboardDictionary
+from ..utils import RedirectStdStreams
 
 class Postprocess:
 
-    system    = dict()
-    varDict   = dict()
-    varDf     = dict()
-    paramDict = dict()
-    paramDf   = dict()
-    modelName = str()
-
-
-    def __init__(self, model=None, **kwargs):
+    def __init__(self, model, scenarios, modelName, subfolder=None):
         """postprocessing of the results of the optimization
-        :param model:     optimization model
-        :param pyoDict:   input data dictionary
-        :param modelName: model name used for the directory to save the results in"""
+        :param model: optimization model
+        :param modelName: The name of the model used to name the output folder
+        :param subfolder: The subfolder used for the results
+        """
 
-        # self.model     = model.model
-        # self.system    = model.system
-        # self.analysis  = model.analysis
-        self.modelName = kwargs.get('modelName', self.modelName)
-        # if specified we get the output dir from the kwargs otherwise we do it the old way
-        self.nameDir = kwargs.get('nameDir', os.path.join('./outputs', self.modelName))
+        # get the necessary stuff from the model
+        self.model = model.model
+        self.scenarios = scenarios
+        self.system = model.system
+        self.analysis = model.analysis
+        self.solver = model.solver
+        self.opt = model.opt
+        self.params = Parameter.getParameterObject()
 
-        # self.makeDirs()
-        # self.getVarValues()
-        # self.saveResults()
-        # self.plotResults()
+        # get name or directory
+        self.modelName = modelName
+        self.nameDir = pathlib.Path(self.system["folderOutput"]).joinpath(self.modelName)
 
-        # case where the class is called from the command line
-        if model==None:
-            self.loadParam()
-            self.loadVar()
-            self.loadSystem()
-            self.loadAnalysis()
-            self.process()
+        # deal with the subfolder
+        self.subfolder = subfolder
+        # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
+        if self.subfolder:
+            self.nameDir = self.nameDir.joinpath(self.subfolder)
+        # create the output directory
+        os.makedirs(self.nameDir, exist_ok=True)
 
-        # case where we are called from compile but should not perform the post-processing
-        elif model.analysis['postprocess']==False:
 
-            self.model      = model.model
-            self.system     = model.system
-            self.analysis   = model.analysis
-            self.params     = Parameter.getParameterObject()
+        # get the compression param
+        self.compress = self.system["compressOutput"]
 
-            self.makeDirs()
-            self.saveParam()
-            self.saveVar()
-            self.saveSystem()
-            self.saveAnalysis()
+        # save the pyomo yml
+        if self.system["writeResultsYML"]:
+            with RedirectStdStreams(open(os.path.join(self.nameDir, "results.yml"), "w+")):
+                model.results.write()
+
+        # save everything
+        self.saveParam()
+        self.saveVar()
+        self.saveSystem()
+        self.saveAnalysis()
+        self.saveScenarios()
+        self.saveSolver()
+        self.saveOpt()
+
+        # extract and save sequence time steps, we transform the arrays to lists
+        self.dictSequenceTimeSteps = self.flatten_dict(EnergySystem.getSequenceTimeStepsDict())
+        self.saveSequenceTimeSteps()
 
         # case where we should run the post-process as normal
+        if model.analysis['postprocess']:
+            pass
+            # TODO: implement this...
+            #self.process()
+
+    def write_file(self, name, dictionary):
+        """
+        Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
+        and saved as binary file
+        :param name: Filename without extension
+        :param dictionary: The dictionary to save
+        """
+
+        # serialize to string
+        serialized_dict = json.dumps(dictionary, indent=2)
+
+        # if the string is larger than the max output size we compress anyway
+        force_compression = False
+        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.system["maxOutputSizeMB"]:
+            print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
+                  f"{self.system['maxOutputSizeMB']}MB, compressing...")
+            force_compression = True
+
+        if self.compress or force_compression:
+            # compress and write
+            compressed = zlib.compress(serialized_dict.encode())
+            with open(f"{name}.gzip", "wb") as outfile:
+                outfile.write(compressed)
         else:
-
-            self.model     = model.model
-            self.system    = model.system
-            self.analysis  = model.analysis
-
-            self.makeDirs()
-            self.saveParam()
-            self.saveVar()
-            self.saveSystem()
-            self.saveAnalysis()
-            self.process()
-
-    def makeDirs(self):
-        """create results directory"""
-        try:
-            os.makedirs(self.nameDir)
-        except OSError:
-            pass
-
-        try:
-            os.makedirs(os.path.join(self.nameDir, 'plots'))
-        except OSError:
-            pass
-
-    def getParamValues(self):
-        """get the values assigned to each variable"""
-
-        for param in self.model.component_objects(pe.Param, active=True):
-            # sava params in a dict
-            self.paramDict[param.name] = dict()
-            for index in param:
-                self.paramDict[param.name][index] = pe.value(param[index])
-            # save params in a dataframe
-            self.createDataframe(param, self.paramDict, self.paramDf)
+            # write normal json
+            with open(f"{name}.json", "w+") as outfile:
+                outfile.write(serialized_dict)
 
     def saveParam(self):
-        """ Saves the Param values to pickle files which can then be
+        """ Saves the Param values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
 
-        # get all the param values from the model and store in a dict
-        # for param in self.model.component_objects(pe.Param, active=True):
-        #     # sava params in a dict
-        #     self.paramDict[param.name] = dict()
-        #     for index in param:
-        #         self.paramDict[param.name][index] = pe.value(param[index])
+        # dataframe serialization
+        data_frames = {}
         for param in self.params.parameterList:
-            self.paramDict[param] = getattr(self.params,param)
+            # get the values
+            vals = getattr(self.params, param)
+            # create a dictionary if necessary
+            if not isinstance(vals, dict):
+                indices = [np.nan]
+                data = [vals]
+            # if the returned dict is emtpy we create a nan value
+            elif len(vals) == 0:
+                indices = [np.nan]
+                data = [None]
+            # we read out everything
+            else:
+                indices = list(vals.keys())
+                data = list(vals.values())
 
-        # save the param dict to a pickle
-        with open(os.path.join(self.nameDir, 'paramDict.pickle'), 'wb') as file:
-            pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
+                # create a multi index if necessary
+                if isinstance(indices[0], tuple):
+                    indices = pd.MultiIndex.from_tuples(indices)
 
-        # save sequence time steps
-        dictSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
-        # save the param dict to a pickle
-        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.pickle'), 'wb') as file:
-            pickle.dump(dictSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
+            # create dataframe
+            df = pd.DataFrame(data=data, columns=["value"], index=indices)
 
-    def loadParam(self):
-        """ Loads the Param values from previously saved pickle files which can then be
-        post-processed """
-        with open(os.path.join(self.nameDir, 'paramDict.pickle'), 'rb') as file:
-            self.paramDict = pickle.load(file)
+            # update dict
+            data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
+                                  "docstring": self.params.docs[param]}
 
-    def getVarValues(self):
-        """get the values assigned to each variable"""
-
-        for var in self.model.component_objects(pe.Var, active=True):
-            if 'constraint' not in var.name and 'gdp' not in var.name:
-                # save vars in a dict
-                self.varDict[var.name] = dict()
-                for index in var:
-                    if var[index].value:
-                        self.varDict[var.name][index] = pe.value(var[index])
-                # save vars in a DataFrame
-                self.createDataframe(var, self.varDict, self.varDf)
+        # write to json
+        self.write_file(self.nameDir.joinpath('paramDict'), data_frames)
 
     def saveVar(self):
-        """ Saves the variable values to pickle files which can then be
+        """ Saves the variable values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
 
-        # get all the variable values from the model and store in a dict
+        # dataframe serialization
+        data_frames = {}
         for var in self.model.component_objects(pe.Var, active=True):
-            if 'constraint' not in var.name and 'gdp' not in var.name:
-                # save vars in a dict
-                self.varDict[var.name] = dict()
-                for index in var:
-                    try:
-                        self.varDict[var.name][index] = var[index].value
-                    except:
-                        pass
+            # get indices and values
+            indices = [index for index in var]
+            values = [getattr(var[index], "value", None) for index in indices]
 
-        # save the variable dict to a pickle
-        with open(os.path.join(self.nameDir, 'varDict.pickle'), 'wb') as file:
-            pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
+            # create a multiindex if necessary
+            if isinstance(indices[0], tuple):
+                indices = pd.MultiIndex.from_tuples(indices)
 
-    # def saveVar_HB(self):  # My own function to save the variables in better dicts
-    #     """ Saves the variable values to pickle files which can then be
-    #     post-processed immediately or loaded and postprocessed at some other time"""
-    #
-    #     # get all the variable values from the model and store in a dict
-    #     for var in self.model.component_objects(pe.Var, active=True):
-    #         if 'constraint' not in var.name and 'gdp' not in var.name:
-    #             # create a sub-dict for each variable
-    #             self.varDict[var.name] = dict()
-    #             for index in var:
-    #                 # if variable is sub-splitted (e.g. for child-classes) create sub-dicts
-    #                 if type(index) is tuple:
-    #                     try:
-    #                         self.varDict[var.name][index[0]][index[1:]] = var[index].value
-    #                     except KeyError:
-    #                         self.varDict[var.name][index[0]] = dict()
-    #                         self.varDict[var.name][index[0]][index[1:]] = var[index].value
-    #                 # for index in var:
-    #                 else:
-    #                     try:
-    #                         self.varDict[var.name][index] = var[index].value
-    #                     except:
-    #                         pass
-    #
-    #     # save the variable dict to a pickle
-    #     with open(f'{self.nameDir}vars/varDict.pickle', 'wb') as file:
-    #         pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
+            # create dataframe
+            df = pd.DataFrame(data=values, columns=["value"], index=indices)
 
-    def loadVar(self):
-        """ Loads the variable values from previously saved pickle files which can then be
-        post-processed """
-        with open(os.path.join(self.nameDir, 'varDict.pickle'), 'rb') as file:
-            self.varDict = pickle.load(file)
+            # we transform the dataframe to a json string and load it into the dictionary as dict
+            data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
+                                     "docstring": var.doc}
+
+        self.write_file(self.nameDir.joinpath('varDict'), data_frames)
 
     def saveSystem(self):
-        with open(os.path.join(self.nameDir, 'System.pickle'), 'wb') as file:
-            pickle.dump(self.system, file, protocol=pickle.HIGHEST_PROTOCOL)
+        """
+        Saves the system dict as json
+        """
+
+        # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath('System')
+        else:
+            fname = self.nameDir.joinpath('System')
+        if not fname.exists():
+            self.write_file(fname, self.system)
 
     def saveAnalysis(self):
-        with open(os.path.join(self.nameDir, 'Analysis.pickle'), 'wb') as file:
-            pickle.dump(self.analysis, file, protocol=pickle.HIGHEST_PROTOCOL)
+        """
+        Saves the analysis dict as json
+        """
 
-    def loadSystem(self):
-        """ Loads the system object from previously saved pickle files which can then be
-        post-processed """
-        with open(os.path.join(self.nameDir, 'System.pickle'), 'rb') as file:
-            self.system = pickle.load(file)
-
-    def loadAnalysis(self):
-        """ Loads the analysis object from previously saved pickle files which can then be
-        post-processed """
-        with open(os.path.join(self.nameDir, 'Analysis.pickle'), 'rb') as file:
-            self.analysis = pickle.load(file)
-
-    # def createDataframe(self, obj, dict, df):
-    #     """ save data in dataframe"""
-    #     if dict[obj.name]:
-    #         if list(dict[obj.name].keys())[0] == None:
-    #             # [index, capacity]
-    #             df[obj.name] = pd.DataFrame(dict[obj.name].values(), columns=self.analysis['headerDataOutputs'][obj.name])
-    #             self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
-    #             print(df)
-    #         elif type(list(dict[obj.name].keys())[0]) == int:
-    #             # seems like we never come in here
-    #             print("DID SOMETHING COME IN HERE??")
-    #             df[obj.name] = pd.DataFrame(dict[obj.name].values(), index=list(dict[obj.name].keys()), columns=self.analysis['headerDataOutputs'][obj.name])
-    #             self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
-    #             print(df)
-    #         else:
-    #             # [tech, node, time, capacity]
-    #             df[obj.name] = pd.DataFrame(dict[obj.name].values(),index=pd.MultiIndex.from_tuples(dict[obj.name].keys())).reset_index()
-    #             df[obj.name].columns = self.analysis['headerDataOutputs'][obj.name]
-    #             self.trimZeros(obj, self.varDf, df[obj.name].columns.values)
-    #             print(df)
-    #     else:
-    #         print(f'{obj.name} not evaluated in results_HB.py')
-
-    def createDataframe(self, varName, dict, df):
-        """ save data in dataframe"""
-        if dict[varName]:
-            if list(dict[varName].keys())[0] == None:
-                # [index, capacity]
-                df[varName] = pd.DataFrame(dict[varName].values(), columns=self.analysis['headerDataOutputs'][varName])
-                self.trimZeros(varName, self.varDf, df[varName].columns.values)
-                print(df)
-            elif type(list(dict[varName].keys())[0]) == int:
-                # seems like we never come in here
-                print("DID SOMETHING COME IN HERE??")
-                try:
-                    df[varName] = pd.DataFrame(dict[varName].values(), index=list(dict[varName].keys()), columns=self.analysis['headerDataOutputs'][varName])
-                except KeyError:
-                    logging.info(f"create header for variable {varName}")
-                    df[varName] = pd.DataFrame(dict[varName].values(), index=list(dict[varName].keys()))
-                self.trimZeros(varName, self.varDf, df[varName].columns.values)
-                print(df)
-            else:
-                # [tech, node, time, capacity]
-                df[varName] = pd.DataFrame(dict[varName].values(),index=pd.MultiIndex.from_tuples(dict[varName].keys())).reset_index()
-                df[varName].columns = self.analysis['headerDataOutputs'][varName]
-                self.trimZeros(varName, self.varDf, df[varName].columns.values)
-                print(df)
+        # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath('Analysis')
         else:
-            print(f'{varName} not evaluated in results.py')
+            fname = self.nameDir.joinpath('Analysis')
+        if not fname.exists():
+            self.write_file(fname, self.analysis)
 
-    def trimZeros(self, varName, df, c=[0]):
-        """ Trims out the zero rows in the dataframe """
-        df[varName] = df[varName].loc[~(df[varName][c[-1]]==0)]
+    def saveScenarios(self):
+        """
+        Saves the analysis dict as json
+        """
 
-        # TODO: handle the case where you are left with an empty dataframe
-        # --> maybe put the check in saveResults() and either have no csv for
-        #   empty dataframe or create a list to keep track of which variables are empty
+        # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath('Scenarios')
+        else:
+            fname = self.nameDir.joinpath('Scenarios')
+        if not fname.exists():
+            self.write_file(fname, self.scenarios)
 
-    def saveResults(self):
-        """save the input data (paramDict, paramDf) and the results (varDict, varDf)"""
+    def saveSolver(self):
+        """
+        Saves the solver dict as json
+        """
 
-        # Save parameter data
-        with open(os.path.join(self.nameDir, 'paramDict.pickle'), 'wb') as file:
-            pickle.dump(self.paramDict, file, protocol=pickle.HIGHEST_PROTOCOL)
-        for paramName, df in self.paramDf.items():
-            df.to_csv(os.path.join(self.nameDir, f'{paramName}.csv'))
+        # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath('Solver')
+        else:
+            fname = self.nameDir.joinpath('Solver')
+        if not fname.exists():
+            self.write_file(fname, self.solver)
 
-        # Save variable data
-        with open(os.path.join(self.nameDir, 'varDict.pickle'), 'wb') as file:
-            pickle.dump(self.varDict, file, protocol=pickle.HIGHEST_PROTOCOL)
-        for varName, df in self.varDf.items():
-            df.to_csv(os.path.join(self.nameDir, f'{varName}.csv'), index=False)
+    def saveOpt(self):
+        """
+        Saves the opt dict as json
+        """
+        self.write_file(self.nameDir.joinpath('optDict'), self.opt.__dict__)
 
-    def process(self):
-        print(self.varDict.items())
-        for var,dic in self.varDict.items():
-            self.createDataframe(var, self.varDict, self.varDf)
-            self.varDf[var].to_csv(os.path.join(self.nameDir, f'{var}.csv'), index=False)
-            self.plotResults()
+        # copy the log file
+        shutil.copy2(os.path.abspath(self.opt._log_file), self.nameDir)
 
-    def plotResults(self):
-        for varName, df in self.varDf.items():
-            # Need to catch here the empty dataframes because we cant plot something that isnt there
-            if df.empty:
-                continue
-            elif varName=='installTechnology':    # --> 1)
-                print('not implemented')
-            elif varName=='carrierFlow' or varName=='carrierLoss': # --> 2)
-                print('not implemented')
-            elif varName=='dependentFlowApproximation' or varName=='inputFlow' or varName=='outputFlow' or varName=='referenceFlowApproximation': # --> 4)
-                print('not implemented')
-            elif varName=='carbonEmissionsCarrierTotal' or varName=='capexTotal' or varName=='carbonEmissionsTechnologyTotal' or varName=='carbonEmissionsTotal' or varName=='costCarrierTotal' or varName=='opexTotal':
-                print('not implemented')
-            elif varName=='carrierFlowCharge' or varName=='carrierFlowDischarge' or varName=='levelCharge':
-                print('not implemented')
-            else: # --> 3)
-                c = df.columns
-                t = 0
-                labels = df[c[0]].unique()
+    def saveSequenceTimeSteps(self):
+        """
+        Saves the dictAllSequenceTimeSteps dict as json
+        """
 
-                df = df.sort_values(by=['node',c[0]])
-                df = df.set_index(['node',c[0],'time'])
-                df.loc[(slice(None),slice(None),t), :].reset_index(level=['time'],drop=['True']).unstack().plot(kind='bar', stacked=True, title=varName+'\ntimeStep='+str(t))
+        # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath('dictAllSequenceTimeSteps')
+        else:
+            fname = self.nameDir.joinpath('dictAllSequenceTimeSteps')
+        if not fname.exists():
+            self.write_file(fname, self.dictSequenceTimeSteps)
 
-                hand, lab = plt.gca().get_legend_handles_labels()
-                leg = []
-                for l in lab:
-                    for la in labels:
-                        if la in l:
-                            leg.append(la)
-                plt.legend(leg)
+    def flatten_dict(self, dictionary):
+        """
+        Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can
+        be saved as json file
+        :param dictionary: The input dictionary
+        :return: A copy of the dictionary containing lists instead of arrays
+        """
+        # create a copy of the dict to avoid overwrite
+        dictionary = dictionary.copy()
 
-                path = os.oath.join(self.nameDir, 'plots', varName+'.png')
-                plt.savefig(path)
+        # faltten all arrays
+        for k, v in dictionary.items():
+            # recursive call
+            if isinstance(v, dict):
+                dictionary[k] = self.flatten_dict(v)
+                # flatten the array to list
+            elif isinstance(v, np.ndarray):
+                # Note: list(v) creates a list of np objects v.tolist() not
+                dictionary[k] = v.tolist()
+            # take as is
+            else:
+                dictionary[k] = v
 
-        # safe dictSequenceTimeSteps
-        dictAllSequenceTimeSteps = EnergySystem.getSequenceTimeStepsDict()
-        with open(os.path.join(self.nameDir, 'dictAllSequenceTimeSteps.pickle'), 'wb') as file:
-            pickle.dump(dictAllSequenceTimeSteps, file, protocol=pickle.HIGHEST_PROTOCOL)
-    # indexNames  = self.getProperties(getattr(self.model, varName).doc)
-    # self.varDf[varName] = pd.DataFrame(varResults, index=pd.MultiIndex.from_tuples(indexValues, names=indexNames))
+        return dictionary
 
-if __name__ == "__main__":
-    today = datetime.date()
-    modelName = "model_" + today.strftime("%Y-%m-%d")
-    evaluation = Postprocess(modelName=modelName)
+
+class Results(object):
+    """
+    This class reads in the results after the pipeline has run
+    """
+
+    def __init__(self, path, load_opt=False):
+        """
+        Initializes the Results class with a given path
+        :param path: Path to the output of the optimization problem
+        :param load_opt: Optionally load the opt dictionary as well
+        """
+
+        # get the abs path
+        self.path = os.path.abspath(path)
+
+        # check if the path exists
+        if not os.path.exists(self.path):
+            raise FileNotFoundError(f"No such file or directory: {self.path}")
+
+        # load the onetime stuff
+        self.results = {}
+        self.results["analysis"] = self.load_analysis(self.path)
+        self.results["scenarios"] = self.load_scenarios(self.path)
+        self.results["solver"] = self.load_solver(self.path)
+        self.results["system"] = self.load_system(self.path)
+        self.results["dictSequenceTimeSteps"] = self.load_sequence_time_steps(self.path)
+
+        # get the years
+        self.years = list(range(0, self.results["system"]["optimizedYears"]))
+
+        # check what type of results we have
+        if self.results["system"]["conductScenarioAnalysis"]:
+            self.has_scenarios = True
+            self.scenarios = [f"scenario_{scenario}" for scenario in self.results["scenarios"].keys()]
+        else:
+            self.has_scenarios = False
+            self.scenarios = [None]
+        if self.results["system"]["useRollingHorizon"]:
+            self.has_MF = True
+            self.myopic_forsights = [f"MF_{stepHorizon}" for stepHorizon in self.years]
+        else:
+            self.has_MF = False
+            self.myopic_forsights = [None]
+
+        # cycle through the dirs
+        for scenario in self.scenarios:
+            # init dict
+            self.results[scenario] = {}
+            for mf in self.myopic_forsights:
+                # init dict
+                self.results[scenario][mf] = {}
+
+                # get the current path
+                subfolder = ""
+                if self.has_scenarios:
+                    # handle scenarios
+                    subfolder += scenario
+                    # add the buffer if necessary
+                    if self.has_MF:
+                        subfolder += "_"
+                # deal with MF
+                if self.has_MF:
+                    subfolder += mf
+
+                # Add together
+                current_path = os.path.join(self.path, subfolder)
+
+                # create dict containing params and vars
+                self.results[scenario][mf]["pars_and_vars"] = {}
+                self.results[scenario][mf]["pars_and_vars"].update(self.load_params(current_path))
+                self.results[scenario][mf]["pars_and_vars"].update(self.load_vars(current_path))
+
+                # the opt we only load when requested
+                if load_opt:
+                    self.results[scenario][mf]["optdict"] = self.load_opt(current_path)
+
+        # load the time step duration
+        self.timeStepDuration = self.loadTimeStepDuration()
+
+    @classmethod
+    def _read_file(cls, name):
+        """
+        Reads out a file and decompresses it if necessary
+        :param name: File name without extension
+        :return: The decompressed content of the file as string
+        """
+
+        # compressed version
+        if os.path.exists(f"{name}.gzip"):
+            with open(f"{name}.gzip", "rb") as f:
+                content_compressed = f.read()
+            return zlib.decompress(content_compressed).decode()
+
+        # normal version
+        if os.path.exists(f"{name}.json"):
+            with open(f"{name}.json", "r") as f:
+                content = f.read()
+            return content
+
+        # raise Error if nothing is found
+        raise FileNotFoundError(f"The file does not exists as json or gzip: {name}")
+
+    @classmethod
+    def _dict2df(cls, dict_raw):
+        """
+        Transforms a parameter or variable dict to a dict containing actual pandas dataframes and not serialized jsons
+        :param dict_raw: The raw dict to parse
+        :return: A dict containing actual dataframes in the dataframe keys
+        """
+
+        # transform back to dataframes
+        dict_df = dict()
+        for key, value in dict_raw.items():
+            # init the dict for the variable
+            dict_df[key] = dict()
+
+            # the docstring we keep
+            dict_df[key]['docstring'] = dict_raw[key]['docstring']
+
+            # the dataframe we transform to an actual dataframe
+            dict_df[key]['dataframe'] = pd.read_json(json.dumps(dict_raw[key]['dataframe']),
+                                                     orient="table")
+
+        return dict_df
+
+    @classmethod
+    def load_params(cls, path):
+        """
+        Loads the parameter dict from a given path
+        :param path: Path to load the parameter dict from
+        :return: The parameter dict
+        """
+
+        # load the raw dict
+        raw_dict = cls._read_file(os.path.join(path, "paramDict"))
+        paramDict_raw = json.loads(raw_dict)
+
+        return cls._dict2df(paramDict_raw)
+
+    @classmethod
+    def load_vars(cls, path):
+        """
+        Loads the var dict from a given path
+        :param path: Path to load the var dict from
+        :return: The var dict
+        """
+
+        # load the raw dict
+        raw_dict = cls._read_file(os.path.join(path, "varDict"))
+        varDict_raw = json.loads(raw_dict)
+
+        return cls._dict2df(varDict_raw)
+
+    @classmethod
+    def load_system(cls, path):
+        """
+        Loads the system dict from a given path
+        :param path: Directory to load the dictionary from
+        :return: The system dictionary
+        """
+
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "System"))
+        system_dict = json.loads(raw_dict)
+
+        return system_dict
+
+    @classmethod
+    def load_analysis(cls, path):
+        """
+        Loads the analysis dict from a given path
+        :param path: Directory to load the dictionary from
+        :return: The analysis dictionary
+        """
+
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "Analysis"))
+        analysis_dict = json.loads(raw_dict)
+
+        return analysis_dict
+
+    @classmethod
+    def load_solver(cls, path):
+        """
+        Loads the solver dict from a given path
+        :param path: Directory to load the dictionary from
+        :return: The analysis dictionary
+        """
+
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "Solver"))
+        solver_dict = json.loads(raw_dict)
+
+        return solver_dict
+
+    @classmethod
+    def load_scenarios(cls, path):
+        """
+        Loads the scenarios dict from a given path
+        :param path: Directory to load the dictionary from
+        :return: The analysis dictionary
+        """
+
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "Scenarios"))
+        scenarios_dict = json.loads(raw_dict)
+
+        return scenarios_dict
+
+    @classmethod
+    def load_opt(cls, path):
+        """
+        Loads the opt dict from a given path
+        :param path: Directory to load the dictionary from
+        :return: The analysis dictionary
+        """
+
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "optDict"))
+        opt_dict = json.loads(raw_dict)
+
+        return opt_dict
+
+    @classmethod
+    def load_sequence_time_steps(cls, path):
+        """
+        Loads the dictSequenceTimeSteps from a given path
+        :param path: Path to load the dict from
+        :return: dictSequenceTimeSteps
+        """
+
+        # get the dict
+        raw_dict = cls._read_file(os.path.join(path, "dictAllSequenceTimeSteps"))
+        dictSequenceTimeSteps = json.loads(raw_dict)
+
+        # json string None to 'null'
+        dictSequenceTimeSteps['yearly'][None] = dictSequenceTimeSteps['yearly']['null']
+        del dictSequenceTimeSteps['yearly']['null']
+
+        # tranform all lists to arrays
+        return cls.expand_dict(dictSequenceTimeSteps)
+
+    @classmethod
+    def expand_dict(cls, dictionary):
+        """
+        Creates a copy of the dictionary where all lists are recursively transformed to numpy arrays
+        :param dictionary: The input dictionary
+        :return: A copy of the dictionary containing arrays instead of lists
+        """
+        # create a copy of the dict to avoid overwrite
+        dictionary = dictionary.copy()
+
+        # faltten all arrays
+        for k, v in dictionary.items():
+            # recursive call
+            if isinstance(v, dict):
+                dictionary[k] = cls.expand_dict(v)
+                # flatten the array to list
+            elif isinstance(v, list):
+                # Note: list(v) creates a list of np objects v.tolist() not
+                dictionary[k] = np.array(v)
+            # take as is
+            else:
+                dictionary[k] = v
+
+        return dictionary
+
+    def get_dataframe(self, name, isStorage=False, scenario=None, to_csv=None, csv_kwargs=None):
+        """
+        Extracts the dataframe from the results
+        :param name: The name of the dataframe to extract
+        :param isStorage: Whether it is a storage or not
+        :param scenario: If multiple scenarios are in the results, only consider this one
+        :param to_csv: Save the dataframes to a csv file
+        :param csv_kwargs: additional keyword arguments forwarded to the to_csv method of pandas
+        :return: The dataframe that should have been extracted. If multiple scenarios are present a dictionary
+                 with scenarios as keys and dataframes as value is returned
+        """
+
+        # set the dict
+        EnergySystem.setSequenceTimeStepsDict(self.results["dictSequenceTimeSteps"])
+
+        # select the scenarios
+        if scenario is not None:
+            scenarios = [scenario]
+        else:
+            scenarios = self.scenarios
+
+        # loop
+        _data = {}
+        for scenario in scenarios:
+            if not self.has_MF:
+                # we set the dataframe of the variable into the data dict
+                _data[scenario] = self.results[scenario][None]["pars_and_vars"][name]["dataframe"]
+
+            else:
+                # init the scenario
+                _mf_data = {}
+
+                # cycle through all MFs
+                for year, mf in enumerate(self.myopic_forsights):
+                    _var = self.results[scenario][mf]["pars_and_vars"][name]["dataframe"]
+
+                    # single element that is not a year
+                    if len(_var) == 1 and not np.isfinite(_var.index[0]):
+                        _data[scenario] = _var
+                        break
+                    # if the year is in the index (no multiindex)
+                    elif year in _var.index:
+                        _mf_data[year] = _var.loc[year]
+                        yearlyComponent = True
+                    else:
+                        # unstack the year
+                        _varSeries = _var.unstack()
+                        # if all columns in years (drop the value level)
+                        if _varSeries.columns.droplevel(0).difference(self.years).empty:
+                            # get the data
+                            tmp_data = _varSeries[("value", year)]
+                            # rename
+                            tmp_data.name = "value"
+                            # set
+                            _mf_data[year] = tmp_data
+                            yearlyComponent = True
+                        # if more time steps than years, then it is operational ts (we drop value in columns)
+                        elif pd.to_numeric(_varSeries.columns.droplevel(0),
+                                           errors="coerce").equals(_varSeries.columns.droplevel(0)):
+                            # TODO only valid for same time steps between techs
+                            if isStorage:
+                                techProxy = [k for k in self.results["dictSequenceTimeSteps"]["operation"].keys()
+                                             if "storage" in k.lower()][0]
+                            else:
+                                techProxy = [k for k in self.results["dictSequenceTimeSteps"]["operation"].keys()
+                                             if "storage" not in k.lower()][0]
+                            # get the timesteps
+                            timeStepsYear = EnergySystem.encodeTimeStep(techProxy,
+                                                                        EnergySystem.decodeTimeStep(None, year,
+                                                                                                    "yearly"),
+                                                                        yearly=True)
+                            # get the data
+                            tmp_data = _varSeries[[("value", tstep) for tstep in timeStepsYear]]
+                            # rename
+                            tmp_data.name = "value"
+                            # set
+                            _mf_data[year] = tmp_data
+                            yearlyComponent = False
+                        # else not a time index
+                        else:
+                            _data[scenario] = _varSeries.stack()
+                            break
+                # This is a for-else, it is triggered if we did not break the loop
+                else:
+                    # deal with the years
+                    if yearlyComponent:
+                        # concat
+                        _df = pd.concat(_mf_data, axis=0, keys=_mf_data.keys())
+                        _dfIndex = _df.index.copy()
+                        for level, codes in enumerate(_df.index.codes):
+                            if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
+                                _dfIndex = _dfIndex.droplevel(level)
+                                break
+                        _df.index = _dfIndex
+                        if year not in _var.index:
+                            _indexSort = list(range(0, _df.index.nlevels))
+                            _indexSort.append(_indexSort[0])
+                            _indexSort.pop(0)
+                            _df = _df.reorder_levels(_indexSort)
+                    else:
+                        _df = pd.concat(_mf_data, axis=1)
+                        _df.columns = _df.columns.droplevel(0)
+                        _df = _df.sort_index(axis=1).stack()
+
+                    _data[scenario] = _df
+
+        # transform all dataframes to pd.Series with the elementName as name
+        for k, v in _data.items():
+            if not isinstance(v, pd.Series):
+                # to series
+                series = pd.Series(data=v["value"], index=v.index)
+                series.name = name
+                # set
+                _data[k] = series
+            # we just make sure the name is right
+            else:
+                v.name = name
+                _data[k] = v
+
+        # get the path to the csv file
+        if to_csv is not None:
+            fname, _ = os.path.splitext(to_csv)
+
+            # deal with additional args
+            if csv_kwargs is None:
+                csv_kwargs = {}
+
+        # if we only had a single scenario no need for the wrapper
+        if len(scenarios) == 1:
+            # save if necessary
+            if to_csv is not None:
+                _data[scenario].to_csv(f"{fname}.csv", **csv_kwargs)
+            return _data[scenario]
+
+        # return the dict
+        else:
+            # save if necessary
+            if to_csv is not None:
+                for scenario in scenarios:
+                    _data[scenario].to_csv(f"{fname}_{scenario}.csv", **csv_kwargs)
+            return _data
+
+    def loadTimeStepDuration(self):
+        """
+        Loads duration of time steps
+        """
+        return self.get_dataframe("timeStepsOperationDuration")
+
+    def calculateFullTimeSeries(self, component, elementName=None, scenario=None):
+        """
+        Calculates the full timeseries for a given element
+        :param component: Either the dataframe of a component as pandas.Series or the name of the component
+        :param elementName: The name of the element
+        :param scenario: The scenario for with the component should be extracted (only if needed)
+        :return: A dataframe containing the full timeseries of the element
+        """
+
+        # set the timesteps
+        EnergySystem.setSequenceTimeStepsDict(self.results["dictSequenceTimeSteps"])
+
+        # readout the component if necessary
+        if isinstance(component, str):
+            # make sure we have a scenario if it is needed
+            if self.has_scenarios:
+                if scenario is None:
+                    raise ValueError("You need to specify a scenario!")
+                else:
+                    component = self.get_dataframe(component)[scenario]
+            else:
+                component = self.get_dataframe(component)[scenario]
+
+        # some checks
+        assert isinstance(component, pd.Series), "inputDf is not pd.Series"
+        inputDf = component.unstack()
+        assert elementName or inputDf.index.get_level_values(0).isin(self.results["system"]["setConversionTechnologies"]).all(), \
+            "the first index of inputDf contains values that are not conversion technologies and no manual element specified"
+
+        # calculate the full time series
+        _outputTemp = {}
+        for row in inputDf.index:
+            # we know the name
+            if elementName:
+                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(elementName)
+            # we extract the name
+            else:
+                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(row[0])
+
+            # throw together
+            _sequenceTimeSteps = _sequenceTimeSteps[np.in1d(_sequenceTimeSteps,list(inputDf.columns))]
+            _outputTemp[row] = inputDf.loc[row,_sequenceTimeSteps].reset_index(drop=True)
+
+        # concat and return
+        outputDf = pd.concat(_outputTemp,axis=0,keys = _outputTemp.keys())
+        return outputDf
+
+    def calculateTotalValue(self, component, elementName=None, year=None, scenario=None):
+        """
+        Calculates the total Value of a component
+        :param component: Either a dataframe as returned from <get_dataframe> or the name of the component
+        :param elementName: The element name to calculate the value for, defaults to all elements
+        :param year: The year to calculate the value for, defaults to all years
+        :param scenario: The scenario to calculate the total value for
+        :return: A dataframe containing the total value with the specified paramters
+        """
+
+        # extract the right timestep duration
+        if self.has_scenarios:
+            if scenario is None:
+                raise ValueError("Please specify a scenario!")
+            else:
+                timeStepDuration = self.timeStepDuration[scenario].unstack()
+        else:
+            timeStepDuration = self.timeStepDuration.unstack()
+
+        # extract the data
+        if isinstance(component, str):
+            component_name = component
+            # only use the data from one scenario if specified
+            if scenario is not None:
+                component_data = self.get_dataframe(component)[scenario].unstack()
+            else:
+                component_data = self.get_dataframe(component).unstack()
+        elif isinstance(component, pd.Series):
+            component_name = component.name
+            component_data = component.unstack()
+
+        # check
+        assert (isinstance(component_data, pd.DataFrame) and component_data.shape[1] == timeStepDuration.shape[1]) \
+               or len(component_data) == timeStepDuration.shape[1], \
+            f"Lengths of {component_name} and the operational time step duration do not match"
+
+        # If we have an element name
+        if elementName is not None:
+            # check that it is in the index
+            assert elementName in component_data.index.get_level_values(level=0), \
+                f"element {elementName} is not found in index of {component_name}"
+            # get the index
+            component_data = component_data.loc[elementName]
+            timeStepDuration_ele = timeStepDuration.loc[elementName]
+
+            if year is not None:
+                # only for the given year
+                timeStepsYear = EnergySystem.encodeTimeStep(elementName,
+                                                            EnergySystem.decodeTimeStep(None, year, "yearly"),
+                                                            yearly=True)
+                totalValue = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
+            else:
+                # for all years
+                totalValue = (component_data*timeStepDuration_ele).sum(axis=1)
+
+        # if we do not have an element name
+        else:
+            totalValue  = component_data.apply(lambda row: row*timeStepDuration.loc[row.name[0]],axis=1)
+            if year is not None:
+                # set a proxy for the element name
+                elementName_proxy = component_data.index.get_level_values(level=0)[0]
+                timeStepsYear = EnergySystem.encodeTimeStep(elementName_proxy,
+                                                            EnergySystem.decodeTimeStep(None, year, "yearly"),
+                                                            yearly=True)
+                totalValue = totalValue[timeStepsYear].sum(axis=1)
+            else:
+                totalValue = totalValue.sum(axis=1)
+        return totalValue
+
+    def __str__(self):
+        return f"Results of '{self.path}'"
