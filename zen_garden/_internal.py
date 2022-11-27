@@ -8,18 +8,20 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
-import copy
 import os
 import sys
 import logging
 import importlib.util
 import pkg_resources
+
+from shutil import rmtree
+
 from   .preprocess.prepare             import Prepare
 from   .model.optimization_setup       import OptimizationSetup
 from   .postprocess.results            import Postprocess
 
 
-def compile(config, dataset_path=None):
+def main(config, dataset_path=None):
     """
     This function runs the compile.py script that was used in ZEN-Garden prior to the package build, it is executed
     in the __main__.py script
@@ -50,6 +52,7 @@ def compile(config, dataset_path=None):
         config.analysis["dataset"] = dataset_path
     # get the abs path to avoid working dir stuff
     config.analysis["dataset"] = os.path.abspath(config.analysis['dataset'])
+    config.system["folderOutput"] = os.path.abspath(config.system['folderOutput'])
 
     ### System - load system configurations
     system_path = os.path.join(config.analysis['dataset'], "system.py")
@@ -83,8 +86,16 @@ def compile(config, dataset_path=None):
     # get rolling horizon years
     stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
 
+    # get the name of the dataset
+    modelName = os.path.basename(config.analysis["dataset"])
+    if os.path.exists(out_folder := os.path.join(config.system["folderOutput"], modelName)):
+        if config.system["overwriteOutput"]:
+            logging.info(f"Removing existing output folder: {out_folder}")
+            rmtree(out_folder)
+        else:
+            logging.warning(f"The outputfolder {out_folder} already exists")
+
     # update input data
-    optimizationSetupList = []
     for scenario, elements in config.scenarios.items():
         optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
         optimizationSetup.overwriteParams(scenario, elements)
@@ -105,64 +116,15 @@ def compile(config, dataset_path=None):
             # add cumulative carbon emissions to previous carbon emissions
             optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
             # EVALUATE RESULTS
-            modelName = os.path.basename(config.analysis["dataset"])
-            if len(stepsOptimizationHorizon) > 1:
-                modelName += f"_MF{stepHorizon}"
+            subfolder = ""
             if config.system["conductScenarioAnalysis"]:
-                modelName += f"_{scenario}"
-            evaluation = Postprocess(optimizationSetup, modelName=modelName)
-
-
-    #adaption LK
-    #        optimizationSetupCopy = copy.deepcopy(optimizationSetup)
-    #        optimizationSetupList.append(optimizationSetupCopy)
-    #if len(optimizationSetupList) == 1:
-    #    optimizationSetupList = optimizationSetupList[0]
-    #return optimizationSetupList
-    return optimizationSetup
-    """
-    #adaption_2
-    import pandas as pd
-    #import csv file containing selected variable values of test model collection
-    testVariables = pd.read_csv(os.path.dirname(os.path.abspath(__file__)) + '\\test_variables_readable.csv', header=0, index_col=None)
-
-    def compareVariables(testModel):
-        # dictionary to store variable names, indices, values and test values of variables which don't match the test values
-        failedVariables = {}
-        #iterate through dataframe rows
-        for dataRow in testVariables.values:
-            #skip row if data doesn't correspond to selected test model
-            if dataRow[0] != testModel:
-                continue
-            #get variable attribute of optimizationSetup object by using string of the variable's name (e.g. optimizationSetup.model.importCarrierFLow)
-            variableAttribute = getattr(optimizationSetup.model,dataRow[1])
-            #iterate through indices of current variable
-            for variableIndex in variableAttribute.extract_values():
-                #ensure equality of dataRow index and variable index
-                if str(variableIndex) == dataRow[2]:
-                    #check if variable value at current index differs from zero such that relative error can be computed
-                    if variableAttribute.extract_values()[variableIndex] != 0:
-                        #check if relative error exceeds limit of 10^-3, i.e. value differs from test value
-                        if abs(variableAttribute.extract_values()[variableIndex] - dataRow[3]) / variableAttribute.extract_values()[variableIndex] > 10**(-3):
-                            if dataRow[1] in failedVariables:
-                                failedVariables[dataRow[1]][dataRow[2]] = {'computedValue' : variableAttribute.extract_values()[variableIndex]}
-                            else:
-                                failedVariables[dataRow[1]] = {dataRow[2] : {'computedValue' : variableAttribute.extract_values()[variableIndex]} }#variableAttribute.extract_values()[variableIndex]
-                            failedVariables[dataRow[1]][dataRow[2]]['testValue'] = dataRow[3]
-                    else:
-                        #check if absolute error exceeds specified limit
-                        if abs(variableAttribute.extract_values()[variableIndex] - dataRow[3]) > 10**(-3):
-                            if dataRow[1] in failedVariables:
-                                failedVariables[dataRow[1]][dataRow[2]] = {'computedValue' : variableAttribute.extract_values()[variableIndex]}
-                            else:
-                                failedVariables[dataRow[1]] = {dataRow[2] : {'computedValue' : variableAttribute.extract_values()[variableIndex]} }#variableAttribute.extract_values()[variableIndex]
-                            failedVariables[dataRow[1]][dataRow[2]]['testValue'] = dataRow[3]
-        assertionString = str()
-        for failedVar in failedVariables:
-            assertionString += f"\n{failedVar}{failedVariables[failedVar]}"
-
-        assert len(failedVariables) == 0, f"The variables {assertionString} \ndon't match their test values"
-
-    compareVariables('test_6a')
-
-    """
+                # handle scenarios
+                subfolder += f"scenario_{scenario}"
+            # handle myopic foresight
+            if len(stepsOptimizationHorizon) > 1:
+                if subfolder != "":
+                    subfolder += f"_"
+                subfolder += f"MF_{stepHorizon}"
+            # write results
+            evaluation = Postprocess(optimizationSetup, scenarios=config.scenarios, subfolder=subfolder,
+                                     modelName=modelName)

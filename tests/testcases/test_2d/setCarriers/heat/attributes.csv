@@ -4,5 +4,7 @@ demandCarrierDefault,0.0,GW
 shedDemandPriceDefault,inf,kiloEuro/GWh
 availabilityCarrierImportDefault,0.0,GW
 availabilityCarrierExportDefault,0.0,GW
+availabilityCarrierImportYearlyDefault,inf,GWh
+availabilityCarrierExportYearlyDefault,inf,GWh
 exportPriceCarrierDefault,0.0,kiloEuro/GWh
 importPriceCarrierDefault,0.0,kiloEuro/GWh

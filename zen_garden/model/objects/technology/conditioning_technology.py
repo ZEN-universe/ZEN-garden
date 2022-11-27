@@ -55,7 +55,7 @@ class ConditioningTechnology(ConversionTechnology):
     def getConverEfficiency(self):
         """retrieves and stores converEfficiency for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as PWAConverEfficiency"""
-        #self.dataInput.extractAttributeData("minBuiltCapacity")["value"]
+        setTimeStepsYearly          = EnergySystem.getEnergySystem().setTimeStepsYearly
         self.specificHeat         = self.dataInput.extractAttributeData("specificHeat")["value"]
         self.specificHeatRatio    = self.dataInput.extractAttributeData("specificHeatRatio")["value"]
         self.pressureIn           = self.dataInput.extractAttributeData("pressureIn")["value"]
@@ -83,11 +83,11 @@ class ConditioningTechnology(ConversionTechnology):
         self.converEfficiencyLinear                           = dict()
         self.converEfficiencyLinear[self.outputCarrier[0]]    = self.dataInput.createDefaultOutput(indexSets=["setNodes","setTimeSteps"],
                                                                                                    column=None,
-                                                                                                   timeSteps=self.setTimeStepsInvest,
+                                                                                                   timeSteps=setTimeStepsYearly,
                                                                                                    manualDefaultValue = 1)[0] # TODO losses are not yet accounted for
         self.converEfficiencyLinear[_inputCarriers[0]]        = self.dataInput.createDefaultOutput(indexSets=["setNodes", "setTimeSteps"],
                                                                                                    column=None,
-                                                                                                   timeSteps=self.setTimeStepsInvest,
+                                                                                                   timeSteps=setTimeStepsYearly,
                                                                                                    manualDefaultValue=_energyConsumption)[0]
         # dict to dataframe
         self.converEfficiencyLinear              = pd.DataFrame.from_dict(self.converEfficiencyLinear)
