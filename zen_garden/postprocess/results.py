@@ -20,7 +20,7 @@ import zlib
 import os
 
 from ..model.objects.energy_system import EnergySystem
-from ..model.objects.parameter import Parameter
+from ..model.objects.component import Parameter
 from ..utils import RedirectStdStreams
 
 class Postprocess:
@@ -39,7 +39,7 @@ class Postprocess:
         self.analysis = model.analysis
         self.solver = model.solver
         self.opt = model.opt
-        self.params = Parameter.getParameterObject()
+        self.params = Parameter.getComponentObject()
 
         # get name or directory
         self.modelName = modelName

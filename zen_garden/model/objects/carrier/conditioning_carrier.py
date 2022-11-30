@@ -13,7 +13,7 @@ import logging
 import pyomo.environ            as pe
 from ..energy_system        import EnergySystem
 from .carrier               import Carrier
-from ..parameter            import Parameter
+from ..component            import Parameter
 
 class ConditioningCarrier(Carrier):
     # set label
@@ -59,14 +59,14 @@ class ConditioningCarrier(Carrier):
         model.constraintCarrierDemandCoupling = pe.Constraint(
             cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
             rule = constraintCarrierDemandCouplingRule,
-            doc = 'coupeling model endogenous and exogenous carrier demand. Dimensions: setConditioningCarriers, setNodes, setTimeStepsCarrier',
+            doc = 'coupeling model endogenous and exogenous carrier demand',
         )
         # overwrite energy balance when conditioning carriers are included
         model.constraintNodalEnergyBalance.deactivate()
         model.constraintNodalEnergyBalanceConditioning = pe.Constraint(
             cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsEnergyBalance"]),
             rule=constraintNodalEnergyBalanceWithConditioningRule,
-            doc='node- and time-dependent energy balance for each carrier. Dimensions: setCarriers, setNodes, setTimeStepsEnergyBalance',
+            doc='node- and time-dependent energy balance for each carrier',
         )
 
 def constraintCarrierDemandCouplingRule(model, parentCarrier, node, time):
@@ -82,7 +82,7 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
     The constraint is indexed by setTimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
     timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
     """
-    params = Parameter.getParameterObject()
+    params = Parameter.getComponentObject()
 
     # decode to baseTimeStep
     baseTimeStep            = EnergySystem.decodeTimeStep(carrier + "EnergyBalance", time)

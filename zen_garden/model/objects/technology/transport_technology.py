@@ -15,7 +15,7 @@ import pyomo.environ as pe
 import numpy as np
 from .technology import Technology
 from ..energy_system import EnergySystem
-from ..parameter import Parameter
+from ..component import Parameter,Variable,Constraint
 
 class TransportTechnology(Technology):
     # set label
@@ -127,22 +127,22 @@ class TransportTechnology(Technology):
         Parameter.addParameter(
             name="distance",
             data= EnergySystem.initializeComponent(cls,"distance"),
-            doc = 'distance between two nodes for transport technologies. Dimensions: setTransportTechnologies, setEdges')
+            doc = 'distance between two nodes for transport technologies')
         # capital cost per unit
         Parameter.addParameter(
             name="capexSpecificTransport",
             data= EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setTransportTechnologies","setEdges","setTimeStepsYearly"]),
-            doc = 'capex per unit for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsYearly')
+            doc = 'capex per unit for transport technologies')
         # capital cost per distance
         Parameter.addParameter(
             name="capexPerDistance",
             data=EnergySystem.initializeComponent(cls, 'capexPerDistance', indexNames=['setTransportTechnologies', "setEdges", "setTimeStepsYearly"]),
-            doc='capex per distance for transport technologies. Dimensions: setTransportTechnologies, setEdges, setTimeStepsYearly')
+            doc='capex per distance for transport technologies')
         # carrier losses
         Parameter.addParameter(
             name="lossFlow",
             data= EnergySystem.initializeComponent(cls,"lossFlow"),
-            doc = 'carrier losses due to transport with transport technologies. Dimensions: setTransportTechnologies')
+            doc = 'carrier losses due to transport with transport technologies')
 
     @classmethod
     def constructVars(cls):
@@ -165,13 +165,13 @@ class TransportTechnology(Technology):
             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             bounds = carrierFlowBounds,
-            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportTechnologies, setEdges, setTimeStepsOperation. Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t'
         )
         # loss of carrier on edge
         model.carrierLoss = pe.Var(
             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
-            doc = 'carrier flow through transport technology on edge i and time t. Dimensions: setTransportTechnologies, setEdges, setTimeStepsOperation. Domain: NonNegativeReals'
+            doc = 'carrier flow through transport technology on edge i and time t'
         )
         
     @classmethod
@@ -183,19 +183,19 @@ class TransportTechnology(Technology):
         model.constraintTransportTechnologyLossesFlow = pe.Constraint(
             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
             rule = constraintTransportTechnologyLossesFlowRule,
-            doc = 'Carrier loss due to transport with through transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsOperation'
+            doc = 'Carrier loss due to transport with through transport technology'
         ) 
         # capex of transport technologies
         model.constraintCapexTransportTechnology = pe.Constraint(
             cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsYearly"]),
             rule = constraintCapexTransportTechnologyRule,
-            doc = 'Capital expenditures for installing transport technology. Dimensions: setTransportTechnologies, setEdges, setTimeStepsYearly'
+            doc = 'Capital expenditures for installing transport technology'
         )
         # bidirectional transport technologies: capacity on edge must be equal in both directions
         model.constraintBidirectionalTransportTechnology = pe.Constraint(
             cls.createCustomSet(["setTransportTechnologies", "setEdges", "setTimeStepsYearly"]),
             rule=constraintBidirectionalTransportTechnologyRule,
-            doc='Forces that transport technology capacity must be equal in both direction. Dimensions: setTransportTechnologies, setEdges, setTimeStepsYearly'
+            doc='Forces that transport technology capacity must be equal in both directions'
         )
 
     # defines disjuncts if technology on/off
@@ -204,7 +204,7 @@ class TransportTechnology(Technology):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
         # get parameter object
-        params = Parameter.getParameterObject()
+        params = Parameter.getComponentObject()
         # get invest time step
         timeStepYear = EnergySystem.convertTimeStepOperation2Invest(tech,time)
         # disjunct constraints min load
@@ -224,7 +224,7 @@ class TransportTechnology(Technology):
 def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
     """compute the flow losses for a carrier through a transport technology"""
     # get parameter object
-    params = Parameter.getParameterObject()
+    params = Parameter.getComponentObject()
     if np.isinf(params.distance[tech,edge]):
         return model.carrierLoss[tech, edge, time] == 0
     else:
@@ -234,7 +234,7 @@ def constraintTransportTechnologyLossesFlowRule(model, tech, edge, time):
 def constraintCapexTransportTechnologyRule(model, tech, edge, time):
     """ definition of the capital expenditures for the transport technology"""
     # get parameter object
-    params = Parameter.getParameterObject()
+    params = Parameter.getComponentObject()
     if np.isinf(params.distance[tech, edge]):
         return model.builtCapacity[tech,"power",edge, time] == 0
     else:

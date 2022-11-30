@@ -16,7 +16,7 @@ import pandas        as pd
 import copy
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 from zen_garden.preprocess.functions.unit_handling         import UnitHandling
-from .parameter import Parameter
+from .component import Parameter,Variable,Constraint
 
 class EnergySystem:
     # energySystem
@@ -488,11 +488,17 @@ class EnergySystem:
         :param componentName: name of modeling component
         :param indexNames: names of index sets, only if callingClass is not EnergySystem
         :param setTimeSteps: time steps, only if callingClass is EnergySystem
+        :param capacityTypes: boolean if extracted for capacities
         :return componentData: data to initialize the component """
-
         # if calling class is EnergySystem
         if callingClass == cls:
             component = getattr(cls.getEnergySystem(), componentName)
+            if indexNames is not None:
+                indexList = indexNames
+            elif setTimeSteps is not None:
+                indexList = [setTimeSteps.name]
+            else:
+                indexList = []
             if setTimeSteps:
                 componentData = component[setTimeSteps]
             elif type(component) == float:
@@ -501,8 +507,9 @@ class EnergySystem:
                 componentData = component.squeeze()
         else:
             componentData,attributeIsSeries = callingClass.getAttributeOfAllElements(componentName, capacityTypes= capacityTypes, returnAttributeIsSeries=True)
+            indexList = []
             if indexNames:
-                customSet = callingClass.createCustomSet(indexNames)
+                customSet,indexList = callingClass.createCustomSet(indexNames)
                 if np.size(customSet):
                     if attributeIsSeries:
                         componentData = pd.concat(componentData,keys=componentData.keys())
@@ -511,7 +518,8 @@ class EnergySystem:
                     componentData   = cls.checkForSubindex(componentData,customSet)
             elif attributeIsSeries:
                 componentData = pd.concat(componentData, keys=componentData.keys())
-        return componentData
+
+        return componentData,indexList
 
     @classmethod
     def checkForSubindex(cls,componentData,customSet):
@@ -631,40 +639,52 @@ class EnergySystem:
         model = cls.getConcreteModel()
 
         # carbon emissions
-        model.carbonEmissionsTotal = pe.Var(
-            model.setTimeStepsYearly,
-            domain = pe.Reals,
-            doc = "total carbon emissions of energy system. Domain: Reals"
+        Variable.addVariable(
+            model,
+            name        = "carbonEmissionsTotal",
+            indexSets   = model.setTimeStepsYearly,
+            domain      = pe.Reals,
+            doc         = "total carbon emissions of energy system"
         )
-        # carbon emissions
-        model.carbonEmissionsCumulative = pe.Var(
-            model.setTimeStepsYearly,
+        # cumulative carbon emissions
+        Variable.addVariable(
+            model,
+            name="carbonEmissionsCumulative",
+            indexSets=model.setTimeStepsYearly,
             domain=pe.Reals,
-            doc="cumulative carbon emissions of energy system over time for each year. Domain: Reals"
+            doc="cumulative carbon emissions of energy system over time for each year"
         )
-        # carbon emissions
-        model.carbonEmissionsOvershoot = pe.Var(
-            model.setTimeStepsYearly,
+        # carbon emission overshoot
+        Variable.addVariable(
+            model,
+            name="carbonEmissionsOvershoot",
+            indexSets=model.setTimeStepsYearly,
             domain=pe.NonNegativeReals,
-            doc="overshoot carbon emissions of energy system at the end of the time horizon. Domain: Reals"
+            doc="overshoot carbon emissions of energy system at the end of the time horizon"
         )
         # cost of carbon emissions
-        model.costCarbonEmissionsTotal = pe.Var(
-            model.setTimeStepsYearly,
+        Variable.addVariable(
+            model,
+            name="costCarbonEmissionsTotal",
+            indexSets = model.setTimeStepsYearly,
             domain=pe.Reals,
-            doc="total cost of carbon emissions of energy system. Domain: Reals"
+            doc="total cost of carbon emissions of energy system"
         )
         # costs
-        model.costTotal = pe.Var(
-            model.setTimeStepsYearly,
+        Variable.addVariable(
+            model,
+            name="costTotal",
+            indexSets = model.setTimeStepsYearly,
             domain=pe.Reals,
-            doc="total cost of energy system. Domain: Reals"
+            doc="total cost of energy system"
         )
         # NPV
-        model.NPV = pe.Var(
-            model.setTimeStepsYearly,
+        Variable.addVariable(
+            model,
+            name="NPV",
+            indexSets = model.setTimeStepsYearly,
             domain=pe.Reals,
-            doc="NPV of energy system. Domain: Reals"
+            doc="NPV of energy system"
         )
 
     @classmethod
@@ -675,43 +695,43 @@ class EnergySystem:
 
         # carbon emissions
         model.constraintCarbonEmissionsTotal = pe.Constraint(
-            model.setTimeStepsYearly,
+            indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsTotalRule,
             doc="total carbon emissions of energy system"
         )
         # carbon emissions
         model.constraintCarbonEmissionsCumulative = pe.Constraint(
-            model.setTimeStepsYearly,
+            indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsCumulativeRule,
             doc="cumulative carbon emissions of energy system over time"
         )
         # cost of carbon emissions
         model.constraintCarbonCostTotal = pe.Constraint(
-            model.setTimeStepsYearly,
+            indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonCostTotalRule,
             doc="total carbon cost of energy system"
         )
         # carbon emissions
         model.constraintCarbonEmissionsLimit = pe.Constraint(
-            model.setTimeStepsYearly,
+            indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsLimitRule,
             doc="limit of total carbon emissions of energy system"
         )
         # carbon emissions
         model.constraintCarbonEmissionsBudget = pe.Constraint(
-            model.setTimeStepsYearly,
+            indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsBudgetRule,
             doc="Budget of total carbon emissions of energy system"
         )
         # costs
         model.constraintCostTotal = pe.Constraint(
-            model.setTimeStepsYearly,
+            indexSets = model.setTimeStepsYearly,
             rule=constraintCostTotalRule,
             doc="total cost of energy system"
         )
         # NPV
         model.constraintNPV = pe.Constraint(
-            model.setTimeStepsYearly,
+            indexSets = model.setTimeStepsYearly,
             rule=constraintNPVRule,
             doc="NPV of energy system"
         )
@@ -763,7 +783,7 @@ def constraintCarbonEmissionsTotalRule(model, year):
 def constraintCarbonEmissionsCumulativeRule(model, year):
     """ cumulative carbon emissions over time """
     # get parameter object
-    params = Parameter.getParameterObject()
+    params = Parameter.getComponentObject()
     intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
     if year == model.setTimeStepsYearly.at(1):
         return (
@@ -782,7 +802,7 @@ def constraintCarbonEmissionsCumulativeRule(model, year):
 def constraintCarbonCostTotalRule(model, year):
     """ carbon cost associated with the carbon emissions of the system in each year """
     # get parameter object
-    params = Parameter.getParameterObject()
+    params = Parameter.getComponentObject()
     return (
             model.costCarbonEmissionsTotal[year] ==
             params.carbonPrice[year] * model.carbonEmissionsTotal[year]
@@ -793,7 +813,7 @@ def constraintCarbonCostTotalRule(model, year):
 def constraintCarbonEmissionsLimitRule(model, year):
     """ time dependent carbon emissions limit from technologies and carriers"""
     # get parameter object
-    params = Parameter.getParameterObject()
+    params = Parameter.getComponentObject()
     if params.carbonEmissionsLimit[year] != np.inf:
         return (
             params.carbonEmissionsLimit[year] >= model.carbonEmissionsTotal[year]
@@ -806,7 +826,7 @@ def constraintCarbonEmissionsBudgetRule(model, year):
     The prediction extends until the end of the horizon, i.e.,
     last optimization time step plus the current carbon emissions until the end of the horizon """
     # get parameter object
-    params = Parameter.getParameterObject()
+    params = Parameter.getComponentObject()
     intervalBetweenYears = EnergySystem.getSystem()["intervalBetweenYears"]
     if params.carbonEmissionsBudget != np.inf: #TODO check for last year - without last term?
         return (

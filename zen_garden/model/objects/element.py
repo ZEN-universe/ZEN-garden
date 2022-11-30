@@ -16,7 +16,7 @@ import pyomo.environ as pe
 import cProfile, pstats
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 from .energy_system import EnergySystem
-from .parameter import Parameter
+from .component import Parameter,Variable,Constraint
 
 class Element:
     # set label
@@ -250,8 +250,9 @@ class Element:
         # operational time step duration
         Parameter.addParameter(
             name="timeStepsOperationDuration",
-            data= EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]).astype(int),
-            doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setElements, setTimeStepsOperation"
+            data= EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]),#.astype(int),
+            # doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setElements, setTimeStepsOperation"
+            doc="Parameter which specifies the time step duration in operation for all technologies"
         )
         # construct pe.Params of the child classes
         for subclass in cls.getAllSubclasses():
@@ -261,6 +262,8 @@ class Element:
     def constructVars(cls):
         """ constructs the pe.Vars of the class <Element> """
         logging.info("Construct pe.Vars")
+        # initialize variableObject
+        Variable()
         # construct pe.Vars of energy system
         EnergySystem.constructVars()
         # construct pe.Vars of the child classes
@@ -271,6 +274,8 @@ class Element:
     def constructConstraints(cls):
         """ constructs the pe.Constraints of the class <Element> """
         logging.info("Construct pe.Constraints")
+        # initialize constraintObject
+        Constraint()
         # construct pe.Constraints of energy system
         EnergySystem.constructConstraints()
         # construct pe.Constraints of the child classes
@@ -281,7 +286,8 @@ class Element:
     def createCustomSet(cls,listIndex):
         """ creates custom set for model component 
         :param listIndex: list of names of indices
-        :return customSet: custom set index """
+        :return customSet: custom set index
+        :return listIndex: list of names of indices """
         model           = EnergySystem.getConcreteModel()
         indexingSets    = EnergySystem.getIndexingSets()
         # check if all index sets are already defined in model and no set is indexed
@@ -296,7 +302,7 @@ class Element:
                     listSets.append(model.find_component(index))
             # return indices as cartesian product of sets
             customSet = list(itertools.product(*listSets))
-            return customSet
+            return customSet,listIndex
         # at least one set is not yet defined
         else:
             # ugly, but if first set is indexingSet
@@ -392,7 +398,7 @@ class Element:
                             customSet.extend(list(itertools.product([element],*listSets)))
                         else:
                             customSet.extend([element])
-                return customSet
+                return customSet,listIndex
             else:
                 raise NotImplementedError
 

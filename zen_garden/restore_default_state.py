@@ -3,7 +3,7 @@ from .model.objects.carrier.conditioning_carrier import ConditioningCarrier
 
 from .model.objects.element import Element
 from .model.objects.energy_system import EnergySystem
-from .model.objects.parameter import Parameter
+from .model.objects.component import Parameter
 
 from .model.objects.technology.conditioning_technology import ConditioningTechnology
 from .model.objects.technology.conversion_technology import ConversionTechnology
