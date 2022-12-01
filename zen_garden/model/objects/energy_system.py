@@ -136,7 +136,7 @@ class EnergySystem:
 
     def getInputPath(self):
         """ get input path where input data is stored inputPath"""
-        folderLabel = EnergySystem.getSystem()["folderNameSystemSpecification"]
+        folderLabel = EnergySystem.getAnalysis()["folderNameSystemSpecification"]
 
         paths = EnergySystem.getPaths()
         # get input path of energy system specification
@@ -518,6 +518,8 @@ class EnergySystem:
                     componentData   = cls.checkForSubindex(componentData,customSet)
             elif attributeIsSeries:
                 componentData = pd.concat(componentData, keys=componentData.keys())
+            if not indexNames:
+                logging.warning(f"Initializing a parameter ({componentName}) without the specifying the index names will be deprecated!")
 
         return componentData,indexList
 
@@ -694,43 +696,57 @@ class EnergySystem:
         model = cls.getConcreteModel()
 
         # carbon emissions
-        model.constraintCarbonEmissionsTotal = pe.Constraint(
+        Constraint.addConstraint(
+            model,
+            name="constraintCarbonEmissionsTotal",
             indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsTotalRule,
             doc="total carbon emissions of energy system"
         )
         # carbon emissions
-        model.constraintCarbonEmissionsCumulative = pe.Constraint(
+        Constraint.addConstraint(
+            model,
+            name="constraintCarbonEmissionsCumulative",
             indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsCumulativeRule,
             doc="cumulative carbon emissions of energy system over time"
         )
         # cost of carbon emissions
-        model.constraintCarbonCostTotal = pe.Constraint(
+        Constraint.addConstraint(
+            model,
+            name="constraintCarbonCostTotal",
             indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonCostTotalRule,
             doc="total carbon cost of energy system"
         )
         # carbon emissions
-        model.constraintCarbonEmissionsLimit = pe.Constraint(
+        Constraint.addConstraint(
+            model,
+            name="constraintCarbonEmissionsLimit",
             indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsLimitRule,
             doc="limit of total carbon emissions of energy system"
         )
         # carbon emissions
-        model.constraintCarbonEmissionsBudget = pe.Constraint(
+        Constraint.addConstraint(
+            model,
+            name="constraintCarbonEmissionsBudget",
             indexSets = model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsBudgetRule,
             doc="Budget of total carbon emissions of energy system"
         )
         # costs
-        model.constraintCostTotal = pe.Constraint(
+        Constraint.addConstraint(
+            model,
+            name="constraintCostTotal",
             indexSets = model.setTimeStepsYearly,
             rule=constraintCostTotalRule,
             doc="total cost of energy system"
         )
         # NPV
-        model.constraintNPV = pe.Constraint(
+        Constraint.addConstraint(
+            model,
+            name="constraintNPV",
             indexSets = model.setTimeStepsYearly,
             rule=constraintNPVRule,
             doc="NPV of energy system"

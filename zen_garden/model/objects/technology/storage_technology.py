@@ -159,7 +159,7 @@ class StorageTechnology(Technology):
         # self discharge
         Parameter.addParameter(
             name="selfDischarge",
-            data= EnergySystem.initializeComponent(cls,"selfDischarge"),
+            data= EnergySystem.initializeComponent(cls,"selfDischarge",indexNames=["setStorageTechnologies","setNodes"]),
             doc = 'self discharge of storage technologies'
         )
         # capex specific
@@ -187,22 +187,28 @@ class StorageTechnology(Technology):
 
         model = EnergySystem.getConcreteModel()
         # flow of carrier on node into storage
-        model.carrierFlowCharge = pe.Var(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="carrierFlowCharge",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             bounds = carrierFlowBounds,
             doc = 'carrier flow into storage technology on node i and time t'
         )
         # flow of carrier on node out of storage
-        model.carrierFlowDischarge = pe.Var(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="carrierFlowDischarge",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             bounds = carrierFlowBounds,
             doc = 'carrier flow out of storage technology on node i and time t'
         )
         # loss of carrier on node
-        model.levelCharge = pe.Var(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
+        Variable.addVariable(
+            model,
+            name="levelCharge",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             domain = pe.NonNegativeReals,
             doc = 'storage level of storage technology ón node in each storage time step'
         )
@@ -212,20 +218,26 @@ class StorageTechnology(Technology):
         """ constructs the pe.Constraints of the class <StorageTechnology> """
         model = EnergySystem.getConcreteModel()
         # Limit storage level
-        model.constraintStorageLevelMax = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintStorageLevelMax",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             rule = constraintStorageLevelMaxRule,
             doc = 'limit maximum storage level to capacity'
         ) 
         # couple storage levels
-        model.constraintCoupleStorageLevel = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintCoupleStorageLevel",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             rule = constraintCoupleStorageLevelRule,
             doc = 'couple subsequent storage levels (time coupling constraints)'
         )
         # Linear Capex
-        model.constraintStorageTechnologyLinearCapex = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsYearly"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintStorageTechnologyLinearCapex",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsYearly"]),
             rule = constraintCapexStorageTechnologyRule,
             doc = 'Capital expenditures for installing storage technology'
         ) 

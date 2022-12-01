@@ -13,7 +13,7 @@ import logging
 import pyomo.environ            as pe
 from ..energy_system        import EnergySystem
 from .carrier               import Carrier
-from ..component            import Parameter
+from ..component            import Parameter,Variable,Constraint
 
 class ConditioningCarrier(Carrier):
     # set label
@@ -44,8 +44,10 @@ class ConditioningCarrier(Carrier):
         model = EnergySystem.getConcreteModel()
         
         # flow of imported carrier
-        model.endogenousCarrierDemand = pe.Var(
-            cls.createCustomSet(["setConditioningCarriers","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="endogenousCarrierDemand",
+            indexSets= cls.createCustomSet(["setConditioningCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent model endogenous carrier demand. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
@@ -56,15 +58,19 @@ class ConditioningCarrier(Carrier):
         model = EnergySystem.getConcreteModel()
 
         # limit import flow by availability
-        model.constraintCarrierDemandCoupling = pe.Constraint(
-            cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintCarrierDemandCoupling",
+            indexSets= cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
             rule = constraintCarrierDemandCouplingRule,
             doc = 'coupeling model endogenous and exogenous carrier demand',
         )
         # overwrite energy balance when conditioning carriers are included
         model.constraintNodalEnergyBalance.deactivate()
-        model.constraintNodalEnergyBalanceConditioning = pe.Constraint(
-            cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsEnergyBalance"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintNodalEnergyBalanceConditioning",
+            indexSets= cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsEnergyBalance"]),
             rule=constraintNodalEnergyBalanceWithConditioningRule,
             doc='node- and time-dependent energy balance for each carrier',
         )

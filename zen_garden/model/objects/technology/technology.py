@@ -342,32 +342,32 @@ class Technology(Element):
         # minimum capacity
         Parameter.addParameter(
             name="minBuiltCapacity",
-            data= EnergySystem.initializeComponent(cls,"minBuiltCapacity",capacityTypes=True),
+            data= EnergySystem.initializeComponent(cls,"minBuiltCapacity",indexNames=["setTechnologies", "setCapacityTypes"],capacityTypes=True),
             doc = 'Parameter which specifies the minimum technology size that can be installed')
         # maximum capacity
         Parameter.addParameter(
             name="maxBuiltCapacity",
-            data= EnergySystem.initializeComponent(cls,"maxBuiltCapacity",capacityTypes=True),
+            data= EnergySystem.initializeComponent(cls,"maxBuiltCapacity",indexNames=["setTechnologies", "setCapacityTypes"],capacityTypes=True),
             doc = 'Parameter which specifies the maximum technology size that can be installed')
         # lifetime existing technologies
         Parameter.addParameter(
             name="lifetimeExistingTechnology",
-            data=EnergySystem.initializeComponent(cls,"lifetimeExistingTechnology"),
+            data=EnergySystem.initializeComponent(cls,"lifetimeExistingTechnology",indexNames=["setTechnologies", "setLocation", "setExistingTechnologies"]),
             doc='Parameter which specifies the remaining lifetime of an existing technology')
         # lifetime existing technologies
         Parameter.addParameter(
             name="capexExistingCapacity",
-            data=EnergySystem.initializeComponent(cls,"capexExistingCapacity",capacityTypes=True),
+            data=EnergySystem.initializeComponent(cls,"capexExistingCapacity",indexNames=["setTechnologies","setCapacityTypes", "setLocation", "setExistingTechnologies"],capacityTypes=True),
             doc='Parameter which specifies the annualized capex of an existing technology which still has to be paid')
         # lifetime newly built technologies
         Parameter.addParameter(
             name="lifetimeTechnology",
-            data= EnergySystem.initializeComponent(cls,"lifetime"),
+            data= EnergySystem.initializeComponent(cls,"lifetime",indexNames=["setTechnologies"]),
             doc = 'Parameter which specifies the lifetime of a newly built technology')
         # constructionTime newly built technologies
         Parameter.addParameter(
             name="constructionTimeTechnology",
-            data=EnergySystem.initializeComponent(cls, "constructionTime"),
+            data=EnergySystem.initializeComponent(cls, "constructionTime",indexNames=["setTechnologies"]),
             doc='Parameter which specifies the construction time of a newly built technology')
         # maximum diffusion rate, i.e., increase in capacity
         Parameter.addParameter(
@@ -377,7 +377,7 @@ class Technology(Element):
         # capacityLimit of technologies
         Parameter.addParameter(
             name="capacityLimitTechnology",
-            data= EnergySystem.initializeComponent(cls,"capacityLimit",capacityTypes=True),
+            data= EnergySystem.initializeComponent(cls,"capacityLimit",indexNames=["setTechnologies","setCapacityTypes","setLocation"],capacityTypes=True),
             doc = 'Parameter which specifies the capacity limit of technologies')
         # minimum load relative to capacity
         Parameter.addParameter(
@@ -397,7 +397,7 @@ class Technology(Element):
         # carbon intensity
         Parameter.addParameter(
             name="carbonIntensityTechnology",
-            data= EnergySystem.initializeComponent(cls,"carbonIntensityTechnology"),
+            data= EnergySystem.initializeComponent(cls,"carbonIntensityTechnology",indexNames=["setTechnologies","setLocation"]),
             doc = 'Parameter which specifies the carbon intensity of each technology')
         # add pe.Param of the child classes
         for subclass in cls.getAllSubclasses():
@@ -443,7 +443,7 @@ class Technology(Element):
 
         model       = EnergySystem.getConcreteModel()
         # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
-        techsOnOff  = Technology.createCustomSet(["setTechnologies","setOnOff"])
+        techsOnOff  = Technology.createCustomSet(["setTechnologies","setOnOff"])[0]
         # construct pe.Vars of the class <Technology>
         # install technology
         Variable.addVariable(
@@ -642,23 +642,32 @@ class Technology(Element):
         )
 
         # disjunct if technology is on
-        model.disjunctOnTechnology = pgdp.Disjunct(
-            cls.createCustomSet(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="disjunctOnTechnology",
+            indexSets= cls.createCustomSet(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOnTechnologyRule,
-            doc = "disjunct to indicate that technology is on"
+            doc = "disjunct to indicate that technology is on",
+            constraintType = "Disjunct"
         )
-        a=1
         # disjunct if technology is off
-        model.disjunctOffTechnology = pgdp.Disjunct(
-            cls.createCustomSet(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="disjunctOffTechnology",
+            indexSets= cls.createCustomSet(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOffTechnologyRule,
-            doc = "disjunct to indicate that technology is off"
+            doc = "disjunct to indicate that technology is off",
+            constraintType = "Disjunct"
         )
         # disjunction
-        model.disjunctionDecisionOnOffTechnology = pgdp.Disjunction(
-            cls.createCustomSet(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="disjunctionDecisionOnOffTechnology",
+            indexSets= cls.createCustomSet(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
             rule = cls.expressionLinkDisjunctsRule,
-            doc = "disjunction to link the on off disjuncts")
+            doc = "disjunction to link the on off disjuncts",
+            constraintType = "Disjunction"
+        )
 
         # add pe.Constraints of the child classes
         for subclass in cls.getAllSubclasses():
@@ -832,7 +841,7 @@ def constraintCapexTotalRule(model,year):
     return(model.capexTotal[year] ==
         sum(
             model.capexYearly[tech, capacityType, loc, year]
-            for tech,capacityType,loc in Element.createCustomSet(["setTechnologies","setCapacityTypes","setLocation"]))
+            for tech,capacityType,loc in Element.createCustomSet(["setTechnologies","setCapacityTypes","setLocation"])[0])
     )
 
 def constraintOpexTechnologyRule(model,tech,loc,time):
@@ -879,7 +888,7 @@ def constraintCarbonEmissionsTechnologyTotalRule(model, year):
                 model.carbonEmissionsTechnology[tech,loc,time]*params.timeStepsOperationDuration[tech, time]
                 for time in EnergySystem.encodeTimeStep(tech, baseTimeStep, "operation", yearly = True)
             )
-            for tech, loc in Element.createCustomSet(["setTechnologies", "setLocation"])
+            for tech, loc in Element.createCustomSet(["setTechnologies", "setLocation"])[0]
         )
     )
 
@@ -894,7 +903,7 @@ def constraintOpexTotalRule(model,year):
                 model.opex[tech, loc, time]*params.timeStepsOperationDuration[tech,time]
                 for time in EnergySystem.encodeTimeStep(tech, baseTimeStep, "operation", yearly=True)
             )
-            for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])
+            for tech,loc in Element.createCustomSet(["setTechnologies","setLocation"])[0]
         )
     )
 

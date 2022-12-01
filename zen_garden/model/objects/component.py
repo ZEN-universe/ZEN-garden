@@ -11,6 +11,7 @@ import logging
 import numpy as np
 import pandas as pd
 import pyomo.environ as pe
+import pyomo.gdp as pgdp
 
 class Component:
 
@@ -36,12 +37,12 @@ class Component:
     def compileDocString(doc,indexList,name,domain = None):
         """ compile docstring from doc and indexList"""
         assert type(doc)==str,f"Docstring {doc} has wrong format. Must be 'str' but is '{type(doc).__name__}'"
-        # check for prohibited characters
-        prohibitedChars = [",",";",":","/"]
+        # check for prohibited strings
+        prohibitedStrings = [",",";",":","/","name","doc","dims","domain"]
         originalDoc = copy.copy(doc)
-        for string in prohibitedChars:
+        for string in prohibitedStrings:
             if string in doc:
-                logging.warning(f"Docstring '{originalDoc}' contains prohibited character '{string}'. Occurrences are dropped.")
+                logging.warning(f"Docstring '{originalDoc}' contains prohibited string '{string}'. Occurrences are dropped.")
                 doc = doc.replace(string,"")
         # joined index names
         joinedIndex = ",".join(indexList)
@@ -169,23 +170,32 @@ class Constraint(Component):
         super().__init__()
 
     @classmethod
-    def addConstraint(cls, model: pe.ConcreteModel, name, indexSets, rule,doc=""):
+    def addConstraint(cls, model: pe.ConcreteModel, name, indexSets, rule,doc="",constraintType="Constraint"):
         """ initialization of a variable
         :param model:       pe.ConcreteModel
         :param name:        name of variable
         :param indexSets:   indices and sets by which the variable is indexed
         :param rule:        constraint rule
-        :param doc:         docstring of variable """
+        :param doc:         docstring of variable
+        :param constraintType: either 'Constraint', 'Disjunct','Disjunction'"""
+        constraintTypes = ['Constraint', 'Disjunct','Disjunction']
+        assert constraintType in constraintTypes,f"Constraint type '{constraintType}' unknown"
         constraintObject = cls.getComponentObject()
         if name not in constraintObject.docs.keys():
             indexValues,indexList = cls.getIndexNamesData(indexSets)
-            var = pe.Var(
+            if constraintType == "Constraint":
+                constraintClass = pe.Constraint
+            elif constraintType == "Disjunct":
+                constraintClass = pgdp.Disjunct
+            else:
+                constraintClass = pgdp.Disjunction
+            constraint = constraintClass(
                 indexValues,
                 rule=rule,
                 doc=doc
             )
-            model.add_component(name, var)
+            model.add_component(name, constraint)
             # save constraint doc
             constraintObject.docs[name] = cls.compileDocString(doc,indexList,name)
         else:
-            logging.warning(f"Constraint {name} already added. Can only be added once")
+            logging.warning(f"{constraintType} {name} already added. Can only be added once")

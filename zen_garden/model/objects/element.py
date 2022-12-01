@@ -9,6 +9,7 @@ Description:    Class defining a standard Element. Contains methods to add param
                 optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
                 optimization model as an input.
 ==========================================================================================================================================================================="""
+import copy
 import itertools 
 import logging
 import pandas as pd
@@ -288,6 +289,7 @@ class Element:
         :param listIndex: list of names of indices
         :return customSet: custom set index
         :return listIndex: list of names of indices """
+        listIndexOverwrite = copy.copy(listIndex)
         model           = EnergySystem.getConcreteModel()
         indexingSets    = EnergySystem.getIndexingSets()
         # check if all index sets are already defined in model and no set is indexed
@@ -301,7 +303,10 @@ class Element:
                     # append set to list
                     listSets.append(model.find_component(index))
             # return indices as cartesian product of sets
-            customSet = list(itertools.product(*listSets))
+            if len(listIndex) > 1:
+                customSet = list(itertools.product(*listSets))
+            else:
+                customSet = list(listSets[0])
             return customSet,listIndex
         # at least one set is not yet defined
         else:
@@ -365,6 +370,7 @@ class Element:
                                     listSets.append(dependentCarrier)
                                 else:
                                     listSets.append([])
+                                listIndexOverwrite = list(map(lambda x: x.replace(index, 'setCarriers'), listIndex))
                             # Transport or Storage technology
                             else:
                                 appendElement = False
@@ -398,7 +404,7 @@ class Element:
                             customSet.extend(list(itertools.product([element],*listSets)))
                         else:
                             customSet.extend([element])
-                return customSet,listIndex
+                return customSet,listIndexOverwrite
             else:
                 raise NotImplementedError
 

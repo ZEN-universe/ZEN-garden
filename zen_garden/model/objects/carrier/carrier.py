@@ -112,7 +112,7 @@ class Carrier(Element):
         # demand shedding price
         Parameter.addParameter(
             name="shedDemandPrice",
-            data=EnergySystem.initializeComponent(cls, "shedDemandPrice"),
+            data=EnergySystem.initializeComponent(cls, "shedDemandPrice",indexNames=["setCarriers"]),
             doc='Parameter which specifies the price to shed demand')
         # carbon intensity
         Parameter.addParameter(
@@ -126,50 +126,66 @@ class Carrier(Element):
         model = EnergySystem.getConcreteModel()
         
         # flow of imported carrier
-        model.importCarrierFlow = pe.Var(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="importCarrierFlow",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent carrier import from the grid'
         )
         # flow of exported carrier
-        model.exportCarrierFlow = pe.Var(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="exportCarrierFlow",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent carrier export from the grid'
         )
         # carrier import/export cost
-        model.costCarrier = pe.Var(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="costCarrier",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.Reals,
             doc = 'node- and time-dependent carrier cost due to import and export'
         )
         # total carrier import/export cost
-        model.costCarrierTotal = pe.Var(
-            model.setTimeStepsYearly,
+        Variable.addVariable(
+            model,
+            name="costCarrierTotal",
+            indexSets= model.setTimeStepsYearly,
             domain = pe.Reals,
             doc = 'total carrier cost due to import and export'
         )
         # carbon emissions
-        model.carbonEmissionsCarrier = pe.Var(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="carbonEmissionsCarrier",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.Reals,
-            doc = "carbon emissions of importing/exporting carrier"
+            doc = "carbon emissions of importing and exporting carrier"
         )
         # carbon emissions carrier
-        model.carbonEmissionsCarrierTotal = pe.Var(
-            model.setTimeStepsYearly,
+        Variable.addVariable(
+            model,
+            name="carbonEmissionsCarrierTotal",
+            indexSets= model.setTimeStepsYearly,
             domain=pe.Reals,
-            doc="total carbon emissions of importing/exporting carrier"
+            doc="total carbon emissions of importing and exporting carrier"
         )
         # shed demand
-        model.shedDemandCarrier = pe.Var(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="shedDemandCarrier",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             domain=pe.NonNegativeReals,
             doc="shed demand of carrier"
         )
         # cost of shed demand
-        model.costShedDemandCarrier = pe.Var(
-            cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="costShedDemandCarrier",
+            indexSets= cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
             domain=pe.NonNegativeReals,
             doc="shed demand of carrier"
         )
@@ -185,63 +201,83 @@ class Carrier(Element):
         model = EnergySystem.getConcreteModel()
 
         # limit import flow by availability
-        model.constraintAvailabilityCarrierImport = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintAvailabilityCarrierImport",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             rule = constraintAvailabilityCarrierImportRule,
             doc = 'node- and time-dependent carrier availability to import from outside the system boundaries',
         )        
         # limit export flow by availability
-        model.constraintAvailabilityCarrierExport = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintAvailabilityCarrierExport",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             rule = constraintAvailabilityCarrierExportRule,
             doc = 'node- and time-dependent carrier availability to export to outside the system boundaries',
         )
         # limit import flow by availability for each year
-        model.constraintAvailabilityCarrierImportYearly = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsYearly"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintAvailabilityCarrierImportYearly",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsYearly"]),
             rule = constraintAvailabilityCarrierImportYearlyRule,
             doc = 'node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year',
         )
         # limit export flow by availability for each year
-        model.constraintAvailabilityCarrierExportYearly = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsYearly"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintAvailabilityCarrierExportYearly",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsYearly"]),
             rule = constraintAvailabilityCarrierExportYearlyRule,
-            doc = 'node- and time-dependent carrier availability to export to outside the system boundaries, summed over entire year',
+            doc = 'node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year',
         )
         # cost for carrier
-        model.constraintCostCarrier = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintCostCarrier",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             rule = constraintCostCarrierRule,
-            doc = "cost of importing/exporting carrier"
+            doc = "cost of importing and exporting carrier"
         )
         # cost for carrier
-        model.constraintCostShedDemand = pe.Constraint(
-            cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintCostShedDemand",
+            indexSets= cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
             rule=constraintCostShedDemandRule,
             doc="cost of shedding carrier demand"
         )
         # total cost for carriers
-        model.constraintCostCarrierTotal = pe.Constraint(
-            model.setTimeStepsYearly,
+        Constraint.addConstraint(
+            model,
+            name="constraintCostCarrierTotal",
+            indexSets= model.setTimeStepsYearly,
             rule = constraintCostCarrierTotalRule,
-            doc = "total cost of importing/exporting carriers"
+            doc = "total cost of importing and exporting carriers"
         )
         # carbon emissions
-        model.constraintCarbonEmissionsCarrier = pe.Constraint(
-            cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintCarbonEmissionsCarrier",
+            indexSets= cls.createCustomSet(["setCarriers","setNodes","setTimeStepsOperation"]),
             rule = constraintCarbonEmissionsCarrierRule,
-            doc = "carbon emissions of importing/exporting carrier"
+            doc = "carbon emissions of importing and exporting carrier"
         )
 
         # carbon emissions carrier
-        model.constraintCarbonEmissionsCarrierTotal = pe.Constraint(
-            model.setTimeStepsYearly,
+        Constraint.addConstraint(
+            model,
+            name="constraintCarbonEmissionsCarrierTotal",
+            indexSets= model.setTimeStepsYearly,
             rule=constraintCarbonEmissionsCarrierTotalRule,
-            doc="total carbon emissions of importing/exporting carriers"
+            doc="total carbon emissions of importing and exporting carriers"
         )
         # energy balance
-        model.constraintNodalEnergyBalance = pe.Constraint(
-            cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsEnergyBalance"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintNodalEnergyBalance",
+            indexSets= cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsEnergyBalance"]),
             rule=constraintNodalEnergyBalanceRule,
             doc='node- and time-dependent energy balance for each carrier',
         )
@@ -305,7 +341,7 @@ def constraintAvailabilityCarrierExportYearlyRule(model, carrier, node, year):
         return pe.Constraint.Skip
 
 def constraintCostCarrierRule(model, carrier, node, time):
-    """ cost of importing/exporting carrier"""
+    """ cost of importing and exporting carrier"""
     # get parameter object
     params = Parameter.getComponentObject()
     return(model.costCarrier[carrier,node, time] ==
@@ -328,7 +364,7 @@ def constraintCostShedDemandRule(model, carrier, node, time):
         )
 
 def constraintCostCarrierTotalRule(model,year):
-    """ total cost of importing/exporting carrier"""
+    """ total cost of importing and exporting carrier"""
     # get parameter object
     params = Parameter.getComponentObject()
     baseTimeStep = EnergySystem.decodeTimeStep(None, year, "yearly")
@@ -339,12 +375,12 @@ def constraintCostCarrierTotalRule(model,year):
                 * params.timeStepsOperationDuration[carrier, time]
                 for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly=True)
             )
-            for carrier,node in Element.createCustomSet(["setCarriers","setNodes"])
+            for carrier,node in Element.createCustomSet(["setCarriers","setNodes"])[0]
         )
     )
 
 def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
-    """ carbon emissions of importing/exporting carrier"""
+    """ carbon emissions of importing and exporting carrier"""
     # get parameter object
     params = Parameter.getComponentObject()
     baseTimeStep    = EnergySystem.decodeTimeStep(carrier, time)
@@ -355,7 +391,7 @@ def constraintCarbonEmissionsCarrierRule(model, carrier, node, time):
             )
 
 def constraintCarbonEmissionsCarrierTotalRule(model, year):
-    """ total carbon emissions of importing/exporting carrier"""
+    """ total carbon emissions of importing and exporting carrier"""
     # get parameter object
     params = Parameter.getComponentObject()
     baseTimeStep = EnergySystem.decodeTimeStep(None,year,"yearly")
@@ -365,7 +401,7 @@ def constraintCarbonEmissionsCarrierTotalRule(model, year):
                 model.carbonEmissionsCarrier[carrier, node, time] * params.timeStepsOperationDuration[carrier, time]
                 for time in EnergySystem.encodeTimeStep(carrier, baseTimeStep, yearly = True)
             )
-            for carrier, node in Element.createCustomSet(["setCarriers", "setNodes"])
+            for carrier, node in Element.createCustomSet(["setCarriers", "setNodes"])[0]
         )
     )
 

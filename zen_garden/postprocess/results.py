@@ -20,7 +20,7 @@ import zlib
 import os
 
 from ..model.objects.energy_system import EnergySystem
-from ..model.objects.component import Parameter
+from ..model.objects.component import Parameter,Variable,Constraint
 from ..utils import RedirectStdStreams
 
 class Postprocess:
@@ -39,11 +39,13 @@ class Postprocess:
         self.analysis = model.analysis
         self.solver = model.solver
         self.opt = model.opt
-        self.params = Parameter.getComponentObject()
+        self.params         = Parameter.getComponentObject()
+        self.vars           = Variable.getComponentObject()
+        self.constraints    = Constraint.getComponentObject()
 
         # get name or directory
         self.modelName = modelName
-        self.nameDir = pathlib.Path(self.system["folderOutput"]).joinpath(self.modelName)
+        self.nameDir = pathlib.Path(self.analysis["folderOutput"]).joinpath(self.modelName)
 
         # deal with the subfolder
         self.subfolder = subfolder
@@ -53,12 +55,11 @@ class Postprocess:
         # create the output directory
         os.makedirs(self.nameDir, exist_ok=True)
 
-
         # get the compression param
-        self.compress = self.system["compressOutput"]
+        self.compress = self.analysis["compressOutput"]
 
         # save the pyomo yml
-        if self.system["writeResultsYML"]:
+        if self.analysis["writeResultsYML"]:
             with RedirectStdStreams(open(os.path.join(self.nameDir, "results.yml"), "w+")):
                 model.results.write()
 
@@ -94,9 +95,9 @@ class Postprocess:
 
         # if the string is larger than the max output size we compress anyway
         force_compression = False
-        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.system["maxOutputSizeMB"]:
+        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.analysis["maxOutputSizeMB"]:
             print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
-                  f"{self.system['maxOutputSizeMB']}MB, compressing...")
+                  f"{self.analysis['maxOutputSizeMB']}MB, compressing...")
             force_compression = True
 
         if self.compress or force_compression:
@@ -115,32 +116,51 @@ class Postprocess:
 
         # dataframe serialization
         data_frames = {}
-        for param in self.params.parameterList:
+        for param in self.params.docs.keys():
             # get the values
             vals = getattr(self.params, param)
+            doc = self.params.docs[param]
+            indexList = self.getIndexList(doc)
+            if len(indexList) == 0:
+                indexNames = None
+            elif len(indexList) == 1:
+                indexNames = indexList[0]
+            else:
+                indexNames = indexList
             # create a dictionary if necessary
             if not isinstance(vals, dict):
-                indices = [np.nan]
+                indices = pd.Index(data=[0],name=indexNames)
                 data = [vals]
             # if the returned dict is emtpy we create a nan value
             elif len(vals) == 0:
-                indices = [np.nan]
-                data = [None]
+                if len(indexNames)>1:
+                    indices = pd.MultiIndex(levels=[[]]*len(indexNames),codes=[[]]*len(indexNames),names=indexNames)
+                else:
+                    indices = pd.Index(data=[],name=indexNames)
+                data = []
             # we read out everything
             else:
                 indices = list(vals.keys())
                 data = list(vals.values())
 
                 # create a multi index if necessary
-                if isinstance(indices[0], tuple):
-                    indices = pd.MultiIndex.from_tuples(indices)
+                if isinstance(indices[0],tuple):
+                    if len(indexList) == len(indices[0]):
+                        indices = pd.MultiIndex.from_tuples(indices,names=indexNames)
+                    else:
+                        indices = pd.MultiIndex.from_tuples(indices)
+                else:
+                    if len(indexList) == 1:
+                        indices = pd.Index(data=indices,name=indexNames)
+                    else:
+                        indices = pd.Index(data=indices)
 
             # create dataframe
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
 
             # update dict
             data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                  "docstring": self.params.docs[param]}
+                                  "docstring": doc}
 
         # write to json
         self.write_file(self.nameDir.joinpath('paramDict'), data_frames)
@@ -152,20 +172,40 @@ class Postprocess:
         # dataframe serialization
         data_frames = {}
         for var in self.model.component_objects(pe.Var, active=True):
+            if var.name in self.vars.docs:
+                doc = self.vars.docs[var.name]
+                indexList = self.getIndexList(doc)
+                if len(indexList) == 0:
+                    indexNames = None
+                elif len(indexList) == 1:
+                    indexNames = indexList[0]
+                else:
+                    indexNames = indexList
+            else:
+                indexList = []
+                doc = None
             # get indices and values
             indices = [index for index in var]
             values = [getattr(var[index], "value", None) for index in indices]
 
-            # create a multiindex if necessary
+            # create a multi index if necessary
             if isinstance(indices[0], tuple):
-                indices = pd.MultiIndex.from_tuples(indices)
+                if len(indexList) == len(indices[0]):
+                    indices = pd.MultiIndex.from_tuples(indices, names=indexNames)
+                else:
+                    indices = pd.MultiIndex.from_tuples(indices)
+            else:
+                if len(indexList) == 1:
+                    indices = pd.Index(data=indices, name=indexNames)
+                else:
+                    indices = pd.Index(data=indices)
 
             # create dataframe
             df = pd.DataFrame(data=values, columns=["value"], index=indices)
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
             data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                     "docstring": var.doc}
+                                     "docstring": doc}
 
         self.write_file(self.nameDir.joinpath('varDict'), data_frames)
 
@@ -269,6 +309,22 @@ class Postprocess:
 
         return dictionary
 
+    def getIndexList(self,doc):
+        """ get index list from docstring """
+        splitDoc = doc.split(";")
+        for string in splitDoc:
+            if "dims" in string:
+                break
+        string = string.replace("dims:","")
+        indexList = string.split(",")
+        indexListFinal = []
+        for index in indexList:
+            if index in self.analysis["headerDataInputs"].keys():
+                indexListFinal.append(self.analysis["headerDataInputs"][index])
+            else:
+                pass
+                # indexListFinal.append(index)
+        return indexListFinal
 
 class Results(object):
     """

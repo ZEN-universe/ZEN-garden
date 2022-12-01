@@ -36,7 +36,8 @@ class DataInput():
         self.folderPath = getattr(self.element,"inputPath")
 
         # get names of indices
-        self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
+        # self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
+        self.indexNames     = self.analysis['headerDataInputs']
 
     def extractInputData(self,fileName,indexSets,column=None,timeSteps=None,scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict

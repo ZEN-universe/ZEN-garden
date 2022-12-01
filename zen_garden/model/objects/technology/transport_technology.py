@@ -126,7 +126,7 @@ class TransportTechnology(Technology):
         # distance between nodes
         Parameter.addParameter(
             name="distance",
-            data= EnergySystem.initializeComponent(cls,"distance"),
+            data= EnergySystem.initializeComponent(cls,"distance",indexNames=["setTransportTechnologies","setEdges"]),
             doc = 'distance between two nodes for transport technologies')
         # capital cost per unit
         Parameter.addParameter(
@@ -141,7 +141,7 @@ class TransportTechnology(Technology):
         # carrier losses
         Parameter.addParameter(
             name="lossFlow",
-            data= EnergySystem.initializeComponent(cls,"lossFlow"),
+            data= EnergySystem.initializeComponent(cls,"lossFlow",indexNames=["setTransportTechnologies"]),
             doc = 'carrier losses due to transport with transport technologies')
 
     @classmethod
@@ -161,15 +161,19 @@ class TransportTechnology(Technology):
 
         model = EnergySystem.getConcreteModel()
         # flow of carrier on edge
-        model.carrierFlow = pe.Var(
-            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="carrierFlow",
+            indexSets= cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             bounds = carrierFlowBounds,
             doc = 'carrier flow through transport technology on edge i and time t'
         )
         # loss of carrier on edge
-        model.carrierLoss = pe.Var(
-            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="carrierLoss",
+            indexSets= cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             doc = 'carrier flow through transport technology on edge i and time t'
         )
@@ -180,20 +184,26 @@ class TransportTechnology(Technology):
         model   = EnergySystem.getConcreteModel()
         system  = EnergySystem.getSystem()
         # Carrier Flow Losses 
-        model.constraintTransportTechnologyLossesFlow = pe.Constraint(
-            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintTransportTechnologyLossesFlow",
+            indexSets= cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsOperation"]),
             rule = constraintTransportTechnologyLossesFlowRule,
             doc = 'Carrier loss due to transport with through transport technology'
         ) 
         # capex of transport technologies
-        model.constraintCapexTransportTechnology = pe.Constraint(
-            cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsYearly"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintCapexTransportTechnology",
+            indexSets= cls.createCustomSet(["setTransportTechnologies","setEdges","setTimeStepsYearly"]),
             rule = constraintCapexTransportTechnologyRule,
             doc = 'Capital expenditures for installing transport technology'
         )
         # bidirectional transport technologies: capacity on edge must be equal in both directions
-        model.constraintBidirectionalTransportTechnology = pe.Constraint(
-            cls.createCustomSet(["setTransportTechnologies", "setEdges", "setTimeStepsYearly"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintBidirectionalTransportTechnology",
+            indexSets= cls.createCustomSet(["setTransportTechnologies", "setEdges", "setTimeStepsYearly"]),
             rule=constraintBidirectionalTransportTechnologyRule,
             doc='Forces that transport technology capacity must be equal in both directions'
         )

@@ -52,7 +52,7 @@ def main(config, dataset_path=None):
         config.analysis["dataset"] = dataset_path
     # get the abs path to avoid working dir stuff
     config.analysis["dataset"] = os.path.abspath(config.analysis['dataset'])
-    config.system["folderOutput"] = os.path.abspath(config.system['folderOutput'])
+    config.analysis["folderOutput"] = os.path.abspath(config.analysis['folderOutput'])
 
     ### System - load system configurations
     system_path = os.path.join(config.analysis['dataset'], "system.py")
@@ -88,8 +88,8 @@ def main(config, dataset_path=None):
 
     # get the name of the dataset
     modelName = os.path.basename(config.analysis["dataset"])
-    if os.path.exists(out_folder := os.path.join(config.system["folderOutput"], modelName)):
-        if config.system["overwriteOutput"]:
+    if os.path.exists(out_folder := os.path.join(config.analysis["folderOutput"], modelName)):
+        if config.analysis["overwriteOutput"]:
             logging.info(f"Removing existing output folder: {out_folder}")
             rmtree(out_folder)
         else:
