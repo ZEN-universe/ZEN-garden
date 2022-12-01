@@ -100,7 +100,7 @@ class EnergySystem:
         self.timeStepsYearlyDuration         = EnergySystem.calculateTimeStepDuration(self.setTimeStepsYearly)
         self.sequenceTimeStepsYearly         = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
         self.setSequenceTimeSteps(None, self.sequenceTimeStepsYearly, timeStepType="yearly")
-
+        self.setTimeStepYears                = list(range(self.system["referenceYear"],self.system["referenceYear"] + self.system["optimizedYears"]*self.system["intervalBetweenYears"],self.system["intervalBetweenYears"]))
         # technology-specific
         self.setConversionTechnologies = system["setConversionTechnologies"]
         self.setTransportTechnologies  = system["setTransportTechnologies"]

@@ -67,16 +67,14 @@ class DataInput():
         # read input file
         dfInput = self.readInputData(fileName+scenario)
 
-        #dfInput = self.convertYearlyIndicesToTimeSteps(dfInput,timeSteps,fileName)
-
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
-            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
+            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue,timeSteps)
         # save parameter values for analysis of numerics
         self.saveValuesOfAttribute(dfOutput=dfOutput,fileName=defaultName)
         return dfOutput
 
-    def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
+    def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue,timeSteps):
         """ fills dfOutput with data from dfInput
         :param dfInput: raw input dataframe
         :param dfOutput: empty output dataframe, only filled with defaultValue 
@@ -84,7 +82,10 @@ class DataInput():
         :param indexNameList: list of name of indices
         :param column: select specific column
         :param defaultValue: default for dataframe
+        :param timeSteps: specific timeSteps of element
         :return dfOutput: filled output dataframe """
+
+        dfInput = self.convertYearsToTimeIndices(dfInput,indexNameList,timeSteps)
 
         # select and drop scenario
         assert dfInput.columns is not None, f"Input file '{fileName}' has no columns"
@@ -545,21 +546,35 @@ class DataInput():
         else:
             return False
 
-    def convertYearlyIndicesToTimeSteps(self,dfInput,timeSteps,fileName):
+    def convertYearsToTimeIndices(self,dfInput,indexNameList,timeSteps):
         """convert yearly time indices to time steps
+
+
+        :param timeSteps: specific timeSteps of element
+        :return
         """
-        #check if there isn't any time dependent input data
-        if dfInput is None:
-            return None
-        bannedFileNames = ['distanceEuclidean','demandCarrier']
-        if fileName in bannedFileNames:
-            return dfInput
-        #check if there is as much yearly data as there are time steps
-        if dfInput.shape[0] == len(timeSteps):
-            for i in range(len(timeSteps)):
-                dfInput.at[i,'time'] = timeSteps[i]
-        else:
-            extrapolateData, interpolate = 1
+        #check if input data is time-dependent and has yearly time steps
+        if timeSteps == self.energySystem.setTimeStepsYearly and 'time' in indexNameList:
+            #check if input data is indexed correctly already
+            for index in dfInput.loc[:,'time']:
+                if index == 0:
+                    return  dfInput
+            #check if there is input data for every optimized year
+            if dfInput.shape[0] == len(self.energySystem.setTimeStepsYearly):
+                for i in range(len(dfInput.time)):
+                    dfInput.at[i,'time'] = dfInput.at[i,'time'] - self.system["referenceYear"]
+            # data needs to be interpolated
+            else:
+                indices = dfInput.axes[1]
+                for index in indices:
+                    if index == 'time':
+                        continue
+                    for year in self.energySystem.setTimeStepYears:
+                        if year not in dfInput.time.values:
+                            dfInput = dfInput.append({'time':year,index:float('nan')},ignore_index=True)
+                    dfInput = dfInput.sort_values('time')
+                    dfInput[index] = dfInput[index].interpolate()
+
         return dfInput
 
     @staticmethod

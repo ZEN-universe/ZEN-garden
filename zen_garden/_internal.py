@@ -128,3 +128,5 @@ def main(config, dataset_path=None):
             # write results
             evaluation = Postprocess(optimizationSetup, scenarios=config.scenarios, subfolder=subfolder,
                                      modelName=modelName)
+
+    return optimizationSetup

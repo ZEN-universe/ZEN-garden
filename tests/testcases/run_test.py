@@ -133,7 +133,7 @@ def test_3b(config):
 
     failedVariables, assertionString = compareVariables('test_3b',optimizationSetup)
     assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
-
+"""
 def test_4a(config):
     # run the test
     restore_default_state()
@@ -189,7 +189,7 @@ def test_4g(config):
 
     failedVariables, assertionString = compareVariables('test_4g',optimizationSetup)
     assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
-
+"""
 def test_5a(config):
     # run the test
     restore_default_state()
