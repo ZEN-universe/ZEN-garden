@@ -132,7 +132,7 @@ class Postprocess:
                 data = list(vals.values())
 
                 # create a multi index if necessary
-                if isinstance(indices[0], tuple):
+                if indices != list() and isinstance(indices[0], tuple):
                     indices = pd.MultiIndex.from_tuples(indices)
 
             # create dataframe
