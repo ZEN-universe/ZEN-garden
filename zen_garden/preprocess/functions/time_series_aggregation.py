@@ -416,6 +416,6 @@ class TimeSeriesAggregation():
             # calculate time steps of storage levels
             element.calculateTimeStepsStorageLevel(conductedTimeSeriesAggregation = timeSeriesAggregation.conductedTimeSeriesAggregation)
         # calculate new time steps of energy balance
-        for element in Carrier.getAllElements():
-            cls.calculateTimeStepsEnergyBalance(element)
+        # for element in Carrier.getAllElements():
+            # cls.calculateTimeStepsEnergyBalance(element)
 
