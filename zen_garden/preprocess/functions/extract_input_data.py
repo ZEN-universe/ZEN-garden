@@ -223,9 +223,9 @@ class DataInput():
         :param extractNodes: boolean to switch between nodes and edges """
         if extractNodes:
             setNodesConfig  = self.system["setNodes"]
-            setNodesInput   = self.readInputData("setNodes")["node"]
+            setNodesInput   = self.readInputData("setNodes")["node"].to_list()
             # if no nodes specified in system, use all nodes
-            if len(setNodesConfig) == 0 and not setNodesInput.empty:
+            if len(setNodesConfig) == 0 and not len(setNodesInput) == 0:
                 self.system["setNodes"] = setNodesInput
                 setNodesConfig          = setNodesInput
             else:
