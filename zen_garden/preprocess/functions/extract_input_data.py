@@ -77,7 +77,7 @@ class DataInput():
     def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue,timeSteps):
         """ fills dfOutput with data from dfInput
         :param dfInput: raw input dataframe
-        :param dfOutput: empty output dataframe, only filled with defaultValue 
+        :param dfOutput: empty output dataframe, only filled with defaultValue
         :param fileName: name of selected file
         :param indexNameList: list of name of indices
         :param column: select specific column
@@ -85,7 +85,7 @@ class DataInput():
         :param timeSteps: specific timeSteps of element
         :return dfOutput: filled output dataframe """
 
-        dfInput = self.convertYearsToTimeIndices(dfInput,indexNameList,timeSteps)
+        dfInput = self.convertRealToGenericTimeIndices(dfInput,indexNameList,timeSteps)
 
         # select and drop scenario
         assert dfInput.columns is not None, f"Input file '{fileName}' has no columns"
@@ -215,7 +215,7 @@ class DataInput():
             else:
                 _selectedColumn         = None
                 _nameYearlyVariation    = fileName
-            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, _selectedColumn,defaultValue)
+            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, _selectedColumn,defaultValue,timeSteps=None)
             setattr(self,_nameYearlyVariation,dfOutput)
 
     def extractLocations(self,extractNodes = True):
@@ -302,7 +302,7 @@ class DataInput():
             indexList, indexNameList = self.constructIndexList(indexSets, None)
             dfInput                  = self.readInputData( fileName)
             # fill output dataframe
-            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue = 0)
+            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue = 0,timeSteps=None)
             # get reference year
             referenceYear            = self.system["referenceYear"]
             # calculate remaining lifetime
@@ -419,7 +419,7 @@ class DataInput():
                     assert (dfInputLinear is not None), f"input file for linearConverEfficiency could not be imported."
                     dfInputLinear = dfInputLinear.rename(columns={'year': 'time'})
                     for carrier in _dependentCarrier:
-                        LinearDict[carrier]        = self.extractGeneralInputData(dfInputLinear, dfOutput, "linearConverEfficiency", indexNameList, carrier, defaultValue).copy(deep=True)
+                        LinearDict[carrier]        = self.extractGeneralInputData(dfInputLinear, dfOutput, "linearConverEfficiency", indexNameList, carrier, defaultValue,timeSteps=None).copy(deep=True)
                 LinearDict = pd.DataFrame.from_dict(LinearDict)
                 LinearDict.columns.name = "carrier"
                 LinearDict = LinearDict.stack()
@@ -546,35 +546,35 @@ class DataInput():
         else:
             return False
 
-    def convertYearsToTimeIndices(self,dfInput,indexNameList,timeSteps):
-        """convert yearly time indices to time steps
-
-
+    def convertRealToGenericTimeIndices(self,dfInput,indexNameList,timeSteps):
+        """convert yearly time indices to generic time indices
+        :param dfInput: raw input dataframe
+        :param indexNameList: list of name of indices
         :param timeSteps: specific timeSteps of element
-        :return
+        :return dfInput: input dataframe with generic time indices
         """
         #check if input data is time-dependent and has yearly time steps
         if timeSteps == self.energySystem.setTimeStepsYearly and 'time' in indexNameList:
-            #check if input data is indexed correctly already
+            #check if input data has generic time indices already
             for index in dfInput.loc[:,'time']:
-                if index == 0:
+                if index <= 20:
                     return  dfInput
             #check if there is input data for every optimized year
             if dfInput.shape[0] == len(self.energySystem.setTimeStepsYearly):
-                for i in range(len(dfInput.time)):
-                    dfInput.at[i,'time'] = dfInput.at[i,'time'] - self.system["referenceYear"]
-            # data needs to be interpolated
+                for count, value in enumerate(dfInput.time):
+                    dfInput.at[count,'time'] = dfInput.at[count,'time'] - self.system["referenceYear"]
+            # interpolate parameter values for missing years
             else:
-                indices = dfInput.axes[1]
-                for index in indices:
-                    if index == 'time':
+                parameters = dfInput.axes[1]
+                for param in parameters:
+                    if param == 'time':
                         continue
                     for year in self.energySystem.setTimeStepYears:
                         if year not in dfInput.time.values:
-                            dfInput = dfInput.append({'time':year,index:float('nan')},ignore_index=True)
+                            dfInput = dfInput.append({'time':year,param:float('nan')},ignore_index=True)
                     dfInput = dfInput.sort_values('time')
-                    dfInput[index] = dfInput[index].interpolate()
-
+                    dfInput[param] = dfInput[param].interpolate()
+            
         return dfInput
 
     @staticmethod
