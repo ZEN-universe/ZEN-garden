@@ -307,7 +307,6 @@ class Results(object):
         self.results["scenarios"] = self.load_scenarios(self.path)
         self.results["solver"] = self.load_solver(self.path)
         self.results["system"] = self.load_system(self.path)
-        self.results["dictSequenceTimeSteps"] = self.load_sequence_time_steps(self.path)
 
         # get the years
         self.years = list(range(0, self.results["system"]["optimizedYears"]))
@@ -367,6 +366,7 @@ class Results(object):
                 self.results[scenario][mf]["pars_and_vars"].update(self.load_vars(current_path))
 
                 # load the corresponding timestep dict
+                print(scenario)
                 time_dict = self.load_sequence_time_steps(self.path, scenario)
                 self.results[scenario]["dictSequenceTimeSteps"] = time_dict
                 self.results[scenario]["SequenceTimeStepsDicts"] = SequenceTimeStepsDicts(time_dict)
