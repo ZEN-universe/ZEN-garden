@@ -89,11 +89,9 @@ def main(config, dataset_path=None):
     # get the name of the dataset
     modelName = os.path.basename(config.analysis["dataset"])
     if os.path.exists(out_folder := os.path.join(config.system["folderOutput"], modelName)):
+        logging.warning(f"The output folder '{out_folder}' already exists")
         if config.system["overwriteOutput"]:
-            logging.info(f"Removing existing output folder: {out_folder}")
-            rmtree(out_folder)
-        else:
-            logging.warning(f"The outputfolder {out_folder} already exists")
+            logging.warning("Existing files will be overwritten!")
 
     # update input data
     for scenario, elements in config.scenarios.items():
@@ -117,9 +115,11 @@ def main(config, dataset_path=None):
             optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
             # EVALUATE RESULTS
             subfolder = ""
+            scenario_name = None
             if config.system["conductScenarioAnalysis"]:
                 # handle scenarios
                 subfolder += f"scenario_{scenario}"
+                scenario_name = subfolder
             # handle myopic foresight
             if len(stepsOptimizationHorizon) > 1:
                 if subfolder != "":
@@ -127,4 +127,4 @@ def main(config, dataset_path=None):
                 subfolder += f"MF_{stepHorizon}"
             # write results
             evaluation = Postprocess(optimizationSetup, scenarios=config.scenarios, subfolder=subfolder,
-                                     modelName=modelName)
+                                     modelName=modelName, scenario_name=scenario_name)

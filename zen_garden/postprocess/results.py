@@ -20,16 +20,18 @@ import zlib
 import os
 
 from ..model.objects.energy_system import EnergySystem
+from .time_steps import SequenceTimeStepsDicts
 from ..model.objects.parameter import Parameter
 from ..utils import RedirectStdStreams
 
 class Postprocess:
 
-    def __init__(self, model, scenarios, modelName, subfolder=None):
+    def __init__(self, model, scenarios, modelName, subfolder=None, scenario_name=None):
         """postprocessing of the results of the optimization
         :param model: optimization model
         :param modelName: The name of the model used to name the output folder
         :param subfolder: The subfolder used for the results
+        :param scenario_name: The name of the current scenario
         """
 
         # get the necessary stuff from the model
@@ -53,6 +55,8 @@ class Postprocess:
         # create the output directory
         os.makedirs(self.nameDir, exist_ok=True)
 
+        # check if we should overwrite output
+        self.overwirte = self.system["overwriteOutput"]
 
         # get the compression param
         self.compress = self.system["compressOutput"]
@@ -73,7 +77,7 @@ class Postprocess:
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dictSequenceTimeSteps = self.flatten_dict(EnergySystem.getSequenceTimeStepsDict())
-        self.saveSequenceTimeSteps()
+        self.saveSequenceTimeSteps(scenario=scenario_name)
 
         # case where we should run the post-process as normal
         if model.analysis['postprocess']:
@@ -99,14 +103,20 @@ class Postprocess:
                   f"{self.system['maxOutputSizeMB']}MB, compressing...")
             force_compression = True
 
+        # prep output file
         if self.compress or force_compression:
-            # compress and write
-            compressed = zlib.compress(serialized_dict.encode())
-            with open(f"{name}.gzip", "wb") as outfile:
-                outfile.write(compressed)
+            # compress
+            f_name = f"{name}.gzip"
+            f_mode = "wb"
+            serialized_dict = zlib.compress(serialized_dict.encode())
         else:
             # write normal json
-            with open(f"{name}.json", "w+") as outfile:
+            f_name = f"{name}.json"
+            f_mode = "w+"
+
+        # write if necessary
+        if self.overwirte or not os.path.exists(f_name):
+            with open(f_name, f_mode) as outfile:
                 outfile.write(serialized_dict)
 
     def saveParam(self):
@@ -179,8 +189,7 @@ class Postprocess:
             fname = self.nameDir.parent.joinpath('System')
         else:
             fname = self.nameDir.joinpath('System')
-        if not fname.exists():
-            self.write_file(fname, self.system)
+        self.write_file(fname, self.system)
 
     def saveAnalysis(self):
         """
@@ -192,8 +201,7 @@ class Postprocess:
             fname = self.nameDir.parent.joinpath('Analysis')
         else:
             fname = self.nameDir.joinpath('Analysis')
-        if not fname.exists():
-            self.write_file(fname, self.analysis)
+        self.write_file(fname, self.analysis)
 
     def saveScenarios(self):
         """
@@ -205,8 +213,7 @@ class Postprocess:
             fname = self.nameDir.parent.joinpath('Scenarios')
         else:
             fname = self.nameDir.joinpath('Scenarios')
-        if not fname.exists():
-            self.write_file(fname, self.scenarios)
+        self.write_file(fname, self.scenarios)
 
     def saveSolver(self):
         """
@@ -218,8 +225,7 @@ class Postprocess:
             fname = self.nameDir.parent.joinpath('Solver')
         else:
             fname = self.nameDir.joinpath('Solver')
-        if not fname.exists():
-            self.write_file(fname, self.solver)
+        self.write_file(fname, self.solver)
 
     def saveOpt(self):
         """
@@ -228,21 +234,26 @@ class Postprocess:
         if self.solver["name"] != "gurobi_persistent":
             self.write_file(self.nameDir.joinpath('optDict'), self.opt.__dict__)
 
-            # copy the log file
-            shutil.copy2(os.path.abspath(self.opt._log_file), self.nameDir)
+        # copy the log file
+        shutil.copy2(os.path.abspath(self.opt._log_file), self.nameDir)
 
-    def saveSequenceTimeSteps(self):
+    def saveSequenceTimeSteps(self, scenario=None):
         """
         Saves the dictAllSequenceTimeSteps dict as json
         """
-
-        # This we only need to save once
-        if self.subfolder:
-            fname = self.nameDir.parent.joinpath('dictAllSequenceTimeSteps')
+        # add the scenario name
+        if scenario is not None:
+            add_on = f"_{scenario}"
         else:
-            fname = self.nameDir.joinpath('dictAllSequenceTimeSteps')
-        if not fname.exists():
-            self.write_file(fname, self.dictSequenceTimeSteps)
+            add_on = ""
+
+            # This we only need to save once
+        if self.subfolder:
+            fname = self.nameDir.parent.joinpath(f'dictAllSequenceTimeSteps{add_on}')
+        else:
+            fname = self.nameDir.joinpath(f'dictAllSequenceTimeSteps{add_on}')
+
+        self.write_file(fname, self.dictSequenceTimeSteps)
 
     def flatten_dict(self, dictionary):
         """
@@ -275,10 +286,11 @@ class Results(object):
     This class reads in the results after the pipeline has run
     """
 
-    def __init__(self, path, load_opt=False):
+    def __init__(self, path, scenarios=None, load_opt=False):
         """
         Initializes the Results class with a given path
         :param path: Path to the output of the optimization problem
+        :param scenarios: A list of scenarios to load, defaults to all scenarios
         :param load_opt: Optionally load the opt dictionary as well
         """
 
@@ -300,13 +312,25 @@ class Results(object):
         # get the years
         self.years = list(range(0, self.results["system"]["optimizedYears"]))
 
-        # check what type of results we have
-        if self.results["system"]["conductScenarioAnalysis"]:
+        # if we only want to load a subset
+        if scenarios is not None:
+            self.has_scenarios = True
+            self.scenarios = []
+            # append prefix if necessary
+            for scenario in scenarios:
+                if not scenario.startswith("scenario_"):
+                    self.scenarios.append(f"scenario_{scenario}")
+                else:
+                    self.scenarios.append(scenario)
+        # we have scenarios and load all
+        elif self.results["system"]["conductScenarioAnalysis"]:
             self.has_scenarios = True
             self.scenarios = [f"scenario_{scenario}" for scenario in self.results["scenarios"].keys()]
+        # there are no scenarios
         else:
             self.has_scenarios = False
             self.scenarios = [None]
+        # myopic foresight
         if self.results["system"]["useRollingHorizon"]:
             self.has_MF = True
             self.myopic_forsights = [f"MF_{stepHorizon}" for stepHorizon in self.years]
@@ -341,6 +365,11 @@ class Results(object):
                 self.results[scenario][mf]["pars_and_vars"] = {}
                 self.results[scenario][mf]["pars_and_vars"].update(self.load_params(current_path))
                 self.results[scenario][mf]["pars_and_vars"].update(self.load_vars(current_path))
+
+                # load the corresponding timestep dict
+                time_dict = self.load_sequence_time_steps(self.path, scenario)
+                self.results[scenario]["dictSequenceTimeSteps"] = time_dict
+                self.results[scenario]["SequenceTimeStepsDicts"] = SequenceTimeStepsDicts(time_dict)
 
                 # the opt we only load when requested
                 if load_opt:
@@ -494,15 +523,20 @@ class Results(object):
         return opt_dict
 
     @classmethod
-    def load_sequence_time_steps(cls, path):
+    def load_sequence_time_steps(cls, path, scenario=None):
         """
         Loads the dictSequenceTimeSteps from a given path
         :param path: Path to load the dict from
+        :param scenario: Name of the scenario to load
         :return: dictSequenceTimeSteps
         """
+        # get the file name
+        fname = os.path.join(path, "dictAllSequenceTimeSteps")
+        if scenario is not None:
+            fname += f"_{scenario}"
 
         # get the dict
-        raw_dict = cls._read_file(os.path.join(path, "dictAllSequenceTimeSteps"))
+        raw_dict = cls._read_file(fname)
         dictSequenceTimeSteps = json.loads(raw_dict)
 
         # json string None to 'null'
