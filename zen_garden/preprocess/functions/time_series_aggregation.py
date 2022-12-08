@@ -191,16 +191,16 @@ class TimeSeriesAggregation():
                 # set aggregation indicator
                 TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
                 # iterate through raw time series data
-                for timeSeries in element.rawTimeSeries:
-                    # if not yet aggregated, conduct "manual" time series aggregation
-                    if not element.isAggregated():
-                        dfTimeSeries = element.rawTimeSeries[timeSeries].loc[(slice(None), setTimeStepsOperation)]
-                    else:
-                        dfTimeSeries = getattr(element, timeSeries)
-                    # multiply with yearly variation
-                    dfTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, dfTimeSeries)
-                    # save attribute
-                    setattr(element, timeSeries, dfTimeSeries)
+#                 for timeSeries in element.rawTimeSeries:
+#                     # if not yet aggregated, conduct "manual" time series aggregation
+#                     if not element.isAggregated():
+#                         dfTimeSeries = element.rawTimeSeries[timeSeries].loc[(slice(None), setTimeStepsOperation)]
+#                     else:
+#                         dfTimeSeries = getattr(element, timeSeries)
+#                     # multiply with yearly variation
+#                     dfTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, dfTimeSeries)
+#                     # save attribute
+#                     setattr(element, timeSeries, dfTimeSeries)
             # no aggregation -> time steps and sequence of energy balance are equal to the carrier time steps and sequence
             else:
                 # get time attributes of carrier

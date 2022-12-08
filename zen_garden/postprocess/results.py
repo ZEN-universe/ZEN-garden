@@ -144,7 +144,7 @@ class Postprocess:
                 data = list(vals.values())
 
                 # create a multi index if necessary
-                if isinstance(indices[0],tuple):
+                if len(indices)>=1 and isinstance(indices[0],tuple):
                     if len(indexList) == len(indices[0]):
                         indices = pd.MultiIndex.from_tuples(indices,names=indexNames)
                     else:
