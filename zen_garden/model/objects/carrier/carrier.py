@@ -56,20 +56,13 @@ class Carrier(Element):
     def overwriteTimeSteps(self,baseTimeSteps):
         """ overwrites setTimeStepsOperation and  setTimeStepsEnergyBalance"""
         setTimeStepsOperation       = EnergySystem.encodeTimeStep(self.name, baseTimeSteps=baseTimeSteps, timeStepType="operation",yearly=True)
-        setTimeStepsEnergyBalance   = EnergySystem.encodeTimeStep(self.name+"EnergyBalance", baseTimeSteps=baseTimeSteps,timeStepType="operation", yearly=True)
         setattr(self, "setTimeStepsOperation", setTimeStepsOperation.squeeze().tolist())
-        setattr(self, "setTimeStepsEnergyBalance", setTimeStepsEnergyBalance.squeeze().tolist())
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
     def constructSets(cls):
         """ constructs the pe.Sets of the class <Carrier> """
-        model = EnergySystem.getConcreteModel()
-         # time-steps of energy balance of carrier
-        # model.setTimeStepsEnergyBalance = pe.Set(
-        #     model.setCarriers,
-        #     initialize=cls.getAttributeOfAllElements("setTimeStepsEnergyBalance"),
-        #     doc='Set of time steps of carriers. Dimensions: setCarriers')
+        pass
 
     @classmethod
     def constructParams(cls):

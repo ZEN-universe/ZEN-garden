@@ -70,7 +70,7 @@ class ConditioningCarrier(Carrier):
         Constraint.addConstraint(
             model,
             name="constraintNodalEnergyBalanceConditioning",
-            indexSets= cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsEnergyBalance"]),
+            indexSets= cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
             rule=constraintNodalEnergyBalanceWithConditioningRule,
             doc='node- and time-dependent energy balance for each carrier',
         )
@@ -90,49 +90,42 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
     """
     params = Parameter.getComponentObject()
 
-    # decode to baseTimeStep
-    baseTimeStep            = EnergySystem.decodeTimeStep(carrier + "EnergyBalance", time)
     # carrier input and output conversion technologies
     carrierConversionIn, carrierConversionOut = 0, 0
     for tech in model.setConversionTechnologies:
         if carrier in model.setInputCarriers[tech]:
-            elementTimeStep         = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierConversionIn     += model.inputFlow[tech,carrier,node,elementTimeStep]
+            carrierConversionIn     += model.inputFlow[tech,carrier,node,time]
         if carrier in model.setOutputCarriers[tech]:
-            elementTimeStep         = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierConversionOut    += model.outputFlow[tech,carrier,node,elementTimeStep]
+            carrierConversionOut    += model.outputFlow[tech,carrier,node,time]
     # carrier flow transport technologies
     carrierFlowIn, carrierFlowOut   = 0, 0
     setEdgesIn                      = EnergySystem.calculateConnectedEdges(node,"in")
     setEdgesOut                     = EnergySystem.calculateConnectedEdges(node,"out")
     for tech in model.setTransportTechnologies:
         if carrier in model.setReferenceCarriers[tech]:
-            elementTimeStep = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierFlowIn   += sum(model.carrierFlow[tech, edge, elementTimeStep]
-                            - model.carrierLoss[tech, edge, elementTimeStep] for edge in setEdgesIn) 
-            carrierFlowOut  += sum(model.carrierFlow[tech, edge, elementTimeStep] for edge in setEdgesOut) 
+            carrierFlowIn   += sum(model.carrierFlow[tech, edge, time]
+                            - model.carrierLoss[tech, edge, time] for edge in setEdgesIn)
+            carrierFlowOut  += sum(model.carrierFlow[tech, edge, time] for edge in setEdgesOut)
     # carrier flow storage technologies
     carrierFlowDischarge, carrierFlowCharge = 0, 0
     for tech in model.setStorageTechnologies:
         if carrier in model.setReferenceCarriers[tech]:
-            elementTimeStep         = EnergySystem.encodeTimeStep(tech,baseTimeStep,"operation")
-            carrierFlowDischarge    += model.carrierFlowDischarge[tech,node,elementTimeStep]
-            carrierFlowCharge       += model.carrierFlowCharge[tech,node,elementTimeStep]
+            carrierFlowDischarge    += model.carrierFlowDischarge[tech,node,time]
+            carrierFlowCharge       += model.carrierFlowCharge[tech,node,time]
     # carrier import, demand and export
     carrierImport, carrierExport, carrierDemand = 0, 0, 0
-    elementTimeStep         = EnergySystem.encodeTimeStep(carrier,baseTimeStep)
-    carrierImport           = model.importCarrierFlow[carrier, node, elementTimeStep]
-    carrierExport           = model.exportCarrierFlow[carrier, node, elementTimeStep]
-    carrierDemand           = params.demandCarrier[carrier, node, elementTimeStep]
+    carrierImport           = model.importCarrierFlow[carrier, node, time]
+    carrierExport           = model.exportCarrierFlow[carrier, node, time]
+    carrierDemand           = params.demandCarrier[carrier, node, time]
     endogenousCarrierDemand = 0
 
     # check if carrier is conditioning carrier:
     if carrier in model.setConditioningCarriers:
         # check if carrier is parentCarrier of a conditioningCarrier
         if carrier in model.setConditioningCarrierParents:
-            endogenousCarrierDemand = - model.endogenousCarrierDemand[carrier, node, elementTimeStep]
+            endogenousCarrierDemand = - model.endogenousCarrierDemand[carrier, node, time]
         else:
-            endogenousCarrierDemand = model.endogenousCarrierDemand[carrier, node, elementTimeStep]
+            endogenousCarrierDemand = model.endogenousCarrierDemand[carrier, node, time]
 
     return (
         # conversion technologies
