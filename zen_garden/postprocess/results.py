@@ -133,7 +133,7 @@ class Postprocess:
                 data = [vals]
             # if the returned dict is emtpy we create a nan value
             elif len(vals) == 0:
-                if len(indexNames)>1:
+                if len(indexList)>1:
                     indices = pd.MultiIndex(levels=[[]]*len(indexNames),codes=[[]]*len(indexNames),names=indexNames)
                 else:
                     indices = pd.Index(data=[],name=indexNames)
@@ -189,7 +189,7 @@ class Postprocess:
             values = [getattr(var[index], "value", None) for index in indices]
 
             # create a multi index if necessary
-            if isinstance(indices[0], tuple):
+            if len(indices)>=1 and isinstance(indices[0], tuple):
                 if len(indexList) == len(indices[0]):
                     indices = pd.MultiIndex.from_tuples(indices, names=indexNames)
                 else:

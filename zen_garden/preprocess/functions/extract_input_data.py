@@ -50,8 +50,8 @@ class DataInput():
         # generic time steps
         if not timeSteps:
             timeSteps = self.energySystem.setBaseTimeSteps
-        # if time steps are the yearly time steps
-        elif timeSteps == self.energySystem.setBaseTimeStepsYearly:
+        # if time steps are the yearly base time steps
+        elif timeSteps is self.energySystem.setBaseTimeStepsYearly:
             self.extractYearlyVariation(fileName,indexSets,column)
 
         # if existing capacities and existing capacities not used
