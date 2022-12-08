@@ -20,7 +20,7 @@ import zlib
 import os
 
 from ..model.objects.energy_system import EnergySystem
-from ..model.objects.parameter import Parameter
+from ..model.objects.component import Parameter,Variable,Constraint
 from ..utils import RedirectStdStreams
 
 class Postprocess:
@@ -39,11 +39,13 @@ class Postprocess:
         self.analysis = model.analysis
         self.solver = model.solver
         self.opt = model.opt
-        self.params = Parameter.getParameterObject()
+        self.params         = Parameter.getComponentObject()
+        self.vars           = Variable.getComponentObject()
+        self.constraints    = Constraint.getComponentObject()
 
         # get name or directory
         self.modelName = modelName
-        self.nameDir = pathlib.Path(self.system["folderOutput"]).joinpath(self.modelName)
+        self.nameDir = pathlib.Path(self.analysis["folderOutput"]).joinpath(self.modelName)
 
         # deal with the subfolder
         self.subfolder = subfolder
@@ -53,12 +55,11 @@ class Postprocess:
         # create the output directory
         os.makedirs(self.nameDir, exist_ok=True)
 
-
         # get the compression param
-        self.compress = self.system["compressOutput"]
+        self.compress = self.analysis["compressOutput"]
 
         # save the pyomo yml
-        if self.system["writeResultsYML"]:
+        if self.analysis["writeResultsYML"]:
             with RedirectStdStreams(open(os.path.join(self.nameDir, "results.yml"), "w+")):
                 model.results.write()
 
@@ -94,9 +95,9 @@ class Postprocess:
 
         # if the string is larger than the max output size we compress anyway
         force_compression = False
-        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.system["maxOutputSizeMB"]:
+        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.analysis["maxOutputSizeMB"]:
             print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
-                  f"{self.system['maxOutputSizeMB']}MB, compressing...")
+                  f"{self.analysis['maxOutputSizeMB']}MB, compressing...")
             force_compression = True
 
         if self.compress or force_compression:
@@ -115,32 +116,51 @@ class Postprocess:
 
         # dataframe serialization
         data_frames = {}
-        for param in self.params.parameterList:
+        for param in self.params.docs.keys():
             # get the values
             vals = getattr(self.params, param)
+            doc = self.params.docs[param]
+            indexList = self.getIndexList(doc)
+            if len(indexList) == 0:
+                indexNames = None
+            elif len(indexList) == 1:
+                indexNames = indexList[0]
+            else:
+                indexNames = indexList
             # create a dictionary if necessary
             if not isinstance(vals, dict):
-                indices = [np.nan]
+                indices = pd.Index(data=[0],name=indexNames)
                 data = [vals]
             # if the returned dict is emtpy we create a nan value
             elif len(vals) == 0:
-                indices = [np.nan]
-                data = [None]
+                if len(indexList)>1:
+                    indices = pd.MultiIndex(levels=[[]]*len(indexNames),codes=[[]]*len(indexNames),names=indexNames)
+                else:
+                    indices = pd.Index(data=[],name=indexNames)
+                data = []
             # we read out everything
             else:
                 indices = list(vals.keys())
                 data = list(vals.values())
 
                 # create a multi index if necessary
-                if indices != list() and isinstance(indices[0], tuple):
-                    indices = pd.MultiIndex.from_tuples(indices)
+                if len(indices)>=1 and isinstance(indices[0],tuple):
+                    if len(indexList) == len(indices[0]):
+                        indices = pd.MultiIndex.from_tuples(indices,names=indexNames)
+                    else:
+                        indices = pd.MultiIndex.from_tuples(indices)
+                else:
+                    if len(indexList) == 1:
+                        indices = pd.Index(data=indices,name=indexNames)
+                    else:
+                        indices = pd.Index(data=indices)
 
             # create dataframe
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
 
             # update dict
             data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                  "docstring": self.params.docs[param]}
+                                  "docstring": doc}
 
         # write to json
         self.write_file(self.nameDir.joinpath('paramDict'), data_frames)
@@ -152,20 +172,40 @@ class Postprocess:
         # dataframe serialization
         data_frames = {}
         for var in self.model.component_objects(pe.Var, active=True):
+            if var.name in self.vars.docs:
+                doc = self.vars.docs[var.name]
+                indexList = self.getIndexList(doc)
+                if len(indexList) == 0:
+                    indexNames = None
+                elif len(indexList) == 1:
+                    indexNames = indexList[0]
+                else:
+                    indexNames = indexList
+            else:
+                indexList = []
+                doc = None
             # get indices and values
             indices = [index for index in var]
             values = [getattr(var[index], "value", None) for index in indices]
 
-            # create a multiindex if necessary
-            if isinstance(indices[0], tuple):
-                indices = pd.MultiIndex.from_tuples(indices)
+            # create a multi index if necessary
+            if len(indices)>=1 and isinstance(indices[0], tuple):
+                if len(indexList) == len(indices[0]):
+                    indices = pd.MultiIndex.from_tuples(indices, names=indexNames)
+                else:
+                    indices = pd.MultiIndex.from_tuples(indices)
+            else:
+                if len(indexList) == 1:
+                    indices = pd.Index(data=indices, name=indexNames)
+                else:
+                    indices = pd.Index(data=indices)
 
             # create dataframe
             df = pd.DataFrame(data=values, columns=["value"], index=indices)
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
             data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                     "docstring": var.doc}
+                                     "docstring": doc}
 
         self.write_file(self.nameDir.joinpath('varDict'), data_frames)
 
@@ -269,6 +309,22 @@ class Postprocess:
 
         return dictionary
 
+    def getIndexList(self,doc):
+        """ get index list from docstring """
+        splitDoc = doc.split(";")
+        for string in splitDoc:
+            if "dims" in string:
+                break
+        string = string.replace("dims:","")
+        indexList = string.split(",")
+        indexListFinal = []
+        for index in indexList:
+            if index in self.analysis["headerDataInputs"].keys():
+                indexListFinal.append(self.analysis["headerDataInputs"][index])
+            else:
+                pass
+                # indexListFinal.append(index)
+        return indexListFinal
 
 class Results(object):
     """
@@ -309,16 +365,16 @@ class Results(object):
             self.scenarios = [None]
         if self.results["system"]["useRollingHorizon"]:
             self.has_MF = True
-            self.myopic_forsights = [f"MF_{stepHorizon}" for stepHorizon in self.years]
+            self.mf = [f"MF_{stepHorizon}" for stepHorizon in self.years]
         else:
             self.has_MF = False
-            self.myopic_forsights = [None]
+            self.mf = [None]
 
         # cycle through the dirs
         for scenario in self.scenarios:
             # init dict
             self.results[scenario] = {}
-            for mf in self.myopic_forsights:
+            for mf in self.mf:
                 # init dict
                 self.results[scenario][mf] = {}
 
@@ -347,7 +403,8 @@ class Results(object):
                     self.results[scenario][mf]["optdict"] = self.load_opt(current_path)
 
         # load the time step duration
-        self.timeStepDuration = self.loadTimeStepDuration()
+        self.timeStepOperationalDuration = self.loadTimeStepOperationDuration()
+        self.timeStepStorageDuration = self.loadTimeStepStorageDuration()
 
     @classmethod
     def _read_file(cls, name):
@@ -537,7 +594,7 @@ class Results(object):
 
         return dictionary
 
-    def get_dataframe(self, name, isStorage=False, scenario=None, to_csv=None, csv_kwargs=None):
+    def get_df(self, name, isStorage=False, scenario=None, to_csv=None, csv_kwargs=None):
         """
         Extracts the dataframe from the results
         :param name: The name of the dataframe to extract
@@ -570,7 +627,7 @@ class Results(object):
                 _mf_data = {}
 
                 # cycle through all MFs
-                for year, mf in enumerate(self.myopic_forsights):
+                for year, mf in enumerate(self.mf):
                     _var = self.results[scenario][mf]["pars_and_vars"][name]["dataframe"]
 
                     # single element that is not a year
@@ -679,13 +736,19 @@ class Results(object):
                     _data[scenario].to_csv(f"{fname}_{scenario}.csv", **csv_kwargs)
             return _data
 
-    def loadTimeStepDuration(self):
+    def loadTimeStepOperationDuration(self):
         """
-        Loads duration of time steps
+        Loads duration of operational time steps
         """
-        return self.get_dataframe("timeStepsOperationDuration")
+        return self.get_df("timeStepsOperationDuration")
 
-    def calculateFullTimeSeries(self, component, elementName=None, scenario=None):
+    def loadTimeStepStorageDuration(self):
+        """
+        Loads duration of operational time steps
+        """
+        return self.get_df("timeStepsStorageLevelDuration")
+
+    def getFullTS(self, component, elementName=None, year=None, scenario=None):
         """
         Calculates the full timeseries for a given element
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -693,80 +756,82 @@ class Results(object):
         :param scenario: The scenario for with the component should be extracted (only if needed)
         :return: A dataframe containing the full timeseries of the element
         """
+        # extract the data
+        component_name, component_data = self._get_component_data(component, scenario)
 
-        # set the timesteps
-        EnergySystem.setSequenceTimeStepsDict(self.results["dictSequenceTimeSteps"])
+        ts_type = self._get_ts_type(component_data, component_name)
 
-        # readout the component if necessary
-        if isinstance(component, str):
-            # make sure we have a scenario if it is needed
-            if self.has_scenarios:
-                if scenario is None:
-                    raise ValueError("You need to specify a scenario!")
+        if ts_type == "yearly":
+            # component indexed by yearly component
+            if year is not None:
+                if year in component_data.columns:
+                    return component_data[year]
                 else:
-                    component = self.get_dataframe(component)[scenario]
+                    print(f"WARNING: year {year} not in years {component_data.columns}. Return component values for all years")
+                    return component_data
             else:
-                component = self.get_dataframe(component)[scenario]
-
-        # some checks
-        assert isinstance(component, pd.Series), "inputDf is not pd.Series"
-        inputDf = component.unstack()
-        assert elementName or inputDf.index.get_level_values(0).isin(self.results["system"]["setConversionTechnologies"]).all(), \
-            "the first index of inputDf contains values that are not conversion technologies and no manual element specified"
+                return component_data
+        elif ts_type == "operational":
+            _storageString = ""
+        else:
+            _storageString = "StorageLevel"
 
         # calculate the full time series
         _outputTemp = {}
-        for row in inputDf.index:
+        for row in component_data.index:
             # we know the name
             if elementName:
-                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(elementName)
+                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(elementName+_storageString)
             # we extract the name
             else:
-                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(row[0])
+                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(row[0]+_storageString)
 
             # throw together
-            _sequenceTimeSteps = _sequenceTimeSteps[np.in1d(_sequenceTimeSteps,list(inputDf.columns))]
-            _outputTemp[row] = inputDf.loc[row,_sequenceTimeSteps].reset_index(drop=True)
+            _sequenceTimeSteps = _sequenceTimeSteps[np.in1d(_sequenceTimeSteps,list(component_data.columns))]
+            _outputTemp[row] = component_data.loc[row,_sequenceTimeSteps].reset_index(drop=True)
+            if year is not None:
+                if year in self.years:
+                    hours_of_year = self._get_hours_of_year(year)
+                    _outputTemp[row] = (_outputTemp[row][hours_of_year]).reset_index(drop=True)
+                else:
+                    print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
 
         # concat and return
-        outputDf = pd.concat(_outputTemp,axis=0,keys = _outputTemp.keys())
+        outputDf = pd.concat(_outputTemp,axis=0,keys = _outputTemp.keys()).unstack()
         return outputDf
 
-    def calculateTotalValue(self, component, elementName=None, year=None, scenario=None):
+    def getTotal(self, component, elementName=None, year=None, scenario=None):
         """
         Calculates the total Value of a component
-        :param component: Either a dataframe as returned from <get_dataframe> or the name of the component
+        :param component: Either a dataframe as returned from <get_df> or the name of the component
         :param elementName: The element name to calculate the value for, defaults to all elements
         :param year: The year to calculate the value for, defaults to all years
         :param scenario: The scenario to calculate the total value for
         :return: A dataframe containing the total value with the specified paramters
         """
-
-        # extract the right timestep duration
-        if self.has_scenarios:
-            if scenario is None:
-                raise ValueError("Please specify a scenario!")
-            else:
-                timeStepDuration = self.timeStepDuration[scenario].unstack()
-        else:
-            timeStepDuration = self.timeStepDuration.unstack()
-
         # extract the data
-        if isinstance(component, str):
-            component_name = component
-            # only use the data from one scenario if specified
-            if scenario is not None:
-                component_data = self.get_dataframe(component)[scenario].unstack()
-            else:
-                component_data = self.get_dataframe(component).unstack()
-        elif isinstance(component, pd.Series):
-            component_name = component.name
-            component_data = component.unstack()
+        component_name,component_data = self._get_component_data(component,scenario)
 
-        # check
-        assert (isinstance(component_data, pd.DataFrame) and component_data.shape[1] == timeStepDuration.shape[1]) \
-               or len(component_data) == timeStepDuration.shape[1], \
-            f"Lengths of {component_name} and the operational time step duration do not match"
+        ts_type = self._get_ts_type(component_data,component_name)
+
+        if ts_type == "yearly":
+            if year is not None:
+                if year in component_data.columns:
+                    return component_data[year]
+                else:
+                    print(f"WARNING: year {year} not in years {component_data.columns}. Return total value for all years")
+                    return component_data.sum(axis=1)
+            else:
+                return component_data.sum(axis=1)
+        elif ts_type == "operational":
+            _isStorage = False
+            _storageString = ""
+        else:
+            _isStorage = True
+            _storageString = "StorageLevel"
+
+        # extract time step duration
+        timeStepDuration = self._get_ts_duration(scenario,is_storage=_isStorage)
 
         # If we have an element name
         if elementName is not None:
@@ -779,7 +844,7 @@ class Results(object):
 
             if year is not None:
                 # only for the given year
-                timeStepsYear = EnergySystem.encodeTimeStep(elementName,
+                timeStepsYear = EnergySystem.encodeTimeStep(elementName+_storageString,
                                                             EnergySystem.decodeTimeStep(None, year, "yearly"),
                                                             yearly=True)
                 totalValue = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
@@ -793,7 +858,7 @@ class Results(object):
             if year is not None:
                 # set a proxy for the element name
                 elementName_proxy = component_data.index.get_level_values(level=0)[0]
-                timeStepsYear = EnergySystem.encodeTimeStep(elementName_proxy,
+                timeStepsYear = EnergySystem.encodeTimeStep(elementName_proxy+_storageString,
                                                             EnergySystem.decodeTimeStep(None, year, "yearly"),
                                                             yearly=True)
                 totalValue = totalValue[timeStepsYear].sum(axis=1)
@@ -801,5 +866,64 @@ class Results(object):
                 totalValue = totalValue.sum(axis=1)
         return totalValue
 
+    def _get_ts_duration(self, scenario=None, is_storage = False):
+        """ extracts the time steps duration """
+        # extract the right timestep duration
+        if self.has_scenarios:
+            if scenario is None:
+                raise ValueError("Please specify a scenario!")
+            else:
+                if is_storage:
+                    timeStepDuration = self.timeStepStorageDuration[scenario].unstack()
+                else:
+                    timeStepDuration = self.timeStepOperationalDuration[scenario].unstack()
+        else:
+            if is_storage:
+                timeStepDuration = self.timeStepStorageDuration.unstack()
+            else:
+                timeStepDuration = self.timeStepOperationalDuration.unstack()
+        return timeStepDuration
+
+    def _get_component_data(self, component, scenario=None):
+        """ extracts the data for a component"""
+        # extract the data
+        if isinstance(component, str):
+            component_name = component
+            # only use the data from one scenario if specified
+            if scenario is not None:
+                component_data = self.get_df(component)[scenario].unstack()
+            else:
+                component_data = self.get_df(component).unstack()
+        elif isinstance(component, pd.Series):
+            # set the timesteps
+            EnergySystem.setSequenceTimeStepsDict(self.results["dictSequenceTimeSteps"])
+            component_name = component.name
+            component_data = component.unstack()
+        else:
+            raise TypeError(f"Type {type(component).__name__} of input is not supported.")
+
+        return component_name,component_data
+
+    def _get_ts_type(self, component_data,component_name):
+        """ get time step type (operational, storage, yearly) """
+        _headerOperational = self.results["analysis"]["headerDataInputs"]["setTimeStepsOperation"]
+        _headerStorage = self.results["analysis"]["headerDataInputs"]["setTimeStepsStorageLevel"]
+        _headerYearly = self.results["analysis"]["headerDataInputs"]["setTimeStepsYearly"]
+        if component_data.columns.name == _headerOperational:
+            return "operational"
+        elif component_data.columns.name == _headerStorage:
+            return "storage"
+        elif component_data.columns.name == _headerYearly:
+            return "yearly"
+        else:
+            raise KeyError(f"Column index name of '{component_name}' ({component_data.columns.name}) is unknown. Should be (operational, storage, yearly)")
+
+    def _get_hours_of_year(self,year):
+        """ get total hours of year """
+        _total_hours_per_year = self.results["system"]["unaggregatedTimeStepsPerYear"]
+        _hours_of_year = list(range(year*_total_hours_per_year,(year+1)*_total_hours_per_year))
+        return _hours_of_year
+
     def __str__(self):
         return f"Results of '{self.path}'"
+

@@ -27,7 +27,7 @@ class TimeSeriesAggregation():
         self.system                 = EnergySystem.getSystem()
         self.analysis               = EnergySystem.getAnalysis()
         self.energySystem           = EnergySystem.getEnergySystem()
-        self.headerSetTimeSteps     = self.analysis['headerDataInputs']["setTimeSteps"][0]
+        self.headerSetTimeSteps     = self.analysis['headerDataInputs']["setTimeSteps"]
         # if setTimeSteps as input (because already aggregated), use this as base time step, otherwise self.setBaseTimeSteps
         self.setBaseTimeSteps       = self.energySystem.setBaseTimeStepsYearly
         self.numberTypicalPeriods   = min(self.system["unaggregatedTimeStepsPerYear"], self.system["aggregatedTimeStepsPerYear"])
@@ -249,7 +249,7 @@ class TimeSeriesAggregation():
         :param element: element of the optimization
         :param setTimeStepsOperation: new time steps operation
         :param sequenceTimeSteps: new order of operational time steps """
-        headerSetTimeSteps      = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
+        headerSetTimeSteps      = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"]
         oldSequenceTimeSteps    = element.sequenceTimeSteps
         _idxOld2New             = np.array([np.unique(oldSequenceTimeSteps[np.argwhere(idx == sequenceTimeSteps)]) for idx in setTimeStepsOperation]).squeeze()
         for timeSeries in element.rawTimeSeries:
@@ -283,8 +283,8 @@ class TimeSeriesAggregation():
         :return multipliedTimeSeries: timeSeries multiplied with yearly variation """
         if hasattr(element.dataInput, timeSeriesName + "YearlyVariation"):
             _yearlyVariation            = getattr(element.dataInput, timeSeriesName + "YearlyVariation")
-            headerSetTimeSteps          = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
-            headerSetTimeStepsYearly    = EnergySystem.getAnalysis()['headerDataInputs']["setTimeStepsYearly"][0]
+            headerSetTimeSteps          = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"]
+            headerSetTimeStepsYearly    = EnergySystem.getAnalysis()['headerDataInputs']["setTimeStepsYearly"]
             _timeSeries                 = timeSeries.unstack(headerSetTimeSteps)
             _yearlyVariation            = _yearlyVariation.unstack(headerSetTimeStepsYearly)
             # if only one unique value
@@ -416,6 +416,6 @@ class TimeSeriesAggregation():
             # calculate time steps of storage levels
             element.calculateTimeStepsStorageLevel(conductedTimeSeriesAggregation = timeSeriesAggregation.conductedTimeSeriesAggregation)
         # calculate new time steps of energy balance
-        for element in Carrier.getAllElements():
-            cls.calculateTimeStepsEnergyBalance(element)
+        # for element in Carrier.getAllElements():
+            # cls.calculateTimeStepsEnergyBalance(element)
 
