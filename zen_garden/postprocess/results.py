@@ -762,6 +762,8 @@ class Results(object):
         ts_type = self._get_ts_type(component_data, component_name)
 
         if ts_type == "yearly":
+            if elementName is not None:
+                component_data = component_data.loc[elementName]
             # component indexed by yearly component
             if year is not None:
                 if year in component_data.columns:
@@ -800,7 +802,7 @@ class Results(object):
         outputDf = pd.concat(_outputTemp,axis=0,keys = _outputTemp.keys()).unstack()
         return outputDf
 
-    def getTotal(self, component, elementName=None, year=None, scenario=None):
+    def getTotal(self, component, elementName=None, year=None, scenario=None,split_years = True):
         """
         Calculates the total Value of a component
         :param component: Either a dataframe as returned from <get_df> or the name of the component
@@ -815,6 +817,8 @@ class Results(object):
         ts_type = self._get_ts_type(component_data,component_name)
 
         if ts_type == "yearly":
+            if elementName is not None:
+                component_data = component_data.loc[elementName]
             if year is not None:
                 if year in component_data.columns:
                     return component_data[year]
@@ -822,7 +826,10 @@ class Results(object):
                     print(f"WARNING: year {year} not in years {component_data.columns}. Return total value for all years")
                     return component_data.sum(axis=1)
             else:
-                return component_data.sum(axis=1)
+                if split_years:
+                    return component_data
+                else:
+                    return component_data.sum(axis=1)
         elif ts_type == "operational":
             _isStorage = False
             _storageString = ""
@@ -844,13 +851,19 @@ class Results(object):
 
             if year is not None:
                 # only for the given year
-                timeStepsYear = EnergySystem.encodeTimeStep(elementName+_storageString,
-                                                            EnergySystem.decodeTimeStep(None, year, "yearly"),
-                                                            yearly=True)
+                timeStepsYear = EnergySystem.encodeTimeStep(elementName+_storageString,EnergySystem.decodeTimeStep(None, year, "yearly"),yearly=True)
                 totalValue = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
             else:
                 # for all years
-                totalValue = (component_data*timeStepDuration_ele).sum(axis=1)
+                if split_years:
+                    totalValueTemp = pd.DataFrame(index=component_data.index, columns=self.years)
+                    for yearTemp in self.years:
+                        # set a proxy for the element name
+                        timeStepsYear = EnergySystem.encodeTimeStep(elementName+_storageString,EnergySystem.decodeTimeStep(None, yearTemp, "yearly"),yearly=True)
+                        totalValueTemp[yearTemp] = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
+                    totalValue = totalValueTemp
+                else:
+                    totalValue = (component_data*timeStepDuration_ele).sum(axis=1)
 
         # if we do not have an element name
         else:
@@ -863,7 +876,16 @@ class Results(object):
                                                             yearly=True)
                 totalValue = totalValue[timeStepsYear].sum(axis=1)
             else:
-                totalValue = totalValue.sum(axis=1)
+                if split_years:
+                    totalValueTemp = pd.DataFrame(index=totalValue.index,columns=self.years)
+                    for yearTemp in self.years:
+                        # set a proxy for the element name
+                        elementName_proxy = component_data.index.get_level_values(level=0)[0]
+                        timeStepsYear = EnergySystem.encodeTimeStep(elementName_proxy + _storageString,EnergySystem.decodeTimeStep(None, yearTemp, "yearly"),yearly=True)
+                        totalValueTemp[yearTemp] = totalValue[timeStepsYear].sum(axis=1)
+                    totalValue = totalValueTemp
+                else:
+                    totalValue = totalValue.sum(axis=1)
         return totalValue
 
     def _get_ts_duration(self, scenario=None, is_storage = False):
