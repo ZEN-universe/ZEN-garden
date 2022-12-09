@@ -18,83 +18,83 @@ from scipy.stats import linregress
 
 class DataInput():
 
-    def __init__(self,element,system,analysis,solver,energySystem,unitHandling):
+    def __init__(self,element,system,analysis,solver,energy_system,unitHandling):
         """ data input object to extract input data
         :param element: element for which data is extracted
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
         :param solver: dictionary defining the solver 
-        :param energySystem: instance of class <EnergySystem> to define energySystem
+        :param energy_system: instance of class <EnergySystem> to define energy_system
         :param unitHandling: instance of class <UnitHandling> to convert units """
         self.element        = element
         self.system         = system
         self.analysis       = analysis
         self.solver         = solver
-        self.energySystem   = energySystem
+        self.energy_system   = energy_system
         self.unitHandling   = unitHandling
         # extract folder path
         self.folderPath = getattr(self.element,"inputPath")
 
         # get names of indices
-        # self.indexNames     = {indexName: self.analysis['headerDataInputs'][indexName][0] for indexName in self.analysis['headerDataInputs']}
-        self.indexNames     = self.analysis['headerDataInputs']
+        # self.index_names     = {index_name: self.analysis['headerDataInputs'][index_name][0] for index_name in self.analysis['headerDataInputs']}
+        self.index_names     = self.analysis['headerDataInputs']
 
-    def extractInputData(self,fileName,indexSets,column=None,timeSteps=None,scenario=""):
+    def extract_input_data(self,file_name,index_sets,column=None,time_steps=None,scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param fileName: name of selected file.
-        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param file_name: name of selected file.
+        :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
-        :param timeSteps: specific timeSteps of element
+        :param time_steps: specific time_steps of element
         :return dataDict: dictionary with attribute values """
 
         # generic time steps
-        if not timeSteps:
-            timeSteps = self.energySystem.setBaseTimeSteps
+        if not time_steps:
+            time_steps = self.energy_system.set_base_time_steps
         # if time steps are the yearly base time steps
-        elif timeSteps is self.energySystem.setBaseTimeStepsYearly:
-            self.extractYearlyVariation(fileName,indexSets,column)
+        elif time_steps is self.energy_system.set_base_time_steps_yearly:
+            self.extractYearlyVariation(file_name,index_sets,column)
 
         # if existing capacities and existing capacities not used
-        if (fileName == "existingCapacity" or fileName == "existingCapacityEnergy") and not self.analysis["useExistingCapacities"]:
-            dfOutput,*_ = self.createDefaultOutput(indexSets,column,fileName= fileName,timeSteps=timeSteps,manualDefaultValue=0,scenario=scenario)
+        if (file_name == "existingCapacity" or file_name == "existingCapacityEnergy") and not self.analysis["useExistingCapacities"]:
+            dfOutput,*_ = self.createDefaultOutput(index_sets,column,file_name= file_name,time_steps=time_steps,manualDefaultValue=0,scenario=scenario)
             return dfOutput
         else:
-            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(indexSets,column,fileName =fileName, timeSteps= timeSteps,scenario=scenario)
+            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(index_sets,column,file_name =file_name, time_steps= time_steps,scenario=scenario)
         # set defaultName
         if column:
             defaultName = column
         else:
-            defaultName = fileName
+            defaultName = file_name
         # read input file
-        dfInput = self.readInputData(fileName+scenario)
+        dfInput = self.readInputData(file_name+scenario)
 
         assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
         if dfInput is not None and not dfInput.empty:
-            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,fileName,indexNameList,column,defaultValue)
+            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,file_name,indexNameList,column,defaultValue)
         # save parameter values for analysis of numerics
-        self.saveValuesOfAttribute(dfOutput=dfOutput,fileName=defaultName)
+        self.saveValuesOfAttribute(dfOutput=dfOutput,file_name=defaultName)
         return dfOutput
 
-    def extractGeneralInputData(self,dfInput,dfOutput,fileName,indexNameList,column,defaultValue):
+    def extractGeneralInputData(self,dfInput,dfOutput,file_name,indexNameList,column,defaultValue):
         """ fills dfOutput with data from dfInput
         :param dfInput: raw input dataframe
         :param dfOutput: empty output dataframe, only filled with defaultValue 
-        :param fileName: name of selected file
+        :param file_name: name of selected file
         :param indexNameList: list of name of indices
         :param column: select specific column
         :param defaultValue: default for dataframe
         :return dfOutput: filled output dataframe """
 
         # select and drop scenario
-        assert dfInput.columns is not None, f"Input file '{fileName}' has no columns"
-        assert self.indexNames["setScenarios"] not in dfInput.columns, f"the index '{self.indexNames['setScenarios']}' is depreciated, but still found in input file '{fileName}'"
+        assert dfInput.columns is not None, f"Input file '{file_name}' has no columns"
+        assert self.index_names["setScenarios"] not in dfInput.columns, f"the index '{self.index_names['setScenarios']}' is depreciated, but still found in input file '{file_name}'"
         # set index by indexNameList
         missingIndex = list(set(indexNameList) - set(indexNameList).intersection(set(dfInput.columns)))
-        assert len(missingIndex) <= 1, f"More than one the requested index sets ({missingIndex}) are missing from input file for {fileName}"
+        assert len(missingIndex) <= 1, f"More than one the requested index sets ({missingIndex}) are missing from input file for {file_name}"
 
         # no indices missing
         if len(missingIndex) == 0:
-            dfInput = DataInput.extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName)
+            dfInput = DataInput.extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,file_name)
         else:
             missingIndex = missingIndex[0]
             # check if special case of existing Technology
@@ -102,14 +102,14 @@ class DataInput():
                 if column:
                     defaultName = column
                 else:
-                    defaultName = fileName
+                    defaultName = file_name
                 dfOutput = DataInput.extractFromInputForExistingCapacities(dfInput,dfOutput,indexNameList,defaultName,missingIndex)
                 if isinstance(defaultValue,dict):
                     dfOutput = dfOutput * defaultValue["multiplier"]
                 return dfOutput
             # index missing
             else:
-                dfInput = DataInput.extractFromInputWithMissingIndex(dfInput,dfOutput,copy.deepcopy(indexNameList),column,fileName,missingIndex)
+                dfInput = DataInput.extractFromInputWithMissingIndex(dfInput,dfOutput,copy.deepcopy(indexNameList),column,file_name,missingIndex)
 
         # apply multiplier to input data
         dfInput     = dfInput * defaultValue["multiplier"]
@@ -125,7 +125,7 @@ class DataInput():
                 indexMultiIndex     = pd.MultiIndex.from_product([indexList], names=[dfInput.index.name])
             dfInput                 = pd.Series(index=indexMultiIndex, data=dfInput.to_list())
         commonIndex                 = dfOutput.index.intersection(dfInput.index)
-        assert defaultValue is not None or len(commonIndex) == len(dfOutput.index), f"Input for {fileName} does not provide entire dataset and no default given in attributes.csv"
+        assert defaultValue is not None or len(commonIndex) == len(dfOutput.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.csv"
         dfOutput.loc[commonIndex]   = dfInput.loc[commonIndex]
         return dfOutput
 
@@ -187,33 +187,33 @@ class DataInput():
             attributeName = attributeName + "Default"
         return attributeName
 
-    def extractYearlyVariation(self,fileName,indexSets,column):
+    def extractYearlyVariation(self,file_name,index_sets,column):
         """ reads the yearly variation of a time dependent quantity
         :param self.folderPath: path to input files
-        :param fileName: name of selected file.
-        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param file_name: name of selected file.
+        :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
         """
         # remove intrayearly time steps from index set and add interyearly time steps
-        _indexSets = copy.deepcopy(indexSets)
-        _indexSets.remove("setTimeSteps")
-        _indexSets.append("setTimeStepsYearly")
-        # add YearlyVariation to fileName
-        fileName  += "YearlyVariation"
+        _index_sets = copy.deepcopy(index_sets)
+        _index_sets.remove("setTimeSteps")
+        _index_sets.append("set_time_steps_yearly")
+        # add YearlyVariation to file_name
+        file_name  += "YearlyVariation"
         # read input data
-        dfInput         = self.readInputData(fileName)
+        dfInput         = self.readInputData(file_name)
         if dfInput is not None:
             if column is not None and column not in dfInput:
                 return
-            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(_indexSets,column,fileName = fileName, manualDefaultValue=1)
+            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(_index_sets,column,file_name = file_name, manualDefaultValue=1)
             # set yearlyVariation attribute to dfOutput
             if column:
                 _selectedColumn         = column
                 _nameYearlyVariation    = column+"YearlyVariation"
             else:
                 _selectedColumn         = None
-                _nameYearlyVariation    = fileName
-            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, _selectedColumn,defaultValue)
+                _nameYearlyVariation    = file_name
+            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, file_name, indexNameList, _selectedColumn,defaultValue)
             setattr(self,_nameYearlyVariation,dfOutput)
 
     def extractLocations(self,extractNodes = True):
@@ -237,7 +237,7 @@ class DataInput():
         else:
             setEdgesInput = self.readInputData("setEdges")
             if setEdgesInput is not None:
-                setEdges        = setEdgesInput[(setEdgesInput["nodeFrom"].isin(self.energySystem.setNodes)) & (setEdgesInput["nodeTo"].isin(self.energySystem.setNodes))]
+                setEdges        = setEdgesInput[(setEdgesInput["nodeFrom"].isin(self.energy_system.setNodes)) & (setEdgesInput["nodeTo"].isin(self.energy_system.setNodes))]
                 setEdges        = setEdges.set_index("edge")
                 return setEdges
             else:
@@ -285,10 +285,10 @@ class DataInput():
 
         return setExistingTechnologies
 
-    def extractLifetimeExistingTechnology(self, fileName, indexSets):
+    def extractLifetimeExistingTechnology(self, file_name, index_sets):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param fileName:  name of selected file
-        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param file_name:  name of selected file
+        :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return existingLifetimeDict: return existing capacity and existing lifetime """
         column   = "yearConstruction"
         dfOutput = pd.Series(index=self.element.existingCapacity.index,data=0)
@@ -296,11 +296,11 @@ class DataInput():
         if not self.analysis["useExistingCapacities"]:
             return dfOutput
 
-        if f"{fileName}.csv" in os.listdir(self.folderPath):
-            indexList, indexNameList = self.constructIndexList(indexSets, None)
-            dfInput                  = self.readInputData( fileName)
+        if f"{file_name}.csv" in os.listdir(self.folderPath):
+            indexList, indexNameList = self.constructIndexList(index_sets, None)
+            dfInput                  = self.readInputData( file_name)
             # fill output dataframe
-            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue = 0)
+            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, file_name, indexNameList, column, defaultValue = 0)
             # get reference year
             referenceYear            = self.system["referenceYear"]
             # calculate remaining lifetime
@@ -319,8 +319,8 @@ class DataInput():
             _attributeName  = "converEfficiency"
         else:
             raise KeyError(f"variable type {variableType} unknown.")
-        _indexSets = ["setNodes", "setTimeSteps"]
-        _timeSteps = self.energySystem.setTimeStepsYearly
+        _index_sets = ["setNodes", "setTimeSteps"]
+        _time_steps = self.energy_system.set_time_steps_yearly
         # import all input data
         dfInputNonlinear    = self.readPWAFiles(variableType, fileType="nonlinear")
         dfInputBreakpoints  = self.readPWAFiles(variableType, fileType="breakpointsPWA")
@@ -369,7 +369,7 @@ class DataInput():
                     if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
                         # model as linear function
                         slopeLinReg = linearRegressObject.slope
-                        LinearDict[valueVariable] = self.createDefaultOutput(indexSets=_indexSets, column=column, timeSteps=_timeSteps,
+                        LinearDict[valueVariable] = self.createDefaultOutput(index_sets=_index_sets, column=column, time_steps=_time_steps,
                                                  manualDefaultValue=slopeLinReg)[0]
                     else:
                         # model as PWA function
@@ -403,7 +403,7 @@ class DataInput():
             isPWA = False
             LinearDict = {}
             if variableType == "Capex":
-                LinearDict["capex"] = self.extractInputData("capexSpecific", indexSets=_indexSets, timeSteps=_timeSteps)
+                LinearDict["capex"] = self.extract_input_data("capexSpecific", index_sets=_index_sets, time_steps=_time_steps)
                 return LinearDict,isPWA
             else:
                 _dependentCarrier = list(set(self.element.inputCarrier + self.element.outputCarrier).difference(self.element.referenceCarrier))
@@ -411,9 +411,9 @@ class DataInput():
                 if _dependentCarrier == []:
                     return None, isPWA
                 elif len(_dependentCarrier) == 1 and dfInputLinear is None:
-                    LinearDict[_dependentCarrier[0]] = self.extractInputData(_attributeName, indexSets=_indexSets, timeSteps=_timeSteps)
+                    LinearDict[_dependentCarrier[0]] = self.extract_input_data(_attributeName, index_sets=_index_sets, time_steps=_time_steps)
                 else:
-                    dfOutput,defaultValue,indexNameList = self.createDefaultOutput(_indexSets, None, timeSteps=_timeSteps, manualDefaultValue=1)
+                    dfOutput,defaultValue,indexNameList = self.createDefaultOutput(_index_sets, None, time_steps=_time_steps, manualDefaultValue=1)
                     assert (dfInputLinear is not None), f"input file for linearConverEfficiency could not be imported."
                     dfInputLinear = dfInputLinear.rename(columns={'year': 'time'})
                     for carrier in _dependentCarrier:
@@ -444,18 +444,18 @@ class DataInput():
             dfInput[columns]    = dfInput[columns] * dfInputMultiplier
         return dfInput
 
-    def createDefaultOutput(self,indexSets,column,fileName=None,timeSteps=None,manualDefaultValue = None,scenario = ""):
+    def createDefaultOutput(self,index_sets,column,file_name=None,time_steps=None,manualDefaultValue = None,scenario = ""):
         """ creates default output dataframe
-        :param fileName: name of selected file.
-        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param file_name: name of selected file.
+        :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
-        :param timeSteps: specific timeSteps of element
+        :param time_steps: specific time_steps of element
         :param scenario: investigated scenario
         :param manualDefaultValue: if given, use manualDefaultValue instead of searching for default value in attributes.csv"""
         # select index
-        indexList, indexNameList = self.constructIndexList(indexSets, timeSteps)
+        indexList, indexNameList = self.constructIndexList(index_sets, time_steps)
         # create pd.MultiIndex and select data
-        if indexSets:
+        if index_sets:
             indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
         else:
             indexMultiIndex = pd.Index([0])
@@ -467,7 +467,7 @@ class DataInput():
             if column:
                 defaultName = column
             else:
-                defaultName = fileName
+                defaultName = file_name
             defaultValue = self.extractAttributeData(defaultName,scenario=scenario)
 
         # create output Series filled with default value
@@ -479,30 +479,30 @@ class DataInput():
         self.saveUnitOfAttribute(defaultName,scenario)
         return dfOutput,defaultValue,indexNameList
 
-    def saveUnitOfAttribute(self,fileName,scenario=""):
+    def saveUnitOfAttribute(self,file_name,scenario=""):
         """ saves the unit of an attribute, converted to the base unit """
         # if numerics analyzed
         if self.solver["analyzeNumerics"]:
-            if fileName:
+            if file_name:
                 dfInput = self.readInputData("attributes" + scenario).set_index("index").squeeze(axis=1)
                 # get attribute
-                attributeName = self.adaptAttributeName(fileName,dfInput)
+                attributeName = self.adaptAttributeName(file_name,dfInput)
                 inputUnit = dfInput.loc[attributeName, "unit"]
-                self.unitHandling.setBaseUnitCombination(inputUnit=inputUnit,attribute=(self.element.name,fileName))
+                self.unitHandling.setBaseUnitCombination(inputUnit=inputUnit,attribute=(self.element.name,file_name))
 
-    def saveValuesOfAttribute(self,dfOutput,fileName):
+    def saveValuesOfAttribute(self,dfOutput,file_name):
         """ saves the values of an attribute """
         # if numerics analyzed
         if self.solver["analyzeNumerics"]:
-            if fileName:
+            if file_name:
                 dfOutputReduced = dfOutput[(dfOutput != 0) & (dfOutput.abs() != np.inf)]
                 if not dfOutputReduced.empty:
-                    self.unitHandling.setAttributeValues(dfOutput= dfOutputReduced,attribute=(self.element.name,fileName))
+                    self.unitHandling.setAttributeValues(dfOutput= dfOutputReduced,attribute=(self.element.name,file_name))
 
-    def constructIndexList(self,indexSets,timeSteps):
+    def constructIndexList(self,index_sets,time_steps):
         """ constructs index list from index sets and returns list of indices and list of index names
-        :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param timeSteps: specific timeSteps of element
+        :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param time_steps: specific time_steps of element
         :return indexList: list of indices
         :return indexNameList: list of name of indices
         """
@@ -510,34 +510,34 @@ class DataInput():
         indexNameList = []
 
         # add rest of indices
-        for index in indexSets:
-            indexNameList.append(self.indexNames[index])
-            if index == "setTimeSteps" and timeSteps:
-                indexList.append(timeSteps)
+        for index in index_sets:
+            indexNameList.append(self.index_names[index])
+            if index == "setTimeSteps" and time_steps:
+                indexList.append(time_steps)
             elif index == "setExistingTechnologies":
                 indexList.append(self.element.setExistingTechnologies)
             elif index in self.system:
                 indexList.append(self.system[index])
-            elif hasattr(self.energySystem,index):
-                indexList.append(getattr(self.energySystem,index))
+            elif hasattr(self.energy_system,index):
+                indexList.append(getattr(self.energy_system,index))
             else:
                 raise AttributeError(f"Index '{index}' cannot be found.")
         return indexList,indexNameList
 
-    def ifAttributeExists(self, fileName, column=None):
+    def ifAttributeExists(self, file_name, column=None):
         """ checks if default value or timeseries of an attribute exists in the input data
-        :param fileName: name of selected file
+        :param file_name: name of selected file
         :param column: select specific column
         """
         # check if default value exists
         if column:
             defaultName = column
         else:
-            defaultName = fileName
+            defaultName = file_name
         defaultValue = self.extractAttributeData(defaultName)
 
         if defaultValue is None or math.isnan(defaultValue["value"]): # if no default value exists or default value is nan
-            _dfInput = self.readInputData(fileName)
+            _dfInput = self.readInputData(file_name)
             return (_dfInput is not None)
         elif defaultValue and not math.isnan(defaultValue["value"]): # if default value exists and is not nan
             return True
@@ -545,26 +545,26 @@ class DataInput():
             return False
 
     @staticmethod
-    def extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,fileName):
+    def extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,file_name):
         """ extracts the demanded values from Input dataframe and reformulates dataframe
         :param dfInput: raw input dataframe
         :param indexNameList: list of name of indices
         :param column: select specific column
-        :param fileName: name of selected file
+        :param file_name: name of selected file
         :return dfInput: reformulated input dataframe
         """
         dfInput = dfInput.set_index(indexNameList)
         if column:
-            assert column in dfInput.columns, f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {fileName}"
+            assert column in dfInput.columns, f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {file_name}"
             dfInput = dfInput[column]
         else:
             # check if only one column remaining
-            assert len(dfInput.columns) == 1,f"Input file for {fileName} has more than one value column: {dfInput.columns.to_list()}"
+            assert len(dfInput.columns) == 1,f"Input file for {file_name} has more than one value column: {dfInput.columns.to_list()}"
             dfInput = dfInput.squeeze(axis=1)
         return dfInput
 
     @staticmethod
-    def extractFromInputWithMissingIndex(dfInput,dfOutput, indexNameList, column, fileName,missingIndex):
+    def extractFromInputWithMissingIndex(dfInput,dfOutput, indexNameList, column, file_name,missingIndex):
         """ extracts the demanded values from Input dataframe and reformulates dataframe if the index is missing.
         Either, the missing index is the column of dfInput, or it is actually missing in dfInput.
         Then, the values in dfInput are extended to all missing index values.
@@ -572,7 +572,7 @@ class DataInput():
         :param dfOutput: default output dataframe
         :param indexNameList: list of name of indices
         :param column: select specific column
-        :param fileName: name of selected file
+        :param file_name: name of selected file
         :param missingIndex: missing index in dfInput
         :return dfInput: reformulated input dataframe
         """
@@ -590,7 +590,7 @@ class DataInput():
         # the missing index does not appear in dfInput
         # the values in dfInput are extended to all missing index values
         else:
-            # logging.info(f"Missing index {missingIndex} detected in {fileName}. Input dataframe is extended by this index")
+            # logging.info(f"Missing index {missingIndex} detected in {file_name}. Input dataframe is extended by this index")
             _dfInputIndexTemp   = pd.MultiIndex.from_product([dfInput.index,requestedIndexValues],names=dfInput.index.names+[missingIndex])
             _dfInputTemp        = pd.Series(index=_dfInputIndexTemp, dtype=float)
             if column in dfInput.columns:

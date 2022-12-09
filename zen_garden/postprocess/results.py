@@ -25,10 +25,10 @@ from ..utils import RedirectStdStreams
 
 class Postprocess:
 
-    def __init__(self, model, scenarios, modelName, subfolder=None):
+    def __init__(self, model, scenarios, model_name, subfolder=None):
         """postprocessing of the results of the optimization
         :param model: optimization model
-        :param modelName: The name of the model used to name the output folder
+        :param model_name: The name of the model used to name the output folder
         :param subfolder: The subfolder used for the results
         """
 
@@ -44,8 +44,8 @@ class Postprocess:
         self.constraints    = Constraint.getComponentObject()
 
         # get name or directory
-        self.modelName = modelName
-        self.nameDir = pathlib.Path(self.analysis["folderOutput"]).joinpath(self.modelName)
+        self.model_name = model_name
+        self.nameDir = pathlib.Path(self.analysis["folderOutput"]).joinpath(self.model_name)
 
         # deal with the subfolder
         self.subfolder = subfolder
@@ -122,21 +122,21 @@ class Postprocess:
             doc = self.params.docs[param]
             indexList = self.getIndexList(doc)
             if len(indexList) == 0:
-                indexNames = None
+                index_names = None
             elif len(indexList) == 1:
-                indexNames = indexList[0]
+                index_names = indexList[0]
             else:
-                indexNames = indexList
+                index_names = indexList
             # create a dictionary if necessary
             if not isinstance(vals, dict):
-                indices = pd.Index(data=[0],name=indexNames)
+                indices = pd.Index(data=[0],name=index_names)
                 data = [vals]
             # if the returned dict is emtpy we create a nan value
             elif len(vals) == 0:
                 if len(indexList)>1:
-                    indices = pd.MultiIndex(levels=[[]]*len(indexNames),codes=[[]]*len(indexNames),names=indexNames)
+                    indices = pd.MultiIndex(levels=[[]]*len(index_names),codes=[[]]*len(index_names),names=index_names)
                 else:
-                    indices = pd.Index(data=[],name=indexNames)
+                    indices = pd.Index(data=[],name=index_names)
                 data = []
             # we read out everything
             else:
@@ -146,12 +146,12 @@ class Postprocess:
                 # create a multi index if necessary
                 if len(indices)>=1 and isinstance(indices[0],tuple):
                     if len(indexList) == len(indices[0]):
-                        indices = pd.MultiIndex.from_tuples(indices,names=indexNames)
+                        indices = pd.MultiIndex.from_tuples(indices,names=index_names)
                     else:
                         indices = pd.MultiIndex.from_tuples(indices)
                 else:
                     if len(indexList) == 1:
-                        indices = pd.Index(data=indices,name=indexNames)
+                        indices = pd.Index(data=indices,name=index_names)
                     else:
                         indices = pd.Index(data=indices)
 
@@ -176,11 +176,11 @@ class Postprocess:
                 doc = self.vars.docs[var.name]
                 indexList = self.getIndexList(doc)
                 if len(indexList) == 0:
-                    indexNames = None
+                    index_names = None
                 elif len(indexList) == 1:
-                    indexNames = indexList[0]
+                    index_names = indexList[0]
                 else:
-                    indexNames = indexList
+                    index_names = indexList
             else:
                 indexList = []
                 doc = None
@@ -191,12 +191,12 @@ class Postprocess:
             # create a multi index if necessary
             if len(indices)>=1 and isinstance(indices[0], tuple):
                 if len(indexList) == len(indices[0]):
-                    indices = pd.MultiIndex.from_tuples(indices, names=indexNames)
+                    indices = pd.MultiIndex.from_tuples(indices, names=index_names)
                 else:
                     indices = pd.MultiIndex.from_tuples(indices)
             else:
                 if len(indexList) == 1:
-                    indices = pd.Index(data=indices, name=indexNames)
+                    indices = pd.Index(data=indices, name=index_names)
                 else:
                     indices = pd.Index(data=indices)
 
@@ -365,7 +365,7 @@ class Results(object):
             self.scenarios = [None]
         if self.results["system"]["useRollingHorizon"]:
             self.has_MF = True
-            self.mf = [f"MF_{stepHorizon}" for stepHorizon in self.years]
+            self.mf = [f"MF_{step_horizon}" for step_horizon in self.years]
         else:
             self.has_MF = False
             self.mf = [None]
@@ -700,7 +700,7 @@ class Results(object):
 
                     _data[scenario] = _df
 
-        # transform all dataframes to pd.Series with the elementName as name
+        # transform all dataframes to pd.Series with the element_name as name
         for k, v in _data.items():
             if not isinstance(v, pd.Series):
                 # to series
@@ -748,11 +748,11 @@ class Results(object):
         """
         return self.get_df("timeStepsStorageLevelDuration")
 
-    def getFullTS(self, component, elementName=None, year=None, scenario=None):
+    def getFullTS(self, component, element_name=None, year=None, scenario=None):
         """
         Calculates the full timeseries for a given element
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
-        :param elementName: The name of the element
+        :param element_name: The name of the element
         :param scenario: The scenario for with the component should be extracted (only if needed)
         :return: A dataframe containing the full timeseries of the element
         """
@@ -762,8 +762,8 @@ class Results(object):
         ts_type = self._get_ts_type(component_data, component_name)
 
         if ts_type == "yearly":
-            if elementName is not None:
-                component_data = component_data.loc[elementName]
+            if element_name is not None:
+                component_data = component_data.loc[element_name]
             # component indexed by yearly component
             if year is not None:
                 if year in component_data.columns:
@@ -782,8 +782,8 @@ class Results(object):
         _outputTemp = {}
         for row in component_data.index:
             # we know the name
-            if elementName:
-                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(elementName+_storageString)
+            if element_name:
+                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(element_name+_storageString)
             # we extract the name
             else:
                 _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(row[0]+_storageString)
@@ -802,11 +802,11 @@ class Results(object):
         outputDf = pd.concat(_outputTemp,axis=0,keys = _outputTemp.keys()).unstack()
         return outputDf
 
-    def getTotal(self, component, elementName=None, year=None, scenario=None,split_years = True):
+    def getTotal(self, component, element_name=None, year=None, scenario=None,split_years = True):
         """
         Calculates the total Value of a component
         :param component: Either a dataframe as returned from <get_df> or the name of the component
-        :param elementName: The element name to calculate the value for, defaults to all elements
+        :param element_name: The element name to calculate the value for, defaults to all elements
         :param year: The year to calculate the value for, defaults to all years
         :param scenario: The scenario to calculate the total value for
         :return: A dataframe containing the total value with the specified paramters
@@ -817,8 +817,8 @@ class Results(object):
         ts_type = self._get_ts_type(component_data,component_name)
 
         if ts_type == "yearly":
-            if elementName is not None:
-                component_data = component_data.loc[elementName]
+            if element_name is not None:
+                component_data = component_data.loc[element_name]
             if year is not None:
                 if year in component_data.columns:
                     return component_data[year]
@@ -930,7 +930,7 @@ class Results(object):
         """ get time step type (operational, storage, yearly) """
         _headerOperational = self.results["analysis"]["headerDataInputs"]["setTimeStepsOperation"]
         _headerStorage = self.results["analysis"]["headerDataInputs"]["setTimeStepsStorageLevel"]
-        _headerYearly = self.results["analysis"]["headerDataInputs"]["setTimeStepsYearly"]
+        _headerYearly = self.results["analysis"]["headerDataInputs"]["set_time_steps_yearly"]
         if component_data.columns.name == _headerOperational:
             return "operational"
         elif component_data.columns.name == _headerStorage:

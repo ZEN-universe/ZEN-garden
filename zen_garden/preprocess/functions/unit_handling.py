@@ -194,7 +194,7 @@ class UnitHandling:
         if attribute in self.dictAttributeValues.keys():
             self.dictAttributeValues[attribute]["values"] = dfOutput
 
-    def recommendBaseUnits(self,immutableUnit,unitExps):
+    def recomment_base_units(self,immutable_unit,unitExps):
         """ gets the best base units based on the input parameter values """
         logging.info(f"Check for best base unit combination between 10^{unitExps['min']} and 10^{unitExps['max']} (interval: 10^{unitExps['stepWidth']})")
         smallestRange   = {"comb":None,"val":np.inf,"originalVal":np.inf}
@@ -221,7 +221,7 @@ class UnitHandling:
         maxExp      = unitExps["max"]
         stepWidth   = unitExps["stepWidth"]
         rangeExp    = range(minExp,maxExp+1,stepWidth)
-        mutableUnit = self.dimMatrix.columns[self.dimMatrix.columns.isin(baseUnits.difference(immutableUnit))]
+        mutableUnit = self.dimMatrix.columns[self.dimMatrix.columns.isin(baseUnits.difference(immutable_unit))]
         dfUnits = dfUnits.loc[:,mutableUnit]
         combMult    = itertools.product(rangeExp,repeat = len(mutableUnit))
         for comb in combMult:

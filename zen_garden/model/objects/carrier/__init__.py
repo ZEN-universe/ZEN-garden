@@ -28,5 +28,5 @@ for (_, moduleName, _) in iter_modules([packageDir]):
                 globals()[attributeName]      = attribute
                 carrierClasses[attributeName] = attribute
 
-# update dictElementClasses
-EnergySystem.dictElementClasses.update(carrierClasses)
+# update dict_element_classes
+EnergySystem.dict_element_classes.update(carrierClasses)

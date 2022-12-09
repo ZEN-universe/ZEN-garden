@@ -47,7 +47,7 @@ class ConditioningCarrier(Carrier):
         Variable.addVariable(
             model,
             name="endogenousCarrierDemand",
-            indexSets= cls.createCustomSet(["setConditioningCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.createCustomSet(["setConditioningCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent model endogenous carrier demand. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
@@ -61,7 +61,7 @@ class ConditioningCarrier(Carrier):
         Constraint.addConstraint(
             model,
             name="constraintCarrierDemandCoupling",
-            indexSets= cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
             rule = constraintCarrierDemandCouplingRule,
             doc = 'coupeling model endogenous and exogenous carrier demand',
         )
@@ -70,7 +70,7 @@ class ConditioningCarrier(Carrier):
         Constraint.addConstraint(
             model,
             name="constraintNodalEnergyBalanceConditioning",
-            indexSets= cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            index_sets= cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
             rule=constraintNodalEnergyBalanceWithConditioningRule,
             doc='node- and time-dependent energy balance for each carrier',
         )

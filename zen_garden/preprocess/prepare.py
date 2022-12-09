@@ -65,7 +65,7 @@ class Prepare:
                 self.paths[technologySubset][technology] = dict()
                 self.paths[technologySubset][technology]["folder"] = os.path.join(path, technology)
 
-    def checkExistingInputData(self):
+    def check_existing_input_data(self):
         """This method checks the existing input data and only regards those elements for which folders exist.
         It is called in compile.py after the main Prepare routine."""
 
@@ -87,7 +87,7 @@ class Prepare:
                     self.system[technologySubset].extend(self.system[subset])
                     self.system["setTechnologies"].extend(self.system[subset])
 
-    def checkExistingCarrierData(self, system):
+    def check_existing_carrier_data(self, system):
         # check if carriers exist
         self.system = system
         for carrier in self.system["setCarriers"]:

@@ -27,5 +27,5 @@ for (_, moduleName, _) in iter_modules([packageDir]):
             if attributeName not in technologyClasses.keys():
                 globals()[attributeName]         = attribute
                 technologyClasses[attributeName] = attribute
-# update dictElementClasses
-EnergySystem.dictElementClasses.update(technologyClasses)
+# update dict_element_classes
+EnergySystem.dict_element_classes.update(technologyClasses)

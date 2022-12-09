@@ -78,17 +78,17 @@ def main(config, dataset_path=None):
     # create a dictionary with the paths to access the model inputs and check if input data exists
     prepare = Prepare(config)
     # check if all data inputs exist and remove non-existent
-    prepare.checkExistingInputData()
+    prepare.check_existing_input_data()
 
     # FORMULATE THE OPTIMIZATION PROBLEM
     # add the elements and read input data
-    optimizationSetup           = OptimizationSetup(config.analysis, prepare)
+    optimization_setup           = OptimizationSetup(config.analysis, prepare)
     # get rolling horizon years
-    stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
+    steps_optimization_horizon    = optimization_setup.get_optimization_horizon()
 
     # get the name of the dataset
-    modelName = os.path.basename(config.analysis["dataset"])
-    if os.path.exists(out_folder := os.path.join(config.analysis["folderOutput"], modelName)):
+    model_name = os.path.basename(config.analysis["dataset"])
+    if os.path.exists(out_folder := os.path.join(config.analysis["folderOutput"], model_name)):
         if config.analysis["overwriteOutput"]:
             logging.info(f"Removing existing output folder: {out_folder}")
             rmtree(out_folder)
@@ -97,34 +97,34 @@ def main(config, dataset_path=None):
 
     # update input data
     for scenario, elements in config.scenarios.items():
-        optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
-        optimizationSetup.overwriteParams(scenario, elements)
+        optimization_setup.restore_base_configuration(scenario, elements)  # per default scenario="" is used as base configuration. Use set_base_configuration(scenario, elements) if you want to change that
+        optimization_setup.overwrite_params(scenario, elements)
         # iterate through horizon steps
-        for stepHorizon in stepsOptimizationHorizon:
-            if len(stepsOptimizationHorizon) == 1:
+        for step_horizon in steps_optimization_horizon:
+            if len(steps_optimization_horizon) == 1:
                 logging.info("\n--- Conduct optimization for perfect foresight --- \n")
             else:
-                logging.info(f"\n--- Conduct optimization for rolling horizon step {stepHorizon} of {max(stepsOptimizationHorizon)}--- \n")
+                logging.info(f"\n--- Conduct optimization for rolling horizon step {step_horizon} of {max(steps_optimization_horizon)}--- \n")
             # overwrite time indices
-            optimizationSetup.overwriteTimeIndices(stepHorizon)
+            optimization_setup.overwrite_time_indices(step_horizon)
             # create optimization problem
-            optimizationSetup.constructOptimizationProblem()
+            optimization_setup.construct_optimization_problem()
             # SOLVE THE OPTIMIZATION PROBLEM
-            optimizationSetup.solve(config.solver)
-            # add newly builtCapacity of first year to existing capacity
-            optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
+            optimization_setup.solve(config.solver)
+            # add newly built_capacity of first year to existing capacity
+            optimization_setup.add_newly_built_capacity(step_horizon)
             # add cumulative carbon emissions to previous carbon emissions
-            optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
+            optimization_setup.add_carbon_emission_cumulative(step_horizon)
             # EVALUATE RESULTS
             subfolder = ""
             if config.system["conductScenarioAnalysis"]:
                 # handle scenarios
                 subfolder += f"scenario_{scenario}"
             # handle myopic foresight
-            if len(stepsOptimizationHorizon) > 1:
+            if len(steps_optimization_horizon) > 1:
                 if subfolder != "":
                     subfolder += f"_"
-                subfolder += f"MF_{stepHorizon}"
+                subfolder += f"MF_{step_horizon}"
             # write results
-            evaluation = Postprocess(optimizationSetup, scenarios=config.scenarios, subfolder=subfolder,
-                                     modelName=modelName)
+            evaluation = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
+                                     model_name=model_name)

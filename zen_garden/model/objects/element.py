@@ -35,7 +35,7 @@ class Element:
         # get input path
         self.getInputPath()
         # create DataInput object
-        self.dataInput = DataInput(self,EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem(),EnergySystem.getUnitHandling())
+        self.datainput = DataInput(self,EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.get_solver(), EnergySystem.get_energy_system(),EnergySystem.get_unit_handling())
         # add element to list
         Element.addElement(self)
 
@@ -66,9 +66,9 @@ class Element:
         """ this method returns the aggregation status """
         return self.aggregated
 
-    def overwriteTimeSteps(self,baseTimeSteps):
+    def overwrite_time_steps(self,baseTimeSteps):
         """ overwrites time steps. Must be implemented in child classes """
-        raise NotImplementedError("overwriteTimeSteps must be implemented in child classes!")
+        raise NotImplementedError("overwrite_time_steps must be implemented in child classes!")
 
     ### --- classmethods --- ###
     # setter/getter classmethods
@@ -79,7 +79,7 @@ class Element:
         cls.listOfElements.append(element)
 
     @classmethod
-    def getAllElements(cls):
+    def get_all_elements(cls):
         """ get all elements in class. Inherited by child classes.
         :return cls.listOfElements: list of elements in this class """
         return cls.listOfElements
@@ -88,14 +88,14 @@ class Element:
     def getAllNamesOfElements(cls):
         """ get all names of elements in class. Inherited by child classes.
         :return namesOfElements: list of names of elements in this class """
-        _elementsInClass = cls.getAllElements()
+        _elementsInClass = cls.get_all_elements()
         namesOfElements = []
         for _element in _elementsInClass:
             namesOfElements.append(_element.name)
         return namesOfElements
         
     @classmethod
-    def getElement(cls,name:str):
+    def get_element(cls,name:str):
         """ get single element in class by name. Inherited by child classes.
         :param name: name of element
         :return element: return element whose name is matched """
@@ -119,7 +119,7 @@ class Element:
         :return dictOfAttributes: returns dict of attribute values
         :return attributeIsSeries: return information on attribute type """
         system            = EnergySystem.getSystem()
-        _classElements    = cls.getAllElements()
+        _classElements    = cls.get_all_elements()
         dictOfAttributes  = {}
         attributeIsSeries = False
         for _element in _classElements:
@@ -185,16 +185,16 @@ class Element:
         return dictOfAttributes, attributeIsSeries
 
     @classmethod
-    def getAttributeOfSpecificElement(cls,elementName:str,attributeName:str):
+    def getAttributeOfSpecificElement(cls,element_name:str,attributeName:str):
         """ get attribute of specific element in class
-        :param elementName: str name of element
+        :param element_name: str name of element
         :param attributeName: str name of attribute
         :return attributeValue: value of attribute"""
         # get element
-        _element = cls.getElement(elementName)
+        _element = cls.get_element(element_name)
         # assert that _element exists and has attribute
-        assert _element, f"Element {elementName} not in class {cls}"
-        assert hasattr(_element,attributeName),f"Element {elementName} does not have attribute {attributeName}"
+        assert _element, f"Element {element_name} not in class {cls}"
+        assert hasattr(_element,attributeName),f"Element {element_name} does not have attribute {attributeName}"
         attributeValue = getattr(_element,attributeName)
         return attributeValue
 
@@ -206,7 +206,7 @@ class Element:
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
     # Here, after defining EnergySystem-specific components, the components of the other classes are constructed
     @classmethod
-    def constructModelComponents(cls):
+    def construct_model_components(cls):
         """ constructs the model components of the class <Element> """
         logging.info("\n--- Construct model components ---\n")
         # construct pe.Sets
@@ -251,7 +251,7 @@ class Element:
         # operational time step duration
         Parameter.addParameter(
             name="timeStepsOperationDuration",
-            data= EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]),#.astype(int),
+            data= EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",index_names=["setElements","setTimeStepsOperation"]),#.astype(int),
             # doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setElements, setTimeStepsOperation"
             doc="Parameter which specifies the time step duration in operation for all technologies"
         )

@@ -49,8 +49,8 @@ def restore_default_state():
     # EnergySystem
     ##############
 
-    # energySystem
-    EnergySystem.energySystem = None
+    # energy_system
+    EnergySystem.energy_system = None
     # pe.ConcreteModel
     EnergySystem.concreteModel = None
     # analysis
@@ -78,7 +78,7 @@ def restore_default_state():
     # empty dict of matching the last time step of the year in the storage domain to the first
     EnergySystem.dictTimeStepsStorageLevelStartEndYear = {}
     # empty dict of element classes
-    # EnergySystem.dictElementClasses = {}
+    # EnergySystem.dict_element_classes = {}
     # empty list of class names
     EnergySystem.elementList = {}
 
@@ -137,8 +137,8 @@ def restore_default_state():
     # OptimizationSetup
     ###################
 
-    OptimizationSetup.baseScenario      = ""
-    OptimizationSetup.baseConfiguration = {}
+    OptimizationSetup.base_scenario      = ""
+    OptimizationSetup.base_configuration = {}
 
     # TimeSeriesAggregation
     #######################

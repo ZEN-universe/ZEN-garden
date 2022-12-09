@@ -56,13 +56,13 @@ class Component:
     def getIndexNamesData(indexList):
         """ splits indexList in data and index names """
         if isinstance(indexList,tuple):
-            indexValues,indexNames = indexList
+            indexValues,index_names = indexList
         elif isinstance(indexList,pe.Set):
             indexValues = copy.copy(indexList)
-            indexNames  = [indexList.name]
+            index_names  = [indexList.name]
         else:
             raise TypeError(f"Type {type(indexList)} unknown to extract index names.")
-        return indexValues,indexNames
+        return indexValues,index_names
 
 class Parameter(Component):
     def __init__(self):
@@ -75,7 +75,7 @@ class Parameter(Component):
     def addParameter(cls,name, data, doc):
         """ initialization of a parameter
         :param name: name of parameter
-        :param data: non default data of parameter and indexNames
+        :param data: non default data of parameter and index_names
         :param doc: docstring of parameter """
         parameterObject = cls.getComponentObject()
         if name not in parameterObject.docs.keys():
@@ -142,17 +142,17 @@ class Variable(Component):
         super().__init__()
 
     @classmethod
-    def addVariable(cls, model:pe.ConcreteModel, name, indexSets, domain,bounds = (None,None), doc = ""):
+    def addVariable(cls, model:pe.ConcreteModel, name, index_sets, domain,bounds = (None,None), doc = ""):
         """ initialization of a variable
         :param model:       pe.ConcreteModel
         :param name:        name of variable
-        :param indexSets:   indices and sets by which the variable is indexed
+        :param index_sets:   indices and sets by which the variable is indexed
         :param domain:      domain of variable
         :param bounds:      bounds of variable
         :param doc:         docstring of variable """
         variableObject = cls.getComponentObject()
         if name not in variableObject.docs.keys():
-            indexValues,indexList = cls.getIndexNamesData(indexSets)
+            indexValues,indexList = cls.getIndexNamesData(index_sets)
             var = pe.Var(
                 indexValues,
                 domain = domain,
@@ -170,11 +170,11 @@ class Constraint(Component):
         super().__init__()
 
     @classmethod
-    def addConstraint(cls, model: pe.ConcreteModel, name, indexSets, rule,doc="",constraintType="Constraint"):
+    def addConstraint(cls, model: pe.ConcreteModel, name, index_sets, rule,doc="",constraintType="Constraint"):
         """ initialization of a variable
         :param model:       pe.ConcreteModel
         :param name:        name of variable
-        :param indexSets:   indices and sets by which the variable is indexed
+        :param index_sets:   indices and sets by which the variable is indexed
         :param rule:        constraint rule
         :param doc:         docstring of variable
         :param constraintType: either 'Constraint', 'Disjunct','Disjunction'"""
@@ -182,7 +182,7 @@ class Constraint(Component):
         assert constraintType in constraintTypes,f"Constraint type '{constraintType}' unknown"
         constraintObject = cls.getComponentObject()
         if name not in constraintObject.docs.keys():
-            indexValues,indexList = cls.getIndexNamesData(indexSets)
+            indexValues,indexList = cls.getIndexNamesData(index_sets)
             if constraintType == "Constraint":
                 constraintClass = pe.Constraint
             elif constraintType == "Disjunct":
