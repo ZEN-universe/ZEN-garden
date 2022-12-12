@@ -14,7 +14,7 @@ import pyomo.environ as pe
 import numpy as np
 from .technology import Technology
 from ..energy_system import EnergySystem
-from ..parameter import Parameter
+from ..component import Parameter,Variable,Constraint
 
 class StorageTechnology(Technology):
     # set label
@@ -142,31 +142,31 @@ class StorageTechnology(Technology):
         Parameter.addParameter(
             name ="timeStepsStorageLevelDuration",
             data = EnergySystem.initializeComponent(cls,"timeStepsStorageLevelDuration",indexNames=["setStorageTechnologies","setTimeStepsStorageLevel"]),
-            doc  ="Parameter which specifies the time step duration in StorageLevel for all technologies. Dimensions: setStorageTechnologies, setTimeStepsStorageLevel"
+            doc  ="Parameter which specifies the time step duration in StorageLevel for all technologies"
         )
         # efficiency charge
         Parameter.addParameter(
             name="efficiencyCharge",
             data= EnergySystem.initializeComponent(cls,"efficiencyCharge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsYearly"]),
-            doc = 'efficiency during charging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsYearly'
+            doc = 'efficiency during charging for storage technologies'
         )
         # efficiency discharge
         Parameter.addParameter(
             name="efficiencyDischarge",
             data= EnergySystem.initializeComponent(cls,"efficiencyDischarge",indexNames=["setStorageTechnologies","setNodes","setTimeStepsYearly"]),
-            doc = 'efficiency during discharging for storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsYearly'
+            doc = 'efficiency during discharging for storage technologies'
         )
         # self discharge
         Parameter.addParameter(
             name="selfDischarge",
-            data= EnergySystem.initializeComponent(cls,"selfDischarge"),
-            doc = 'self discharge of storage technologies. Dimensions: setStorageTechnologies, setNodes'
+            data= EnergySystem.initializeComponent(cls,"selfDischarge",indexNames=["setStorageTechnologies","setNodes"]),
+            doc = 'self discharge of storage technologies'
         )
         # capex specific
         Parameter.addParameter(
             name="capexSpecificStorage",
             data= EnergySystem.initializeComponent(cls,"capexSpecific",indexNames=["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsYearly"],capacityTypes=True),
-            doc = 'specific capex of storage technologies. Dimensions: setStorageTechnologies, setNodes, setTimeStepsYearly'
+            doc = 'specific capex of storage technologies'
         )
 
     @classmethod
@@ -187,24 +187,30 @@ class StorageTechnology(Technology):
 
         model = EnergySystem.getConcreteModel()
         # flow of carrier on node into storage
-        model.carrierFlowCharge = pe.Var(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="carrierFlowCharge",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             bounds = carrierFlowBounds,
-            doc = 'carrier flow into storage technology on node i and time t. Dimensions: setStorageTechnologies, setNodes, setTimeStepsOperation. Domain: NonNegativeReals'
+            doc = 'carrier flow into storage technology on node i and time t'
         )
         # flow of carrier on node out of storage
-        model.carrierFlowDischarge = pe.Var(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
+        Variable.addVariable(
+            model,
+            name="carrierFlowDischarge",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             bounds = carrierFlowBounds,
-            doc = 'carrier flow out of storage technology on node i and time t. Dimensions: setStorageTechnologies, setNodes, setTimeStepsOperation. Domain: NonNegativeReals'
+            doc = 'carrier flow out of storage technology on node i and time t'
         )
         # loss of carrier on node
-        model.levelCharge = pe.Var(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
+        Variable.addVariable(
+            model,
+            name="levelCharge",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             domain = pe.NonNegativeReals,
-            doc = 'storage level of storage technology ón node in each storage time step. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel. Domain: NonNegativeReals'
+            doc = 'storage level of storage technology ón node in each storage time step'
         )
         
     @classmethod
@@ -212,22 +218,28 @@ class StorageTechnology(Technology):
         """ constructs the pe.Constraints of the class <StorageTechnology> """
         model = EnergySystem.getConcreteModel()
         # Limit storage level
-        model.constraintStorageLevelMax = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintStorageLevelMax",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             rule = constraintStorageLevelMaxRule,
-            doc = 'limit maximum storage level to capacity. Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel'
+            doc = 'limit maximum storage level to capacity'
         ) 
         # couple storage levels
-        model.constraintCoupleStorageLevel = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintCoupleStorageLevel",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setNodes","setTimeStepsStorageLevel"]),
             rule = constraintCoupleStorageLevelRule,
-            doc = 'couple subsequent storage levels (time coupling constraints). Dimensions: setStorageTechnologies, setNodes, setTimeStepsStorageLevel'
+            doc = 'couple subsequent storage levels (time coupling constraints)'
         )
         # Linear Capex
-        model.constraintStorageTechnologyLinearCapex = pe.Constraint(
-            cls.createCustomSet(["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsYearly"]),
+        Constraint.addConstraint(
+            model,
+            name="constraintStorageTechnologyLinearCapex",
+            indexSets= cls.createCustomSet(["setStorageTechnologies","setCapacityTypes","setNodes","setTimeStepsYearly"]),
             rule = constraintCapexStorageTechnologyRule,
-            doc = 'Capital expenditures for installing storage technology. Dimensions: setStorageTechnologies,"setCapacityTypes", setNodes, setTimeStepsYearly'
+            doc = 'Capital expenditures for installing storage technology'
         ) 
 
     # defines disjuncts if technology on/off
@@ -235,7 +247,7 @@ class StorageTechnology(Technology):
     def disjunctOnTechnologyRule(cls,disjunct, tech,capacityType, node, time):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
-        params = Parameter.getParameterObject()
+        params = Parameter.getComponentObject()
         # get invest time step
         baseTimeStep = EnergySystem.decodeTimeStep(tech,time,"operation")
         timeStepYear = EnergySystem.encodeTimeStep(tech,baseTimeStep,"yearly")
@@ -287,7 +299,7 @@ def constraintStorageLevelMaxRule(model, tech, node, time):
 def constraintCoupleStorageLevelRule(model, tech, node, time):
     """couple subsequent storage levels (time coupling constraints)"""
     # get parameter object
-    params = Parameter.getParameterObject()
+    params = Parameter.getComponentObject()
     elementTimeStep             = EnergySystem.convertTimeStepEnergy2Power(tech,time)
     # get invest time step
     timeStepYear              = EnergySystem.convertTimeStepOperation2Invest(tech,elementTimeStep)
@@ -308,7 +320,7 @@ def constraintCoupleStorageLevelRule(model, tech, node, time):
 def constraintCapexStorageTechnologyRule(model, tech,capacityType, node, time):
     """ definition of the capital expenditures for the storage technology"""
     # get parameter object
-    params = Parameter.getParameterObject()
+    params = Parameter.getComponentObject()
     return (model.capex[tech,capacityType,node, time] ==
             model.builtCapacity[tech,capacityType,node, time] *
             params.capexSpecificStorage[tech,capacityType,node, time])

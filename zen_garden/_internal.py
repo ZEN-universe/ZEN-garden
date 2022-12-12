@@ -52,7 +52,7 @@ def main(config, dataset_path=None):
         config.analysis["dataset"] = dataset_path
     # get the abs path to avoid working dir stuff
     config.analysis["dataset"] = os.path.abspath(config.analysis['dataset'])
-    config.system["folderOutput"] = os.path.abspath(config.system['folderOutput'])
+    config.analysis["folderOutput"] = os.path.abspath(config.analysis['folderOutput'])
 
     ### System - load system configurations
     system_path = os.path.join(config.analysis['dataset'], "system.py")
