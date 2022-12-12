@@ -93,7 +93,7 @@ def main(config, dataset_path=None):
             logging.info(f"Removing existing output folder: {out_folder}")
             rmtree(out_folder)
         else:
-            logging.warning(f"The outputfolder {out_folder} already exists")
+            logging.warning(f"The output folder {out_folder} already exists")
 
     # update input data
     for scenario, elements in config.scenarios.items():

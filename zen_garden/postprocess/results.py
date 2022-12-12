@@ -39,9 +39,9 @@ class Postprocess:
         self.analysis = model.analysis
         self.solver = model.solver
         self.opt = model.opt
-        self.params         = Parameter.getComponentObject()
-        self.vars           = Variable.getComponentObject()
-        self.constraints    = Constraint.getComponentObject()
+        self.params         = Parameter.get_component_object()
+        self.vars           = Variable.get_component_object()
+        self.constraints    = Constraint.get_component_object()
 
         # get name or directory
         self.model_name = model_name
@@ -73,7 +73,7 @@ class Postprocess:
         self.saveOpt()
 
         # extract and save sequence time steps, we transform the arrays to lists
-        self.dictSequenceTimeSteps = self.flatten_dict(EnergySystem.getSequenceTimeStepsDict())
+        self.dictSequenceTimeSteps = self.flatten_dict(EnergySystem.get_sequence_time_steps_dict())
         self.saveSequenceTimeSteps()
 
         # case where we should run the post-process as normal
@@ -120,20 +120,20 @@ class Postprocess:
             # get the values
             vals = getattr(self.params, param)
             doc = self.params.docs[param]
-            indexList = self.getIndexList(doc)
-            if len(indexList) == 0:
+            index_list = self.getIndexList(doc)
+            if len(index_list) == 0:
                 index_names = None
-            elif len(indexList) == 1:
-                index_names = indexList[0]
+            elif len(index_list) == 1:
+                index_names = index_list[0]
             else:
-                index_names = indexList
+                index_names = index_list
             # create a dictionary if necessary
             if not isinstance(vals, dict):
                 indices = pd.Index(data=[0],name=index_names)
                 data = [vals]
             # if the returned dict is emtpy we create a nan value
             elif len(vals) == 0:
-                if len(indexList)>1:
+                if len(index_list)>1:
                     indices = pd.MultiIndex(levels=[[]]*len(index_names),codes=[[]]*len(index_names),names=index_names)
                 else:
                     indices = pd.Index(data=[],name=index_names)
@@ -145,12 +145,12 @@ class Postprocess:
 
                 # create a multi index if necessary
                 if len(indices)>=1 and isinstance(indices[0],tuple):
-                    if len(indexList) == len(indices[0]):
+                    if len(index_list) == len(indices[0]):
                         indices = pd.MultiIndex.from_tuples(indices,names=index_names)
                     else:
                         indices = pd.MultiIndex.from_tuples(indices)
                 else:
-                    if len(indexList) == 1:
+                    if len(index_list) == 1:
                         indices = pd.Index(data=indices,name=index_names)
                     else:
                         indices = pd.Index(data=indices)
@@ -174,15 +174,15 @@ class Postprocess:
         for var in self.model.component_objects(pe.Var, active=True):
             if var.name in self.vars.docs:
                 doc = self.vars.docs[var.name]
-                indexList = self.getIndexList(doc)
-                if len(indexList) == 0:
+                index_list = self.getIndexList(doc)
+                if len(index_list) == 0:
                     index_names = None
-                elif len(indexList) == 1:
-                    index_names = indexList[0]
+                elif len(index_list) == 1:
+                    index_names = index_list[0]
                 else:
-                    index_names = indexList
+                    index_names = index_list
             else:
-                indexList = []
+                index_list = []
                 doc = None
             # get indices and values
             indices = [index for index in var]
@@ -190,12 +190,12 @@ class Postprocess:
 
             # create a multi index if necessary
             if len(indices)>=1 and isinstance(indices[0], tuple):
-                if len(indexList) == len(indices[0]):
+                if len(index_list) == len(indices[0]):
                     indices = pd.MultiIndex.from_tuples(indices, names=index_names)
                 else:
                     indices = pd.MultiIndex.from_tuples(indices)
             else:
-                if len(indexList) == 1:
+                if len(index_list) == 1:
                     indices = pd.Index(data=indices, name=index_names)
                 else:
                     indices = pd.Index(data=indices)
@@ -273,14 +273,14 @@ class Postprocess:
 
     def saveSequenceTimeSteps(self):
         """
-        Saves the dictAllSequenceTimeSteps dict as json
+        Saves the dict_all_sequence_time_steps dict as json
         """
 
         # This we only need to save once
         if self.subfolder:
-            fname = self.nameDir.parent.joinpath('dictAllSequenceTimeSteps')
+            fname = self.nameDir.parent.joinpath('dict_all_sequence_time_steps')
         else:
-            fname = self.nameDir.joinpath('dictAllSequenceTimeSteps')
+            fname = self.nameDir.joinpath('dict_all_sequence_time_steps')
         if not fname.exists():
             self.write_file(fname, self.dictSequenceTimeSteps)
 
@@ -316,9 +316,9 @@ class Postprocess:
             if "dims" in string:
                 break
         string = string.replace("dims:","")
-        indexList = string.split(",")
+        index_list = string.split(",")
         indexListFinal = []
-        for index in indexList:
+        for index in index_list:
             if index in self.analysis["headerDataInputs"].keys():
                 indexListFinal.append(self.analysis["headerDataInputs"][index])
             else:
@@ -559,7 +559,7 @@ class Results(object):
         """
 
         # get the dict
-        raw_dict = cls._read_file(os.path.join(path, "dictAllSequenceTimeSteps"))
+        raw_dict = cls._read_file(os.path.join(path, "dict_all_sequence_time_steps"))
         dictSequenceTimeSteps = json.loads(raw_dict)
 
         # json string None to 'null'
@@ -607,7 +607,7 @@ class Results(object):
         """
 
         # set the dict
-        EnergySystem.setSequenceTimeStepsDict(self.results["dictSequenceTimeSteps"])
+        EnergySystem.set_sequence_time_steps_dict(self.results["dictSequenceTimeSteps"])
 
         # select the scenarios
         if scenario is not None:
@@ -661,8 +661,8 @@ class Results(object):
                                 techProxy = [k for k in self.results["dictSequenceTimeSteps"]["operation"].keys()
                                              if "storage" not in k.lower()][0]
                             # get the timesteps
-                            timeStepsYear = EnergySystem.encodeTimeStep(techProxy,
-                                                                        EnergySystem.decodeTimeStep(None, year,
+                            timeStepsYear = EnergySystem.encode_time_step(techProxy,
+                                                                        EnergySystem.decode_time_step(None, year,
                                                                                                     "yearly"),
                                                                         yearly=True)
                             # get the data
@@ -783,14 +783,14 @@ class Results(object):
         for row in component_data.index:
             # we know the name
             if element_name:
-                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(element_name+_storageString)
+                _sequence_time_steps = EnergySystem.get_sequence_time_steps(element_name+_storageString)
             # we extract the name
             else:
-                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(row[0]+_storageString)
+                _sequence_time_steps = EnergySystem.get_sequence_time_steps(row[0]+_storageString)
 
             # throw together
-            _sequenceTimeSteps = _sequenceTimeSteps[np.in1d(_sequenceTimeSteps,list(component_data.columns))]
-            _outputTemp[row] = component_data.loc[row,_sequenceTimeSteps].reset_index(drop=True)
+            _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps,list(component_data.columns))]
+            _outputTemp[row] = component_data.loc[row,_sequence_time_steps].reset_index(drop=True)
             if year is not None:
                 if year in self.years:
                     hours_of_year = self._get_hours_of_year(year)
@@ -851,7 +851,7 @@ class Results(object):
 
             if year is not None:
                 # only for the given year
-                timeStepsYear = EnergySystem.encodeTimeStep(elementName+_storageString,EnergySystem.decodeTimeStep(None, year, "yearly"),yearly=True)
+                timeStepsYear = EnergySystem.encode_time_step(elementName+_storageString,EnergySystem.decode_time_step(None, year, "yearly"),yearly=True)
                 totalValue = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
             else:
                 # for all years
@@ -859,7 +859,7 @@ class Results(object):
                     totalValueTemp = pd.DataFrame(index=component_data.index, columns=self.years)
                     for yearTemp in self.years:
                         # set a proxy for the element name
-                        timeStepsYear = EnergySystem.encodeTimeStep(elementName+_storageString,EnergySystem.decodeTimeStep(None, yearTemp, "yearly"),yearly=True)
+                        timeStepsYear = EnergySystem.encode_time_step(elementName+_storageString,EnergySystem.decode_time_step(None, yearTemp, "yearly"),yearly=True)
                         totalValueTemp[yearTemp] = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
                     totalValue = totalValueTemp
                 else:
@@ -871,8 +871,8 @@ class Results(object):
             if year is not None:
                 # set a proxy for the element name
                 elementName_proxy = component_data.index.get_level_values(level=0)[0]
-                timeStepsYear = EnergySystem.encodeTimeStep(elementName_proxy+_storageString,
-                                                            EnergySystem.decodeTimeStep(None, year, "yearly"),
+                timeStepsYear = EnergySystem.encode_time_step(elementName_proxy+_storageString,
+                                                            EnergySystem.decode_time_step(None, year, "yearly"),
                                                             yearly=True)
                 totalValue = totalValue[timeStepsYear].sum(axis=1)
             else:
@@ -881,7 +881,7 @@ class Results(object):
                     for yearTemp in self.years:
                         # set a proxy for the element name
                         elementName_proxy = component_data.index.get_level_values(level=0)[0]
-                        timeStepsYear = EnergySystem.encodeTimeStep(elementName_proxy + _storageString,EnergySystem.decodeTimeStep(None, yearTemp, "yearly"),yearly=True)
+                        timeStepsYear = EnergySystem.encode_time_step(elementName_proxy + _storageString,EnergySystem.decode_time_step(None, yearTemp, "yearly"),yearly=True)
                         totalValueTemp[yearTemp] = totalValue[timeStepsYear].sum(axis=1)
                     totalValue = totalValueTemp
                 else:
@@ -918,7 +918,7 @@ class Results(object):
                 component_data = self.get_df(component).unstack()
         elif isinstance(component, pd.Series):
             # set the timesteps
-            EnergySystem.setSequenceTimeStepsDict(self.results["dictSequenceTimeSteps"])
+            EnergySystem.set_sequence_time_steps_dict(self.results["dictSequenceTimeSteps"])
             component_name = component.name
             component_data = component.unstack()
         else:

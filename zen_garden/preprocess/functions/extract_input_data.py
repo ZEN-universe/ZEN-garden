@@ -18,22 +18,22 @@ from scipy.stats import linregress
 
 class DataInput():
 
-    def __init__(self,element,system,analysis,solver,energy_system,unitHandling):
+    def __init__(self,element,system,analysis,solver,energy_system,unit_handling):
         """ data input object to extract input data
         :param element: element for which data is extracted
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
         :param solver: dictionary defining the solver 
         :param energy_system: instance of class <EnergySystem> to define energy_system
-        :param unitHandling: instance of class <UnitHandling> to convert units """
+        :param unit_handling: instance of class <UnitHandling> to convert units """
         self.element        = element
         self.system         = system
         self.analysis       = analysis
         self.solver         = solver
         self.energy_system   = energy_system
-        self.unitHandling   = unitHandling
+        self.unit_handling   = unit_handling
         # extract folder path
-        self.folderPath = getattr(self.element,"inputPath")
+        self.folderPath = getattr(self.element,"input_path")
 
         # get names of indices
         # self.index_names     = {index_name: self.analysis['headerDataInputs'][index_name][0] for index_name in self.analysis['headerDataInputs']}
@@ -118,11 +118,11 @@ class DataInput():
 
         # get common index of dfOutput and dfInput
         if not isinstance(dfInput.index, pd.MultiIndex):
-            indexList               = dfInput.index.to_list()
-            if len(indexList) == 1:
-                indexMultiIndex     = pd.MultiIndex.from_tuples([(indexList[0],)], names=[dfInput.index.name])
+            index_list               = dfInput.index.to_list()
+            if len(index_list) == 1:
+                indexMultiIndex     = pd.MultiIndex.from_tuples([(index_list[0],)], names=[dfInput.index.name])
             else:
-                indexMultiIndex     = pd.MultiIndex.from_product([indexList], names=[dfInput.index.name])
+                indexMultiIndex     = pd.MultiIndex.from_product([index_list], names=[dfInput.index.name])
             dfInput                 = pd.Series(index=indexMultiIndex, data=dfInput.to_list())
         commonIndex                 = dfOutput.index.intersection(dfInput.index)
         assert defaultValue is not None or len(commonIndex) == len(dfOutput.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.csv"
@@ -145,27 +145,27 @@ class DataInput():
         else:
             return None
 
-    def extractAttributeData(self,attributeName,skipWarning = False,scenario=""):
+    def extractAttributeData(self,attribute_name,skipWarning = False,scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param attributeName: name of selected attribute
+        :param attribute_name: name of selected attribute
         :param skipWarning: boolean to indicate if "Default" warning is skipped
         :return attributeValue: attribute value """
         filename = "attributes"
         dfInput  = self.readInputData(filename+scenario)
         if dfInput is not None:
             dfInput = dfInput.set_index("index").squeeze(axis=1)
-            name    = self.adaptAttributeName(attributeName, dfInput, skipWarning)
+            name    = self.adaptAttributeName(attribute_name, dfInput, skipWarning)
         if dfInput is None or name is None:
             dfInput = self.readInputData(filename)
             if dfInput is not None:
                 dfInput = dfInput.set_index("index").squeeze(axis=1)
             else:
                 return None
-        attributeName = self.adaptAttributeName(attributeName,dfInput,skipWarning)
-        if attributeName is not None:
+        attribute_name = self.adaptAttributeName(attribute_name,dfInput,skipWarning)
+        if attribute_name is not None:
             # get attribute
-            attributeValue = dfInput.loc[attributeName, "value"]
-            multiplier = self.unitHandling.getUnitMultiplier(dfInput.loc[attributeName, "unit"])
+            attributeValue = dfInput.loc[attribute_name, "value"]
+            multiplier = self.unit_handling.getUnitMultiplier(dfInput.loc[attribute_name, "unit"])
             try:
                 attribute = {"value": float(attributeValue) * multiplier, "multiplier": multiplier}
                 return attribute
@@ -174,18 +174,18 @@ class DataInput():
         else:
             return None
 
-    def adaptAttributeName(self,attributeName,dfInput,skipWarning=False):
+    def adaptAttributeName(self,attribute_name,dfInput,skipWarning=False):
         """ check if attribute in index"""
-        if attributeName + "Default" not in dfInput.index:
-            if attributeName not in dfInput.index:
+        if attribute_name + "Default" not in dfInput.index:
+            if attribute_name not in dfInput.index:
                 return None
             elif not skipWarning:
                 warnings.warn(
-                    f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attributeName} of attributes in path {self.folderPath}",
+                    f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attribute_name} of attributes in path {self.folderPath}",
                     FutureWarning)
         else:
-            attributeName = attributeName + "Default"
-        return attributeName
+            attribute_name = attribute_name + "Default"
+        return attribute_name
 
     def extractYearlyVariation(self,file_name,index_sets,column):
         """ reads the yearly variation of a time dependent quantity
@@ -196,7 +196,7 @@ class DataInput():
         """
         # remove intrayearly time steps from index set and add interyearly time steps
         _index_sets = copy.deepcopy(index_sets)
-        _index_sets.remove("setTimeSteps")
+        _index_sets.remove("set_time_steps")
         _index_sets.append("set_time_steps_yearly")
         # add YearlyVariation to file_name
         file_name  += "YearlyVariation"
@@ -216,7 +216,7 @@ class DataInput():
             dfOutput = self.extractGeneralInputData(dfInput, dfOutput, file_name, indexNameList, _selectedColumn,defaultValue)
             setattr(self,_nameYearlyVariation,dfOutput)
 
-    def extractLocations(self,extractNodes = True):
+    def extract_locations(self,extractNodes = True):
         """ reads input data to extract nodes or edges.
         :param extractNodes: boolean to switch between nodes and edges """
         if extractNodes:
@@ -235,9 +235,9 @@ class DataInput():
             setNodesConfig.sort()
             return setNodesConfig
         else:
-            setEdgesInput = self.readInputData("setEdges")
-            if setEdgesInput is not None:
-                setEdges        = setEdgesInput[(setEdgesInput["nodeFrom"].isin(self.energy_system.setNodes)) & (setEdgesInput["nodeTo"].isin(self.energy_system.setNodes))]
+            set_edges_input = self.readInputData("setEdges")
+            if set_edges_input is not None:
+                setEdges        = set_edges_input[(set_edges_input["nodeFrom"].isin(self.energy_system.setNodes)) & (set_edges_input["nodeTo"].isin(self.energy_system.setNodes))]
                 setEdges        = setEdges.set_index("edge")
                 return setEdges
             else:
@@ -297,7 +297,7 @@ class DataInput():
             return dfOutput
 
         if f"{file_name}.csv" in os.listdir(self.folderPath):
-            indexList, indexNameList = self.constructIndexList(index_sets, None)
+            index_list, indexNameList = self.constructIndexList(index_sets, None)
             dfInput                  = self.readInputData( file_name)
             # fill output dataframe
             dfOutput = self.extractGeneralInputData(dfInput, dfOutput, file_name, indexNameList, column, defaultValue = 0)
@@ -319,7 +319,7 @@ class DataInput():
             _attributeName  = "converEfficiency"
         else:
             raise KeyError(f"variable type {variableType} unknown.")
-        _index_sets = ["setNodes", "setTimeSteps"]
+        _index_sets = ["setNodes", "set_time_steps"]
         _time_steps = self.energy_system.set_time_steps_yearly
         # import all input data
         dfInputNonlinear    = self.readPWAFiles(variableType, fileType="nonlinear")
@@ -438,7 +438,7 @@ class DataInput():
                 columns = dfInput.columns
             dfInputUnits        = dfInput[columns].iloc[-1]
             dfInput             = dfInput.iloc[:-1]
-            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unitHandling.getUnitMultiplier(unit))
+            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unit_handling.getUnitMultiplier(unit))
             #dfInput[columns]    = dfInput[columns].astype(float
             dfInput             = dfInput.apply(lambda column: pd.to_numeric(column, errors='coerce'))
             dfInput[columns]    = dfInput[columns] * dfInputMultiplier
@@ -453,10 +453,10 @@ class DataInput():
         :param scenario: investigated scenario
         :param manualDefaultValue: if given, use manualDefaultValue instead of searching for default value in attributes.csv"""
         # select index
-        indexList, indexNameList = self.constructIndexList(index_sets, time_steps)
+        index_list, indexNameList = self.constructIndexList(index_sets, time_steps)
         # create pd.MultiIndex and select data
         if index_sets:
-            indexMultiIndex = pd.MultiIndex.from_product(indexList, names=indexNameList)
+            indexMultiIndex = pd.MultiIndex.from_product(index_list, names=indexNameList)
         else:
             indexMultiIndex = pd.Index([0])
         if manualDefaultValue:
@@ -486,9 +486,9 @@ class DataInput():
             if file_name:
                 dfInput = self.readInputData("attributes" + scenario).set_index("index").squeeze(axis=1)
                 # get attribute
-                attributeName = self.adaptAttributeName(file_name,dfInput)
-                inputUnit = dfInput.loc[attributeName, "unit"]
-                self.unitHandling.setBaseUnitCombination(inputUnit=inputUnit,attribute=(self.element.name,file_name))
+                attribute_name = self.adaptAttributeName(file_name,dfInput)
+                inputUnit = dfInput.loc[attribute_name, "unit"]
+                self.unit_handling.setBaseUnitCombination(inputUnit=inputUnit,attribute=(self.element.name,file_name))
 
     def saveValuesOfAttribute(self,dfOutput,file_name):
         """ saves the values of an attribute """
@@ -497,32 +497,32 @@ class DataInput():
             if file_name:
                 dfOutputReduced = dfOutput[(dfOutput != 0) & (dfOutput.abs() != np.inf)]
                 if not dfOutputReduced.empty:
-                    self.unitHandling.setAttributeValues(dfOutput= dfOutputReduced,attribute=(self.element.name,file_name))
+                    self.unit_handling.setAttributeValues(dfOutput= dfOutputReduced,attribute=(self.element.name,file_name))
 
     def constructIndexList(self,index_sets,time_steps):
         """ constructs index list from index sets and returns list of indices and list of index names
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param time_steps: specific time_steps of element
-        :return indexList: list of indices
+        :return index_list: list of indices
         :return indexNameList: list of name of indices
         """
-        indexList     = []
+        index_list     = []
         indexNameList = []
 
         # add rest of indices
         for index in index_sets:
             indexNameList.append(self.index_names[index])
-            if index == "setTimeSteps" and time_steps:
-                indexList.append(time_steps)
+            if index == "set_time_steps" and time_steps:
+                index_list.append(time_steps)
             elif index == "setExistingTechnologies":
-                indexList.append(self.element.setExistingTechnologies)
+                index_list.append(self.element.setExistingTechnologies)
             elif index in self.system:
-                indexList.append(self.system[index])
+                index_list.append(self.system[index])
             elif hasattr(self.energy_system,index):
-                indexList.append(getattr(self.energy_system,index))
+                index_list.append(getattr(self.energy_system,index))
             else:
                 raise AttributeError(f"Index '{index}' cannot be found.")
-        return indexList,indexNameList
+        return index_list,indexNameList
 
     def ifAttributeExists(self, file_name, column=None):
         """ checks if default value or timeseries of an attribute exists in the input data

@@ -42,7 +42,7 @@ def restore_default_state():
     #########
 
     # set label
-    Element.label = "setElements"
+    Element.label = "set_elements"
     # empty list of elements
     Element.listOfElements = []
 
@@ -52,7 +52,7 @@ def restore_default_state():
     # energy_system
     EnergySystem.energy_system = None
     # pe.ConcreteModel
-    EnergySystem.concreteModel = None
+    EnergySystem.pyomo_model = None
     # analysis
     EnergySystem.analysis = None
     # system
@@ -62,25 +62,25 @@ def restore_default_state():
     # solver
     EnergySystem.solver = None
     # unit handling instance
-    EnergySystem.unitHandling = None
+    EnergySystem.unit_handling = None
     # empty list of indexing sets
-    EnergySystem.indexingSets = []
+    EnergySystem.indexing_sets = []
     # empty dict of technologies of carrier
-    EnergySystem.dictTechnologyOfCarrier = {}
+    EnergySystem.dict_technology_of_carrier = {}
     # empty dict of sequence of time steps operation
-    EnergySystem.dictSequenceTimeStepsOperation = {}
+    EnergySystem.dict_sequence_time_steps_operation = {}
     # empty dict of sequence of time steps yearly
-    EnergySystem.dictSequenceTimeStepsYearly = {}
+    EnergySystem.dict_sequence_time_steps_yearly = {}
     # empty dict of conversion from energy time steps to power time steps for storage technologies
-    EnergySystem.dictTimeStepsEnergy2Power = {}
+    EnergySystem.dict_time_steps_energy2power = {}
     # empty dict of conversion from operational time steps to invest time steps for technologies
-    EnergySystem.dictTimeStepsOperation2Invest = {}
+    EnergySystem.dict_time_steps_operation2invest = {}
     # empty dict of matching the last time step of the year in the storage domain to the first
-    EnergySystem.dictTimeStepsStorageLevelStartEndYear = {}
+    EnergySystem.dict_time_steps_storage_level_startend_year = {}
     # empty dict of element classes
     # EnergySystem.dict_element_classes = {}
     # empty list of class names
-    EnergySystem.elementList = {}
+    EnergySystem.element_list = {}
 
     # Parameter
     ###########

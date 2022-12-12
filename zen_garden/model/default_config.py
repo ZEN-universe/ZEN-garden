@@ -65,7 +65,7 @@ class Config(object):
         # typology of optimisation: minimize or maximize
         self.analysis["sense"]     = "minimize"
         # discount rate
-        self.analysis["discountRate"] = 0.06
+        self.analysis["discount_rate"] = 0.06
         # transport distance (euclidean or actual)
         self.analysis["transportDistance"] = "Euclidean"
         # dictionary with subsets related to set
@@ -78,18 +78,18 @@ class Config(object):
                                             "setEdges": "edge",
                                             "setLocation": "location",
                                             "setScenarios":"scenario",
-                                            "setTimeSteps":"time",
+                                            "set_time_steps":"time",
                                             "setTimeStepsOperation":"timeOperation",
                                             "setTimeStepsStorageLevel":"timeStorageLevel",
                                             "setTimeStepsYearly":"year",
-                                            "setTimeStepsYearlyEntireHorizon":"year",
+                                            "set_time_steps_yearly_entire_horizon":"year",
                                             "setCarriers":"carrier",
                                             "setInputCarriers":"carrier",
                                             "setOutputCarriers":"carrier",
                                             "setDependentCarriers":"carrier",
                                             "setConditioningCarriers":"carrier",
                                             "setConditioningCarrierParents":"carrier",
-                                            "setElements":"element",
+                                            "set_elements":"element",
                                             "setConversionTechnologies":"technology",
                                             "setTransportTechnologies":"technology",
                                             "setStorageTechnologies":"technology",

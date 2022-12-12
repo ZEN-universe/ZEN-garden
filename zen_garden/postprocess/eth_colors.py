@@ -43,11 +43,11 @@ class ETHColors:
 
     def setColorsCosts(self):
         self.colors["costs"] = {
-            "costTotal": self.getColor("blue"),
-            "capexTotal": self.getColor("petrol"),
-            "opexTotal": self.getColor("bronze"),
-            "costCarrierTotal": self.getColor("red"),
-            "costCarbonEmissionsTotal": self.getColor("purple"),
+            "cost_total": self.getColor("blue"),
+            "capex_total": self.getColor("petrol"),
+            "opex_total": self.getColor("bronze"),
+            "cost_carrier_total": self.getColor("red"),
+            "cost_carbon_emissions_total": self.getColor("purple"),
         }
 
     def setColorsTechs(self):

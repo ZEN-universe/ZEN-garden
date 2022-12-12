@@ -16,7 +16,7 @@ import copy
 class UnitHandling:
 
     def __init__(self,folderPath,roundDecimalPoints):
-        """ initialization of the unitHandling instance"""
+        """ initialization of the unit_handling instance"""
         self.folderPath             = folderPath
         self.roundingDecimalPoints  = roundDecimalPoints
         self.getBaseUnits()

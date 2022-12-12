@@ -28,22 +28,22 @@ class ConditioningTechnology(ConversionTechnology):
         logging.info(f'Initialize conditioning technology {tech}')
         super().__init__(tech)
         # store input data
-        self.storeInputData()
+        self.store_input_data()
         # add ConversionTechnology to list
         ConditioningTechnology.addElement(self)
 
-    def storeInputData(self):
+    def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # get attributes from class <Technology>
-        super().storeInputData()
+        super().store_input_data()
         self.setConditioningCarriers()
 
     def setConditioningCarriers(self):
         """add conditioning carriers to system"""
         subset   = "setConditioningCarriers"
-        analysis = EnergySystem.getAnalysis()
-        system   = EnergySystem.getSystem()
-        # add setConditioningCarriers to analysis and indexingSets
+        analysis = EnergySystem.get_analysis()
+        system   = EnergySystem.get_system()
+        # add setConditioningCarriers to analysis and indexing_sets
         if subset not in analysis["subsets"]["setCarriers"]:
             analysis["subsets"]["setCarriers"].append(subset)
         # add setConditioningCarriers to system
@@ -81,11 +81,11 @@ class ConditioningTechnology(ConversionTechnology):
         # create dictionary
         self.converEfficiencyIsPWA                            = False
         self.converEfficiencyLinear                           = dict()
-        self.converEfficiencyLinear[self.outputCarrier[0]]    = self.datainput.createDefaultOutput(index_sets=["setNodes","setTimeSteps"],
+        self.converEfficiencyLinear[self.outputCarrier[0]]    = self.datainput.createDefaultOutput(index_sets=["setNodes","set_time_steps"],
                                                                                                    column=None,
                                                                                                    time_steps=set_time_steps_yearly,
                                                                                                    manualDefaultValue = 1)[0] # TODO losses are not yet accounted for
-        self.converEfficiencyLinear[_inputCarriers[0]]        = self.datainput.createDefaultOutput(index_sets=["setNodes", "setTimeSteps"],
+        self.converEfficiencyLinear[_inputCarriers[0]]        = self.datainput.createDefaultOutput(index_sets=["setNodes", "set_time_steps"],
                                                                                                    column=None,
                                                                                                    time_steps=set_time_steps_yearly,
                                                                                                    manualDefaultValue=_energyConsumption)[0]
@@ -97,12 +97,12 @@ class ConditioningTechnology(ConversionTechnology):
         self.converEfficiencyLinear              = self.converEfficiencyLinear.reorder_levels(_converEfficiencyLevels)
 
     @classmethod
-    def constructSets(cls):
+    def construct_sets(cls):
         """ constructs the pe.Sets of the class <ConditioningTechnology> """
-        model = EnergySystem.getConcreteModel()
+        model = EnergySystem.get_pyomo_model()
         # get parent carriers
-        _outputCarriers    = cls.getAttributeOfAllElements("outputCarrier")
-        _referenceCarriers = cls.getAttributeOfAllElements("referenceCarrier")
+        _outputCarriers    = cls.get_attribute_of_all_elements("outputCarrier")
+        _referenceCarriers = cls.get_attribute_of_all_elements("referenceCarrier")
         _parentCarriers    = list()
         _childCarriers     = dict()
         for tech, carrierRef in _referenceCarriers.items():
@@ -115,8 +115,8 @@ class ConditioningTechnology(ConversionTechnology):
         _conditioningCarriers = _parentCarriers+[carrier[0] for carrier in _childCarriers.values()]
 
         # update indexing sets
-        EnergySystem.indexingSets.append("setConditioningCarriers")
-        EnergySystem.indexingSets.append("setConditioningCarrierParents")
+        EnergySystem.indexing_sets.append("setConditioningCarriers")
+        EnergySystem.indexing_sets.append("setConditioningCarrierParents")
 
         # set of conditioning carriers
         model.setConditioningCarriers = pe.Set(

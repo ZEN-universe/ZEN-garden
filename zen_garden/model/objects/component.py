@@ -26,7 +26,7 @@ class Component:
         cls.componentObject = componentObject
 
     @classmethod
-    def getComponentObject(cls):
+    def get_component_object(cls):
         """ returns componentObject """
         if hasattr(cls,"componentObject"):
             return cls.componentObject
@@ -34,8 +34,8 @@ class Component:
             raise AttributeError(f"The class {cls.__name__} has not yet been instantiated!")
 
     @staticmethod
-    def compileDocString(doc,indexList,name,domain = None):
-        """ compile docstring from doc and indexList"""
+    def compileDocString(doc,index_list,name,domain = None):
+        """ compile docstring from doc and index_list"""
         assert type(doc)==str,f"Docstring {doc} has wrong format. Must be 'str' but is '{type(doc).__name__}'"
         # check for prohibited strings
         prohibitedStrings = [",",";",":","/","name","doc","dims","domain"]
@@ -45,7 +45,7 @@ class Component:
                 logging.warning(f"Docstring '{originalDoc}' contains prohibited string '{string}'. Occurrences are dropped.")
                 doc = doc.replace(string,"")
         # joined index names
-        joinedIndex = ",".join(indexList)
+        joinedIndex = ",".join(index_list)
         # complete doc string
         completeDoc = f"name:{name};doc:{doc};dims:{joinedIndex}"
         if domain:
@@ -53,15 +53,15 @@ class Component:
         return completeDoc
 
     @staticmethod
-    def getIndexNamesData(indexList):
-        """ splits indexList in data and index names """
-        if isinstance(indexList,tuple):
-            indexValues,index_names = indexList
-        elif isinstance(indexList,pe.Set):
-            indexValues = copy.copy(indexList)
-            index_names  = [indexList.name]
+    def getIndexNamesData(index_list):
+        """ splits index_list in data and index names """
+        if isinstance(index_list,tuple):
+            indexValues,index_names = index_list
+        elif isinstance(index_list,pe.Set):
+            indexValues = copy.copy(index_list)
+            index_names  = [index_list.name]
         else:
-            raise TypeError(f"Type {type(indexList)} unknown to extract index names.")
+            raise TypeError(f"Type {type(index_list)} unknown to extract index names.")
         return indexValues,index_names
 
 class Parameter(Component):
@@ -72,14 +72,14 @@ class Parameter(Component):
         self.maxParameterValue  = {"name":None,"value":None}
 
     @classmethod
-    def addParameter(cls,name, data, doc):
+    def add_parameter(cls,name, data, doc):
         """ initialization of a parameter
         :param name: name of parameter
         :param data: non default data of parameter and index_names
         :param doc: docstring of parameter """
-        parameterObject = cls.getComponentObject()
+        parameterObject = cls.get_component_object()
         if name not in parameterObject.docs.keys():
-            data, indexList = cls.getIndexNamesData(data)
+            data, index_list = cls.getIndexNamesData(data)
             # save if highest or lowest value
             cls.saveMinMax(parameterObject,data,name)
             # convert to dict
@@ -87,7 +87,7 @@ class Parameter(Component):
             # set parameter
             setattr(parameterObject, name, data)
             # save additional parameters
-            parameterObject.docs[name] = cls.compileDocString(doc,indexList,name)
+            parameterObject.docs[name] = cls.compileDocString(doc,index_list,name)
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")
 
@@ -142,7 +142,7 @@ class Variable(Component):
         super().__init__()
 
     @classmethod
-    def addVariable(cls, model:pe.ConcreteModel, name, index_sets, domain,bounds = (None,None), doc = ""):
+    def add_variable(cls, model:pe.ConcreteModel, name, index_sets, domain,bounds = (None,None), doc = ""):
         """ initialization of a variable
         :param model:       pe.ConcreteModel
         :param name:        name of variable
@@ -150,9 +150,9 @@ class Variable(Component):
         :param domain:      domain of variable
         :param bounds:      bounds of variable
         :param doc:         docstring of variable """
-        variableObject = cls.getComponentObject()
+        variableObject = cls.get_component_object()
         if name not in variableObject.docs.keys():
-            indexValues,indexList = cls.getIndexNamesData(index_sets)
+            indexValues,index_list = cls.getIndexNamesData(index_sets)
             var = pe.Var(
                 indexValues,
                 domain = domain,
@@ -161,7 +161,7 @@ class Variable(Component):
             )
             model.add_component(name,var)
             # save variable doc
-            variableObject.docs[name] = cls.compileDocString(doc,indexList,name,domain.name)
+            variableObject.docs[name] = cls.compileDocString(doc,index_list,name,domain.name)
         else:
             logging.warning(f"Variable {name} already added. Can only be added once")
 
@@ -170,7 +170,7 @@ class Constraint(Component):
         super().__init__()
 
     @classmethod
-    def addConstraint(cls, model: pe.ConcreteModel, name, index_sets, rule,doc="",constraintType="Constraint"):
+    def add_constraint(cls, model: pe.ConcreteModel, name, index_sets, rule,doc="",constraintType="Constraint"):
         """ initialization of a variable
         :param model:       pe.ConcreteModel
         :param name:        name of variable
@@ -180,9 +180,9 @@ class Constraint(Component):
         :param constraintType: either 'Constraint', 'Disjunct','Disjunction'"""
         constraintTypes = ['Constraint', 'Disjunct','Disjunction']
         assert constraintType in constraintTypes,f"Constraint type '{constraintType}' unknown"
-        constraintObject = cls.getComponentObject()
+        constraintObject = cls.get_component_object()
         if name not in constraintObject.docs.keys():
-            indexValues,indexList = cls.getIndexNamesData(index_sets)
+            indexValues,index_list = cls.getIndexNamesData(index_sets)
             if constraintType == "Constraint":
                 constraintClass = pe.Constraint
             elif constraintType == "Disjunct":
@@ -196,6 +196,6 @@ class Constraint(Component):
             )
             model.add_component(name, constraint)
             # save constraint doc
-            constraintObject.docs[name] = cls.compileDocString(doc,indexList,name)
+            constraintObject.docs[name] = cls.compileDocString(doc,index_list,name)
         else:
             logging.warning(f"{constraintType} {name} already added. Can only be added once")

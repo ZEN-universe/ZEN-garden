@@ -88,7 +88,7 @@ class OptimizationSetup():
         """ constructs the optimization problem """
         # create empty ConcreteModel
         self.model = pe.ConcreteModel()
-        EnergySystem.set_concrete_model(self.model)
+        EnergySystem.set_pyomo_model(self.model)
         # define and construct components of self.model
         Element.construct_model_components()
         logging.info("Apply Big-M GDP ")
@@ -288,7 +288,7 @@ class OptimizationSetup():
         """ overwrite previous carbon emissions with cumulative carbon emissions
         :param step_horizon: step of the rolling horizon """
         energy_system                           = EnergySystem.get_energy_system()
-        interval_between_years                  = EnergySystem.getSystem()["intervalBetweenYears"]
+        interval_between_years                  = EnergySystem.get_system()["intervalBetweenYears"]
         _carbon_emissions_cumulative            = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
         carbon_emissions                        = self.model.carbon_emissions_total.extract_values()[step_horizon]
         energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + carbon_emissions*(interval_between_years-1)

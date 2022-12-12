@@ -28,49 +28,49 @@ class ConditioningCarrier(Carrier):
         logging.info(f'Initialize conditioning carrier {carrier}')
         super().__init__(carrier)
         # store input data
-        self.storeInputData()
+        self.store_input_data()
         # add carrier to list
         ConditioningCarrier.addElement(self)
 
-    def storeInputData(self):
+    def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # get attributes from class <Technology>
-        super().storeInputData()
+        super().store_input_data()
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
-    def constructVars(cls):
+    def construct_vars(cls):
         """ constructs the pe.Vars of the class <Carrier> """
-        model = EnergySystem.getConcreteModel()
+        model = EnergySystem.get_pyomo_model()
         
         # flow of imported carrier
-        Variable.addVariable(
+        Variable.add_variable(
             model,
             name="endogenousCarrierDemand",
-            index_sets= cls.createCustomSet(["setConditioningCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["setConditioningCarriers","setNodes","setTimeStepsOperation"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent model endogenous carrier demand. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
         )
 
     @classmethod
-    def constructConstraints(cls):
+    def construct_constraints(cls):
         """ constructs the pe.Constraints of the class <Carrier> """
-        model = EnergySystem.getConcreteModel()
+        model = EnergySystem.get_pyomo_model()
 
         # limit import flow by availability
-        Constraint.addConstraint(
+        Constraint.add_constraint(
             model,
             name="constraintCarrierDemandCoupling",
-            index_sets= cls.createCustomSet(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
             rule = constraintCarrierDemandCouplingRule,
             doc = 'coupeling model endogenous and exogenous carrier demand',
         )
         # overwrite energy balance when conditioning carriers are included
         model.constraintNodalEnergyBalance.deactivate()
-        Constraint.addConstraint(
+        Constraint.add_constraint(
             model,
             name="constraintNodalEnergyBalanceConditioning",
-            index_sets= cls.createCustomSet(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["setCarriers", "setNodes", "setTimeStepsOperation"]),
             rule=constraintNodalEnergyBalanceWithConditioningRule,
             doc='node- and time-dependent energy balance for each carrier',
         )
@@ -86,9 +86,9 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
     """" 
     nodal energy balance for each time step. 
     The constraint is indexed by setTimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
-    timeStepEnergyBalance --> baseTimeStep --> elementTimeStep
+    timeStepEnergyBalance --> base_time_step --> element_time_step
     """
-    params = Parameter.getComponentObject()
+    params = Parameter.get_component_object()
 
     # carrier input and output conversion technologies
     carrierConversionIn, carrierConversionOut = 0, 0
@@ -99,8 +99,8 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
             carrierConversionOut    += model.outputFlow[tech,carrier,node,time]
     # carrier flow transport technologies
     carrierFlowIn, carrierFlowOut   = 0, 0
-    setEdgesIn                      = EnergySystem.calculateConnectedEdges(node,"in")
-    setEdgesOut                     = EnergySystem.calculateConnectedEdges(node,"out")
+    setEdgesIn                      = EnergySystem.calculate_connected_edges(node,"in")
+    setEdgesOut                     = EnergySystem.calculate_connected_edges(node,"out")
     for tech in model.setTransportTechnologies:
         if carrier in model.setReferenceCarriers[tech]:
             carrierFlowIn   += sum(model.carrierFlow[tech, edge, time]
