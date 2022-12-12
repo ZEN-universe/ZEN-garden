@@ -81,17 +81,17 @@ def test_1a(config):
 def test_1a_wo_storageTechnologies(config):
     # run the test
     restore_default_state()
-    optimizationSetup = main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1a"))
+    optimizationSetup = main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1a_wo_storageTechnologies"))
 
-    failedVariables, assertionString = compareVariables('test_1a_wo_storageTechnologies',optimizationSetup)
+    failedVariables, assertionString = compareVariables('test_1a',optimizationSetup)
     assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_1a_wo_transportTechnologies(config):
     # run the test
     restore_default_state()
-    optimizationSetup = main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1a"))
+    optimizationSetup = main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1a_wo_transportTechnologies"))
 
-    failedVariables, assertionString = compareVariables('test_1a_wo_transportTechnologies',optimizationSetup)
+    failedVariables, assertionString = compareVariables('test_1a',optimizationSetup)
     assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_1b(config):
