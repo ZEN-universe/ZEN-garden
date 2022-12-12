@@ -60,7 +60,7 @@ class Postprocess:
         os.makedirs(self.nameDir, exist_ok=True)
 
         # check if we should overwrite output
-        self.overwirte = self.system["overwriteOutput"]
+        self.overwirte = self.analysis["overwriteOutput"]
         # get the compression param
         self.compress = self.analysis["compressOutput"]
 

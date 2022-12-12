@@ -13,7 +13,6 @@ import json
 import zlib
 import os
 
-from ..model.objects.energy_system import EnergySystem
 from .time_steps import SequenceTimeStepsDicts
 
 class Results(object):
@@ -76,6 +75,12 @@ class Results(object):
         for scenario in self.scenarios:
             # init dict
             self.results[scenario] = {}
+
+            # load the corresponding timestep dict
+            time_dict = self.load_sequence_time_steps(self.path, scenario)
+            self.results[scenario]["dictSequenceTimeSteps"] = time_dict
+            self.results[scenario]["SequenceTimeStepsDicts"] = SequenceTimeStepsDicts(time_dict)
+
             for mf in self.mf:
                 # init dict
                 self.results[scenario][mf] = {}
@@ -100,17 +105,11 @@ class Results(object):
                 self.results[scenario][mf]["pars_and_vars"].update(self.load_params(current_path))
                 self.results[scenario][mf]["pars_and_vars"].update(self.load_vars(current_path))
 
-                # load the corresponding timestep dict
-                print(scenario)
-                time_dict = self.load_sequence_time_steps(self.path, scenario)
-                self.results[scenario]["dictSequenceTimeSteps"] = time_dict
-                self.results[scenario]["SequenceTimeStepsDicts"] = SequenceTimeStepsDicts(time_dict)
-
                 # the opt we only load when requested
                 if load_opt:
                     self.results[scenario][mf]["optdict"] = self.load_opt(current_path)
 
-        # load the time step duration
+        # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
         self.timeStepOperationalDuration = self.loadTimeStepOperationDuration()
         self.timeStepStorageDuration = self.loadTimeStepStorageDuration()
 
@@ -319,9 +318,6 @@ class Results(object):
                  with scenarios as keys and dataframes as value is returned
         """
 
-        # set the dict
-        EnergySystem.setSequenceTimeStepsDict(self.results["dictSequenceTimeSteps"])
-
         # select the scenarios
         if scenario is not None:
             scenarios = [scenario]
@@ -331,6 +327,9 @@ class Results(object):
         # loop
         _data = {}
         for scenario in scenarios:
+            # we get the timestep dict
+            SequenceTimeStepsDicts = self.results[scenario]["SequenceTimeStepsDicts"]
+
             if not self.has_MF:
                 # we set the dataframe of the variable into the data dict
                 _data[scenario] = self.results[scenario][None]["pars_and_vars"][name]["dataframe"]
@@ -368,16 +367,15 @@ class Results(object):
                                            errors="coerce").equals(_varSeries.columns.droplevel(0)):
                             # TODO only valid for same time steps between techs
                             if isStorage:
-                                techProxy = [k for k in self.results["dictSequenceTimeSteps"]["operation"].keys()
+                                techProxy = [k for k in self.results[scenario]["dictSequenceTimeSteps"]["operation"].keys()
                                              if "storage" in k.lower()][0]
                             else:
-                                techProxy = [k for k in self.results["dictSequenceTimeSteps"]["operation"].keys()
+                                techProxy = [k for k in self.results[scenario]["dictSequenceTimeSteps"]["operation"].keys()
                                              if "storage" not in k.lower()][0]
                             # get the timesteps
-                            timeStepsYear = EnergySystem.encodeTimeStep(techProxy,
-                                                                        EnergySystem.decodeTimeStep(None, year,
-                                                                                                    "yearly"),
-                                                                        yearly=True)
+                            timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(techProxy,
+                                                                                  SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
+                                                                                  yearly=True)
                             # get the data
                             tmp_data = _varSeries[[("value", tstep) for tstep in timeStepsYear]]
                             # rename
@@ -471,6 +469,8 @@ class Results(object):
         """
         # extract the data
         component_name, component_data = self._get_component_data(component, scenario)
+        # timestep dict
+        SequenceTimeStepsDicts = self.results[scenario]["SequenceTimeStepsDicts"]
 
         ts_type = self._get_ts_type(component_data, component_name)
 
@@ -496,10 +496,10 @@ class Results(object):
         for row in component_data.index:
             # we know the name
             if elementName:
-                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(elementName+_storageString)
+                _sequenceTimeSteps = SequenceTimeStepsDicts.getSequenceTimeSteps(elementName+_storageString)
             # we extract the name
             else:
-                _sequenceTimeSteps = EnergySystem.getSequenceTimeSteps(row[0]+_storageString)
+                _sequenceTimeSteps = SequenceTimeStepsDicts.getSequenceTimeSteps(row[0]+_storageString)
 
             # throw together
             _sequenceTimeSteps = _sequenceTimeSteps[np.in1d(_sequenceTimeSteps,list(component_data.columns))]
@@ -525,7 +525,9 @@ class Results(object):
         :return: A dataframe containing the total value with the specified paramters
         """
         # extract the data
-        component_name,component_data = self._get_component_data(component,scenario)
+        component_name,component_data = self._get_component_data(component, scenario)
+        # timestep dict
+        SequenceTimeStepsDicts = self.results[scenario]["SequenceTimeStepsDicts"]
 
         ts_type = self._get_ts_type(component_data,component_name)
 
@@ -564,7 +566,9 @@ class Results(object):
 
             if year is not None:
                 # only for the given year
-                timeStepsYear = EnergySystem.encodeTimeStep(elementName+_storageString,EnergySystem.decodeTimeStep(None, year, "yearly"),yearly=True)
+                timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName+_storageString,
+                                                                      SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
+                                                                      yearly=True)
                 totalValue = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
             else:
                 # for all years
@@ -572,7 +576,9 @@ class Results(object):
                     totalValueTemp = pd.DataFrame(index=component_data.index, columns=self.years)
                     for yearTemp in self.years:
                         # set a proxy for the element name
-                        timeStepsYear = EnergySystem.encodeTimeStep(elementName+_storageString,EnergySystem.decodeTimeStep(None, yearTemp, "yearly"),yearly=True)
+                        timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName+_storageString,
+                                                                              SequenceTimeStepsDicts.decodeTimeStep(None, yearTemp, "yearly"),
+                                                                              yearly=True)
                         totalValueTemp[yearTemp] = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
                     totalValue = totalValueTemp
                 else:
@@ -584,9 +590,9 @@ class Results(object):
             if year is not None:
                 # set a proxy for the element name
                 elementName_proxy = component_data.index.get_level_values(level=0)[0]
-                timeStepsYear = EnergySystem.encodeTimeStep(elementName_proxy+_storageString,
-                                                            EnergySystem.decodeTimeStep(None, year, "yearly"),
-                                                            yearly=True)
+                timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName_proxy+_storageString,
+                                                                      SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
+                                                                      yearly=True)
                 totalValue = totalValue[timeStepsYear].sum(axis=1)
             else:
                 if split_years:
@@ -594,7 +600,9 @@ class Results(object):
                     for yearTemp in self.years:
                         # set a proxy for the element name
                         elementName_proxy = component_data.index.get_level_values(level=0)[0]
-                        timeStepsYear = EnergySystem.encodeTimeStep(elementName_proxy + _storageString,EnergySystem.decodeTimeStep(None, yearTemp, "yearly"),yearly=True)
+                        timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName_proxy + _storageString,
+                                                                              SequenceTimeStepsDicts.decodeTimeStep(None, yearTemp, "yearly"),
+                                                                              yearly=True)
                         totalValueTemp[yearTemp] = totalValue[timeStepsYear].sum(axis=1)
                     totalValue = totalValueTemp
                 else:
@@ -630,14 +638,12 @@ class Results(object):
             else:
                 component_data = self.get_df(component).unstack()
         elif isinstance(component, pd.Series):
-            # set the timesteps
-            EnergySystem.setSequenceTimeStepsDict(self.results["dictSequenceTimeSteps"])
             component_name = component.name
             component_data = component.unstack()
         else:
             raise TypeError(f"Type {type(component).__name__} of input is not supported.")
 
-        return component_name,component_data
+        return component_name, component_data
 
     def _get_ts_type(self, component_data,component_name):
         """ get time step type (operational, storage, yearly) """

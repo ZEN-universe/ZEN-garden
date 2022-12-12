@@ -13,7 +13,7 @@ from .model.objects.technology.transport_technology import TransportTechnology
 
 from .model.optimization_setup import OptimizationSetup
 
-from .postprocess.results import Postprocess
+from .postprocess.postprocess import Postprocess
 
 from .preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
