@@ -368,10 +368,10 @@ class Results(object):
                             # TODO only valid for same time steps between techs
                             if isStorage:
                                 techProxy = [k for k in self.results[scenario]["dictSequenceTimeSteps"]["operation"].keys()
-                                             if "storage" in k.lower()][0]
+                                             if "storagelevel" in k.lower()][0]
                             else:
                                 techProxy = [k for k in self.results[scenario]["dictSequenceTimeSteps"]["operation"].keys()
-                                             if "storage" not in k.lower()][0]
+                                             if "storagelevel" not in k.lower()][0]
                             # get the timesteps
                             timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(techProxy,
                                                                                   SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
@@ -457,7 +457,7 @@ class Results(object):
         """
         Loads duration of operational time steps
         """
-        return self.get_df("timeStepsStorageLevelDuration")
+        return self.get_df("timeStepsStorageLevelDuration", isStorage=True)
 
     def getFullTS(self, component, elementName=None, year=None, scenario=None):
         """
@@ -515,13 +515,14 @@ class Results(object):
         outputDf = pd.concat(_outputTemp,axis=0,keys = _outputTemp.keys()).unstack()
         return outputDf
 
-    def getTotal(self, component, elementName=None, year=None, scenario=None,split_years = True):
+    def getTotal(self, component, elementName=None, year=None, scenario=None, split_years=True):
         """
         Calculates the total Value of a component
         :param component: Either a dataframe as returned from <get_df> or the name of the component
         :param elementName: The element name to calculate the value for, defaults to all elements
         :param year: The year to calculate the value for, defaults to all years
         :param scenario: The scenario to calculate the total value for
+        :param split_years: Calculate the value for each year individually
         :return: A dataframe containing the total value with the specified paramters
         """
         # extract the data
