@@ -86,7 +86,7 @@ class DataInput():
         :param timeSteps: specific timeSteps of element
         :return dfOutput: filled output dataframe """
 
-        dfInput = self.convertRealToGenericTimeIndices(dfInput,indexNameList,timeSteps)
+        dfInput = self.convertRealToGenericTimeIndices(dfInput,timeSteps)
 
         # select and drop scenario
         assert dfInput.columns is not None, f"Input file '{fileName}' has no columns"
@@ -547,35 +547,43 @@ class DataInput():
         else:
             return False
 
-    def convertRealToGenericTimeIndices(self,dfInput,indexNameList,timeSteps):
+    def convertRealToGenericTimeIndices(self,dfInput,timeSteps):
         """convert yearly time indices to generic time indices
         :param dfInput: raw input dataframe
-        :param indexNameList: list of name of indices
         :param timeSteps: specific timeSteps of element
         :return dfInput: input dataframe with generic time indices
         """
         #check if input data is time-dependent and has yearly time steps
-        if timeSteps == self.energySystem.setTimeStepsYearly and 'time' in indexNameList:
-            #check if input data has generic time indices already
-            for index in dfInput.loc[:,'time']:
-                if index <= 20:
-                    return  dfInput
-            #check if there is input data for every optimized year
-            if dfInput.shape[0] == len(self.energySystem.setTimeStepsYearly):
-                for count, value in enumerate(dfInput.time):
-                    dfInput.at[count,'time'] = dfInput.at[count,'time'] - self.system["referenceYear"]
-            # interpolate parameter values for missing years
-            else:
-                parameters = dfInput.axes[1]
-                for param in parameters:
-                    if param == 'time':
-                        continue
-                    for year in self.energySystem.setTimeStepYears:
-                        if year not in dfInput.time.values:
-                            dfInput = dfInput.append({'time':year,param:float('nan')},ignore_index=True)
-                    dfInput = dfInput.sort_values('time')
-                    dfInput[param] = dfInput[param].interpolate()
-            
+        if timeSteps is self.energySystem.setTimeStepsYearly:
+            #check if input data is still given with generic time indices
+            if max(dfInput.loc[:,'time']) < self.analysis["earliestYearOfData"]:
+                warnings.warn(f"Generic time indices won't be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
+                return  dfInput
+
+            #interpolate missing data
+            parameters = dfInput.axes[1]
+            for param in parameters:
+                if param == 'time':
+                    continue
+                for year in self.energySystem.setTimeStepYears:
+                    if year not in dfInput.time.values:
+                        dfInput = dfInput.append({'time': year, param: float('nan')}, ignore_index=True)
+                dfInput = dfInput.sort_values('time')
+                dfInput[param] = dfInput[param].interpolate()
+
+            #remove data of years that won't be simulated
+            unnecessaryRows = []
+            for count in dfInput.axes[0]:
+                if dfInput.at[count,"time"] not in self.energySystem.setTimeStepYears:
+                    unnecessaryRows.append(count)
+            dfInput = dfInput.drop(index=unnecessaryRows)
+
+            #convert yearly time indices to generic ones
+            counter = 0
+            for index in dfInput.axes[0]:
+                dfInput.at[index,"time"] = dfInput.at[index,"time"] - self.system["referenceYear"] - (self.system["intervalBetweenYears"] - 1) * counter
+                counter += 1
+
         return dfInput
 
     @staticmethod

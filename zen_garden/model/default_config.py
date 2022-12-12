@@ -119,6 +119,8 @@ class Config(object):
         self.analysis["maxOutputSizeMB"] = 500
         # name of data folder for energy system specification
         self.analysis["folderNameSystemSpecification"] = "systemSpecification"
+        #earliest possible year of in input data, needed to differentiate between yearly and generic time indices
+        self.analysis["earliestYearOfData"] = 1900
 
         ## System - Items assignment
         # set of energy carriers
