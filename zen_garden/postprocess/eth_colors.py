@@ -53,21 +53,28 @@ class ETHColors:
     def setColorsTechs(self):
         self.colors["techs"] = {
             "natural_gas_turbine": self.getColor("petrol"),
+            "Natural gas turbine": self.getColor("petrol"),
             "hard_coal_plant": self.getColor("grey","dark"),
+            "Hard coal plant": self.getColor("grey","dark"),
             "hard_coal_boiler": self.getColor("grey","dark"),
             "natural_gas_turbine_CCS": self.getColor("petrol",60),
             "hard_coal_plant_CCS": self.getColor("grey"),
             "coal": self.getColor("bronze","dark"),
             "nuclear": self.getColor("purple"),
+            "Nuclear power plant": self.getColor("purple"),
             "lignite_coal_plant": self.getColor("bronze","dark"),
+            "Lignite coal plant": self.getColor("bronze","dark"),
             "oil_plant": self.getColor("grey"),
             "lng_terminal": self.getColor("grey",40),
             "wind_onshore": self.getColor("blue"),
             "wind": self.getColor("blue",60),
+            "Wind turbine": self.getColor("blue",60),
             "wind_solar": self.getColor("blue",60),
             "photovoltaics": self.getColor("bronze",60),
+            "Photovoltaics": self.getColor("bronze",60),
             "wind_offshore": self.getColor("blue","dark"),
             "biomass_plant": self.getColor("green"),
+            "Biomass power plant": self.getColor("green"),
             "biomass_boiler": self.getColor("green"),
             "biomass_plant_CCS": self.getColor("green",60),
             "CCS": self.getColor("red"),
@@ -75,12 +82,14 @@ class ETHColors:
             "run-of-river_hydro": self.getColor("blue",80),
             "reservoir_hydro": self.getColor("blue",60),
             "hydro": self.getColor("blue"),
+            "Hydropower": self.getColor("blue"),
             "renewables": self.getColor("green", 60),
             "heat_pump": self.getColor("blue"),
             "natural_gas_boiler": self.getColor("petrol",60),
             "oil_boiler": self.getColor("bronze",60),
             "electrode_boiler": self.getColor("blue",60),
             "others": self.getColor("red",60),
+            "Others": self.getColor("red",60),
             "battery": self.getColor("bronze",60),
             "hydrogen_storage": self.getColor("purple",60),
             "natural_gas_storage": self.getColor("petrol",60),
@@ -139,6 +148,11 @@ class ETHColors:
             "noRG_MF": self.getColor("red",80),
             "noRG_MF2": self.getColor("red",60),
             "noRG_MF4": self.getColor("red",20),
+            # short
+            "short0": self.getColor("blue",60),
+            "short100": self.getColor("blue","dark"),
+            "short100noPer": self.getColor("bronze",60),
+            "short100noStor": self.getColor("bronze","dark")
         }
 
     def setManualColors(self):
@@ -149,8 +163,8 @@ class ETHColors:
         self.manualColors["Final Cumulative NPC"]               = self.getColor("blue")
         self.manualColors["Maximum New Electricity Capacities"] = self.getColor("red")
         self.manualColors["Spillover Rate Impact"]              = [self.getColor("red"), self.getColor("green")]
-        self.manualColors["reduced electrified heat"]           = self.getColor("green",60)
-        self.manualColors["reduced electricity demand"]         = self.getColor("red","dark")
+        self.manualColors["Reduced electrified heat"]           = self.getColor("green",60)
+        self.manualColors["Reduced electricity demand"]         = self.getColor("red","dark")
 
     def getColor(self,color,shade = 100):
         assert color in self.baseColors, f"color {color} not in base colors. Select from {list(self.baseColors.keys())}."
