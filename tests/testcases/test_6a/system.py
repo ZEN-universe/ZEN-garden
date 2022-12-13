@@ -21,11 +21,11 @@ system["socialDiscountRate"]            = 0     # similar to discount factor, bu
 system["knowledgeSpilloverRate"]        = 0.025
 # time steps
 system["referenceYear"]                 = 2022
-system["unaggregatedTimeStepsPerYear"]  = 1
-system["aggregatedTimeStepsPerYear"]    = 1
+system["unaggregatedTimeStepsPerYear"]  = 2
+system["aggregatedTimeStepsPerYear"]    = 2
 system["conductTimeSeriesAggregation"]  = False
 
-system["optimizedYears"]                = 1
+system["optimizedYears"]                = 2
 system["intervalBetweenYears"]          = 1
 system["useRollingHorizon"]             = False
 system["yearsInRollingHorizon"]         = 1
