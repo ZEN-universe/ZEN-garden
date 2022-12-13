@@ -149,7 +149,7 @@ class OptimizationSetup():
                 element = Element.getElement(elementName)
             # overwrite scenario dependent parameters
             for param in params:
-                assert "PWA" in param,"Scenarios are not implemented for PWA."
+                assert "PWA" not in param,"Scenarios are not implemented for PWA."
                 fileName = param
                 column   = None
                 if type(param) is tuple:
