@@ -331,7 +331,7 @@ class Results(object):
     This class reads in the results after the pipeline has run
     """
 
-    def __init__(self, path, load_opt=False):
+    def __init__(self, path, load_opt=False, scenarios=[]):
         """
         Initializes the Results class with a given path
         :param path: Path to the output of the optimization problem
@@ -359,7 +359,10 @@ class Results(object):
         # check what type of results we have
         if self.results["system"]["conductScenarioAnalysis"]:
             self.has_scenarios = True
-            self.scenarios = [f"scenario_{scenario}" for scenario in self.results["scenarios"].keys()]
+            if scenarios:
+                self.scenarios=scenarios
+            else:
+                self.scenarios = [f"scenario_{scenario}" for scenario in self.results["scenarios"].keys()]
         else:
             self.has_scenarios = False
             self.scenarios = [None]
