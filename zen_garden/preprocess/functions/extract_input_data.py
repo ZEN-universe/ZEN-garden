@@ -299,13 +299,14 @@ class DataInput():
         :param indexSets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return existingLifetimeDict: return existing capacity and existing lifetime """
         column   = "yearConstruction"
-        dfOutput = pd.Series(index=self.element.existingCapacity.index,data=0)
+        indexList, indexNameList = self.constructIndexList(indexSets, None)
+        multiidx = pd.MultiIndex.from_product(indexList, names=indexNameList)
+        dfOutput = pd.Series(index=multiidx,data=0)
         # if no existing capacities
         if not self.analysis["useExistingCapacities"]:
             return dfOutput
 
-        if f"{fileName}.csv" in os.listdir(self.folderPath):
-            indexList, indexNameList = self.constructIndexList(indexSets, None)
+        if f"{fileName}{scenario}.csv" in os.listdir(self.folderPath):
             dfInput                  = self.readInputData(fileName+scenario)
             # fill output dataframe
             dfOutput = self.extractGeneralInputData(dfInput, dfOutput, fileName, indexNameList, column, defaultValue = 0)
