@@ -16,14 +16,36 @@ class SequenceTimeStepsDicts(object):
     It is very similar to EnergySystem functions and is meant to avoid the import of packages that can cause conflicts.
     """
 
-    def __init__(self, dictAllSequenceTimeSteps):
+    def __init__(self, dictAllSequenceTimeSteps=None):
         """
         Sets all dicts of sequences of time steps.
         :param dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps
         """
 
-        self.dictSequenceTimeStepsOperation = dictAllSequenceTimeSteps["operation"]
-        self.dictSequenceTimeStepsYearly = dictAllSequenceTimeSteps["yearly"]
+        # set the params if provided
+        if dictAllSequenceTimeSteps is not None:
+            self.dictSequenceTimeStepsOperation = dictAllSequenceTimeSteps["operation"]
+            self.dictSequenceTimeStepsYearly = dictAllSequenceTimeSteps["yearly"]
+        else:
+            self.dictSequenceTimeStepsOperation = dict()
+            self.dictSequenceTimeStepsYearly = dict()
+
+    def setSequenceTimeSteps(self, element, sequenceTimeSteps, timeStepType=None):
+        """
+        Sets sequence of time steps, either of operation, invest, or year
+        :param element: name of element in model
+        :param sequenceTimeSteps: list of time steps corresponding to base time step
+        :param timeStepType: type of time step (operation or yearly)
+        """
+
+        if not timeStepType:
+            timeStepType = "operation"
+        if timeStepType == "operation":
+            self.dictSequenceTimeStepsOperation[element] = sequenceTimeSteps
+        elif timeStepType == "yearly":
+            self.dictSequenceTimeStepsYearly[element] = sequenceTimeSteps
+        else:
+            raise KeyError(f"Time step type {timeStepType} is incorrect")
 
     def reset_dicts(self, dictAllSequenceTimeSteps):
         """
@@ -50,6 +72,18 @@ class SequenceTimeStepsDicts(object):
             return self.dictSequenceTimeStepsYearly[None]
         else:
             raise KeyError(f"Time step type {timeStepType} is incorrect")
+
+    def getSequenceTimeStepsDict(self):
+        """
+        Returns all dicts of sequence of time steps.
+        :return dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps
+        """
+
+        dictAllSequenceTimeSteps = {
+            "operation": self.dictSequenceTimeStepsOperation,
+            "yearly": self.dictSequenceTimeStepsYearly
+        }
+        return dictAllSequenceTimeSteps
 
     def encodeTimeStep(cls, element: str, baseTimeSteps: int, timeStepType: str = None, yearly=False):
         """

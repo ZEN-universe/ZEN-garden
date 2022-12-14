@@ -13,7 +13,7 @@ import json
 import zlib
 import os
 
-from .time_steps import SequenceTimeStepsDicts
+from zen_garden.model.objects.time_steps import SequenceTimeStepsDicts
 
 class Results(object):
     """
