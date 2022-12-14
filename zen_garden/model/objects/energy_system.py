@@ -17,6 +17,7 @@ import copy
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 from zen_garden.preprocess.functions.unit_handling         import UnitHandling
 from .component import Parameter,Variable,Constraint
+from .time_steps import SequenceTimeStepsDicts
 
 class EnergySystem:
     # energySystem
@@ -51,6 +52,8 @@ class EnergySystem:
     dictElementClasses = {}
     # empty list of class names
     elementList = {}
+    # The timesteps
+    SequenceTimeSteps = SequenceTimeStepsDicts()
 
     def __init__(self,nameEnergySystem):
         """ initialization of the energySystem
@@ -232,22 +235,15 @@ class EnergySystem:
         :param element: name of element in model
         :param sequenceTimeSteps: list of time steps corresponding to base time step
         :param timeStepType: type of time step (operation or yearly)"""
-        if not timeStepType:
-            timeStepType = "operation"
 
-        if timeStepType == "operation":
-            cls.dictSequenceTimeStepsOperation[element] = sequenceTimeSteps
-        elif timeStepType == "yearly":
-            cls.dictSequenceTimeStepsYearly[element]    = sequenceTimeSteps
-        else:
-            raise KeyError(f"Time step type {timeStepType} is incorrect")
+        cls.SequenceTimeSteps.setSequenceTimeSteps(element=element, sequenceTimeSteps=sequenceTimeSteps,
+                                                   timeStepType=timeStepType)
 
     @classmethod
     def setSequenceTimeStepsDict(cls,dictAllSequenceTimeSteps):
         """ sets all dicts of sequences of time steps.
         :param dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps"""
-        cls.dictSequenceTimeStepsOperation = dictAllSequenceTimeSteps["operation"]
-        cls.dictSequenceTimeStepsYearly    = dictAllSequenceTimeSteps["yearly"]
+        cls.SequenceTimeSteps.reset_dicts(dictAllSequenceTimeSteps=dictAllSequenceTimeSteps)
 
     @classmethod
     def getConcreteModel(cls):
@@ -345,24 +341,15 @@ class EnergySystem:
         :param element: name of element in model
         :param timeStepType: type of time step (operation or invest)
         :return sequenceTimeSteps: list of time steps corresponding to base time step"""
-        if not timeStepType:
-            timeStepType = "operation"
-        if timeStepType == "operation":
-            return cls.dictSequenceTimeStepsOperation[element]
-        elif timeStepType == "yearly":
-            return cls.dictSequenceTimeStepsYearly[None]
-        else:
-            raise KeyError(f"Time step type {timeStepType} is incorrect")
+
+        return cls.SequenceTimeSteps.getSequenceTimeSteps(element=element, timeStepType=timeStepType)
 
     @classmethod
     def getSequenceTimeStepsDict(cls):
         """ returns all dicts of sequence of time steps.
         :return dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps"""
-        dictAllSequenceTimeSteps = {
-            "operation" : cls.dictSequenceTimeStepsOperation,
-            "yearly"    : cls.dictSequenceTimeStepsYearly
-        }
-        return dictAllSequenceTimeSteps
+
+        return cls.SequenceTimeSteps.getSequenceTimeStepsDict()
 
     @classmethod
     def getUnitHandling(cls):
@@ -432,10 +419,9 @@ class EnergySystem:
         :param elementTimeStep: time step of element
         :param timeStepType: invest or operation. Only relevant for technologies, None for carrier
         :return baseTimeStep: baseTimeStep of model """
-        sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
-        # find where elementTimeStep in sequence of element time steps
-        baseTimeSteps = np.argwhere(sequenceTimeSteps == elementTimeStep)
-        return baseTimeSteps
+
+        return cls.SequenceTimeSteps.decodeTimeStep(element=element, elementTimeStep=elementTimeStep,
+                                                    timeStepType=timeStepType)
 
     @classmethod
     def encodeTimeStep(cls,element:str,baseTimeSteps:int,timeStepType:str = None,yearly=False):
@@ -445,18 +431,9 @@ class EnergySystem:
         :param baseTimeStep: base time step of model for which the corresponding time index is extracted
         :param timeStepType: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
-        sequenceTimeSteps = cls.getSequenceTimeSteps(element,timeStepType)
-        # get time step duration
-        if np.all(baseTimeSteps >= 0):
-            elementTimeStep = np.unique(sequenceTimeSteps[baseTimeSteps])
-        else:
-            elementTimeStep = [-1]
-        if yearly:
-            return(elementTimeStep)
-        if len(elementTimeStep) == 1:
-            return(elementTimeStep[0])
-        else:
-            raise LookupError(f"Currently only implemented for a single element time step, not {elementTimeStep}")
+
+        return cls.SequenceTimeSteps.encodeTimeStep(element=element, baseTimeSteps=baseTimeSteps,
+                                                    timeStepType=timeStepType, yearly=yearly)
 
     @classmethod
     def decodeYearlyTimeSteps(cls,elementTimeSteps):
