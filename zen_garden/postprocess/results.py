@@ -6,9 +6,11 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class is defining to read in the results of an Optimization problem.
 ==========================================================================================================================================================================="""
+import logging
 
 import numpy as np
 import pandas as pd
+import importlib
 import json
 import zlib
 import os
@@ -669,3 +671,15 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
+
+if __name__ == "__main__":
+    spec = importlib.util.spec_from_file_location("module", "config.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    config = module.config
+
+    modelName = os.path.basename(config.analysis["dataset"])
+    if os.path.exists(out_folder := os.path.join(config.analysis["folderOutput"], modelName)):
+        r = Results(out_folder)
+    else:
+        logging.critical("No results folder found!")
