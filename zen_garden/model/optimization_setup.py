@@ -172,7 +172,7 @@ class OptimizationSetup():
                         if "time" in _index_names:
                             _time_steps = list(_old_param.index.unique("time"))
                         _new_param  = element.datainput.extract_input_data(file_name,index_sets=_index_sets,time_steps=_time_steps,scenario=scenario)
-                        #else: _new_param = element.datainput.extractAttributeData(param,scenario=scenario,skipWarning=True)["value"]
+                        #else: _new_param = element.datainput.extract_attribute(param,scenario=scenario,skip_warning=True)["value"]
                         setattr(element, param, _new_param)
         # if scenario contains timeSeries dependent params conduct timeSeriesAggregation
         if conduct_time_series_aggregation:

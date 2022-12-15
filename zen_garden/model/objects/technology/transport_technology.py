@@ -22,7 +22,7 @@ class TransportTechnology(Technology):
     label           = "setTransportTechnologies"
     locationType    = "setEdges"
     # empty list of elements
-    listOfElements = []
+    list_of_elements = []
     # dict of reversed edges
     dictReversedEdges = {}
 
@@ -35,7 +35,7 @@ class TransportTechnology(Technology):
         # store input data
         self.store_input_data()
         # add TransportTechnology to list
-        TransportTechnology.addElement(self)
+        TransportTechnology.add_element(self)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """   
@@ -43,7 +43,7 @@ class TransportTechnology(Technology):
         super().store_input_data()
         # set attributes for parameters of child class <TransportTechnology>
         self.distance                       = self.datainput.extract_input_data("distanceEuclidean",index_sets=["setEdges"])
-        self.lossFlow                       = self.datainput.extractAttributeData("lossFlow")["value"]
+        self.lossFlow                       = self.datainput.extract_attribute("lossFlow")["value"]
         # get capex of transport technology
         self.getCapexTransport()
         # annualize capex
@@ -63,11 +63,11 @@ class TransportTechnology(Technology):
             self.capexSpecific    = self.datainput.extract_input_data("capexSpecific",index_sets=["setEdges", "set_time_steps"],time_steps=set_time_steps_yearly)
             self.capexPerDistance = self.datainput.extract_input_data("capexPerDistance",index_sets=["setEdges", "set_time_steps"],time_steps=set_time_steps_yearly)
         else:  # Here only capexSpecific is used, and capexPerDistance is set to Zero.
-            if self.datainput.ifAttributeExists("capexPerDistance"):
+            if self.datainput.exists_attribute("capexPerDistance"):
                 self.capexPerDistance   = self.datainput.extract_input_data("capexPerDistance",index_sets=["setEdges","set_time_steps"],time_steps= set_time_steps_yearly)
                 self.capexSpecific      = self.capexPerDistance * self.distance
                 self.fixedOpexSpecific  = self.fixedOpexSpecific * self.distance
-            elif self.datainput.ifAttributeExists("capexSpecific"):
+            elif self.datainput.exists_attribute("capexSpecific"):
                 self.capexSpecific  = self.datainput.extract_input_data("capexSpecific",index_sets=["setEdges","set_time_steps"],time_steps= set_time_steps_yearly)
             else:
                 raise AttributeError(f"The transport technology {self.name} has neither capexPerDistance nor capexSpecific attribute.")
@@ -210,7 +210,7 @@ class TransportTechnology(Technology):
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunctOnTechnologyRule(cls,disjunct, tech,capacityType, edge, time):
+    def disjunctOnTechnologyRule(cls,disjunct, tech,capacity_type, edge, time):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
         # get parameter object
@@ -219,11 +219,11 @@ class TransportTechnology(Technology):
         timeStepYear = EnergySystem.convert_time_step_operation2invest(tech,time)
         # disjunct constraints min load
         disjunct.constraintMinLoad = pe.Constraint(
-            expr=model.carrierFlow[tech, edge, time] >= params.minLoad[tech,capacityType,edge,time] * model.capacity[tech,capacityType,edge, timeStepYear]
+            expr=model.carrierFlow[tech, edge, time] >= params.minLoad[tech,capacity_type,edge,time] * model.capacity[tech,capacity_type,edge, timeStepYear]
         )
 
     @classmethod
-    def disjunctOffTechnologyRule(cls,disjunct, tech,capacityType, edge, time):
+    def disjunctOffTechnologyRule(cls,disjunct, tech,capacity_type, edge, time):
         """definition of disjunct constraints if technology is off"""
         model = disjunct.model()
         disjunct.constraintNoLoad = pe.Constraint(

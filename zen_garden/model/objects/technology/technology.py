@@ -25,7 +25,7 @@ class Technology(Element):
     label           = "setTechnologies"
     locationType    = None
     # empty list of elements
-    listOfElements = []
+    list_of_elements = []
 
     def __init__(self, technology):
         """init generic technology object
@@ -34,7 +34,7 @@ class Technology(Element):
 
         super().__init__(technology)
         # add Technology to list
-        Technology.addElement(self)
+        Technology.add_element(self)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -43,12 +43,12 @@ class Technology(Element):
 
         set_base_time_steps_yearly          = EnergySystem.get_energy_system().set_base_time_steps_yearly
         set_time_steps_yearly              = EnergySystem.get_energy_system().set_time_steps_yearly
-        self.referenceCarrier           = [self.datainput.extractAttributeData("referenceCarrier",skipWarning=True)]
+        self.referenceCarrier           = [self.datainput.extract_attribute("referenceCarrier",skip_warning=True)]
         EnergySystem.set_technology_of_carrier(self.name, self.referenceCarrier)
-        self.minBuiltCapacity           = self.datainput.extractAttributeData("minBuiltCapacity")["value"]
-        self.maxBuiltCapacity           = self.datainput.extractAttributeData("maxBuiltCapacity")["value"]
-        self.lifetime                   = self.datainput.extractAttributeData("lifetime")["value"]
-        self.constructionTime           = self.datainput.extractAttributeData("constructionTime")["value"]
+        self.minBuiltCapacity           = self.datainput.extract_attribute("minBuiltCapacity")["value"]
+        self.maxBuiltCapacity           = self.datainput.extract_attribute("maxBuiltCapacity")["value"]
+        self.lifetime                   = self.datainput.extract_attribute("lifetime")["value"]
+        self.constructionTime           = self.datainput.extract_attribute("constructionTime")["value"]
         # maximum diffusion rate
         self.maxDiffusionRate           = self.datainput.extract_input_data("maxDiffusionRate", index_sets=["set_time_steps"],time_steps=set_time_steps_yearly)
 
@@ -62,20 +62,20 @@ class Technology(Element):
         self.capacityLimit              = self.datainput.extract_input_data("capacityLimit",index_sets=[_setLocation])
         self.carbonIntensityTechnology  = self.datainput.extract_input_data("carbonIntensity",index_sets=[_setLocation])
         # extract existing capacity
-        self.setExistingTechnologies    = self.datainput.extractSetExistingTechnologies()
+        self.setExistingTechnologies    = self.datainput.extract_set_existing_technologies()
         self.existingCapacity           = self.datainput.extract_input_data("existingCapacity",index_sets=[_setLocation,"setExistingTechnologies"])
         self.existingInvestedCapacity   = self.datainput.extract_input_data("existingInvestedCapacity", index_sets=[_setLocation, "set_time_steps"], time_steps=set_time_steps_yearly)
-        self.lifetimeExistingTechnology = self.datainput.extractLifetimeExistingTechnology("existingCapacity",index_sets=[_setLocation,"setExistingTechnologies"])
+        self.lifetimeExistingTechnology = self.datainput.extract_lifetime_existing_technology("existingCapacity",index_sets=[_setLocation,"setExistingTechnologies"])
 
-    def calculateCapexOfExistingCapacities(self,storageEnergy = False):
+    def calculateCapexOfExistingCapacities(self,storage_energy = False):
         """ this method calculates the annualized capex of the existing capacities """
-        if storageEnergy:
+        if storage_energy:
             existingCapacities  = self.existingCapacityEnergy
         else:
             existingCapacities  = self.existingCapacity
         if self.__class__.__name__ == "StorageTechnology":
             existingCapex   = existingCapacities.to_frame().apply(
-                lambda _existingCapacity: self.calculateCapexOfSingleCapacity(_existingCapacity.squeeze(),_existingCapacity.name,storageEnergy),axis=1)
+                lambda _existingCapacity: self.calculateCapexOfSingleCapacity(_existingCapacity.squeeze(),_existingCapacity.name,storage_energy),axis=1)
         else:
             existingCapex   = existingCapacities.to_frame().apply(
                 lambda _existingCapacity: self.calculateCapexOfSingleCapacity(_existingCapacity.squeeze(),_existingCapacity.name), axis=1)
@@ -127,20 +127,20 @@ class Technology(Element):
             for typeCapacity in list(set(_newlyBuiltCapacity.index.get_level_values(0))):
                 # if power
                 if typeCapacity == system["setCapacityTypes"][0]:
-                    _energyString = ""
+                    _energy_string = ""
                 # if energy
                 else:
-                    _energyString = "Energy"
-                _existingCapacity       = getattr(self,"existingCapacity"+_energyString)
-                _capexExistingCapacity  = getattr(self, "capexExistingCapacity" + _energyString)
+                    _energy_string = "Energy"
+                _existingCapacity       = getattr(self,"existingCapacity"+_energy_string)
+                _capexExistingCapacity  = getattr(self, "capexExistingCapacity" + _energy_string)
                 # add new existing capacity
                 _existingCapacity                           = _existingCapacity.unstack()
                 _existingCapacity[indexNewTechnology]       = _newlyBuiltCapacity.loc[typeCapacity]
-                setattr(self,"existingCapacity"+_energyString,_existingCapacity.stack())
+                setattr(self,"existingCapacity"+_energy_string,_existingCapacity.stack())
                 # calculate capex of existing capacity
                 _capexExistingCapacity                      = _capexExistingCapacity.unstack()
                 _capexExistingCapacity[indexNewTechnology]  = _capex.loc[typeCapacity]
-                setattr(self, "capexExistingCapacity" + _energyString,_capexExistingCapacity.stack())
+                setattr(self, "capexExistingCapacity" + _energy_string,_capexExistingCapacity.stack())
 
     def add_newly_invested_capacity_tech(self,invested_capacity,step_horizon):
         """ adds the newly invested capacity to the list of invested capacity
@@ -153,15 +153,15 @@ class Technology(Element):
             for typeCapacity in list(set(_newlyInvestedCapacity.index.get_level_values(0))):
                 # if power
                 if typeCapacity == system["setCapacityTypes"][0]:
-                    _energyString = ""
+                    _energy_string = ""
                 # if energy
                 else:
-                    _energyString = "Energy"
-                _existingInvestedCapacity = getattr(self, "existingInvestedCapacity" + _energyString)
+                    _energy_string = "Energy"
+                _existingInvestedCapacity = getattr(self, "existingInvestedCapacity" + _energy_string)
                 # add new existing invested capacity
                 _existingInvestedCapacity = _existingInvestedCapacity.unstack()
                 _existingInvestedCapacity[step_horizon] = _newlyInvestedCapacity.loc[typeCapacity]
-                setattr(self, "existingInvestedCapacity" + _energyString, _existingInvestedCapacity.stack())
+                setattr(self, "existingInvestedCapacity" + _energy_string, _existingInvestedCapacity.stack())
 
     ### --- getter/setter classmethods
     @classmethod
@@ -183,7 +183,7 @@ class Technology(Element):
         return range(tStart, tEnd + 1)
 
     @classmethod
-    def getAvailableExistingQuantity(cls, tech,capacityType,loc, time,typeExistingQuantity, time_step_type: str = None):
+    def getAvailableExistingQuantity(cls, tech,capacity_type,loc, time,typeExistingQuantity, time_step_type: str = None):
         """ returns existing quantity of 'tech', that is still available at invest time step 'time'.
         Either capacity or capex.
         :param tech: name of technology
@@ -220,7 +220,7 @@ class Technology(Element):
                 discountFactor = 1
             # if still available at first base time step, add to list
             if tStart == model.set_base_time_steps.at(1) or tStart == timeStepYear:
-                existingQuantity += existingVariable[tech,capacityType, loc, idExistingCapacity]*discountFactor
+                existingQuantity += existingVariable[tech,capacity_type, loc, idExistingCapacity]*discountFactor
         return existingQuantity
 
     @classmethod
@@ -321,7 +321,7 @@ class Technology(Element):
             doc = "set of all reference carriers correspondent to a technology. Dimensions: setTechnologies"
         )
         # add pe.Sets of the child classes
-        for subclass in cls.getAllSubclasses():
+        for subclass in cls.get_all_subclasses():
             subclass.construct_sets()
 
     @classmethod
@@ -400,41 +400,41 @@ class Technology(Element):
             data= EnergySystem.initialize_component(cls,"carbonIntensityTechnology",index_names=["setTechnologies","setLocation"]),
             doc = 'Parameter which specifies the carbon intensity of each technology')
         # add pe.Param of the child classes
-        for subclass in cls.getAllSubclasses():
+        for subclass in cls.get_all_subclasses():
             subclass.construct_params()
 
     @classmethod
     def construct_vars(cls):
         """ constructs the pe.Vars of the class <Technology> """
-        def capacityBounds(model,tech,capacityType, loc, time):
+        def capacityBounds(model,tech,capacity_type, loc, time):
             """ return bounds of capacity for bigM expression
             :param model: pe.ConcreteModel
             :param tech: tech index
-            :param capacityType: either power or energy
+            :param capacity_type: either power or energy
             :param loc: location of capacity
             :param time: investment time step
             :return bounds: bounds of capacity"""
             # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
-            if tech in techsOnOff:
+            if tech in techs_on_off:
                 system = EnergySystem.get_system()
                 params = Parameter.get_component_object()
-                if capacityType == system["setCapacityTypes"][0]:
-                    _energyString = ""
+                if capacity_type == system["setCapacityTypes"][0]:
+                    _energy_string = ""
                 else:
-                    _energyString = "Energy"
-                _existingCapacity           = getattr(params,"existingCapacity"+_energyString)
-                _maxBuiltCapacity           = getattr(params,"maxBuiltCapacity"+_energyString)
-                _capacityLimitTechnology    = getattr(params,"capacityLimitTechnology"+_energyString)
+                    _energy_string = "Energy"
+                _existingCapacity           = getattr(params,"existingCapacity"+_energy_string)
+                _maxBuiltCapacity           = getattr(params,"maxBuiltCapacity"+_energy_string)
+                _capacityLimitTechnology    = getattr(params,"capacityLimitTechnology"+_energy_string)
                 existingCapacities = 0
                 for idExistingTechnology in model.setExistingTechnologies[tech]:
                     if params.lifetimeExistingTechnology[tech, loc, idExistingTechnology] > params.lifetimeTechnology[tech]:
                         if time > params.lifetimeExistingTechnology[tech, loc, idExistingTechnology] - params.lifetimeTechnology[tech]:
-                            existingCapacities += _existingCapacity[tech,capacityType, loc, idExistingTechnology]
+                            existingCapacities += _existingCapacity[tech,capacity_type, loc, idExistingTechnology]
                     elif time <= params.lifetimeExistingTechnology[tech, loc, idExistingTechnology] + 1:
-                        existingCapacities  += _existingCapacity[tech,capacityType, loc, idExistingTechnology]
+                        existingCapacities  += _existingCapacity[tech,capacity_type, loc, idExistingTechnology]
 
-                maxBuiltCapacity            = len(model.set_time_steps_yearly)*_maxBuiltCapacity[tech,capacityType]
-                maxCapacityLimitTechnology  = _capacityLimitTechnology[tech,capacityType, loc]
+                maxBuiltCapacity            = len(model.set_time_steps_yearly)*_maxBuiltCapacity[tech,capacity_type]
+                maxCapacityLimitTechnology  = _capacityLimitTechnology[tech,capacity_type, loc]
                 boundCapacity = min(maxBuiltCapacity + existingCapacities,maxCapacityLimitTechnology + existingCapacities)
                 bounds = (0,boundCapacity)
                 return(bounds)
@@ -443,7 +443,7 @@ class Technology(Element):
 
         model       = EnergySystem.get_pyomo_model()
         # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
-        techsOnOff  = Technology.create_custom_set(["setTechnologies","setOnOff"])[0]
+        techs_on_off  = Technology.create_custom_set(["setTechnologies","set_on_off"])[0]
         # construct pe.Vars of the class <Technology>
         # install technology
         Variable.add_variable(
@@ -529,7 +529,7 @@ class Technology(Element):
         )
 
         # add pe.Vars of the child classes
-        for subclass in cls.getAllSubclasses():
+        for subclass in cls.get_all_subclasses():
             subclass.construct_vars()
 
     @classmethod
@@ -645,7 +645,7 @@ class Technology(Element):
         Constraint.add_constraint(
             model,
             name="disjunctOnTechnology",
-            index_sets= cls.create_custom_set(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["setTechnologies","set_on_off", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOnTechnologyRule,
             doc = "disjunct to indicate that technology is on",
             constraintType = "Disjunct"
@@ -654,7 +654,7 @@ class Technology(Element):
         Constraint.add_constraint(
             model,
             name="disjunctOffTechnology",
-            index_sets= cls.create_custom_set(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["setTechnologies","set_on_off", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
             rule = cls.disjunctOffTechnologyRule,
             doc = "disjunct to indicate that technology is off",
             constraintType = "Disjunct"
@@ -663,71 +663,71 @@ class Technology(Element):
         Constraint.add_constraint(
             model,
             name="disjunctionDecisionOnOffTechnology",
-            index_sets= cls.create_custom_set(["setTechnologies","setOnOff", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["setTechnologies","set_on_off", "setCapacityTypes","setLocation","setTimeStepsOperation"]),
             rule = cls.expressionLinkDisjunctsRule,
             doc = "disjunction to link the on off disjuncts",
             constraintType = "Disjunction"
         )
 
         # add pe.Constraints of the child classes
-        for subclass in cls.getAllSubclasses():
+        for subclass in cls.get_all_subclasses():
             subclass.construct_constraints()
 
     @classmethod
-    def disjunctOnTechnologyRule(cls,disjunct, tech, capacityType, loc, time):
+    def disjunctOnTechnologyRule(cls,disjunct, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
-        for subclass in cls.getAllSubclasses():
-            if tech in subclass.getAllNamesOfElements():
+        for subclass in cls.get_all_subclasses():
+            if tech in subclass.get_all_names_of_elements():
                 # disjunct is defined in corresponding subclass
-                subclass.disjunctOnTechnologyRule(disjunct,tech, capacityType,loc,time)
+                subclass.disjunctOnTechnologyRule(disjunct,tech, capacity_type,loc,time)
                 break
 
     @classmethod
-    def disjunctOffTechnologyRule(cls,disjunct, tech, capacityType, loc, time):
+    def disjunctOffTechnologyRule(cls,disjunct, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is off
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
-        for subclass in cls.getAllSubclasses():
-            if tech in subclass.getAllNamesOfElements():
+        for subclass in cls.get_all_subclasses():
+            if tech in subclass.get_all_names_of_elements():
                 # disjunct is defined in corresponding subclass
-                subclass.disjunctOffTechnologyRule(disjunct,tech, capacityType,loc,time)
+                subclass.disjunctOffTechnologyRule(disjunct,tech, capacity_type,loc,time)
                 break
 
     @classmethod
-    def expressionLinkDisjunctsRule(cls,model, tech, capacityType, loc, time):
+    def expressionLinkDisjunctsRule(cls,model, tech, capacity_type, loc, time):
         """ link disjuncts for technology is on and technology is off """
-        return ([model.disjunctOnTechnology[tech, capacityType,loc,time],model.disjunctOffTechnology[tech, capacityType,loc,time]])
+        return ([model.disjunctOnTechnology[tech, capacity_type,loc,time],model.disjunctOffTechnology[tech, capacity_type,loc,time]])
 
 ### --- constraint rules --- ###
 #%% Constraint rules pre-defined in Technology class
-def constraintTechnologyCapacityLimitRule(model, tech,capacityType, loc, time):
+def constraintTechnologyCapacityLimitRule(model, tech,capacity_type, loc, time):
     """limited capacityLimit of technology"""
     # get parameter object
     params = Parameter.get_component_object()
-    if params.capacityLimitTechnology[tech,capacityType, loc] != np.inf:
-        existingCapacities = Technology.getAvailableExistingQuantity(tech, capacityType, loc, time,typeExistingQuantity="capacity")
-        if existingCapacities < params.capacityLimitTechnology[tech, capacityType, loc]:
-            return (params.capacityLimitTechnology[tech,capacityType, loc] >= model.capacity[tech,capacityType, loc, time])
+    if params.capacityLimitTechnology[tech,capacity_type, loc] != np.inf:
+        existingCapacities = Technology.getAvailableExistingQuantity(tech, capacity_type, loc, time,typeExistingQuantity="capacity")
+        if existingCapacities < params.capacityLimitTechnology[tech, capacity_type, loc]:
+            return (params.capacityLimitTechnology[tech,capacity_type, loc] >= model.capacity[tech,capacity_type, loc, time])
         else:
-            return (model.built_capacity[tech, capacityType, loc, time] == 0)
+            return (model.built_capacity[tech, capacity_type, loc, time] == 0)
     else:
         return pe.Constraint.Skip
 
-def constraintTechnologyMinCapacityRule(model, tech,capacityType, loc, time):
+def constraintTechnologyMinCapacityRule(model, tech,capacity_type, loc, time):
     """ min capacity expansion of technology."""
     # get parameter object
     params = Parameter.get_component_object()
-    if params.minBuiltCapacity[tech,capacityType] != 0:
-        return (params.minBuiltCapacity[tech,capacityType] * model.installTechnology[tech,capacityType, loc, time] <= model.built_capacity[tech,capacityType, loc, time])
+    if params.minBuiltCapacity[tech,capacity_type] != 0:
+        return (params.minBuiltCapacity[tech,capacity_type] * model.installTechnology[tech,capacity_type, loc, time] <= model.built_capacity[tech,capacity_type, loc, time])
     else:
         return pe.Constraint.Skip
 
-def constraintTechnologyMaxCapacityRule(model, tech,capacityType, loc, time):
+def constraintTechnologyMaxCapacityRule(model, tech,capacity_type, loc, time):
     """max capacity expansion of technology"""
     # get parameter object
     params = Parameter.get_component_object()
     system = EnergySystem.get_system()
-    if params.maxBuiltCapacity[tech,capacityType] != np.inf:
+    if params.maxBuiltCapacity[tech,capacity_type] != np.inf:
         return (params.maxBuiltCapacity[tech,capacityType] * model.installTechnology[tech,capacityType, loc, time] >= model.built_capacity[tech,capacityType, loc, time])
     elif system['DoubleCapexTransport'] and tech in system["setTransportTechnologies"] and model.maxCapacity[tech,capacityType] != np.inf:
         return (params.maxCapacity[tech, capacityType] * model.installTechnology[tech, capacityType, loc, time] >= model.built_capacity[tech, capacityType, loc, time])

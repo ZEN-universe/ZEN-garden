@@ -19,7 +19,7 @@ class ConditioningTechnology(ConversionTechnology):
     # set label
     label = "setConditioningTechnologies"
     # empty list of elements
-    listOfElements = []
+    list_of_elements = []
 
     def __init__(self, tech):
         """init conditioning technology object
@@ -30,7 +30,7 @@ class ConditioningTechnology(ConversionTechnology):
         # store input data
         self.store_input_data()
         # add ConversionTechnology to list
-        ConditioningTechnology.addElement(self)
+        ConditioningTechnology.add_element(self)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -56,18 +56,18 @@ class ConditioningTechnology(ConversionTechnology):
         """retrieves and stores converEfficiency for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as PWAConverEfficiency"""
         set_time_steps_yearly          = EnergySystem.get_energy_system().set_time_steps_yearly
-        self.specificHeat         = self.datainput.extractAttributeData("specificHeat")["value"]
-        self.specificHeatRatio    = self.datainput.extractAttributeData("specificHeatRatio")["value"]
-        self.pressureIn           = self.datainput.extractAttributeData("pressureIn")["value"]
-        self.pressureOut          = self.datainput.extractAttributeData("pressureOut")["value"]
-        self.temperatureIn        = self.datainput.extractAttributeData("temperatureIn")["value"]
-        self.isentropicEfficiency = self.datainput.extractAttributeData("isentropicEfficiency")["value"]
+        self.specificHeat         = self.datainput.extract_attribute("specificHeat")["value"]
+        self.specificHeatRatio    = self.datainput.extract_attribute("specificHeatRatio")["value"]
+        self.pressureIn           = self.datainput.extract_attribute("pressureIn")["value"]
+        self.pressureOut          = self.datainput.extract_attribute("pressureOut")["value"]
+        self.temperatureIn        = self.datainput.extract_attribute("temperatureIn")["value"]
+        self.isentropicEfficiency = self.datainput.extract_attribute("isentropicEfficiency")["value"]
 
         # calculate energy consumption
         _pressureRatio     = self.pressureOut / self.pressureIn
         _exponent          = (self.specificHeatRatio - 1) / self.specificHeatRatio
-        if self.datainput.ifAttributeExists("lowerHeatingValue", column=None):
-            _lowerHeatingValue = self.datainput.extractAttributeData("lowerHeatingValue")["value"]
+        if self.datainput.exists_attribute("lowerHeatingValue", column=None):
+            _lowerHeatingValue = self.datainput.extract_attribute("lowerHeatingValue")["value"]
             self.specificHeat  = self.specificHeat / _lowerHeatingValue
         _energyConsumption = self.specificHeat * self.temperatureIn / self.isentropicEfficiency \
                             * (_pressureRatio ** _exponent - 1)
@@ -80,21 +80,21 @@ class ConditioningTechnology(ConversionTechnology):
         assert len(self.outputCarrier) == 1, f"{self.name} can only have 1 output carrier."
         # create dictionary
         self.converEfficiencyIsPWA                            = False
-        self.converEfficiencyLinear                           = dict()
-        self.converEfficiencyLinear[self.outputCarrier[0]]    = self.datainput.createDefaultOutput(index_sets=["setNodes","set_time_steps"],
+        self.conver_efficiency_linear                           = dict()
+        self.conver_efficiency_linear[self.outputCarrier[0]]    = self.datainput.create_default_output(index_sets=["setNodes","set_time_steps"],
                                                                                                    column=None,
                                                                                                    time_steps=set_time_steps_yearly,
-                                                                                                   manualDefaultValue = 1)[0] # TODO losses are not yet accounted for
-        self.converEfficiencyLinear[_inputCarriers[0]]        = self.datainput.createDefaultOutput(index_sets=["setNodes", "set_time_steps"],
+                                                                                                   manual_default_value = 1)[0] # TODO losses are not yet accounted for
+        self.conver_efficiency_linear[_inputCarriers[0]]        = self.datainput.create_default_output(index_sets=["setNodes", "set_time_steps"],
                                                                                                    column=None,
                                                                                                    time_steps=set_time_steps_yearly,
-                                                                                                   manualDefaultValue=_energyConsumption)[0]
+                                                                                                   manual_default_value=_energyConsumption)[0]
         # dict to dataframe
-        self.converEfficiencyLinear              = pd.DataFrame.from_dict(self.converEfficiencyLinear)
-        self.converEfficiencyLinear.columns.name = "carrier"
-        self.converEfficiencyLinear              = self.converEfficiencyLinear.stack()
-        _converEfficiencyLevels                  = [self.converEfficiencyLinear.index.names[-1]] + self.converEfficiencyLinear.index.names[:-1]
-        self.converEfficiencyLinear              = self.converEfficiencyLinear.reorder_levels(_converEfficiencyLevels)
+        self.conver_efficiency_linear              = pd.DataFrame.from_dict(self.conver_efficiency_linear)
+        self.conver_efficiency_linear.columns.name = "carrier"
+        self.conver_efficiency_linear              = self.conver_efficiency_linear.stack()
+        _conver_efficiency_levels                  = [self.conver_efficiency_linear.index.names[-1]] + self.conver_efficiency_linear.index.names[:-1]
+        self.conver_efficiency_linear              = self.conver_efficiency_linear.reorder_levels(_conver_efficiency_levels)
 
     @classmethod
     def construct_sets(cls):

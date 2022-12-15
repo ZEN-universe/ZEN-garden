@@ -33,7 +33,7 @@ class DataInput():
         self.energy_system   = energy_system
         self.unit_handling   = unit_handling
         # extract folder path
-        self.folderPath = getattr(self.element,"input_path")
+        self.folder_path = getattr(self.element,"input_path")
 
         # get names of indices
         # self.index_names     = {index_name: self.analysis['headerDataInputs'][index_name][0] for index_name in self.analysis['headerDataInputs']}
@@ -45,6 +45,7 @@ class DataInput():
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
         :param time_steps: specific time_steps of element
+        :param scenario: scenario name
         :return dataDict: dictionary with attribute values """
 
         # generic time steps
@@ -52,144 +53,147 @@ class DataInput():
             time_steps = self.energy_system.set_base_time_steps
         # if time steps are the yearly base time steps
         elif time_steps is self.energy_system.set_base_time_steps_yearly:
-            self.extractYearlyVariation(file_name,index_sets,column)
+            self.extract_yearly_variation(file_name,index_sets,column)
 
         # if existing capacities and existing capacities not used
         if (file_name == "existingCapacity" or file_name == "existingCapacityEnergy") and not self.analysis["useExistingCapacities"]:
-            dfOutput,*_ = self.createDefaultOutput(index_sets,column,file_name= file_name,time_steps=time_steps,manualDefaultValue=0,scenario=scenario)
-            return dfOutput
+            df_output,*_ = self.create_default_output(index_sets,column,file_name= file_name,time_steps=time_steps,manual_default_value=0,scenario=scenario)
+            return df_output
         else:
-            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(index_sets,column,file_name =file_name, time_steps= time_steps,scenario=scenario)
-        # set defaultName
+            df_output, default_value, index_name_list = self.create_default_output(index_sets,column,file_name =file_name, time_steps= time_steps,scenario=scenario)
+        # set default_name
         if column:
-            defaultName = column
+            default_name = column
         else:
-            defaultName = file_name
+            default_name = file_name
         # read input file
-        dfInput = self.readInputData(file_name+scenario)
+        df_input = self.read_input_data(file_name+scenario)
 
-        assert(dfInput is not None or defaultValue is not None), f"input file for attribute {defaultName} could not be imported and no default value is given."
-        if dfInput is not None and not dfInput.empty:
-            dfOutput = self.extractGeneralInputData(dfInput,dfOutput,file_name,indexNameList,column,defaultValue)
+        assert(df_input is not None or default_value is not None), f"input file for attribute {default_name} could not be imported and no default value is given."
+        if df_input is not None and not df_input.empty:
+            df_output = self.extract_general_input_data(df_input,df_output,file_name,index_name_list,column,default_value)
         # save parameter values for analysis of numerics
-        self.saveValuesOfAttribute(dfOutput=dfOutput,file_name=defaultName)
-        return dfOutput
+        self.save_values_of_attribute(df_output=df_output,file_name=default_name)
+        return df_output
 
-    def extractGeneralInputData(self,dfInput,dfOutput,file_name,indexNameList,column,defaultValue):
-        """ fills dfOutput with data from dfInput
-        :param dfInput: raw input dataframe
-        :param dfOutput: empty output dataframe, only filled with defaultValue 
+    def extract_general_input_data(self,df_input,df_output,file_name,index_name_list,column,default_value):
+        """ fills df_output with data from df_input
+        :param df_input: raw input dataframe
+        :param df_output: empty output dataframe, only filled with default_value
         :param file_name: name of selected file
-        :param indexNameList: list of name of indices
+        :param index_name_list: list of name of indices
         :param column: select specific column
-        :param defaultValue: default for dataframe
-        :return dfOutput: filled output dataframe """
+        :param default_value: default for dataframe
+        :return df_output: filled output dataframe """
 
         # select and drop scenario
-        assert dfInput.columns is not None, f"Input file '{file_name}' has no columns"
-        assert self.index_names["setScenarios"] not in dfInput.columns, f"the index '{self.index_names['setScenarios']}' is depreciated, but still found in input file '{file_name}'"
-        # set index by indexNameList
-        missingIndex = list(set(indexNameList) - set(indexNameList).intersection(set(dfInput.columns)))
-        assert len(missingIndex) <= 1, f"More than one the requested index sets ({missingIndex}) are missing from input file for {file_name}"
+        assert df_input.columns is not None, f"Input file '{file_name}' has no columns"
+        assert self.index_names["setScenarios"] not in df_input.columns, f"the index '{self.index_names['setScenarios']}' is depreciated, but still found in input file '{file_name}'"
+        # set index by index_name_list
+        missing_index = list(set(index_name_list) - set(index_name_list).intersection(set(df_input.columns)))
+        assert len(missing_index) <= 1, f"More than one the requested index sets ({missing_index}) are missing from input file for {file_name}"
 
         # no indices missing
-        if len(missingIndex) == 0:
-            dfInput = DataInput.extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,file_name)
+        if len(missing_index) == 0:
+            df_input = DataInput.extract_from_input_without_missing_index(df_input,index_name_list,column,file_name)
         else:
-            missingIndex = missingIndex[0]
+            missing_index = missing_index[0]
             # check if special case of existing Technology
-            if "existingTechnology" in missingIndex:
+            if "existingTechnology" in missing_index:
                 if column:
-                    defaultName = column
+                    default_name = column
                 else:
-                    defaultName = file_name
-                dfOutput = DataInput.extractFromInputForExistingCapacities(dfInput,dfOutput,indexNameList,defaultName,missingIndex)
-                if isinstance(defaultValue,dict):
-                    dfOutput = dfOutput * defaultValue["multiplier"]
-                return dfOutput
+                    default_name = file_name
+                df_output = DataInput.extract_from_input_for_existing_capacities(df_input,df_output,index_name_list,default_name,missing_index)
+                if isinstance(default_value,dict):
+                    df_output = df_output * default_value["multiplier"]
+                return df_output
             # index missing
             else:
-                dfInput = DataInput.extractFromInputWithMissingIndex(dfInput,dfOutput,copy.deepcopy(indexNameList),column,file_name,missingIndex)
+                df_input = DataInput.extract_from_input_with_missing_index(df_input,df_output,copy.deepcopy(index_name_list),column,file_name,missing_index)
 
         # apply multiplier to input data
-        dfInput     = dfInput * defaultValue["multiplier"]
+        df_input     = df_input * default_value["multiplier"]
         # delete nans
-        dfInput     = dfInput.dropna()
+        df_input     = df_input.dropna()
 
-        # get common index of dfOutput and dfInput
-        if not isinstance(dfInput.index, pd.MultiIndex):
-            index_list               = dfInput.index.to_list()
+        # get common index of df_output and df_input
+        if not isinstance(df_input.index, pd.MultiIndex):
+            index_list               = df_input.index.to_list()
             if len(index_list) == 1:
-                indexMultiIndex     = pd.MultiIndex.from_tuples([(index_list[0],)], names=[dfInput.index.name])
+                index_multi_index     = pd.MultiIndex.from_tuples([(index_list[0],)], names=[df_input.index.name])
             else:
-                indexMultiIndex     = pd.MultiIndex.from_product([index_list], names=[dfInput.index.name])
-            dfInput                 = pd.Series(index=indexMultiIndex, data=dfInput.to_list())
-        commonIndex                 = dfOutput.index.intersection(dfInput.index)
-        assert defaultValue is not None or len(commonIndex) == len(dfOutput.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.csv"
-        dfOutput.loc[commonIndex]   = dfInput.loc[commonIndex]
-        return dfOutput
+                index_multi_index     = pd.MultiIndex.from_product([index_list], names=[df_input.index.name])
+            df_input                 = pd.Series(index=index_multi_index, data=df_input.to_list())
+        common_index                 = df_output.index.intersection(df_input.index)
+        assert default_value is not None or len(common_index) == len(df_output.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.csv"
+        df_output.loc[common_index]   = df_input.loc[common_index]
+        return df_output
 
-    def readInputData(self,inputFileName):
+    def read_input_data(self,input_file_name):
         """ reads input data and returns raw input dataframe
-        :param inputFileName: name of selected file
-        :return dfInput: pd.DataFrame with input data """
+        :param input_file_name: name of selected file
+        :return df_input: pd.DataFrame with input data """
 
         # append .csv suffix
-        inputFileName += ".csv"
+        input_file_name += ".csv"
 
         # select data
-        fileNames = os.listdir(self.folderPath)
-        if inputFileName in fileNames:
-            dfInput = pd.read_csv(os.path.join(self.folderPath, inputFileName), header=0, index_col=None)
-            return dfInput
+        file_names = os.listdir(self.folder_path)
+        if input_file_name in file_names:
+            df_input = pd.read_csv(os.path.join(self.folder_path, input_file_name), header=0, index_col=None)
+            return df_input
         else:
             return None
 
-    def extractAttributeData(self,attribute_name,skipWarning = False,scenario=""):
+    def extract_attribute(self,attribute_name,skip_warning = False,scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param attribute_name: name of selected attribute
-        :param skipWarning: boolean to indicate if "Default" warning is skipped
-        :return attributeValue: attribute value """
+        :param skip_warning: boolean to indicate if "Default" warning is skipped
+        :param scenario: scenario name
+        :return attribute_value: attribute value """
         filename = "attributes"
-        dfInput  = self.readInputData(filename+scenario)
-        if dfInput is not None:
-            dfInput = dfInput.set_index("index").squeeze(axis=1)
-            name    = self.adaptAttributeName(attribute_name, dfInput, skipWarning)
-        if dfInput is None or name is None:
-            dfInput = self.readInputData(filename)
-            if dfInput is not None:
-                dfInput = dfInput.set_index("index").squeeze(axis=1)
+        df_input  = self.read_input_data(filename+scenario)
+        if df_input is not None:
+            df_input = df_input.set_index("index").squeeze(axis=1)
+            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning)
+        else:
+            attribute_name = None
+        if df_input is None or attribute_name is None:
+            df_input = self.read_input_data(filename)
+            if df_input is not None:
+                df_input = df_input.set_index("index").squeeze(axis=1)
             else:
                 return None
-        attribute_name = self.adaptAttributeName(attribute_name,dfInput,skipWarning)
+        attribute_name = self.adapt_attribute_name(attribute_name,df_input,skip_warning)
         if attribute_name is not None:
             # get attribute
-            attributeValue = dfInput.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.getUnitMultiplier(dfInput.loc[attribute_name, "unit"])
+            attribute_value = df_input.loc[attribute_name, "value"]
+            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"])
             try:
-                attribute = {"value": float(attributeValue) * multiplier, "multiplier": multiplier}
+                attribute = {"value": float(attribute_value) * multiplier, "multiplier": multiplier}
                 return attribute
             except:
-                return attributeValue
+                return attribute_value
         else:
             return None
 
-    def adaptAttributeName(self,attribute_name,dfInput,skipWarning=False):
+    def adapt_attribute_name(self,attribute_name,df_input,skip_warning=False):
         """ check if attribute in index"""
-        if attribute_name + "Default" not in dfInput.index:
-            if attribute_name not in dfInput.index:
+        if attribute_name + "Default" not in df_input.index:
+            if attribute_name not in df_input.index:
                 return None
-            elif not skipWarning:
+            elif not skip_warning:
                 warnings.warn(
-                    f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attribute_name} of attributes in path {self.folderPath}",
+                    f"Attribute names without 'Default' suffix will be deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}",
                     FutureWarning)
         else:
             attribute_name = attribute_name + "Default"
         return attribute_name
 
-    def extractYearlyVariation(self,file_name,index_sets,column):
+    def extract_yearly_variation(self,file_name,index_sets,column):
         """ reads the yearly variation of a time dependent quantity
-        :param self.folderPath: path to input files
+        :param self.folder_path: path to input files
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
@@ -201,317 +205,313 @@ class DataInput():
         # add YearlyVariation to file_name
         file_name  += "YearlyVariation"
         # read input data
-        dfInput         = self.readInputData(file_name)
-        if dfInput is not None:
-            if column is not None and column not in dfInput:
+        df_input         = self.read_input_data(file_name)
+        if df_input is not None:
+            if column is not None and column not in df_input:
                 return
-            dfOutput, defaultValue, indexNameList = self.createDefaultOutput(_index_sets,column,file_name = file_name, manualDefaultValue=1)
-            # set yearlyVariation attribute to dfOutput
+            df_output, default_value, index_name_list = self.create_default_output(_index_sets,column,file_name = file_name, manual_default_value=1)
+            # set yearlyVariation attribute to df_output
             if column:
-                _selectedColumn         = column
-                _nameYearlyVariation    = column+"YearlyVariation"
+                _selected_column         = column
+                _name_yearly_variation    = column+"YearlyVariation"
             else:
-                _selectedColumn         = None
-                _nameYearlyVariation    = file_name
-            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, file_name, indexNameList, _selectedColumn,defaultValue)
-            setattr(self,_nameYearlyVariation,dfOutput)
+                _selected_column         = None
+                _name_yearly_variation    = file_name
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, _selected_column,default_value)
+            setattr(self,_name_yearly_variation,df_output)
 
-    def extract_locations(self,extractNodes = True):
+    def extract_locations(self,extract_nodes = True):
         """ reads input data to extract nodes or edges.
-        :param extractNodes: boolean to switch between nodes and edges """
-        if extractNodes:
-            setNodesConfig  = self.system["setNodes"]
-            setNodesInput   = self.readInputData("setNodes")["node"].to_list()
+        :param extract_nodes: boolean to switch between nodes and edges """
+        if extract_nodes:
+            set_nodes_config  = self.system["setNodes"]
+            set_nodes_input   = self.read_input_data("setNodes")["node"].to_list()
             # if no nodes specified in system, use all nodes
-            if len(setNodesConfig) == 0 and not len(setNodesInput) == 0:
-                self.system["setNodes"] = setNodesInput
-                setNodesConfig          = setNodesInput
+            if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
+                self.system["setNodes"] = set_nodes_input
+                set_nodes_config = set_nodes_input
             else:
-                assert len(setNodesConfig) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
-                _missingNodes   = list(set(setNodesConfig).difference(setNodesInput))
-                assert len(_missingNodes) == 0, f"The nodes {_missingNodes} were declared in the config but do not exist in the input file {self.folderPath+'setNodes'}"
-            if not isinstance(setNodesConfig, list):
-                setNodesConfig = setNodesConfig.to_list()
-            setNodesConfig.sort()
-            return setNodesConfig
+                assert len(set_nodes_config) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
+                _missing_nodes   = list(set(set_nodes_config).difference(set_nodes_input))
+                assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path+'setNodes'}"
+            if not isinstance(set_nodes_config, list):
+                set_nodes_config = set_nodes_config.to_list()
+            set_nodes_config.sort()
+            return set_nodes_config
         else:
-            set_edges_input = self.readInputData("setEdges")
+            set_edges_input = self.read_input_data("setEdges")
             if set_edges_input is not None:
-                setEdges        = set_edges_input[(set_edges_input["nodeFrom"].isin(self.energy_system.setNodes)) & (set_edges_input["nodeTo"].isin(self.energy_system.setNodes))]
-                setEdges        = setEdges.set_index("edge")
-                return setEdges
+                set_edges = set_edges_input[(set_edges_input["nodeFrom"].isin(self.energy_system.setNodes)) & (set_edges_input["nodeTo"].isin(self.energy_system.setNodes))]
+                set_edges = set_edges.set_index("edge")
+                return set_edges
             else:
                 return None
 
-    def extractConversionCarriers(self):
+    def extract_conversion_carriers(self):
         """ reads input data and extracts conversion carriers
-        :param self.folderPath: path to input files
-        :return carrierDict: dictionary with input and output carriers of technology """
-        carrierDict = {}
+        :return carrier_dict: dictionary with input and output carriers of technology """
+        carrier_dict = {}
         # get carriers
-        for _carrierType in ["inputCarrier","outputCarrier"]:
+        for _carrier_type in ["inputCarrier","outputCarrier"]:
             # TODO implement for multiple carriers
-            _carrierString = self.extractAttributeData(_carrierType,skipWarning = True)
-            if type(_carrierString) == str:
-                _carrierList = _carrierString.strip().split(" ")
+            _carrier_string = self.extract_attribute(_carrier_type,skip_warning = True)
+            if type(_carrier_string) == str:
+                _carrier_list = _carrier_string.strip().split(" ")
             else:
-                _carrierList = []
-            carrierDict[_carrierType] = _carrierList
+                _carrier_list = []
+            carrier_dict[_carrier_type] = _carrier_list
+        return carrier_dict
 
-        return carrierDict
-
-    def extractSetExistingTechnologies(self, storageEnergy = False):
+    def extract_set_existing_technologies(self, storage_energy = False):
         """ reads input data and creates setExistingCapacity for each technology
-        :param storageEnergy: boolean if existing energy capacity of storage technology (instead of power)
+        :param storage_energy: boolean if existing energy capacity of storage technology (instead of power)
         :return setExistingTechnologies: return set existing technologies"""
         if self.analysis["useExistingCapacities"]:
-            if storageEnergy:
-                _energyString = "Energy"
+            if storage_energy:
+                _energy_string = "Energy"
             else:
-                _energyString = ""
+                _energy_string = ""
 
-            dfInput = self.readInputData(f"existingCapacity{_energyString}")
-            if dfInput is None:
-                return  [0]
-
+            df_input = self.read_input_data(f"existingCapacity{_energy_string}")
+            if df_input is None:
+                return [0]
             if self.element.name in self.system["setTransportTechnologies"]:
                 location = "edge"
             else:
                 location = "node"
-            maxNodeCount = dfInput[location].value_counts().max()
-            setExistingTechnologies = np.arange(0, maxNodeCount)
+            _max_node_count = df_input[location].value_counts().max()
+            set_existing_technologies = np.arange(0, _max_node_count)
         else:
-            setExistingTechnologies = np.array([0])
+            set_existing_technologies = np.array([0])
 
-        return setExistingTechnologies
+        return set_existing_technologies
 
-    def extractLifetimeExistingTechnology(self, file_name, index_sets):
+    def extract_lifetime_existing_technology(self, file_name, index_sets):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param file_name:  name of selected file
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :return existingLifetimeDict: return existing capacity and existing lifetime """
-        column   = "yearConstruction"
-        dfOutput = pd.Series(index=self.element.existingCapacity.index,data=0)
+        :return df_output: return existing capacity and existing lifetime """
+        column = "yearConstruction"
+        df_output = pd.Series(index=self.element.existingCapacity.index,data=0)
         # if no existing capacities
         if not self.analysis["useExistingCapacities"]:
-            return dfOutput
+            return df_output
 
-        if f"{file_name}.csv" in os.listdir(self.folderPath):
-            index_list, indexNameList = self.constructIndexList(index_sets, None)
-            dfInput                  = self.readInputData( file_name)
+        if f"{file_name}.csv" in os.listdir(self.folder_path):
+            index_list, index_name_list = self.constructIndexList(index_sets, None)
+            df_input = self.read_input_data( file_name)
             # fill output dataframe
-            dfOutput = self.extractGeneralInputData(dfInput, dfOutput, file_name, indexNameList, column, defaultValue = 0)
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, column, default_value = 0)
             # get reference year
-            referenceYear            = self.system["referenceYear"]
+            reference_year = self.system["referenceYear"]
             # calculate remaining lifetime
-            dfOutput[dfOutput > 0]   = - referenceYear + dfOutput[dfOutput > 0] + self.element.lifetime
+            df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime
+        return df_output
 
-        return dfOutput
-
-    def extractPWAData(self,variableType):
+    def extract_pwa_data(self,variable_type):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
-        :param variableType: technology approximation type
-        :return PWADict: dictionary with PWA parameters """
+        :param variable_type: technology approximation type
+        :return pwa_dict: dictionary with pwa parameters """
         # attribute names
-        if variableType == "Capex":
-            _attributeName  = "capexSpecific"
-        elif variableType == "ConverEfficiency":
-            _attributeName  = "converEfficiency"
+        if variable_type == "capex":
+            _attribute_name  = "capexSpecific"
+        elif variable_type == "conver_efficiency":
+            _attribute_name  = "converEfficiency"
         else:
-            raise KeyError(f"variable type {variableType} unknown.")
+            raise KeyError(f"variable type {variable_type} unknown.")
         _index_sets = ["setNodes", "set_time_steps"]
         _time_steps = self.energy_system.set_time_steps_yearly
         # import all input data
-        dfInputNonlinear    = self.readPWAFiles(variableType, fileType="nonlinear")
-        dfInputBreakpoints  = self.readPWAFiles(variableType, fileType="breakpointsPWA")
-        dfInputLinear       = self.readPWAFiles(variableType, fileType="linear")
-        ifLinearExist       = self.ifAttributeExists(_attributeName)
-        assert (dfInputNonlinear is not None and dfInputBreakpoints is not None) \
-               or ifLinearExist \
-               or dfInputLinear is not None, \
-            f"Neither PWA nor linear data exist for {variableType} of {self.element.name}"
+        df_input_nonlinear    = self.read_pwa_files(variable_type, fileType="nonlinear")
+        df_input_breakpoints  = self.read_pwa_files(variable_type, fileType="breakpointsPWA")
+        df_input_linear       = self.read_pwa_files(variable_type, fileType="linear")
+        df_linear_exist       = self.exists_attribute(_attribute_name)
+        assert (df_input_nonlinear is not None and df_input_breakpoints is not None) \
+               or df_linear_exist \
+               or df_input_linear is not None, \
+            f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
         # check if capexSpecific exists
-        if (dfInputNonlinear is not None and dfInputBreakpoints is not None):
+        if (df_input_nonlinear is not None and df_input_breakpoints is not None):
             # select data
-            PWADict = {}
+            pwa_dict = {}
             # extract all data values
-            nonlinearValues     = {}
+            nonlinear_values     = {}
 
-            if variableType == "Capex":
+            if variable_type == "capex":
                 # make absolute capex
-                dfInputNonlinear["capex"] = dfInputNonlinear["capex"]*dfInputNonlinear["capacity"]
-            for column in dfInputNonlinear.columns:
-                nonlinearValues[column] = dfInputNonlinear[column].to_list()
+                df_input_nonlinear["capex"] = df_input_nonlinear["capex"]*df_input_nonlinear["capacity"]
+            for column in df_input_nonlinear.columns:
+                nonlinear_values[column] = df_input_nonlinear[column].to_list()
 
             # assert that breakpoint variable (x variable in nonlinear input)
-            assert dfInputBreakpoints.columns[0] in dfInputNonlinear.columns, f"breakpoint variable for PWA '{dfInputBreakpoints.columns[0]}' is not in nonlinear variables [{dfInputNonlinear.columns}]"
-            breakpointVariable = dfInputBreakpoints.columns[0]
-            breakpoints = dfInputBreakpoints[breakpointVariable].to_list()
+            assert df_input_breakpoints.columns[0] in df_input_nonlinear.columns, f"breakpoint variable for pwa '{df_input_breakpoints.columns[0]}' is not in nonlinear variables [{df_input_nonlinear.columns}]"
+            breakpoint_variable = df_input_breakpoints.columns[0]
+            breakpoints = df_input_breakpoints[breakpoint_variable].to_list()
 
-            PWADict[breakpointVariable] = breakpoints
-            PWADict["PWAVariables"]     = [] # select only those variables that are modeled as PWA
-            PWADict["bounds"]           = {} # save bounds of variables
-            LinearDict                  = {}
+            pwa_dict[breakpoint_variable] = breakpoints
+            pwa_dict["pwa_variables"]     = [] # select only those variables that are modeled as pwa
+            pwa_dict["bounds"]           = {} # save bounds of variables
+            linear_dict                  = {}
             # min and max total capacity of technology
-            minCapacityTech,maxCapacityTech = (0,min(max(self.element.capacityLimit.values),max(breakpoints)))
-            for valueVariable in nonlinearValues:
-                if valueVariable == breakpointVariable:
-                    PWADict["bounds"][valueVariable] = (minCapacityTech,maxCapacityTech)
+            min_capacity_tech,max_capacity_tech = (0,min(max(self.element.capacityLimit.values),max(breakpoints)))
+            for value_variable in nonlinear_values:
+                if value_variable == breakpoint_variable:
+                    pwa_dict["bounds"][value_variable] = (min_capacity_tech,max_capacity_tech)
                 else:
                     # conduct linear regress
-                    linearRegressObject = linregress(nonlinearValues[breakpointVariable],nonlinearValues[valueVariable])
+                    linear_regress_object = linregress(nonlinear_values[breakpoint_variable],nonlinear_values[value_variable])
                     # calculate relative intercept (intercept/slope) if slope != 0
-                    if linearRegressObject.slope != 0:
-                        _relativeIntercept = np.abs(linearRegressObject.intercept/linearRegressObject.slope)
+                    if linear_regress_object.slope != 0:
+                        _relative_intercept = np.abs(linear_regress_object.intercept/linear_regress_object.slope)
                     else:
-                        _relativeIntercept = np.abs(linearRegressObject.intercept)
+                        _relative_intercept = np.abs(linear_regress_object.intercept)
                     # check if to a reasonable degree linear
-                    if _relativeIntercept <= self.solver["linearRegressionCheck"]["epsIntercept"] and linearRegressObject.rvalue >= self.solver["linearRegressionCheck"]["epsRvalue"]:
+                    if _relative_intercept <= self.solver["linear_regression_check"]["eps_intercept"] and linear_regress_object.rvalue >= self.solver["linear_regression_check"]["epsRvalue"]:
                         # model as linear function
-                        slopeLinReg = linearRegressObject.slope
-                        LinearDict[valueVariable] = self.createDefaultOutput(index_sets=_index_sets, column=column, time_steps=_time_steps,
-                                                 manualDefaultValue=slopeLinReg)[0]
+                        slope_lin_reg = linear_regress_object.slope
+                        linear_dict[value_variable] = self.create_default_output(index_sets=_index_sets, column=column, time_steps=_time_steps,
+                                                 manual_default_value=slope_lin_reg)[0]
                     else:
-                        # model as PWA function
-                        PWADict[valueVariable] = list(np.interp(breakpoints,nonlinearValues[breakpointVariable],nonlinearValues[valueVariable]))
-                        PWADict["PWAVariables"].append(valueVariable)
+                        # model as pwa function
+                        pwa_dict[value_variable] = list(np.interp(breakpoints,nonlinear_values[breakpoint_variable],nonlinear_values[value_variable]))
+                        pwa_dict["pwa_variables"].append(value_variable)
                         # save bounds
-                        _valuesBetweenBounds = [PWADict[valueVariable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= minCapacityTech and breakpoint <= maxCapacityTech]
-                        _valuesBetweenBounds.extend(list(np.interp([minCapacityTech,maxCapacityTech],breakpoints,PWADict[valueVariable])))
-                        PWADict["bounds"][valueVariable] = (min(_valuesBetweenBounds),max(_valuesBetweenBounds))
-            # PWA
-            if (len(PWADict["PWAVariables"]) > 0 and len(LinearDict) == 0):
-                isPWA = True
-                return PWADict, isPWA
+                        _values_between_bounds = [pwa_dict[value_variable][idxBreakpoint] for idxBreakpoint,breakpoint in enumerate(breakpoints) if breakpoint >= min_capacity_tech and breakpoint <= max_capacity_tech]
+                        _values_between_bounds.extend(list(np.interp([min_capacity_tech,max_capacity_tech],breakpoints,pwa_dict[value_variable])))
+                        pwa_dict["bounds"][value_variable] = (min(_values_between_bounds),max(_values_between_bounds))
+            # pwa
+            if (len(pwa_dict["pwa_variables"]) > 0 and len(linear_dict) == 0):
+                is_pwa = True
+                return pwa_dict, is_pwa
             # linear
-            elif len(LinearDict) > 0 and len(PWADict["PWAVariables"]) == 0:
-                isPWA = False
-                LinearDict              = pd.DataFrame.from_dict(LinearDict)
-                LinearDict.columns.name = "carrier"
-                LinearDict              = LinearDict.stack()
-                _converEfficiencyLevels = [LinearDict.index.names[-1]] + LinearDict.index.names[:-1]
-                LinearDict              = LinearDict.reorder_levels(_converEfficiencyLevels)
-                return LinearDict,  isPWA
+            elif len(linear_dict) > 0 and len(pwa_dict["pwa_variables"]) == 0:
+                is_pwa = False
+                linear_dict              = pd.DataFrame.from_dict(linear_dict)
+                linear_dict.columns.name = "carrier"
+                linear_dict              = linear_dict.stack()
+                _conver_efficiency_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
+                linear_dict              = linear_dict.reorder_levels(_conver_efficiency_levels)
+                return linear_dict, is_pwa
             # no dependent carrier
-            elif len(nonlinearValues) == 1:
-                isPWA = False
-                return None, isPWA
+            elif len(nonlinear_values) == 1:
+                is_pwa = False
+                return None, is_pwa
             else:
-                raise NotImplementedError(f"There are both linearly and nonlinearly modeled variables in {variableType} of {self.element.name}. Not yet implemented")
+                raise NotImplementedError(f"There are both linearly and nonlinearly modeled variables in {variable_type} of {self.element.name}. Not yet implemented")
         # linear
         else:
-            isPWA = False
-            LinearDict = {}
-            if variableType == "Capex":
-                LinearDict["capex"] = self.extract_input_data("capexSpecific", index_sets=_index_sets, time_steps=_time_steps)
-                return LinearDict,isPWA
+            is_pwa = False
+            linear_dict = {}
+            if variable_type == "capex":
+                linear_dict["capex"] = self.extract_input_data("capexSpecific", index_sets=_index_sets, time_steps=_time_steps)
+                return linear_dict,is_pwa
             else:
-                _dependentCarrier = list(set(self.element.inputCarrier + self.element.outputCarrier).difference(self.element.referenceCarrier))
+                _dependent_carrier = list(set(self.element.inputCarrier + self.element.outputCarrier).difference(self.element.referenceCarrier))
                 # TODO implement for more than 1 carrier
-                if _dependentCarrier == []:
-                    return None, isPWA
-                elif len(_dependentCarrier) == 1 and dfInputLinear is None:
-                    LinearDict[_dependentCarrier[0]] = self.extract_input_data(_attributeName, index_sets=_index_sets, time_steps=_time_steps)
+                if _dependent_carrier == []:
+                    return None, is_pwa
+                elif len(_dependent_carrier) == 1 and df_input_linear is None:
+                    linear_dict[_dependent_carrier[0]] = self.extract_input_data(_attribute_name, index_sets=_index_sets, time_steps=_time_steps)
                 else:
-                    dfOutput,defaultValue,indexNameList = self.createDefaultOutput(_index_sets, None, time_steps=_time_steps, manualDefaultValue=1)
-                    assert (dfInputLinear is not None), f"input file for linearConverEfficiency could not be imported."
-                    dfInputLinear = dfInputLinear.rename(columns={'year': 'time'})
-                    for carrier in _dependentCarrier:
-                        LinearDict[carrier]        = self.extractGeneralInputData(dfInputLinear, dfOutput, "linearConverEfficiency", indexNameList, carrier, defaultValue).copy(deep=True)
-                LinearDict = pd.DataFrame.from_dict(LinearDict)
-                LinearDict.columns.name = "carrier"
-                LinearDict = LinearDict.stack()
-                _converEfficiencyLevels = [LinearDict.index.names[-1]] + LinearDict.index.names[:-1]
-                LinearDict = LinearDict.reorder_levels(_converEfficiencyLevels)
-                return LinearDict,isPWA
+                    df_output,default_value,index_name_list = self.create_default_output(_index_sets, None, time_steps=_time_steps, manual_default_value=1)
+                    assert (df_input_linear is not None), f"input file for linearConverEfficiency could not be imported."
+                    df_input_linear = df_input_linear.rename(columns={'year': 'time'})
+                    for carrier in _dependent_carrier:
+                        linear_dict[carrier]        = self.extract_general_input_data(df_input_linear, df_output, "linearConverEfficiency", index_name_list, carrier, default_value).copy(deep=True)
+                linear_dict = pd.DataFrame.from_dict(linear_dict)
+                linear_dict.columns.name = "carrier"
+                linear_dict = linear_dict.stack()
+                _conver_efficiency_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
+                linear_dict = linear_dict.reorder_levels(_conver_efficiency_levels)
+                return linear_dict,is_pwa
 
-    def readPWAFiles(self,variableType,fileType):
-        """ reads PWA Files
-        :param variableType: technology approximation type
+    def read_pwa_files(self,variable_type,fileType):
+        """ reads pwa Files
+        :param variable_type: technology approximation type
         :param fileType: either breakpointsPWA, linear, or nonlinear
-        :return dfInput: raw input file"""
-        dfInput             = self.readInputData(fileType+variableType)
-        if dfInput is not None:
-            if "unit" in dfInput.values:
-                columns = dfInput.iloc[-1][dfInput.iloc[-1] != "unit"].dropna().index
+        :return df_input: raw input file"""
+        df_input             = self.read_input_data(fileType+variable_type)
+        if df_input is not None:
+            if "unit" in df_input.values:
+                columns = df_input.iloc[-1][df_input.iloc[-1] != "unit"].dropna().index
             else:
-                columns = dfInput.columns
-            dfInputUnits        = dfInput[columns].iloc[-1]
-            dfInput             = dfInput.iloc[:-1]
-            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unit_handling.getUnitMultiplier(unit))
-            #dfInput[columns]    = dfInput[columns].astype(float
-            dfInput             = dfInput.apply(lambda column: pd.to_numeric(column, errors='coerce'))
-            dfInput[columns]    = dfInput[columns] * dfInputMultiplier
-        return dfInput
+                columns = df_input.columns
+            dfInputUnits        = df_input[columns].iloc[-1]
+            df_input             = df_input.iloc[:-1]
+            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit))
+            #df_input[columns]    = df_input[columns].astype(float
+            df_input             = df_input.apply(lambda column: pd.to_numeric(column, errors='coerce'))
+            df_input[columns]    = df_input[columns] * dfInputMultiplier
+        return df_input
 
-    def createDefaultOutput(self,index_sets,column,file_name=None,time_steps=None,manualDefaultValue = None,scenario = ""):
+    def create_default_output(self,index_sets,column,file_name=None,time_steps=None,manual_default_value = None,scenario = ""):
         """ creates default output dataframe
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
         :param time_steps: specific time_steps of element
         :param scenario: investigated scenario
-        :param manualDefaultValue: if given, use manualDefaultValue instead of searching for default value in attributes.csv"""
+        :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv"""
         # select index
-        index_list, indexNameList = self.constructIndexList(index_sets, time_steps)
+        index_list, index_name_list = self.constructIndexList(index_sets, time_steps)
         # create pd.MultiIndex and select data
         if index_sets:
-            indexMultiIndex = pd.MultiIndex.from_product(index_list, names=indexNameList)
+            index_multi_index = pd.MultiIndex.from_product(index_list, names=index_name_list)
         else:
-            indexMultiIndex = pd.Index([0])
-        if manualDefaultValue:
-            defaultValue = {"value":manualDefaultValue,"multiplier":1}
-            defaultName  = None
+            index_multi_index = pd.Index([0])
+        if manual_default_value:
+            default_value = {"value":manual_default_value,"multiplier":1}
+            default_name  = None
         else:
             # check if default value exists in attributes.csv, with or without "Default" Suffix
             if column:
-                defaultName = column
+                default_name = column
             else:
-                defaultName = file_name
-            defaultValue = self.extractAttributeData(defaultName,scenario=scenario)
+                default_name = file_name
+            default_value = self.extract_attribute(default_name,scenario=scenario)
 
         # create output Series filled with default value
-        if defaultValue is None:
-            dfOutput = pd.Series(index=indexMultiIndex, dtype=float)
+        if default_value is None:
+            df_output = pd.Series(index=index_multi_index, dtype=float)
         else:
-            dfOutput = pd.Series(index=indexMultiIndex, data=defaultValue["value"], dtype=float)
+            df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit
-        self.saveUnitOfAttribute(defaultName,scenario)
-        return dfOutput,defaultValue,indexNameList
+        self.saveUnitOfAttribute(default_name,scenario)
+        return df_output,default_value,index_name_list
 
     def saveUnitOfAttribute(self,file_name,scenario=""):
         """ saves the unit of an attribute, converted to the base unit """
         # if numerics analyzed
         if self.solver["analyzeNumerics"]:
             if file_name:
-                dfInput = self.readInputData("attributes" + scenario).set_index("index").squeeze(axis=1)
+                df_input = self.read_input_data("attributes" + scenario).set_index("index").squeeze(axis=1)
                 # get attribute
-                attribute_name = self.adaptAttributeName(file_name,dfInput)
-                inputUnit = dfInput.loc[attribute_name, "unit"]
+                attribute_name = self.adapt_attribute_name(file_name,df_input)
+                inputUnit = df_input.loc[attribute_name, "unit"]
                 self.unit_handling.setBaseUnitCombination(inputUnit=inputUnit,attribute=(self.element.name,file_name))
 
-    def saveValuesOfAttribute(self,dfOutput,file_name):
+    def save_values_of_attribute(self,df_output,file_name):
         """ saves the values of an attribute """
         # if numerics analyzed
         if self.solver["analyzeNumerics"]:
             if file_name:
-                dfOutputReduced = dfOutput[(dfOutput != 0) & (dfOutput.abs() != np.inf)]
+                dfOutputReduced = df_output[(df_output != 0) & (df_output.abs() != np.inf)]
                 if not dfOutputReduced.empty:
-                    self.unit_handling.setAttributeValues(dfOutput= dfOutputReduced,attribute=(self.element.name,file_name))
+                    self.unit_handling.setAttributeValues(df_output= dfOutputReduced,attribute=(self.element.name,file_name))
 
     def constructIndexList(self,index_sets,time_steps):
         """ constructs index list from index sets and returns list of indices and list of index names
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param time_steps: specific time_steps of element
         :return index_list: list of indices
-        :return indexNameList: list of name of indices
+        :return index_name_list: list of name of indices
         """
         index_list     = []
-        indexNameList = []
+        index_name_list = []
 
         # add rest of indices
         for index in index_sets:
-            indexNameList.append(self.index_names[index])
+            index_name_list.append(self.index_names[index])
             if index == "set_time_steps" and time_steps:
                 index_list.append(time_steps)
             elif index == "setExistingTechnologies":
@@ -522,114 +522,114 @@ class DataInput():
                 index_list.append(getattr(self.energy_system,index))
             else:
                 raise AttributeError(f"Index '{index}' cannot be found.")
-        return index_list,indexNameList
+        return index_list,index_name_list
 
-    def ifAttributeExists(self, file_name, column=None):
+    def exists_attribute(self, file_name, column=None):
         """ checks if default value or timeseries of an attribute exists in the input data
         :param file_name: name of selected file
         :param column: select specific column
         """
         # check if default value exists
         if column:
-            defaultName = column
+            default_name = column
         else:
-            defaultName = file_name
-        defaultValue = self.extractAttributeData(defaultName)
+            default_name = file_name
+        default_value = self.extract_attribute(default_name)
 
-        if defaultValue is None or math.isnan(defaultValue["value"]): # if no default value exists or default value is nan
-            _dfInput = self.readInputData(file_name)
+        if default_value is None or math.isnan(default_value["value"]): # if no default value exists or default value is nan
+            _dfInput = self.read_input_data(file_name)
             return (_dfInput is not None)
-        elif defaultValue and not math.isnan(defaultValue["value"]): # if default value exists and is not nan
+        elif default_value and not math.isnan(default_value["value"]): # if default value exists and is not nan
             return True
         else:
             return False
 
     @staticmethod
-    def extractFromInputWithoutMissingIndex(dfInput,indexNameList,column,file_name):
+    def extract_from_input_without_missing_index(df_input,index_name_list,column,file_name):
         """ extracts the demanded values from Input dataframe and reformulates dataframe
-        :param dfInput: raw input dataframe
-        :param indexNameList: list of name of indices
+        :param df_input: raw input dataframe
+        :param index_name_list: list of name of indices
         :param column: select specific column
         :param file_name: name of selected file
-        :return dfInput: reformulated input dataframe
+        :return df_input: reformulated input dataframe
         """
-        dfInput = dfInput.set_index(indexNameList)
+        df_input = df_input.set_index(index_name_list)
         if column:
-            assert column in dfInput.columns, f"Requested column {column} not in columns {dfInput.columns.to_list()} of input file {file_name}"
-            dfInput = dfInput[column]
+            assert column in df_input.columns, f"Requested column {column} not in columns {df_input.columns.to_list()} of input file {file_name}"
+            df_input = df_input[column]
         else:
             # check if only one column remaining
-            assert len(dfInput.columns) == 1,f"Input file for {file_name} has more than one value column: {dfInput.columns.to_list()}"
-            dfInput = dfInput.squeeze(axis=1)
-        return dfInput
+            assert len(df_input.columns) == 1,f"Input file for {file_name} has more than one value column: {df_input.columns.to_list()}"
+            df_input = df_input.squeeze(axis=1)
+        return df_input
 
     @staticmethod
-    def extractFromInputWithMissingIndex(dfInput,dfOutput, indexNameList, column, file_name,missingIndex):
+    def extract_from_input_with_missing_index(df_input,df_output, index_name_list, column, file_name,missing_index):
         """ extracts the demanded values from Input dataframe and reformulates dataframe if the index is missing.
-        Either, the missing index is the column of dfInput, or it is actually missing in dfInput.
-        Then, the values in dfInput are extended to all missing index values.
-        :param dfInput: raw input dataframe
-        :param dfOutput: default output dataframe
-        :param indexNameList: list of name of indices
+        Either, the missing index is the column of df_input, or it is actually missing in df_input.
+        Then, the values in df_input are extended to all missing index values.
+        :param df_input: raw input dataframe
+        :param df_output: default output dataframe
+        :param index_name_list: list of name of indices
         :param column: select specific column
         :param file_name: name of selected file
-        :param missingIndex: missing index in dfInput
-        :return dfInput: reformulated input dataframe
+        :param missing_index: missing index in df_input
+        :return df_input: reformulated input dataframe
         """
-        indexNameList.remove(missingIndex)
-        dfInput                 = dfInput.set_index(indexNameList)
+        index_name_list.remove(missing_index)
+        df_input                 = df_input.set_index(index_name_list)
         # missing index values
-        requestedIndexValues    = set(dfOutput.index.get_level_values(missingIndex))
-        # the missing index is the columns of dfInput
-        _requestedIndexValuesInColumns  = requestedIndexValues.intersection(dfInput.columns)
+        requestedIndexValues    = set(df_output.index.get_level_values(missing_index))
+        # the missing index is the columns of df_input
+        _requestedIndexValuesInColumns  = requestedIndexValues.intersection(df_input.columns)
         if _requestedIndexValuesInColumns:
             requestedIndexValues    = _requestedIndexValuesInColumns
-            dfInput.columns         = dfInput.columns.set_names(missingIndex)
-            dfInput                 = dfInput[list(requestedIndexValues)].stack()
-            dfInput                 = dfInput.reorder_levels(dfOutput.index.names)
-        # the missing index does not appear in dfInput
-        # the values in dfInput are extended to all missing index values
+            df_input.columns         = df_input.columns.set_names(missing_index)
+            df_input                 = df_input[list(requestedIndexValues)].stack()
+            df_input                 = df_input.reorder_levels(df_output.index.names)
+        # the missing index does not appear in df_input
+        # the values in df_input are extended to all missing index values
         else:
-            # logging.info(f"Missing index {missingIndex} detected in {file_name}. Input dataframe is extended by this index")
-            _dfInputIndexTemp   = pd.MultiIndex.from_product([dfInput.index,requestedIndexValues],names=dfInput.index.names+[missingIndex])
+            # logging.info(f"Missing index {missing_index} detected in {file_name}. Input dataframe is extended by this index")
+            _dfInputIndexTemp   = pd.MultiIndex.from_product([df_input.index,requestedIndexValues],names=df_input.index.names+[missing_index])
             _dfInputTemp        = pd.Series(index=_dfInputIndexTemp, dtype=float)
-            if column in dfInput.columns:
-                dfInput = dfInput[column].loc[_dfInputIndexTemp.get_level_values(dfInput.index.names[0])].squeeze()
+            if column in df_input.columns:
+                df_input = df_input[column].loc[_dfInputIndexTemp.get_level_values(df_input.index.names[0])].squeeze()
                 # much slower than overwriting index:
-                # dfInput         = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.name[0], column].squeeze(),axis=1)
+                # df_input         = _dfInputTemp.to_frame().apply(lambda row: df_input.loc[row.name[0], column].squeeze(),axis=1)
             else:
-                if isinstance(dfInput,pd.Series):
-                    dfInput = dfInput.to_frame()
-                if dfInput.shape[1] == 1:
-                    dfInput         = dfInput.loc[_dfInputIndexTemp.get_level_values(dfInput.index.names[0])].squeeze()
+                if isinstance(df_input,pd.Series):
+                    df_input = df_input.to_frame()
+                if df_input.shape[1] == 1:
+                    df_input         = df_input.loc[_dfInputIndexTemp.get_level_values(df_input.index.names[0])].squeeze()
                 else:
                     assert _dfInputTemp.index.names[-1] != "time", f"Only works if columns contain time index and not for {_dfInputTemp.index.names[-1]}"
-                    dfInput = _dfInputTemp.to_frame().apply(lambda row: dfInput.loc[row.name[0:-1],str(row.name[-1])],axis=1)
-            dfInput.index = _dfInputTemp.index
-            dfInput = dfInput.reorder_levels(order=dfOutput.index.names)
-            if isinstance(dfInput,pd.DataFrame):
-                dfInput = dfInput.squeeze()
-        return dfInput
+                    df_input = _dfInputTemp.to_frame().apply(lambda row: df_input.loc[row.name[0:-1],str(row.name[-1])],axis=1)
+            df_input.index = _dfInputTemp.index
+            df_input = df_input.reorder_levels(order=df_output.index.names)
+            if isinstance(df_input,pd.DataFrame):
+                df_input = df_input.squeeze()
+        return df_input
 
     @staticmethod
-    def extractFromInputForExistingCapacities(dfInput,dfOutput, indexNameList, column, missingIndex):
+    def extract_from_input_for_existing_capacities(df_input,df_output, index_name_list, column, missing_index):
         """ extracts the demanded values from input dataframe if extracting existing capacities
-        :param dfInput: raw input dataframe
-        :param dfOutput: default output dataframe
-        :param indexNameList: list of name of indices
+        :param df_input: raw input dataframe
+        :param df_output: default output dataframe
+        :param index_name_list: list of name of indices
         :param column: select specific column
-        :param missingIndex: missing index in dfInput
-        :return dfOutput: filled output dataframe
+        :param missing_index: missing index in df_input
+        :return df_output: filled output dataframe
         """
-        indexNameList.remove(missingIndex)
-        dfInput = dfInput.set_index(indexNameList)
-        setLocation = dfInput.index.unique()
+        index_name_list.remove(missing_index)
+        df_input = df_input.set_index(index_name_list)
+        setLocation = df_input.index.unique()
         for location in setLocation:
-            if location in dfOutput.index.get_level_values(indexNameList[0]):
-                values = dfInput[column].loc[location].tolist()
+            if location in df_output.index.get_level_values(index_name_list[0]):
+                values = df_input[column].loc[location].tolist()
                 if isinstance(values, int) or isinstance(values, float):
                     index = [0]
                 else:
                     index = list(range(len(values)))
-                dfOutput.loc[location, index] = values
-        return dfOutput
+                df_output.loc[location, index] = values
+        return df_output

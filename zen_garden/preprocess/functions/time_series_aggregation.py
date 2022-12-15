@@ -164,7 +164,7 @@ class TimeSeriesAggregation():
         Can have higher resolution
         :param element: element of the optimization """
         # if carrier is already aggregated
-        if element.isAggregated():
+        if element.is_aggregated():
             sequenceTimeStepsRaw = element.sequence_time_steps
             # if sequenceTimeStepsRaw not None
             listSequenceTimeSteps = [sequenceTimeStepsRaw]
@@ -176,7 +176,7 @@ class TimeSeriesAggregation():
         if technologiesCarrier:
             # iterate through technologies and extend listSequenceTimeSteps
             for technology in technologiesCarrier:
-                listSequenceTimeSteps.append(Element.getAttributeOfSpecificElement(technology, "sequence_time_steps"))
+                listSequenceTimeSteps.append(Element.get_attribute_of_specific_element(technology, "sequence_time_steps"))
             # get combined time steps, duration and sequence
             uniqueTimeStepSequences = TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listSequenceTimeSteps)
             # if time steps of energy balance differ from carrier flows
@@ -186,14 +186,14 @@ class TimeSeriesAggregation():
                 TimeSeriesAggregation.setTimeAttributes(element,setTimeStepsOperation,timeStepsOperationDuration,sequence_time_steps,isEnergyBalance=True)
 
                 # if carrier previously not aggregated
-                if not element.isAggregated():
+                if not element.is_aggregated():
                     TimeSeriesAggregation.setTimeAttributes(element,setTimeStepsOperation,timeStepsOperationDuration,sequence_time_steps)
                 # set aggregation indicator
                 TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
                 # iterate through raw time series data
 #                 for timeSeries in element.raw_time_series:
 #                     # if not yet aggregated, conduct "manual" time series aggregation
-#                     if not element.isAggregated():
+#                     if not element.is_aggregated():
 #                         dfTimeSeries = element.raw_time_series[timeSeries].loc[(slice(None), setTimeStepsOperation)]
 #                     else:
 #                         dfTimeSeries = getattr(element, timeSeries)
@@ -310,7 +310,7 @@ class TimeSeriesAggregation():
         # concatenate the order of time steps for all elements and link with investment and yearly time steps
         for element in Element.get_all_elements():
             # optimizedYears              = EnergySystem.get_system()["optimizedYears"]
-            oldSequenceTimeSteps        = Element.getAttributeOfSpecificElement(element.name, "sequence_time_steps")
+            oldSequenceTimeSteps        = Element.get_attribute_of_specific_element(element.name, "sequence_time_steps")
             newSequenceTimeSteps        = np.hstack([oldSequenceTimeSteps] * optimizedYears)
             element.sequence_time_steps   = newSequenceTimeSteps
             EnergySystem.set_sequence_time_steps(element.name, element.sequence_time_steps)
@@ -329,7 +329,7 @@ class TimeSeriesAggregation():
         if setEnergyBalanceIndicator:
             EnergySystem.set_sequence_time_steps(element.name + "EnergyBalance", element.sequenceTimeStepsEnergyBalance,
                                               time_step_type="operation")
-        element.setAggregated()
+        element.set_aggregated()
 
     @classmethod
     def uniqueTimeStepsInMultigrid(cls, listSequenceTimeSteps):

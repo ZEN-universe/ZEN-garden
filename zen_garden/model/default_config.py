@@ -192,7 +192,7 @@ class Config(object):
         self.solver["performanceCheck"] = {"printDeltaRun":1, "printDeltaIteration":1}
         # settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly:
         # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
-        self.solver["linearRegressionCheck"] = {"epsIntercept":0.1,"epsRvalue":1-(1E-5)}
+        self.solver["linear_regression_check"] = {"eps_intercept":0.1,"epsRvalue":1-(1E-5)}
 
         ## Scenarios - dictionary declaration
         self.scenarios[""] = {}

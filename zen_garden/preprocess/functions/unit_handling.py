@@ -15,9 +15,9 @@ from pint.util                               import column_echelon_form
 import copy
 class UnitHandling:
 
-    def __init__(self,folderPath,roundDecimalPoints):
+    def __init__(self,folder_path,roundDecimalPoints):
         """ initialization of the unit_handling instance"""
-        self.folderPath             = folderPath
+        self.folder_path             = folder_path
         self.roundingDecimalPoints  = roundDecimalPoints
         self.getBaseUnits()
         # dict of element attribute values
@@ -29,7 +29,7 @@ class UnitHandling:
         self.ureg       = UnitRegistry()
 
         # load additional units
-        self.ureg.load_definitions(self.folderPath+"/unitDefinitions.txt")
+        self.ureg.load_definitions(self.folder_path+"/unitDefinitions.txt")
 
         # empty base units and dimensionality matrix
         self.baseUnits                  = {}
@@ -87,7 +87,7 @@ class UnitHandling:
     def extractBaseUnits(self):
         """ extracts base units of energy system
         :return listBaseUnits: list of base units """
-        listBaseUnits = pd.read_csv(self.folderPath +"/baseUnits.csv").squeeze().values.tolist()
+        listBaseUnits = pd.read_csv(self.folder_path +"/baseUnits.csv").squeeze().values.tolist()
         return listBaseUnits
 
     def calculateCombinedUnit(self,inputUnit,returnCombination = False):
@@ -156,7 +156,7 @@ class UnitHandling:
         else:
             return combinedUnit
 
-    def getUnitMultiplier(self,inputUnit):
+    def get_unit_multiplier(self,inputUnit):
         """ calculates the multiplier for converting an inputUnit to the base units
         :param inputUnit: string of input unit
         :return multiplier: multiplication factor """
@@ -189,10 +189,10 @@ class UnitHandling:
         if (baseUnitCombination != 0).any():
             self.dictAttributeValues[attribute] = {"baseCombination": baseUnitCombination,"values":None}
 
-    def setAttributeValues(self,dfOutput,attribute):
+    def setAttributeValues(self,df_output,attribute):
         """ saves the attributes values of an attribute """
         if attribute in self.dictAttributeValues.keys():
-            self.dictAttributeValues[attribute]["values"] = dfOutput
+            self.dictAttributeValues[attribute]["values"] = df_output
 
     def recomment_base_units(self,immutable_unit,unitExps):
         """ gets the best base units based on the input parameter values """

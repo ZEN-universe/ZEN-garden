@@ -121,7 +121,7 @@ class EnergySystem:
         :return set_nodes_on_edges: dict with edges and corresponding nodes """
         set_nodes_on_edges = {}
         # read edge file
-        set_edges_input = self.datainput.extract_locations(extractNodes=False)
+        set_edges_input = self.datainput.extract_locations(extract_nodes=False)
         if set_edges_input is not None:
             for edge in set_edges_input.index:
                 set_nodes_on_edges[edge] = (set_edges_input.loc[edge,"nodeFrom"],set_edges_input.loc[edge,"nodeTo"])
@@ -750,7 +750,7 @@ class EnergySystem:
         )
 
     @classmethod
-    def constraint_objective(cls):
+    def construct_objective(cls):
         """ constructs the pe.Objective of the class <EnergySystem> """
         logging.info("Construct pe.Objective")
         # get model

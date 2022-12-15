@@ -28,7 +28,7 @@ def restore_default_state():
     # set label
     Carrier.label = "setCarriers"
     # empty list of elements
-    Carrier.listOfElements = []
+    Carrier.list_of_elements = []
     
     # Conditional Carrier
     #####################
@@ -36,7 +36,7 @@ def restore_default_state():
     # set label
     ConditioningCarrier.label = "setConditioningCarriers"
     # empty list of elements
-    ConditioningCarrier.listOfElements = []
+    ConditioningCarrier.list_of_elements = []
     
     # Element
     #########
@@ -44,7 +44,7 @@ def restore_default_state():
     # set label
     Element.label = "set_elements"
     # empty list of elements
-    Element.listOfElements = []
+    Element.list_of_elements = []
 
     # EnergySystem
     ##############
@@ -94,7 +94,7 @@ def restore_default_state():
     # set label
     ConditioningTechnology.label = "setConditioningTechnologies"
     # empty list of elements
-    ConditioningTechnology.listOfElements = []
+    ConditioningTechnology.list_of_elements = []
 
     # ConversionTechnology
     ######################
@@ -103,7 +103,7 @@ def restore_default_state():
     ConversionTechnology.label           = "setConversionTechnologies"
     ConversionTechnology.locationType    = "setNodes"
     # empty list of elements
-    ConversionTechnology.listOfElements = []
+    ConversionTechnology.list_of_elements = []
 
     # StorageTechnology
     ###################
@@ -112,7 +112,7 @@ def restore_default_state():
     StorageTechnology.label           = "setStorageTechnologies"
     StorageTechnology.locationType    = "setNodes"
     # empty list of elements
-    StorageTechnology.listOfElements = []
+    StorageTechnology.list_of_elements = []
 
     # Technology
     ############
@@ -121,7 +121,7 @@ def restore_default_state():
     Technology.label           = "setTechnologies"
     Technology.locationType    = None
     # empty list of elements
-    Technology.listOfElements = []
+    Technology.list_of_elements = []
 
     # TransportTechnology
     #####################
@@ -130,7 +130,7 @@ def restore_default_state():
     TransportTechnology.label           = "setTransportTechnologies"
     TransportTechnology.locationType    = "setEdges"
     # empty list of elements
-    TransportTechnology.listOfElements = []
+    TransportTechnology.list_of_elements = []
     # dict of reversed edges
     TransportTechnology.dictReversedEdges = {}
 

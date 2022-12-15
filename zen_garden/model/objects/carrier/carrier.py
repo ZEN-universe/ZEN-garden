@@ -22,7 +22,7 @@ class Carrier(Element):
     # set label
     label = "setCarriers"
     # empty list of elements
-    listOfElements = []
+    list_of_elements = []
 
     def __init__(self,carrier):
         """initialization of a generic carrier object
@@ -33,7 +33,7 @@ class Carrier(Element):
         # store input data
         self.store_input_data()
         # add carrier to list
-        Carrier.addElement(self)
+        Carrier.add_element(self)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -184,7 +184,7 @@ class Carrier(Element):
         )
 
         # add pe.Sets of the child classes
-        for subclass in cls.getAllSubclasses():
+        for subclass in cls.get_all_subclasses():
             if np.size(EnergySystem.get_system()[subclass.label]):
                 subclass.construct_vars()
 
@@ -275,7 +275,7 @@ class Carrier(Element):
             doc='node- and time-dependent energy balance for each carrier',
         )
         # add pe.Sets of the child classes
-        for subclass in cls.getAllSubclasses():
+        for subclass in cls.get_all_subclasses():
             if np.size(EnergySystem.get_system()[subclass.label]):
                 subclass.construct_constraints()
 

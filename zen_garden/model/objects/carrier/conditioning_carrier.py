@@ -19,7 +19,7 @@ class ConditioningCarrier(Carrier):
     # set label
     label = "setConditioningCarriers"
     # empty list of elements
-    listOfElements = []
+    list_of_elements = []
 
     def __init__(self,carrier):
         """initialization of a generic carrier object
@@ -30,7 +30,7 @@ class ConditioningCarrier(Carrier):
         # store input data
         self.store_input_data()
         # add carrier to list
-        ConditioningCarrier.addElement(self)
+        ConditioningCarrier.add_element(self)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
