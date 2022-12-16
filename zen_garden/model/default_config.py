@@ -76,7 +76,7 @@ class Config(object):
         self.analysis["headerDataInputs"] = {
                                             "setNodes": "node",
                                             "setEdges": "edge",
-                                            "setLocation": "location",
+                                            "set_location": "location",
                                             "setScenarios":"scenario",
                                             "set_time_steps":"time",
                                             "setTimeStepsOperation":"timeOperation",

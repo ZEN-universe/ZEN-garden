@@ -324,8 +324,8 @@ class Element:
                                 list_sets.append(model.find_component(index)[element])
                             else:
                                 raise NotImplementedError
-                        # if index is setLocation
-                        elif index == "setLocation":
+                        # if index is set_location
+                        elif index == "set_location":
                             # if element in setConversionTechnologies or setStorageTechnologies, append setNodes
                             if element in model.setConversionTechnologies or element in model.setStorageTechnologies:
                                 list_sets.append(model.setNodes)

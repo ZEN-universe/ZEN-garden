@@ -326,14 +326,14 @@ class ConversionTechnology(Technology):
         Constraint.add_constraint(
             model,
             name="constraintReferenceFlowCoupling",
-            index_sets= cls.create_custom_set(["setConversionTechnologies","set_no_on_off","setDependentCarriers","setLocation","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["setConversionTechnologies","set_no_on_off","setDependentCarriers","set_location","setTimeStepsOperation"]),
             rule = constraintReferenceFlowCouplingRule,
             doc = "couples the real reference flow variables with the approximated variables")
         # dependent flow coupling
         Constraint.add_constraint(
             model,
             name="constraintDependentFlowCoupling",
-            index_sets= cls.create_custom_set(["setConversionTechnologies","set_no_on_off","setDependentCarriers","setLocation","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["setConversionTechnologies","set_no_on_off","setDependentCarriers","set_location","setTimeStepsOperation"]),
             rule = constraintDependentFlowCouplingRule,
             doc = "couples the real dependent flow variables with the approximated variables")
 

@@ -298,7 +298,7 @@ class DataInput():
             return df_output
 
         if f"{file_name}.csv" in os.listdir(self.folder_path):
-            index_list, index_name_list = self.constructIndexList(index_sets, None)
+            index_list, index_name_list = self.construct_index_list(index_sets, None)
             df_input = self.read_input_data( file_name)
             # fill output dataframe
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, column, default_value = 0)
@@ -436,12 +436,11 @@ class DataInput():
                 columns = df_input.iloc[-1][df_input.iloc[-1] != "unit"].dropna().index
             else:
                 columns = df_input.columns
-            dfInputUnits        = df_input[columns].iloc[-1]
-            df_input             = df_input.iloc[:-1]
-            dfInputMultiplier   = dfInputUnits.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit))
-            #df_input[columns]    = df_input[columns].astype(float
-            df_input             = df_input.apply(lambda column: pd.to_numeric(column, errors='coerce'))
-            df_input[columns]    = df_input[columns] * dfInputMultiplier
+            df_input_units = df_input[columns].iloc[-1]
+            df_input = df_input.iloc[:-1]
+            _df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit))
+            df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='coerce'))
+            df_input[columns] = df_input[columns] * _df_input_multiplier
         return df_input
 
     def create_default_output(self,index_sets,column,file_name=None,time_steps=None,manual_default_value = None,scenario = ""):
@@ -453,7 +452,7 @@ class DataInput():
         :param scenario: investigated scenario
         :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv"""
         # select index
-        index_list, index_name_list = self.constructIndexList(index_sets, time_steps)
+        index_list, index_name_list = self.construct_index_list(index_sets, time_steps)
         # create pd.MultiIndex and select data
         if index_sets:
             index_multi_index = pd.MultiIndex.from_product(index_list, names=index_name_list)
@@ -476,10 +475,10 @@ class DataInput():
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit
-        self.saveUnitOfAttribute(default_name,scenario)
+        self.save_unit_of_attribute(default_name,scenario)
         return df_output,default_value,index_name_list
 
-    def saveUnitOfAttribute(self,file_name,scenario=""):
+    def save_unit_of_attribute(self,file_name,scenario=""):
         """ saves the unit of an attribute, converted to the base unit """
         # if numerics analyzed
         if self.solver["analyzeNumerics"]:
@@ -487,28 +486,27 @@ class DataInput():
                 df_input = self.read_input_data("attributes" + scenario).set_index("index").squeeze(axis=1)
                 # get attribute
                 attribute_name = self.adapt_attribute_name(file_name,df_input)
-                inputUnit = df_input.loc[attribute_name, "unit"]
-                self.unit_handling.setBaseUnitCombination(inputUnit=inputUnit,attribute=(self.element.name,file_name))
+                input_unit = df_input.loc[attribute_name, "unit"]
+                self.unit_handling.set_base_unit_combination(input_unit=input_unit,attribute=(self.element.name,file_name))
 
     def save_values_of_attribute(self,df_output,file_name):
         """ saves the values of an attribute """
         # if numerics analyzed
         if self.solver["analyzeNumerics"]:
             if file_name:
-                dfOutputReduced = df_output[(df_output != 0) & (df_output.abs() != np.inf)]
-                if not dfOutputReduced.empty:
-                    self.unit_handling.setAttributeValues(df_output= dfOutputReduced,attribute=(self.element.name,file_name))
+                df_output_reduced = df_output[(df_output != 0) & (df_output.abs() != np.inf)]
+                if not df_output_reduced.empty:
+                    self.unit_handling.set_attribute_values(df_output= df_output_reduced,attribute=(self.element.name,file_name))
 
-    def constructIndexList(self,index_sets,time_steps):
+    def construct_index_list(self,index_sets,time_steps):
         """ constructs index list from index sets and returns list of indices and list of index names
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param time_steps: specific time_steps of element
         :return index_list: list of indices
         :return index_name_list: list of name of indices
         """
-        index_list     = []
+        index_list = []
         index_name_list = []
-
         # add rest of indices
         for index in index_sets:
             index_name_list.append(self.index_names[index])
@@ -577,35 +575,33 @@ class DataInput():
         :return df_input: reformulated input dataframe
         """
         index_name_list.remove(missing_index)
-        df_input                 = df_input.set_index(index_name_list)
+        df_input = df_input.set_index(index_name_list)
         # missing index values
-        requestedIndexValues    = set(df_output.index.get_level_values(missing_index))
+        requested_index_values = set(df_output.index.get_level_values(missing_index))
         # the missing index is the columns of df_input
-        _requestedIndexValuesInColumns  = requestedIndexValues.intersection(df_input.columns)
-        if _requestedIndexValuesInColumns:
-            requestedIndexValues    = _requestedIndexValuesInColumns
-            df_input.columns         = df_input.columns.set_names(missing_index)
-            df_input                 = df_input[list(requestedIndexValues)].stack()
-            df_input                 = df_input.reorder_levels(df_output.index.names)
+        _requested_index_values_in_columns  = requested_index_values.intersection(df_input.columns)
+        if _requested_index_values_in_columns:
+            requested_index_values = _requested_index_values_in_columns
+            df_input.columns = df_input.columns.set_names(missing_index)
+            df_input = df_input[list(requested_index_values)].stack()
+            df_input = df_input.reorder_levels(df_output.index.names)
         # the missing index does not appear in df_input
         # the values in df_input are extended to all missing index values
         else:
             # logging.info(f"Missing index {missing_index} detected in {file_name}. Input dataframe is extended by this index")
-            _dfInputIndexTemp   = pd.MultiIndex.from_product([df_input.index,requestedIndexValues],names=df_input.index.names+[missing_index])
-            _dfInputTemp        = pd.Series(index=_dfInputIndexTemp, dtype=float)
+            _df_input_index_temp   = pd.MultiIndex.from_product([df_input.index,requested_index_values],names=df_input.index.names+[missing_index])
+            _df_input_temp        = pd.Series(index=_df_input_index_temp, dtype=float)
             if column in df_input.columns:
-                df_input = df_input[column].loc[_dfInputIndexTemp.get_level_values(df_input.index.names[0])].squeeze()
-                # much slower than overwriting index:
-                # df_input         = _dfInputTemp.to_frame().apply(lambda row: df_input.loc[row.name[0], column].squeeze(),axis=1)
+                df_input = df_input[column].loc[_df_input_index_temp.get_level_values(df_input.index.names[0])].squeeze()
             else:
                 if isinstance(df_input,pd.Series):
                     df_input = df_input.to_frame()
                 if df_input.shape[1] == 1:
-                    df_input         = df_input.loc[_dfInputIndexTemp.get_level_values(df_input.index.names[0])].squeeze()
+                    df_input = df_input.loc[_df_input_index_temp.get_level_values(df_input.index.names[0])].squeeze()
                 else:
-                    assert _dfInputTemp.index.names[-1] != "time", f"Only works if columns contain time index and not for {_dfInputTemp.index.names[-1]}"
-                    df_input = _dfInputTemp.to_frame().apply(lambda row: df_input.loc[row.name[0:-1],str(row.name[-1])],axis=1)
-            df_input.index = _dfInputTemp.index
+                    assert _df_input_temp.index.names[-1] != "time", f"Only works if columns contain time index and not for {_df_input_temp.index.names[-1]}"
+                    df_input = _df_input_temp.to_frame().apply(lambda row: df_input.loc[row.name[0:-1],str(row.name[-1])],axis=1)
+            df_input.index = _df_input_temp.index
             df_input = df_input.reorder_levels(order=df_output.index.names)
             if isinstance(df_input,pd.DataFrame):
                 df_input = df_input.squeeze()
@@ -623,8 +619,8 @@ class DataInput():
         """
         index_name_list.remove(missing_index)
         df_input = df_input.set_index(index_name_list)
-        setLocation = df_input.index.unique()
-        for location in setLocation:
+        set_location = df_input.index.unique()
+        for location in set_location:
             if location in df_output.index.get_level_values(index_name_list[0]):
                 values = df_input[column].loc[location].tolist()
                 if isinstance(values, int) or isinstance(values, float):

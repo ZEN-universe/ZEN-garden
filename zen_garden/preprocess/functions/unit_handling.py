@@ -90,20 +90,20 @@ class UnitHandling:
         listBaseUnits = pd.read_csv(self.folder_path +"/baseUnits.csv").squeeze().values.tolist()
         return listBaseUnits
 
-    def calculateCombinedUnit(self,inputUnit,returnCombination = False):
-        """ calculates the combined unit for converting an inputUnit to the base units
-        :param inputUnit: string of input unit
+    def calculateCombinedUnit(self,input_unit,returnCombination = False):
+        """ calculates the combined unit for converting an input_unit to the base units
+        :param input_unit: string of input unit
         :return combinedUnit: multiplication factor """
         # check if "h" and thus "planck_constant" in unit
-        self.checkIfInvalidHourString(inputUnit)
-        # create dimensionality vector for inputUnit
-        dimInput = self.ureg.get_dimensionality(self.ureg(inputUnit))
+        self.checkIfInvalidHourString(input_unit)
+        # create dimensionality vector for input_unit
+        dimInput = self.ureg.get_dimensionality(self.ureg(input_unit))
         dimVector = pd.Series(index=self.dimMatrix.index, data=0)
         _missingDim = set(dimInput.keys()).difference(dimVector.keys())
         assert len(_missingDim) == 0, f"No base unit defined for dimensionalities <{_missingDim}>"
         dimVector[list(dimInput.keys())] = list(dimInput.values())
         # calculate dimensionless combined unit (e.g., tons and kilotons)
-        combinedUnit = self.ureg(inputUnit).units
+        combinedUnit = self.ureg(input_unit).units
         # if unit (with a different multiplier) is already in base units
         if self.dimMatrix.isin(dimVector).all(axis=0).any():
             baseCombination = self.dimMatrix.isin(dimVector).all(axis=0).astype(int)
@@ -150,46 +150,46 @@ class UnitHandling:
                                         combinedUnit *= self.ureg(unitTemp) ** (-1 * powerTemp)
                                     calculatedMultiplier = True
                                     break
-                assert calculatedMultiplier, f"Cannot establish base unit conversion for {inputUnit} from base units {self.baseUnits.keys()}"
+                assert calculatedMultiplier, f"Cannot establish base unit conversion for {input_unit} from base units {self.baseUnits.keys()}"
         if returnCombination:
             return baseCombination
         else:
             return combinedUnit
 
-    def get_unit_multiplier(self,inputUnit):
-        """ calculates the multiplier for converting an inputUnit to the base units
-        :param inputUnit: string of input unit
+    def get_unit_multiplier(self,input_unit):
+        """ calculates the multiplier for converting an input_unit to the base units
+        :param input_unit: string of input unit
         :return multiplier: multiplication factor """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
-        if inputUnit in self.baseUnits:
+        if input_unit in self.baseUnits:
             return 1
         # if input unit is nan --> dimensionless
-        elif type(inputUnit) != str and np.isnan(inputUnit):
+        elif type(input_unit) != str and np.isnan(input_unit):
             return 1
         else:
-            combinedUnit = self.calculateCombinedUnit(inputUnit)
-            assert combinedUnit.to_base_units().unitless, f"The unit conversion of unit {inputUnit} did not resolve to a dimensionless conversion factor. Something went wrong."
+            combinedUnit = self.calculateCombinedUnit(input_unit)
+            assert combinedUnit.to_base_units().unitless, f"The unit conversion of unit {input_unit} did not resolve to a dimensionless conversion factor. Something went wrong."
             # magnitude of combined unit is multiplier
             multiplier = combinedUnit.to_base_units().magnitude
             # check that multiplier is larger than rounding tolerance
-            assert multiplier >= 10**(-self.roundingDecimalPoints), f"Multiplier {multiplier} of unit {inputUnit} is smaller than rounding tolerance {10**(-self.roundingDecimalPoints)}"
+            assert multiplier >= 10**(-self.roundingDecimalPoints), f"Multiplier {multiplier} of unit {input_unit} is smaller than rounding tolerance {10**(-self.roundingDecimalPoints)}"
             # round to decimal points
             return round(multiplier,self.roundingDecimalPoints)
 
-    def setBaseUnitCombination(self,inputUnit,attribute):
+    def set_base_unit_combination(self,input_unit,attribute):
         """ converts the input unit to the corresponding base unit """
         # if input unit is already in base units --> the input unit is base unit
-        if inputUnit in self.baseUnits:
-            baseUnitCombination = self.calculateCombinedUnit(inputUnit,returnCombination=True)
+        if input_unit in self.baseUnits:
+            baseUnitCombination = self.calculateCombinedUnit(input_unit,returnCombination=True)
         # if input unit is nan --> dimensionless
-        elif type(inputUnit) != str and np.isnan(inputUnit):
+        elif type(input_unit) != str and np.isnan(input_unit):
             baseUnitCombination = pd.Series(index=self.dimMatrix.columns,data=0)
         else:
-            baseUnitCombination = self.calculateCombinedUnit(inputUnit,returnCombination=True)
+            baseUnitCombination = self.calculateCombinedUnit(input_unit,returnCombination=True)
         if (baseUnitCombination != 0).any():
             self.dictAttributeValues[attribute] = {"baseCombination": baseUnitCombination,"values":None}
 
-    def setAttributeValues(self,df_output,attribute):
+    def set_attribute_values(self,df_output,attribute):
         """ saves the attributes values of an attribute """
         if attribute in self.dictAttributeValues.keys():
             self.dictAttributeValues[attribute]["values"] = df_output
@@ -241,12 +241,12 @@ class UnitHandling:
                     listUnits.append(str(self.ureg(f"{10**exp} {unit}").to_compact()))
             logging.info(f"A better base unit combination is {', '.join(listUnits)}. This reduces the parameter range by 10^{int(np.round(smallestRange['originalVal']-smallestRange['val']))}")
 
-    def checkIfInvalidHourString(self,inputUnit):
-        """ checks if "h" and thus "planck_constant" in inputUnit
-        :param inputUnit: string of inputUnit """
-        _tupleUnits = self.ureg(inputUnit).to_tuple()[1]
+    def checkIfInvalidHourString(self,input_unit):
+        """ checks if "h" and thus "planck_constant" in input_unit
+        :param input_unit: string of input_unit """
+        _tupleUnits = self.ureg(input_unit).to_tuple()[1]
         _listUnits = [_item[0] for _item in _tupleUnits]
-        assert "planck_constant" not in _listUnits, f"Error in input unit '{inputUnit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"
+        assert "planck_constant" not in _listUnits, f"Error in input unit '{input_unit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"
 
     @staticmethod
     def checkIfPosNegBoolean(array,axis=None):
