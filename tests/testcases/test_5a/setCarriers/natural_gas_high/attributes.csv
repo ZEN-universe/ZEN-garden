@@ -2,7 +2,7 @@ index,value,unit
 carbonIntensityDefault,0.2,kilotons/GWh
 demandCarrierDefault,0,GW
 shedDemandPriceDefault,inf,kiloEuro/GWh
-availabilityCarrierImportDefault,inf,GW
+availabilityCarrierImportDefault,0,GW
 availabilityCarrierExportDefault,0,GW
 availabilityCarrierImportYearlyDefault,inf,GWh
 availabilityCarrierExportYearlyDefault,inf,GWh
