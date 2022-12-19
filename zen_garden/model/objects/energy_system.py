@@ -104,6 +104,10 @@ class EnergySystem:
         self.sequenceTimeStepsYearly         = np.concatenate([[timeStep] * self.timeStepsYearlyDuration[timeStep] for timeStep in self.timeStepsYearlyDuration])
         self.setSequenceTimeSteps(None, self.sequenceTimeStepsYearly, timeStepType="yearly")
         self.setTimeStepYears                = list(range(self.system["referenceYear"],self.system["referenceYear"] + self.system["optimizedYears"]*self.system["intervalBetweenYears"],self.system["intervalBetweenYears"]))
+
+        #parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
+        self.parametersInterpolationOff = self.dataInput.readInputData("parametersInterpolationOff")
+
         # technology-specific
         self.setConversionTechnologies = system["setConversionTechnologies"]
         self.setTransportTechnologies  = system["setTransportTechnologies"]

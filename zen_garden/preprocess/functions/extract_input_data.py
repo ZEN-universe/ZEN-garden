@@ -91,7 +91,7 @@ class DataInput():
         :param timeSteps: specific timeSteps of element
         :return dfOutput: filled output dataframe """
 
-        dfInput = self.convertRealToGenericTimeIndices(dfInput,timeSteps)
+        dfInput = self.convertRealToGenericTimeIndices(dfInput,timeSteps,fileName)
 
         # select and drop scenario
         assert dfInput.columns is not None, f"Input file '{fileName}' has no columns"
@@ -561,10 +561,11 @@ class DataInput():
         else:
             return False
 
-    def convertRealToGenericTimeIndices(self,dfInput,timeSteps):
+    def convertRealToGenericTimeIndices(self,dfInput,timeSteps,fileName):
         """convert yearly time indices to generic time indices
         :param dfInput: raw input dataframe
         :param timeSteps: specific timeSteps of element
+        :param fileName: name of selected file
         :return dfInput: input dataframe with generic time indices
         """
         #check if input data is time-dependent and has yearly time steps
@@ -575,15 +576,21 @@ class DataInput():
                 return  dfInput
 
             #interpolate missing data
-            parameters = dfInput.axes[1]
-            for param in parameters:
-                if param == 'time':
-                    continue
-                for year in self.energySystem.setTimeStepYears:
-                    if year not in dfInput.time.values:
-                        dfInput = dfInput.append({'time': year, param: float('nan')}, ignore_index=True)
-                dfInput = dfInput.sort_values('time')
-                dfInput[param] = dfInput[param].interpolate()
+            fileNamesIntOff = []
+            if self.energySystem.parametersInterpolationOff is not None:
+                fileNamesIntOff = self.energySystem.parametersInterpolationOff.values
+            if fileName not in fileNamesIntOff:
+                parameters = dfInput.axes[1]
+                for param in parameters:
+                    if param == 'time':
+                        continue
+                    for year in self.energySystem.setTimeStepYears:
+                        if year not in dfInput.time.values:
+                            dfInput = dfInput.append({'time': year, param: float('nan')}, ignore_index=True)
+                    dfInput = dfInput.sort_values('time')
+                    dfInput[param] = dfInput[param].interpolate()
+            else:
+                logging.info(f"Parameter {fileName} data won't be interpolated to cover years without given values")
 
             #remove data of years that won't be simulated
             unnecessaryRows = []
