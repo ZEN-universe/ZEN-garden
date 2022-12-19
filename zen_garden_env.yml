@@ -5,7 +5,7 @@ channels:
   - gurobi
 dependencies:
   - numpy
-  - gurobi
+  - gurobi=9.*
   - glpk
   - geopandas
   - pandas
