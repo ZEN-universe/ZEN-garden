@@ -82,7 +82,7 @@ class OptimizationSetup():
             EnergySystem.get_unit_handling().recomment_base_units(immutable_unit = EnergySystem.get_solver()["immutableUnit"],
                                                               unitExps = EnergySystem.get_solver()["rangeUnitExponents"])
         # conduct  time series aggregation
-        TimeSeriesAggregation.conduct_time_series_aggregation()
+        TimeSeriesAggregation.conduct_tsa()
 
     def construct_optimization_problem(self):
         """ constructs the optimization problem """
@@ -145,7 +145,7 @@ class OptimizationSetup():
         else:
             scenario = "_" + scenario
         # list of parameters with raw_time_series
-        conduct_time_series_aggregation = False
+        conduct_tsa = False
         # overwrite scenario dependent parameter values for all elements
         for element_name, params in elements.items():
             if element_name == "EnergySystem":
@@ -164,7 +164,7 @@ class OptimizationSetup():
                 _time_steps  = None
                 # set new parameter value
                 if hasattr(element, "raw_time_series") and param in element.raw_time_series.keys():
-                    conduct_time_series_aggregation = True
+                    conduct_tsa = True
                     _time_steps                   = EnergySystem.get_energy_system().set_base_time_steps_yearly
                     element.raw_time_series[param] = element.datainput.extract_input_data(file_name, index_sets=_index_sets,column=param,time_steps=_time_steps,scenario=scenario)
                 else:
@@ -174,9 +174,9 @@ class OptimizationSetup():
                         _new_param  = element.datainput.extract_input_data(file_name,index_sets=_index_sets,time_steps=_time_steps,scenario=scenario)
                         #else: _new_param = element.datainput.extract_attribute(param,scenario=scenario,skip_warning=True)["value"]
                         setattr(element, param, _new_param)
-        # if scenario contains timeSeries dependent params conduct timeSeriesAggregation
-        if conduct_time_series_aggregation:
-            TimeSeriesAggregation.conduct_time_series_aggregation()
+        # if scenario contains timeSeries dependent params conduct tsa
+        if conduct_tsa:
+            TimeSeriesAggregation.conduct_tsa()
 
     def overwrite_time_indices(self,step_horizon):
         """ select subset of time indices, matching the step horizon

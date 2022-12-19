@@ -36,8 +36,8 @@ class DataInput():
         self.folder_path = getattr(self.element,"input_path")
 
         # get names of indices
-        # self.index_names     = {index_name: self.analysis['headerDataInputs'][index_name][0] for index_name in self.analysis['headerDataInputs']}
-        self.index_names     = self.analysis['headerDataInputs']
+        # self.index_names     = {index_name: self.analysis['header_data_inputs'][index_name][0] for index_name in self.analysis['header_data_inputs']}
+        self.index_names     = self.analysis['header_data_inputs']
 
     def extract_input_data(self,file_name,index_sets,column=None,time_steps=None,scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
@@ -56,7 +56,7 @@ class DataInput():
             self.extract_yearly_variation(file_name,index_sets,column)
 
         # if existing capacities and existing capacities not used
-        if (file_name == "existingCapacity" or file_name == "existingCapacityEnergy") and not self.analysis["useExistingCapacities"]:
+        if (file_name == "existing_capacity" or file_name == "existingCapacityEnergy") and not self.analysis["useExistingCapacities"]:
             df_output,*_ = self.create_default_output(index_sets,column,file_name= file_name,time_steps=time_steps,manual_default_value=0,scenario=scenario)
             return df_output
         else:
@@ -157,15 +157,17 @@ class DataInput():
         if df_input is not None:
             df_input = df_input.set_index("index").squeeze(axis=1)
             attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning)
-        else:
-            attribute_name = None
-        if df_input is None or attribute_name is None:
+        elif scenario != "":
             df_input = self.read_input_data(filename)
-            if df_input is not None:
-                df_input = df_input.set_index("index").squeeze(axis=1)
-            else:
-                return None
-        attribute_name = self.adapt_attribute_name(attribute_name,df_input,skip_warning)
+            df_input = df_input.set_index("index").squeeze(axis=1)
+            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning)
+        # if df_input is None or attribute_name is None:
+        #     df_input = self.read_input_data(filename)
+        #     if df_input is not None:
+        #         df_input = df_input.set_index("index").squeeze(axis=1)
+        #     else:
+        #         return None
+        #     attribute_name = self.adapt_attribute_name(attribute_name,df_input,skip_warning)
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
@@ -265,7 +267,7 @@ class DataInput():
     def extract_set_existing_technologies(self, storage_energy = False):
         """ reads input data and creates setExistingCapacity for each technology
         :param storage_energy: boolean if existing energy capacity of storage technology (instead of power)
-        :return setExistingTechnologies: return set existing technologies"""
+        :return set_existing_technologies: return set existing technologies"""
         if self.analysis["useExistingCapacities"]:
             if storage_energy:
                 _energy_string = "Energy"
@@ -292,7 +294,7 @@ class DataInput():
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return df_output: return existing capacity and existing lifetime """
         column = "yearConstruction"
-        df_output = pd.Series(index=self.element.existingCapacity.index,data=0)
+        df_output = pd.Series(index=self.element.existing_capacity.index,data=0)
         # if no existing capacities
         if not self.analysis["useExistingCapacities"]:
             return df_output
@@ -315,22 +317,24 @@ class DataInput():
         # attribute names
         if variable_type == "capex":
             _attribute_name  = "capexSpecific"
+            variable_type_manual = "Capex"
         elif variable_type == "conver_efficiency":
             _attribute_name  = "converEfficiency"
+            variable_type_manual = "ConverEfficiency"
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
         _index_sets = ["setNodes", "set_time_steps"]
         _time_steps = self.energy_system.set_time_steps_yearly
         # import all input data
-        df_input_nonlinear    = self.read_pwa_files(variable_type, fileType="nonlinear")
-        df_input_breakpoints  = self.read_pwa_files(variable_type, fileType="breakpointsPWA")
-        df_input_linear       = self.read_pwa_files(variable_type, fileType="linear")
+        df_input_nonlinear    = self.read_pwa_files(variable_type_manual, fileType="nonlinear")
+        df_input_breakpoints  = self.read_pwa_files(variable_type_manual, fileType="breakpointsPWA")
+        df_input_linear       = self.read_pwa_files(variable_type_manual, fileType="linear")
         df_linear_exist       = self.exists_attribute(_attribute_name)
         assert (df_input_nonlinear is not None and df_input_breakpoints is not None) \
                or df_linear_exist \
                or df_input_linear is not None, \
             f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
-        # check if capexSpecific exists
+        # check if capex_specific exists
         if (df_input_nonlinear is not None and df_input_breakpoints is not None):
             # select data
             pwa_dict = {}
@@ -353,7 +357,7 @@ class DataInput():
             pwa_dict["bounds"]           = {} # save bounds of variables
             linear_dict                  = {}
             # min and max total capacity of technology
-            min_capacity_tech,max_capacity_tech = (0,min(max(self.element.capacityLimit.values),max(breakpoints)))
+            min_capacity_tech,max_capacity_tech = (0,min(max(self.element.capacity_limit.values),max(breakpoints)))
             for value_variable in nonlinear_values:
                 if value_variable == breakpoint_variable:
                     pwa_dict["bounds"][value_variable] = (min_capacity_tech,max_capacity_tech)
@@ -512,8 +516,8 @@ class DataInput():
             index_name_list.append(self.index_names[index])
             if index == "set_time_steps" and time_steps:
                 index_list.append(time_steps)
-            elif index == "setExistingTechnologies":
-                index_list.append(self.element.setExistingTechnologies)
+            elif index == "set_existing_technologies":
+                index_list.append(self.element.set_existing_technologies)
             elif index in self.system:
                 index_list.append(self.system[index])
             elif hasattr(self.energy_system,index):

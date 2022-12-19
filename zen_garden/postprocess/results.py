@@ -319,8 +319,8 @@ class Postprocess:
         index_list = string.split(",")
         indexListFinal = []
         for index in index_list:
-            if index in self.analysis["headerDataInputs"].keys():
-                indexListFinal.append(self.analysis["headerDataInputs"][index])
+            if index in self.analysis["header_data_inputs"].keys():
+                indexListFinal.append(self.analysis["header_data_inputs"][index])
             else:
                 pass
                 # indexListFinal.append(index)
@@ -740,7 +740,7 @@ class Results(object):
         """
         Loads duration of operational time steps
         """
-        return self.get_df("timeStepsOperationDuration")
+        return self.get_df("time_steps_operation_duration")
 
     def loadTimeStepStorageDuration(self):
         """
@@ -928,9 +928,9 @@ class Results(object):
 
     def _get_ts_type(self, component_data,component_name):
         """ get time step type (operational, storage, yearly) """
-        _headerOperational = self.results["analysis"]["headerDataInputs"]["setTimeStepsOperation"]
-        _headerStorage = self.results["analysis"]["headerDataInputs"]["setTimeStepsStorageLevel"]
-        _headerYearly = self.results["analysis"]["headerDataInputs"]["set_time_steps_yearly"]
+        _headerOperational = self.results["analysis"]["header_data_inputs"]["setTimeStepsOperation"]
+        _headerStorage = self.results["analysis"]["header_data_inputs"]["setTimeStepsStorageLevel"]
+        _headerYearly = self.results["analysis"]["header_data_inputs"]["set_time_steps_yearly"]
         if component_data.columns.name == _headerOperational:
             return "operational"
         elif component_data.columns.name == _headerStorage:

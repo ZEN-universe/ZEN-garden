@@ -125,9 +125,9 @@ class Element:
                 dict_of_attributes,attribute_is_series = cls.append_attribute_of_element_to_dict(_element,attribute_name,dict_of_attributes)
             # if extracted for both capacity types
             else:
-                for capacity_type in system["setCapacityTypes"]:
+                for capacity_type in system["set_capacity_types"]:
                     # append energy only for storage technologies
-                    if capacity_type == system["setCapacityTypes"][0] or _element.name in system["setStorageTechnologies"]:
+                    if capacity_type == system["set_capacity_types"][0] or _element.name in system["setStorageTechnologies"]:
                         dict_of_attributes,attribute_is_series = cls.append_attribute_of_element_to_dict(_element, attribute_name, dict_of_attributes,capacity_type)
         if return_attribute_is_series:
             return dict_of_attributes,attribute_is_series
@@ -145,8 +145,8 @@ class Element:
         attribute_is_series = False
         system = EnergySystem.get_system()
         # add Energy for energy capacity type
-        if capacity_type == system["setCapacityTypes"][1]:
-            attribute_name += "Energy"
+        if capacity_type == system["set_capacity_types"][1]:
+            attribute_name += "_energy"
         assert hasattr(_element, attribute_name), f"Element {_element.name} does not have attribute {attribute_name}"
         _attribute = getattr(_element, attribute_name)
         assert not isinstance(_attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {_element.name}"
@@ -242,8 +242,8 @@ class Element:
         # construct pe.Sets of class elements
         # operational time step duration
         Parameter.add_parameter(
-            name="timeStepsOperationDuration",
-            data= EnergySystem.initialize_component(cls,"timeStepsOperationDuration",index_names=["set_elements","setTimeStepsOperation"]),#.astype(int),
+            name="time_steps_operation_duration",
+            data= EnergySystem.initialize_component(cls,"time_steps_operation_duration",index_names=["set_elements","setTimeStepsOperation"]),#.astype(int),
             # doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: set_elements, setTimeStepsOperation"
             doc="Parameter which specifies the time step duration in operation for all technologies"
         )
@@ -368,7 +368,7 @@ class Element:
                                 append_element = False
                                 break
                         # if set is used to determine if on-off behavior is modeled
-                        # exclude technologies which have no minLoad and dependentCarrierFlow at referenceCarrierFlow = 0 is also equal to 0
+                        # exclude technologies which have no min_load and dependentCarrierFlow at referenceCarrierFlow = 0 is also equal to 0
                         elif "on_off" in index:
                             model_on_off = cls.check_on_off_modeled(element)
                             if "set_no_on_off" in index:
@@ -382,12 +382,12 @@ class Element:
                                     append_element = False
                                     break
                         # split in capacity types of power and energy
-                        elif index == "setCapacityTypes":
+                        elif index == "set_capacity_types":
                             system = EnergySystem.get_system()
                             if element in model.setStorageTechnologies:
-                                list_sets.append(system["setCapacityTypes"])
+                                list_sets.append(system["set_capacity_types"])
                             else:
-                                list_sets.append([system["setCapacityTypes"][0]])
+                                list_sets.append([system["set_capacity_types"][0]])
                         else:
                             raise NotImplementedError(f"Index <{index}> not known")
                     # append indices to custom_set if element is supposed to be appended
@@ -412,8 +412,8 @@ class Element:
 
         model_on_off = True
         # check if any min
-        _unique_min_load = list(set(cls.get_attribute_of_specific_element(tech,"minLoad").values))
-        # if only one unique minLoad which is zero
+        _unique_min_load = list(set(cls.get_attribute_of_specific_element(tech,"min_load").values))
+        # if only one unique min_load which is zero
         if len(_unique_min_load) == 1 and _unique_min_load[0] == 0:
             # if not a conversion technology, break for current technology
             if tech not in model.setConversionTechnologies:

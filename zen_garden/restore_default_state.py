@@ -101,7 +101,7 @@ def restore_default_state():
 
     # set label
     ConversionTechnology.label           = "setConversionTechnologies"
-    ConversionTechnology.locationType    = "setNodes"
+    ConversionTechnology.location_type    = "setNodes"
     # empty list of elements
     ConversionTechnology.list_of_elements = []
 
@@ -110,7 +110,7 @@ def restore_default_state():
 
     # set label
     StorageTechnology.label           = "setStorageTechnologies"
-    StorageTechnology.locationType    = "setNodes"
+    StorageTechnology.location_type    = "setNodes"
     # empty list of elements
     StorageTechnology.list_of_elements = []
 
@@ -119,7 +119,7 @@ def restore_default_state():
 
     # set label
     Technology.label           = "setTechnologies"
-    Technology.locationType    = None
+    Technology.location_type    = None
     # empty list of elements
     Technology.list_of_elements = []
 
@@ -128,7 +128,7 @@ def restore_default_state():
 
     # set label
     TransportTechnology.label           = "setTransportTechnologies"
-    TransportTechnology.locationType    = "setEdges"
+    TransportTechnology.location_type    = "setEdges"
     # empty list of elements
     TransportTechnology.list_of_elements = []
     # dict of reversed edges
@@ -143,4 +143,4 @@ def restore_default_state():
     # TimeSeriesAggregation
     #######################
 
-    TimeSeriesAggregation.timeSeriesAggregation = None
+    TimeSeriesAggregation.time_series_aggregation = None

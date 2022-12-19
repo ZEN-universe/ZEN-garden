@@ -66,12 +66,12 @@ class ConditioningCarrier(Carrier):
             doc = 'coupeling model endogenous and exogenous carrier demand',
         )
         # overwrite energy balance when conditioning carriers are included
-        model.constraintNodalEnergyBalance.deactivate()
+        model.constraint_nodal_energy_balance.deactivate()
         Constraint.add_constraint(
             model,
-            name="constraintNodalEnergyBalanceConditioning",
+            name="constraint_nodal_energy_balance_conditioning",
             index_sets= cls.create_custom_set(["setCarriers", "setNodes", "setTimeStepsOperation"]),
-            rule=constraintNodalEnergyBalanceWithConditioningRule,
+            rule=constraint_nodal_energy_balance_conditioning_rule,
             doc='node- and time-dependent energy balance for each carrier',
         )
 
@@ -82,7 +82,7 @@ def constraintCarrierDemandCouplingRule(model, parentCarrier, node, time):
            sum(model.endogenousCarrierDemand[conditioningCarrier,node,time]
                  for conditioningCarrier in model.setConditioningCarrierChildren[parentCarrier]))
 
-def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time):
+def constraint_nodal_energy_balance_conditioning_rule(model, carrier, node, time):
     """" 
     nodal energy balance for each time step. 
     The constraint is indexed by setTimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
@@ -91,32 +91,32 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
     params = Parameter.get_component_object()
 
     # carrier input and output conversion technologies
-    carrierConversionIn, carrierConversionOut = 0, 0
+    carrier_conversion_in, carrier_conversion_out = 0, 0
     for tech in model.setConversionTechnologies:
-        if carrier in model.setInputCarriers[tech]:
-            carrierConversionIn     += model.inputFlow[tech,carrier,node,time]
-        if carrier in model.setOutputCarriers[tech]:
-            carrierConversionOut    += model.outputFlow[tech,carrier,node,time]
+        if carrier in model.set_input_carriers[tech]:
+            carrier_conversion_in     += model.input_flow[tech,carrier,node,time]
+        if carrier in model.set_output_carriers[tech]:
+            carrier_conversion_out    += model.output_flow[tech,carrier,node,time]
     # carrier flow transport technologies
-    carrierFlowIn, carrierFlowOut   = 0, 0
-    setEdgesIn                      = EnergySystem.calculate_connected_edges(node,"in")
-    setEdgesOut                     = EnergySystem.calculate_connected_edges(node,"out")
+    carrier_flow_in, carrier_flow_out   = 0, 0
+    set_edges_in                      = EnergySystem.calculate_connected_edges(node,"in")
+    set_edges_out                     = EnergySystem.calculate_connected_edges(node,"out")
     for tech in model.setTransportTechnologies:
-        if carrier in model.setReferenceCarriers[tech]:
-            carrierFlowIn   += sum(model.carrierFlow[tech, edge, time]
-                            - model.carrierLoss[tech, edge, time] for edge in setEdgesIn)
-            carrierFlowOut  += sum(model.carrierFlow[tech, edge, time] for edge in setEdgesOut)
+        if carrier in model.set_reference_carriers[tech]:
+            carrier_flow_in   += sum(model.carrier_flow[tech, edge, time]
+                            - model.carrierLoss[tech, edge, time] for edge in set_edges_in)
+            carrier_flow_out  += sum(model.carrier_flow[tech, edge, time] for edge in set_edges_out)
     # carrier flow storage technologies
-    carrierFlowDischarge, carrierFlowCharge = 0, 0
+    carrier_flow_discharge, carrier_flow_charge = 0, 0
     for tech in model.setStorageTechnologies:
-        if carrier in model.setReferenceCarriers[tech]:
-            carrierFlowDischarge    += model.carrierFlowDischarge[tech,node,time]
-            carrierFlowCharge       += model.carrierFlowCharge[tech,node,time]
+        if carrier in model.set_reference_carriers[tech]:
+            carrier_flow_discharge    += model.carrier_flow_discharge[tech,node,time]
+            carrier_flow_charge       += model.carrier_flow_charge[tech,node,time]
     # carrier import, demand and export
-    carrierImport, carrierExport, carrierDemand = 0, 0, 0
-    carrierImport           = model.importCarrierFlow[carrier, node, time]
-    carrierExport           = model.exportCarrierFlow[carrier, node, time]
-    carrierDemand           = params.demandCarrier[carrier, node, time]
+    carrier_import, carrier_export, carrier_demand = 0, 0, 0
+    carrier_import           = model.import_carrier_flow[carrier, node, time]
+    carrier_export           = model.export_carrier_flow[carrier, node, time]
+    carrier_demand           = params.demand_carrier[carrier, node, time]
     endogenousCarrierDemand = 0
 
     # check if carrier is conditioning carrier:
@@ -129,14 +129,14 @@ def constraintNodalEnergyBalanceWithConditioningRule(model, carrier, node, time)
 
     return (
         # conversion technologies
-        carrierConversionOut - carrierConversionIn 
+        carrier_conversion_out - carrier_conversion_in
         # transport technologies
-        + carrierFlowIn - carrierFlowOut
+        + carrier_flow_in - carrier_flow_out
         # storage technologies
-        + carrierFlowDischarge - carrierFlowCharge
+        + carrier_flow_discharge - carrier_flow_charge
         # import and export 
-        + carrierImport - carrierExport 
+        + carrier_import - carrier_export
         # demand
-        - endogenousCarrierDemand - carrierDemand
+        - endogenousCarrierDemand - carrier_demand
         == 0
         )

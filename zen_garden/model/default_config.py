@@ -73,7 +73,7 @@ class Config(object):
                                "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"],
                                "setConversionTechnologies": ["setConditioningTechnologies"]}
         # headers for the generation of input files
-        self.analysis["headerDataInputs"] = {
+        self.analysis["header_data_inputs"] = {
                                             "setNodes": "node",
                                             "setEdges": "edge",
                                             "set_location": "location",
@@ -84,8 +84,8 @@ class Config(object):
                                             "setTimeStepsYearly":"year",
                                             "set_time_steps_yearly_entire_horizon":"year",
                                             "setCarriers":"carrier",
-                                            "setInputCarriers":"carrier",
-                                            "setOutputCarriers":"carrier",
+                                            "set_input_carriers":"carrier",
+                                            "set_output_carriers":"carrier",
                                             "setDependentCarriers":"carrier",
                                             "setConditioningCarriers":"carrier",
                                             "setConditioningCarrierParents":"carrier",
@@ -94,13 +94,13 @@ class Config(object):
                                             "setTransportTechnologies":"technology",
                                             "setStorageTechnologies":"technology",
                                             "setTechnologies":"technology",
-                                            "setExistingTechnologies": "existingTechnology",
-                                            "setCapacityTypes":"capacityType"}
+                                            "set_existing_technologies": "existingTechnology",
+                                            "set_capacity_types":"capacity_type"}
 
         # file format of input data
         self.analysis["fileFormat"] = "csv"
         # time series aggregation
-        self.analysis["timeSeriesAggregation"] = {
+        self.analysis["time_series_aggregation"] = {
             "clusterMethod"         : "k_means",
             "solver"                : "gurobi",
             "hoursPerPeriod"        : 1,
@@ -126,7 +126,7 @@ class Config(object):
         # set of conditioning carriers
         self.system["setConditioningCarriers"] = []
         # set of capacity types: power-rated or energy-rated
-        self.system["setCapacityTypes"] = ["power","energy"]
+        self.system["set_capacity_types"] = ["power","energy"]
         # set of conversion technologies
         self.system["setConversionTechnologies"] = []
         # set of conditioning technologies
@@ -135,22 +135,22 @@ class Config(object):
         self.system["setStorageTechnologies"] = []
         # set of transport technologies
         self.system["setTransportTechnologies"] = []
-        self.system['DoubleCapexTransport'] = False
+        self.system['double_capex_transport'] = False
         self.system["setBidirectionalTransportTechnologies"] = []
         # set of nodes
         self.system["setNodes"] = []
-        # toggle to use timeSeriesAggregation
+        # toggle to use time_series_aggregation
         self.system["conductTimeSeriesAggregation"] = False
         # toggle to perform analysis for multiple scenarios
         self.system["conductScenarioAnalysis"] = False
         # total hours per year
         self.system["totalHoursPerYear"] = 8760
         # unbounded market share for technology diffusion rate
-        self.system["unboundedMarketShare"] = 0.01
+        self.system["unbounded_market_share"] = 0.01
         # rate at which the knowledge stock of existing capacities is depreciated annually
-        self.system["knowledgeDepreciationRate"] = 0.1
+        self.system["knowledge_depreciation_rate"] = 0.1
         # spillover rate of knowledge stock to another
-        self.system["knowledgeSpilloverRate"] = 0.05
+        self.system["knowledge_spillover_rate"] = 0.05
         # social discount rate
         self.system["socialDiscountRate"] = 0
         # folder output
@@ -176,7 +176,7 @@ class Config(object):
         # round down to number of decimal points, for new capacity and unit multipliers
         self.solver["roundingDecimalPoints"]     = 5
         # round down to number of decimal points, for time series after TSA
-        self.solver["roundingDecimalPointsTS"]   = 3
+        self.solver["rounding_decimal_points_ts"]   = 3
         # verbosity
         self.solver["verbosity"] = True
         # typology of model solved: MILP or MINLP
