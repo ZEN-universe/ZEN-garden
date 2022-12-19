@@ -78,28 +78,28 @@ def test_1a(config):
     failedVariables, assertionString = compareVariables('test_1a',optimizationSetup)
     assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
-def test_1a_wo_storageTechnologies(config):
-    # run the test
-    restore_default_state()
-    optimizationSetup = main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1a_wo_storageTechnologies"))
-
-    failedVariables, assertionString = compareVariables('test_1a',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
-
-def test_1a_wo_transportTechnologies(config):
-    # run the test
-    restore_default_state()
-    optimizationSetup = main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1a_wo_transportTechnologies"))
-
-    failedVariables, assertionString = compareVariables('test_1a',optimizationSetup)
-    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
-
 def test_1b(config):
     # run the test
     restore_default_state()
     optimizationSetup = main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1b"))
 
     failedVariables, assertionString = compareVariables('test_1b', optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
+
+def test_1c(config):
+    # run the test
+    restore_default_state()
+    optimizationSetup = main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1c"))
+
+    failedVariables, assertionString = compareVariables('test_1c',optimizationSetup)
+    assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
+
+def test_1d(config):
+    # run the test
+    restore_default_state()
+    optimizationSetup = main(config=config, dataset_path=os.path.join(os.path.dirname(__file__), "test_1d"))
+
+    failedVariables, assertionString = compareVariables('test_1d',optimizationSetup)
     assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
 
 def test_2a(config):
@@ -149,7 +149,7 @@ def test_3b(config):
 
     failedVariables, assertionString = compareVariables('test_3b',optimizationSetup)
     assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
-"""
+
 def test_4a(config):
     # run the test
     restore_default_state()
@@ -205,7 +205,7 @@ def test_4g(config):
 
     failedVariables, assertionString = compareVariables('test_4g',optimizationSetup)
     assert len(failedVariables) == 0, f"The variables {assertionString} don't match their test values"
-"""
+
 def test_5a(config):
     # run the test
     restore_default_state()
