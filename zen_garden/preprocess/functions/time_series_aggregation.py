@@ -26,12 +26,12 @@ class TimeSeriesAggregation():
         self.header_set_time_steps = self.analysis['header_data_inputs']["set_time_steps"]
         # if set_time_steps as input (because already aggregated), use this as base time step, otherwise self.set_base_time_steps
         self.set_base_time_steps = self.energy_system.set_base_time_steps_yearly
-        self.number_typical_periods = min(self.system["unaggregatedTimeStepsPerYear"], self.system["aggregatedTimeStepsPerYear"])
+        self.number_typical_periods = min(self.system["unaggregated_time_steps_per_year"], self.system["aggregatedTimeStepsPerYear"])
         # set time_series_aggregation
         TimeSeriesAggregation.set_tsa(self)
         self.conducted_tsa = False
         # if number of time steps >= number of base time steps, skip aggregation
-        if self.number_typical_periods < np.size(self.set_base_time_steps) and self.system["conductTimeSeriesAggregation"]:
+        if self.number_typical_periods < np.size(self.set_base_time_steps) and self.system["conduct_time_series_aggregation"]:
             # select time series
             self.select_ts_of_all_elements()
             if not self.df_ts_raw.empty:
@@ -101,7 +101,7 @@ class TimeSeriesAggregation():
         for element in Element.get_all_elements():
             raw_ts = getattr(element, "raw_time_series")
             # set_time_steps, duration and sequence time steps
-            element.setTimeStepsOperation       = list(self.set_time_steps)
+            element.set_time_steps_operation       = list(self.set_time_steps)
             element.time_steps_operation_duration  = self.time_steps_duration
             element.sequence_time_steps           = self.sequence_time_steps
 
@@ -187,17 +187,17 @@ class TimeSeriesAggregation():
         EnergySystem.set_time_steps_operation2invest(element.name,time_steps_operation2invest)
 
     @classmethod
-    def overwrite_ts_with_expanded_timeindex(cls, element, setTimeStepsOperation, sequence_time_steps):
+    def overwrite_ts_with_expanded_timeindex(cls, element, set_time_steps_operation, sequence_time_steps):
         """ this method expands the aggregated time series to match the extended operational time steps because of matching the investment and operational time sequences.
         :param element: element of the optimization
-        :param setTimeStepsOperation: new time steps operation
+        :param set_time_steps_operation: new time steps operation
         :param sequence_time_steps: new order of operational time steps """
         header_set_time_steps = EnergySystem.get_analysis()['header_data_inputs']["set_time_steps"]
         old_sequence_time_steps = element.sequence_time_steps
-        _idx_old2new = np.array([np.unique(old_sequence_time_steps[np.argwhere(idx == sequence_time_steps)]) for idx in setTimeStepsOperation]).squeeze()
+        _idx_old2new = np.array([np.unique(old_sequence_time_steps[np.argwhere(idx == sequence_time_steps)]) for idx in set_time_steps_operation]).squeeze()
         for ts in element.raw_time_series:
             _old_ts = getattr(element, ts).unstack(header_set_time_steps)
-            _new_ts = pd.DataFrame(index=_old_ts.index, columns=setTimeStepsOperation)
+            _new_ts = pd.DataFrame(index=_old_ts.index, columns=set_time_steps_operation)
             _new_ts = _old_ts.loc[:,_idx_old2new[_new_ts.columns]].T.reset_index(drop=True).T
             _new_ts.columns.names = [header_set_time_steps]
             _new_ts = _new_ts.stack()
@@ -252,7 +252,7 @@ class TimeSeriesAggregation():
         optimized_years = len(EnergySystem.get_energy_system().set_time_steps_yearly)
         # concatenate the order of time steps for all elements and link with investment and yearly time steps
         for element in Element.get_all_elements():
-            # optimized_years = EnergySystem.get_system()["optimizedYears"]
+            # optimized_years = EnergySystem.get_system()["optimized_years"]
             old_sequence_time_steps = Element.get_attribute_of_specific_element(element.name, "sequence_time_steps")
             new_sequence_time_steps = np.hstack([old_sequence_time_steps] * optimized_years)
             element.sequence_time_steps = new_sequence_time_steps
@@ -309,7 +309,7 @@ class TimeSeriesAggregation():
             element.time_steps_duration = time_steps_duration
             element.sequence_time_steps = sequence_time_steps
         else:
-            element.setTimeStepsOperation           = set_time_steps
+            element.set_time_steps_operation           = set_time_steps
             element.time_steps_operation_duration      = time_steps_duration
             element.sequence_time_steps               = sequence_time_steps
 

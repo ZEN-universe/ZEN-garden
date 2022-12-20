@@ -45,7 +45,7 @@ class Postprocess:
 
         # get name or directory
         self.model_name = model_name
-        self.nameDir = pathlib.Path(self.analysis["folderOutput"]).joinpath(self.model_name)
+        self.nameDir = pathlib.Path(self.analysis["folder_output"]).joinpath(self.model_name)
 
         # deal with the subfolder
         self.subfolder = subfolder
@@ -56,10 +56,10 @@ class Postprocess:
         os.makedirs(self.nameDir, exist_ok=True)
 
         # get the compression param
-        self.compress = self.analysis["compressOutput"]
+        self.compress = self.analysis["compress_output"]
 
         # save the pyomo yml
-        if self.analysis["writeResultsYML"]:
+        if self.analysis["write_results_yml"]:
             with RedirectStdStreams(open(os.path.join(self.nameDir, "results.yml"), "w+")):
                 model.results.write()
 
@@ -95,9 +95,9 @@ class Postprocess:
 
         # if the string is larger than the max output size we compress anyway
         force_compression = False
-        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.analysis["maxOutputSizeMB"]:
+        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.analysis["max_output_size_mb"]:
             print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
-                  f"{self.analysis['maxOutputSizeMB']}MB, compressing...")
+                  f"{self.analysis['max_output_size_mb']}MB, compressing...")
             force_compression = True
 
         if self.compress or force_compression:
@@ -354,10 +354,10 @@ class Results(object):
         self.results["dictSequenceTimeSteps"] = self.load_sequence_time_steps(self.path)
 
         # get the years
-        self.years = list(range(0, self.results["system"]["optimizedYears"]))
+        self.years = list(range(0, self.results["system"]["optimized_years"]))
 
         # check what type of results we have
-        if self.results["system"]["conductScenarioAnalysis"]:
+        if self.results["system"]["conduct_scenario_analysis"]:
             self.has_scenarios = True
             self.scenarios = [f"scenario_{scenario}" for scenario in self.results["scenarios"].keys()]
         else:
@@ -746,7 +746,7 @@ class Results(object):
         """
         Loads duration of operational time steps
         """
-        return self.get_df("timeStepsStorageLevelDuration")
+        return self.get_df("time_steps_storage_level_duration")
 
     def getFullTS(self, component, element_name=None, year=None, scenario=None):
         """
@@ -776,7 +776,7 @@ class Results(object):
         elif ts_type == "operational":
             _storageString = ""
         else:
-            _storageString = "StorageLevel"
+            _storageString = "_storage_level"
 
         # calculate the full time series
         _outputTemp = {}
@@ -835,7 +835,7 @@ class Results(object):
             _storageString = ""
         else:
             _isStorage = True
-            _storageString = "StorageLevel"
+            _storageString = "_storage_level"
 
         # extract time step duration
         timeStepDuration = self._get_ts_duration(scenario,is_storage=_isStorage)
@@ -928,8 +928,8 @@ class Results(object):
 
     def _get_ts_type(self, component_data,component_name):
         """ get time step type (operational, storage, yearly) """
-        _headerOperational = self.results["analysis"]["header_data_inputs"]["setTimeStepsOperation"]
-        _headerStorage = self.results["analysis"]["header_data_inputs"]["setTimeStepsStorageLevel"]
+        _headerOperational = self.results["analysis"]["header_data_inputs"]["set_time_steps_operation"]
+        _headerStorage = self.results["analysis"]["header_data_inputs"]["set_time_steps_storage_level"]
         _headerYearly = self.results["analysis"]["header_data_inputs"]["set_time_steps_yearly"]
         if component_data.columns.name == _headerOperational:
             return "operational"
@@ -942,7 +942,7 @@ class Results(object):
 
     def _get_hours_of_year(self,year):
         """ get total hours of year """
-        _total_hours_per_year = self.results["system"]["unaggregatedTimeStepsPerYear"]
+        _total_hours_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
         _hours_of_year = list(range(year*_total_hours_per_year,(year+1)*_total_hours_per_year))
         return _hours_of_year
 

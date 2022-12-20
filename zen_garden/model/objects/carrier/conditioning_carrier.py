@@ -17,7 +17,7 @@ from ..component            import Parameter,Variable,Constraint
 
 class ConditioningCarrier(Carrier):
     # set label
-    label = "setConditioningCarriers"
+    label = "set_conditioning_carriers"
     # empty list of elements
     list_of_elements = []
 
@@ -46,10 +46,10 @@ class ConditioningCarrier(Carrier):
         # flow of imported carrier
         Variable.add_variable(
             model,
-            name="endogenousCarrierDemand",
-            index_sets= cls.create_custom_set(["setConditioningCarriers","setNodes","setTimeStepsOperation"]),
+            name="endogenous_carrier_demand",
+            index_sets= cls.create_custom_set(["set_conditioning_carriers","set_nodes","set_time_steps_operation"]),
             domain = pe.NonNegativeReals,
-            doc = 'node- and time-dependent model endogenous carrier demand. \n\t Dimensions: setCarriers, setNodes, setTimeStepsCarrier. Domain: NonNegativeReals'
+            doc = 'node- and time-dependent model endogenous carrier demand'
         )
 
     @classmethod
@@ -60,27 +60,27 @@ class ConditioningCarrier(Carrier):
         # limit import flow by availability
         Constraint.add_constraint(
             model,
-            name="constraintCarrierDemandCoupling",
-            index_sets= cls.create_custom_set(["setConditioningCarrierParents","setNodes","setTimeStepsOperation"]),
-            rule = constraintCarrierDemandCouplingRule,
-            doc = 'coupeling model endogenous and exogenous carrier demand',
+            name="constraint_carrier_demand_coupling",
+            index_sets= cls.create_custom_set(["set_conditioning_carrier_parents","set_nodes","set_time_steps_operation"]),
+            rule = constraint_carrier_demand_coupling_rule,
+            doc = 'coupling model endogenous and exogenous carrier demand',
         )
         # overwrite energy balance when conditioning carriers are included
         model.constraint_nodal_energy_balance.deactivate()
         Constraint.add_constraint(
             model,
             name="constraint_nodal_energy_balance_conditioning",
-            index_sets= cls.create_custom_set(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
             rule=constraint_nodal_energy_balance_conditioning_rule,
             doc='node- and time-dependent energy balance for each carrier',
         )
 
-def constraintCarrierDemandCouplingRule(model, parentCarrier, node, time):
+def constraint_carrier_demand_coupling_rule(model, parentCarrier, node, time):
     """ sum conditioning Carriers"""
 
-    return(model.endogenousCarrierDemand[parentCarrier,node,time] ==
-           sum(model.endogenousCarrierDemand[conditioningCarrier,node,time]
-                 for conditioningCarrier in model.setConditioningCarrierChildren[parentCarrier]))
+    return(model.endogenous_carrier_demand[parentCarrier,node,time] ==
+           sum(model.endogenous_carrier_demand[conditioning_carrier,node,time]
+                 for conditioning_carrier in model.set_conditioning_carrier_children[parentCarrier]))
 
 def constraint_nodal_energy_balance_conditioning_rule(model, carrier, node, time):
     """" 
@@ -92,7 +92,7 @@ def constraint_nodal_energy_balance_conditioning_rule(model, carrier, node, time
 
     # carrier input and output conversion technologies
     carrier_conversion_in, carrier_conversion_out = 0, 0
-    for tech in model.setConversionTechnologies:
+    for tech in model.set_conversion_technologies:
         if carrier in model.set_input_carriers[tech]:
             carrier_conversion_in     += model.input_flow[tech,carrier,node,time]
         if carrier in model.set_output_carriers[tech]:
@@ -101,14 +101,14 @@ def constraint_nodal_energy_balance_conditioning_rule(model, carrier, node, time
     carrier_flow_in, carrier_flow_out   = 0, 0
     set_edges_in                      = EnergySystem.calculate_connected_edges(node,"in")
     set_edges_out                     = EnergySystem.calculate_connected_edges(node,"out")
-    for tech in model.setTransportTechnologies:
+    for tech in model.set_transport_technologies:
         if carrier in model.set_reference_carriers[tech]:
             carrier_flow_in   += sum(model.carrier_flow[tech, edge, time]
-                            - model.carrierLoss[tech, edge, time] for edge in set_edges_in)
+                            - model.carrier_loss[tech, edge, time] for edge in set_edges_in)
             carrier_flow_out  += sum(model.carrier_flow[tech, edge, time] for edge in set_edges_out)
     # carrier flow storage technologies
     carrier_flow_discharge, carrier_flow_charge = 0, 0
-    for tech in model.setStorageTechnologies:
+    for tech in model.set_storage_technologies:
         if carrier in model.set_reference_carriers[tech]:
             carrier_flow_discharge    += model.carrier_flow_discharge[tech,node,time]
             carrier_flow_charge       += model.carrier_flow_charge[tech,node,time]
@@ -117,15 +117,15 @@ def constraint_nodal_energy_balance_conditioning_rule(model, carrier, node, time
     carrier_import           = model.import_carrier_flow[carrier, node, time]
     carrier_export           = model.export_carrier_flow[carrier, node, time]
     carrier_demand           = params.demand_carrier[carrier, node, time]
-    endogenousCarrierDemand = 0
+    endogenous_carrier_demand = 0
 
     # check if carrier is conditioning carrier:
-    if carrier in model.setConditioningCarriers:
-        # check if carrier is parentCarrier of a conditioningCarrier
-        if carrier in model.setConditioningCarrierParents:
-            endogenousCarrierDemand = - model.endogenousCarrierDemand[carrier, node, time]
+    if carrier in model.set_conditioning_carriers:
+        # check if carrier is parentCarrier of a conditioning_carrier
+        if carrier in model.set_conditioning_carrier_parents:
+            endogenous_carrier_demand = - model.endogenous_carrier_demand[carrier, node, time]
         else:
-            endogenousCarrierDemand = model.endogenousCarrierDemand[carrier, node, time]
+            endogenous_carrier_demand = model.endogenous_carrier_demand[carrier, node, time]
 
     return (
         # conversion technologies
@@ -137,6 +137,6 @@ def constraint_nodal_energy_balance_conditioning_rule(model, carrier, node, time
         # import and export 
         + carrier_import - carrier_export
         # demand
-        - endogenousCarrierDemand - carrier_demand
+        - endogenous_carrier_demand - carrier_demand
         == 0
         )

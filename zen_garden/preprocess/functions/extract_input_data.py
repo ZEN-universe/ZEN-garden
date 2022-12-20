@@ -56,7 +56,7 @@ class DataInput():
             self.extract_yearly_variation(file_name,index_sets,column)
 
         # if existing capacities and existing capacities not used
-        if (file_name == "existing_capacity" or file_name == "existingCapacityEnergy") and not self.analysis["useExistingCapacities"]:
+        if (file_name == "existing_capacity" or file_name == "existingCapacityEnergy") and not self.analysis["use_existing_capacities"]:
             df_output,*_ = self.create_default_output(index_sets,column,file_name= file_name,time_steps=time_steps,manual_default_value=0,scenario=scenario)
             return df_output
         else:
@@ -226,24 +226,24 @@ class DataInput():
         """ reads input data to extract nodes or edges.
         :param extract_nodes: boolean to switch between nodes and edges """
         if extract_nodes:
-            set_nodes_config  = self.system["setNodes"]
-            set_nodes_input   = self.read_input_data("setNodes")["node"].to_list()
+            set_nodes_config  = self.system["set_nodes"]
+            set_nodes_input   = self.read_input_data("set_nodes")["node"].to_list()
             # if no nodes specified in system, use all nodes
             if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
-                self.system["setNodes"] = set_nodes_input
+                self.system["set_nodes"] = set_nodes_input
                 set_nodes_config = set_nodes_input
             else:
                 assert len(set_nodes_config) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
                 _missing_nodes   = list(set(set_nodes_config).difference(set_nodes_input))
-                assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path+'setNodes'}"
+                assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path+'set_nodes'}"
             if not isinstance(set_nodes_config, list):
                 set_nodes_config = set_nodes_config.to_list()
             set_nodes_config.sort()
             return set_nodes_config
         else:
-            set_edges_input = self.read_input_data("setEdges")
+            set_edges_input = self.read_input_data("set_edges")
             if set_edges_input is not None:
-                set_edges = set_edges_input[(set_edges_input["nodeFrom"].isin(self.energy_system.setNodes)) & (set_edges_input["nodeTo"].isin(self.energy_system.setNodes))]
+                set_edges = set_edges_input[(set_edges_input["node_from"].isin(self.energy_system.set_nodes)) & (set_edges_input["node_to"].isin(self.energy_system.set_nodes))]
                 set_edges = set_edges.set_index("edge")
                 return set_edges
             else:
@@ -254,7 +254,7 @@ class DataInput():
         :return carrier_dict: dictionary with input and output carriers of technology """
         carrier_dict = {}
         # get carriers
-        for _carrier_type in ["inputCarrier","outputCarrier"]:
+        for _carrier_type in ["input_carrier","output_carrier"]:
             # TODO implement for multiple carriers
             _carrier_string = self.extract_attribute(_carrier_type,skip_warning = True)
             if type(_carrier_string) == str:
@@ -268,7 +268,7 @@ class DataInput():
         """ reads input data and creates setExistingCapacity for each technology
         :param storage_energy: boolean if existing energy capacity of storage technology (instead of power)
         :return set_existing_technologies: return set existing technologies"""
-        if self.analysis["useExistingCapacities"]:
+        if self.analysis["use_existing_capacities"]:
             if storage_energy:
                 _energy_string = "Energy"
             else:
@@ -277,7 +277,7 @@ class DataInput():
             df_input = self.read_input_data(f"existingCapacity{_energy_string}")
             if df_input is None:
                 return [0]
-            if self.element.name in self.system["setTransportTechnologies"]:
+            if self.element.name in self.system["set_transport_technologies"]:
                 location = "edge"
             else:
                 location = "node"
@@ -296,7 +296,7 @@ class DataInput():
         column = "yearConstruction"
         df_output = pd.Series(index=self.element.existing_capacity.index,data=0)
         # if no existing capacities
-        if not self.analysis["useExistingCapacities"]:
+        if not self.analysis["use_existing_capacities"]:
             return df_output
 
         if f"{file_name}.csv" in os.listdir(self.folder_path):
@@ -323,7 +323,7 @@ class DataInput():
             variable_type_manual = "ConverEfficiency"
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
-        _index_sets = ["setNodes", "set_time_steps"]
+        _index_sets = ["set_nodes", "set_time_steps"]
         _time_steps = self.energy_system.set_time_steps_yearly
         # import all input data
         df_input_nonlinear    = self.read_pwa_files(variable_type_manual, fileType="nonlinear")
@@ -410,7 +410,7 @@ class DataInput():
                 linear_dict["capex"] = self.extract_input_data("capexSpecific", index_sets=_index_sets, time_steps=_time_steps)
                 return linear_dict,is_pwa
             else:
-                _dependent_carrier = list(set(self.element.inputCarrier + self.element.outputCarrier).difference(self.element.referenceCarrier))
+                _dependent_carrier = list(set(self.element.input_carrier + self.element.output_carrier).difference(self.element.reference_carrier))
                 # TODO implement for more than 1 carrier
                 if _dependent_carrier == []:
                     return None, is_pwa
@@ -485,7 +485,7 @@ class DataInput():
     def save_unit_of_attribute(self,file_name,scenario=""):
         """ saves the unit of an attribute, converted to the base unit """
         # if numerics analyzed
-        if self.solver["analyzeNumerics"]:
+        if self.solver["analyze_numerics"]:
             if file_name:
                 df_input = self.read_input_data("attributes" + scenario).set_index("index").squeeze(axis=1)
                 # get attribute
@@ -496,7 +496,7 @@ class DataInput():
     def save_values_of_attribute(self,df_output,file_name):
         """ saves the values of an attribute """
         # if numerics analyzed
-        if self.solver["analyzeNumerics"]:
+        if self.solver["analyze_numerics"]:
             if file_name:
                 df_output_reduced = df_output[(df_output != 0) & (df_output.abs() != np.inf)]
                 if not df_output_reduced.empty:

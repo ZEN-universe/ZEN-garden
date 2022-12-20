@@ -52,7 +52,7 @@ def main(config, dataset_path=None):
         config.analysis["dataset"] = dataset_path
     # get the abs path to avoid working dir stuff
     config.analysis["dataset"] = os.path.abspath(config.analysis['dataset'])
-    config.analysis["folderOutput"] = os.path.abspath(config.analysis['folderOutput'])
+    config.analysis["folder_output"] = os.path.abspath(config.analysis['folder_output'])
 
     ### System - load system configurations
     system_path = os.path.join(config.analysis['dataset'], "system.py")
@@ -65,7 +65,7 @@ def main(config, dataset_path=None):
     config.system.update(system)
 
     ### overwrite default system and scenario dictionaries
-    if config.system["conductScenarioAnalysis"]:
+    if config.system["conduct_scenario_analysis"]:
         scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
         if not os.path.exists(scenarios_path):
             raise FileNotFoundError(f"scenarios.py not found in dataset: {config.analysis['dataset']}")
@@ -88,8 +88,8 @@ def main(config, dataset_path=None):
 
     # get the name of the dataset
     model_name = os.path.basename(config.analysis["dataset"])
-    if os.path.exists(out_folder := os.path.join(config.analysis["folderOutput"], model_name)):
-        if config.analysis["overwriteOutput"]:
+    if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
+        if config.analysis["overwrite_output"]:
             logging.info(f"Removing existing output folder: {out_folder}")
             rmtree(out_folder)
         else:
@@ -117,7 +117,7 @@ def main(config, dataset_path=None):
             optimization_setup.add_carbon_emission_cumulative(step_horizon)
             # EVALUATE RESULTS
             subfolder = ""
-            if config.system["conductScenarioAnalysis"]:
+            if config.system["conduct_scenario_analysis"]:
                 # handle scenarios
                 subfolder += f"scenario_{scenario}"
             # handle myopic foresight
@@ -128,3 +128,4 @@ def main(config, dataset_path=None):
             # write results
             evaluation = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
                                      model_name=model_name)
+    return optimization_setup

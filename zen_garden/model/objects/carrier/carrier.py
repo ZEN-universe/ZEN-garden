@@ -20,7 +20,7 @@ from ..component import Parameter,Variable,Constraint
 
 class Carrier(Element):
     # set label
-    label = "setCarriers"
+    label = "set_carriers"
     # empty list of elements
     list_of_elements = []
 
@@ -42,21 +42,21 @@ class Carrier(Element):
         # set attributes of carrier
         # raw import
         self.raw_time_series = {}
-        self.raw_time_series["demand_carrier"] = self.datainput.extract_input_data("demandCarrier",index_sets = ["setNodes","set_time_steps"],time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["availability_carrier_import"] = self.datainput.extract_input_data("availabilityCarrier",index_sets = ["setNodes","set_time_steps"],column="availabilityCarrierImport",time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["availability_carrier_export"] = self.datainput.extract_input_data("availabilityCarrier",index_sets = ["setNodes","set_time_steps"],column="availabilityCarrierExport",time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["export_price_carrier"] = self.datainput.extract_input_data("priceCarrier",index_sets = ["setNodes","set_time_steps"],column="exportPriceCarrier",time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["import_price_carrier"] = self.datainput.extract_input_data("priceCarrier",index_sets = ["setNodes","set_time_steps"],column="importPriceCarrier",time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["demand_carrier"] = self.datainput.extract_input_data("demand_carrier",index_sets = ["set_nodes","set_time_steps"],time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["availability_carrier_import"] = self.datainput.extract_input_data("availability_carrier",index_sets = ["set_nodes","set_time_steps"],column="availability_carrier_import",time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["availability_carrier_export"] = self.datainput.extract_input_data("availability_carrier",index_sets = ["set_nodes","set_time_steps"],column="availability_carrier_export",time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["export_price_carrier"] = self.datainput.extract_input_data("price_carrier",index_sets = ["set_nodes","set_time_steps"],column="price_carrier_export",time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["import_price_carrier"] = self.datainput.extract_input_data("price_carrier",index_sets = ["set_nodes","set_time_steps"],column="price_carrier_import",time_steps=set_base_time_steps_yearly)
         # non-time series input data
-        self.availability_carrier_import_yearly = self.datainput.extract_input_data("availabilityCarrierYearly",index_sets = ["setNodes","set_time_steps"],column="availabilityCarrierImportYearly",time_steps=set_time_steps_yearly)
-        self.availability_carrier_export_yearly = self.datainput.extract_input_data("availabilityCarrierYearly",index_sets = ["setNodes","set_time_steps"],column="availabilityCarrierExportYearly",time_steps=set_time_steps_yearly)
-        self.carbon_intensity_carrier = self.datainput.extract_input_data("carbonIntensity",index_sets = ["setNodes","set_time_steps"],time_steps=set_time_steps_yearly)
-        self.shed_demand_price = self.datainput.extract_input_data("shedDemandPrice",index_sets = [])
+        self.availability_carrier_import_yearly = self.datainput.extract_input_data("availability_carrier_yearly",index_sets = ["set_nodes","set_time_steps"],column="availability_carrier_import_yearly",time_steps=set_time_steps_yearly)
+        self.availability_carrier_export_yearly = self.datainput.extract_input_data("availability_carrier_yearly",index_sets = ["set_nodes","set_time_steps"],column="availability_carrier_export_yearly",time_steps=set_time_steps_yearly)
+        self.carbon_intensity_carrier = self.datainput.extract_input_data("carbon_intensity",index_sets = ["set_nodes","set_time_steps"],time_steps=set_time_steps_yearly)
+        self.shed_demand_price = self.datainput.extract_input_data("shed_demand_price",index_sets = [])
         
     def overwrite_time_steps(self,base_time_steps):
-        """ overwrites setTimeStepsOperation and  setTimeStepsEnergyBalance"""
-        setTimeStepsOperation       = EnergySystem.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation",yearly=True)
-        setattr(self, "setTimeStepsOperation", setTimeStepsOperation.squeeze().tolist())
+        """ overwrites set_time_steps_operation and  setTimeStepsEnergyBalance"""
+        set_time_steps_operation       = EnergySystem.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation",yearly=True)
+        setattr(self, "set_time_steps_operation", set_time_steps_operation.squeeze().tolist())
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
@@ -70,47 +70,47 @@ class Carrier(Element):
         # demand of carrier
         Parameter.add_parameter(
             name="demand_carrier",
-            data= EnergySystem.initialize_component(cls,"demand_carrier",index_names=["setCarriers","setNodes","setTimeStepsOperation"]),
+            data= EnergySystem.initialize_component(cls,"demand_carrier",index_names=["set_carriers","set_nodes","set_time_steps_operation"]),
             doc = 'Parameter which specifies the carrier demand')
         # availability of carrier
         Parameter.add_parameter(
             name="availability_carrier_import",
-            data= EnergySystem.initialize_component(cls,"availability_carrier_import",index_names=["setCarriers","setNodes","setTimeStepsOperation"]),
+            data= EnergySystem.initialize_component(cls,"availability_carrier_import",index_names=["set_carriers","set_nodes","set_time_steps_operation"]),
             doc = 'Parameter which specifies the maximum energy that can be imported from outside the system boundaries')
         # availability of carrier
         Parameter.add_parameter(
             name="availability_carrier_export",
-            data= EnergySystem.initialize_component(cls,"availability_carrier_export",index_names=["setCarriers","setNodes","setTimeStepsOperation"]),
+            data= EnergySystem.initialize_component(cls,"availability_carrier_export",index_names=["set_carriers","set_nodes","set_time_steps_operation"]),
             doc = 'Parameter which specifies the maximum energy that can be exported to outside the system boundaries')
         # availability of carrier
         Parameter.add_parameter(
             name="availability_carrier_import_yearly",
-            data= EnergySystem.initialize_component(cls,"availability_carrier_import_yearly",index_names=["setCarriers","setNodes","set_time_steps_yearly"]),
+            data= EnergySystem.initialize_component(cls,"availability_carrier_import_yearly",index_names=["set_carriers","set_nodes","set_time_steps_yearly"]),
             doc = 'Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year')
         # availability of carrier
         Parameter.add_parameter(
             name="availability_carrier_export_yearly",
-            data= EnergySystem.initialize_component(cls,"availability_carrier_export_yearly",index_names=["setCarriers","setNodes","set_time_steps_yearly"]),
+            data= EnergySystem.initialize_component(cls,"availability_carrier_export_yearly",index_names=["set_carriers","set_nodes","set_time_steps_yearly"]),
             doc = 'Parameter which specifies the maximum energy that can be exported to outside the system boundaries for the entire year')
         # import price
         Parameter.add_parameter(
             name="import_price_carrier",
-            data= EnergySystem.initialize_component(cls,"import_price_carrier",index_names=["setCarriers","setNodes","setTimeStepsOperation"]),
+            data= EnergySystem.initialize_component(cls,"import_price_carrier",index_names=["set_carriers","set_nodes","set_time_steps_operation"]),
             doc = 'Parameter which specifies the import carrier price')
         # export price
         Parameter.add_parameter(
             name="export_price_carrier",
-            data= EnergySystem.initialize_component(cls,"export_price_carrier",index_names=["setCarriers","setNodes","setTimeStepsOperation"]),
+            data= EnergySystem.initialize_component(cls,"export_price_carrier",index_names=["set_carriers","set_nodes","set_time_steps_operation"]),
             doc = 'Parameter which specifies the export carrier price')
         # demand shedding price
         Parameter.add_parameter(
             name="shed_demand_price",
-            data=EnergySystem.initialize_component(cls, "shed_demand_price",index_names=["setCarriers"]),
+            data=EnergySystem.initialize_component(cls, "shed_demand_price",index_names=["set_carriers"]),
             doc='Parameter which specifies the price to shed demand')
         # carbon intensity
         Parameter.add_parameter(
             name="carbon_intensity_carrier",
-            data= EnergySystem.initialize_component(cls,"carbon_intensity_carrier",index_names=["setCarriers","setNodes","set_time_steps_yearly"]),
+            data= EnergySystem.initialize_component(cls,"carbon_intensity_carrier",index_names=["set_carriers","set_nodes","set_time_steps_yearly"]),
             doc = 'Parameter which specifies the carbon intensity of carrier')
 
     @classmethod
@@ -122,7 +122,7 @@ class Carrier(Element):
         Variable.add_variable(
             model,
             name="import_carrier_flow",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_operation"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent carrier import from the grid'
         )
@@ -130,7 +130,7 @@ class Carrier(Element):
         Variable.add_variable(
             model,
             name="export_carrier_flow",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_operation"]),
             domain = pe.NonNegativeReals,
             doc = 'node- and time-dependent carrier export from the grid'
         )
@@ -138,7 +138,7 @@ class Carrier(Element):
         Variable.add_variable(
             model,
             name="cost_carrier",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_operation"]),
             domain = pe.Reals,
             doc = 'node- and time-dependent carrier cost due to import and export'
         )
@@ -154,7 +154,7 @@ class Carrier(Element):
         Variable.add_variable(
             model,
             name="carbon_emissions_carrier",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_operation"]),
             domain = pe.Reals,
             doc = "carbon emissions of importing and exporting carrier"
         )
@@ -170,7 +170,7 @@ class Carrier(Element):
         Variable.add_variable(
             model,
             name="shed_demand_carrier",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_operation"]),
             domain=pe.NonNegativeReals,
             doc="shed demand of carrier"
         )
@@ -178,7 +178,7 @@ class Carrier(Element):
         Variable.add_variable(
             model,
             name="costShedDemandCarrier",
-            index_sets= cls.create_custom_set(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
             domain=pe.NonNegativeReals,
             doc="shed demand of carrier"
         )
@@ -197,7 +197,7 @@ class Carrier(Element):
         Constraint.add_constraint(
             model,
             name="constraint_availability_carrier_import",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_operation"]),
             rule = constraint_availability_carrier_import_rule,
             doc = 'node- and time-dependent carrier availability to import from outside the system boundaries',
         )        
@@ -205,7 +205,7 @@ class Carrier(Element):
         Constraint.add_constraint(
             model,
             name="constraint_availability_carrier_export",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_operation"]),
             rule = constraint_availability_carrier_export_rule,
             doc = 'node- and time-dependent carrier availability to export to outside the system boundaries',
         )
@@ -213,7 +213,7 @@ class Carrier(Element):
         Constraint.add_constraint(
             model,
             name="constraint_availability_carrier_import_yearly",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","set_time_steps_yearly"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_yearly"]),
             rule = constraint_availability_carrier_import_yearly_rule,
             doc = 'node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year',
         )
@@ -221,7 +221,7 @@ class Carrier(Element):
         Constraint.add_constraint(
             model,
             name="constraint_availability_carrier_export_yearly",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","set_time_steps_yearly"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_yearly"]),
             rule = constraint_availability_carrier_export_yearly_rule,
             doc = 'node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year',
         )
@@ -229,7 +229,7 @@ class Carrier(Element):
         Constraint.add_constraint(
             model,
             name="constraint_cost_carrier",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_operation"]),
             rule = constraint_cost_carrier_rule,
             doc = "cost of importing and exporting carrier"
         )
@@ -237,7 +237,7 @@ class Carrier(Element):
         Constraint.add_constraint(
             model,
             name="constraint_cost_shed_demand",
-            index_sets= cls.create_custom_set(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
             rule=constraint_cost_shed_demand_rule,
             doc="cost of shedding carrier demand"
         )
@@ -245,7 +245,7 @@ class Carrier(Element):
         Constraint.add_constraint(
             model,
             name="constraint_limit_shed_demand",
-            index_sets= cls.create_custom_set(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
             rule=constraint_limit_shed_demand_rule,
             doc="limit of shedding carrier demand"
         )
@@ -261,7 +261,7 @@ class Carrier(Element):
         Constraint.add_constraint(
             model,
             name="constraint_carbon_emissions_carrier",
-            index_sets= cls.create_custom_set(["setCarriers","setNodes","setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers","set_nodes","set_time_steps_operation"]),
             rule = constraint_carbon_emissions_carrier_rule,
             doc = "carbon emissions of importing and exporting carrier"
         )
@@ -278,7 +278,7 @@ class Carrier(Element):
         Constraint.add_constraint(
             model,
             name="constraint_nodal_energy_balance",
-            index_sets= cls.create_custom_set(["setCarriers", "setNodes", "setTimeStepsOperation"]),
+            index_sets= cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
             rule=constraint_nodal_energy_balance_rule,
             doc='node- and time-dependent energy balance for each carrier',
         )
@@ -385,7 +385,7 @@ def constraint_cost_carrier_total_rule(model,year):
                 * params.time_steps_operation_duration[carrier, time]
                 for time in EnergySystem.encode_time_step(carrier, base_time_step, yearly=True)
             )
-            for carrier,node in Element.create_custom_set(["setCarriers","setNodes"])[0]
+            for carrier,node in Element.create_custom_set(["set_carriers","set_nodes"])[0]
         )
     )
 
@@ -411,21 +411,21 @@ def constraint_carbon_emissions_carrier_total_rule(model, year):
                 model.carbon_emissions_carrier[carrier, node, time] * params.time_steps_operation_duration[carrier, time]
                 for time in EnergySystem.encode_time_step(carrier, base_time_step, yearly = True)
             )
-            for carrier, node in Element.create_custom_set(["setCarriers", "setNodes"])[0]
+            for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"])[0]
         )
     )
 
 def constraint_nodal_energy_balance_rule(model, carrier, node, time):
     """" 
     nodal energy balance for each time step. 
-    The constraint is indexed by setTimeStepsOperation, which is union of time step sequences of all corresponding technologies and carriers
+    The constraint is indexed by set_time_steps_operation, which is union of time step sequences of all corresponding technologies and carriers
     timeStepEnergyBalance --> base_time_step --> element_time_step
     """
     # get parameter object
     params = Parameter.get_component_object()
     # carrier input and output conversion technologies
     carrier_conversion_in, carrier_conversion_out = 0, 0
-    for tech in model.setConversionTechnologies:
+    for tech in model.set_conversion_technologies:
         if carrier in model.set_input_carriers[tech]:
             carrier_conversion_in     += model.input_flow[tech,carrier,node,time]
         if carrier in model.set_output_carriers[tech]:
@@ -434,14 +434,14 @@ def constraint_nodal_energy_balance_rule(model, carrier, node, time):
     carrier_flow_in, carrier_flow_out   = 0, 0
     set_edges_in                      = EnergySystem.calculate_connected_edges(node,"in")
     set_edges_out                     = EnergySystem.calculate_connected_edges(node,"out")
-    for tech in model.setTransportTechnologies:
+    for tech in model.set_transport_technologies:
         if carrier in model.set_reference_carriers[tech]:
             carrier_flow_in   += sum(model.carrier_flow[tech, edge, time]
-                            - model.carrierLoss[tech, edge, time] for edge in set_edges_in)
+                            - model.carrier_loss[tech, edge, time] for edge in set_edges_in)
             carrier_flow_out  += sum(model.carrier_flow[tech, edge, time] for edge in set_edges_out)
     # carrier flow storage technologies
     carrier_flow_discharge, carrier_flow_charge = 0, 0
-    for tech in model.setStorageTechnologies:
+    for tech in model.set_storage_technologies:
         if carrier in model.set_reference_carriers[tech]:
             carrier_flow_discharge    += model.carrier_flow_discharge[tech,node,time]
             carrier_flow_charge       += model.carrier_flow_charge[tech,node,time]

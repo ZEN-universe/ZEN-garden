@@ -1,6 +1,0 @@
-index,value,unit
-carbonEmissionsLimitDefault,inf,gigatons
-carbonEmissionsBudgetDefault,4.2749370139006455,gigatons
-previousCarbonEmissionsDefault,0.0,gigatons
-carbonPriceDefault,0.0,Euro/tons
-carbonPriceOvershootDefault,400.0,Euro/tons

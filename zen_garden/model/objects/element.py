@@ -127,7 +127,7 @@ class Element:
             else:
                 for capacity_type in system["set_capacity_types"]:
                     # append energy only for storage technologies
-                    if capacity_type == system["set_capacity_types"][0] or _element.name in system["setStorageTechnologies"]:
+                    if capacity_type == system["set_capacity_types"][0] or _element.name in system["set_storage_technologies"]:
                         dict_of_attributes,attribute_is_series = cls.append_attribute_of_element_to_dict(_element, attribute_name, dict_of_attributes,capacity_type)
         if return_attribute_is_series:
             return dict_of_attributes,attribute_is_series
@@ -221,9 +221,9 @@ class Element:
         # construct pe.Sets of class elements
         model = EnergySystem.get_pyomo_model()
         # operational time steps
-        model.setTimeStepsOperation = pe.Set(
+        model.set_time_steps_operation = pe.Set(
             model.set_elements,
-            initialize=cls.get_attribute_of_all_elements("setTimeStepsOperation"),
+            initialize=cls.get_attribute_of_all_elements("set_time_steps_operation"),
             doc="Set of time steps in operation for all technologies. Dimensions: set_elements"
         )
         # construct pe.Sets of the child classes
@@ -235,7 +235,7 @@ class Element:
     def construct_params(cls):
         """ constructs the pe.Params of the class <Element> """
         logging.info("Construct pe.Params")
-        # initialize parameterObject
+        # initialize parameter_object
         Parameter()
         # construct pe.Params of energy system
         EnergySystem.construct_params()
@@ -243,8 +243,8 @@ class Element:
         # operational time step duration
         Parameter.add_parameter(
             name="time_steps_operation_duration",
-            data= EnergySystem.initialize_component(cls,"time_steps_operation_duration",index_names=["set_elements","setTimeStepsOperation"]),#.astype(int),
-            # doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: set_elements, setTimeStepsOperation"
+            data= EnergySystem.initialize_component(cls,"time_steps_operation_duration",index_names=["set_elements","set_time_steps_operation"]),#.astype(int),
+            # doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: set_elements, set_time_steps_operation"
             doc="Parameter which specifies the time step duration in operation for all technologies"
         )
         # construct pe.Params of the child classes
@@ -255,7 +255,7 @@ class Element:
     def construct_vars(cls):
         """ constructs the pe.Vars of the class <Element> """
         logging.info("Construct pe.Vars")
-        # initialize variableObject
+        # initialize variable_object
         Variable()
         # construct pe.Vars of energy system
         EnergySystem.construct_vars()
@@ -267,7 +267,7 @@ class Element:
     def construct_constraints(cls):
         """ constructs the pe.Constraints of the class <Element> """
         logging.info("Construct pe.Constraints")
-        # initialize constraintObject
+        # initialize constraint_object
         Constraint()
         # construct pe.Constraints of energy system
         EnergySystem.construct_constraints()
@@ -326,16 +326,16 @@ class Element:
                                 raise NotImplementedError
                         # if index is set_location
                         elif index == "set_location":
-                            # if element in setConversionTechnologies or setStorageTechnologies, append setNodes
-                            if element in model.setConversionTechnologies or element in model.setStorageTechnologies:
-                                list_sets.append(model.setNodes)
-                            # if element in setTransportTechnologies
-                            elif element in model.setTransportTechnologies:
-                                list_sets.append(model.setEdges)
+                            # if element in set_conversion_technologies or set_storage_technologies, append set_nodes
+                            if element in model.set_conversion_technologies or element in model.set_storage_technologies:
+                                list_sets.append(model.set_nodes)
+                            # if element in set_transport_technologies
+                            elif element in model.set_transport_technologies:
+                                list_sets.append(model.set_edges)
                         # if set is built for pwa capex:
                         elif "set_capex" in index:
-                            if element in model.setConversionTechnologies:
-                                _capex_is_pwa = cls.get_attribute_of_specific_element(element,"capexIsPWA")
+                            if element in model.set_conversion_technologies:
+                                _capex_is_pwa = cls.get_attribute_of_specific_element(element,"capex_is_pwa")
                                 # if technology is modeled as pwa, break for linear index
                                 if "linear" in index and _capex_is_pwa:
                                     append_element = False
@@ -350,25 +350,25 @@ class Element:
                                 break
                         # if set is built for pwa converEfficiency:
                         elif "set_conver_efficiency" in index:
-                            if element in model.setConversionTechnologies: # or element in model.setStorageTechnologies:
-                                _conver_efficiency_is_pwa = cls.get_attribute_of_specific_element(element, "converEfficiencyIsPWA")
-                                dependent_carrier = list(model.setDependentCarriers[element])
+                            if element in model.set_conversion_technologies: # or element in model.set_storage_technologies:
+                                _conver_efficiency_is_pwa = cls.get_attribute_of_specific_element(element, "conver_efficiency_is_pwa")
+                                dependent_carrier = list(model.set_dependent_carriers[element])
                                 # TODO for more than one carrier
-                                # _PWAConverEfficiency = cls.get_attribute_of_specific_element(element,"PWAConverEfficiency")
-                                # dependent_carrier_pwa     = _PWAConverEfficiency["pwa_variables"]
+                                # _pwa_conver_efficiency = cls.get_attribute_of_specific_element(element,"pwa_conver_efficiency")
+                                # dependent_carrier_pwa     = _pwa_conver_efficiency["pwa_variables"]
                                 if "linear" in index and not _conver_efficiency_is_pwa:
                                     list_sets.append(dependent_carrier)
                                 elif "pwa" in index and _conver_efficiency_is_pwa:
                                     list_sets.append(dependent_carrier)
                                 else:
                                     list_sets.append([])
-                                list_index_overwrite = list(map(lambda x: x.replace(index, 'setCarriers'), list_index))
+                                list_index_overwrite = list(map(lambda x: x.replace(index, 'set_carriers'), list_index))
                             # Transport or Storage technology
                             else:
                                 append_element = False
                                 break
                         # if set is used to determine if on-off behavior is modeled
-                        # exclude technologies which have no min_load and dependentCarrierFlow at referenceCarrierFlow = 0 is also equal to 0
+                        # exclude technologies which have no min_load and dependentCarrierFlow at reference_carrierFlow = 0 is also equal to 0
                         elif "on_off" in index:
                             model_on_off = cls.check_on_off_modeled(element)
                             if "set_no_on_off" in index:
@@ -384,7 +384,7 @@ class Element:
                         # split in capacity types of power and energy
                         elif index == "set_capacity_types":
                             system = EnergySystem.get_system()
-                            if element in model.setStorageTechnologies:
+                            if element in model.set_storage_technologies:
                                 list_sets.append(system["set_capacity_types"])
                             else:
                                 list_sets.append([system["set_capacity_types"][0]])
@@ -416,21 +416,21 @@ class Element:
         # if only one unique min_load which is zero
         if len(_unique_min_load) == 1 and _unique_min_load[0] == 0:
             # if not a conversion technology, break for current technology
-            if tech not in model.setConversionTechnologies:
+            if tech not in model.set_conversion_technologies:
                 model_on_off = False
-            # if a conversion technology, check if all dependentCarrierFlow at referenceCarrierFlow = 0 equal to 0
+            # if a conversion technology, check if all dependentCarrierFlow at reference_carrierFlow = 0 equal to 0
             else:
                 # if technology is approximated (by either pwa or linear)
-                _isPWA = cls.get_attribute_of_specific_element(tech,"converEfficiencyIsPWA")
+                _isPWA = cls.get_attribute_of_specific_element(tech,"conver_efficiency_is_pwa")
                 # if not modeled as pwa
                 if not _isPWA:
                     model_on_off = False
                 else:
-                    _PWAParameter = cls.get_attribute_of_specific_element(tech,"PWAConverEfficiency")
+                    _pwa_parameter = cls.get_attribute_of_specific_element(tech,"pwa_conver_efficiency")
                     # iterate through all dependent carriers and check if all lower bounds are equal to 0
                     _only_zero_dependent_bound = True
-                    for PWAVariable in _PWAParameter["pwa_variables"]:
-                        if _PWAParameter["bounds"][PWAVariable][0] != 0:
+                    for PWAVariable in _pwa_parameter["pwa_variables"]:
+                        if _pwa_parameter["bounds"][PWAVariable][0] != 0:
                             _only_zero_dependent_bound = False
                     if _only_zero_dependent_bound:
                         model_on_off = False

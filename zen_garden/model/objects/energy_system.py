@@ -84,58 +84,59 @@ class EnergySystem:
         self.paths                      = EnergySystem.get_paths()
 
         # in class <EnergySystem>, all sets are constructed
-        self.setNodes              = self.datainput.extract_locations()
+        self.set_nodes              = self.datainput.extract_locations()
         self.set_nodes_on_edges        = self.calculate_edges_from_nodes()
-        self.setEdges               = list(self.set_nodes_on_edges.keys())
-        self.setCarriers            = []
-        self.setTechnologies        = system["setTechnologies"]
+        self.set_edges               = list(self.set_nodes_on_edges.keys())
+        self.set_carriers            = []
+        self.set_technologies        = system["set_technologies"]
         # base time steps
-        self.set_base_time_steps       = list(range(0, system["unaggregatedTimeStepsPerYear"] * system["optimizedYears"]))
-        self.set_base_time_steps_yearly = list(range(0, system["unaggregatedTimeStepsPerYear"]))
+        self.set_base_time_steps       = list(range(0, system["unaggregated_time_steps_per_year"] * system["optimized_years"]))
+        self.set_base_time_steps_yearly = list(range(0, system["unaggregated_time_steps_per_year"]))
 
         # yearly time steps
-        self.set_time_steps_yearly = list(range(self.system["optimizedYears"]))
+        self.set_time_steps_yearly = list(range(self.system["optimized_years"]))
         self.set_time_steps_yearly_entire_horizon = copy.deepcopy(self.set_time_steps_yearly)
         time_steps_yearly_duration = EnergySystem.calculate_time_step_duration(self.set_time_steps_yearly)
         self.sequence_time_steps_yearly = np.concatenate([[time_step] * time_steps_yearly_duration[time_step] for time_step in time_steps_yearly_duration])
         self.set_sequence_time_steps(None, self.sequence_time_steps_yearly, time_step_type="yearly")
 
         # technology-specific
-        self.setConversionTechnologies = system["setConversionTechnologies"]
-        self.setTransportTechnologies = system["setTransportTechnologies"]
-        self.setStorageTechnologies = system["setStorageTechnologies"]
+        self.set_conversion_technologies = system["set_conversion_technologies"]
+        self.set_transport_technologies = system["set_transport_technologies"]
+        self.set_storage_technologies = system["set_storage_technologies"]
         # carbon emissions limit
-        self.carbonEmissionsLimit = self.datainput.extract_input_data("carbonEmissionsLimit", index_sets=["set_time_steps"],
+        self.carbon_emissions_limit = self.datainput.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps"],
                                                                     time_steps=self.set_time_steps_yearly)
-        _fraction_year = system["unaggregatedTimeStepsPerYear"] / system["totalHoursPerYear"]
-        self.carbonEmissionsLimit = self.carbonEmissionsLimit * _fraction_year  # reduce to fraction of year
-        self.carbon_emissions_budget = self.datainput.extract_input_data("carbonEmissionsBudget", index_sets=[])
-        self.previous_carbon_emissions = self.datainput.extract_input_data("previousCarbonEmissions", index_sets=[])
+        _fraction_year = system["unaggregated_time_steps_per_year"] / system["total_hours_per_year"]
+        self.carbon_emissions_limit = self.carbon_emissions_limit * _fraction_year  # reduce to fraction of year
+        self.carbon_emissions_budget = self.datainput.extract_input_data("carbon_emissions_budget", index_sets=[])
+        self.previous_carbon_emissions = self.datainput.extract_input_data("previous_carbon_emissions", index_sets=[])
         # carbon price
-        self.carbon_price = self.datainput.extract_input_data("carbonPrice", index_sets=["set_time_steps"],
+        self.carbon_price = self.datainput.extract_input_data("carbon_price", index_sets=["set_time_steps"],
                                                            time_steps=self.set_time_steps_yearly)
-        self.carbon_price_overshoot = self.datainput.extract_input_data("carbonPriceOvershoot", index_sets=[])
+        self.carbon_price_overshoot = self.datainput.extract_input_data("carbon_price_overshoot", index_sets=[])
 
     def calculate_edges_from_nodes(self):
-        """ calculates set_nodes_on_edges from setNodes
+        """ calculates set_nodes_on_edges from set_nodes
         :return set_nodes_on_edges: dict with edges and corresponding nodes """
+        system = EnergySystem.get_system()
         set_nodes_on_edges = {}
         # read edge file
         set_edges_input = self.datainput.extract_locations(extract_nodes=False)
         if set_edges_input is not None:
             for edge in set_edges_input.index:
-                set_nodes_on_edges[edge] = (set_edges_input.loc[edge,"nodeFrom"],set_edges_input.loc[edge,"nodeTo"])
+                set_nodes_on_edges[edge] = (set_edges_input.loc[edge,"node_from"],set_edges_input.loc[edge,"node_to"])
         else:
-            warnings.warn("Implicit creation of edges will be deprecated. Provide 'setEdges.csv' in folder 'setNodes' instead!",FutureWarning)
-            for node_from in self.setNodes:
-                for node_to in self.setNodes:
+            warnings.warn(f"Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{system['''folder_name_system_specification''']}' instead!",FutureWarning)
+            for node_from in self.set_nodes:
+                for node_to in self.set_nodes:
                     if node_from != node_to:
                         set_nodes_on_edges[node_from+"-"+node_to] = (node_from,node_to)
         return set_nodes_on_edges
 
     def get_input_path(self):
         """ get input path where input data is stored input_path"""
-        _folder_label = EnergySystem.get_analysis()["folderNameSystemSpecification"]
+        _folder_label = EnergySystem.get_analysis()["folder_name_system_specification"]
 
         paths = EnergySystem.get_paths()
         # get input path of energy system specification
@@ -195,7 +196,7 @@ class EnergySystem:
         for carrier in list_technology_of_carrier:
             if carrier not in cls.dict_technology_of_carrier:
                 cls.dict_technology_of_carrier[carrier] = [technology]
-                cls.energy_system.setCarriers.append(carrier)
+                cls.energy_system.set_carriers.append(carrier)
             elif technology not in cls.dict_technology_of_carrier[carrier]:
                 cls.dict_technology_of_carrier[carrier].append(technology)
 
@@ -213,8 +214,8 @@ class EnergySystem:
     def set_time_steps_storage_startend(cls, element):
         """ sets the dict of matching the last time step of the year in the storage level domain to the first """
         system = cls.get_system()
-        _unaggregated_time_steps  = system["unaggregatedTimeStepsPerYear"]
-        _sequence_time_steps      = cls.get_sequence_time_steps(element + "StorageLevel")
+        _unaggregated_time_steps  = system["unaggregated_time_steps_per_year"]
+        _sequence_time_steps      = cls.get_sequence_time_steps(element + "_storage_level")
         _counter = 0
         _time_steps_start = []
         _time_steps_end = []
@@ -371,7 +372,7 @@ class EnergySystem:
     def create_unit_handling(cls):
         """ creates and stores the unit handling object """
         # create UnitHandling object
-        cls.unit_handling = UnitHandling(cls.get_energy_system().input_path,cls.get_energy_system().solver["roundingDecimalPoints"])
+        cls.unit_handling = UnitHandling(cls.get_energy_system().input_path,cls.get_energy_system().solver["rounding_decimal_points"])
 
     @classmethod
     def calculate_connected_edges(cls,node,direction:str):
@@ -555,29 +556,29 @@ class EnergySystem:
         energy_system = cls.get_energy_system()
 
         # nodes
-        model.setNodes = pe.Set(
-            initialize=energy_system.setNodes,
+        model.set_nodes = pe.Set(
+            initialize=energy_system.set_nodes,
             doc='Set of nodes')
         # edges
-        model.setEdges = pe.Set(
-            initialize = energy_system.setEdges,
+        model.set_edges = pe.Set(
+            initialize = energy_system.set_edges,
             doc = 'Set of edges')
         # nodes on edges
         model.set_nodes_on_edges = pe.Set(
-            model.setEdges,
+            model.set_edges,
             initialize = energy_system.set_nodes_on_edges,
             doc = 'Set of nodes that constitute an edge. Edge connects first node with second node.')
         # carriers
-        model.setCarriers = pe.Set(
-            initialize=energy_system.setCarriers,
+        model.set_carriers = pe.Set(
+            initialize=energy_system.set_carriers,
             doc='Set of carriers')
         # technologies
-        model.setTechnologies = pe.Set(
-            initialize=energy_system.setTechnologies,
+        model.set_technologies = pe.Set(
+            initialize=energy_system.set_technologies,
             doc='Set of technologies')
         # all elements
         model.set_elements = pe.Set(
-            initialize=model.setTechnologies | model.setCarriers,
+            initialize=model.set_technologies | model.set_carriers,
             doc='Set of elements')
         # set set_elements to indexing_sets
         cls.set_manual_set_to_indexing_sets("set_elements")
@@ -602,8 +603,8 @@ class EnergySystem:
 
         # carbon emissions limit
         Parameter.add_parameter(
-            name="carbonEmissionsLimit",
-            data=cls.initialize_component(cls, "carbonEmissionsLimit", set_time_steps=model.set_time_steps_yearly),
+            name="carbon_emissions_limit",
+            data=cls.initialize_component(cls, "carbon_emissions_limit", set_time_steps=model.set_time_steps_yearly),
             doc='Parameter which specifies the total limit on carbon emissions'
         )
         # carbon emissions budget
@@ -757,11 +758,11 @@ class EnergySystem:
         model = cls.get_pyomo_model()
 
         # get selected objective rule
-        if cls.get_analysis()["objective"] == "TotalCost":
+        if cls.get_analysis()["objective"] == "total_cost":
             objective_rule = objective_total_cost_rule
-        elif cls.get_analysis()["objective"] == "TotalCarbonEmissions":
+        elif cls.get_analysis()["objective"] == "total_carbon_emissions":
             objective_rule = objective_total_carbon_emissions_rule
-        elif cls.get_analysis()["objective"] == "Risk":
+        elif cls.get_analysis()["objective"] == "risk":
             logging.info("Objective of minimizing risk not yet implemented")
             objective_rule = objective_risk_rule
         else:
@@ -827,9 +828,9 @@ def constraint_carbon_emissions_limit_rule(model, year):
     """ time dependent carbon emissions limit from technologies and carriers"""
     # get parameter object
     params = Parameter.get_component_object()
-    if params.carbonEmissionsLimit[year] != np.inf:
+    if params.carbon_emissions_limit[year] != np.inf:
         return (
-            params.carbonEmissionsLimit[year] >= model.carbon_emissions_total[year]
+            params.carbon_emissions_limit[year] >= model.carbon_emissions_total[year]
         )
     else:
         return pe.Constraint.Skip
@@ -867,7 +868,7 @@ def constraint_NPV_rule(model, year):
     """ discounts the annual capital flows to calculate the NPV """
     system = EnergySystem.get_system()
     discount_rate = EnergySystem.get_analysis()["discount_rate"]
-    if system["optimizedYears"] > 1:
+    if system["optimized_years"] > 1:
         interval_between_years = system["intervalBetweenYears"]
     else:
         interval_between_years = 1
@@ -890,7 +891,7 @@ def objective_total_cost_rule(model):
         sum(
             model.NPV[year] *
             # discounted utility function
-            ((1 / (1 + system["socialDiscountRate"])) ** (
+            ((1 / (1 + system["social_discount_rate"])) ** (
                         system["intervalBetweenYears"] * (year - model.set_time_steps_yearly.at(1))))
             for year in model.set_time_steps_yearly)
     )

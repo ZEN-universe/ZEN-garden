@@ -26,7 +26,7 @@ def restore_default_state():
     #########
     
     # set label
-    Carrier.label = "setCarriers"
+    Carrier.label = "set_carriers"
     # empty list of elements
     Carrier.list_of_elements = []
     
@@ -34,7 +34,7 @@ def restore_default_state():
     #####################
     
     # set label
-    ConditioningCarrier.label = "setConditioningCarriers"
+    ConditioningCarrier.label = "set_conditioning_carriers"
     # empty list of elements
     ConditioningCarrier.list_of_elements = []
     
@@ -86,13 +86,13 @@ def restore_default_state():
     ###########
 
     # initialize parameter object
-    Parameter.parameterObject = None
+    Parameter.parameter_object = None
 
     # ConditioningTechnology
     ########################
 
     # set label
-    ConditioningTechnology.label = "setConditioningTechnologies"
+    ConditioningTechnology.label = "set_conditioning_technologies"
     # empty list of elements
     ConditioningTechnology.list_of_elements = []
 
@@ -100,8 +100,8 @@ def restore_default_state():
     ######################
 
     # set label
-    ConversionTechnology.label           = "setConversionTechnologies"
-    ConversionTechnology.location_type    = "setNodes"
+    ConversionTechnology.label           = "set_conversion_technologies"
+    ConversionTechnology.location_type    = "set_nodes"
     # empty list of elements
     ConversionTechnology.list_of_elements = []
 
@@ -109,8 +109,8 @@ def restore_default_state():
     ###################
 
     # set label
-    StorageTechnology.label           = "setStorageTechnologies"
-    StorageTechnology.location_type    = "setNodes"
+    StorageTechnology.label           = "set_storage_technologies"
+    StorageTechnology.location_type    = "set_nodes"
     # empty list of elements
     StorageTechnology.list_of_elements = []
 
@@ -118,7 +118,7 @@ def restore_default_state():
     ############
 
     # set label
-    Technology.label           = "setTechnologies"
+    Technology.label           = "set_technologies"
     Technology.location_type    = None
     # empty list of elements
     Technology.list_of_elements = []
@@ -127,12 +127,12 @@ def restore_default_state():
     #####################
 
     # set label
-    TransportTechnology.label           = "setTransportTechnologies"
-    TransportTechnology.location_type    = "setEdges"
+    TransportTechnology.label           = "set_transport_technologies"
+    TransportTechnology.location_type    = "set_edges"
     # empty list of elements
     TransportTechnology.list_of_elements = []
     # dict of reversed edges
-    TransportTechnology.dictReversedEdges = {}
+    TransportTechnology.dict_reversed_edges = {}
 
     # OptimizationSetup
     ###################

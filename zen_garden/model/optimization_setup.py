@@ -62,10 +62,10 @@ class OptimizationSetup():
             element_name  = element_class.label
             element_set   = self.system[element_name]
 
-            # before adding the carriers, get setCarriers and check if carrier data exists
-            if element_name == "setCarriers":
-                element_set = EnergySystem.get_attribute("setCarriers")
-                self.system["setCarriers"] = element_set
+            # before adding the carriers, get set_carriers and check if carrier data exists
+            if element_name == "set_carriers":
+                element_set = EnergySystem.get_attribute("set_carriers")
+                self.system["set_carriers"] = element_set
                 self.prepare.check_existing_carrier_data(self.system)
 
             # check if element_set has a subset and remove subset from element_set
@@ -78,9 +78,9 @@ class OptimizationSetup():
             # add element class
             for item in element_set:
                 element_class(item)
-        if EnergySystem.get_solver()["analyzeNumerics"]:
-            EnergySystem.get_unit_handling().recomment_base_units(immutable_unit = EnergySystem.get_solver()["immutableUnit"],
-                                                              unitExps = EnergySystem.get_solver()["rangeUnitExponents"])
+        if EnergySystem.get_solver()["analyze_numerics"]:
+            EnergySystem.get_unit_handling().recommend_base_units(immutable_unit = EnergySystem.get_solver()["immutable_unit"],
+                                                              unit_exps = EnergySystem.get_solver()["rangeUnitExponents"])
         # conduct  time series aggregation
         TimeSeriesAggregation.conduct_tsa()
 
@@ -198,7 +198,7 @@ class OptimizationSetup():
 
     def analyze_numerics(self):
         """ get largest and smallest matrix coefficients and RHS """
-        if EnergySystem.get_solver()["analyzeNumerics"]:
+        if EnergySystem.get_solver()["analyze_numerics"]:
             largest_rhs      = [None,0]
             smallest_rhs     = [None,np.inf]
             largest_coeff    = [None,0]
@@ -242,22 +242,22 @@ class OptimizationSetup():
 
         solver_name          = solver["name"]
         # remove options that are None
-        solver_options       = {key:solver["solverOptions"][key] for key in solver["solverOptions"] if solver["solverOptions"][key] is not None}
+        solver_options       = {key:solver["solver_options"][key] for key in solver["solver_options"] if solver["solver_options"][key] is not None}
 
         logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily
         logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
-        solver_parameters   = f"ResultFile={os.path.dirname(solver['solverOptions']['logfile'])}//infeasibleModelIIS.ilp"
+        solver_parameters   = f"ResultFile={os.path.dirname(solver['solver_options']['logfile'])}//infeasibleModelIIS.ilp"
 
         if solver_name == "gurobi_persistent":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
             self.opt.set_instance(self.model,symbolic_solver_labels=solver["useSymbolicLabels"])
-            self.results    = self.opt.solve(tee=solver["verbosity"], logfile=solver["solverOptions"]["logfile"],options_string=solver_parameters)
+            self.results    = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"],options_string=solver_parameters)
         else:
             self.opt = pe.SolverFactory(solver_name)
-            self.results    = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solverOptions"]["logfile"])
+            self.results    = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"])
         # enable logger
         logging.disable(logging.NOTSET)
 
@@ -270,7 +270,7 @@ class OptimizationSetup():
         _built_capacity      = pd.Series(self.model.built_capacity.extract_values())
         _invest_capacity   = pd.Series(self.model.invested_capacity.extract_values())
         _capex              = pd.Series(self.model.capex.extract_values())
-        _rounding_value      = 10 ** (-EnergySystem.get_solver()["roundingDecimalPoints"])
+        _rounding_value      = 10 ** (-EnergySystem.get_solver()["rounding_decimal_points"])
         _built_capacity[_built_capacity <= _rounding_value]        = 0
         _invest_capacity[_invest_capacity <= _rounding_value]  = 0
         _capex[_capex <= _rounding_value]                        = 0

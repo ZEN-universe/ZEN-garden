@@ -61,44 +61,40 @@ class Config(object):
 
         ## Analysis - Items assignment
         # objective function definition
-        self.analysis["objective"] = "TotalCost"
+        self.analysis["objective"] = "total_cost"
         # typology of optimisation: minimize or maximize
         self.analysis["sense"]     = "minimize"
         # discount rate
         self.analysis["discount_rate"] = 0.06
         # transport distance (euclidean or actual)
-        self.analysis["transportDistance"] = "Euclidean"
+        self.analysis["transport_distance"] = "Euclidean"
         # dictionary with subsets related to set
-        self.analysis["subsets"] = {"setCarriers": [],
-                               "setTechnologies": ["setConversionTechnologies", "setTransportTechnologies","setStorageTechnologies"],
-                               "setConversionTechnologies": ["setConditioningTechnologies"]}
+        self.analysis["subsets"] = {"set_carriers": [],
+                               "set_technologies": ["set_conversion_technologies", "set_transport_technologies","set_storage_technologies"],
+                               "set_conversion_technologies": ["set_conditioning_technologies"]}
         # headers for the generation of input files
         self.analysis["header_data_inputs"] = {
-                                            "setNodes": "node",
-                                            "setEdges": "edge",
+                                            "set_nodes": "node",
+                                            "set_edges": "edge",
                                             "set_location": "location",
-                                            "setScenarios":"scenario",
                                             "set_time_steps":"time",
-                                            "setTimeStepsOperation":"timeOperation",
-                                            "setTimeStepsStorageLevel":"timeStorageLevel",
-                                            "setTimeStepsYearly":"year",
+                                            "set_time_steps_operation":"timeOperation",
+                                            "set_time_steps_storage_level":"time_storage_level",
+                                            "set_time_steps_yearly":"year",
                                             "set_time_steps_yearly_entire_horizon":"year",
-                                            "setCarriers":"carrier",
+                                            "set_carriers":"carrier",
                                             "set_input_carriers":"carrier",
                                             "set_output_carriers":"carrier",
-                                            "setDependentCarriers":"carrier",
-                                            "setConditioningCarriers":"carrier",
-                                            "setConditioningCarrierParents":"carrier",
+                                            "set_dependent_carriers":"carrier",
+                                            "set_conditioning_carriers":"carrier",
+                                            "set_conditioning_carrier_parents":"carrier",
                                             "set_elements":"element",
-                                            "setConversionTechnologies":"technology",
-                                            "setTransportTechnologies":"technology",
-                                            "setStorageTechnologies":"technology",
-                                            "setTechnologies":"technology",
+                                            "set_conversion_technologies":"technology",
+                                            "set_transport_technologies":"technology",
+                                            "set_storage_technologies":"technology",
+                                            "set_technologies":"technology",
                                             "set_existing_technologies": "existingTechnology",
                                             "set_capacity_types":"capacity_type"}
-
-        # file format of input data
-        self.analysis["fileFormat"] = "csv"
         # time series aggregation
         self.analysis["time_series_aggregation"] = {
             "clusterMethod"         : "k_means",
@@ -112,39 +108,39 @@ class Config(object):
             "noSegments"            : 12}
 
         self.analysis['postprocess'] = False
-        self.analysis["folderOutput"] = "./outputs/"
-        self.analysis["overwriteOutput"] = True
-        self.analysis["compressOutput"] = True
-        self.analysis["writeResultsYML"] = False
-        self.analysis["maxOutputSizeMB"] = 500
+        self.analysis["folder_output"] = "./outputs/"
+        self.analysis["overwrite_output"] = True
+        self.analysis["compress_output"] = True
+        self.analysis["write_results_yml"] = False
+        self.analysis["max_output_size_mb"] = 500
         # name of data folder for energy system specification
-        self.analysis["folderNameSystemSpecification"] = "systemSpecification"
+        self.analysis["folder_name_system_specification"] = "system_specification"
 
         ## System - Items assignment
         # set of energy carriers
-        self.system["setCarriers"] = []
+        self.system["set_carriers"] = []
         # set of conditioning carriers
-        self.system["setConditioningCarriers"] = []
+        self.system["set_conditioning_carriers"] = []
         # set of capacity types: power-rated or energy-rated
         self.system["set_capacity_types"] = ["power","energy"]
         # set of conversion technologies
-        self.system["setConversionTechnologies"] = []
+        self.system["set_conversion_technologies"] = []
         # set of conditioning technologies
-        self.system["setConditioningTechnologies"] = []
+        self.system["set_conditioning_technologies"] = []
         # set of storage technologies
-        self.system["setStorageTechnologies"] = []
+        self.system["set_storage_technologies"] = []
         # set of transport technologies
-        self.system["setTransportTechnologies"] = []
+        self.system["set_transport_technologies"] = []
         self.system['double_capex_transport'] = False
-        self.system["setBidirectionalTransportTechnologies"] = []
+        self.system["set_bidirectional_transport_technologies"] = []
         # set of nodes
-        self.system["setNodes"] = []
+        self.system["set_nodes"] = []
         # toggle to use time_series_aggregation
-        self.system["conductTimeSeriesAggregation"] = False
+        self.system["conduct_time_series_aggregation"] = False
         # toggle to perform analysis for multiple scenarios
-        self.system["conductScenarioAnalysis"] = False
+        self.system["conduct_scenario_analysis"] = False
         # total hours per year
-        self.system["totalHoursPerYear"] = 8760
+        self.system["total_hours_per_year"] = 8760
         # unbounded market share for technology diffusion rate
         self.system["unbounded_market_share"] = 0.01
         # rate at which the knowledge stock of existing capacities is depreciated annually
@@ -152,7 +148,7 @@ class Config(object):
         # spillover rate of knowledge stock to another
         self.system["knowledge_spillover_rate"] = 0.05
         # social discount rate
-        self.system["socialDiscountRate"] = 0
+        self.system["social_discount_rate"] = 0
         # folder output
 
 
@@ -161,7 +157,7 @@ class Config(object):
         # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
         self.solver["name"]      = "glpk"
         # gurobi options
-        self.solver["solverOptions"] = {
+        self.solver["solver_options"] = {
             "logfile":      ".//outputs//logs//pyomoLogFile.log",
             "MIPGap":       None,
             "TimeLimit":    None,
@@ -170,11 +166,11 @@ class Config(object):
         # use symbolic labels, only sensible for debugging infeasible problems. Adds overhead
         self.solver["useSymbolicLabels"] = False
         # analyze numerics
-        self.solver["analyzeNumerics"]   = False
-        self.solver["immutableUnit"]     = []
-        self.solver["rangeUnitExponents"]    = {"min":-1,"max":1,"stepWidth":1}
+        self.solver["analyze_numerics"]   = False
+        self.solver["immutable_unit"]     = []
+        self.solver["rangeUnitExponents"]    = {"min":-1,"max":1,"step_width":1}
         # round down to number of decimal points, for new capacity and unit multipliers
-        self.solver["roundingDecimalPoints"]     = 5
+        self.solver["rounding_decimal_points"]     = 5
         # round down to number of decimal points, for time series after TSA
         self.solver["rounding_decimal_points_ts"]   = 3
         # verbosity

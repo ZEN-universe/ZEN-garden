@@ -12,64 +12,69 @@ import numpy as np
 import pandas as pd
 import pyomo.environ as pe
 import pyomo.gdp as pgdp
+import itertools
+from typing import Union
 
 class Component:
 
     def __init__(self):
         self.docs = {}
         # set component object
-        self.__class__.setComponentObject(self)
+        self.__class__.set_component_object(self)
 
     @classmethod
-    def setComponentObject(cls,componentObject):
-        """ sets componentObject"""
-        cls.componentObject = componentObject
+    def set_component_object(cls,component_object):
+        """ sets component_object"""
+        cls.component_object = component_object
 
     @classmethod
     def get_component_object(cls):
-        """ returns componentObject """
-        if hasattr(cls,"componentObject"):
-            return cls.componentObject
+        """ returns component_object """
+        if hasattr(cls,"component_object"):
+            return cls.component_object
         else:
             raise AttributeError(f"The class {cls.__name__} has not yet been instantiated!")
 
     @staticmethod
-    def compileDocString(doc,index_list,name,domain = None):
+    def compile_doc_string(doc,index_list,name,domain = None):
         """ compile docstring from doc and index_list"""
         assert type(doc)==str,f"Docstring {doc} has wrong format. Must be 'str' but is '{type(doc).__name__}'"
         # check for prohibited strings
-        prohibitedStrings = [",",";",":","/","name","doc","dims","domain"]
-        originalDoc = copy.copy(doc)
-        for string in prohibitedStrings:
+        prohibited_strings = [",",";",":","/","name","doc","dims","domain"]
+        original_doc = copy.copy(doc)
+        for string in prohibited_strings:
             if string in doc:
-                logging.warning(f"Docstring '{originalDoc}' contains prohibited string '{string}'. Occurrences are dropped.")
+                logging.warning(f"Docstring '{original_doc}' contains prohibited string '{string}'. Occurrences are dropped.")
                 doc = doc.replace(string,"")
         # joined index names
-        joinedIndex = ",".join(index_list)
+        joined_index = ",".join(index_list)
         # complete doc string
-        completeDoc = f"name:{name};doc:{doc};dims:{joinedIndex}"
+        complete_doc = f"name:{name};doc:{doc};dims:{joined_index}"
         if domain:
-            completeDoc += f";domain:{domain}"
-        return completeDoc
+            complete_doc += f";domain:{domain}"
+        return complete_doc
 
     @staticmethod
-    def getIndexNamesData(index_list):
+    def get_index_names_data(index_list):
         """ splits index_list in data and index names """
         if isinstance(index_list,tuple):
-            indexValues,index_names = index_list
+            index_values,index_names = index_list
         elif isinstance(index_list,pe.Set):
-            indexValues = copy.copy(index_list)
+            index_values = copy.copy(index_list)
             index_names  = [index_list.name]
+        elif isinstance(index_list,list):
+            index_values = list(itertools.product(*index_list[0]))
+            index_names = index_list[1]
         else:
             raise TypeError(f"Type {type(index_list)} unknown to extract index names.")
-        return indexValues,index_names
+        return index_values,index_names
 
 class Parameter(Component):
     def __init__(self):
         """ initialization of the parameter object """
         super().__init__()
-        self.minParameterValue  = {"name":None,"value":None}
-        self.maxParameterValue  = {"name":None,"value":None}
+        self.min_parameter_value  = {"name":None,"value":None}
+        self.max_parameter_value  = {"name":None,"value":None}
 
     @classmethod
     def add_parameter(cls,name, data, doc):
@@ -77,22 +82,22 @@ class Parameter(Component):
         :param name: name of parameter
         :param data: non default data of parameter and index_names
         :param doc: docstring of parameter """
-        parameterObject = cls.get_component_object()
-        if name not in parameterObject.docs.keys():
-            data, index_list = cls.getIndexNamesData(data)
+        parameter_object = cls.get_component_object()
+        if name not in parameter_object.docs.keys():
+            data, index_list = cls.get_index_names_data(data)
             # save if highest or lowest value
-            cls.saveMinMax(parameterObject,data,name)
+            cls.save_min_max(parameter_object,data,name)
             # convert to dict
-            data = cls.convertToDict(data)
+            data = cls.convert_to_dict(data)
             # set parameter
-            setattr(parameterObject, name, data)
+            setattr(parameter_object, name, data)
             # save additional parameters
-            parameterObject.docs[name] = cls.compileDocString(doc,index_list,name)
+            parameter_object.docs[name] = cls.compile_doc_string(doc,index_list,name)
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")
 
     @staticmethod
-    def saveMinMax(parameterObject,data,name):
+    def save_min_max(parameter_object,data,name):
         """ stores min and max parameter """
         if isinstance(data,dict) and data:
             data = pd.Series(data)
@@ -114,21 +119,21 @@ class Parameter(Component):
             _valmax = _abs
             _idxmin = name
             _valmin = _abs
-        if not parameterObject.maxParameterValue["name"]:
-            parameterObject.maxParameterValue["name"]   = _idxmax
-            parameterObject.maxParameterValue["value"]  = _valmax
-            parameterObject.minParameterValue["name"]   = _idxmin
-            parameterObject.minParameterValue["value"]  = _valmin
+        if not parameter_object.max_parameter_value["name"]:
+            parameter_object.max_parameter_value["name"]   = _idxmax
+            parameter_object.max_parameter_value["value"]  = _valmax
+            parameter_object.min_parameter_value["name"]   = _idxmin
+            parameter_object.min_parameter_value["value"]  = _valmin
         else:
-            if _valmax > parameterObject.maxParameterValue["value"]:
-                parameterObject.maxParameterValue["name"]   = _idxmax
-                parameterObject.maxParameterValue["value"]  = _valmax
-            if _valmin < parameterObject.minParameterValue["value"]:
-                parameterObject.minParameterValue["name"]   = _idxmin
-                parameterObject.minParameterValue["value"]  = _valmin
+            if _valmax > parameter_object.max_parameter_value["value"]:
+                parameter_object.max_parameter_value["name"]   = _idxmax
+                parameter_object.max_parameter_value["value"]  = _valmax
+            if _valmin < parameter_object.min_parameter_value["value"]:
+                parameter_object.min_parameter_value["name"]   = _idxmin
+                parameter_object.min_parameter_value["value"]  = _valmin
 
     @staticmethod
-    def convertToDict(data):
+    def convert_to_dict(data):
         """ converts the data to a dict if pd.Series"""
         if isinstance(data, pd.Series):
             # if single entry in index
@@ -142,26 +147,26 @@ class Variable(Component):
         super().__init__()
 
     @classmethod
-    def add_variable(cls, model:pe.ConcreteModel, name, index_sets, domain,bounds = (None,None), doc = ""):
+    def add_variable(cls, block_component:pe.ConcreteModel, name, index_sets, domain,bounds = (None,None), doc = ""):
         """ initialization of a variable
-        :param model:       pe.ConcreteModel
-        :param name:        name of variable
-        :param index_sets:   indices and sets by which the variable is indexed
-        :param domain:      domain of variable
-        :param bounds:      bounds of variable
-        :param doc:         docstring of variable """
-        variableObject = cls.get_component_object()
-        if name not in variableObject.docs.keys():
-            indexValues,index_list = cls.getIndexNamesData(index_sets)
+        :param block_component: parent block component of variable, must be pe.ConcreteModel
+        :param name: name of variable
+        :param index_sets: indices and sets by which the variable is indexed
+        :param domain: domain of variable
+        :param bounds:  bounds of variable
+        :param doc: docstring of variable """
+        variable_object = cls.get_component_object()
+        if name not in variable_object.docs.keys():
+            index_values,index_list = cls.get_index_names_data(index_sets)
             var = pe.Var(
-                indexValues,
+                index_values,
                 domain = domain,
                 bounds = bounds,
                 doc    = doc
             )
-            model.add_component(name,var)
+            block_component.add_component(name,var)
             # save variable doc
-            variableObject.docs[name] = cls.compileDocString(doc,index_list,name,domain.name)
+            variable_object.docs[name] = cls.compile_doc_string(doc,index_list,name,domain.name)
         else:
             logging.warning(f"Variable {name} already added. Can only be added once")
 
@@ -170,32 +175,26 @@ class Constraint(Component):
         super().__init__()
 
     @classmethod
-    def add_constraint(cls, model: pe.ConcreteModel, name, index_sets, rule,doc="",constraintType="Constraint"):
+    def add_constraint(cls, block_component: Union[pe.Constraint, pgdp.Disjunct], name, index_sets, rule,doc="",constraint_class=pe.Constraint):
         """ initialization of a variable
-        :param model:       pe.ConcreteModel
-        :param name:        name of variable
-        :param index_sets:   indices and sets by which the variable is indexed
-        :param rule:        constraint rule
-        :param doc:         docstring of variable
-        :param constraintType: either 'Constraint', 'Disjunct','Disjunction'"""
-        constraintTypes = ['Constraint', 'Disjunct','Disjunction']
-        assert constraintType in constraintTypes,f"Constraint type '{constraintType}' unknown"
-        constraintObject = cls.get_component_object()
-        if name not in constraintObject.docs.keys():
-            indexValues,index_list = cls.getIndexNamesData(index_sets)
-            if constraintType == "Constraint":
-                constraintClass = pe.Constraint
-            elif constraintType == "Disjunct":
-                constraintClass = pgdp.Disjunct
-            else:
-                constraintClass = pgdp.Disjunction
-            constraint = constraintClass(
-                indexValues,
+        :param block_component: pe.Constraint or pgdp.Disjunct
+        :param name: name of variable
+        :param index_sets: indices and sets by which the variable is indexed
+        :param rule: constraint rule
+        :param doc: docstring of variable
+        :param constraint_class: either pe.Constraint, pgdp.Disjunct,pgdp.Disjunction"""
+        constraint_types = [pe.Constraint, pgdp.Disjunct,pgdp.Disjunction]
+        assert constraint_class in constraint_types,f"Constraint type '{constraint_class.name}' unknown"
+        constraint_object = cls.get_component_object()
+        if name not in constraint_object.docs.keys():
+            index_values,index_list = cls.get_index_names_data(index_sets)
+            constraint = constraint_class(
+                index_values,
                 rule=rule,
                 doc=doc
             )
-            model.add_component(name, constraint)
+            block_component.add_component(name, constraint)
             # save constraint doc
-            constraintObject.docs[name] = cls.compileDocString(doc,index_list,name)
+            constraint_object.docs[name] = cls.compile_doc_string(doc,index_list,name)
         else:
-            logging.warning(f"{constraintType} {name} already added. Can only be added once")
+            logging.warning(f"{constraint_class.name} {name} already added. Can only be added once")
