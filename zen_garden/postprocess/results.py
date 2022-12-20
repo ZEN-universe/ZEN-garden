@@ -4,337 +4,29 @@ Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Class is defining the postprocessing of the results.
-              The class takes as inputs the optimization problem (model) and the system configurations (system).
-              The class contains methods to read the results and save them in a result dictionary (resultDict).
+Description:  Class is defining to read in the results of an Optimization problem.
 ==========================================================================================================================================================================="""
-import sys
+import logging
 
 import numpy as np
-import pyomo.environ as pe
 import pandas as pd
-import pathlib
-import shutil
+import importlib
 import json
 import zlib
 import os
 
-from ..model.objects.energy_system import EnergySystem
-from ..model.objects.component import Parameter,Variable,Constraint
-from ..utils import RedirectStdStreams
-
-class Postprocess:
-
-    def __init__(self, model, scenarios, model_name, subfolder=None):
-        """postprocessing of the results of the optimization
-        :param model: optimization model
-        :param model_name: The name of the model used to name the output folder
-        :param subfolder: The subfolder used for the results
-        """
-
-        # get the necessary stuff from the model
-        self.model = model.model
-        self.scenarios = scenarios
-        self.system = model.system
-        self.analysis = model.analysis
-        self.solver = model.solver
-        self.opt = model.opt
-        self.params         = Parameter.get_component_object()
-        self.vars           = Variable.get_component_object()
-        self.constraints    = Constraint.get_component_object()
-
-        # get name or directory
-        self.model_name = model_name
-        self.nameDir = pathlib.Path(self.analysis["folder_output"]).joinpath(self.model_name)
-
-        # deal with the subfolder
-        self.subfolder = subfolder
-        # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
-        if self.subfolder:
-            self.nameDir = self.nameDir.joinpath(self.subfolder)
-        # create the output directory
-        os.makedirs(self.nameDir, exist_ok=True)
-
-        # get the compression param
-        self.compress = self.analysis["compress_output"]
-
-        # save the pyomo yml
-        if self.analysis["write_results_yml"]:
-            with RedirectStdStreams(open(os.path.join(self.nameDir, "results.yml"), "w+")):
-                model.results.write()
-
-        # save everything
-        self.saveParam()
-        self.saveVar()
-        self.saveSystem()
-        self.saveAnalysis()
-        self.saveScenarios()
-        self.saveSolver()
-        self.saveOpt()
-
-        # extract and save sequence time steps, we transform the arrays to lists
-        self.dictSequenceTimeSteps = self.flatten_dict(EnergySystem.get_sequence_time_steps_dict())
-        self.saveSequenceTimeSteps()
-
-        # case where we should run the post-process as normal
-        if model.analysis['postprocess']:
-            pass
-            # TODO: implement this...
-            #self.process()
-
-    def write_file(self, name, dictionary):
-        """
-        Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
-        and saved as binary file
-        :param name: Filename without extension
-        :param dictionary: The dictionary to save
-        """
-
-        # serialize to string
-        serialized_dict = json.dumps(dictionary, indent=2)
-
-        # if the string is larger than the max output size we compress anyway
-        force_compression = False
-        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.analysis["max_output_size_mb"]:
-            print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
-                  f"{self.analysis['max_output_size_mb']}MB, compressing...")
-            force_compression = True
-
-        if self.compress or force_compression:
-            # compress and write
-            compressed = zlib.compress(serialized_dict.encode())
-            with open(f"{name}.gzip", "wb") as outfile:
-                outfile.write(compressed)
-        else:
-            # write normal json
-            with open(f"{name}.json", "w+") as outfile:
-                outfile.write(serialized_dict)
-
-    def saveParam(self):
-        """ Saves the Param values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time"""
-
-        # dataframe serialization
-        data_frames = {}
-        for param in self.params.docs.keys():
-            # get the values
-            vals = getattr(self.params, param)
-            doc = self.params.docs[param]
-            index_list = self.getIndexList(doc)
-            if len(index_list) == 0:
-                index_names = None
-            elif len(index_list) == 1:
-                index_names = index_list[0]
-            else:
-                index_names = index_list
-            # create a dictionary if necessary
-            if not isinstance(vals, dict):
-                indices = pd.Index(data=[0],name=index_names)
-                data = [vals]
-            # if the returned dict is emtpy we create a nan value
-            elif len(vals) == 0:
-                if len(index_list)>1:
-                    indices = pd.MultiIndex(levels=[[]]*len(index_names),codes=[[]]*len(index_names),names=index_names)
-                else:
-                    indices = pd.Index(data=[],name=index_names)
-                data = []
-            # we read out everything
-            else:
-                indices = list(vals.keys())
-                data = list(vals.values())
-
-                # create a multi index if necessary
-                if len(indices)>=1 and isinstance(indices[0],tuple):
-                    if len(index_list) == len(indices[0]):
-                        indices = pd.MultiIndex.from_tuples(indices,names=index_names)
-                    else:
-                        indices = pd.MultiIndex.from_tuples(indices)
-                else:
-                    if len(index_list) == 1:
-                        indices = pd.Index(data=indices,name=index_names)
-                    else:
-                        indices = pd.Index(data=indices)
-
-            # create dataframe
-            df = pd.DataFrame(data=data, columns=["value"], index=indices)
-
-            # update dict
-            data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                  "docstring": doc}
-
-        # write to json
-        self.write_file(self.nameDir.joinpath('paramDict'), data_frames)
-
-    def saveVar(self):
-        """ Saves the variable values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time"""
-
-        # dataframe serialization
-        data_frames = {}
-        for var in self.model.component_objects(pe.Var, active=True):
-            if var.name in self.vars.docs:
-                doc = self.vars.docs[var.name]
-                index_list = self.getIndexList(doc)
-                if len(index_list) == 0:
-                    index_names = None
-                elif len(index_list) == 1:
-                    index_names = index_list[0]
-                else:
-                    index_names = index_list
-            else:
-                index_list = []
-                doc = None
-            # get indices and values
-            indices = [index for index in var]
-            values = [getattr(var[index], "value", None) for index in indices]
-
-            # create a multi index if necessary
-            if len(indices)>=1 and isinstance(indices[0], tuple):
-                if len(index_list) == len(indices[0]):
-                    indices = pd.MultiIndex.from_tuples(indices, names=index_names)
-                else:
-                    indices = pd.MultiIndex.from_tuples(indices)
-            else:
-                if len(index_list) == 1:
-                    indices = pd.Index(data=indices, name=index_names)
-                else:
-                    indices = pd.Index(data=indices)
-
-            # create dataframe
-            df = pd.DataFrame(data=values, columns=["value"], index=indices)
-
-            # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                     "docstring": doc}
-
-        self.write_file(self.nameDir.joinpath('varDict'), data_frames)
-
-    def saveSystem(self):
-        """
-        Saves the system dict as json
-        """
-
-        # This we only need to save once
-        if self.subfolder:
-            fname = self.nameDir.parent.joinpath('System')
-        else:
-            fname = self.nameDir.joinpath('System')
-        if not fname.exists():
-            self.write_file(fname, self.system)
-
-    def saveAnalysis(self):
-        """
-        Saves the analysis dict as json
-        """
-
-        # This we only need to save once
-        if self.subfolder:
-            fname = self.nameDir.parent.joinpath('Analysis')
-        else:
-            fname = self.nameDir.joinpath('Analysis')
-        if not fname.exists():
-            self.write_file(fname, self.analysis)
-
-    def saveScenarios(self):
-        """
-        Saves the analysis dict as json
-        """
-
-        # This we only need to save once
-        if self.subfolder:
-            fname = self.nameDir.parent.joinpath('Scenarios')
-        else:
-            fname = self.nameDir.joinpath('Scenarios')
-        if not fname.exists():
-            self.write_file(fname, self.scenarios)
-
-    def saveSolver(self):
-        """
-        Saves the solver dict as json
-        """
-
-        # This we only need to save once
-        if self.subfolder:
-            fname = self.nameDir.parent.joinpath('Solver')
-        else:
-            fname = self.nameDir.joinpath('Solver')
-        if not fname.exists():
-            self.write_file(fname, self.solver)
-
-    def saveOpt(self):
-        """
-        Saves the opt dict as json
-        """
-        if self.solver["name"] != "gurobi_persistent":
-            self.write_file(self.nameDir.joinpath('optDict'), self.opt.__dict__)
-
-            # copy the log file
-            shutil.copy2(os.path.abspath(self.opt._log_file), self.nameDir)
-
-    def saveSequenceTimeSteps(self):
-        """
-        Saves the dict_all_sequence_time_steps dict as json
-        """
-
-        # This we only need to save once
-        if self.subfolder:
-            fname = self.nameDir.parent.joinpath('dict_all_sequence_time_steps')
-        else:
-            fname = self.nameDir.joinpath('dict_all_sequence_time_steps')
-        if not fname.exists():
-            self.write_file(fname, self.dictSequenceTimeSteps)
-
-    def flatten_dict(self, dictionary):
-        """
-        Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can
-        be saved as json file
-        :param dictionary: The input dictionary
-        :return: A copy of the dictionary containing lists instead of arrays
-        """
-        # create a copy of the dict to avoid overwrite
-        dictionary = dictionary.copy()
-
-        # faltten all arrays
-        for k, v in dictionary.items():
-            # recursive call
-            if isinstance(v, dict):
-                dictionary[k] = self.flatten_dict(v)
-                # flatten the array to list
-            elif isinstance(v, np.ndarray):
-                # Note: list(v) creates a list of np objects v.tolist() not
-                dictionary[k] = v.tolist()
-            # take as is
-            else:
-                dictionary[k] = v
-
-        return dictionary
-
-    def getIndexList(self,doc):
-        """ get index list from docstring """
-        splitDoc = doc.split(";")
-        for string in splitDoc:
-            if "dims" in string:
-                break
-        string = string.replace("dims:","")
-        index_list = string.split(",")
-        indexListFinal = []
-        for index in index_list:
-            if index in self.analysis["header_data_inputs"].keys():
-                indexListFinal.append(self.analysis["header_data_inputs"][index])
-            else:
-                pass
-                # indexListFinal.append(index)
-        return indexListFinal
+from zen_garden.model.objects.time_steps import SequenceTimeStepsDicts
 
 class Results(object):
     """
     This class reads in the results after the pipeline has run
     """
 
-    def __init__(self, path, load_opt=False):
+    def __init__(self, path, scenarios=None, load_opt=False):
         """
         Initializes the Results class with a given path
         :param path: Path to the output of the optimization problem
+        :param scenarios: A list of scenarios to load, defaults to all scenarios
         :param load_opt: Optionally load the opt dictionary as well
         """
 
@@ -351,18 +43,29 @@ class Results(object):
         self.results["scenarios"] = self.load_scenarios(self.path)
         self.results["solver"] = self.load_solver(self.path)
         self.results["system"] = self.load_system(self.path)
-        self.results["dictSequenceTimeSteps"] = self.load_sequence_time_steps(self.path)
 
         # get the years
         self.years = list(range(0, self.results["system"]["optimized_years"]))
 
-        # check what type of results we have
-        if self.results["system"]["conduct_scenario_analysis"]:
+        # if we only want to load a subset
+        if scenarios is not None:
+            self.has_scenarios = True
+            self.scenarios = []
+            # append prefix if necessary
+            for scenario in scenarios:
+                if not scenario.startswith("scenario_"):
+                    self.scenarios.append(f"scenario_{scenario}")
+                else:
+                    self.scenarios.append(scenario)
+        # we have scenarios and load all
+        elif self.results["system"]["conductScenarioAnalysis"]:
             self.has_scenarios = True
             self.scenarios = [f"scenario_{scenario}" for scenario in self.results["scenarios"].keys()]
+        # there are no scenarios
         else:
             self.has_scenarios = False
             self.scenarios = [None]
+        # myopic foresight
         if self.results["system"]["useRollingHorizon"]:
             self.has_MF = True
             self.mf = [f"MF_{step_horizon}" for step_horizon in self.years]
@@ -374,6 +77,12 @@ class Results(object):
         for scenario in self.scenarios:
             # init dict
             self.results[scenario] = {}
+
+            # load the corresponding timestep dict
+            time_dict = self.load_sequence_time_steps(self.path, scenario)
+            self.results[scenario]["dictSequenceTimeSteps"] = time_dict
+            self.results[scenario]["SequenceTimeStepsDicts"] = SequenceTimeStepsDicts(time_dict)
+
             for mf in self.mf:
                 # init dict
                 self.results[scenario][mf] = {}
@@ -402,7 +111,7 @@ class Results(object):
                 if load_opt:
                     self.results[scenario][mf]["optdict"] = self.load_opt(current_path)
 
-        # load the time step duration
+        # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
         self.timeStepOperationalDuration = self.loadTimeStepOperationDuration()
         self.timeStepStorageDuration = self.loadTimeStepStorageDuration()
 
@@ -551,15 +260,20 @@ class Results(object):
         return opt_dict
 
     @classmethod
-    def load_sequence_time_steps(cls, path):
+    def load_sequence_time_steps(cls, path, scenario=None):
         """
         Loads the dictSequenceTimeSteps from a given path
         :param path: Path to load the dict from
+        :param scenario: Name of the scenario to load
         :return: dictSequenceTimeSteps
         """
+        # get the file name
+        fname = os.path.join(path, "dictAllSequenceTimeSteps")
+        if scenario is not None:
+            fname += f"_{scenario}"
 
         # get the dict
-        raw_dict = cls._read_file(os.path.join(path, "dict_all_sequence_time_steps"))
+        raw_dict = cls._read_file(fname)
         dictSequenceTimeSteps = json.loads(raw_dict)
 
         # json string None to 'null'
@@ -606,9 +320,6 @@ class Results(object):
                  with scenarios as keys and dataframes as value is returned
         """
 
-        # set the dict
-        EnergySystem.set_sequence_time_steps_dict(self.results["dictSequenceTimeSteps"])
-
         # select the scenarios
         if scenario is not None:
             scenarios = [scenario]
@@ -618,6 +329,9 @@ class Results(object):
         # loop
         _data = {}
         for scenario in scenarios:
+            # we get the timestep dict
+            SequenceTimeStepsDicts = self.results[scenario]["SequenceTimeStepsDicts"]
+
             if not self.has_MF:
                 # we set the dataframe of the variable into the data dict
                 _data[scenario] = self.results[scenario][None]["pars_and_vars"][name]["dataframe"]
@@ -655,16 +369,15 @@ class Results(object):
                                            errors="coerce").equals(_varSeries.columns.droplevel(0)):
                             # TODO only valid for same time steps between techs
                             if isStorage:
-                                techProxy = [k for k in self.results["dictSequenceTimeSteps"]["operation"].keys()
-                                             if "storage" in k.lower()][0]
+                                techProxy = [k for k in self.results[scenario]["dictSequenceTimeSteps"]["operation"].keys()
+                                             if "storagelevel" in k.lower()][0]
                             else:
-                                techProxy = [k for k in self.results["dictSequenceTimeSteps"]["operation"].keys()
-                                             if "storage" not in k.lower()][0]
+                                techProxy = [k for k in self.results[scenario]["dictSequenceTimeSteps"]["operation"].keys()
+                                             if "storagelevel" not in k.lower()][0]
                             # get the timesteps
-                            timeStepsYear = EnergySystem.encode_time_step(techProxy,
-                                                                        EnergySystem.decode_time_step(None, year,
-                                                                                                    "yearly"),
-                                                                        yearly=True)
+                            timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(techProxy,
+                                                                                  SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
+                                                                                  yearly=True)
                             # get the data
                             tmp_data = _varSeries[[("value", tstep) for tstep in timeStepsYear]]
                             # rename
@@ -746,7 +459,7 @@ class Results(object):
         """
         Loads duration of operational time steps
         """
-        return self.get_df("time_steps_storage_level_duration")
+        return self.get_df("timeStepsStorageLevelDuration", isStorage=True)
 
     def getFullTS(self, component, element_name=None, year=None, scenario=None):
         """
@@ -758,6 +471,8 @@ class Results(object):
         """
         # extract the data
         component_name, component_data = self._get_component_data(component, scenario)
+        # timestep dict
+        SequenceTimeStepsDicts = self.results[scenario]["SequenceTimeStepsDicts"]
 
         ts_type = self._get_ts_type(component_data, component_name)
 
@@ -782,11 +497,11 @@ class Results(object):
         _outputTemp = {}
         for row in component_data.index:
             # we know the name
-            if element_name:
-                _sequence_time_steps = EnergySystem.get_sequence_time_steps(element_name+_storageString)
+            if elementName:
+                _sequenceTimeSteps = SequenceTimeStepsDicts.getSequenceTimeSteps(elementName+_storageString)
             # we extract the name
             else:
-                _sequence_time_steps = EnergySystem.get_sequence_time_steps(row[0]+_storageString)
+                _sequenceTimeSteps = SequenceTimeStepsDicts.getSequenceTimeSteps(row[0]+_storageString)
 
             # throw together
             _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps,list(component_data.columns))]
@@ -802,17 +517,20 @@ class Results(object):
         outputDf = pd.concat(_outputTemp,axis=0,keys = _outputTemp.keys()).unstack()
         return outputDf
 
-    def getTotal(self, component, element_name=None, year=None, scenario=None,split_years = True):
+    def getTotal(self, component, elementName=None, year=None, scenario=None, split_years=True):
         """
         Calculates the total Value of a component
         :param component: Either a dataframe as returned from <get_df> or the name of the component
         :param element_name: The element name to calculate the value for, defaults to all elements
         :param year: The year to calculate the value for, defaults to all years
         :param scenario: The scenario to calculate the total value for
+        :param split_years: Calculate the value for each year individually
         :return: A dataframe containing the total value with the specified paramters
         """
         # extract the data
-        component_name,component_data = self._get_component_data(component,scenario)
+        component_name,component_data = self._get_component_data(component, scenario)
+        # timestep dict
+        SequenceTimeStepsDicts = self.results[scenario]["SequenceTimeStepsDicts"]
 
         ts_type = self._get_ts_type(component_data,component_name)
 
@@ -851,7 +569,9 @@ class Results(object):
 
             if year is not None:
                 # only for the given year
-                timeStepsYear = EnergySystem.encode_time_step(elementName+_storageString,EnergySystem.decode_time_step(None, year, "yearly"),yearly=True)
+                timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName+_storageString,
+                                                                      SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
+                                                                      yearly=True)
                 totalValue = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
             else:
                 # for all years
@@ -859,7 +579,9 @@ class Results(object):
                     totalValueTemp = pd.DataFrame(index=component_data.index, columns=self.years)
                     for yearTemp in self.years:
                         # set a proxy for the element name
-                        timeStepsYear = EnergySystem.encode_time_step(elementName+_storageString,EnergySystem.decode_time_step(None, yearTemp, "yearly"),yearly=True)
+                        timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName+_storageString,
+                                                                              SequenceTimeStepsDicts.decodeTimeStep(None, yearTemp, "yearly"),
+                                                                              yearly=True)
                         totalValueTemp[yearTemp] = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
                     totalValue = totalValueTemp
                 else:
@@ -871,9 +593,9 @@ class Results(object):
             if year is not None:
                 # set a proxy for the element name
                 elementName_proxy = component_data.index.get_level_values(level=0)[0]
-                timeStepsYear = EnergySystem.encode_time_step(elementName_proxy+_storageString,
-                                                            EnergySystem.decode_time_step(None, year, "yearly"),
-                                                            yearly=True)
+                timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName_proxy+_storageString,
+                                                                      SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
+                                                                      yearly=True)
                 totalValue = totalValue[timeStepsYear].sum(axis=1)
             else:
                 if split_years:
@@ -881,7 +603,9 @@ class Results(object):
                     for yearTemp in self.years:
                         # set a proxy for the element name
                         elementName_proxy = component_data.index.get_level_values(level=0)[0]
-                        timeStepsYear = EnergySystem.encode_time_step(elementName_proxy + _storageString,EnergySystem.decode_time_step(None, yearTemp, "yearly"),yearly=True)
+                        timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName_proxy + _storageString,
+                                                                              SequenceTimeStepsDicts.decodeTimeStep(None, yearTemp, "yearly"),
+                                                                              yearly=True)
                         totalValueTemp[yearTemp] = totalValue[timeStepsYear].sum(axis=1)
                     totalValue = totalValueTemp
                 else:
@@ -917,14 +641,12 @@ class Results(object):
             else:
                 component_data = self.get_df(component).unstack()
         elif isinstance(component, pd.Series):
-            # set the timesteps
-            EnergySystem.set_sequence_time_steps_dict(self.results["dictSequenceTimeSteps"])
             component_name = component.name
             component_data = component.unstack()
         else:
             raise TypeError(f"Type {type(component).__name__} of input is not supported.")
 
-        return component_name,component_data
+        return component_name, component_data
 
     def _get_ts_type(self, component_data,component_name):
         """ get time step type (operational, storage, yearly) """
@@ -949,3 +671,15 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
+
+if __name__ == "__main__":
+    spec = importlib.util.spec_from_file_location("module", "config.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    config = module.config
+
+    modelName = os.path.basename(config.analysis["dataset"])
+    if os.path.exists(out_folder := os.path.join(config.analysis["folderOutput"], modelName)):
+        r = Results(out_folder)
+    else:
+        logging.critical("No results folder found!")

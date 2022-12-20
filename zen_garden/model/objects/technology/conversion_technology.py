@@ -50,8 +50,8 @@ class ConversionTechnology(Technology):
         self.get_annualized_capex()
 
     def get_conver_efficiency(self):
-        """retrieves and stores converEfficiency for <ConversionTechnology>.
-        Each Child class overwrites method to store different converEfficiency """
+        """retrieves and stores conver_efficiency for <ConversionTechnology>.
+        Each Child class overwrites method to store different conver_efficiency """
         #TODO read pwa Dict and set Params
         _pwa_conver_efficiency,self.conver_efficiency_is_pwa   = self.datainput.extract_pwa_data("conver_efficiency")
         if self.conver_efficiency_is_pwa:
@@ -91,9 +91,9 @@ class ConversionTechnology(Technology):
     ### --- getter/setter classmethods
     @classmethod
     def get_capex_conver_efficiency_all_elements(cls, variable_type, selectPWA,index_names = None):
-        """ similar to Element.get_attribute_of_all_elements but only for capex and converEfficiency.
+        """ similar to Element.get_attribute_of_all_elements but only for capex and conver_efficiency.
         If selectPWA, extract pwa attributes, otherwise linear.
-        :param variable_type: either capex or converEfficiency
+        :param variable_type: either capex or conver_efficiency
         :param selectPWA: boolean if get attributes for pwa
         :return dict_of_attributes: returns dict of attribute values """
         _class_elements = cls.get_all_elements()
@@ -102,12 +102,12 @@ class ConversionTechnology(Technology):
             _is_pwa_attribute = "capex_is_pwa"
             _attribute_name_pwa = "pwa_capex"
             _attribute_name_linear = "capex_specific"
-        elif variable_type == "converEfficiency":
+        elif variable_type == "conver_efficiency":
             _is_pwa_attribute = "conver_efficiency_is_pwa"
             _attribute_name_pwa = "pwa_conver_efficiency"
             _attribute_name_linear = "conver_efficiency_linear"
         else:
-            raise KeyError("Select either 'capex' or 'converEfficiency'")
+            raise KeyError("Select either 'capex' or 'conver_efficiency'")
         for _element in _class_elements:
             # extract for pwa
             if getattr(_element,_is_pwa_attribute) and selectPWA:
@@ -176,7 +176,7 @@ class ConversionTechnology(Technology):
         # slope of linearly modeled conversion efficiencies
         Parameter.add_parameter(
             name="conver_efficiency_specific",
-            data= cls.get_capex_conver_efficiency_all_elements("converEfficiency",False,index_names=["set_conversion_technologies","set_conver_efficiency_linear","set_nodes","set_time_steps_yearly"]),
+            data= cls.get_capex_conver_efficiency_all_elements("conver_efficiency",False,index_names=["set_conversion_technologies","set_conver_efficiency_linear","set_nodes","set_time_steps_yearly"]),
             doc = "Parameter which specifies the slope of the conversion efficiency if approximated linearly"
         )
 
@@ -303,7 +303,7 @@ class ConversionTechnology(Technology):
                 name="constraint_linear_conver_efficiency",
                 index_sets= set_linear_conver_efficiency,
                 rule = constraint_linear_conver_efficiency_rule,
-                doc = "Linear relationship in ConverEfficiency"
+                doc = "Linear relationship in conver_efficiency"
             )    
         # Coupling constraints
         # couple the real variables with the auxiliary variables

@@ -53,21 +53,21 @@ class ConditioningTechnology(ConversionTechnology):
             system[subset] += self.output_carrier
 
     def get_conver_efficiency(self):
-        """retrieves and stores converEfficiency for <ConditioningTechnology>.
+        """retrieves and stores conver_efficiency for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as pwa_conver_efficiency"""
         set_time_steps_yearly = EnergySystem.get_energy_system().set_time_steps_yearly
-        specific_heat = self.datainput.extract_attribute("specificHeat")["value"]
-        specific_heat_ratio = self.datainput.extract_attribute("specificHeatRatio")["value"]
-        pressure_in = self.datainput.extract_attribute("pressureIn")["value"]
-        pressure_out = self.datainput.extract_attribute("pressureOut")["value"]
-        temperature_in = self.datainput.extract_attribute("temperatureIn")["value"]
-        isentropic_efficiency = self.datainput.extract_attribute("isentropicEfficiency")["value"]
+        specific_heat = self.datainput.extract_attribute("specific_heat")["value"]
+        specific_heat_ratio = self.datainput.extract_attribute("specific_heat_ratio")["value"]
+        pressure_in = self.datainput.extract_attribute("pressure_in")["value"]
+        pressure_out = self.datainput.extract_attribute("pressure_out")["value"]
+        temperature_in = self.datainput.extract_attribute("temperature_in")["value"]
+        isentropic_efficiency = self.datainput.extract_attribute("isentropic_efficiency")["value"]
 
         # calculate energy consumption
         _pressure_ratio = pressure_out / pressure_in
         _exponent = (specific_heat_ratio - 1) / specific_heat_ratio
-        if self.datainput.exists_attribute("lowerHeatingValue", column=None):
-            _lower_heating_value = self.datainput.extract_attribute("lowerHeatingValue")["value"]
+        if self.datainput.exists_attribute("lower_heating_value", column=None):
+            _lower_heating_value = self.datainput.extract_attribute("lower_heating_value")["value"]
             specific_heat  = specific_heat / _lower_heating_value
         _energy_consumption = specific_heat * temperature_in / isentropic_efficiency * (_pressure_ratio ** _exponent - 1)
 

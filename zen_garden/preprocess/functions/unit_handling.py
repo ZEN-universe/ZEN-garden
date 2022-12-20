@@ -29,7 +29,7 @@ class UnitHandling:
         self.ureg = UnitRegistry()
 
         # load additional units
-        self.ureg.load_definitions(self.folder_path+"/unitDefinitions.txt")
+        self.ureg.load_definitions(self.folder_path+"/unit_definitions.txt")
 
         # empty base units and dimensionality matrix
         self.base_units = {}

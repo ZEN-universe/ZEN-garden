@@ -41,38 +41,38 @@ class StorageTechnology(Technology):
         set_base_time_steps_yearly  = EnergySystem.get_energy_system().set_base_time_steps_yearly
         set_time_steps_yearly      = EnergySystem.get_energy_system().set_time_steps_yearly
         # set attributes for parameters of child class <StorageTechnology>
-        self.efficiency_charge = self.datainput.extract_input_data("efficiencyCharge",index_sets=["set_nodes","set_time_steps"],time_steps= set_time_steps_yearly)
-        self.efficiency_discharge = self.datainput.extract_input_data("efficiencyDischarge",index_sets=["set_nodes","set_time_steps"],time_steps= set_time_steps_yearly)
-        self.self_discharge = self.datainput.extract_input_data("selfDischarge",index_sets=["set_nodes"])
+        self.efficiency_charge = self.datainput.extract_input_data("efficiency_charge",index_sets=["set_nodes","set_time_steps"],time_steps= set_time_steps_yearly)
+        self.efficiency_discharge = self.datainput.extract_input_data("efficiency_discharge",index_sets=["set_nodes","set_time_steps"],time_steps= set_time_steps_yearly)
+        self.self_discharge = self.datainput.extract_input_data("self_discharge",index_sets=["set_nodes"])
         # extract existing energy capacity
-        self.min_built_capacity_energy = self.datainput.extract_attribute("minBuiltCapacityEnergy")["value"]
-        self.max_built_capacity_energy  = self.datainput.extract_attribute("maxBuiltCapacityEnergy")["value"]
-        self.capacity_limit_energy = self.datainput.extract_input_data("capacityLimitEnergy",index_sets=["set_nodes"])
-        self.existing_capacity_energy = self.datainput.extract_input_data("existingCapacityEnergy",index_sets=["set_nodes","set_existing_technologies"],column="existingCapacityEnergy")
-        self.existing_invested_capacity_energy = self.datainput.extract_input_data("existingInvestedCapacityEnergy", index_sets=["set_nodes", "set_time_steps"],time_steps=set_time_steps_yearly)
+        self.min_built_capacity_energy = self.datainput.extract_attribute("min_built_capacity_energy")["value"]
+        self.max_built_capacity_energy  = self.datainput.extract_attribute("max_built_capacity_energy")["value"]
+        self.capacity_limit_energy = self.datainput.extract_input_data("capacity_limit_energy",index_sets=["set_nodes"])
+        self.existing_capacity_energy = self.datainput.extract_input_data("existing_capacity_energy",index_sets=["set_nodes","set_existing_technologies"],column="existing_capacity_energy")
+        self.existing_invested_capacity_energy = self.datainput.extract_input_data("existing_invested_capacity_energy", index_sets=["set_nodes", "set_time_steps"],time_steps=set_time_steps_yearly)
         self.capex_specific = self.datainput.extract_input_data(
-            "capexSpecific",index_sets=["set_nodes","set_time_steps"],time_steps= set_time_steps_yearly)
+            "capex_specific",index_sets=["set_nodes","set_time_steps"],time_steps= set_time_steps_yearly)
         self.capex_specific_energy = self.datainput.extract_input_data(
-            "capexSpecificEnergy",index_sets=["set_nodes","set_time_steps"],time_steps=set_time_steps_yearly)
-        self.fixed_opex_specific_energy = self.datainput.extract_input_data("fixedOpexSpecificEnergy", index_sets=["set_nodes", "set_time_steps"], time_steps=set_time_steps_yearly)        # annualize capex
+            "capex_specific_energy",index_sets=["set_nodes","set_time_steps"],time_steps=set_time_steps_yearly)
+        self.fixed_opex_specific_energy = self.datainput.extract_input_data("fixed_opex_specific_energy", index_sets=["set_nodes", "set_time_steps"], time_steps=set_time_steps_yearly)        # annualize capex
         self.convert_to_annualized_capex()
         # calculate capex of existing capacity
         self.capex_existing_capacity = self.calculate_capex_of_existing_capacities()
         self.capex_existing_capacity_energy = self.calculate_capex_of_existing_capacities(storage_energy = True)
         # add min load max load time series for energy
         self.raw_time_series["min_load_energy"] = self.datainput.extract_input_data(
-            "minLoadEnergy", index_sets=["set_nodes", "set_time_steps"],time_steps=set_base_time_steps_yearly)
+            "min_load_energy", index_sets=["set_nodes", "set_time_steps"],time_steps=set_base_time_steps_yearly)
         self.raw_time_series["max_load_energy"] = self.datainput.extract_input_data(
-            "maxLoadEnergy",index_sets=["set_nodes", "set_time_steps"],time_steps=set_base_time_steps_yearly)
+            "max_load_energy",index_sets=["set_nodes", "set_time_steps"],time_steps=set_base_time_steps_yearly)
 
     def convert_to_annualized_capex(self):
         """ this method converts the total capex to annualized capex """
-        fractional_annuity           = self.calculate_fractional_annuity()
-        system                      = EnergySystem.get_system()
-        _fraction_year             = system["unaggregated_time_steps_per_year"] / system["total_hours_per_year"]
+        fractional_annuity = self.calculate_fractional_annuity()
+        system = EnergySystem.get_system()
+        _fraction_year = system["unaggregated_time_steps_per_year"] / system["total_hours_per_year"]
         # annualize capex
-        self.capex_specific          = self.capex_specific        * fractional_annuity + self.fixed_opex_specific * _fraction_year
-        self.capex_specific_energy    = self.capex_specific_energy  * fractional_annuity + self.fixed_opex_specific_energy * _fraction_year
+        self.capex_specific = self.capex_specific * fractional_annuity + self.fixed_opex_specific * _fraction_year
+        self.capex_specific_energy = self.capex_specific_energy  * fractional_annuity + self.fixed_opex_specific_energy * _fraction_year
 
     def calculate_capex_of_single_capacity(self,capacity,index,storage_energy = False):
         """ this method calculates the annualized capex of a single existing capacity. """

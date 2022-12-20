@@ -348,7 +348,7 @@ class Element:
                             else:
                                 append_element = False
                                 break
-                        # if set is built for pwa converEfficiency:
+                        # if set is built for pwa conver_efficiency:
                         elif "set_conver_efficiency" in index:
                             if element in model.set_conversion_technologies: # or element in model.set_storage_technologies:
                                 _conver_efficiency_is_pwa = cls.get_attribute_of_specific_element(element, "conver_efficiency_is_pwa")

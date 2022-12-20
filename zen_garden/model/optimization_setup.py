@@ -28,9 +28,6 @@ from ..preprocess.functions.time_series_aggregation       import TimeSeriesAggre
 
 class OptimizationSetup():
 
-    base_scenario      = ""
-    base_configuration = {}
-
     def __init__(self, analysis, prepare):
         """setup Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
@@ -46,6 +43,8 @@ class OptimizationSetup():
         self.step_horizon = 0
         # set optimization attributes (the five set above) to class <EnergySystem>
         EnergySystem.set_optimization_attributes(analysis, self.system, self.paths, self.solver)
+        # set base scenario
+        self.set_base_configuration()
         # add Elements to optimization
         self.add_elements()
 
@@ -100,8 +99,6 @@ class OptimizationSetup():
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
         energy_system    = EnergySystem.get_energy_system()
-        # save "original" full set_time_steps_yearly
-        # self.setTimeStepsYearlyFull = energy_system.set_time_steps_yearly
         # if using rolling horizon
         if self.system["useRollingHorizon"]:
             self.years_in_horizon = self.system["yearsInRollingHorizon"]
@@ -116,7 +113,7 @@ class OptimizationSetup():
     def set_base_configuration(self, scenario, elements):
         """set base configuration
         :param scenario: name of base scenario
-        :param elements: elements in base scenario """
+        :param elements: elements in base configuration """
         self.base_scenario      = scenario
         self.base_configuration = elements
 
@@ -140,9 +137,7 @@ class OptimizationSetup():
         """overwrite scenario dependent parameters
         :param scenario: scenario name
         :param elements: dictionary of scenario dependent elements and parameters"""
-        if scenario == self.base_scenario:
-            scenario = ""
-        else:
+        if scenario != "":
             scenario = "_" + scenario
         # list of parameters with raw_time_series
         conduct_tsa = False
@@ -154,26 +149,44 @@ class OptimizationSetup():
                 element = Element.get_element(element_name)
             # overwrite scenario dependent parameters
             for param in params:
+                assert "pwa" not in param,"Scenarios are not implemented for piece-wise affine parameters."
                 file_name = param
+                column   = None
                 if type(param) is tuple:
                     file_name, param = param
+                if "yearly_variation" in param:
+                    param = param.replace("yearly_variation", "")
+                    file_name = param
                 # get old param value
                 _old_param   = getattr(element, param)
                 _index_names = _old_param.index.names
                 _index_sets  = [index_set for index_set, index_name in element.datainput.index_names.items() if index_name in _index_names]
                 _time_steps  = None
+                # if existing capacity is changed, setExistingTechnologies, existing lifetime, and capexExistingCapacity have to be updated as well
+                if "set_existing_technologies" in _index_sets:
+                    # update setExistingTechnologies and existingLifetime
+                    _existing_technologies = element.datainput.extract_set_existing_technologies(scenario=scenario)
+                    _lifetime_existing_technologies = element.datainput.extract_lifetime_existing_technology(param, index_sets=_index_sets,scenario=scenario)
+                    setattr(element, "set_existing_technologies", _existing_technologies)
+                    setattr(element, "lifetime_existing_technology", _lifetime_existing_technologies)
                 # set new parameter value
                 if hasattr(element, "raw_time_series") and param in element.raw_time_series.keys():
                     conduct_tsa = True
                     _time_steps                   = EnergySystem.get_energy_system().set_base_time_steps_yearly
-                    element.raw_time_series[param] = element.datainput.extract_input_data(file_name, index_sets=_index_sets,column=param,time_steps=_time_steps,scenario=scenario)
+                    element.raw_time_series[param] = element.datainput.extract_input_data(file_name, index_sets=_index_sets,column=column,time_steps=_time_steps,scenario=scenario)
                 else:
-                    if isinstance(_old_param, pd.Series) or isinstance(_old_param, pd.DataFrame):
-                        if "time" in _index_names:
-                            _time_steps = list(_old_param.index.unique("time"))
-                        _new_param  = element.datainput.extract_input_data(file_name,index_sets=_index_sets,time_steps=_time_steps,scenario=scenario)
-                        #else: _new_param = element.datainput.extract_attribute(param,scenario=scenario,skip_warning=True)["value"]
-                        setattr(element, param, _new_param)
+                    assert isinstance(_old_param, pd.Series) or isinstance(_old_param, pd.DataFrame), f"Param values of '{param}' have to be a pd.DataFrame or pd.Series."
+                    if "time" in _index_names:
+                        _time_steps = list(_old_param.index.unique("time"))
+                    _new_param  = element.datainput.extract_input_data(file_name,index_sets=_index_sets,time_steps=_time_steps,scenario=scenario)
+                    setattr(element, param, _new_param)
+                    # if existing capacity is changed, capexExistingCapacity also has to be updated
+                    if "existing_capacity" in param:
+                        storage_energy = False
+                        if element in EnergySystem.system["set_storage_technologies"]:
+                            storage_energy = True
+                        _capex_existing_capacities = element.calculate_capex_of_existing_capacities(storage_energy=storage_energy)
+                        setattr(element, "capex_existing_capacity", _capex_existing_capacities)
         # if scenario contains timeSeries dependent params conduct tsa
         if conduct_tsa:
             TimeSeriesAggregation.conduct_tsa()
@@ -267,30 +280,32 @@ class OptimizationSetup():
     def add_newly_built_capacity(self,step_horizon):
         """ adds the newly built capacity to the existing capacity
         :param step_horizon: step of the rolling horizon """
-        _built_capacity      = pd.Series(self.model.built_capacity.extract_values())
-        _invest_capacity   = pd.Series(self.model.invested_capacity.extract_values())
-        _capex              = pd.Series(self.model.capex.extract_values())
-        _rounding_value      = 10 ** (-EnergySystem.get_solver()["rounding_decimal_points"])
-        _built_capacity[_built_capacity <= _rounding_value]        = 0
-        _invest_capacity[_invest_capacity <= _rounding_value]  = 0
-        _capex[_capex <= _rounding_value]                        = 0
-        _base_time_steps      = EnergySystem.decode_yearly_time_steps([step_horizon])
-        Technology          = getattr(sys.modules[__name__], "Technology")
-        for tech in Technology.get_all_elements():
-            # new capacity
-            _built_capacity_tech      = _built_capacity.loc[tech.name].unstack()
-            _invested_capacity_tech   = _invest_capacity.loc[tech.name].unstack()
-            _capex_tech              = _capex.loc[tech.name].unstack()
-            tech.add_newly_built_capacity_tech(_built_capacity_tech,_capex_tech,_base_time_steps)
-            tech.add_newly_invested_capacity_tech(_invested_capacity_tech,step_horizon)
+        if self.system["use_rolling_horizon"]:
+            _built_capacity      = pd.Series(self.model.built_capacity.extract_values())
+            _invest_capacity   = pd.Series(self.model.invested_capacity.extract_values())
+            _capex              = pd.Series(self.model.capex.extract_values())
+            _rounding_value      = 10 ** (-EnergySystem.get_solver()["rounding_decimal_points"])
+            _built_capacity[_built_capacity <= _rounding_value]        = 0
+            _invest_capacity[_invest_capacity <= _rounding_value]  = 0
+            _capex[_capex <= _rounding_value]                        = 0
+            _base_time_steps      = EnergySystem.decode_yearly_time_steps([step_horizon])
+            Technology          = getattr(sys.modules[__name__], "Technology")
+            for tech in Technology.get_all_elements():
+                # new capacity
+                _built_capacity_tech      = _built_capacity.loc[tech.name].unstack()
+                _invested_capacity_tech   = _invest_capacity.loc[tech.name].unstack()
+                _capex_tech              = _capex.loc[tech.name].unstack()
+                tech.add_newly_built_capacity_tech(_built_capacity_tech,_capex_tech,_base_time_steps)
+                tech.add_newly_invested_capacity_tech(_invested_capacity_tech,step_horizon)
 
     def add_carbon_emission_cumulative(self,step_horizon):
         """ overwrite previous carbon emissions with cumulative carbon emissions
         :param step_horizon: step of the rolling horizon """
-        energy_system                           = EnergySystem.get_energy_system()
-        interval_between_years                  = EnergySystem.get_system()["intervalBetweenYears"]
-        _carbon_emissions_cumulative            = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
-        carbon_emissions                        = self.model.carbon_emissions_total.extract_values()[step_horizon]
-        energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + carbon_emissions*(interval_between_years-1)
+        if self.system["use_rolling_horizon"]:
+            energy_system                           = EnergySystem.get_energy_system()
+            interval_between_years                  = EnergySystem.get_system()["intervalBetweenYears"]
+            _carbon_emissions_cumulative            = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
+            carbon_emissions                        = self.model.carbon_emissions_total.extract_values()[step_horizon]
+            energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + carbon_emissions*(interval_between_years-1)
 
 

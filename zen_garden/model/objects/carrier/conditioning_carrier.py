@@ -85,7 +85,7 @@ def constraint_carrier_demand_coupling_rule(model, parentCarrier, node, time):
 def constraint_nodal_energy_balance_conditioning_rule(model, carrier, node, time):
     """" 
     nodal energy balance for each time step. 
-    The constraint is indexed by setTimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
+    The constraint is indexed by existing_invested_capacityimeStepsCarrier, which is union of time step sequences of all corresponding technologies and carriers
     timeStepEnergyBalance --> base_time_step --> element_time_step
     """
     params = Parameter.get_component_object()

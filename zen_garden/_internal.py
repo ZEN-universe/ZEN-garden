@@ -18,7 +18,7 @@ from shutil import rmtree
 
 from   .preprocess.prepare             import Prepare
 from   .model.optimization_setup       import OptimizationSetup
-from   .postprocess.results            import Postprocess
+from   .postprocess.postprocess        import Postprocess
 
 
 def main(config, dataset_path=None):
@@ -89,11 +89,9 @@ def main(config, dataset_path=None):
     # get the name of the dataset
     model_name = os.path.basename(config.analysis["dataset"])
     if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
+        logging.warning(f"The output folder '{out_folder}' already exists")
         if config.analysis["overwrite_output"]:
-            logging.info(f"Removing existing output folder: {out_folder}")
-            rmtree(out_folder)
-        else:
-            logging.warning(f"The output folder {out_folder} already exists")
+            logging.warning("Existing files will be overwritten!")
 
     # update input data
     for scenario, elements in config.scenarios.items():
@@ -117,9 +115,11 @@ def main(config, dataset_path=None):
             optimization_setup.add_carbon_emission_cumulative(step_horizon)
             # EVALUATE RESULTS
             subfolder = ""
+            scenario_name = None
             if config.system["conduct_scenario_analysis"]:
                 # handle scenarios
                 subfolder += f"scenario_{scenario}"
+                scenario_name = subfolder
             # handle myopic foresight
             if len(steps_optimization_horizon) > 1:
                 if subfolder != "":
@@ -127,5 +127,5 @@ def main(config, dataset_path=None):
                 subfolder += f"MF_{step_horizon}"
             # write results
             evaluation = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
-                                     model_name=model_name)
+                                     model_name=model_name, scenario_name=scenario_name)
     return optimization_setup
