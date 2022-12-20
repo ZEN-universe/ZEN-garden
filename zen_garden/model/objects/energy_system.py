@@ -53,7 +53,7 @@ class EnergySystem:
     # empty list of class names
     element_list = {}
     # The timesteps
-    SequenceTimeSteps = SequenceTimeStepsDicts()
+    sequence_time_steps = SequenceTimeStepsDicts()
 
     def __init__(self,name_energy_system):
         """ initialization of the energy_system
@@ -232,17 +232,17 @@ class EnergySystem:
     def set_sequence_time_steps(cls,element,sequence_time_steps,time_step_type = None):
         """ sets sequence of time steps, either of operation, invest, or year
         :param element: name of element in model
-        :param sequenceTimeSteps: list of time steps corresponding to base time step
-        :param timeStepType: type of time step (operation or yearly)"""
+        :param sequence_time_steps: list of time steps corresponding to base time step
+        :param time_step_type: type of time step (operation or yearly)"""
 
-        cls.SequenceTimeSteps.setSequenceTimeSteps(element=element, sequenceTimeSteps=sequenceTimeSteps,
-                                                   timeStepType=timeStepType)
+        cls.sequence_time_steps.set_sequence_time_steps(element=element, sequence_time_steps=sequence_time_steps,
+                                                   time_step_type=time_step_type)
 
     @classmethod
     def set_sequence_time_steps_dict(cls,dict_all_sequence_time_steps):
         """ sets all dicts of sequences of time steps.
-        :param dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps"""
-        cls.SequenceTimeSteps.reset_dicts(dictAllSequenceTimeSteps=dictAllSequenceTimeSteps)
+        :param dict_all_sequence_time_steps: dict of all dict_sequence_time_steps"""
+        cls.sequence_time_steps.reset_dicts(dict_all_sequence_time_steps=dict_all_sequence_time_steps)
 
     @classmethod
     def get_pyomo_model(cls):
@@ -338,17 +338,17 @@ class EnergySystem:
     def get_sequence_time_steps(cls,element,time_step_type = None):
         """ get sequence ot time steps of element
         :param element: name of element in model
-        :param timeStepType: type of time step (operation or invest)
-        :return sequenceTimeSteps: list of time steps corresponding to base time step"""
+        :param time_step_type: type of time step (operation or invest)
+        :return sequence_time_steps: list of time steps corresponding to base time step"""
 
-        return cls.SequenceTimeSteps.getSequenceTimeSteps(element=element, timeStepType=timeStepType)
+        return cls.sequence_time_steps.get_sequence_time_steps(element=element, time_step_type=time_step_type)
 
     @classmethod
     def get_sequence_time_steps_dict(cls):
         """ returns all dicts of sequence of time steps.
-        :return dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps"""
+        :return dict_all_sequence_time_steps: dict of all dict_sequence_time_steps"""
 
-        return cls.SequenceTimeSteps.getSequenceTimeStepsDict()
+        return cls.sequence_time_steps.get_sequence_time_steps_dict()
 
     @classmethod
     def get_unit_handling(cls):
@@ -414,12 +414,12 @@ class EnergySystem:
         """ decodes time_step, i.e., retrieves the base_time_step corresponding to the variableTimeStep of a element.
         time_step of element --> base_time_step of model
         :param element: element of model, i.e., carrier or technology
-        :param elementTimeStep: time step of element
-        :param timeStepType: invest or operation. Only relevant for technologies, None for carrier
+        :param element_time_step: time step of element
+        :param time_step_type: invest or operation. Only relevant for technologies, None for carrier
         :return baseTimeStep: baseTimeStep of model """
 
-        return cls.SequenceTimeSteps.decodeTimeStep(element=element, elementTimeStep=elementTimeStep,
-                                                    timeStepType=timeStepType)
+        return cls.sequence_time_steps.decode_time_step(element=element, element_time_step=element_time_step,
+                                                    time_step_type=time_step_type)
 
     @classmethod
     def encode_time_step(cls,element:str,base_time_steps:int,time_step_type:str = None,yearly=False):
@@ -430,8 +430,8 @@ class EnergySystem:
         :param time_step_type: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
 
-        return cls.SequenceTimeSteps.encodeTimeStep(element=element, baseTimeSteps=baseTimeSteps,
-                                                    timeStepType=timeStepType, yearly=yearly)
+        return cls.sequence_time_steps.encode_time_step(element=element, base_time_steps=base_time_steps,
+                                                    time_step_type=time_step_type, yearly=yearly)
 
     @classmethod
     def decode_yearly_time_steps(cls,element_time_steps):
@@ -775,7 +775,7 @@ def constraint_carbon_emissions_cumulative_rule(model, year):
     """ cumulative carbon emissions over time """
     # get parameter object
     params = Parameter.get_component_object()
-    interval_between_years = EnergySystem.get_system()["intervalBetweenYears"]
+    interval_between_years = EnergySystem.get_system()["interval_between_years"]
     if year == model.set_time_steps_yearly.at(1):
         return (
                 model.carbon_emissions_cumulative[year] ==
@@ -818,7 +818,7 @@ def constraint_carbon_emissions_budget_rule(model, year):
     last optimization time step plus the current carbon emissions until the end of the horizon """
     # get parameter object
     params = Parameter.get_component_object()
-    interval_between_years = EnergySystem.get_system()["intervalBetweenYears"]
+    interval_between_years = EnergySystem.get_system()["interval_between_years"]
     if params.carbon_emissions_budget != np.inf: #TODO check for last year - without last term?
         return (
                 params.carbon_emissions_budget + model.carbon_emissions_overshoot[year] >=
@@ -846,7 +846,7 @@ def constraint_NPV_rule(model, year):
     system = EnergySystem.get_system()
     discount_rate = EnergySystem.get_analysis()["discount_rate"]
     if system["optimized_years"] > 1:
-        interval_between_years = system["intervalBetweenYears"]
+        interval_between_years = system["interval_between_years"]
     else:
         interval_between_years = 1
 
@@ -869,7 +869,7 @@ def objective_total_cost_rule(model):
             model.NPV[year] *
             # discounted utility function
             ((1 / (1 + system["social_discount_rate"])) ** (
-                        system["intervalBetweenYears"] * (year - model.set_time_steps_yearly.at(1))))
+                        system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1))))
             for year in model.set_time_steps_yearly)
     )
 

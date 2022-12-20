@@ -100,8 +100,8 @@ class OptimizationSetup():
         """ returns list of optimization horizon steps """
         energy_system    = EnergySystem.get_energy_system()
         # if using rolling horizon
-        if self.system["useRollingHorizon"]:
-            self.years_in_horizon = self.system["yearsInRollingHorizon"]
+        if self.system["use_rolling_horizon"]:
+            self.years_in_horizon = self.system["years_in_rolling_horizon"]
             _time_steps_yearly    = energy_system.set_time_steps_yearly
             self.steps_horizon   = {year: list(range(year,min(year + self.years_in_horizon,max(_time_steps_yearly)+1))) for year in _time_steps_yearly}
         # if no rolling horizon
@@ -110,7 +110,7 @@ class OptimizationSetup():
             self.steps_horizon   = {0: energy_system.set_time_steps_yearly}
         return list(self.steps_horizon.keys())
 
-    def set_base_configuration(self, scenario, elements):
+    def set_base_configuration(self, scenario="", elements={}):
         """set base configuration
         :param scenario: name of base scenario
         :param elements: elements in base configuration """
@@ -155,7 +155,7 @@ class OptimizationSetup():
                 if type(param) is tuple:
                     file_name, param = param
                 if "yearly_variation" in param:
-                    param = param.replace("yearly_variation", "")
+                    param = param.replace("_yearly_variation", "")
                     file_name = param
                 # get old param value
                 _old_param   = getattr(element, param)
@@ -196,7 +196,7 @@ class OptimizationSetup():
         :param step_horizon: step of the rolling horizon """
         energy_system    = EnergySystem.get_energy_system()
 
-        if self.system["useRollingHorizon"]:
+        if self.system["use_rolling_horizon"]:
             _time_steps_yearly_horizon = self.steps_horizon[step_horizon]
             _base_time_steps_horizon   = EnergySystem.decode_yearly_time_steps(_time_steps_yearly_horizon)
             # overwrite time steps of each element
@@ -303,7 +303,7 @@ class OptimizationSetup():
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             energy_system                           = EnergySystem.get_energy_system()
-            interval_between_years                  = EnergySystem.get_system()["intervalBetweenYears"]
+            interval_between_years                  = EnergySystem.get_system()["interval_between_years"]
             _carbon_emissions_cumulative            = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
             carbon_emissions                        = self.model.carbon_emissions_total.extract_values()[step_horizon]
             energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + carbon_emissions*(interval_between_years-1)

@@ -110,7 +110,7 @@ class Technology(Element):
         :param base_time_steps: base time steps of current horizon step """
         system = EnergySystem.get_system()
         # reduce lifetime of existing capacities and add new remaining lifetime
-        self.lifetime_existing_technology = (self.lifetime_existing_technology - system["intervalBetweenYears"]).clip(lower=0)
+        self.lifetime_existing_technology = (self.lifetime_existing_technology - system["interval_between_years"]).clip(lower=0)
         # new capacity
         _time_step_years = EnergySystem.encode_time_step(self.name, base_time_steps, "yearly", yearly=True)
         _newly_built_capacity = built_capacity[_time_step_years].sum(axis=1)
@@ -217,8 +217,8 @@ class Technology(Element):
             tStart  = cls.get_start_end_time_of_period(tech, time_step_year, id_existing_capacity=id_existing_capacity,loc= loc)
             # discount existing capex
             if type_existing_quantity == "capex":
-                year_construction = max(0,time*system["intervalBetweenYears"] - params.lifetime_technology[tech] + params.lifetime_existing_technology[tech,loc,id_existing_capacity])
-                discount_factor = (1 + discount_rate)**(time*system["intervalBetweenYears"] - year_construction)
+                year_construction = max(0,time*system["interval_between_years"] - params.lifetime_technology[tech] + params.lifetime_existing_technology[tech,loc,id_existing_capacity])
+                discount_factor = (1 + discount_rate)**(time*system["interval_between_years"] - year_construction)
             else:
                 discount_factor = 1
             # if still available at first base time step, add to list
@@ -264,12 +264,12 @@ class Technology(Element):
         else:
             delta_lifetime = params.lifetime_existing_technology[tech, loc, id_existing_capacity] - period_time[tech]
             if delta_lifetime >= 0:
-                if delta_lifetime <= (time_step_year - model.set_time_steps_yearly.at(1))*system["intervalBetweenYears"]:
+                if delta_lifetime <= (time_step_year - model.set_time_steps_yearly.at(1))*system["interval_between_years"]:
                     return time_step_year
                 else:
                     return -1
             period_yearly = params.lifetime_existing_technology[tech, loc, id_existing_capacity]
-        base_period = period_yearly / system["intervalBetweenYears"] * system["unaggregated_time_steps_per_year"]
+        base_period = period_yearly / system["interval_between_years"] * system["unaggregated_time_steps_per_year"]
         base_period = round(base_period, EnergySystem.get_solver()["rounding_decimal_points"])
         if int(base_period) != base_period:
             logging.warning(
@@ -759,7 +759,7 @@ def constraint_technology_diffusion_limit_rule(model,tech,capacity_type ,loc,tim
     """limited technology diffusion based on the existing capacity in the previous year """
     # get parameter object
     params = Parameter.get_component_object()
-    interval_between_years = EnergySystem.get_system()["intervalBetweenYears"]
+    interval_between_years = EnergySystem.get_system()["interval_between_years"]
     unbounded_market_share = EnergySystem.get_system()["unbounded_market_share"]
     knowledge_depreciation_rate = EnergySystem.get_system()["knowledge_depreciation_rate"]
     knowledge_spillover_rate = EnergySystem.get_system()["knowledge_spillover_rate"]
@@ -830,10 +830,10 @@ def constraint_capex_yearly_rule(model, tech, capacity_type, loc, year):
     """ aggregates the capex of built capacity and of existing capacity """
     system = EnergySystem.get_system()
     discount_rate = EnergySystem.get_analysis()["discount_rate"]
-    return (model.capex_yearly[tech, capacity_type, loc, year] == (1 + discount_rate) ** (system["intervalBetweenYears"] * (year - model.set_time_steps_yearly.at(1))) *
+    return (model.capex_yearly[tech, capacity_type, loc, year] == (1 + discount_rate) ** (system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1))) *
             (sum(
                 model.capex[tech, capacity_type, loc, time] *
-                (1/(1 + discount_rate)) ** (system["intervalBetweenYears"] * (time - model.set_time_steps_yearly.at(1)))
+                (1/(1 + discount_rate)) ** (system["interval_between_years"] * (time - model.set_time_steps_yearly.at(1)))
                 for time in Technology.get_lifetime_range(tech, year, time_step_type="yearly")))
             + Technology.get_available_existing_quantity(tech, capacity_type, loc, year, type_existing_quantity="capex",time_step_type="yearly"))
 

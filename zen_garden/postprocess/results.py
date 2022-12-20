@@ -66,7 +66,7 @@ class Results(object):
             self.has_scenarios = False
             self.scenarios = [None]
         # myopic foresight
-        if self.results["system"]["useRollingHorizon"]:
+        if self.results["system"]["use_rolling_horizon"]:
             self.has_MF = True
             self.mf = [f"MF_{step_horizon}" for step_horizon in self.years]
         else:
@@ -80,7 +80,7 @@ class Results(object):
 
             # load the corresponding timestep dict
             time_dict = self.load_sequence_time_steps(self.path, scenario)
-            self.results[scenario]["dictSequenceTimeSteps"] = time_dict
+            self.results[scenario]["dict_sequence_time_steps"] = time_dict
             self.results[scenario]["SequenceTimeStepsDicts"] = SequenceTimeStepsDicts(time_dict)
 
             for mf in self.mf:
@@ -170,7 +170,7 @@ class Results(object):
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "paramDict"))
+        raw_dict = cls._read_file(os.path.join(path, "param_dict"))
         paramDict_raw = json.loads(raw_dict)
 
         return cls._dict2df(paramDict_raw)
@@ -184,7 +184,7 @@ class Results(object):
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "varDict"))
+        raw_dict = cls._read_file(os.path.join(path, "var_dict"))
         varDict_raw = json.loads(raw_dict)
 
         return cls._dict2df(varDict_raw)
@@ -262,26 +262,26 @@ class Results(object):
     @classmethod
     def load_sequence_time_steps(cls, path, scenario=None):
         """
-        Loads the dictSequenceTimeSteps from a given path
+        Loads the dict_sequence_time_steps from a given path
         :param path: Path to load the dict from
         :param scenario: Name of the scenario to load
-        :return: dictSequenceTimeSteps
+        :return: dict_sequence_time_steps
         """
         # get the file name
-        fname = os.path.join(path, "dictAllSequenceTimeSteps")
+        fname = os.path.join(path, "dict_all_sequence_time_steps")
         if scenario is not None:
             fname += f"_{scenario}"
 
         # get the dict
         raw_dict = cls._read_file(fname)
-        dictSequenceTimeSteps = json.loads(raw_dict)
+        dict_sequence_time_steps = json.loads(raw_dict)
 
         # json string None to 'null'
-        dictSequenceTimeSteps['yearly'][None] = dictSequenceTimeSteps['yearly']['null']
-        del dictSequenceTimeSteps['yearly']['null']
+        dict_sequence_time_steps['yearly'][None] = dict_sequence_time_steps['yearly']['null']
+        del dict_sequence_time_steps['yearly']['null']
 
         # tranform all lists to arrays
-        return cls.expand_dict(dictSequenceTimeSteps)
+        return cls.expand_dict(dict_sequence_time_steps)
 
     @classmethod
     def expand_dict(cls, dictionary):
@@ -369,14 +369,14 @@ class Results(object):
                                            errors="coerce").equals(_varSeries.columns.droplevel(0)):
                             # TODO only valid for same time steps between techs
                             if isStorage:
-                                techProxy = [k for k in self.results[scenario]["dictSequenceTimeSteps"]["operation"].keys()
+                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys()
                                              if "storagelevel" in k.lower()][0]
                             else:
-                                techProxy = [k for k in self.results[scenario]["dictSequenceTimeSteps"]["operation"].keys()
+                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys()
                                              if "storagelevel" not in k.lower()][0]
                             # get the timesteps
-                            timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(techProxy,
-                                                                                  SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
+                            timeStepsYear = SequenceTimeStepsDicts.encode_time_step(techProxy,
+                                                                                  SequenceTimeStepsDicts.decode_time_step(None, year, "yearly"),
                                                                                   yearly=True)
                             # get the data
                             tmp_data = _varSeries[[("value", tstep) for tstep in timeStepsYear]]
@@ -498,10 +498,10 @@ class Results(object):
         for row in component_data.index:
             # we know the name
             if elementName:
-                _sequenceTimeSteps = SequenceTimeStepsDicts.getSequenceTimeSteps(elementName+_storageString)
+                _sequenceTimeSteps = SequenceTimeStepsDicts.get_sequence_time_steps(elementName+_storageString)
             # we extract the name
             else:
-                _sequenceTimeSteps = SequenceTimeStepsDicts.getSequenceTimeSteps(row[0]+_storageString)
+                _sequenceTimeSteps = SequenceTimeStepsDicts.get_sequence_time_steps(row[0]+_storageString)
 
             # throw together
             _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps,list(component_data.columns))]
@@ -569,8 +569,8 @@ class Results(object):
 
             if year is not None:
                 # only for the given year
-                timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName+_storageString,
-                                                                      SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
+                timeStepsYear = SequenceTimeStepsDicts.encode_time_step(elementName+_storageString,
+                                                                      SequenceTimeStepsDicts.decode_time_step(None, year, "yearly"),
                                                                       yearly=True)
                 totalValue = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
             else:
@@ -579,8 +579,8 @@ class Results(object):
                     totalValueTemp = pd.DataFrame(index=component_data.index, columns=self.years)
                     for yearTemp in self.years:
                         # set a proxy for the element name
-                        timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName+_storageString,
-                                                                              SequenceTimeStepsDicts.decodeTimeStep(None, yearTemp, "yearly"),
+                        timeStepsYear = SequenceTimeStepsDicts.encode_time_step(elementName+_storageString,
+                                                                              SequenceTimeStepsDicts.decode_time_step(None, yearTemp, "yearly"),
                                                                               yearly=True)
                         totalValueTemp[yearTemp] = (component_data*timeStepDuration_ele)[timeStepsYear].sum(axis=1)
                     totalValue = totalValueTemp
@@ -593,8 +593,8 @@ class Results(object):
             if year is not None:
                 # set a proxy for the element name
                 elementName_proxy = component_data.index.get_level_values(level=0)[0]
-                timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName_proxy+_storageString,
-                                                                      SequenceTimeStepsDicts.decodeTimeStep(None, year, "yearly"),
+                timeStepsYear = SequenceTimeStepsDicts.encode_time_step(elementName_proxy+_storageString,
+                                                                      SequenceTimeStepsDicts.decode_time_step(None, year, "yearly"),
                                                                       yearly=True)
                 totalValue = totalValue[timeStepsYear].sum(axis=1)
             else:
@@ -603,8 +603,8 @@ class Results(object):
                     for yearTemp in self.years:
                         # set a proxy for the element name
                         elementName_proxy = component_data.index.get_level_values(level=0)[0]
-                        timeStepsYear = SequenceTimeStepsDicts.encodeTimeStep(elementName_proxy + _storageString,
-                                                                              SequenceTimeStepsDicts.decodeTimeStep(None, yearTemp, "yearly"),
+                        timeStepsYear = SequenceTimeStepsDicts.encode_time_step(elementName_proxy + _storageString,
+                                                                              SequenceTimeStepsDicts.decode_time_step(None, yearTemp, "yearly"),
                                                                               yearly=True)
                         totalValueTemp[yearTemp] = totalValue[timeStepsYear].sum(axis=1)
                     totalValue = totalValueTemp
@@ -678,8 +678,8 @@ if __name__ == "__main__":
     spec.loader.exec_module(module)
     config = module.config
 
-    modelName = os.path.basename(config.analysis["dataset"])
-    if os.path.exists(out_folder := os.path.join(config.analysis["folderOutput"], modelName)):
+    model_name = os.path.basename(config.analysis["dataset"])
+    if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
         r = Results(out_folder)
     else:
         logging.critical("No results folder found!")

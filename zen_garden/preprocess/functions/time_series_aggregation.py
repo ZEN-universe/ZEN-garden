@@ -26,7 +26,7 @@ class TimeSeriesAggregation():
         self.header_set_time_steps = self.analysis['header_data_inputs']["set_time_steps"]
         # if set_time_steps as input (because already aggregated), use this as base time step, otherwise self.set_base_time_steps
         self.set_base_time_steps = self.energy_system.set_base_time_steps_yearly
-        self.number_typical_periods = min(self.system["unaggregated_time_steps_per_year"], self.system["aggregatedTimeStepsPerYear"])
+        self.number_typical_periods = min(self.system["unaggregated_time_steps_per_year"], self.system["aggregated_time_steps_per_year"])
         # set time_series_aggregation
         TimeSeriesAggregation.set_tsa(self)
         self.conducted_tsa = False

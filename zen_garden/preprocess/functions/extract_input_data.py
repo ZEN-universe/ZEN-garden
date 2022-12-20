@@ -312,7 +312,7 @@ class DataInput():
             # fill output dataframe
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, column, default_value = 0)
             # get reference year
-            reference_year = self.system["referenceYear"]
+            reference_year = self.system["reference_year"]
             # calculate remaining lifetime
             df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime
         return df_output
