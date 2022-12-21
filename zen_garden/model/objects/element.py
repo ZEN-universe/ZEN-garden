@@ -10,22 +10,23 @@ Description:    Class defining a standard Element. Contains methods to add param
                 optimization model as an input.
 ==========================================================================================================================================================================="""
 import copy
-import itertools 
+import itertools
 import logging
 import pandas as pd
 import pyomo.environ as pe
 import cProfile, pstats
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 from .energy_system import EnergySystem
-from .component import Parameter,Variable,Constraint
+from .component import Parameter, Variable, Constraint
+
 
 class Element:
     # set label
-    label = "setElements"
+    label = "set_elements"
     # empty list of elements
-    listOfElements = []
+    list_of_elements = []
 
-    def __init__(self,element):
+    def __init__(self, element):
         """ initialization of an element
         :param element: element that is added to the model"""
         # set attributes
@@ -33,414 +34,401 @@ class Element:
         # set if aggregated
         self.aggregated = False
         # get input path
-        self.getInputPath()
+        self.get_input_path()
         # create DataInput object
-        self.dataInput = DataInput(self,EnergySystem.getSystem(),EnergySystem.getAnalysis(),EnergySystem.getSolver(), EnergySystem.getEnergySystem(),EnergySystem.getUnitHandling())
+        self.datainput = DataInput(self, EnergySystem.get_system(), EnergySystem.get_analysis(), EnergySystem.get_solver(), EnergySystem.get_energy_system(), EnergySystem.get_unit_handling())
         # add element to list
-        Element.addElement(self)
+        Element.add_element(self)
 
-    def getInputPath(self):
-        """ get input path where input data is stored inputPath"""
-        # get system information
-        system      = EnergySystem.getSystem()
+    def get_input_path(self):
+        """ get input path where input data is stored input_path"""
         # get technology type
-        classLabel  = type(self).getClassLabel()
+        class_label = type(self)._get_class_label()
         # get path dictionary
-        paths = EnergySystem.getPaths()
+        paths = EnergySystem.get_paths()
         # check if class is a subset
-        if classLabel not in paths.keys():
-            subsets = EnergySystem.getAnalysis()["subsets"]
+        if class_label not in paths.keys():
+            subsets = EnergySystem.get_analysis()["subsets"]
             # iterate through subsets and check if class belongs to any of the subsets
-            for setName, subsetsList in subsets.items():
-                if classLabel in subsetsList:
-                    classLabel = setName
+            for set_name, subsets_list in subsets.items():
+                if class_label in subsets_list:
+                    class_label = set_name
                     break
-        # get input path for current classLabel
-        self.inputPath = paths[classLabel][self.name]["folder"]
+        # get input path for current class_label
+        self.input_path = paths[class_label][self.name]["folder"]
 
-    def setAggregated(self):
+    def set_aggregated(self):
         """ this method sets self.aggregated to True """
         self.aggregated = True
-    
-    def isAggregated(self):
+
+    def is_aggregated(self):
         """ this method returns the aggregation status """
         return self.aggregated
 
-    def overwriteTimeSteps(self,baseTimeSteps):
+    def overwrite_time_steps(self, base_time_steps):
         """ overwrites time steps. Must be implemented in child classes """
-        raise NotImplementedError("overwriteTimeSteps must be implemented in child classes!")
+        raise NotImplementedError("overwrite_time_steps must be implemented in child classes!")
 
     ### --- classmethods --- ###
     # setter/getter classmethods
     @classmethod
-    def addElement(cls,element):
+    def add_element(cls, element):
         """ add element to element list. Inherited by child classes.
         :param element: new element that is to be added to the list """
-        cls.listOfElements.append(element)
+        cls.list_of_elements.append(element)
 
     @classmethod
-    def getAllElements(cls):
+    def get_all_elements(cls):
         """ get all elements in class. Inherited by child classes.
-        :return cls.listOfElements: list of elements in this class """
-        return cls.listOfElements
+        :return cls.list_of_elements: list of elements in this class """
+        return cls.list_of_elements
 
     @classmethod
-    def getAllNamesOfElements(cls):
+    def get_all_names_of_elements(cls):
         """ get all names of elements in class. Inherited by child classes.
-        :return namesOfElements: list of names of elements in this class """
-        _elementsInClass = cls.getAllElements()
-        namesOfElements = []
-        for _element in _elementsInClass:
-            namesOfElements.append(_element.name)
-        return namesOfElements
-        
+        :return names_of_elements: list of names of elements in this class """
+        _elements_in_class = cls.get_all_elements()
+        names_of_elements = []
+        for _element in _elements_in_class:
+            names_of_elements.append(_element.name)
+        return names_of_elements
+
     @classmethod
-    def getElement(cls,name:str):
+    def get_element(cls, name: str):
         """ get single element in class by name. Inherited by child classes.
         :param name: name of element
         :return element: return element whose name is matched """
-        for _element in cls.listOfElements:
+        for _element in cls.list_of_elements:
             if _element.name == name:
                 return _element
         return None
 
     @classmethod
-    def getAllSubclasses(cls):
+    def get_all_subclasses(cls):
         """ get all subclasses (child classes) of cls 
         :return subclasses: subclasses of cls """
         return cls.__subclasses__()
 
     @classmethod
-    def getAttributeOfAllElements(cls,attributeName:str,capacityTypes = False,returnAttributeIsSeries = False):
+    def get_attribute_of_all_elements(cls, attribute_name: str, capacity_types=False, return_attribute_is_series=False):
         """ get attribute values of all elements in this class 
-        :param attributeName: str name of attribute
-        :param capacityTypes: boolean if attributes extracted for all capacity types
-        :param returnAttributeIsSeries: boolean if information on attribute type is returned
-        :return dictOfAttributes: returns dict of attribute values
-        :return attributeIsSeries: return information on attribute type """
-        system            = EnergySystem.getSystem()
-        _classElements    = cls.getAllElements()
-        dictOfAttributes  = {}
-        attributeIsSeries = False
-        for _element in _classElements:
-            if not capacityTypes:
-                dictOfAttributes,attributeIsSeries = cls.appendAttributeOfElementToDict(_element,attributeName,dictOfAttributes)
+        :param attribute_name: str name of attribute
+        :param capacity_types: boolean if attributes extracted for all capacity types
+        :param return_attribute_is_series: boolean if information on attribute type is returned
+        :return dict_of_attributes: returns dict of attribute values
+        :return attribute_is_series: return information on attribute type """
+        system = EnergySystem.get_system()
+        _class_elements = cls.get_all_elements()
+        dict_of_attributes = {}
+        attribute_is_series = False
+        for _element in _class_elements:
+            if not capacity_types:
+                dict_of_attributes, attribute_is_series = cls.append_attribute_of_element_to_dict(_element, attribute_name, dict_of_attributes)
             # if extracted for both capacity types
             else:
-                for capacityType in system["setCapacityTypes"]:
+                for capacity_type in system["set_capacity_types"]:
                     # append energy only for storage technologies
-                    if capacityType == system["setCapacityTypes"][0] or _element.name in system["setStorageTechnologies"]:
-                        dictOfAttributes,attributeIsSeries = cls.appendAttributeOfElementToDict(_element, attributeName, dictOfAttributes,capacityType)
-        if returnAttributeIsSeries:
-            return dictOfAttributes,attributeIsSeries
+                    if capacity_type == system["set_capacity_types"][0] or _element.name in system["set_storage_technologies"]:
+                        dict_of_attributes, attribute_is_series = cls.append_attribute_of_element_to_dict(_element, attribute_name, dict_of_attributes, capacity_type)
+        if return_attribute_is_series:
+            return dict_of_attributes, attribute_is_series
         else:
-            return dictOfAttributes
+            return dict_of_attributes
 
     @classmethod
-    def appendAttributeOfElementToDict(cls,_element,attributeName,dictOfAttributes,capacityType = None):
+    def append_attribute_of_element_to_dict(cls, _element, attribute_name, dict_of_attributes, capacity_type=None):
         """ get attribute values of all elements in this class
         :param _element: element of class
-        :param attributeName: str name of attribute
-        :param dictOfAttributes: dict of attribute values
-        :param capacityType: capacity type for which attribute extracted. If None, not listed in key
-        :return dictOfAttributes: returns dict of attribute values """
-        attributeIsSeries = False
-        system = EnergySystem.getSystem()
+        :param attribute_name: str name of attribute
+        :param dict_of_attributes: dict of attribute values
+        :param capacity_type: capacity type for which attribute extracted. If None, not listed in key
+        :return dict_of_attributes: returns dict of attribute values """
+        attribute_is_series = False
+        system = EnergySystem.get_system()
         # add Energy for energy capacity type
-        if capacityType == system["setCapacityTypes"][1]:
-            attributeName += "Energy"
-        assert hasattr(_element, attributeName), f"Element {_element.name} does not have attribute {attributeName}"
-        _attribute = getattr(_element, attributeName)
+        if capacity_type == system["set_capacity_types"][1]:
+            attribute_name += "_energy"
+        assert hasattr(_element, attribute_name), f"Element {_element.name} does not have attribute {attribute_name}"
+        _attribute = getattr(_element, attribute_name)
         assert not isinstance(_attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {_element.name}"
-        # add attribute to dictOfAttributes
+        # add attribute to dict_of_attributes
         if isinstance(_attribute, dict):
-            dictOfAttributes.update({(_element.name,)+(key,):val for key,val in _attribute.items()})
-        elif isinstance(_attribute, pd.Series) and "PWA" not in attributeName:
-            if capacityType:
-                _combinedKey = (_element.name,capacityType)
+            dict_of_attributes.update({(_element.name,) + (key,): val for key, val in _attribute.items()})
+        elif isinstance(_attribute, pd.Series) and "pwa" not in attribute_name:
+            if capacity_type:
+                _combined_key = (_element.name, capacity_type)
             else:
-                _combinedKey = _element.name
+                _combined_key = _element.name
             if len(_attribute) > 1:
-                dictOfAttributes[_combinedKey] = _attribute
-                attributeIsSeries = True
+                dict_of_attributes[_combined_key] = _attribute
+                attribute_is_series = True
             else:
-                dictOfAttributes[_combinedKey] = _attribute.squeeze()
-                attributeIsSeries = False
-            # # if attribute is dict
-            # for _key in _attribute:
-            #     if isinstance(_key, tuple):
-            #         dictOfAttributes[_combinedKey + _key] = _attribute[_key]
-            #     else:
-            #         dictOfAttributes[_combinedKey + (_key,)] = _attribute[_key]
+                dict_of_attributes[_combined_key] = _attribute.squeeze()
+                attribute_is_series = False
         elif isinstance(_attribute, int):
-            if capacityType:
-                dictOfAttributes[(_element.name,capacityType)] = [_attribute]
+            if capacity_type:
+                dict_of_attributes[(_element.name, capacity_type)] = [_attribute]
             else:
-                dictOfAttributes[_element.name] = [_attribute]
+                dict_of_attributes[_element.name] = [_attribute]
         else:
-            if capacityType:
-                dictOfAttributes[(_element.name,capacityType)] = _attribute
+            if capacity_type:
+                dict_of_attributes[(_element.name, capacity_type)] = _attribute
             else:
-                dictOfAttributes[_element.name] = _attribute
-        return dictOfAttributes, attributeIsSeries
+                dict_of_attributes[_element.name] = _attribute
+        return dict_of_attributes, attribute_is_series
 
     @classmethod
-    def getAttributeOfSpecificElement(cls,elementName:str,attributeName:str):
+    def get_attribute_of_specific_element(cls, element_name: str, attribute_name: str):
         """ get attribute of specific element in class
-        :param elementName: str name of element
-        :param attributeName: str name of attribute
-        :return attributeValue: value of attribute"""
+        :param element_name: str name of element
+        :param attribute_name: str name of attribute
+        :return attribute_value: value of attribute"""
         # get element
-        _element = cls.getElement(elementName)
+        _element = cls.get_element(element_name)
         # assert that _element exists and has attribute
-        assert _element, f"Element {elementName} not in class {cls}"
-        assert hasattr(_element,attributeName),f"Element {elementName} does not have attribute {attributeName}"
-        attributeValue = getattr(_element,attributeName)
-        return attributeValue
+        assert _element, f"Element {element_name} not in class {cls}"
+        assert hasattr(_element, attribute_name), f"Element {element_name} does not have attribute {attribute_name}"
+        attribute_value = getattr(_element, attribute_name)
+        return attribute_value
 
     @classmethod
-    def getClassLabel(cls):
+    def _get_class_label(cls):
         """ returns label of class """
         return cls.label
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
     # Here, after defining EnergySystem-specific components, the components of the other classes are constructed
     @classmethod
-    def constructModelComponents(cls):
+    def construct_model_components(cls):
         """ constructs the model components of the class <Element> """
         logging.info("\n--- Construct model components ---\n")
         # construct pe.Sets
-        cls.constructSets()
+        cls.construct_sets()
         # construct pe.Params
-        cls.constructParams()
+        cls.construct_params()
         # construct pe.Vars
-        cls.constructVars()
+        cls.construct_vars()
         # construct pe.Constraints
-        cls.constructConstraints()
+        cls.construct_constraints()
         # construct pe.Objective
-        EnergySystem.constructObjective()
+        EnergySystem.construct_objective()
 
     @classmethod
-    def constructSets(cls):
+    def construct_sets(cls):
         """ constructs the pe.Sets of the class <Element> """
         logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
-        EnergySystem.constructSets()
+        EnergySystem.construct_sets()
         # construct pe.Sets of class elements
-        model = EnergySystem.getConcreteModel()
+        model = EnergySystem.get_pyomo_model()
         # operational time steps
-        model.setTimeStepsOperation = pe.Set(
-            model.setElements,
-            initialize=cls.getAttributeOfAllElements("setTimeStepsOperation"),
-            doc="Set of time steps in operation for all technologies. Dimensions: setElements"
-        )
+        model.set_time_steps_operation = pe.Set(model.set_elements, initialize=cls.get_attribute_of_all_elements("set_time_steps_operation"),
+            doc="Set of time steps in operation for all technologies. Dimensions: set_elements")
         # construct pe.Sets of the child classes
-        for subclass in cls.getAllSubclasses():
+        for subclass in cls.get_all_subclasses():
             print(subclass.__name__)
-            subclass.constructSets()
+            subclass.construct_sets()
 
     @classmethod
-    def constructParams(cls):
+    def construct_params(cls):
         """ constructs the pe.Params of the class <Element> """
         logging.info("Construct pe.Params")
-        # initialize parameterObject
+        # initialize parameter_object
         Parameter()
         # construct pe.Params of energy system
-        EnergySystem.constructParams()
+        EnergySystem.construct_params()
         # construct pe.Sets of class elements
         # operational time step duration
-        Parameter.addParameter(
-            name="timeStepsOperationDuration",
-            data= EnergySystem.initializeComponent(cls,"timeStepsOperationDuration",indexNames=["setElements","setTimeStepsOperation"]),#.astype(int),
-            # doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: setElements, setTimeStepsOperation"
-            doc="Parameter which specifies the time step duration in operation for all technologies"
-        )
+        Parameter.add_parameter(name="time_steps_operation_duration",
+            data=EnergySystem.initialize_component(cls, "time_steps_operation_duration", index_names=["set_elements", "set_time_steps_operation"]),  # .astype(int),
+            # doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: set_elements, set_time_steps_operation"
+            doc="Parameter which specifies the time step duration in operation for all technologies")
         # construct pe.Params of the child classes
-        for subclass in cls.getAllSubclasses():
-            subclass.constructParams()
+        for subclass in cls.get_all_subclasses():
+            subclass.construct_params()
 
     @classmethod
-    def constructVars(cls):
+    def construct_vars(cls):
         """ constructs the pe.Vars of the class <Element> """
         logging.info("Construct pe.Vars")
-        # initialize variableObject
+        # initialize variable_object
         Variable()
         # construct pe.Vars of energy system
-        EnergySystem.constructVars()
+        EnergySystem.construct_vars()
         # construct pe.Vars of the child classes
-        for subclass in cls.getAllSubclasses():
-            subclass.constructVars()
+        for subclass in cls.get_all_subclasses():
+            subclass.construct_vars()
 
     @classmethod
-    def constructConstraints(cls):
+    def construct_constraints(cls):
         """ constructs the pe.Constraints of the class <Element> """
         logging.info("Construct pe.Constraints")
-        # initialize constraintObject
+        # initialize constraint_object
         Constraint()
         # construct pe.Constraints of energy system
-        EnergySystem.constructConstraints()
+        EnergySystem.construct_constraints()
         # construct pe.Constraints of the child classes
-        for subclass in cls.getAllSubclasses():
-            subclass.constructConstraints()
+        for subclass in cls.get_all_subclasses():
+            subclass.construct_constraints()
 
     @classmethod
-    def createCustomSet(cls,listIndex):
+    def create_custom_set(cls, list_index):
         """ creates custom set for model component 
-        :param listIndex: list of names of indices
-        :return customSet: custom set index
-        :return listIndex: list of names of indices """
-        listIndexOverwrite = copy.copy(listIndex)
-        model           = EnergySystem.getConcreteModel()
-        indexingSets    = EnergySystem.getIndexingSets()
+        :param list_index: list of names of indices
+        :return custom_set: custom set index
+        :return list_index: list of names of indices """
+        list_index_overwrite = copy.copy(list_index)
+        model = EnergySystem.get_pyomo_model()
+        indexing_sets = EnergySystem.get_indexing_sets()
         # check if all index sets are already defined in model and no set is indexed
-        if all([(hasattr(model,index) and not model.find_component(index).is_indexed()) for index in listIndex]):
+        if all([(hasattr(model, index) and not model.find_component(index).is_indexed()) for index in list_index]):
             # check if no set is indexed
-            listSets = []
+            list_sets = []
             # iterate through indices
-            for index in listIndex:
+            for index in list_index:
                 # if the set already exists in model
-                if hasattr(model,index):
+                if hasattr(model, index):
                     # append set to list
-                    listSets.append(model.find_component(index))
+                    list_sets.append(model.find_component(index))
             # return indices as cartesian product of sets
-            if len(listIndex) > 1:
-                customSet = list(itertools.product(*listSets))
+            if len(list_index) > 1:
+                custom_set = list(itertools.product(*list_sets))
             else:
-                customSet = list(listSets[0])
-            return customSet,listIndex
+                custom_set = list(list_sets[0])
+            return custom_set, list_index
         # at least one set is not yet defined
         else:
             # ugly, but if first set is indexingSet
-            if listIndex[0] in indexingSets:
+            if list_index[0] in indexing_sets:
                 # empty custom index set
-                customSet = []
+                custom_set = []
                 # iterate through
-                for element in model.find_component(listIndex[0]):
+                for element in model.find_component(list_index[0]):
                     # default: append element
-                    appendElement = True
+                    append_element = True
                     # create empty list of sets
-                    listSets = []
+                    list_sets = []
                     # iterate through indices without first index
-                    for index in listIndex[1:]:
+                    for index in list_index[1:]:
                         # if the set already exist in model
-                        if hasattr(model,index):
+                        if hasattr(model, index):
                             # if not indexed
                             if not model.find_component(index).is_indexed():
-                                listSets.append(model.find_component(index))
+                                list_sets.append(model.find_component(index))
                             # if indexed by first entry
-                            elif model.find_component(index).index_set().name in indexingSets:
-                                listSets.append(model.find_component(index)[element])
+                            elif model.find_component(index).index_set().name in indexing_sets:
+                                list_sets.append(model.find_component(index)[element])
                             else:
                                 raise NotImplementedError
-                        # if index is setLocation
-                        elif index == "setLocation":
-                            # if element in setConversionTechnologies or setStorageTechnologies, append setNodes
-                            if element in model.setConversionTechnologies or element in model.setStorageTechnologies:
-                                listSets.append(model.setNodes)
-                            # if element in setTransportTechnologies
-                            elif element in model.setTransportTechnologies:
-                                listSets.append(model.setEdges)
-                        # if set is built for PWA capex:
-                        elif "setCapex" in index:
-                            if element in model.setConversionTechnologies:
-                                _capexIsPWA = cls.getAttributeOfSpecificElement(element,"capexIsPWA")
-                                # if technology is modeled as PWA, break for Linear index
-                                if "Linear" in index and _capexIsPWA:
-                                    appendElement = False
+                        # if index is set_location
+                        elif index == "set_location":
+                            # if element in set_conversion_technologies or set_storage_technologies, append set_nodes
+                            if element in model.set_conversion_technologies or element in model.set_storage_technologies:
+                                list_sets.append(model.set_nodes)
+                            # if element in set_transport_technologies
+                            elif element in model.set_transport_technologies:
+                                list_sets.append(model.set_edges)
+                        # if set is built for pwa capex:
+                        elif "set_capex" in index:
+                            if element in model.set_conversion_technologies:
+                                _capex_is_pwa = cls.get_attribute_of_specific_element(element, "capex_is_pwa")
+                                # if technology is modeled as pwa, break for linear index
+                                if "linear" in index and _capex_is_pwa:
+                                    append_element = False
                                     break
-                                # if technology is not modeled as PWA, break for PWA index
-                                elif "PWA" in index and not _capexIsPWA:
-                                    appendElement = False
+                                # if technology is not modeled as pwa, break for pwa index
+                                elif "pwa" in index and not _capex_is_pwa:
+                                    append_element = False
                                     break
                             # Transport or Storage technology
                             else:
-                                appendElement = False
+                                append_element = False
                                 break
-                        # if set is built for PWA converEfficiency:
-                        elif "setConverEfficiency" in index:
-                            if element in model.setConversionTechnologies: # or element in model.setStorageTechnologies:
-                                _converEfficiencyIsPWA = cls.getAttributeOfSpecificElement(element, "converEfficiencyIsPWA")
-                                dependentCarrier = list(model.setDependentCarriers[element])
+                        # if set is built for pwa conver_efficiency:
+                        elif "set_conver_efficiency" in index:
+                            if element in model.set_conversion_technologies:  # or element in model.set_storage_technologies:
+                                _conver_efficiency_is_pwa = cls.get_attribute_of_specific_element(element, "conver_efficiency_is_pwa")
+                                dependent_carrier = list(model.set_dependent_carriers[element])
                                 # TODO for more than one carrier
-                                # _PWAConverEfficiency = cls.getAttributeOfSpecificElement(element,"PWAConverEfficiency")
-                                # dependentCarrierPWA     = _PWAConverEfficiency["PWAVariables"]
-                                if "Linear" in index and not _converEfficiencyIsPWA:
-                                    listSets.append(dependentCarrier)
-                                elif "PWA" in index and _converEfficiencyIsPWA:
-                                    listSets.append(dependentCarrier)
+                                # _pwa_conver_efficiency = cls.get_attribute_of_specific_element(element,"pwa_conver_efficiency")
+                                # dependent_carrier_pwa     = _pwa_conver_efficiency["pwa_variables"]
+                                if "linear" in index and not _conver_efficiency_is_pwa:
+                                    list_sets.append(dependent_carrier)
+                                elif "pwa" in index and _conver_efficiency_is_pwa:
+                                    list_sets.append(dependent_carrier)
                                 else:
-                                    listSets.append([])
-                                listIndexOverwrite = list(map(lambda x: x.replace(index, 'setCarriers'), listIndex))
+                                    list_sets.append([])
+                                list_index_overwrite = list(map(lambda x: x.replace(index, 'set_carriers'), list_index))
                             # Transport or Storage technology
                             else:
-                                appendElement = False
+                                append_element = False
                                 break
                         # if set is used to determine if on-off behavior is modeled
-                        # exclude technologies which have no minLoad and dependentCarrierFlow at referenceCarrierFlow = 0 is also equal to 0
-                        elif "OnOff" in index:
-                            modelOnOff = cls.checkOnOffModeled(element)
-                            if "setNoOnOff" in index:
-                                # if modeled as on off, do not append to setNoOnOff
-                                if modelOnOff:
-                                    appendElement = False
+                        # exclude technologies which have no min_load and dependentCarrierFlow at reference_carrierFlow = 0 is also equal to 0
+                        elif "on_off" in index:
+                            model_on_off = cls.check_on_off_modeled(element)
+                            if "set_no_on_off" in index:
+                                # if modeled as on off, do not append to set_no_on_off
+                                if model_on_off:
+                                    append_element = False
                                     break
                             else:
-                                # if not modeled as on off, do not append to setOnOff
-                                if not modelOnOff:
-                                    appendElement = False
+                                # if not modeled as on off, do not append to set_on_off
+                                if not model_on_off:
+                                    append_element = False
                                     break
                         # split in capacity types of power and energy
-                        elif index == "setCapacityTypes":
-                            system = EnergySystem.getSystem()
-                            if element in model.setStorageTechnologies:
-                                listSets.append(system["setCapacityTypes"])
+                        elif index == "set_capacity_types":
+                            system = EnergySystem.get_system()
+                            if element in model.set_storage_technologies:
+                                list_sets.append(system["set_capacity_types"])
                             else:
-                                listSets.append([system["setCapacityTypes"][0]])
+                                list_sets.append([system["set_capacity_types"][0]])
                         else:
                             raise NotImplementedError(f"Index <{index}> not known")
-                    # append indices to customSet if element is supposed to be appended
-                    if appendElement:
-                        if listSets:
-                            customSet.extend(list(itertools.product([element],*listSets)))
+                    # append indices to custom_set if element is supposed to be appended
+                    if append_element:
+                        if list_sets:
+                            custom_set.extend(list(itertools.product([element], *list_sets)))
                         else:
-                            customSet.extend([element])
-                return customSet,listIndexOverwrite
+                            custom_set.extend([element])
+                return custom_set, list_index_overwrite
             else:
                 raise NotImplementedError
 
     @classmethod
-    def checkOnOffModeled(cls,tech):
+    def check_on_off_modeled(cls, tech):
         """ this classmethod checks if the on-off-behavior of a technology needs to be modeled.
         If the technology has a minimum load of 0 for all nodes and time steps,
-        and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as PWA),
+        and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as pwa),
         then on-off-behavior is not necessary to model
         :param tech: technology in model
-        :returns modelOnOff: boolean to indicate that on-off-behavior modeled """
-        model = EnergySystem.getConcreteModel()
+        :returns model_on_off: boolean to indicate that on-off-behavior modeled """
+        model = EnergySystem.get_pyomo_model()
 
-        modelOnOff = True
+        model_on_off = True
         # check if any min
-        _uniqueMinLoad = list(set(cls.getAttributeOfSpecificElement(tech,"minLoad").values))
-        # if only one unique minLoad which is zero
-        if len(_uniqueMinLoad) == 1 and _uniqueMinLoad[0] == 0:
+        _unique_min_load = list(set(cls.get_attribute_of_specific_element(tech, "min_load").values))
+        # if only one unique min_load which is zero
+        if len(_unique_min_load) == 1 and _unique_min_load[0] == 0:
             # if not a conversion technology, break for current technology
-            if tech not in model.setConversionTechnologies:
-                modelOnOff = False
-            # if a conversion technology, check if all dependentCarrierFlow at referenceCarrierFlow = 0 equal to 0
+            if tech not in model.set_conversion_technologies:
+                model_on_off = False
+            # if a conversion technology, check if all dependentCarrierFlow at reference_carrierFlow = 0 equal to 0
             else:
-                # if technology is approximated (by either PWA or Linear)
-                _isPWA = cls.getAttributeOfSpecificElement(tech,"converEfficiencyIsPWA")
-                # if not modeled as PWA
+                # if technology is approximated (by either pwa or linear)
+                _isPWA = cls.get_attribute_of_specific_element(tech, "conver_efficiency_is_pwa")
+                # if not modeled as pwa
                 if not _isPWA:
-                    modelOnOff = False
+                    model_on_off = False
                 else:
-                    _PWAParameter = cls.getAttributeOfSpecificElement(tech,"PWAConverEfficiency")
+                    _pwa_parameter = cls.get_attribute_of_specific_element(tech, "pwa_conver_efficiency")
                     # iterate through all dependent carriers and check if all lower bounds are equal to 0
-                    _onlyZeroDependentBound = True
-                    for PWAVariable in _PWAParameter["PWAVariables"]:
-                        if _PWAParameter["bounds"][PWAVariable][0] != 0:
-                            _onlyZeroDependentBound = False
-                    if _onlyZeroDependentBound:
-                        modelOnOff = False
+                    _only_zero_dependent_bound = True
+                    for PWAVariable in _pwa_parameter["pwa_variables"]:
+                        if _pwa_parameter["bounds"][PWAVariable][0] != 0:
+                            _only_zero_dependent_bound = False
+                    if _only_zero_dependent_bound:
+                        model_on_off = False
         # return
-        return modelOnOff
+        return model_on_off

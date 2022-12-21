@@ -17,42 +17,43 @@ from .postprocess.postprocess import Postprocess
 
 from .preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
+
 def restore_default_state():
     """
     Restores the default state of the packages, i.e. sets all Class attributes to their initial values
     """
-    
+
     # Carrier
     #########
-    
+
     # set label
-    Carrier.label = "setCarriers"
+    Carrier.label = "set_carriers"
     # empty list of elements
-    Carrier.listOfElements = []
-    
+    Carrier.list_of_elements = []
+
     # Conditional Carrier
     #####################
-    
+
     # set label
-    ConditioningCarrier.label = "setConditioningCarriers"
+    ConditioningCarrier.label = "set_conditioning_carriers"
     # empty list of elements
-    ConditioningCarrier.listOfElements = []
-    
+    ConditioningCarrier.list_of_elements = []
+
     # Element
     #########
 
     # set label
-    Element.label = "setElements"
+    Element.label = "set_elements"
     # empty list of elements
-    Element.listOfElements = []
+    Element.list_of_elements = []
 
     # EnergySystem
     ##############
 
-    # energySystem
-    EnergySystem.energySystem = None
+    # energy_system
+    EnergySystem.energy_system = None
     # pe.ConcreteModel
-    EnergySystem.concreteModel = None
+    EnergySystem.pyomo_model = None
     # analysis
     EnergySystem.analysis = None
     # system
@@ -62,85 +63,85 @@ def restore_default_state():
     # solver
     EnergySystem.solver = None
     # unit handling instance
-    EnergySystem.unitHandling = None
+    EnergySystem.unit_handling = None
     # empty list of indexing sets
-    EnergySystem.indexingSets = []
+    EnergySystem.indexing_sets = []
     # empty dict of technologies of carrier
-    EnergySystem.dictTechnologyOfCarrier = {}
+    EnergySystem.dict_technology_of_carrier = {}
     # empty dict of sequence of time steps operation
-    EnergySystem.dictSequenceTimeStepsOperation = {}
+    EnergySystem.dict_sequence_time_steps_operation = {}
     # empty dict of sequence of time steps yearly
-    EnergySystem.dictSequenceTimeStepsYearly = {}
+    EnergySystem.dict_sequence_time_steps_yearly = {}
     # empty dict of conversion from energy time steps to power time steps for storage technologies
-    EnergySystem.dictTimeStepsEnergy2Power = {}
+    EnergySystem.dict_time_steps_energy2power = {}
     # empty dict of conversion from operational time steps to invest time steps for technologies
-    EnergySystem.dictTimeStepsOperation2Invest = {}
+    EnergySystem.dict_time_steps_operation2invest = {}
     # empty dict of matching the last time step of the year in the storage domain to the first
-    EnergySystem.dictTimeStepsStorageLevelStartEndYear = {}
+    EnergySystem.dict_time_steps_storage_level_startend_year = {}
     # empty dict of element classes
-    # EnergySystem.dictElementClasses = {}
+    # EnergySystem.dict_element_classes = {}
     # empty list of class names
-    EnergySystem.elementList = {}
+    EnergySystem.element_list = {}
 
     # Parameter
     ###########
 
     # initialize parameter object
-    Parameter.parameterObject = None
+    Parameter.parameter_object = None
 
     # ConditioningTechnology
     ########################
 
     # set label
-    ConditioningTechnology.label = "setConditioningTechnologies"
+    ConditioningTechnology.label = "set_conditioning_technologies"
     # empty list of elements
-    ConditioningTechnology.listOfElements = []
+    ConditioningTechnology.list_of_elements = []
 
     # ConversionTechnology
     ######################
 
     # set label
-    ConversionTechnology.label           = "setConversionTechnologies"
-    ConversionTechnology.locationType    = "setNodes"
+    ConversionTechnology.label = "set_conversion_technologies"
+    ConversionTechnology.location_type = "set_nodes"
     # empty list of elements
-    ConversionTechnology.listOfElements = []
+    ConversionTechnology.list_of_elements = []
 
     # StorageTechnology
     ###################
 
     # set label
-    StorageTechnology.label           = "setStorageTechnologies"
-    StorageTechnology.locationType    = "setNodes"
+    StorageTechnology.label = "set_storage_technologies"
+    StorageTechnology.location_type = "set_nodes"
     # empty list of elements
-    StorageTechnology.listOfElements = []
+    StorageTechnology.list_of_elements = []
 
     # Technology
     ############
 
     # set label
-    Technology.label           = "setTechnologies"
-    Technology.locationType    = None
+    Technology.label = "set_technologies"
+    Technology.location_type = None
     # empty list of elements
-    Technology.listOfElements = []
+    Technology.list_of_elements = []
 
     # TransportTechnology
     #####################
 
     # set label
-    TransportTechnology.label           = "setTransportTechnologies"
-    TransportTechnology.locationType    = "setEdges"
+    TransportTechnology.label = "set_transport_technologies"
+    TransportTechnology.location_type = "set_edges"
     # empty list of elements
-    TransportTechnology.listOfElements = []
+    TransportTechnology.list_of_elements = []
     # dict of reversed edges
-    TransportTechnology.dictReversedEdges = {}
+    TransportTechnology.dict_reversed_edges = {}
 
     # OptimizationSetup
     ###################
 
-    OptimizationSetup.baseScenario      = ""
-    OptimizationSetup.baseConfiguration = {}
+    OptimizationSetup.base_scenario = ""
+    OptimizationSetup.base_configuration = {}
 
     # TimeSeriesAggregation
     #######################
 
-    TimeSeriesAggregation.timeSeriesAggregation = None
+    TimeSeriesAggregation.time_series_aggregation = None

@@ -16,108 +16,104 @@ class SequenceTimeStepsDicts(object):
     It is very similar to EnergySystem functions and is meant to avoid the import of packages that can cause conflicts.
     """
 
-    def __init__(self, dictAllSequenceTimeSteps=None):
+    def __init__(self, dict_all_sequence_time_steps=None):
         """
         Sets all dicts of sequences of time steps.
-        :param dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps
+        :param dict_all_sequence_time_steps: dict of all dict_sequence_time_steps
         """
 
         # set the params if provided
-        if dictAllSequenceTimeSteps is not None:
-            self.dictSequenceTimeStepsOperation = dictAllSequenceTimeSteps["operation"]
-            self.dictSequenceTimeStepsYearly = dictAllSequenceTimeSteps["yearly"]
+        if dict_all_sequence_time_steps is not None:
+            self.dict_sequence_time_steps_operation = dict_all_sequence_time_steps["operation"]
+            self.dict_sequence_time_steps_yearly = dict_all_sequence_time_steps["yearly"]
         else:
-            self.dictSequenceTimeStepsOperation = dict()
-            self.dictSequenceTimeStepsYearly = dict()
+            self.dict_sequence_time_steps_operation = dict()
+            self.dict_sequence_time_steps_yearly = dict()
 
-    def setSequenceTimeSteps(self, element, sequenceTimeSteps, timeStepType=None):
+    def set_sequence_time_steps(self, element, sequence_time_steps, time_step_type=None):
         """
         Sets sequence of time steps, either of operation, invest, or year
         :param element: name of element in model
-        :param sequenceTimeSteps: list of time steps corresponding to base time step
-        :param timeStepType: type of time step (operation or yearly)
+        :param sequence_time_steps: list of time steps corresponding to base time step
+        :param time_step_type: type of time step (operation or yearly)
         """
 
-        if not timeStepType:
-            timeStepType = "operation"
-        if timeStepType == "operation":
-            self.dictSequenceTimeStepsOperation[element] = sequenceTimeSteps
-        elif timeStepType == "yearly":
-            self.dictSequenceTimeStepsYearly[element] = sequenceTimeSteps
+        if not time_step_type:
+            time_step_type = "operation"
+        if time_step_type == "operation":
+            self.dict_sequence_time_steps_operation[element] = sequence_time_steps
+        elif time_step_type == "yearly":
+            self.dict_sequence_time_steps_yearly[element] = sequence_time_steps
         else:
-            raise KeyError(f"Time step type {timeStepType} is incorrect")
+            raise KeyError(f"Time step type {time_step_type} is incorrect")
 
-    def reset_dicts(self, dictAllSequenceTimeSteps):
+    def reset_dicts(self, dict_all_sequence_time_steps):
         """
         Resets all dicts of sequences of time steps.
-        :param dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps
+        :param dict_all_sequence_time_steps: dict of all dict_sequence_time_steps
         """
 
-        self.dictSequenceTimeStepsOperation = dictAllSequenceTimeSteps["operation"]
-        self.dictSequenceTimeStepsYearly = dictAllSequenceTimeSteps["yearly"]
+        self.dict_sequence_time_steps_operation = dict_all_sequence_time_steps["operation"]
+        self.dict_sequence_time_steps_yearly = dict_all_sequence_time_steps["yearly"]
 
-    def getSequenceTimeSteps(self, element, timeStepType=None):
+    def get_sequence_time_steps(self, element, time_step_type=None):
         """
         Get sequence ot time steps of element
         :param element: name of element in model
-        :param timeStepType: type of time step (operation or invest)
-        :return sequenceTimeSteps: list of time steps corresponding to base time step
+        :param time_step_type: type of time step (operation or invest)
+        :return sequence_time_steps: list of time steps corresponding to base time step
         """
 
-        if not timeStepType:
-            timeStepType = "operation"
-        if timeStepType == "operation":
-            return self.dictSequenceTimeStepsOperation[element]
-        elif timeStepType == "yearly":
-            return self.dictSequenceTimeStepsYearly[None]
+        if not time_step_type:
+            time_step_type = "operation"
+        if time_step_type == "operation":
+            return self.dict_sequence_time_steps_operation[element]
+        elif time_step_type == "yearly":
+            return self.dict_sequence_time_steps_yearly[None]
         else:
-            raise KeyError(f"Time step type {timeStepType} is incorrect")
+            raise KeyError(f"Time step type {time_step_type} is incorrect")
 
-    def getSequenceTimeStepsDict(self):
+    def get_sequence_time_steps_dict(self):
         """
         Returns all dicts of sequence of time steps.
-        :return dictAllSequenceTimeSteps: dict of all dictSequenceTimeSteps
+        :return dict_all_sequence_time_steps: dict of all dict_sequence_time_steps
         """
 
-        dictAllSequenceTimeSteps = {
-            "operation": self.dictSequenceTimeStepsOperation,
-            "yearly": self.dictSequenceTimeStepsYearly
-        }
-        return dictAllSequenceTimeSteps
+        dict_all_sequence_time_steps = {"operation": self.dict_sequence_time_steps_operation, "yearly": self.dict_sequence_time_steps_yearly}
+        return dict_all_sequence_time_steps
 
-    def encodeTimeStep(cls, element: str, baseTimeSteps: int, timeStepType: str = None, yearly=False):
+    def encode_time_step(self, element: str, base_time_steps: int, time_step_type: str = None, yearly=False):
         """
         Encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
         baseTimeStep of model --> timeStep of element
         :param element: name of element in model, i.e., carrier or technology
         :param baseTimeStep: base time step of model for which the corresponding time index is extracted
-        :param timeStepType: invest or operation. Only relevant for technologies
+        :param time_step_type: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element
         """
-        sequenceTimeSteps = cls.getSequenceTimeSteps(element, timeStepType)
+        sequence_time_steps = self.get_sequence_time_steps(element, time_step_type)
         # get time step duration
-        if np.all(baseTimeSteps >= 0):
-            elementTimeStep = np.unique(sequenceTimeSteps[baseTimeSteps])
+        if np.all(base_time_steps >= 0):
+            element_time_step = np.unique(sequence_time_steps[base_time_steps])
         else:
-            elementTimeStep = [-1]
+            element_time_step = [-1]
         if yearly:
-            return (elementTimeStep)
-        if len(elementTimeStep) == 1:
-            return (elementTimeStep[0])
+            return (element_time_step)
+        if len(element_time_step) == 1:
+            return (element_time_step[0])
         else:
-            raise LookupError(f"Currently only implemented for a single element time step, not {elementTimeStep}")
+            raise LookupError(f"Currently only implemented for a single element time step, not {element_time_step}")
 
-    def decodeTimeStep(self, element, elementTimeStep:int, timeStepType:str = None):
+    def decode_time_step(self, element, element_time_step: int, time_step_type: str = None):
         """
         Decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variableTimeStep of a element.
         timeStep of element --> baseTimeStep of model
         :param element: element of model, i.e., carrier or technology
-        :param elementTimeStep: time step of element
-        :param timeStepType: invest or operation. Only relevant for technologies, None for carrier
+        :param element_time_step: time step of element
+        :param time_step_type: invest or operation. Only relevant for technologies, None for carrier
         :return baseTimeStep: baseTimeStep of model
         """
-        sequenceTimeSteps = self.getSequenceTimeSteps(element,timeStepType)
-        # find where elementTimeStep in sequence of element time steps
-        baseTimeSteps = np.argwhere(sequenceTimeSteps == elementTimeStep)
-        return baseTimeSteps
-
+        sequence_time_steps = self.get_sequence_time_steps(element, time_step_type)
+        # find where element_time_step in sequence of element time steps
+        base_time_steps = np.argwhere(sequence_time_steps == element_time_step)
+        return base_time_steps
