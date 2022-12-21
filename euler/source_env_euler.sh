@@ -9,9 +9,10 @@
 module load gcc/8.2.0
 # python 3.9.9
 module load python/3.9.9
-# backend for the solver
-module load glpk
 
 # activate the env from anywhere
 # $BASH_SOURCE contains the path that was sourced 
 source $(realpath $BASH_SOURCE | xargs dirname)/zen_garden_env/bin/activate
+
+# backend for the solver
+module load glpk
