@@ -54,8 +54,8 @@ class Carrier(Element):
         self.shed_demand_price = self.datainput.extract_input_data("shed_demand_price",index_sets = [])
         
     def overwrite_time_steps(self,base_time_steps):
-        """ overwrites set_time_steps_operation and  setTimeStepsEnergyBalance"""
-        set_time_steps_operation       = EnergySystem.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation",yearly=True)
+        """ overwrites set_time_steps_operation"""
+        set_time_steps_operation = EnergySystem.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation",yearly=True)
         setattr(self, "set_time_steps_operation", set_time_steps_operation.squeeze().tolist())
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
@@ -416,10 +416,8 @@ def constraint_carbon_emissions_carrier_total_rule(model, year):
     )
 
 def constraint_nodal_energy_balance_rule(model, carrier, node, time):
-    """" 
-    nodal energy balance for each time step. 
-    The constraint is indexed by set_time_steps_operation, which is union of time step sequences of all corresponding technologies and carriers
-    timeStepEnergyBalance --> base_time_step --> element_time_step
+    """
+    nodal energy balance for each time step.
     """
     # get parameter object
     params = Parameter.get_component_object()

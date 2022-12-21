@@ -98,10 +98,10 @@ class Technology(Element):
 
     def overwrite_time_steps(self,base_time_steps):
         """ overwrites set_time_steps_operation """
-        set_time_steps_operation   = EnergySystem.encode_time_step(self.name, base_time_steps=base_time_steps,time_step_type="operation",yearly=True)
+        set_time_steps_operation = EnergySystem.encode_time_step(self.name, base_time_steps=base_time_steps,time_step_type="operation",yearly=True)
 
         # copy invest time steps
-        self.set_time_steps_operation              = set_time_steps_operation.squeeze().tolist()
+        self.set_time_steps_operation = set_time_steps_operation.squeeze().tolist()
 
     def add_newly_built_capacity_tech(self,built_capacity,capex,base_time_steps):
         """ adds the newly built capacity to the existing capacity

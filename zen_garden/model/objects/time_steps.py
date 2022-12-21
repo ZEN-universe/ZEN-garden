@@ -85,7 +85,7 @@ class SequenceTimeStepsDicts(object):
         }
         return dict_all_sequence_time_steps
 
-    def encode_time_step(cls, element: str, base_time_steps: int, time_step_type: str = None, yearly=False):
+    def encode_time_step(self, element: str, base_time_steps: int, time_step_type: str = None, yearly=False):
         """
         Encodes baseTimeStep, i.e., retrieves the time step of a element corresponding to baseTimeStep of model.
         baseTimeStep of model --> timeStep of element
@@ -94,7 +94,7 @@ class SequenceTimeStepsDicts(object):
         :param time_step_type: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element
         """
-        sequence_time_steps = cls.get_sequence_time_steps(element, time_step_type)
+        sequence_time_steps = self.get_sequence_time_steps(element, time_step_type)
         # get time step duration
         if np.all(base_time_steps >= 0):
             element_time_step = np.unique(sequence_time_steps[base_time_steps])
