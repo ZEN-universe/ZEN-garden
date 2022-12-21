@@ -79,10 +79,7 @@ class SequenceTimeStepsDicts(object):
         :return dict_all_sequence_time_steps: dict of all dict_sequence_time_steps
         """
 
-        dict_all_sequence_time_steps = {
-            "operation": self.dict_sequence_time_steps_operation,
-            "yearly": self.dict_sequence_time_steps_yearly
-        }
+        dict_all_sequence_time_steps = {"operation": self.dict_sequence_time_steps_operation, "yearly": self.dict_sequence_time_steps_yearly}
         return dict_all_sequence_time_steps
 
     def encode_time_step(self, element: str, base_time_steps: int, time_step_type: str = None, yearly=False):
@@ -107,7 +104,7 @@ class SequenceTimeStepsDicts(object):
         else:
             raise LookupError(f"Currently only implemented for a single element time step, not {element_time_step}")
 
-    def decode_time_step(self, element, element_time_step:int, time_step_type:str = None):
+    def decode_time_step(self, element, element_time_step: int, time_step_type: str = None):
         """
         Decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variableTimeStep of a element.
         timeStep of element --> baseTimeStep of model
@@ -116,8 +113,7 @@ class SequenceTimeStepsDicts(object):
         :param time_step_type: invest or operation. Only relevant for technologies, None for carrier
         :return baseTimeStep: baseTimeStep of model
         """
-        sequence_time_steps = self.get_sequence_time_steps(element,time_step_type)
+        sequence_time_steps = self.get_sequence_time_steps(element, time_step_type)
         # find where element_time_step in sequence of element time steps
         base_time_steps = np.argwhere(sequence_time_steps == element_time_step)
         return base_time_steps
-

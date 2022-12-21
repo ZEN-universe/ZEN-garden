@@ -9,7 +9,6 @@ Description:  Class is defining the postprocessing of the results.
               The class contains methods to read the results and save them in a result dictionary (resultDict).
 ==========================================================================================================================================================================="""
 
-
 import sys
 
 import numpy as np
@@ -43,9 +42,9 @@ class Postprocess:
         self.analysis = model.analysis
         self.solver = model.solver
         self.opt = model.opt
-        self.params         = Parameter.get_component_object()
-        self.vars           = Variable.get_component_object()
-        self.constraints    = Constraint.get_component_object()
+        self.params = Parameter.get_component_object()
+        self.vars = Variable.get_component_object()
+        self.constraints = Constraint.get_component_object()
 
         # get name or directory
         self.model_name = model_name
@@ -84,9 +83,7 @@ class Postprocess:
 
         # case where we should run the post-process as normal
         if model.analysis['postprocess']:
-            pass
-            # TODO: implement this...
-            #self.process()
+            pass  # TODO: implement this...  # self.process()
 
     def write_file(self, name, dictionary):
         """
@@ -101,7 +98,7 @@ class Postprocess:
 
         # if the string is larger than the max output size we compress anyway
         force_compression = False
-        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.analysis["max_output_size_mb"]:
+        if not self.compress and sys.getsizeof(serialized_dict) / 1024 ** 2 > self.analysis["max_output_size_mb"]:
             print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
                   f"{self.analysis['max_output_size_mb']}MB, compressing...")
             force_compression = True
@@ -141,14 +138,14 @@ class Postprocess:
                 index_names = index_list
             # create a dictionary if necessary
             if not isinstance(vals, dict):
-                indices = pd.Index(data=[0],name=index_names)
+                indices = pd.Index(data=[0], name=index_names)
                 data = [vals]
             # if the returned dict is emtpy we create a nan value
             elif len(vals) == 0:
-                if len(index_list)>1:
-                    indices = pd.MultiIndex(levels=[[]]*len(index_names),codes=[[]]*len(index_names),names=index_names)
+                if len(index_list) > 1:
+                    indices = pd.MultiIndex(levels=[[]] * len(index_names), codes=[[]] * len(index_names), names=index_names)
                 else:
-                    indices = pd.Index(data=[],name=index_names)
+                    indices = pd.Index(data=[], name=index_names)
                 data = []
             # we read out everything
             else:
@@ -156,14 +153,14 @@ class Postprocess:
                 data = list(vals.values())
 
                 # create a multi index if necessary
-                if len(indices)>=1 and isinstance(indices[0],tuple):
+                if len(indices) >= 1 and isinstance(indices[0], tuple):
                     if len(index_list) == len(indices[0]):
-                        indices = pd.MultiIndex.from_tuples(indices,names=index_names)
+                        indices = pd.MultiIndex.from_tuples(indices, names=index_names)
                     else:
                         indices = pd.MultiIndex.from_tuples(indices)
                 else:
                     if len(index_list) == 1:
-                        indices = pd.Index(data=indices,name=index_names)
+                        indices = pd.Index(data=indices, name=index_names)
                     else:
                         indices = pd.Index(data=indices)
 
@@ -171,8 +168,7 @@ class Postprocess:
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
 
             # update dict
-            data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                  "docstring": doc}
+            data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)), "docstring": doc}
 
         # write to json
         self.write_file(self.name_dir.joinpath('param_dict'), data_frames)
@@ -201,7 +197,7 @@ class Postprocess:
             values = [getattr(var[index], "value", None) for index in indices]
 
             # create a multi index if necessary
-            if len(indices)>=1 and isinstance(indices[0], tuple):
+            if len(indices) >= 1 and isinstance(indices[0], tuple):
                 if len(index_list) == len(indices[0]):
                     indices = pd.MultiIndex.from_tuples(indices, names=index_names)
                 else:
@@ -216,8 +212,7 @@ class Postprocess:
             df = pd.DataFrame(data=values, columns=["value"], index=indices)
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                     "docstring": doc}
+            data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)), "docstring": doc}
 
         self.write_file(self.name_dir.joinpath('var_dict'), data_frames)
 
@@ -307,12 +302,11 @@ class Postprocess:
         # create a copy of the dict to avoid overwrite
         dictionary = dictionary.copy()
 
-        # faltten all arrays
+        # falten all arrays
         for k, v in dictionary.items():
             # recursive call
             if isinstance(v, dict):
-                dictionary[k] = self.flatten_dict(v)
-                # flatten the array to list
+                dictionary[k] = self.flatten_dict(v)  # flatten the array to list
             elif isinstance(v, np.ndarray):
                 # Note: list(v) creates a list of np objects v.tolist() not
                 dictionary[k] = v.tolist()
@@ -322,19 +316,16 @@ class Postprocess:
 
         return dictionary
 
-    def get_index_list(self,doc):
+    def get_index_list(self, doc):
         """ get index list from docstring """
         split_doc = doc.split(";")
         for string in split_doc:
             if "dims" in string:
                 break
-        string = string.replace("dims:","")
+        string = string.replace("dims:", "")
         index_list = string.split(",")
         index_list_final = []
         for index in index_list:
             if index in self.analysis["header_data_inputs"].keys():
-                index_list_final.append(self.analysis["header_data_inputs"][index])
-            # else:
-            #     pass
-            #     # index_list_final.append(index)
+                index_list_final.append(self.analysis["header_data_inputs"][index])  # else:  #     pass  #     # index_list_final.append(index)
         return index_list_final

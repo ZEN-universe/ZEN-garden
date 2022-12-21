@@ -14,6 +14,7 @@ import importlib.util
 import argparse
 import sys
 
+
 def run_module(args=None):
     """
     Runs the main function of ZEN-Garden
@@ -27,15 +28,12 @@ def run_module(args=None):
                   "current working directory. You can specify a config file with the --config argument. However, " \
                   "note that the output directory will always be the current working directory, independent of the " \
                   "dataset specified in the config file."
-    parser = argparse.ArgumentParser(description=description, add_help=True,
-                                     usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET]")
+    parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET]")
 
-    parser.add_argument("--config", required=False, type=str, default="config.py",
-                        help="The config file used to run the pipeline, "
-                             "defaults to config.py in the current directory.")
-    parser.add_argument("--dataset", required=False, type=str, default=None,
-                        help="Path to the dataset used for the run. IMPORTANT: This will overwrite the "
-                             "config.analysis['dataset'] attribute of the config file!")
+    parser.add_argument("--config", required=False, type=str, default="config.py", help="The config file used to run the pipeline, "
+                                                                                        "defaults to config.py in the current directory.")
+    parser.add_argument("--dataset", required=False, type=str, default=None, help="Path to the dataset used for the run. IMPORTANT: This will overwrite the "
+                                                                                  "config.analysis['dataset'] attribute of the config file!")
     args = parser.parse_args(args)
 
     ### import the config
@@ -46,6 +44,7 @@ def run_module(args=None):
 
     ### run
     main(config=config, dataset_path=args.dataset)
+
 
 if __name__ == "__main__":
     run_module()

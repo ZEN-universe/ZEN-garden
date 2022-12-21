@@ -17,6 +17,7 @@ import os
 
 from zen_garden.model.objects.time_steps import SequenceTimeStepsDicts
 
+
 class Results(object):
     """
     This class reads in the results after the pipeline has run
@@ -156,8 +157,7 @@ class Results(object):
             dict_df[key]['docstring'] = dict_raw[key]['docstring']
 
             # the dataframe we transform to an actual dataframe
-            dict_df[key]['dataframe'] = pd.read_json(json.dumps(dict_raw[key]['dataframe']),
-                                                     orient="table")
+            dict_df[key]['dataframe'] = pd.read_json(json.dumps(dict_raw[key]['dataframe']), orient="table")
 
         return dict_df
 
@@ -297,8 +297,7 @@ class Results(object):
         for k, v in dictionary.items():
             # recursive call
             if isinstance(v, dict):
-                dictionary[k] = cls.expand_dict(v)
-                # flatten the array to list
+                dictionary[k] = cls.expand_dict(v)  # flatten the array to list
             elif isinstance(v, list):
                 # Note: list(v) creates a list of np objects v.tolist() not
                 dictionary[k] = np.array(v)
@@ -365,18 +364,13 @@ class Results(object):
                             _mf_data[year] = tmp_data
                             yearly_component = True
                         # if more time steps than years, then it is operational ts (we drop value in columns)
-                        elif pd.to_numeric(_varSeries.columns.droplevel(0),
-                                           errors="coerce").equals(_varSeries.columns.droplevel(0)):
+                        elif pd.to_numeric(_varSeries.columns.droplevel(0), errors="coerce").equals(_varSeries.columns.droplevel(0)):
                             if is_storage:
-                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys()
-                                             if "storage_level" in k.lower()][0]
+                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" in k.lower()][0]
                             else:
-                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys()
-                                             if "storage_level" not in k.lower()][0]
+                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" not in k.lower()][0]
                             # get the timesteps
-                            time_steps_year = sequence_time_steps_dicts.encode_time_step(techProxy,
-                                                                                  sequence_time_steps_dicts.decode_time_step(None, year, "yearly"),
-                                                                                  yearly=True)
+                            time_steps_year = sequence_time_steps_dicts.encode_time_step(techProxy, sequence_time_steps_dicts.decode_time_step(None, year, "yearly"), yearly=True)
                             # get the data
                             tmp_data = _varSeries[[("value", tstep) for tstep in time_steps_year]]
                             # rename
@@ -497,14 +491,14 @@ class Results(object):
         for row in component_data.index:
             # we know the name
             if element_name:
-                _sequenceTimeSteps = sequence_time_steps_dicts.get_sequence_time_steps(element_name+_storage_string)
+                _sequenceTimeSteps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + _storage_string)
             # we extract the name
             else:
-                _sequenceTimeSteps = sequence_time_steps_dicts.get_sequence_time_steps(row[0]+_storage_string)
+                _sequenceTimeSteps = sequence_time_steps_dicts.get_sequence_time_steps(row[0] + _storage_string)
 
             # throw together
-            _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps,list(component_data.columns))]
-            _output_temp[row] = component_data.loc[row,_sequence_time_steps].reset_index(drop=True)
+            _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(component_data.columns))]
+            _output_temp[row] = component_data.loc[row, _sequence_time_steps].reset_index(drop=True)
             if year is not None:
                 if year in self.years:
                     hours_of_year = self._get_hours_of_year(year)
@@ -513,7 +507,7 @@ class Results(object):
                     print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
 
         # concat and return
-        outputDf = pd.concat(_output_temp,axis=0,keys = _output_temp.keys()).unstack()
+        outputDf = pd.concat(_output_temp, axis=0, keys=_output_temp.keys()).unstack()
         return outputDf
 
     def get_total(self, component, element_name=None, year=None, scenario=None, split_years=True):
@@ -527,11 +521,11 @@ class Results(object):
         :return: A dataframe containing the total value with the specified paramters
         """
         # extract the data
-        component_name,component_data = self._get_component_data(component, scenario)
+        component_name, component_data = self._get_component_data(component, scenario)
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
 
-        ts_type = self._get_ts_type(component_data,component_name)
+        ts_type = self._get_ts_type(component_data, component_name)
 
         if ts_type == "yearly":
             if element_name is not None:
@@ -555,63 +549,55 @@ class Results(object):
             _storage_string = "_storage_level"
 
         # extract time step duration
-        time_step_duration = self._get_ts_duration(scenario,is_storage=_isStorage)
+        time_step_duration = self._get_ts_duration(scenario, is_storage=_isStorage)
 
         # If we have an element name
         if element_name is not None:
             # check that it is in the index
-            assert element_name in component_data.index.get_level_values(level=0), \
-                f"element {element_name} is not found in index of {component_name}"
+            assert element_name in component_data.index.get_level_values(level=0), f"element {element_name} is not found in index of {component_name}"
             # get the index
             component_data = component_data.loc[element_name]
             time_step_duration_element = time_step_duration.loc[element_name]
 
             if year is not None:
                 # only for the given year
-                time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name+_storage_string,
-                                                                      sequence_time_steps_dicts.decode_time_step(None, year, "yearly"),
-                                                                      yearly=True)
-                total_value = (component_data*time_step_duration_element)[time_steps_year].sum(axis=1)
+                time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name + _storage_string, sequence_time_steps_dicts.decode_time_step(None, year, "yearly"), yearly=True)
+                total_value = (component_data * time_step_duration_element)[time_steps_year].sum(axis=1)
             else:
                 # for all years
                 if split_years:
                     total_value_temp = pd.DataFrame(index=component_data.index, columns=self.years)
                     for year_temp in self.years:
                         # set a proxy for the element name
-                        time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name+_storage_string,
-                                                                              sequence_time_steps_dicts.decode_time_step(None, year_temp, "yearly"),
-                                                                              yearly=True)
-                        total_value_temp[year_temp] = (component_data*time_step_duration_element)[time_steps_year].sum(axis=1)
+                        time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name + _storage_string, sequence_time_steps_dicts.decode_time_step(None, year_temp, "yearly"), yearly=True)
+                        total_value_temp[year_temp] = (component_data * time_step_duration_element)[time_steps_year].sum(axis=1)
                     total_value = total_value_temp
                 else:
-                    total_value = (component_data*time_step_duration_element).sum(axis=1)
+                    total_value = (component_data * time_step_duration_element).sum(axis=1)
 
         # if we do not have an element name
         else:
-            total_value  = component_data.apply(lambda row: row*time_step_duration.loc[row.name[0]],axis=1)
+            total_value = component_data.apply(lambda row: row * time_step_duration.loc[row.name[0]], axis=1)
             if year is not None:
                 # set a proxy for the element name
                 element_name_proxy = component_data.index.get_level_values(level=0)[0]
-                time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name_proxy+_storage_string,
-                                                                      sequence_time_steps_dicts.decode_time_step(None, year, "yearly"),
-                                                                      yearly=True)
+                time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name_proxy + _storage_string, sequence_time_steps_dicts.decode_time_step(None, year, "yearly"), yearly=True)
                 total_value = total_value[time_steps_year].sum(axis=1)
             else:
                 if split_years:
-                    total_value_temp = pd.DataFrame(index=total_value.index,columns=self.years)
+                    total_value_temp = pd.DataFrame(index=total_value.index, columns=self.years)
                     for year_temp in self.years:
                         # set a proxy for the element name
                         element_name_proxy = component_data.index.get_level_values(level=0)[0]
-                        time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name_proxy + _storage_string,
-                                                                              sequence_time_steps_dicts.decode_time_step(None, year_temp, "yearly"),
-                                                                              yearly=True)
+                        time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name_proxy + _storage_string, sequence_time_steps_dicts.decode_time_step(None, year_temp, "yearly"),
+                                                                                     yearly=True)
                         total_value_temp[year_temp] = total_value[time_steps_year].sum(axis=1)
                     total_value = total_value_temp
                 else:
                     total_value = total_value.sum(axis=1)
         return total_value
 
-    def _get_ts_duration(self, scenario=None, is_storage = False):
+    def _get_ts_duration(self, scenario=None, is_storage=False):
         """ extracts the time steps duration """
         # extract the right timestep duration
         if self.has_scenarios:
@@ -647,7 +633,7 @@ class Results(object):
 
         return component_name, component_data
 
-    def _get_ts_type(self, component_data,component_name):
+    def _get_ts_type(self, component_data, component_name):
         """ get time step type (operational, storage, yearly) """
         _header_operational = self.results["analysis"]["header_data_inputs"]["set_time_steps_operation"]
         _header_storage = self.results["analysis"]["header_data_inputs"]["set_time_steps_storage_level"]
@@ -661,10 +647,10 @@ class Results(object):
         else:
             raise KeyError(f"Column index name of '{component_name}' ({component_data.columns.name}) is unknown. Should be (operational, storage, yearly)")
 
-    def _get_hours_of_year(self,year):
+    def _get_hours_of_year(self, year):
         """ get total hours of year """
         _total_hours_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
-        _hours_of_year = list(range(year*_total_hours_per_year,(year+1)*_total_hours_per_year))
+        _hours_of_year = list(range(year * _total_hours_per_year, (year + 1) * _total_hours_per_year))
         return _hours_of_year
 
     def __str__(self):

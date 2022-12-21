@@ -12,6 +12,7 @@ Description:  Class to read the data from input files, collect them into a dicti
 import logging
 import os
 
+
 class Prepare:
 
     def __init__(self, config):
@@ -25,10 +26,10 @@ class Prepare:
         self.analysis = config.analysis
 
         # instantiate system object
-        self.system   = config.system
+        self.system = config.system
 
         # instantiate the solver object
-        self.solver   = config.solver
+        self.solver = config.solver
 
         # create a dictionary with the paths to access the model inputs
         self.create_paths()

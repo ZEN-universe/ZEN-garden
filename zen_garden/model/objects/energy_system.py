@@ -11,13 +11,14 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
 import logging
 import warnings
 import pyomo.environ as pe
-import numpy         as np
-import pandas        as pd
+import numpy as np
+import pandas as pd
 import copy
 from zen_garden.preprocess.functions.extract_input_data import DataInput
-from zen_garden.preprocess.functions.unit_handling      import UnitHandling
-from .component import Parameter,Variable,Constraint
+from zen_garden.preprocess.functions.unit_handling import UnitHandling
+from .component import Parameter, Variable, Constraint
 from .time_steps import SequenceTimeStepsDicts
+
 
 class EnergySystem:
     # energy_system
@@ -55,7 +56,7 @@ class EnergySystem:
     # The timesteps
     sequence_time_steps = SequenceTimeStepsDicts()
 
-    def __init__(self,name_energy_system):
+    def __init__(self, name_energy_system):
         """ initialization of the energy_system
         :param name_energy_system: name of energy_system that is added to the model """
 
@@ -75,7 +76,7 @@ class EnergySystem:
         EnergySystem.create_unit_handling()
 
         # create DataInput object
-        self.datainput = DataInput(self,EnergySystem.get_system(), EnergySystem.get_analysis(), EnergySystem.get_solver(), EnergySystem.get_energy_system(), self.unit_handling)
+        self.datainput = DataInput(self, EnergySystem.get_system(), EnergySystem.get_analysis(), EnergySystem.get_solver(), EnergySystem.get_energy_system(), self.unit_handling)
 
         # store input data
         self.store_input_data()
@@ -83,17 +84,17 @@ class EnergySystem:
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
 
-        system                          = EnergySystem.get_system()
-        self.paths                      = EnergySystem.get_paths()
+        system = EnergySystem.get_system()
+        self.paths = EnergySystem.get_paths()
 
         # in class <EnergySystem>, all sets are constructed
-        self.set_nodes              = self.datainput.extract_locations()
-        self.set_nodes_on_edges        = self.calculate_edges_from_nodes()
-        self.set_edges               = list(self.set_nodes_on_edges.keys())
-        self.set_carriers            = []
-        self.set_technologies        = system["set_technologies"]
+        self.set_nodes = self.datainput.extract_locations()
+        self.set_nodes_on_edges = self.calculate_edges_from_nodes()
+        self.set_edges = list(self.set_nodes_on_edges.keys())
+        self.set_carriers = []
+        self.set_technologies = system["set_technologies"]
         # base time steps
-        self.set_base_time_steps       = list(range(0, system["unaggregated_time_steps_per_year"] * system["optimized_years"]))
+        self.set_base_time_steps = list(range(0, system["unaggregated_time_steps_per_year"] * system["optimized_years"]))
         self.set_base_time_steps_yearly = list(range(0, system["unaggregated_time_steps_per_year"]))
 
         # yearly time steps
@@ -108,15 +109,13 @@ class EnergySystem:
         self.set_transport_technologies = system["set_transport_technologies"]
         self.set_storage_technologies = system["set_storage_technologies"]
         # carbon emissions limit
-        self.carbon_emissions_limit = self.datainput.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps"],
-                                                                    time_steps=self.set_time_steps_yearly)
+        self.carbon_emissions_limit = self.datainput.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps"], time_steps=self.set_time_steps_yearly)
         _fraction_year = system["unaggregated_time_steps_per_year"] / system["total_hours_per_year"]
         self.carbon_emissions_limit = self.carbon_emissions_limit * _fraction_year  # reduce to fraction of year
         self.carbon_emissions_budget = self.datainput.extract_input_data("carbon_emissions_budget", index_sets=[])
         self.previous_carbon_emissions = self.datainput.extract_input_data("previous_carbon_emissions", index_sets=[])
         # carbon price
-        self.carbon_price = self.datainput.extract_input_data("carbon_price", index_sets=["set_time_steps"],
-                                                           time_steps=self.set_time_steps_yearly)
+        self.carbon_price = self.datainput.extract_input_data("carbon_price", index_sets=["set_time_steps"], time_steps=self.set_time_steps_yearly)
         self.carbon_price_overshoot = self.datainput.extract_input_data("carbon_price_overshoot", index_sets=[])
 
     def calculate_edges_from_nodes(self):
@@ -128,13 +127,13 @@ class EnergySystem:
         set_edges_input = self.datainput.extract_locations(extract_nodes=False)
         if set_edges_input is not None:
             for edge in set_edges_input.index:
-                set_nodes_on_edges[edge] = (set_edges_input.loc[edge,"node_from"],set_edges_input.loc[edge,"node_to"])
+                set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
         else:
-            warnings.warn(f"Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{system['''folder_name_system_specification''']}' instead!",FutureWarning)
+            warnings.warn(f"Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{system['''folder_name_system_specification''']}' instead!", FutureWarning)
             for node_from in self.set_nodes:
                 for node_to in self.set_nodes:
                     if node_from != node_to:
-                        set_nodes_on_edges[node_from+"-"+node_to] = (node_from,node_to)
+                        set_nodes_on_edges[node_from + "-" + node_to] = (node_from, node_to)
         return set_nodes_on_edges
 
     def get_input_path(self):
@@ -148,13 +147,13 @@ class EnergySystem:
     ### CLASS METHODS ###
     # setter/getter classmethods
     @classmethod
-    def set_energy_system(cls,energy_system):
+    def set_energy_system(cls, energy_system):
         """ set energy_system.
         :param energy_system: new energy_system that is set """
         cls.energy_system = energy_system
 
     @classmethod
-    def set_optimization_attributes(cls,analysis, system,paths,solver):
+    def set_optimization_attributes(cls, analysis, system, paths, solver):
         """ set attributes of class <EnergySystem> with inputs 
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system
@@ -172,7 +171,7 @@ class EnergySystem:
         cls.set_indexing_sets()
 
     @classmethod
-    def set_pyomo_model(cls,pyomo_model):
+    def set_pyomo_model(cls, pyomo_model):
         """ sets empty concrete model to energy_system
         :param pyomo_model: pe.ConcreteModel"""
         cls.pyomo_model = pyomo_model
@@ -187,12 +186,12 @@ class EnergySystem:
                 cls.indexing_sets.append(key)
 
     @classmethod
-    def set_manual_set_to_indexing_sets(cls,manual_set):
+    def set_manual_set_to_indexing_sets(cls, manual_set):
         """ manually set to cls.indexing_sets """
         cls.indexing_sets.append(manual_set)
 
     @classmethod
-    def set_technology_of_carrier(cls,technology,list_technology_of_carrier):
+    def set_technology_of_carrier(cls, technology, list_technology_of_carrier):
         """ appends technology to carrier in dict_technology_of_carrier
         :param technology: name of technology in model
         :param list_technology_of_carrier: list of carriers correspondent to technology"""
@@ -217,8 +216,8 @@ class EnergySystem:
     def set_time_steps_storage_startend(cls, element):
         """ sets the dict of matching the last time step of the year in the storage level domain to the first """
         system = cls.get_system()
-        _unaggregated_time_steps  = system["unaggregated_time_steps_per_year"]
-        _sequence_time_steps      = cls.get_sequence_time_steps(element + "_storage_level")
+        _unaggregated_time_steps = system["unaggregated_time_steps_per_year"]
+        _sequence_time_steps = cls.get_sequence_time_steps(element + "_storage_level")
         _counter = 0
         _time_steps_start = []
         _time_steps_end = []
@@ -229,17 +228,16 @@ class EnergySystem:
         cls.dict_time_steps_storage_level_startend_year[element] = {_start: _end for _start, _end in zip(_time_steps_start, _time_steps_end)}
 
     @classmethod
-    def set_sequence_time_steps(cls,element,sequence_time_steps,time_step_type = None):
+    def set_sequence_time_steps(cls, element, sequence_time_steps, time_step_type=None):
         """ sets sequence of time steps, either of operation, invest, or year
         :param element: name of element in model
         :param sequence_time_steps: list of time steps corresponding to base time step
         :param time_step_type: type of time step (operation or yearly)"""
 
-        cls.sequence_time_steps.set_sequence_time_steps(element=element, sequence_time_steps=sequence_time_steps,
-                                                   time_step_type=time_step_type)
+        cls.sequence_time_steps.set_sequence_time_steps(element=element, sequence_time_steps=sequence_time_steps, time_step_type=time_step_type)
 
     @classmethod
-    def set_sequence_time_steps_dict(cls,dict_all_sequence_time_steps):
+    def set_sequence_time_steps_dict(cls, dict_all_sequence_time_steps):
         """ sets all dicts of sequences of time steps.
         :param dict_all_sequence_time_steps: dict of all dict_sequence_time_steps"""
         cls.sequence_time_steps.reset_dicts(dict_all_sequence_time_steps=dict_all_sequence_time_steps)
@@ -285,20 +283,20 @@ class EnergySystem:
         """ get attribute value of energy_system
         :param attribute_name: str name of attribute
         :return attribute: returns attribute values """
-        element_classes    = cls.dict_element_classes.keys()
-        carrier_classes    = [element_name for element_name in element_classes if "Carrier" in element_name]
+        element_classes = cls.dict_element_classes.keys()
+        carrier_classes = [element_name for element_name in element_classes if "Carrier" in element_name]
         technology_classes = [element_name for element_name in element_classes if "Technology" in element_name]
-        cls.element_list   = technology_classes + carrier_classes
+        cls.element_list = technology_classes + carrier_classes
         return cls.element_list
 
     @classmethod
-    def get_attribute(cls,attribute_name:str):
+    def get_attribute(cls, attribute_name: str):
         """ get attribute value of energy_system
         :param attribute_name: str name of attribute
         :return attribute: returns attribute values """
         energy_system = cls.get_energy_system()
-        assert hasattr(energy_system,attribute_name), f"The energy system does not have attribute '{attribute_name}"
-        return getattr(energy_system,attribute_name)
+        assert hasattr(energy_system, attribute_name), f"The energy system does not have attribute '{attribute_name}"
+        return getattr(energy_system, attribute_name)
 
     @classmethod
     def get_indexing_sets(cls):
@@ -307,7 +305,7 @@ class EnergySystem:
         return cls.indexing_sets
 
     @classmethod
-    def get_technology_of_carrier(cls,carrier):
+    def get_technology_of_carrier(cls, carrier):
         """ gets technologies which are connected by carrier
         :param carrier: carrier which connects technologies
         :return listOfTechnologies: list of technologies connected by carrier"""
@@ -335,7 +333,7 @@ class EnergySystem:
             return None
 
     @classmethod
-    def get_sequence_time_steps(cls,element,time_step_type = None):
+    def get_sequence_time_steps(cls, element, time_step_type=None):
         """ get sequence ot time steps of element
         :param element: name of element in model
         :param time_step_type: type of time step (operation or invest)
@@ -359,10 +357,10 @@ class EnergySystem:
     def create_unit_handling(cls):
         """ creates and stores the unit handling object """
         # create UnitHandling object
-        cls.unit_handling = UnitHandling(cls.get_energy_system().input_path,cls.get_energy_system().solver["rounding_decimal_points"])
+        cls.unit_handling = UnitHandling(cls.get_energy_system().input_path, cls.get_energy_system().solver["rounding_decimal_points"])
 
     @classmethod
-    def calculate_connected_edges(cls,node,direction:str):
+    def calculate_connected_edges(cls, node, direction: str):
         """ calculates connected edges going in (direction = 'in') or going out (direction = 'out')
         :param node: current node, connected by edges
         :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
@@ -370,10 +368,10 @@ class EnergySystem:
         energy_system = cls.get_energy_system()
         if direction == "in":
             # second entry is node into which the flow goes
-            _set_connected_edges = [edge for edge in energy_system.set_nodes_on_edges if energy_system.set_nodes_on_edges[edge][1]==node]
+            _set_connected_edges = [edge for edge in energy_system.set_nodes_on_edges if energy_system.set_nodes_on_edges[edge][1] == node]
         elif direction == "out":
             # first entry is node out of which the flow starts
-            _set_connected_edges = [edge for edge in energy_system.set_nodes_on_edges if energy_system.set_nodes_on_edges[edge][0]==node]
+            _set_connected_edges = [edge for edge in energy_system.set_nodes_on_edges if energy_system.set_nodes_on_edges[edge][0] == node]
         else:
             raise KeyError(f"invalid direction '{direction}'")
         return _set_connected_edges
@@ -391,17 +389,17 @@ class EnergySystem:
         raise KeyError(f"Edge {edge} has no reversed edge. However, at least one transport technology is bidirectional")
 
     @classmethod
-    def calculate_time_step_duration(cls,input_time_steps,manual_base_time_steps = None):
+    def calculate_time_step_duration(cls, input_time_steps, manual_base_time_steps=None):
         """ calculates (equidistant) time step durations for input time steps
         :param input_time_steps: input time steps
         :param manual_base_time_steps: manual list of base time steps
         :return time_step_duration_dict: dict with duration of each time step """
         if manual_base_time_steps is not None:
-            base_time_steps       = manual_base_time_steps
+            base_time_steps = manual_base_time_steps
         else:
-            base_time_steps       = cls.get_energy_system().set_base_time_steps
-        duration_input_time_steps  = len(base_time_steps)/len(input_time_steps)
-        time_step_duration_dict    = {time_step: int(duration_input_time_steps) for time_step in input_time_steps}
+            base_time_steps = cls.get_energy_system().set_base_time_steps
+        duration_input_time_steps = len(base_time_steps) / len(input_time_steps)
+        time_step_duration_dict = {time_step: int(duration_input_time_steps) for time_step in input_time_steps}
         if not duration_input_time_steps.is_integer():
             logging.warning(f"The duration of each time step {duration_input_time_steps} of input time steps {input_time_steps} does not evaluate to an integer. \n"
                             f"The duration of the last time step is set to compensate for the difference")
@@ -410,7 +408,7 @@ class EnergySystem:
         return time_step_duration_dict
 
     @classmethod
-    def decode_time_step(cls,element,element_time_step:int,time_step_type:str = None):
+    def decode_time_step(cls, element, element_time_step: int, time_step_type: str = None):
         """ decodes time_step, i.e., retrieves the base_time_step corresponding to the variableTimeStep of a element.
         time_step of element --> base_time_step of model
         :param element: element of model, i.e., carrier or technology
@@ -418,11 +416,10 @@ class EnergySystem:
         :param time_step_type: invest or operation. Only relevant for technologies, None for carrier
         :return baseTimeStep: baseTimeStep of model """
 
-        return cls.sequence_time_steps.decode_time_step(element=element, element_time_step=element_time_step,
-                                                    time_step_type=time_step_type)
+        return cls.sequence_time_steps.decode_time_step(element=element, element_time_step=element_time_step, time_step_type=time_step_type)
 
     @classmethod
-    def encode_time_step(cls,element:str,base_time_steps:int,time_step_type:str = None,yearly=False):
+    def encode_time_step(cls, element: str, base_time_steps: int, time_step_type: str = None, yearly=False):
         """ encodes base_time_step, i.e., retrieves the time step of a element corresponding to base_time_step of model.
         base_time_step of model --> time_step of element
         :param element: name of element in model, i.e., carrier or technology
@@ -430,22 +427,21 @@ class EnergySystem:
         :param time_step_type: invest or operation. Only relevant for technologies
         :return outputTimeStep: time step of element"""
 
-        return cls.sequence_time_steps.encode_time_step(element=element, base_time_steps=base_time_steps,
-                                                    time_step_type=time_step_type, yearly=yearly)
+        return cls.sequence_time_steps.encode_time_step(element=element, base_time_steps=base_time_steps, time_step_type=time_step_type, yearly=yearly)
 
     @classmethod
-    def decode_yearly_time_steps(cls,element_time_steps):
+    def decode_yearly_time_steps(cls, element_time_steps):
         """ decodes list of years to base time steps
         :param element_time_steps: time steps of year
         :return _full_base_time_steps: full list of time steps """
         _list_base_time_steps = []
         for year in element_time_steps:
-            _list_base_time_steps.append(cls.decode_time_step(None,year,"yearly"))
+            _list_base_time_steps.append(cls.decode_time_step(None, year, "yearly"))
         _full_base_time_steps = np.concatenate(_list_base_time_steps)
         return _full_base_time_steps
 
     @classmethod
-    def convert_time_step_energy2power(cls,element,timeStepEnergy):
+    def convert_time_step_energy2power(cls, element, timeStepEnergy):
         """ converts the time step of the energy quantities of a storage technology to the time step of the power quantities """
         _timeStepsEnergy2Power = cls.get_time_steps_energy2power(element)
         return _timeStepsEnergy2Power[timeStepEnergy]
@@ -457,7 +453,7 @@ class EnergySystem:
         return time_steps_operation2invest[time_step_operation]
 
     @classmethod
-    def initialize_component(cls,calling_class,component_name,index_names = None,set_time_steps = None,capacity_types = False):
+    def initialize_component(cls, calling_class, component_name, index_names=None, set_time_steps=None, capacity_types=False):
         """ this method initializes a modeling component by extracting the stored input data.
         :param calling_class: class from where the method is called
         :param component_name: name of modeling component
@@ -481,25 +477,25 @@ class EnergySystem:
             else:
                 component_data = component.squeeze()
         else:
-            component_data,attribute_is_series = calling_class.get_attribute_of_all_elements(component_name, capacity_types= capacity_types, return_attribute_is_series=True)
+            component_data, attribute_is_series = calling_class.get_attribute_of_all_elements(component_name, capacity_types=capacity_types, return_attribute_is_series=True)
             index_list = []
             if index_names:
-                custom_set,index_list = calling_class.create_custom_set(index_names)
+                custom_set, index_list = calling_class.create_custom_set(index_names)
                 if np.size(custom_set):
                     if attribute_is_series:
-                        component_data = pd.concat(component_data,keys=component_data.keys())
+                        component_data = pd.concat(component_data, keys=component_data.keys())
                     else:
                         component_data = pd.Series(component_data)
-                    component_data   = cls.check_for_subindex(component_data,custom_set)
+                    component_data = cls.check_for_subindex(component_data, custom_set)
             elif attribute_is_series:
                 component_data = pd.concat(component_data, keys=component_data.keys())
             if not index_names:
                 logging.warning(f"Initializing a parameter ({component_name}) without the specifying the index names will be deprecated!")
 
-        return component_data,index_list
+        return component_data, index_list
 
     @classmethod
-    def check_for_subindex(cls,component_data,custom_set):
+    def check_for_subindex(cls, component_data, custom_set):
         """ this method checks if the custom_set can be a subindex of component_data and returns subindexed component_data
         :param component_data: extracted data as pd.Series
         :param custom_set: custom set as subindex of component_data
@@ -514,12 +510,12 @@ class EnergySystem:
         except:
             _custom_index = pd.Index(custom_set)
             _reduced_custom_index = _custom_index.copy()
-            for _level,_shape in enumerate(_custom_index.levshape):
+            for _level, _shape in enumerate(_custom_index.levshape):
                 if _shape == 1:
                     _reduced_custom_index = _reduced_custom_index.droplevel(_level)
             try:
                 component_data = component_data[_reduced_custom_index]
-                component_data.index     = _custom_index
+                component_data.index = _custom_index
                 return component_data
             except KeyError:
                 raise KeyError(f"the custom set {custom_set} cannot be used as a subindex of {component_data.index}")
@@ -533,44 +529,25 @@ class EnergySystem:
         energy_system = cls.get_energy_system()
 
         # nodes
-        model.set_nodes = pe.Set(
-            initialize=energy_system.set_nodes,
-            doc='Set of nodes')
+        model.set_nodes = pe.Set(initialize=energy_system.set_nodes, doc='Set of nodes')
         # edges
-        model.set_edges = pe.Set(
-            initialize = energy_system.set_edges,
-            doc = 'Set of edges')
+        model.set_edges = pe.Set(initialize=energy_system.set_edges, doc='Set of edges')
         # nodes on edges
-        model.set_nodes_on_edges = pe.Set(
-            model.set_edges,
-            initialize = energy_system.set_nodes_on_edges,
-            doc = 'Set of nodes that constitute an edge. Edge connects first node with second node.')
+        model.set_nodes_on_edges = pe.Set(model.set_edges, initialize=energy_system.set_nodes_on_edges, doc='Set of nodes that constitute an edge. Edge connects first node with second node.')
         # carriers
-        model.set_carriers = pe.Set(
-            initialize=energy_system.set_carriers,
-            doc='Set of carriers')
+        model.set_carriers = pe.Set(initialize=energy_system.set_carriers, doc='Set of carriers')
         # technologies
-        model.set_technologies = pe.Set(
-            initialize=energy_system.set_technologies,
-            doc='Set of technologies')
+        model.set_technologies = pe.Set(initialize=energy_system.set_technologies, doc='Set of technologies')
         # all elements
-        model.set_elements = pe.Set(
-            initialize=model.set_technologies | model.set_carriers,
-            doc='Set of elements')
+        model.set_elements = pe.Set(initialize=model.set_technologies | model.set_carriers, doc='Set of elements')
         # set set_elements to indexing_sets
         cls.set_manual_set_to_indexing_sets("set_elements")
         # time-steps
-        model.set_base_time_steps = pe.Set(
-            initialize=energy_system.set_base_time_steps,
-            doc='Set of base time-steps')
+        model.set_base_time_steps = pe.Set(initialize=energy_system.set_base_time_steps, doc='Set of base time-steps')
         # yearly time steps
-        model.set_time_steps_yearly = pe.Set(
-            initialize=energy_system.set_time_steps_yearly,
-            doc='Set of yearly time-steps')
+        model.set_time_steps_yearly = pe.Set(initialize=energy_system.set_time_steps_yearly, doc='Set of yearly time-steps')
         # yearly time steps of entire optimization horizon
-        model.set_time_steps_yearly_entire_horizon = pe.Set(
-            initialize=energy_system.set_time_steps_yearly_entire_horizon,
-            doc='Set of yearly time-steps of entire optimization horizon')
+        model.set_time_steps_yearly_entire_horizon = pe.Set(initialize=energy_system.set_time_steps_yearly_entire_horizon, doc='Set of yearly time-steps of entire optimization horizon')
 
     @classmethod
     def construct_params(cls):
@@ -579,35 +556,18 @@ class EnergySystem:
         model = cls.get_pyomo_model()
 
         # carbon emissions limit
-        Parameter.add_parameter(
-            name="carbon_emissions_limit",
-            data=cls.initialize_component(cls, "carbon_emissions_limit", set_time_steps=model.set_time_steps_yearly),
-            doc='Parameter which specifies the total limit on carbon emissions'
-        )
+        Parameter.add_parameter(name="carbon_emissions_limit", data=cls.initialize_component(cls, "carbon_emissions_limit", set_time_steps=model.set_time_steps_yearly),
+            doc='Parameter which specifies the total limit on carbon emissions')
         # carbon emissions budget
-        Parameter.add_parameter(
-            name="carbon_emissions_budget",
-            data=cls.initialize_component(cls, "carbon_emissions_budget"),
-            doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon'
-        )
+        Parameter.add_parameter(name="carbon_emissions_budget", data=cls.initialize_component(cls, "carbon_emissions_budget"),
+            doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon')
         # carbon emissions budget
-        Parameter.add_parameter(
-            name="previous_carbon_emissions",
-            data=cls.initialize_component(cls, "previous_carbon_emissions"),
-            doc='Parameter which specifies the total previous carbon emissions'
-        )
+        Parameter.add_parameter(name="previous_carbon_emissions", data=cls.initialize_component(cls, "previous_carbon_emissions"), doc='Parameter which specifies the total previous carbon emissions')
         # carbon price
-        Parameter.add_parameter(
-            name="carbon_price",
-            data=cls.initialize_component(cls, "carbon_price", set_time_steps=model.set_time_steps_yearly),
-            doc='Parameter which specifies the yearly carbon price'
-        )
+        Parameter.add_parameter(name="carbon_price", data=cls.initialize_component(cls, "carbon_price", set_time_steps=model.set_time_steps_yearly),
+            doc='Parameter which specifies the yearly carbon price')
         # carbon price of overshoot
-        Parameter.add_parameter(
-            name="carbon_price_overshoot",
-            data=cls.initialize_component(cls, "carbon_price_overshoot"),
-            doc='Parameter which specifies the carbon price for budget overshoot'
-        )
+        Parameter.add_parameter(name="carbon_price_overshoot", data=cls.initialize_component(cls, "carbon_price_overshoot"), doc='Parameter which specifies the carbon price for budget overshoot')
 
     @classmethod
     def construct_vars(cls):
@@ -616,53 +576,19 @@ class EnergySystem:
         model = cls.get_pyomo_model()
 
         # carbon emissions
-        Variable.add_variable(
-            model,
-            name = "carbon_emissions_total",
-            index_sets = model.set_time_steps_yearly,
-            domain = pe.Reals,
-            doc = "total carbon emissions of energy system"
-        )
+        Variable.add_variable(model, name="carbon_emissions_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc="total carbon emissions of energy system")
         # cumulative carbon emissions
-        Variable.add_variable(
-            model,
-            name="carbon_emissions_cumulative",
-            index_sets=model.set_time_steps_yearly,
-            domain=pe.Reals,
-            doc="cumulative carbon emissions of energy system over time for each year"
-        )
+        Variable.add_variable(model, name="carbon_emissions_cumulative", index_sets=model.set_time_steps_yearly, domain=pe.Reals,
+            doc="cumulative carbon emissions of energy system over time for each year")
         # carbon emission overshoot
-        Variable.add_variable(
-            model,
-            name="carbon_emissions_overshoot",
-            index_sets=model.set_time_steps_yearly,
-            domain=pe.NonNegativeReals,
-            doc="overshoot carbon emissions of energy system at the end of the time horizon"
-        )
+        Variable.add_variable(model, name="carbon_emissions_overshoot", index_sets=model.set_time_steps_yearly, domain=pe.NonNegativeReals,
+            doc="overshoot carbon emissions of energy system at the end of the time horizon")
         # cost of carbon emissions
-        Variable.add_variable(
-            model,
-            name="cost_carbon_emissions_total",
-            index_sets = model.set_time_steps_yearly,
-            domain=pe.Reals,
-            doc="total cost of carbon emissions of energy system"
-        )
+        Variable.add_variable(model, name="cost_carbon_emissions_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of carbon emissions of energy system")
         # costs
-        Variable.add_variable(
-            model,
-            name="cost_total",
-            index_sets = model.set_time_steps_yearly,
-            domain=pe.Reals,
-            doc="total cost of energy system"
-        )
+        Variable.add_variable(model, name="cost_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of energy system")
         # NPV
-        Variable.add_variable(
-            model,
-            name="NPV",
-            index_sets = model.set_time_steps_yearly,
-            domain=pe.Reals,
-            doc="NPV of energy system"
-        )
+        Variable.add_variable(model, name="NPV", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc="NPV of energy system")
 
     @classmethod
     def construct_constraints(cls):
@@ -671,61 +597,23 @@ class EnergySystem:
         model = cls.get_pyomo_model()
 
         # carbon emissions
-        Constraint.add_constraint(
-            model,
-            name="constraint_carbon_emissions_total",
-            index_sets = model.set_time_steps_yearly,
-            rule=constraint_carbon_emissions_total_rule,
-            doc="total carbon emissions of energy system"
-        )
+        Constraint.add_constraint(model, name="constraint_carbon_emissions_total", index_sets=model.set_time_steps_yearly, rule=constraint_carbon_emissions_total_rule,
+            doc="total carbon emissions of energy system")
         # carbon emissions
-        Constraint.add_constraint(
-            model,
-            name="constraint_carbon_emissions_cumulative",
-            index_sets = model.set_time_steps_yearly,
-            rule=constraint_carbon_emissions_cumulative_rule,
-            doc="cumulative carbon emissions of energy system over time"
-        )
+        Constraint.add_constraint(model, name="constraint_carbon_emissions_cumulative", index_sets=model.set_time_steps_yearly, rule=constraint_carbon_emissions_cumulative_rule,
+            doc="cumulative carbon emissions of energy system over time")
         # cost of carbon emissions
-        Constraint.add_constraint(
-            model,
-            name="constraint_carbon_cost_total",
-            index_sets = model.set_time_steps_yearly,
-            rule=constraint_carbon_cost_total_rule,
-            doc="total carbon cost of energy system"
-        )
+        Constraint.add_constraint(model, name="constraint_carbon_cost_total", index_sets=model.set_time_steps_yearly, rule=constraint_carbon_cost_total_rule, doc="total carbon cost of energy system")
         # carbon emissions
-        Constraint.add_constraint(
-            model,
-            name="constraint_carbon_emissions_limit",
-            index_sets = model.set_time_steps_yearly,
-            rule=constraint_carbon_emissions_limit_rule,
-            doc="limit of total carbon emissions of energy system"
-        )
+        Constraint.add_constraint(model, name="constraint_carbon_emissions_limit", index_sets=model.set_time_steps_yearly, rule=constraint_carbon_emissions_limit_rule,
+            doc="limit of total carbon emissions of energy system")
         # carbon emissions
-        Constraint.add_constraint(
-            model,
-            name="constraint_carbon_emissions_budget",
-            index_sets = model.set_time_steps_yearly,
-            rule=constraint_carbon_emissions_budget_rule,
-            doc="Budget of total carbon emissions of energy system"
-        )
+        Constraint.add_constraint(model, name="constraint_carbon_emissions_budget", index_sets=model.set_time_steps_yearly, rule=constraint_carbon_emissions_budget_rule,
+            doc="Budget of total carbon emissions of energy system")
         # costs
-        Constraint.add_constraint(
-            model,
-            name="constraint_cost_total",
-            index_sets = model.set_time_steps_yearly,
-            rule=constraint_cost_total_rule,
-            doc="total cost of energy system"
-        )
+        Constraint.add_constraint(model, name="constraint_cost_total", index_sets=model.set_time_steps_yearly, rule=constraint_cost_total_rule, doc="total cost of energy system")
         # NPV
-        Constraint.add_constraint(
-            model,
-            name="constraint_NPV",
-            index_sets = model.set_time_steps_yearly,
-            rule=constraint_NPV_rule,
-            doc="NPV of energy system"
-        )
+        Constraint.add_constraint(model, name="constraint_NPV", index_sets=model.set_time_steps_yearly, rule=constraint_NPV_rule, doc="NPV of energy system")
 
     @classmethod
     def construct_objective(cls):
@@ -754,22 +642,16 @@ class EnergySystem:
             raise KeyError(f"Objective sense {cls.get_analysis()['sense']} not known")
 
         # construct objective
-        model.objective = pe.Objective(
-            rule=objective_rule,
-            sense=objective_sense
-        )
+        model.objective = pe.Objective(rule=objective_rule, sense=objective_sense)
 
 
 def constraint_carbon_emissions_total_rule(model, year):
     """ add up all carbon emissions from technologies and carriers """
-    return (
-            model.carbon_emissions_total[year] ==
+    return (model.carbon_emissions_total[year] ==
             # technologies
-            model.carbon_emissions_technology_total[year]
-            +
-            # carriers
-            model.carbon_emissions_carrier_total[year]
-    )
+            model.carbon_emissions_technology_total[year] + # carriers
+            model.carbon_emissions_carrier_total[year])
+
 
 def constraint_carbon_emissions_cumulative_rule(model, year):
     """ cumulative carbon emissions over time """
@@ -777,40 +659,29 @@ def constraint_carbon_emissions_cumulative_rule(model, year):
     params = Parameter.get_component_object()
     interval_between_years = EnergySystem.get_system()["interval_between_years"]
     if year == model.set_time_steps_yearly.at(1):
-        return (
-                model.carbon_emissions_cumulative[year] ==
-                model.carbon_emissions_total[year]
-                + params.previous_carbon_emissions
-        )
+        return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_total[year] + params.previous_carbon_emissions)
     else:
-        return (
-                model.carbon_emissions_cumulative[year] ==
-                model.carbon_emissions_cumulative[year - 1]
-                + model.carbon_emissions_total[year - 1] * (interval_between_years - 1)
-                + model.carbon_emissions_total[year]
-        )
+        return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_cumulative[year - 1] + model.carbon_emissions_total[year - 1] * (interval_between_years - 1) +
+                model.carbon_emissions_total[year])
+
 
 def constraint_carbon_cost_total_rule(model, year):
     """ carbon cost associated with the carbon emissions of the system in each year """
     # get parameter object
     params = Parameter.get_component_object()
-    return (
-            model.cost_carbon_emissions_total[year] ==
-            params.carbon_price[year] * model.carbon_emissions_total[year]
-            # add overshoot price
-            + model.carbon_emissions_overshoot[year] * params.carbon_price_overshoot
-    )
+    return (model.cost_carbon_emissions_total[year] == params.carbon_price[year] * model.carbon_emissions_total[year] # add overshoot price
+            + model.carbon_emissions_overshoot[year] * params.carbon_price_overshoot)
+
 
 def constraint_carbon_emissions_limit_rule(model, year):
     """ time dependent carbon emissions limit from technologies and carriers"""
     # get parameter object
     params = Parameter.get_component_object()
     if params.carbon_emissions_limit[year] != np.inf:
-        return (
-            params.carbon_emissions_limit[year] >= model.carbon_emissions_total[year]
-        )
+        return (params.carbon_emissions_limit[year] >= model.carbon_emissions_total[year])
     else:
         return pe.Constraint.Skip
+
 
 def constraint_carbon_emissions_budget_rule(model, year):
     """ carbon emissions budget of entire time horizon from technologies and carriers.
@@ -819,27 +690,21 @@ def constraint_carbon_emissions_budget_rule(model, year):
     # get parameter object
     params = Parameter.get_component_object()
     interval_between_years = EnergySystem.get_system()["interval_between_years"]
-    if params.carbon_emissions_budget != np.inf: #TODO check for last year - without last term?
-        return (
-                params.carbon_emissions_budget + model.carbon_emissions_overshoot[year] >=
-                model.carbon_emissions_cumulative[year] + model.carbon_emissions_total[year] * (interval_between_years - 1)
-        )
+    if params.carbon_emissions_budget != np.inf:  # TODO check for last year - without last term?
+        return (params.carbon_emissions_budget + model.carbon_emissions_overshoot[year] >= model.carbon_emissions_cumulative[year] + model.carbon_emissions_total[year] * (interval_between_years - 1))
     else:
         return pe.Constraint.Skip
 
+
 def constraint_cost_total_rule(model, year):
     """ add up all costs from technologies and carriers"""
-    return (
-            model.cost_total[year] ==
+    return (model.cost_total[year] ==
             # capex
-            model.capex_total[year] +
-            # opex
-            model.opex_total[year] +
-            # carrier costs
-            model.cost_carrier_total[year] +
-            # carbon costs
-            model.cost_carbon_emissions_total[year]
-    )
+            model.capex_total[year] + # opex
+            model.opex_total[year] + # carrier costs
+            model.cost_carrier_total[year] + # carbon costs
+            model.cost_carbon_emissions_total[year])
+
 
 def constraint_NPV_rule(model, year):
     """ discounts the annual capital flows to calculate the NPV """
@@ -850,43 +715,29 @@ def constraint_NPV_rule(model, year):
     else:
         interval_between_years = 1
 
-    return (
-            model.NPV[year] ==
-            model.cost_total[year] *
-            sum(
-                # economic discount
-                ((1 / (1 + discount_rate)) ** (interval_between_years * (year - model.set_time_steps_yearly.at(1))+_intermediate_time_step))
-                for _intermediate_time_step in range(0,interval_between_years)
-            )
-    )
+    return (model.NPV[year] == model.cost_total[year] * sum(# economic discount
+        ((1 / (1 + discount_rate)) ** (interval_between_years * (year - model.set_time_steps_yearly.at(1)) + _intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years)))
+
 
 # objective rules
 def objective_total_cost_rule(model):
     """objective function to minimize the total cost"""
     system = EnergySystem.get_system()
-    return (
-        sum(
-            model.NPV[year] *
-            # discounted utility function
-            ((1 / (1 + system["social_discount_rate"])) ** (
-                        system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1))))
-            for year in model.set_time_steps_yearly)
-    )
+    return (sum(model.NPV[year] * # discounted utility function
+                ((1 / (1 + system["social_discount_rate"])) ** (system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1)))) for year in model.set_time_steps_yearly))
+
 
 def objectiveNPVRule(model):
     """ objective function to minimize NPV """
-    return (
-        sum(
-            model.NPV[year]
-            for year in model.set_time_steps_yearly)
-    )
+    return (sum(model.NPV[year] for year in model.set_time_steps_yearly))
+
 
 def objective_total_carbon_emissions_rule(model):
     """objective function to minimize total emissions"""
     return (sum(model.carbon_emissions_total[year] for year in model.set_time_steps_yearly))
 
+
 def objective_risk_rule(model):
     """objective function to minimize total risk"""
     # TODO implement objective functions for risk
     return pe.Constraint.Skip
-

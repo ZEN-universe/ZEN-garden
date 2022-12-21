@@ -9,11 +9,12 @@ Description:    Class defining the parameters, variables and constraints of the 
                 constraints of the conversion technologies.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ                                as pe
-import pandas                                       as pd
-import numpy                                        as np
-from ..energy_system                    import EnergySystem
+import pyomo.environ as pe
+import pandas as pd
+import numpy as np
+from ..energy_system import EnergySystem
 from .conversion_technology import ConversionTechnology
+
 
 class ConditioningTechnology(ConversionTechnology):
     # set label
@@ -40,9 +41,9 @@ class ConditioningTechnology(ConversionTechnology):
 
     def add_conditioning_carriers(self):
         """add conditioning carriers to system"""
-        subset   = "set_conditioning_carriers"
+        subset = "set_conditioning_carriers"
         analysis = EnergySystem.get_analysis()
-        system   = EnergySystem.get_system()
+        system = EnergySystem.get_system()
         # add set_conditioning_carriers to analysis and indexing_sets
         if subset not in analysis["subsets"]["set_carriers"]:
             analysis["subsets"]["set_carriers"].append(subset)
@@ -68,7 +69,7 @@ class ConditioningTechnology(ConversionTechnology):
         _exponent = (specific_heat_ratio - 1) / specific_heat_ratio
         if self.datainput.exists_attribute("lower_heating_value", column=None):
             _lower_heating_value = self.datainput.extract_attribute("lower_heating_value")["value"]
-            specific_heat  = specific_heat / _lower_heating_value
+            specific_heat = specific_heat / _lower_heating_value
         _energy_consumption = specific_heat * temperature_in / isentropic_efficiency * (_pressure_ratio ** _exponent - 1)
 
         # check input and output carriers
@@ -80,20 +81,17 @@ class ConditioningTechnology(ConversionTechnology):
         # create dictionary
         self.conver_efficiency_is_pwa = False
         self.conver_efficiency_linear = dict()
-        self.conver_efficiency_linear[self.output_carrier[0]] = self.datainput.create_default_output(index_sets=["set_nodes","set_time_steps"],
-                                                                                                   column=None,
-                                                                                                   time_steps=set_time_steps_yearly,
-                                                                                                   manual_default_value = 1)[0] # TODO losses are not yet accounted for
-        self.conver_efficiency_linear[_input_carriers[0]] = self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps"],
-                                                                                                   column=None,
-                                                                                                   time_steps=set_time_steps_yearly,
-                                                                                                   manual_default_value=_energy_consumption)[0]
+        self.conver_efficiency_linear[self.output_carrier[0]] = \
+        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps"], column=None, time_steps=set_time_steps_yearly, manual_default_value=1)[
+            0]  # TODO losses are not yet accounted for
+        self.conver_efficiency_linear[_input_carriers[0]] = \
+        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps"], column=None, time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
         # dict to dataframe
-        self.conver_efficiency_linear              = pd.DataFrame.from_dict(self.conver_efficiency_linear)
+        self.conver_efficiency_linear = pd.DataFrame.from_dict(self.conver_efficiency_linear)
         self.conver_efficiency_linear.columns.name = "carrier"
-        self.conver_efficiency_linear              = self.conver_efficiency_linear.stack()
-        _conver_efficiency_levels                  = [self.conver_efficiency_linear.index.names[-1]] + self.conver_efficiency_linear.index.names[:-1]
-        self.conver_efficiency_linear              = self.conver_efficiency_linear.reorder_levels(_conver_efficiency_levels)
+        self.conver_efficiency_linear = self.conver_efficiency_linear.stack()
+        _conver_efficiency_levels = [self.conver_efficiency_linear.index.names[-1]] + self.conver_efficiency_linear.index.names[:-1]
+        self.conver_efficiency_linear = self.conver_efficiency_linear.reorder_levels(_conver_efficiency_levels)
 
     @classmethod
     def construct_sets(cls):
@@ -109,27 +107,18 @@ class ConditioningTechnology(ConversionTechnology):
                 _parent_carriers += carrier_ref
                 _child_carriers[carrier_ref[0]] = list()
             if _output_carriers[tech] not in _child_carriers[carrier_ref[0]]:
-                _child_carriers[carrier_ref[0]] +=_output_carriers[tech]
+                _child_carriers[carrier_ref[0]] += _output_carriers[tech]
                 _conditioning_carriers = list()
-        _conditioning_carriers = _parent_carriers+[carrier[0] for carrier in _child_carriers.values()]
+        _conditioning_carriers = _parent_carriers + [carrier[0] for carrier in _child_carriers.values()]
 
         # update indexing sets
         EnergySystem.indexing_sets.append("set_conditioning_carriers")
         EnergySystem.indexing_sets.append("set_conditioning_carrier_parents")
 
         # set of conditioning carriers
-        model.set_conditioning_carriers = pe.Set(
-            initialize=_conditioning_carriers,
-            doc="set of conditioning carriers"
-        )
+        model.set_conditioning_carriers = pe.Set(initialize=_conditioning_carriers, doc="set of conditioning carriers")
         # set of parent carriers
-        model.set_conditioning_carrier_parents = pe.Set(
-            initialize=_parent_carriers,
-            doc="set of parent carriers of conditioning"
-        )
+        model.set_conditioning_carrier_parents = pe.Set(initialize=_parent_carriers, doc="set of parent carriers of conditioning")
         # set that maps parent and child carriers
-        model.set_conditioning_carrier_children = pe.Set(
-            model.set_conditioning_carrier_parents,
-            initialize=_child_carriers,
-            doc="set of child carriers associated with parent carrier used in conditioning"
-        )
+        model.set_conditioning_carrier_children = pe.Set(model.set_conditioning_carrier_parents, initialize=_child_carriers,
+            doc="set of child carriers associated with parent carrier used in conditioning")

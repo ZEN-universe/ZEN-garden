@@ -17,27 +17,28 @@ from .postprocess.postprocess import Postprocess
 
 from .preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
+
 def restore_default_state():
     """
     Restores the default state of the packages, i.e. sets all Class attributes to their initial values
     """
-    
+
     # Carrier
     #########
-    
+
     # set label
     Carrier.label = "set_carriers"
     # empty list of elements
     Carrier.list_of_elements = []
-    
+
     # Conditional Carrier
     #####################
-    
+
     # set label
     ConditioningCarrier.label = "set_conditioning_carriers"
     # empty list of elements
     ConditioningCarrier.list_of_elements = []
-    
+
     # Element
     #########
 
@@ -100,8 +101,8 @@ def restore_default_state():
     ######################
 
     # set label
-    ConversionTechnology.label           = "set_conversion_technologies"
-    ConversionTechnology.location_type    = "set_nodes"
+    ConversionTechnology.label = "set_conversion_technologies"
+    ConversionTechnology.location_type = "set_nodes"
     # empty list of elements
     ConversionTechnology.list_of_elements = []
 
@@ -109,8 +110,8 @@ def restore_default_state():
     ###################
 
     # set label
-    StorageTechnology.label           = "set_storage_technologies"
-    StorageTechnology.location_type    = "set_nodes"
+    StorageTechnology.label = "set_storage_technologies"
+    StorageTechnology.location_type = "set_nodes"
     # empty list of elements
     StorageTechnology.list_of_elements = []
 
@@ -118,8 +119,8 @@ def restore_default_state():
     ############
 
     # set label
-    Technology.label           = "set_technologies"
-    Technology.location_type    = None
+    Technology.label = "set_technologies"
+    Technology.location_type = None
     # empty list of elements
     Technology.list_of_elements = []
 
@@ -127,8 +128,8 @@ def restore_default_state():
     #####################
 
     # set label
-    TransportTechnology.label           = "set_transport_technologies"
-    TransportTechnology.location_type    = "set_edges"
+    TransportTechnology.label = "set_transport_technologies"
+    TransportTechnology.location_type = "set_edges"
     # empty list of elements
     TransportTechnology.list_of_elements = []
     # dict of reversed edges
@@ -137,7 +138,7 @@ def restore_default_state():
     # OptimizationSetup
     ###################
 
-    OptimizationSetup.base_scenario      = ""
+    OptimizationSetup.base_scenario = ""
     OptimizationSetup.base_configuration = {}
 
     # TimeSeriesAggregation
