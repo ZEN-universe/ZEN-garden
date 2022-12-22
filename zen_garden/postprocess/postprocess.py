@@ -16,10 +16,12 @@ import pyomo.environ as pe
 import pandas as pd
 import pathlib
 import shutil
+import h5py
 import json
 import zlib
 import os
 
+from .. import utils
 from ..model.objects.energy_system import EnergySystem
 from ..model.objects.component import Parameter, Variable, Constraint
 from ..utils import RedirectStdStreams
@@ -27,12 +29,13 @@ from ..utils import RedirectStdStreams
 
 class Postprocess:
 
-    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None):
+    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None, save_opt=False):
         """postprocessing of the results of the optimization
         :param model: optimization model
         :param model_name: The name of the model used to name the output folder
         :param subfolder: The subfolder used for the results
         :param scenario_name: The name of the current scenario
+        :param save_opt: Save the dict of the opt as gszip
         """
 
         # get the necessary stuff from the model
@@ -61,7 +64,7 @@ class Postprocess:
         # check if we should overwrite output
         self.overwrite = self.analysis["overwrite_output"]
         # get the compression param
-        self.compress = self.analysis["compress_output"]
+        self.output_format = self.analysis["output_format"]
 
         # save the pyomo yml
         if self.analysis["write_results_yml"]:
@@ -75,7 +78,8 @@ class Postprocess:
         self.save_analysis()
         self.save_scenarios()
         self.save_solver()
-        self.save_opt()
+        if save_opt:
+            self.save_opt()
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(EnergySystem.get_sequence_time_steps_dict())
@@ -85,39 +89,51 @@ class Postprocess:
         if model.analysis['postprocess']:
             pass  # TODO: implement this...  # self.process()
 
-    def write_file(self, name, dictionary):
+    def write_file(self, name, dictionary, format=None):
         """
         Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
         and saved as binary file
         :param name: Filename without extension
         :param dictionary: The dictionary to save
+        :param format: Force the format to use, if None use output_format attribute of instance
         """
 
-        # serialize to string
-        serialized_dict = json.dumps(dictionary, indent=2)
+        # set the format
+        if format is None:
+            format = self.output_format
+        if format == "gzip" or format == "json":
+            # serialize to string
+            serialized_dict = json.dumps(dictionary, indent=2)
 
-        # if the string is larger than the max output size we compress anyway
-        force_compression = False
-        if not self.compress and sys.getsizeof(serialized_dict) / 1024 ** 2 > self.analysis["max_output_size_mb"]:
-            print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
-                  f"{self.analysis['max_output_size_mb']}MB, compressing...")
-            force_compression = True
+            # if the string is larger than the max output size we compress anyway
+            force_compression = False
+            if format == "json" and sys.getsizeof(serialized_dict) / 1024 ** 2 > self.analysis["max_output_size_mb"]:
+                print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
+                      f"{self.analysis['max_output_size_mb']}MB, compressing...")
+                force_compression = True
 
-        # prep output file
-        if self.compress or force_compression:
-            # compress
-            f_name = f"{name}.gzip"
-            f_mode = "wb"
-            serialized_dict = zlib.compress(serialized_dict.encode())
-        else:
-            # write normal json
-            f_name = f"{name}.json"
-            f_mode = "w+"
+            # prep output file
+            if format == "gzip" or force_compression:
+                # compress
+                f_name = f"{name}.gzip"
+                f_mode = "wb"
+                serialized_dict = zlib.compress(serialized_dict.encode())
+            else:
+                # write normal json
+                f_name = f"{name}.json"
+                f_mode = "w+"
 
-        # write if necessary
-        if self.overwrite or not os.path.exists(f_name):
-            with open(f_name, f_mode) as outfile:
-                outfile.write(serialized_dict)
+            # write if necessary
+            if self.overwrite or not os.path.exists(f_name):
+                with open(f_name, f_mode) as outfile:
+                    outfile.write(serialized_dict)
+
+        elif format == "h5":
+            f_name = f"{name}.h5"
+            if self.overwrite or not os.path.exists(f_name):
+                with h5py.File(f_name, "w") as outfile:
+                    utils.dump(data=dictionary, hdf=outfile)
+
 
     def save_param(self):
         """ Saves the Param values to a json file which can then be
@@ -168,7 +184,12 @@ class Postprocess:
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
 
             # update dict
-            data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)), "docstring": doc}
+            if self.output_format == "h5":
+                # need an array wrap because null bytes cause errors
+                compressed_df = np.array([zlib.compress(df.to_json(orient="table", indent=2).encode())])
+                data_frames[param] = {"dataframe": compressed_df, "docstring": doc}
+            else:
+                data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)), "docstring": doc}
 
         # write to json
         self.write_file(self.name_dir.joinpath('param_dict'), data_frames)
@@ -212,7 +233,14 @@ class Postprocess:
             df = pd.DataFrame(data=values, columns=["value"], index=indices)
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)), "docstring": doc}
+            if self.output_format == "h5":
+                # need an array wrap because null bytes cause errors
+                compressed_df = np.array([zlib.compress(df.to_json(orient="table", indent=2).encode())])
+                data_frames[var.name] = {"dataframe": compressed_df,
+                                         "docstring": doc}
+            else:
+                data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
+                                         "docstring": doc}
 
         self.write_file(self.name_dir.joinpath('var_dict'), data_frames)
 
@@ -226,7 +254,7 @@ class Postprocess:
             fname = self.name_dir.parent.joinpath('system')
         else:
             fname = self.name_dir.joinpath('system')
-        self.write_file(fname, self.system)
+        self.write_file(fname, self.system, format="json")
 
     def save_analysis(self):
         """
@@ -238,7 +266,7 @@ class Postprocess:
             fname = self.name_dir.parent.joinpath('analysis')
         else:
             fname = self.name_dir.joinpath('analysis')
-        self.write_file(fname, self.analysis)
+        self.write_file(fname, self.analysis, format="json")
 
     def save_scenarios(self):
         """
@@ -250,7 +278,7 @@ class Postprocess:
             fname = self.name_dir.parent.joinpath('scenarios')
         else:
             fname = self.name_dir.joinpath('scenarios')
-        self.write_file(fname, self.scenarios)
+        self.write_file(fname, self.scenarios, format="json")
 
     def save_solver(self):
         """
@@ -262,14 +290,14 @@ class Postprocess:
             fname = self.name_dir.parent.joinpath('solver')
         else:
             fname = self.name_dir.joinpath('solver')
-        self.write_file(fname, self.solver)
+        self.write_file(fname, self.solver, format="json")
 
     def save_opt(self):
         """
         Saves the opt dict as json
         """
-        if self.solver["name"] != "gurobi_persistent":
-            self.write_file(self.name_dir.joinpath('opt_dict'), self.opt.__dict__)
+
+        self.write_file(self.name_dir.joinpath('opt_dict'), self.opt.__dict__)
 
         # copy the log file
         shutil.copy2(os.path.abspath(self.opt._log_file), self.name_dir)
@@ -300,21 +328,25 @@ class Postprocess:
         :return: A copy of the dictionary containing lists instead of arrays
         """
         # create a copy of the dict to avoid overwrite
-        dictionary = dictionary.copy()
+        out_dict = dict()
 
         # falten all arrays
         for k, v in dictionary.items():
+            # transform the key None to 'null'
+            if k is None:
+                k = 'null'
+
             # recursive call
             if isinstance(v, dict):
-                dictionary[k] = self.flatten_dict(v)  # flatten the array to list
+                out_dict[k] = self.flatten_dict(v)  # flatten the array to list
             elif isinstance(v, np.ndarray):
                 # Note: list(v) creates a list of np objects v.tolist() not
-                dictionary[k] = v.tolist()
+                out_dict[k] = v.tolist()
             # take as is
             else:
-                dictionary[k] = v
+                out_dict[k] = v
 
-        return dictionary
+        return out_dict
 
     def get_index_list(self, doc):
         """ get index list from docstring """

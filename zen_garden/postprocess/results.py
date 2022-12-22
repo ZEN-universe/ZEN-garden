@@ -8,6 +8,7 @@ Description:  Class is defining to read in the results of an Optimization proble
 ==========================================================================================================================================================================="""
 import logging
 
+import h5py
 import numpy as np
 import pandas as pd
 import importlib
@@ -15,6 +16,7 @@ import json
 import zlib
 import os
 
+from zen_garden import utils
 from zen_garden.model.objects.time_steps import SequenceTimeStepsDicts
 
 
@@ -47,6 +49,9 @@ class Results(object):
 
         # get the years
         self.years = list(range(0, self.results["system"]["optimized_years"]))
+
+        # this is a list for lazy dict to keep the datasets open
+        self._lazydicts = []
 
         # if we only want to load a subset
         if scenarios is not None:
@@ -105,8 +110,12 @@ class Results(object):
 
                 # create dict containing params and vars
                 self.results[scenario][mf]["pars_and_vars"] = {}
-                self.results[scenario][mf]["pars_and_vars"].update(self.load_params(current_path))
-                self.results[scenario][mf]["pars_and_vars"].update(self.load_vars(current_path))
+                pars = self.load_params(current_path, lazy=True)
+                self._lazydicts.append([pars])
+                self.results[scenario][mf]["pars_and_vars"].update(pars)
+                vars = self.load_vars(current_path, lazy=True)
+                self._lazydicts.append([vars])
+                self.results[scenario][mf]["pars_and_vars"].update(vars)
 
                 # the opt we only load when requested
                 if load_opt:
@@ -117,24 +126,34 @@ class Results(object):
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
     @classmethod
-    def _read_file(cls, name):
+    def _read_file(cls, name, lazy=True):
         """
         Reads out a file and decompresses it if necessary
         :param name: File name without extension
-        :return: The decompressed content of the file as string
+        :param lazy: When possible, load lazy
+        :return: The decompressed content of the file as dict like object
         """
+
+        # h5 version
+        if os.path.exists(f"{name}.h5"):
+            content = utils.load(f"{name}.h5")
+            if not lazy:
+                content = content.unlazy(return_dict=True)
+
+            return content
 
         # compressed version
         if os.path.exists(f"{name}.gzip"):
             with open(f"{name}.gzip", "rb") as f:
                 content_compressed = f.read()
-            return zlib.decompress(content_compressed).decode()
+            content = zlib.decompress(content_compressed).decode()
+            return json.loads(content)
 
         # normal version
         if os.path.exists(f"{name}.json"):
             with open(f"{name}.json", "r") as f:
                 content = f.read()
-            return content
+            return json.loads(content)
 
         # raise Error if nothing is found
         raise FileNotFoundError(f"The file does not exists as json or gzip: {name}")
@@ -156,38 +175,66 @@ class Results(object):
             # the docstring we keep
             dict_df[key]['docstring'] = dict_raw[key]['docstring']
 
+            # unpack if necessary
+            if isinstance(dict_raw[key]['dataframe'], np.ndarray):
+                json_dump = zlib.decompress(dict_raw[key]['dataframe']).decode()
+            else:
+                json_dump = json.dumps(dict_raw[key]['dataframe'])
+
             # the dataframe we transform to an actual dataframe
-            dict_df[key]['dataframe'] = pd.read_json(json.dumps(dict_raw[key]['dataframe']), orient="table")
+            dict_df[key]['dataframe'] = pd.read_json(json_dump, orient="table")
 
         return dict_df
 
     @classmethod
-    def load_params(cls, path):
+    def _to_df(cls, string):
+        """
+        Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
+        :param string: The string to decode
+        :return: The corresponding datafram
+        """
+
+        # transform back to dataframes
+        if isinstance(string, np.ndarray):
+            json_dump = zlib.decompress(string).decode()
+        else:
+            json_dump = json.dumps(string)
+
+        return pd.read_json(json_dump, orient="table")
+
+    @classmethod
+    def load_params(cls, path, lazy=False):
         """
         Loads the parameter dict from a given path
         :param path: Path to load the parameter dict from
+        :param lazy: Load lazy, this will not transform the data into dataframes
         :return: The parameter dict
         """
 
         # load the raw dict
         raw_dict = cls._read_file(os.path.join(path, "param_dict"))
-        paramDict_raw = json.loads(raw_dict)
 
-        return cls._dict2df(paramDict_raw)
+        if lazy:
+            return raw_dict
+        else:
+            return cls._dict2df(raw_dict)
 
     @classmethod
-    def load_vars(cls, path):
+    def load_vars(cls, path, lazy=False):
         """
         Loads the var dict from a given path
         :param path: Path to load the var dict from
+        :param lazy: Load lazy, this will not transform the data into dataframes
         :return: The var dict
         """
 
         # load the raw dict
         raw_dict = cls._read_file(os.path.join(path, "var_dict"))
-        varDict_raw = json.loads(raw_dict)
 
-        return cls._dict2df(varDict_raw)
+        if lazy:
+            return raw_dict
+        else:
+            return cls._dict2df(raw_dict)
 
     @classmethod
     def load_system(cls, path):
@@ -198,10 +245,9 @@ class Results(object):
         """
 
         # get the dict
-        raw_dict = cls._read_file(os.path.join(path, "System"))
-        system_dict = json.loads(raw_dict)
+        raw_dict = cls._read_file(os.path.join(path, "system"))
 
-        return system_dict
+        return raw_dict
 
     @classmethod
     def load_analysis(cls, path):
@@ -212,10 +258,9 @@ class Results(object):
         """
 
         # get the dict
-        raw_dict = cls._read_file(os.path.join(path, "Analysis"))
-        analysis_dict = json.loads(raw_dict)
+        raw_dict = cls._read_file(os.path.join(path, "analysis"))
 
-        return analysis_dict
+        return raw_dict
 
     @classmethod
     def load_solver(cls, path):
@@ -226,10 +271,9 @@ class Results(object):
         """
 
         # get the dict
-        raw_dict = cls._read_file(os.path.join(path, "Solver"))
-        solver_dict = json.loads(raw_dict)
+        raw_dict = cls._read_file(os.path.join(path, "solver"))
 
-        return solver_dict
+        return raw_dict
 
     @classmethod
     def load_scenarios(cls, path):
@@ -240,10 +284,9 @@ class Results(object):
         """
 
         # get the dict
-        raw_dict = cls._read_file(os.path.join(path, "Scenarios"))
-        scenarios_dict = json.loads(raw_dict)
+        raw_dict = cls._read_file(os.path.join(path, "scenarios"))
 
-        return scenarios_dict
+        return raw_dict
 
     @classmethod
     def load_opt(cls, path):
@@ -254,10 +297,9 @@ class Results(object):
         """
 
         # get the dict
-        raw_dict = cls._read_file(os.path.join(path, "optDict"))
-        opt_dict = json.loads(raw_dict)
+        raw_dict = cls._read_file(os.path.join(path, "opt_dict"))
 
-        return opt_dict
+        return raw_dict
 
     @classmethod
     def load_sequence_time_steps(cls, path, scenario=None):
@@ -273,12 +315,7 @@ class Results(object):
             fname += f"_{scenario}"
 
         # get the dict
-        raw_dict = cls._read_file(fname)
-        dict_sequence_time_steps = json.loads(raw_dict)
-
-        # json string None to 'null'
-        dict_sequence_time_steps['yearly'][None] = dict_sequence_time_steps['yearly']['null']
-        del dict_sequence_time_steps['yearly']['null']
+        dict_sequence_time_steps = cls._read_file(fname, lazy=False)
 
         # tranform all lists to arrays
         return cls.expand_dict(dict_sequence_time_steps)
@@ -291,21 +328,25 @@ class Results(object):
         :return: A copy of the dictionary containing arrays instead of lists
         """
         # create a copy of the dict to avoid overwrite
-        dictionary = dictionary.copy()
+        out_dict = dict()
 
         # faltten all arrays
         for k, v in dictionary.items():
+            # transform 'null' keys to None
+            if k == 'null':
+                k = None
+
             # recursive call
-            if isinstance(v, dict):
-                dictionary[k] = cls.expand_dict(v)  # flatten the array to list
+            if isinstance(v, (dict, utils.LazyHdfDict)):
+                out_dict[k] = cls.expand_dict(v)  # flatten the array to list
             elif isinstance(v, list):
                 # Note: list(v) creates a list of np objects v.tolist() not
-                dictionary[k] = np.array(v)
+                out_dict[k] = np.array(v)
             # take as is
             else:
-                dictionary[k] = v
+                out_dict[k] = v
 
-        return dictionary
+        return out_dict
 
     def get_df(self, name, is_storage=False, scenario=None, to_csv=None, csv_kwargs=None):
         """
@@ -333,7 +374,7 @@ class Results(object):
 
             if not self.has_MF:
                 # we set the dataframe of the variable into the data dict
-                _data[scenario] = self.results[scenario][None]["pars_and_vars"][name]["dataframe"]
+                _data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
 
             else:
                 # init the scenario
@@ -341,7 +382,7 @@ class Results(object):
 
                 # cycle through all MFs
                 for year, mf in enumerate(self.mf):
-                    _var = self.results[scenario][mf]["pars_and_vars"][name]["dataframe"]
+                    _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
 
                     # single element that is not a year
                     if len(_var) == 1 and not np.isfinite(_var.index[0]):
@@ -368,7 +409,8 @@ class Results(object):
                             if is_storage:
                                 techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" in k.lower()][0]
                             else:
-                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" not in k.lower()][0]
+                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys()
+                                             if "storage_level" not in k.lower() and "natural" in k.lower()][0]
                             # get the timesteps
                             time_steps_year = sequence_time_steps_dicts.encode_time_step(techProxy, sequence_time_steps_dicts.decode_time_step(None, year, "yearly"), yearly=True)
                             # get the data
@@ -491,10 +533,10 @@ class Results(object):
         for row in component_data.index:
             # we know the name
             if element_name:
-                _sequenceTimeSteps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + _storage_string)
+                _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + _storage_string)
             # we extract the name
             else:
-                _sequenceTimeSteps = sequence_time_steps_dicts.get_sequence_time_steps(row[0] + _storage_string)
+                _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(row[0] + _storage_string)
 
             # throw together
             _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(component_data.columns))]

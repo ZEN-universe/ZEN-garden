@@ -25,6 +25,7 @@ dependencies:
   - mpmath
   - pip:
       - tsam
+      - hdfdict
       - -e .
 
 # conda env create -f zen_garden_env.yml

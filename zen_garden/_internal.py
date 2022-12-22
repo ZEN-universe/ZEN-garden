@@ -126,5 +126,6 @@ def main(config, dataset_path=None):
                     subfolder += f"_"
                 subfolder += f"MF_{step_horizon}"
             # write results
-            evaluation = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder, model_name=model_name, scenario_name=scenario_name)
+            evaluation = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
+                                     model_name=model_name, scenario_name=scenario_name)
     return optimization_setup
