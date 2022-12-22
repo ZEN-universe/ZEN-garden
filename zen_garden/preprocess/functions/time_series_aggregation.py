@@ -6,418 +6,315 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Functions to apply time series aggregation to time series
 ==========================================================================================================================================================================="""
-import cProfile
-
 import pandas as pd
 import numpy as np
 import logging
 import tsam.timeseriesaggregation as tsam
-import pstats
 from zen_garden.model.objects.energy_system import EnergySystem
 from zen_garden.model.objects.element import Element
-from zen_garden.model.objects.carrier import Carrier
 from zen_garden.model.objects.technology.technology import Technology
 from zen_garden.model.objects.technology.storage_technology import StorageTechnology
 
+
 class TimeSeriesAggregation():
-    timeSeriesAggregation = None
+    time_series_aggregation = None
 
     def __init__(self):
         """ initializes the time series aggregation. The data is aggregated for a single year and then concatenated"""
-        self.system                 = EnergySystem.getSystem()
-        self.analysis               = EnergySystem.getAnalysis()
-        self.energySystem           = EnergySystem.getEnergySystem()
-        self.headerSetTimeSteps     = self.analysis['headerDataInputs']["setTimeSteps"][0]
-        # if setTimeSteps as input (because already aggregated), use this as base time step, otherwise self.setBaseTimeSteps
-        self.setBaseTimeSteps       = self.energySystem.setBaseTimeStepsYearly
-        self.numberTypicalPeriods   = min(self.system["unaggregatedTimeStepsPerYear"], self.system["aggregatedTimeStepsPerYear"])
-        # set timeSeriesAggregation
-        TimeSeriesAggregation.setTimeSeriesAggregation(self)
-        self.conductedTimeSeriesAggregation = False
+        self.system = EnergySystem.get_system()
+        self.analysis = EnergySystem.get_analysis()
+        self.energy_system = EnergySystem.get_energy_system()
+        self.header_set_time_steps = self.analysis['header_data_inputs']["set_time_steps"]
+        # if set_time_steps as input (because already aggregated), use this as base time step, otherwise self.set_base_time_steps
+        self.set_base_time_steps = self.energy_system.set_base_time_steps_yearly
+        self.number_typical_periods = min(self.system["unaggregated_time_steps_per_year"], self.system["aggregated_time_steps_per_year"])
+        # set time_series_aggregation
+        TimeSeriesAggregation.set_tsa(self)
+        self.conducted_tsa = False
         # if number of time steps >= number of base time steps, skip aggregation
-        if self.numberTypicalPeriods < np.size(self.setBaseTimeSteps) and self.system["conductTimeSeriesAggregation"]:
+        if self.number_typical_periods < np.size(self.set_base_time_steps) and self.system["conduct_time_series_aggregation"]:
             # select time series
-            self.selectTimeSeriesOfAllElements() #TODO speed up
-            if not self.dfTimeSeriesRaw.empty:
+            self.select_ts_of_all_elements()
+            if not self.df_ts_raw.empty:
                 # run time series aggregation to create typical periods
-                self.runTimeSeriesAggregation()
+                self.run_tsa()
         else:
-            self.typicalPeriods = pd.DataFrame()
-            _setTimeSteps       = self.setBaseTimeSteps
-            _timeStepDuration   = EnergySystem.calculateTimeStepDuration(_setTimeSteps,self.setBaseTimeSteps)
-            _sequenceTimeSteps  = np.concatenate([[timeStep] * _timeStepDuration[timeStep] for timeStep in _timeStepDuration])
-            TimeSeriesAggregation.setTimeAttributes(self,_setTimeSteps,_timeStepDuration,_sequenceTimeSteps)
+            self.typical_periods = pd.DataFrame()
+            _set_time_steps = self.set_base_time_steps
+            _time_step_duration = EnergySystem.calculate_time_step_duration(_set_time_steps, self.set_base_time_steps)
+            _sequence_time_steps = np.concatenate([[time_step] * _time_step_duration[time_step] for time_step in _time_step_duration])
+            TimeSeriesAggregation.set_time_attributes(self, _set_time_steps, _time_step_duration, _sequence_time_steps)
             # set aggregated time series
-            self.setAggregatedTimeSeriesOfAllElements()
+            self.set_aggregated_ts_all_elements()
 
-    def selectTimeSeriesOfAllElements(self):
+    def select_ts_of_all_elements(self):
         """ this method retrieves the raw time series for the aggregation of all input data sets.
         Only in aligned time grid approach! """
 
-        _dictRawTimeSeries = {}
-        for element in Element.getAllElements():
-            dfTimeSeriesRaw = TimeSeriesAggregation.extractRawTimeSeries(element, self.headerSetTimeSteps)
-            if not dfTimeSeriesRaw.empty:
-                _dictRawTimeSeries[element.name] = dfTimeSeriesRaw
-        if _dictRawTimeSeries:
-            self.dfTimeSeriesRaw = pd.concat(_dictRawTimeSeries.values(), axis=1, keys=_dictRawTimeSeries.keys())
+        _dict_raw_ts = {}
+        for element in Element.get_all_elements():
+            df_ts_raw = TimeSeriesAggregation.extract_raw_ts(element, self.header_set_time_steps)
+            if not df_ts_raw.empty:
+                _dict_raw_ts[element.name] = df_ts_raw
+        if _dict_raw_ts:
+            self.df_ts_raw = pd.concat(_dict_raw_ts.values(), axis=1, keys=_dict_raw_ts.keys())
         else:
-            self.dfTimeSeriesRaw = pd.Series()
+            self.df_ts_raw = pd.Series()
 
-    def substituteColumnNames(self, direction="flatten"):
+    def substitute_column_names(self, direction="flatten"):
         """ this method substitutes the column names to have flat columns names (otherwise sklearn warning) """
         if direction == "flatten":
-            if not hasattr(self,"columnNamesOriginal"):
-                self.columnNamesOriginal        = self.dfTimeSeriesRaw.columns
-                self.columnNamesFlat            = [str(index) for index in self.columnNamesOriginal]
-                self.dfTimeSeriesRaw.columns    = self.columnNamesFlat
+            if not hasattr(self, "columnNamesOriginal"):
+                self.columnNamesOriginal = self.df_ts_raw.columns
+                self.columnNamesFlat = [str(index) for index in self.columnNamesOriginal]
+                self.df_ts_raw.columns = self.columnNamesFlat
         elif direction == "raise":
-            self.typicalPeriods             = self.typicalPeriods[self.columnNamesFlat]
-            self.typicalPeriods.columns     = self.columnNamesOriginal
+            self.typical_periods = self.typical_periods[self.columnNamesFlat]
+            self.typical_periods.columns = self.columnNamesOriginal
 
-    def runTimeSeriesAggregation(self):
+    def run_tsa(self):
         """ this method runs the time series aggregation """
         # substitute column names
-        self.substituteColumnNames(direction="flatten")
+        self.substitute_column_names(direction="flatten")
         # create aggregation object
-        self.aggregation = tsam.TimeSeriesAggregation(
-            timeSeries           = self.dfTimeSeriesRaw,
-            noTypicalPeriods     = self.numberTypicalPeriods,
-            hoursPerPeriod       = self.analysis["timeSeriesAggregation"]["hoursPerPeriod"],
-            resolution           = self.analysis["timeSeriesAggregation"]["resolution"],
-            clusterMethod        = self.analysis["timeSeriesAggregation"]["clusterMethod"],
-            solver               = self.analysis["timeSeriesAggregation"]["solver"],
-            extremePeriodMethod  = self.analysis["timeSeriesAggregation"]["extremePeriodMethod"],
-            rescaleClusterPeriods= self.analysis["timeSeriesAggregation"]["rescaleClusterPeriods"],
-            representationMethod = self.analysis["timeSeriesAggregation"]["representationMethod"]
-        )
+        self.aggregation = tsam.TimeSeriesAggregation(timeSeries=self.df_ts_raw, noTypicalPeriods=self.number_typical_periods,
+            hoursPerPeriod=self.analysis["time_series_aggregation"]["hoursPerPeriod"], resolution=self.analysis["time_series_aggregation"]["resolution"],
+            clusterMethod=self.analysis["time_series_aggregation"]["clusterMethod"], solver=self.analysis["time_series_aggregation"]["solver"],
+            extremePeriodMethod=self.analysis["time_series_aggregation"]["extremePeriodMethod"], rescaleClusterPeriods=self.analysis["time_series_aggregation"]["rescaleClusterPeriods"],
+            representationMethod=self.analysis["time_series_aggregation"]["representationMethod"])
         # create typical periods
-        self.typicalPeriods     = self.aggregation.createTypicalPeriods().reset_index(drop=True)
-        TimeSeriesAggregation.setTimeAttributes(self,self.aggregation.clusterPeriodIdx,self.aggregation.clusterPeriodNoOccur,self.aggregation.clusterOrder)
+        self.typical_periods = self.aggregation.createTypicalPeriods().reset_index(drop=True)
+        TimeSeriesAggregation.set_time_attributes(self, self.aggregation.clusterPeriodIdx, self.aggregation.clusterPeriodNoOccur, self.aggregation.clusterOrder)
         # resubstitute column names
-        self.substituteColumnNames(direction="raise")
+        self.substitute_column_names(direction="raise")
         # set aggregated time series
-        self.setAggregatedTimeSeriesOfAllElements()
-        self.conductedTimeSeriesAggregation = True
+        self.set_aggregated_ts_all_elements()
+        self.conducted_tsa = True
 
-    def setAggregatedTimeSeriesOfAllElements(self):
+    def set_aggregated_ts_all_elements(self):
         """ this method sets the aggregated time series and sets the necessary attributes after the aggregation to a single time grid """
-        for element in Element.getAllElements():
-            rawTimeSeries = getattr(element, "rawTimeSeries")
-            # setTimeSteps, duration and sequence time steps
-            element.setTimeStepsOperation       = list(self.setTimeSteps)
-            element.timeStepsOperationDuration  = self.timeStepsDuration
-            element.sequenceTimeSteps           = self.sequenceTimeSteps
+        for element in Element.get_all_elements():
+            raw_ts = getattr(element, "raw_time_series")
+            # set_time_steps, duration and sequence time steps
+            element.set_time_steps_operation = list(self.set_time_steps)
+            element.time_steps_operation_duration = self.time_steps_duration
+            element.sequence_time_steps = self.sequence_time_steps
 
             # iterate through raw time series
-            for timeSeries in rawTimeSeries:
-                _indexNames = list(rawTimeSeries[timeSeries].index.names)
-                _indexNames.remove(self.headerSetTimeSteps)
-                dfTimeSeries = rawTimeSeries[timeSeries].unstack(level=_indexNames)
+            for ts in raw_ts:
+                _index_names = list(raw_ts[ts].index.names)
+                _index_names.remove(self.header_set_time_steps)
+                df_ts = raw_ts[ts].unstack(level=_index_names)
 
-                dfAggregatedTimeSeries = pd.DataFrame(index=self.setTimeSteps, columns=dfTimeSeries.columns)
+                df_aggregated_ts = pd.DataFrame(index=self.set_time_steps, columns=df_ts.columns)
                 # columns which are in aggregated time series and which are not
-                if element.name in self.typicalPeriods and timeSeries in self.typicalPeriods[element.name]:
-                    dfTypicalPeriods = self.typicalPeriods[element.name, timeSeries]
-                    AggregatedColumns = dfTimeSeries.columns.intersection(dfTypicalPeriods.columns)
-                    NotAggregatedColumns = dfTimeSeries.columns.difference(dfTypicalPeriods.columns)
+                if element.name in self.typical_periods and ts in self.typical_periods[element.name]:
+                    df_typical_periods = self.typical_periods[element.name, ts]
+                    aggregated_columns = df_ts.columns.intersection(df_typical_periods.columns)
+                    not_aggregated_columns = df_ts.columns.difference(df_typical_periods.columns)
                     # aggregated columns
-                    dfAggregatedTimeSeries[AggregatedColumns] = self.typicalPeriods[element.name, timeSeries][
-                        AggregatedColumns]
+                    df_aggregated_ts[aggregated_columns] = self.typical_periods[element.name, ts][aggregated_columns]
                 else:
-                    NotAggregatedColumns = dfTimeSeries.columns
+                    not_aggregated_columns = df_ts.columns
                 # not aggregated columns
-                dfAggregatedTimeSeries[NotAggregatedColumns] = dfTimeSeries.loc[
-                    dfAggregatedTimeSeries.index, NotAggregatedColumns]
+                df_aggregated_ts[not_aggregated_columns] = df_ts.loc[df_aggregated_ts.index, not_aggregated_columns]
                 # reorder
-                dfAggregatedTimeSeries.index.names      = [self.headerSetTimeSteps]
-                dfAggregatedTimeSeries.columns.names    = _indexNames
-                dfAggregatedTimeSeries                  = dfAggregatedTimeSeries.stack(_indexNames)
-                dfAggregatedTimeSeries.index            = dfAggregatedTimeSeries.index.reorder_levels(
-                                                            _indexNames + [self.headerSetTimeSteps])
-                setattr(element, timeSeries, dfAggregatedTimeSeries)
-                TimeSeriesAggregation.setAggregationIndicators(element)
+                df_aggregated_ts.index.names = [self.header_set_time_steps]
+                df_aggregated_ts.columns.names = _index_names
+                df_aggregated_ts = df_aggregated_ts.stack(_index_names)
+                df_aggregated_ts.index = df_aggregated_ts.index.reorder_levels(_index_names + [self.header_set_time_steps])
+                setattr(element, ts, df_aggregated_ts)
+                TimeSeriesAggregation.set_aggregation_indicators(element)
 
     @classmethod
-    def extractRawTimeSeries(cls, element, headerSetTimeSteps):
+    def extract_raw_ts(cls, element, header_set_time_steps):
         """ extract the time series from an element and concatenates the non-constant time series to a pd.DataFrame
         :param element: element of the optimization 
-        :param headerSetTimeSteps: name of setTimeSteps
-        :return dfTimeSeriesRaw: pd.DataFrame with non-constant time series"""
-        _dictRawTimeSeries = {}
-        rawTimeSeries = getattr(element, "rawTimeSeries")
-        for timeSeries in rawTimeSeries:
-            rawTimeSeries[timeSeries].name = timeSeries
-            _indexNames = list(rawTimeSeries[timeSeries].index.names)
-            _indexNames.remove(headerSetTimeSteps)
-            dfTimeSeries = rawTimeSeries[timeSeries].unstack(level=_indexNames)
+        :param header_set_time_steps: name of set_time_steps
+        :return df_time_series_raw: pd.DataFrame with non-constant time series"""
+        _dict_raw_ts = {}
+        raw_ts = getattr(element, "raw_time_series")
+        for ts in raw_ts:
+            raw_ts[ts].name = ts
+            _index_names = list(raw_ts[ts].index.names)
+            _index_names.remove(header_set_time_steps)
+            df_ts = raw_ts[ts].unstack(level=_index_names)
             # select time series that are not constant (rows have more than 1 unique entries)
-            dfTimeSeriesNonConstant = dfTimeSeries[
-                dfTimeSeries.columns[dfTimeSeries.apply(lambda column: len(np.unique(column)) != 1)]]
-            _dictRawTimeSeries[timeSeries] = dfTimeSeriesNonConstant
-        dfTimeSeriesRaw = pd.concat(_dictRawTimeSeries.values(), axis=1, keys=_dictRawTimeSeries.keys())
-        return dfTimeSeriesRaw
+            df_ts_non_constant = df_ts[df_ts.columns[df_ts.apply(lambda column: len(np.unique(column)) != 1)]]
+            _dict_raw_ts[ts] = df_ts_non_constant
+        df_ts_raw = pd.concat(_dict_raw_ts.values(), axis=1, keys=_dict_raw_ts.keys())
+        return df_ts_raw
 
     @classmethod
-    def calculateTimeStepsEnergyBalance(cls, element):
-        """ calculates the necessary time steps of carrier. Carrier must always have highest resolution of all connected technologies. 
-        Can have higher resolution
-        :param element: element of the optimization """
-        # if carrier is already aggregated
-        if element.isAggregated():
-            sequenceTimeStepsRaw = element.sequenceTimeSteps
-            # if sequenceTimeStepsRaw not None
-            listSequenceTimeSteps = [sequenceTimeStepsRaw]
-        else:
-            listSequenceTimeSteps = []
-        # get technologies of carrier
-        technologiesCarrier = EnergySystem.getTechnologyOfCarrier(element.name)
-        # if any technologies of carriers are aggregated 
-        if technologiesCarrier:
-            # iterate through technologies and extend listSequenceTimeSteps
-            for technology in technologiesCarrier:
-                listSequenceTimeSteps.append(Element.getAttributeOfSpecificElement(technology, "sequenceTimeSteps"))
-            # get combined time steps, duration and sequence
-            uniqueTimeStepSequences = TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listSequenceTimeSteps)
-            # if time steps of energy balance differ from carrier flows
-            if uniqueTimeStepSequences:
-                setTimeStepsOperation, timeStepsOperationDuration, sequenceTimeSteps = uniqueTimeStepSequences
-                # set attributes
-                TimeSeriesAggregation.setTimeAttributes(element,setTimeStepsOperation,timeStepsOperationDuration,sequenceTimeSteps,isEnergyBalance=True)
-
-                # if carrier previously not aggregated
-                if not element.isAggregated():
-                    TimeSeriesAggregation.setTimeAttributes(element,setTimeStepsOperation,timeStepsOperationDuration,sequenceTimeSteps)
-                # set aggregation indicator
-                TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
-                # iterate through raw time series data
-                # for timeSeries in element.rawTimeSeries:
-                #     # if not yet aggregated, conduct "manual" time series aggregation
-                #     if not element.isAggregated():
-                #         dfTimeSeries = element.rawTimeSeries[timeSeries].loc[(slice(None), setTimeStepsOperation)]
-                #     else:
-                #         dfTimeSeries = getattr(element, timeSeries)
-                #     # multiply with yearly variation
-                #     dfTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, dfTimeSeries)
-                #     # save attribute
-                #     setattr(element, timeSeries, dfTimeSeries)
-            # no aggregation -> time steps and sequence of energy balance are equal to the carrier time steps and sequence
-            else:
-                # get time attributes of carrier
-                setTimeStepsOperation, timeStepsOperationDuration, sequenceTimeSteps = TimeSeriesAggregation.getTimeAttributes(element)
-                # set time attributes for energy balance
-                TimeSeriesAggregation.setTimeAttributes(element, setTimeStepsOperation, timeStepsOperationDuration,sequenceTimeSteps, isEnergyBalance=True)
-                # set aggregation indicator
-                TimeSeriesAggregation.setAggregationIndicators(element, setEnergyBalanceIndicator=True)
-
-    @classmethod
-    def linkTimeSteps(cls, element):
+    def link_time_steps(cls, element):
         """ calculates the necessary overlapping time steps of the investment and operation of a technology for all years.
         It sets the union of the time steps for investment, operation and years.
         :param element: technology of the optimization """
-        listSequenceTimeSteps = [
-            EnergySystem.getSequenceTimeSteps(element.name, "operation"),
-            EnergySystem.getSequenceTimeSteps(None, "yearly")
-        ]
-        if element in Technology.getAllElements():
-            listSequenceTimeSteps.append(EnergySystem.getSequenceTimeSteps(element.name, "invest"))
+        list_sequence_time_steps = [EnergySystem.get_sequence_time_steps(element.name, "operation"), EnergySystem.get_sequence_time_steps(None, "yearly")]
 
-        uniqueTimeStepSequences = TimeSeriesAggregation.uniqueTimeStepsInMultigrid(listSequenceTimeSteps)
-        if uniqueTimeStepSequences:
-            setTimeSteps, timeStepsDuration, sequenceTimeSteps = uniqueTimeStepSequences
+        unique_time_steps_sequences = TimeSeriesAggregation.unique_time_steps_multiple_indices(list_sequence_time_steps)
+        if unique_time_steps_sequences:
+            set_time_steps, time_steps_duration, sequence_time_steps = unique_time_steps_sequences
             # set sequence time steps
-            EnergySystem.setSequenceTimeSteps(element.name, sequenceTimeSteps)
+            EnergySystem.set_sequence_time_steps(element.name, sequence_time_steps)
             # time series parameters
-            cls.overwriteTimeSeriesWithExpandedTimeIndex(element, setTimeSteps, sequenceTimeSteps)
+            cls.overwrite_ts_with_expanded_timeindex(element, set_time_steps, sequence_time_steps)
             # set attributes
-            TimeSeriesAggregation.setTimeAttributes(element,setTimeSteps,timeStepsDuration,sequenceTimeSteps)
+            TimeSeriesAggregation.set_time_attributes(element, set_time_steps, time_steps_duration, sequence_time_steps)
         else:
             # check to multiply the time series with the yearly variation
-            cls.yearlyVariationNonaggregatedTimeSeries(element)
+            cls.yearly_variation_nonaggregated_ts(element)
 
     @classmethod
-    def calculateTimeStepsOperation2Invest(cls,element):
+    def calculate_time_steps_operation2invest(cls, element):
         """ calculates the conversion of operational time steps to invest time steps """
-        _setTimeStepsOperation      = getattr(element,"setTimeStepsOperation")
-        _sequenceTimeStepsOperation = getattr(element,"sequenceTimeSteps")
-        _sequenceTimeStepsInvest    = getattr(element, "sequenceTimeStepsInvest")
-        _timeStepsOperation2Invest  = np.unique(np.vstack([_sequenceTimeStepsOperation,_sequenceTimeStepsInvest]),axis=1)
-        _timeStepsOperation2Invest  = {key:val for key,val in zip(_timeStepsOperation2Invest[0,:],_timeStepsOperation2Invest[1,:])}
-        EnergySystem.setTimeStepsOperation2Invest(element.name,_timeStepsOperation2Invest)
+        _sequence_time_steps_operation = getattr(element, "sequence_time_steps")
+        _sequence_time_steps_yearly = getattr(EnergySystem.get_energy_system(), "sequence_time_steps_yearly")
+        time_steps_operation2invest = np.unique(np.vstack([_sequence_time_steps_operation, _sequence_time_steps_yearly]), axis=1)
+        time_steps_operation2invest = {key: val for key, val in zip(time_steps_operation2invest[0, :], time_steps_operation2invest[1, :])}
+        EnergySystem.set_time_steps_operation2invest(element.name, time_steps_operation2invest)
 
     @classmethod
-    def overwriteTimeSeriesWithExpandedTimeIndex(cls, element, setTimeStepsOperation, sequenceTimeSteps):
+    def overwrite_ts_with_expanded_timeindex(cls, element, set_time_steps_operation, sequence_time_steps):
         """ this method expands the aggregated time series to match the extended operational time steps because of matching the investment and operational time sequences.
         :param element: element of the optimization
-        :param setTimeStepsOperation: new time steps operation
-        :param sequenceTimeSteps: new order of operational time steps """
-        headerSetTimeSteps      = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
-        oldSequenceTimeSteps    = element.sequenceTimeSteps
-        _idxOld2New             = np.array([np.unique(oldSequenceTimeSteps[np.argwhere(idx == sequenceTimeSteps)]) for idx in setTimeStepsOperation]).squeeze()
-        for timeSeries in element.rawTimeSeries:
-            _oldTimeSeries                  = getattr(element, timeSeries).unstack(headerSetTimeSteps)
-            _newTimeSeries                  = pd.DataFrame(index=_oldTimeSeries.index, columns=setTimeStepsOperation)
-            _newTimeSeries                  = _oldTimeSeries.loc[:,_idxOld2New[_newTimeSeries.columns]].T.reset_index(drop=True).T
-            _newTimeSeries.columns.names    = [headerSetTimeSteps]
-            _newTimeSeries                  = _newTimeSeries.stack()
+        :param set_time_steps_operation: new time steps operation
+        :param sequence_time_steps: new order of operational time steps """
+        header_set_time_steps = EnergySystem.get_analysis()['header_data_inputs']["set_time_steps"]
+        old_sequence_time_steps = element.sequence_time_steps
+        _idx_old2new = np.array([np.unique(old_sequence_time_steps[np.argwhere(idx == sequence_time_steps)]) for idx in set_time_steps_operation]).squeeze()
+        for ts in element.raw_time_series:
+            _old_ts = getattr(element, ts).unstack(header_set_time_steps)
+            _new_ts = pd.DataFrame(index=_old_ts.index, columns=set_time_steps_operation)
+            _new_ts = _old_ts.loc[:, _idx_old2new[_new_ts.columns]].T.reset_index(drop=True).T
+            _new_ts.columns.names = [header_set_time_steps]
+            _new_ts = _new_ts.stack()
             # multiply with yearly variation
-            _newTimeSeries                  = cls.multiplyYearlyVariation(element, timeSeries, _newTimeSeries)
+            _new_ts = cls.multiply_yearly_variation(element, ts, _new_ts)
             # overwrite time series
-            setattr(element, timeSeries, _newTimeSeries)
+            setattr(element, ts, _new_ts)
 
     @classmethod
-    def yearlyVariationNonaggregatedTimeSeries(cls, element):
+    def yearly_variation_nonaggregated_ts(cls, element):
         """ multiply the time series with the yearly variation if the element's time series are not aggregated
         :param element: element of the optimization """
-        for timeSeries in element.rawTimeSeries:
+        for ts in element.raw_time_series:
             # multiply with yearly variation
-            _newTimeSeries = cls.multiplyYearlyVariation(element, timeSeries, getattr(element, timeSeries))
+            _new_ts = cls.multiply_yearly_variation(element, ts, getattr(element, ts))
             # overwrite time series
-            setattr(element, timeSeries, _newTimeSeries)
+            setattr(element, ts, _new_ts)
 
     @classmethod
-    def multiplyYearlyVariation(cls, element, timeSeriesName, timeSeries):
+    def multiply_yearly_variation(cls, element, ts_name, ts):
         """ this method multiplies time series with the yearly variation of the time series
         The index of the variation is the same as the original time series, just time and year substituted
         :param element: technology of the optimization
-        :param timeSeriesName: name of time series
-        :param timeSeries: time series
-        :return multipliedTimeSeries: timeSeries multiplied with yearly variation """
-        if hasattr(element.dataInput, timeSeriesName + "YearlyVariation"):
-            _yearlyVariation            = getattr(element.dataInput, timeSeriesName + "YearlyVariation")
-            headerSetTimeSteps          = EnergySystem.getAnalysis()['headerDataInputs']["setTimeSteps"][0]
-            headerSetTimeStepsYearly    = EnergySystem.getAnalysis()['headerDataInputs']["setTimeStepsYearly"][0]
-            _timeSeries                 = timeSeries.unstack(headerSetTimeSteps)
-            _yearlyVariation            = _yearlyVariation.unstack(headerSetTimeStepsYearly)
+        :param ts_name: name of time series
+        :param ts: time series
+        :return multipliedTimeSeries: ts multiplied with yearly variation """
+        if hasattr(element.datainput, ts_name + "YearlyVariation"):
+            _yearly_variation = getattr(element.datainput, ts_name + "YearlyVariation")
+            header_set_time_steps = EnergySystem.get_analysis()['header_data_inputs']["set_time_steps"]
+            header_set_time_steps_yearly = EnergySystem.get_analysis()['header_data_inputs']["set_time_steps_yearly"]
+            _ts = ts.unstack(header_set_time_steps)
+            _yearly_variation = _yearly_variation.unstack(header_set_time_steps_yearly)
             # if only one unique value
-            if len(np.unique(_yearlyVariation)) == 1:
-                timeSeries = _timeSeries.stack()*np.unique(_yearlyVariation)[0]
+            if len(np.unique(_yearly_variation)) == 1:
+                ts = _ts.stack() * np.unique(_yearly_variation)[0]
             else:
-                for year in EnergySystem.getEnergySystem().setTimeStepsYearly:
-                    if not all(_yearlyVariation[year] == 1):
-                        _baseTimeSteps                          = EnergySystem.decodeTimeStep(None, year, "yearly")
-                        _elementTimeSteps                       = EnergySystem.encodeTimeStep(element.name, _baseTimeSteps, yearly=True)
-                        _timeSeries.loc[:,_elementTimeSteps]    = _timeSeries[_elementTimeSteps].multiply(_yearlyVariation[year],axis=0).fillna(0)
-                timeSeries = _timeSeries.stack()
+                for year in EnergySystem.get_energy_system().set_time_steps_yearly:
+                    if not all(_yearly_variation[year] == 1):
+                        _base_time_steps = EnergySystem.decode_time_step(None, year, "yearly")
+                        _element_time_steps = EnergySystem.encode_time_step(element.name, _base_time_steps, yearly=True)
+                        _ts.loc[:, _element_time_steps] = _ts[_element_time_steps].multiply(_yearly_variation[year], axis=0).fillna(0)
+                ts = _ts.stack()
         # round down if lower than decimal points
-        _roundingValue                                  = 10 ** (-EnergySystem.getSolver()["roundingDecimalPointsTS"])
-        timeSeries[timeSeries.abs() < _roundingValue]   = 0
-        return timeSeries
+        _rounding_value = 10 ** (-EnergySystem.get_solver()["rounding_decimal_points_ts"])
+        ts[ts.abs() < _rounding_value] = 0
+        return ts
 
     @classmethod
-    def repeatSequenceTimeStepsForAllYears(cls):
+    def repeat_sequence_time_steps_for_all_years(cls):
         """ this method repeats the operational time series for all years."""
         logging.info("Repeat the time series sequences for all years")
-        optimizedYears = len(EnergySystem.getEnergySystem().setTimeStepsYearly)
+        optimized_years = len(EnergySystem.get_energy_system().set_time_steps_yearly)
         # concatenate the order of time steps for all elements and link with investment and yearly time steps
-        for element in Element.getAllElements():
-            # optimizedYears              = EnergySystem.getSystem()["optimizedYears"]
-            oldSequenceTimeSteps        = Element.getAttributeOfSpecificElement(element.name, "sequenceTimeSteps")
-            newSequenceTimeSteps        = np.hstack([oldSequenceTimeSteps] * optimizedYears)
-            element.sequenceTimeSteps   = newSequenceTimeSteps
-            EnergySystem.setSequenceTimeSteps(element.name, element.sequenceTimeSteps)
+        for element in Element.get_all_elements():
+            # optimized_years = EnergySystem.get_system()["optimized_years"]
+            old_sequence_time_steps = Element.get_attribute_of_specific_element(element.name, "sequence_time_steps")
+            new_sequence_time_steps = np.hstack([old_sequence_time_steps] * optimized_years)
+            element.sequence_time_steps = new_sequence_time_steps
+            EnergySystem.set_sequence_time_steps(element.name, element.sequence_time_steps)
             # calculate the time steps in operation to link with investment and yearly time steps
-            cls.linkTimeSteps(element)
+            cls.link_time_steps(element)
             # set operation2invest time step dict
-            if element in Technology.getAllElements():
-                cls.calculateTimeStepsOperation2Invest(element)
+            if element in Technology.get_all_elements():
+                cls.calculate_time_steps_operation2invest(element)
 
     @classmethod
-    def setAggregationIndicators(cls, element, setEnergyBalanceIndicator=False):
+    def set_aggregation_indicators(cls, element):
         """ this method sets the indicators that element is aggregated """
         # add order of time steps to Energy System
-        EnergySystem.setSequenceTimeSteps(element.name, element.sequenceTimeSteps, timeStepType="operation")
-        # if energy balance indicator is set as well, save sequence of time steps in energy balance as well
-        if setEnergyBalanceIndicator:
-            EnergySystem.setSequenceTimeSteps(element.name + "EnergyBalance", element.sequenceTimeStepsEnergyBalance,
-                                              timeStepType="operation")
-        element.setAggregated()
+        EnergySystem.set_sequence_time_steps(element.name, element.sequence_time_steps, time_step_type="operation")
+        element.set_aggregated()
 
     @classmethod
-    def uniqueTimeStepsInMultigrid(cls, listSequenceTimeSteps):
+    def unique_time_steps_multiple_indices(cls, list_sequence_time_steps):
         """ this method returns the unique time steps of multiple time grids """
-        sequenceTimeSteps           = np.zeros(np.size(listSequenceTimeSteps, axis=1)).astype(int)
-        combinedSequenceTimeSteps   = np.vstack(listSequenceTimeSteps)
-        uniqueCombinedTimeSteps, uniqueIndices, countCombinedTimeSteps = np.unique(combinedSequenceTimeSteps, axis=1,return_counts=True,return_index = True)
+        sequence_time_steps = np.zeros(np.size(list_sequence_time_steps, axis=1)).astype(int)
+        combined_sequence_time_steps = np.vstack(list_sequence_time_steps)
+        unique_combined_time_steps, unique_indices, count_combined_time_steps = np.unique(combined_sequence_time_steps, axis=1, return_counts=True, return_index=True)
         # if unique time steps are the same as original, or if the second until last only have a single unique value
-        # if combinedSequenceTimeSteps.shape == uniqueCombinedTimeSteps.shape:
-        if len(np.unique(combinedSequenceTimeSteps[0,:])) == len(combinedSequenceTimeSteps[0,:]) or len(np.unique(combinedSequenceTimeSteps[1:,:],axis=1)[0]) == 1:
+        if len(np.unique(combined_sequence_time_steps[0, :])) == len(combined_sequence_time_steps[0, :]) or len(np.unique(combined_sequence_time_steps[1:, :], axis=1)[0]) == 1:
             return None
-        setTimeSteps      = []
-        timeStepsDuration = {}
-        for idxUniqueTimeStep, countUniqueTimeStep in enumerate(countCombinedTimeSteps):
-            setTimeSteps.append(idxUniqueTimeStep)
-            timeStepsDuration[idxUniqueTimeStep]    = countUniqueTimeStep
-            uniqueTimeStep                          = uniqueCombinedTimeSteps[:, idxUniqueTimeStep]
-            idxInInput                              = np.argwhere(np.all(combinedSequenceTimeSteps.T == uniqueTimeStep, axis=1))
+        set_time_steps = []
+        time_steps_duration = {}
+        for _idx_unique_time_steps, _count_unique_time_steps in enumerate(count_combined_time_steps):
+            set_time_steps.append(_idx_unique_time_steps)
+            time_steps_duration[_idx_unique_time_steps] = _count_unique_time_steps
+            _unique_time_step = unique_combined_time_steps[:, _idx_unique_time_steps]
+            _idx_input = np.argwhere(np.all(combined_sequence_time_steps.T == _unique_time_step, axis=1))
             # fill new order time steps 
-            sequenceTimeSteps[idxInInput]           = idxUniqueTimeStep
-        return (setTimeSteps, timeStepsDuration, sequenceTimeSteps)
+            sequence_time_steps[_idx_input] = _idx_unique_time_steps
+        return (set_time_steps, time_steps_duration, sequence_time_steps)
 
     @classmethod
-    def overwriteRawTimeSeries(cls, element):
+    def overwrite_raw_ts(cls, element):
         """ this method overwrites the raw time series to the already once aggregated time series
         :param element: technology of the optimization """
-        for timeSeries in element.rawTimeSeries:
-            element.rawTimeSeries[timeSeries] = getattr(element, timeSeries)
+        for ts in element.raw_time_series:
+            element.raw_time_series[ts] = getattr(element, ts)
 
     @staticmethod
-    def setTimeAttributes(element,setTimeSteps,timeStepsDuration,sequenceTimeSteps,isEnergyBalance = False):
+    def set_time_attributes(element, set_time_steps, time_steps_duration, sequence_time_steps):
         """ this method sets the operational time attributes of an element.
         :param element: element of the optimization
-        :param setTimeSteps: setTimeSteps of operation
-        :param timeStepsDuration: timeStepsDuration of operation
-        :param sequenceTimeSteps: sequence of operation
-        :param isEnergyBalance: boolean if attributes set for energyBalance """
-        if isinstance(element,TimeSeriesAggregation):
-            element.setTimeSteps                    = setTimeSteps
-            element.timeStepsDuration               = timeStepsDuration
-            element.sequenceTimeSteps               = sequenceTimeSteps
-        elif not isEnergyBalance:
-            element.setTimeStepsOperation           = setTimeSteps
-            element.timeStepsOperationDuration      = timeStepsDuration
-            element.sequenceTimeSteps               = sequenceTimeSteps
-        else:
-            element.setTimeStepsEnergyBalance       = setTimeSteps
-            element.timeStepsEnergyBalanceDuration  = timeStepsDuration
-            element.sequenceTimeStepsEnergyBalance  = sequenceTimeSteps
-
-    @classmethod
-    def setTimeSeriesAggregation(cls, timeSeriesAggregation):
-        """ sets empty timeSeriesAggregation to timeSeriesAggregation
-        :param timeSeriesAggregation: timeSeriesAggregation """
-        cls.timeSeriesAggregation = timeSeriesAggregation
-
-    @staticmethod
-    def getTimeAttributes(element, isEnergyBalance=False):
-        """ this method returns the operational time attributes of an element.
-        :param element: element of the optimization
-        :param isEnergyBalance: boolean if attributes set for energyBalance """
+        :param set_time_steps: set_time_steps of operation
+        :param time_steps_duration: time_steps_duration of operation
+        :param sequence_time_steps: sequence of operation """
         if isinstance(element, TimeSeriesAggregation):
-            return (element.setTimeSteps,element.timeStepsDuration,element.sequenceTimeSteps)
-        elif not isEnergyBalance:
-            return (element.setTimeStepsOperation, element.timeStepsOperationDuration, element.sequenceTimeSteps)
+            element.set_time_steps = set_time_steps
+            element.time_steps_duration = time_steps_duration
+            element.sequence_time_steps = sequence_time_steps
         else:
-            return (element.setTimeStepsEnergyBalance, element.timeStepsEnergyBalanceDuration, element.sequenceTimeStepsEnergyBalance)
+            element.set_time_steps_operation = set_time_steps
+            element.time_steps_operation_duration = time_steps_duration
+            element.sequence_time_steps = sequence_time_steps
 
     @classmethod
-    def getTimeSeriesAggregation(cls):
-        """ get timeSeriesAggregation
-        :return timeSeriesAggregation: return timeSeriesAggregation """
-        return cls.timeSeriesAggregation
+    def set_tsa(cls, time_series_aggregation):
+        """ sets empty time_series_aggregation to time_series_aggregation
+        :param time_series_aggregation: time_series_aggregation """
+        cls.time_series_aggregation = time_series_aggregation
 
     @classmethod
-    def conductTimeSeriesAggregation(cls):
+    def conduct_tsa(cls):
         """ this method conducts time series aggregation """
         logging.info("\n--- Time series aggregation ---")
-        timeSeriesAggregation = TimeSeriesAggregation()
+        time_series_aggregation = TimeSeriesAggregation()
         # repeat order of operational time steps and link with investment and yearly time steps
-        cls.repeatSequenceTimeStepsForAllYears()
+        cls.repeat_sequence_time_steps_for_all_years()
         logging.info("Calculate operational time steps for storage levels and energy balances")
-        for element in StorageTechnology.getAllElements():
+        for element in StorageTechnology.get_all_elements():
             # calculate time steps of storage levels
-            element.calculateTimeStepsStorageLevel(conductedTimeSeriesAggregation = timeSeriesAggregation.conductedTimeSeriesAggregation)
-        # calculate new time steps of energy balance
-        for element in Carrier.getAllElements():
-            cls.calculateTimeStepsEnergyBalance(element)
-
+            element.calculate_time_steps_storage_level(conducted_tsa=time_series_aggregation.conducted_tsa)

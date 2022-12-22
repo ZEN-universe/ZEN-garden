@@ -11,21 +11,21 @@ Description:  Model settings. Overwrite default values defined in default_config
 system = dict()
 
 ## System - settings update compared to default values
-system['setConversionTechnologies']     = ["natural_gas_boiler"]
-system['setStorageTechnologies']        = ["natural_gas_storage"]
-system['setTransportTechnologies']      = ["natural_gas_pipeline"]
+system['set_conversion_technologies']     = ["natural_gas_boiler"]
+system['set_storage_technologies']        = ["natural_gas_storage"]
+system['set_transport_technologies']      = ["natural_gas_pipeline"]
 
-system['setNodes']                      = ["DE","CH"]
-system["socialDiscountRate"]            = 0     # similar to discount factor, but for discounted utility model
-system["knowledgeSpilloverRate"]        = 0.025
+system['set_nodes']                      = ["DE","CH"]
+system["social_discount_rate"]            = 0     # similar to discount factor, but for discounted utility model
+system["knowledge_spillover_rate"]        = 0.025
 # time steps
-system["referenceYear"]                 = 2022
-system["unaggregatedTimeStepsPerYear"]  = 8760
-system["aggregatedTimeStepsPerYear"]    = 10
-system["conductTimeSeriesAggregation"]  = True
+system["reference_year"]                 = 2022
+system["unaggregated_time_steps_per_year"]  = 8760
+system["aggregated_time_steps_per_year"]    = 10
+system["conduct_time_series_aggregation"]  = True
 
-system["optimizedYears"]                = 3
-system["intervalBetweenYears"]          = 1
-system["useRollingHorizon"]             = True
-system["yearsInRollingHorizon"]         = 2
+system["optimized_years"]                = 3
+system["interval_between_years"]          = 1
+system["use_rolling_horizon"]             = True
+system["years_in_rolling_horizon"]         = 2
 
