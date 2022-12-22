@@ -182,11 +182,11 @@ class TransportTechnology(Technology):
         # disjunct to enforce Selfish behavior
         if "enforce_selfish_behavior" in system.keys() and system["enforce_selfish_behavior"]:
             Constraint.add_constraint(model,"disjunct_selfish_behavior_no_flow",index_sets=cls.create_custom_set(["set_transport_technologies", "set_selfish_nodes"]),
-                                      rule=disjunct_selfish_behavior_no_flow_rule,doc="disjunct to enforce Selfish behavior no flow",constraint_class=pgdp.Disjunct)
+                                      rule=cls.disjunct_selfish_behavior_no_flow_rule,doc="disjunct to enforce Selfish behavior no flow",constraint_class=pgdp.Disjunct)
             Constraint.add_constraint(model,"disjunct_selfish_behavior_no_shed_demand_low",index_sets=cls.create_custom_set(["set_transport_technologies", "set_selfish_nodes"]),
-                                      rule=disjunct_selfish_behavior_no_shed_demand_low_rule,doc="disjunct to enforce Selfish behavior no shed demand at low cost",constraint_class=pgdp.Disjunct)
+                                      rule=cls.disjunct_selfish_behavior_no_shed_demand_low_rule,doc="disjunct to enforce Selfish behavior no shed demand at low cost",constraint_class=pgdp.Disjunct)
             Constraint.add_constraint(model,"disjunction_selfish_behavior",index_sets=cls.create_custom_set(["set_transport_technologies", "set_selfish_nodes"]),
-                                      rule=disjunction_selfish_behavior_rule,doc="disjunction to enforce Selfish behavior",constraint_class=pgdp.Disjunction)
+                                      rule=cls.disjunction_selfish_behavior_rule,doc="disjunction to enforce Selfish behavior",constraint_class=pgdp.Disjunction)
 
     # defines disjuncts if technology on/off
     @classmethod
