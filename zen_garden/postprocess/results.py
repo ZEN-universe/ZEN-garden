@@ -706,8 +706,7 @@ if __name__ == "__main__":
     config = module.config
 
     model_name = os.path.basename(config.analysis["dataset"])
-    #if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
-    if os.path.exists(out_folder := os.path.join("../outputs_gzip/test_4g/")):
+    if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
         r = Results(out_folder)
     else:
         logging.critical("No results folder found!")
