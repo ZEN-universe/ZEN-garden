@@ -111,7 +111,7 @@ class Config(object):
         self.analysis["folder_output"] = "./outputs/"
         self.analysis["overwrite_output"] = True
         # output format, can be h5, json or gzip
-        self.analysis["output_format"] = "h5"
+        self.analysis["output_format"] = "gzip"
         self.analysis["write_results_yml"] = False
         self.analysis["max_output_size_mb"] = 500
         # name of data folder for energy system specification
