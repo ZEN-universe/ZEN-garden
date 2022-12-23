@@ -236,7 +236,7 @@ class TransportTechnology(Technology):
         # set shedDemandCarrierLow of all carriers that are either transported (reference_carrier)
         # or that are the output of conversionTechnologies with the reference_carrier of this transportTechnology as the inputCarrier
         list_connected_carriers = []
-        # for tech in model.setTransportTechnologies:
+        # for tech in model.set_transport_technologies:
         reference_carrier            = cls.get_attribute_of_specific_element(tech,"reference_carrier")[0]
         list_connected_carriers.extend([reference_carrier])
         set_conversion_technologies   = EnergySystem.get_energy_system().set_conversion_technologies

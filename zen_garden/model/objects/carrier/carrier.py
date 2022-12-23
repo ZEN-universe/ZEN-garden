@@ -60,7 +60,7 @@ class Carrier(Element):
         self.carbon_intensity_carrier = self.datainput.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps"], time_steps=set_time_steps_yearly)
         self.shed_demand_price = self.datainput.extract_input_data("shed_demand_price", index_sets=[])
         self.shed_demand_price_high = self.datainput.extract_input_data("shed_demand_price_high", index_sets=[])
-        self.max_shed_demand = self.datainput.extract_input_data("max_shed_demand_Low", index_sets=[])
+        self.max_shed_demand = self.datainput.extract_input_data("max_shed_demand", index_sets=[])
         self.max_shed_demand_high = self.datainput.extract_input_data("max_shed_demand_high",index_sets = [])
 
     def overwrite_time_steps(self, base_time_steps):
@@ -129,9 +129,9 @@ class Carrier(Element):
             :param node: node
             :param time: operational time step
             :return bounds: bounds of shedDemandCarrierLow"""
-            # bounds only needed for Big-M formulation, if enforceSelfishBehavior
+            # bounds only needed for Big-M formulation, if enforce_selfish_behavior
             system = EnergySystem.get_system()
-            if "enforce_selfish_behavior" in system.keys() and system["enforceSelfishBehavior"]:
+            if "enforce_selfish_behavior" in system.keys() and system["enforce_selfish_behavior"]:
                 params = Parameter.get_component_object()
                 demand_carrier = params.demand_carrier[carrier,node,time]
                 bounds = (0,demand_carrier)
@@ -158,10 +158,10 @@ class Carrier(Element):
         # carbon emissions carrier
         Variable.add_variable(model, name="carbon_emissions_carrier_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc="total carbon emissions of importing and exporting carrier")
         # shed demand
-        Variable.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        Variable.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,bounds=shed_demand_carrier_bounds,
             doc="shed demand of carrier")
         # shed demand high
-        Variable.add_variable(model, name="shed_demand_carrier_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        Variable.add_variable(model, name="shed_demand_carrier_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,bounds=shed_demand_carrier_bounds,
             doc="shed demand of carrier at high price")
         # cost of shed demand
         Variable.add_variable(model, name="cost_shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,

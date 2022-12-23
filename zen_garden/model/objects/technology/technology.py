@@ -390,7 +390,7 @@ class Technology(Element):
             # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
             system = EnergySystem.get_system()
 
-            if tech in techs_on_off or ("enforceSelfishBehavior" in system.keys() and system["enforce_selfish_behavior"] and tech in system["set_transport_technologies"]):
+            if tech in techs_on_off or ("enforce_selfish_behavior" in system.keys() and system["enforce_selfish_behavior"] and tech in system["set_transport_technologies"]):
                 params = Parameter.get_component_object()
                 if capacity_type == system["set_capacity_types"][0]:
                     _energy_string = ""

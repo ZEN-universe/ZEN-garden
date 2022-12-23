@@ -301,7 +301,7 @@ class DataInput():
         :param file_name:  name of selected file
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return df_output: return existing capacity and existing lifetime """
-        column = "yearConstruction"
+        column = "year_construction"
         index_list, index_name_list = self.construct_index_list(index_sets, None)
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multiidx, data=0)

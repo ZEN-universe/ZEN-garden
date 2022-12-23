@@ -45,7 +45,7 @@ class StorageTechnology(Technology):
         self.efficiency_charge = self.datainput.extract_input_data("efficiency_charge", index_sets=["set_nodes", "set_time_steps"], time_steps=set_time_steps_yearly)
         self.efficiency_discharge = self.datainput.extract_input_data("efficiency_discharge", index_sets=["set_nodes", "set_time_steps"], time_steps=set_time_steps_yearly)
         self.self_discharge = self.datainput.extract_input_data("self_discharge", index_sets=["set_nodes"])
-        self.initial_storage_level = self.datainput.extractInputData("initial_storage_level",indexSets=["set_nodes"])
+        self.initial_storage_level = self.datainput.extract_input_data("initial_storage_level",index_sets=["set_nodes"])
         # extract existing energy capacity
         self.min_built_capacity_energy = self.datainput.extract_attribute("min_built_capacity_energy")["value"]
         self.max_built_capacity_energy = self.datainput.extract_attribute("max_built_capacity_energy")["value"]
