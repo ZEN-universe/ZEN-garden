@@ -1,0 +1,19 @@
+index,value,unit
+min_built_capacity_default,0,GW
+max_built_capacity_default,inf,GW
+existing_capacity_default,0,GW
+capacity_limit_default,inf,GW
+min_load_default,0,
+max_load_default,1,
+lifetime_default,25,
+opex_specific_default,0,kiloEuro/GWh
+reference_carrier,heat,GW
+carbon_intensity_default,0,kilotons/GWh
+construction_time_default,0,
+existing_invested_capacity_default,0,GW
+fixed_opex_specific_default,87.6,Euro/kW
+max_diffusion_rate_default,inf,
+input_carrier,natural_gas oxygen,
+output_carrier,heat,
+conver_efficiency_default,1.1,
+capex_specific_default,876,Euro/kW

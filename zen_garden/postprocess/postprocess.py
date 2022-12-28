@@ -9,7 +9,6 @@ Description:  Class is defining the postprocessing of the results.
               The class contains methods to read the results and save them in a result dictionary (resultDict).
 ==========================================================================================================================================================================="""
 
-
 import sys
 
 import numpy as np
@@ -17,10 +16,12 @@ import pyomo.environ as pe
 import pandas as pd
 import pathlib
 import shutil
+import h5py
 import json
 import zlib
 import os
 
+from .. import utils
 from ..model.objects.energy_system import EnergySystem
 from ..model.objects.component import Parameter, Variable, Constraint
 from ..utils import RedirectStdStreams
@@ -28,12 +29,13 @@ from ..utils import RedirectStdStreams
 
 class Postprocess:
 
-    def __init__(self, model, scenarios, modelName, subfolder=None, scenario_name=None):
+    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None, save_opt=False):
         """postprocessing of the results of the optimization
         :param model: optimization model
-        :param modelName: The name of the model used to name the output folder
+        :param model_name: The name of the model used to name the output folder
         :param subfolder: The subfolder used for the results
         :param scenario_name: The name of the current scenario
+        :param save_opt: Save the dict of the opt as gszip
         """
 
         # get the necessary stuff from the model
@@ -43,86 +45,97 @@ class Postprocess:
         self.analysis = model.analysis
         self.solver = model.solver
         self.opt = model.opt
-        self.params         = Parameter.getComponentObject()
-        self.vars           = Variable.getComponentObject()
-        self.constraints    = Constraint.getComponentObject()
+        self.params = Parameter.get_component_object()
+        self.vars = Variable.get_component_object()
+        self.constraints = Constraint.get_component_object()
 
         # get name or directory
-        self.modelName = modelName
-        self.nameDir = pathlib.Path(self.analysis["folderOutput"]).joinpath(self.modelName)
+        self.model_name = model_name
+        self.name_dir = pathlib.Path(self.analysis["folder_output"]).joinpath(self.model_name)
 
         # deal with the subfolder
         self.subfolder = subfolder
         # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
         if self.subfolder:
-            self.nameDir = self.nameDir.joinpath(self.subfolder)
+            self.name_dir = self.name_dir.joinpath(self.subfolder)
         # create the output directory
-        os.makedirs(self.nameDir, exist_ok=True)
+        os.makedirs(self.name_dir, exist_ok=True)
 
         # check if we should overwrite output
-        self.overwirte = self.analysis["overwriteOutput"]
+        self.overwrite = self.analysis["overwrite_output"]
         # get the compression param
-        self.compress = self.analysis["compressOutput"]
+        self.output_format = self.analysis["output_format"]
 
         # save the pyomo yml
-        if self.analysis["writeResultsYML"]:
-            with RedirectStdStreams(open(os.path.join(self.nameDir, "results.yml"), "w+")):
+        if self.analysis["write_results_yml"]:
+            with RedirectStdStreams(open(os.path.join(self.name_dir, "results.yml"), "w+")):
                 model.results.write()
 
         # save everything
-        self.saveParam()
-        self.saveVar()
-        self.saveSystem()
-        self.saveAnalysis()
-        self.saveScenarios()
-        self.saveSolver()
-        self.saveOpt()
+        self.save_param()
+        self.save_var()
+        self.save_system()
+        self.save_analysis()
+        self.save_scenarios()
+        self.save_solver()
+        if save_opt:
+            self.save_opt()
 
         # extract and save sequence time steps, we transform the arrays to lists
-        self.dictSequenceTimeSteps = self.flatten_dict(EnergySystem.getSequenceTimeStepsDict())
-        self.saveSequenceTimeSteps(scenario=scenario_name)
+        self.dict_sequence_time_steps = self.flatten_dict(EnergySystem.get_sequence_time_steps_dict())
+        self.save_sequence_time_steps(scenario=scenario_name)
 
         # case where we should run the post-process as normal
         if model.analysis['postprocess']:
-            pass
-            # TODO: implement this...
-            #self.process()
+            pass  # TODO: implement this...  # self.process()
 
-    def write_file(self, name, dictionary):
+    def write_file(self, name, dictionary, format=None):
         """
         Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
         and saved as binary file
         :param name: Filename without extension
         :param dictionary: The dictionary to save
+        :param format: Force the format to use, if None use output_format attribute of instance
         """
 
-        # serialize to string
-        serialized_dict = json.dumps(dictionary, indent=2)
+        # set the format
+        if format is None:
+            format = self.output_format
+        if format == "gzip" or format == "json":
+            # serialize to string
+            serialized_dict = json.dumps(dictionary, indent=2)
 
-        # if the string is larger than the max output size we compress anyway
-        force_compression = False
-        if not self.compress and sys.getsizeof(serialized_dict)/1024**2 > self.analysis["maxOutputSizeMB"]:
-            print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
-                  f"{self.analysis['maxOutputSizeMB']}MB, compressing...")
-            force_compression = True
+            # if the string is larger than the max output size we compress anyway
+            force_compression = False
+            if format == "json" and sys.getsizeof(serialized_dict) / 1024 ** 2 > self.analysis["max_output_size_mb"]:
+                print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
+                      f"{self.analysis['max_output_size_mb']}MB, compressing...")
+                force_compression = True
 
-        # prep output file
-        if self.compress or force_compression:
-            # compress
-            f_name = f"{name}.gzip"
-            f_mode = "wb"
-            serialized_dict = zlib.compress(serialized_dict.encode())
-        else:
-            # write normal json
-            f_name = f"{name}.json"
-            f_mode = "w+"
+            # prep output file
+            if format == "gzip" or force_compression:
+                # compress
+                f_name = f"{name}.gzip"
+                f_mode = "wb"
+                serialized_dict = zlib.compress(serialized_dict.encode())
+            else:
+                # write normal json
+                f_name = f"{name}.json"
+                f_mode = "w+"
 
-        # write if necessary
-        if self.overwirte or not os.path.exists(f_name):
-            with open(f_name, f_mode) as outfile:
-                outfile.write(serialized_dict)
+            # write if necessary
+            if self.overwrite or not os.path.exists(f_name):
+                with open(f_name, f_mode) as outfile:
+                    outfile.write(serialized_dict)
 
-    def saveParam(self):
+        elif format == "h5":
+            f_name = f"{name}.h5"
+            if self.overwrite or not os.path.exists(f_name):
+                with h5py.File(f_name, "w") as outfile:
+                    utils.dump(data=dictionary, hdf=outfile)
+
+
+    def save_param(self):
         """ Saves the Param values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
 
@@ -132,23 +145,23 @@ class Postprocess:
             # get the values
             vals = getattr(self.params, param)
             doc = self.params.docs[param]
-            indexList = self.getIndexList(doc)
-            if len(indexList) == 0:
-                indexNames = None
-            elif len(indexList) == 1:
-                indexNames = indexList[0]
+            index_list = self.get_index_list(doc)
+            if len(index_list) == 0:
+                index_names = None
+            elif len(index_list) == 1:
+                index_names = index_list[0]
             else:
-                indexNames = indexList
+                index_names = index_list
             # create a dictionary if necessary
             if not isinstance(vals, dict):
-                indices = pd.Index(data=[0],name=indexNames)
+                indices = pd.Index(data=[0], name=index_names)
                 data = [vals]
             # if the returned dict is emtpy we create a nan value
             elif len(vals) == 0:
-                if len(indexList)>1:
-                    indices = pd.MultiIndex(levels=[[]]*len(indexNames),codes=[[]]*len(indexNames),names=indexNames)
+                if len(index_list) > 1:
+                    indices = pd.MultiIndex(levels=[[]] * len(index_names), codes=[[]] * len(index_names), names=index_names)
                 else:
-                    indices = pd.Index(data=[],name=indexNames)
+                    indices = pd.Index(data=[], name=index_names)
                 data = []
             # we read out everything
             else:
@@ -156,14 +169,14 @@ class Postprocess:
                 data = list(vals.values())
 
                 # create a multi index if necessary
-                if len(indices)>=1 and isinstance(indices[0],tuple):
-                    if len(indexList) == len(indices[0]):
-                        indices = pd.MultiIndex.from_tuples(indices,names=indexNames)
+                if len(indices) >= 1 and isinstance(indices[0], tuple):
+                    if len(index_list) == len(indices[0]):
+                        indices = pd.MultiIndex.from_tuples(indices, names=index_names)
                     else:
                         indices = pd.MultiIndex.from_tuples(indices)
                 else:
-                    if len(indexList) == 1:
-                        indices = pd.Index(data=indices,name=indexNames)
+                    if len(index_list) == 1:
+                        indices = pd.Index(data=indices, name=index_names)
                     else:
                         indices = pd.Index(data=indices)
 
@@ -171,13 +184,17 @@ class Postprocess:
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
 
             # update dict
-            data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                  "docstring": doc}
+            if self.output_format == "h5":
+                # need an array wrap because null bytes cause errors
+                compressed_df = np.array([zlib.compress(df.to_json(orient="table", indent=2).encode())])
+                data_frames[param] = {"dataframe": compressed_df, "docstring": doc}
+            else:
+                data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)), "docstring": doc}
 
         # write to json
-        self.write_file(self.nameDir.joinpath('paramDict'), data_frames)
+        self.write_file(self.name_dir.joinpath('param_dict'), data_frames)
 
-    def saveVar(self):
+    def save_var(self):
         """ Saves the variable values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
 
@@ -186,29 +203,29 @@ class Postprocess:
         for var in self.model.component_objects(pe.Var, active=True):
             if var.name in self.vars.docs:
                 doc = self.vars.docs[var.name]
-                indexList = self.getIndexList(doc)
-                if len(indexList) == 0:
-                    indexNames = None
-                elif len(indexList) == 1:
-                    indexNames = indexList[0]
+                index_list = self.get_index_list(doc)
+                if len(index_list) == 0:
+                    index_names = None
+                elif len(index_list) == 1:
+                    index_names = index_list[0]
                 else:
-                    indexNames = indexList
+                    index_names = index_list
             else:
-                indexList = []
+                index_list = []
                 doc = None
             # get indices and values
             indices = [index for index in var]
             values = [getattr(var[index], "value", None) for index in indices]
 
             # create a multi index if necessary
-            if len(indices)>=1 and isinstance(indices[0], tuple):
-                if len(indexList) == len(indices[0]):
-                    indices = pd.MultiIndex.from_tuples(indices, names=indexNames)
+            if len(indices) >= 1 and isinstance(indices[0], tuple):
+                if len(index_list) == len(indices[0]):
+                    indices = pd.MultiIndex.from_tuples(indices, names=index_names)
                 else:
                     indices = pd.MultiIndex.from_tuples(indices)
             else:
-                if len(indexList) == 1:
-                    indices = pd.Index(data=indices, name=indexNames)
+                if len(index_list) == 1:
+                    indices = pd.Index(data=indices, name=index_names)
                 else:
                     indices = pd.Index(data=indices)
 
@@ -216,72 +233,78 @@ class Postprocess:
             df = pd.DataFrame(data=values, columns=["value"], index=indices)
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                     "docstring": doc}
+            if self.output_format == "h5":
+                # need an array wrap because null bytes cause errors
+                compressed_df = np.array([zlib.compress(df.to_json(orient="table", indent=2).encode())])
+                data_frames[var.name] = {"dataframe": compressed_df,
+                                         "docstring": doc}
+            else:
+                data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
+                                         "docstring": doc}
 
-        self.write_file(self.nameDir.joinpath('varDict'), data_frames)
+        self.write_file(self.name_dir.joinpath('var_dict'), data_frames)
 
-    def saveSystem(self):
+    def save_system(self):
         """
         Saves the system dict as json
         """
 
         # This we only need to save once
         if self.subfolder:
-            fname = self.nameDir.parent.joinpath('System')
+            fname = self.name_dir.parent.joinpath('system')
         else:
-            fname = self.nameDir.joinpath('System')
-        self.write_file(fname, self.system)
+            fname = self.name_dir.joinpath('system')
+        self.write_file(fname, self.system, format="json")
 
-    def saveAnalysis(self):
+    def save_analysis(self):
         """
         Saves the analysis dict as json
         """
 
         # This we only need to save once
         if self.subfolder:
-            fname = self.nameDir.parent.joinpath('Analysis')
+            fname = self.name_dir.parent.joinpath('analysis')
         else:
-            fname = self.nameDir.joinpath('Analysis')
-        self.write_file(fname, self.analysis)
+            fname = self.name_dir.joinpath('analysis')
+        self.write_file(fname, self.analysis, format="json")
 
-    def saveScenarios(self):
+    def save_scenarios(self):
         """
         Saves the analysis dict as json
         """
 
         # This we only need to save once
         if self.subfolder:
-            fname = self.nameDir.parent.joinpath('Scenarios')
+            fname = self.name_dir.parent.joinpath('scenarios')
         else:
-            fname = self.nameDir.joinpath('Scenarios')
-        self.write_file(fname, self.scenarios)
+            fname = self.name_dir.joinpath('scenarios')
+        self.write_file(fname, self.scenarios, format="json")
 
-    def saveSolver(self):
+    def save_solver(self):
         """
         Saves the solver dict as json
         """
 
         # This we only need to save once
         if self.subfolder:
-            fname = self.nameDir.parent.joinpath('Solver')
+            fname = self.name_dir.parent.joinpath('solver')
         else:
-            fname = self.nameDir.joinpath('Solver')
-        self.write_file(fname, self.solver)
+            fname = self.name_dir.joinpath('solver')
+        self.write_file(fname, self.solver, format="json")
 
-    def saveOpt(self):
+    def save_opt(self):
         """
         Saves the opt dict as json
         """
-        if self.solver["name"] != "gurobi_persistent":
-            self.write_file(self.nameDir.joinpath('optDict'), self.opt.__dict__)
+
+        self.write_file(self.name_dir.joinpath('opt_dict'), self.opt.__dict__)
 
         # copy the log file
-        shutil.copy2(os.path.abspath(self.opt._log_file), self.nameDir)
+        shutil.copy2(os.path.abspath(self.opt._log_file), self.name_dir)
 
-    def saveSequenceTimeSteps(self, scenario=None):
+    def save_sequence_time_steps(self, scenario=None):
         """
-        Saves the dictAllSequenceTimeSteps dict as json
+        Saves the dict_all_sequence_time_steps dict as json
         """
         # add the scenario name
         if scenario is not None:
@@ -291,11 +314,11 @@ class Postprocess:
 
             # This we only need to save once
         if self.subfolder:
-            fname = self.nameDir.parent.joinpath(f'dictAllSequenceTimeSteps{add_on}')
+            fname = self.name_dir.parent.joinpath(f'dict_all_sequence_time_steps{add_on}')
         else:
-            fname = self.nameDir.joinpath(f'dictAllSequenceTimeSteps{add_on}')
+            fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
 
-        self.write_file(fname, self.dictSequenceTimeSteps)
+        self.write_file(fname, self.dict_sequence_time_steps)
 
     def flatten_dict(self, dictionary):
         """
@@ -305,36 +328,36 @@ class Postprocess:
         :return: A copy of the dictionary containing lists instead of arrays
         """
         # create a copy of the dict to avoid overwrite
-        dictionary = dictionary.copy()
+        out_dict = dict()
 
-        # faltten all arrays
+        # falten all arrays
         for k, v in dictionary.items():
+            # transform the key None to 'null'
+            if k is None:
+                k = 'null'
+
             # recursive call
             if isinstance(v, dict):
-                dictionary[k] = self.flatten_dict(v)
-                # flatten the array to list
+                out_dict[k] = self.flatten_dict(v)  # flatten the array to list
             elif isinstance(v, np.ndarray):
                 # Note: list(v) creates a list of np objects v.tolist() not
-                dictionary[k] = v.tolist()
+                out_dict[k] = v.tolist()
             # take as is
             else:
-                dictionary[k] = v
+                out_dict[k] = v
 
-        return dictionary
+        return out_dict
 
-    def getIndexList(self,doc):
+    def get_index_list(self, doc):
         """ get index list from docstring """
-        splitDoc = doc.split(";")
-        for string in splitDoc:
+        split_doc = doc.split(";")
+        for string in split_doc:
             if "dims" in string:
                 break
-        string = string.replace("dims:","")
-        indexList = string.split(",")
-        indexListFinal = []
-        for index in indexList:
-            if index in self.analysis["headerDataInputs"].keys():
-                indexListFinal.append(self.analysis["headerDataInputs"][index])
-            else:
-                pass
-                # indexListFinal.append(index)
-        return indexListFinal
+        string = string.replace("dims:", "")
+        index_list = string.split(",")
+        index_list_final = []
+        for index in index_list:
+            if index in self.analysis["header_data_inputs"].keys():
+                index_list_final.append(self.analysis["header_data_inputs"][index])  # else:  #     pass  #     # index_list_final.append(index)
+        return index_list_final

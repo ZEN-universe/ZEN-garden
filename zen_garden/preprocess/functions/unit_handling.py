@@ -7,255 +7,254 @@ Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 Description:    Class containing the unit handling procedure.
 ==========================================================================================================================================================================="""
 import logging
-import numpy         as np
-import pandas        as pd
+import numpy as np
+import pandas as pd
 import itertools
-from pint                                    import UnitRegistry
-from pint.util                               import column_echelon_form
+from pint import UnitRegistry
+from pint.util import column_echelon_form
 import copy
+
+
 class UnitHandling:
 
-    def __init__(self,folderPath,roundDecimalPoints):
-        """ initialization of the unitHandling instance"""
-        self.folderPath             = folderPath
-        self.roundingDecimalPoints  = roundDecimalPoints
-        self.getBaseUnits()
+    def __init__(self, folder_path, round_decimal_points):
+        """ initialization of the unit_handling instance"""
+        self.folder_path = folder_path
+        self.rounding_decimal_points = round_decimal_points
+        self.get_base_units()
         # dict of element attribute values
-        self.dictAttributeValues    = {}
+        self.dict_attribute_values = {}
 
-    def getBaseUnits(self):
+    def get_base_units(self):
         """ gets base units of energy system """
-        _listBaseUnits  = self.extractBaseUnits()
-        self.ureg       = UnitRegistry()
+        _list_base_unit = self.extract_base_units()
+        self.ureg = UnitRegistry()
 
         # load additional units
-        self.ureg.load_definitions(self.folderPath+"/unitDefinitions.txt")
+        self.ureg.load_definitions(self.folder_path + "/unit_definitions.txt")
 
         # empty base units and dimensionality matrix
-        self.baseUnits                  = {}
-        self.dimMatrix                  = pd.DataFrame(index=_listBaseUnits).astype(int)
-        for _baseUnit in _listBaseUnits:
-            dimUnit                     = self.ureg.get_dimensionality(self.ureg(_baseUnit))
-            self.baseUnits[_baseUnit]   = self.ureg(_baseUnit).dimensionality
-            self.dimMatrix.loc[_baseUnit, list(dimUnit.keys())] = list(dimUnit.values())
-        self.dimMatrix                  = self.dimMatrix.fillna(0).astype(int).T
+        self.base_units = {}
+        self.dim_matrix = pd.DataFrame(index=_list_base_unit).astype(int)
+        for _base_unit in _list_base_unit:
+            dim_unit = self.ureg.get_dimensionality(self.ureg(_base_unit))
+            self.base_units[_base_unit] = self.ureg(_base_unit).dimensionality
+            self.dim_matrix.loc[_base_unit, list(dim_unit.keys())] = list(dim_unit.values())
+        self.dim_matrix = self.dim_matrix.fillna(0).astype(int).T
 
         # check if unit defined twice or more
-        _duplicateUnits                 = self.dimMatrix.T.duplicated()
-        if _duplicateUnits.any():
-            _dimMatrixDuplicate         = self.dimMatrix.loc[:,_duplicateUnits]
-            for _duplicate in _dimMatrixDuplicate:
+        _duplicate_units = self.dim_matrix.T.duplicated()
+        if _duplicate_units.any():
+            _dim_matrix_duplicate = self.dim_matrix.loc[:, _duplicate_units]
+            for _duplicate in _dim_matrix_duplicate:
                 # if same unit twice (same order of magnitude and same dimensionality)
-                if len(self.dimMatrix[_duplicate].shape) > 1:
+                if len(self.dim_matrix[_duplicate].shape) > 1:
                     logging.warning(f"The base unit <{_duplicate}> was defined more than once. Duplicates are dropped.")
-                    _duplicateDim               = self.dimMatrix[_duplicate].T.drop_duplicates().T
-                    self.dimMatrix              = self.dimMatrix.drop(_duplicate,axis=1)
-                    self.dimMatrix[_duplicate]  = _duplicateDim
+                    _duplicateDim = self.dim_matrix[_duplicate].T.drop_duplicates().T
+                    self.dim_matrix = self.dim_matrix.drop(_duplicate, axis=1)
+                    self.dim_matrix[_duplicate] = _duplicateDim
                 else:
-                    raise KeyError(f"More than one base unit defined for dimensionality {self.baseUnits[_duplicate]} (e.g., {_duplicate})")
+                    raise KeyError(f"More than one base unit defined for dimensionality {self.base_units[_duplicate]} (e.g., {_duplicate})")
         # get linearly dependent units
-        M, I, pivot                     = column_echelon_form(np.array(self.dimMatrix), ntype=float)
-        M                               = np.array(M).squeeze()
-        I                               = np.array(I).squeeze()
-        pivot                           = np.array(pivot).squeeze()
+        M, I, pivot = column_echelon_form(np.array(self.dim_matrix), ntype=float)
+        M = np.array(M).squeeze()
+        I = np.array(I).squeeze()
+        pivot = np.array(pivot).squeeze()
         # index of linearly dependent units in M and I
-        idxLinDep                       = np.squeeze(np.argwhere(np.all(M==0,axis=1)))
+        idx_lin_dep = np.squeeze(np.argwhere(np.all(M == 0, axis=1)))
         # index of linearly dependent units in dimensionality matrix
-        _idxPivot                           = range(len(self.baseUnits))
-        idxLinDepDimMatrix                  = list(set(_idxPivot).difference(pivot))
-        self.dimAnalysis                    = {}
-        self.dimAnalysis["dependentUnits"]  = self.dimMatrix.columns[idxLinDepDimMatrix]
-        dependentDims                       = I[idxLinDep,:]
+        _idx_pivot = range(len(self.base_units))
+        idx_lin_dep_dim_matrix = list(set(_idx_pivot).difference(pivot))
+        self.dim_analysis = {}
+        self.dim_analysis["dependent_units"] = self.dim_matrix.columns[idx_lin_dep_dim_matrix]
+        dependent_dims = I[idx_lin_dep, :]
         # if only one dependent unit
-        if len(self.dimAnalysis["dependentUnits"]) == 1:
-            dependentDims                   = dependentDims.reshape(1,dependentDims.size)
+        if len(self.dim_analysis["dependent_units"]) == 1:
+            dependent_dims = dependent_dims.reshape(1, dependent_dims.size)
         # reorder dependent dims to match dependent units
-        DimOfDependentUnits                 = dependentDims[:,idxLinDepDimMatrix]
-        # if not already in correct order (ones on the diagonal of dependentDims)
-        if not np.all(np.diag(DimOfDependentUnits)==1):
-            # get position of ones in DimOfDependentUnits
-            posOnes         = np.argwhere(DimOfDependentUnits==1)
-            assert np.size(posOnes,axis=0) == len(self.dimAnalysis["dependentUnits"]), \
-                f"Cannot determine order of dependent base units {self.dimAnalysis['dependentUnits']}, " \
-                f"because diagonal of dimensions of the dependent units cannot be determined."
+        dim_of_dependent_units = dependent_dims[:, idx_lin_dep_dim_matrix]
+        # if not already in correct order (ones on the diagonal of dependent_dims)
+        if not np.all(np.diag(dim_of_dependent_units) == 1):
+            # get position of ones in dim_of_dependent_units
+            pos_ones = np.argwhere(dim_of_dependent_units == 1)
+            assert np.size(pos_ones, axis=0) == len(self.dim_analysis["dependent_units"]), f"Cannot determine order of dependent base units {self.dim_analysis['dependent_units']}, " \
+                                                                                           f"because diagonal of dimensions of the dependent units cannot be determined."
             # pivot dependent dims
-            dependentDims   = dependentDims[posOnes[:,1],:]
-        self.dimAnalysis["dependentDims"]   = dependentDims
+            dependent_dims = dependent_dims[pos_ones[:, 1], :]
+        self.dim_analysis["dependent_dims"] = dependent_dims
         # check that no base unit can be directly constructed from the others (e.g., GJ from GW and hour)
-        assert ~UnitHandling.checkIfPosNegBoolean(dependentDims,axis=1), f"At least one of the base units {list(self.baseUnits.keys())} can be directly constructed from the others"
+        assert ~UnitHandling.check_pos_neg_boolean(dependent_dims, axis=1), f"At least one of the base units {list(self.base_units.keys())} can be directly constructed from the others"
 
-    def extractBaseUnits(self):
+    def extract_base_units(self):
         """ extracts base units of energy system
-        :return listBaseUnits: list of base units """
-        listBaseUnits = pd.read_csv(self.folderPath +"/baseUnits.csv").squeeze().values.tolist()
-        return listBaseUnits
+        :return list_base_units: list of base units """
+        list_base_units = pd.read_csv(self.folder_path + "/base_units.csv").squeeze().values.tolist()
+        return list_base_units
 
-    def calculateCombinedUnit(self,inputUnit,returnCombination = False):
-        """ calculates the combined unit for converting an inputUnit to the base units
-        :param inputUnit: string of input unit
-        :return combinedUnit: multiplication factor """
+    def calculate_combined_unit(self, input_unit, return_combination=False):
+        """ calculates the combined unit for converting an input_unit to the base units
+        :param input_unit: string of input unit
+        :return combined_unit: multiplication factor """
         # check if "h" and thus "planck_constant" in unit
-        self.checkIfInvalidHourString(inputUnit)
-        # create dimensionality vector for inputUnit
-        dimInput = self.ureg.get_dimensionality(self.ureg(inputUnit))
-        dimVector = pd.Series(index=self.dimMatrix.index, data=0)
-        _missingDim = set(dimInput.keys()).difference(dimVector.keys())
-        assert len(_missingDim) == 0, f"No base unit defined for dimensionalities <{_missingDim}>"
-        dimVector[list(dimInput.keys())] = list(dimInput.values())
+        self.check_if_invalid_hourstring(input_unit)
+        # create dimensionality vector for input_unit
+        dim_input = self.ureg.get_dimensionality(self.ureg(input_unit))
+        dim_vector = pd.Series(index=self.dim_matrix.index, data=0)
+        _missing_dim = set(dim_input.keys()).difference(dim_vector.keys())
+        assert len(_missing_dim) == 0, f"No base unit defined for dimensionalities <{_missing_dim}>"
+        dim_vector[list(dim_input.keys())] = list(dim_input.values())
         # calculate dimensionless combined unit (e.g., tons and kilotons)
-        combinedUnit = self.ureg(inputUnit).units
+        combined_unit = self.ureg(input_unit).units
         # if unit (with a different multiplier) is already in base units
-        if self.dimMatrix.isin(dimVector).all(axis=0).any():
-            baseCombination = self.dimMatrix.isin(dimVector).all(axis=0).astype(int)
-            _baseUnit = self.ureg(self.dimMatrix.columns[self.dimMatrix.isin(dimVector).all(axis=0)][0])
-            combinedUnit *= _baseUnit ** (-1)
+        if self.dim_matrix.isin(dim_vector).all(axis=0).any():
+            base_combination = self.dim_matrix.isin(dim_vector).all(axis=0).astype(int)
+            _base_unit = self.ureg(self.dim_matrix.columns[self.dim_matrix.isin(dim_vector).all(axis=0)][0])
+            combined_unit *= _base_unit ** (-1)
         # if inverse of unit (with a different multiplier) is already in base units (e.g. 1/km and km)
-        elif (self.dimMatrix * -1).isin(dimVector).all(axis=0).any():
-            baseCombination = (self.dimMatrix * -1).isin(dimVector).all(axis=0).astype(int)*(-1)
-            _baseUnit = self.ureg(self.dimMatrix.columns[(self.dimMatrix * -1).isin(dimVector).all(axis=0)][0])
-            combinedUnit *= _baseUnit
+        elif (self.dim_matrix * -1).isin(dim_vector).all(axis=0).any():
+            base_combination = (self.dim_matrix * -1).isin(dim_vector).all(axis=0).astype(int) * (-1)
+            _base_unit = self.ureg(self.dim_matrix.columns[(self.dim_matrix * -1).isin(dim_vector).all(axis=0)][0])
+            combined_unit *= _base_unit
         else:
-            dimAnalysis = self.dimAnalysis
+            dim_analysis = self.dim_analysis
             # drop dependent units
-            dimMatrixReduced = self.dimMatrix.drop(dimAnalysis["dependentUnits"], axis=1)
+            dim_matrix_reduced = self.dim_matrix.drop(dim_analysis["dependent_units"], axis=1)
             # solve system of linear equations
-            combinationSolution = np.linalg.solve(dimMatrixReduced, dimVector)
+            combination_solution = np.linalg.solve(dim_matrix_reduced, dim_vector)
             # check if only -1, 0, 1
-            if UnitHandling.checkIfPosNegBoolean(combinationSolution):
-                baseCombination = pd.Series(index=self.dimMatrix.columns,data=0)
-                baseCombination[dimMatrixReduced.columns] = combinationSolution
+            if UnitHandling.check_pos_neg_boolean(combination_solution):
+                base_combination = pd.Series(index=self.dim_matrix.columns, data=0)
+                base_combination[dim_matrix_reduced.columns] = combination_solution
                 # compose relevant units to dimensionless combined unit
-                for unit, power in zip(dimMatrixReduced.columns, combinationSolution):
-                    combinedUnit *= self.ureg(unit) ** (-1 * power)
+                for unit, power in zip(dim_matrix_reduced.columns, combination_solution):
+                    combined_unit *= self.ureg(unit) ** (-1 * power)
             else:
-                calculatedMultiplier = False
-                for unit, power in zip(dimMatrixReduced.columns, combinationSolution):
+                calculated_multiplier = False
+                for unit, power in zip(dim_matrix_reduced.columns, combination_solution):
                     # try to substitute unit with power > 1 by a dependent unit
-                    if np.abs(power) > 1 and not calculatedMultiplier:
+                    if np.abs(power) > 1 and not calculated_multiplier:
                         # iterate through dependent units
-                        for dependentUnit, dependentDim in zip(dimAnalysis["dependentUnits"],
-                                                               dimAnalysis["dependentDims"]):
-                            idxUnitInMatrixReduced = list(dimMatrixReduced.columns).index(unit)
+                        for dependent_unit, dependent_dim in zip(dim_analysis["dependent_units"], dim_analysis["dependent_dims"]):
+                            idx_unit_in_reduced_matrix = list(dim_matrix_reduced.columns).index(unit)
                             # if the power of the unit is the same as of the dimensionality in the dependent unit
-                            if np.abs(dependentDim[idxUnitInMatrixReduced]) == np.abs(power):
-                                dimMatrixReducedTemp = dimMatrixReduced.drop(unit, axis=1)
-                                dimMatrixReducedTemp[dependentUnit] = self.dimMatrix[dependentUnit]
-                                combinationSolutionTemp = np.linalg.solve(dimMatrixReducedTemp, dimVector)
-                                if UnitHandling.checkIfPosNegBoolean(combinationSolutionTemp):
+                            if np.abs(dependent_dim[idx_unit_in_reduced_matrix]) == np.abs(power):
+                                dim_matrix_reduced_temp = dim_matrix_reduced.drop(unit, axis=1)
+                                dim_matrix_reduced_temp[dependent_unit] = self.dim_matrix[dependent_unit]
+                                combination_solution_temp = np.linalg.solve(dim_matrix_reduced_temp, dim_vector)
+                                if UnitHandling.check_pos_neg_boolean(combination_solution_temp):
                                     # compose relevant units to dimensionless combined unit
-                                    baseCombination = pd.Series(index=self.dimMatrix.columns,data=0)
-                                    baseCombination[dimMatrixReducedTemp.columns] = combinationSolutionTemp
-                                    for unitTemp, powerTemp in zip(dimMatrixReducedTemp.columns,
-                                                                   combinationSolutionTemp):
-                                        combinedUnit *= self.ureg(unitTemp) ** (-1 * powerTemp)
-                                    calculatedMultiplier = True
+                                    base_combination = pd.Series(index=self.dim_matrix.columns, data=0)
+                                    base_combination[dim_matrix_reduced_temp.columns] = combination_solution_temp
+                                    for unit_temp, power_temp in zip(dim_matrix_reduced_temp.columns, combination_solution_temp):
+                                        combined_unit *= self.ureg(unit_temp) ** (-1 * power_temp)
+                                    calculated_multiplier = True
                                     break
-                assert calculatedMultiplier, f"Cannot establish base unit conversion for {inputUnit} from base units {self.baseUnits.keys()}"
-        if returnCombination:
-            return baseCombination
+                assert calculated_multiplier, f"Cannot establish base unit conversion for {input_unit} from base units {self.base_units.keys()}"
+        if return_combination:
+            return base_combination
         else:
-            return combinedUnit
+            return combined_unit
 
-    def getUnitMultiplier(self,inputUnit):
-        """ calculates the multiplier for converting an inputUnit to the base units
-        :param inputUnit: string of input unit
+    def get_unit_multiplier(self, input_unit):
+        """ calculates the multiplier for converting an input_unit to the base units
+        :param input_unit: string of input unit
         :return multiplier: multiplication factor """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
-        if inputUnit in self.baseUnits:
+        if input_unit in self.base_units:
             return 1
         # if input unit is nan --> dimensionless
-        elif type(inputUnit) != str and np.isnan(inputUnit):
+        elif type(input_unit) != str and np.isnan(input_unit):
             return 1
         else:
-            combinedUnit = self.calculateCombinedUnit(inputUnit)
-            assert combinedUnit.to_base_units().unitless, f"The unit conversion of unit {inputUnit} did not resolve to a dimensionless conversion factor. Something went wrong."
+            combined_unit = self.calculate_combined_unit(input_unit)
+            assert combined_unit.to_base_units().unitless, f"The unit conversion of unit {input_unit} did not resolve to a dimensionless conversion factor. Something went wrong."
             # magnitude of combined unit is multiplier
-            multiplier = combinedUnit.to_base_units().magnitude
+            multiplier = combined_unit.to_base_units().magnitude
             # check that multiplier is larger than rounding tolerance
-            assert multiplier >= 10**(-self.roundingDecimalPoints), f"Multiplier {multiplier} of unit {inputUnit} is smaller than rounding tolerance {10**(-self.roundingDecimalPoints)}"
+            assert multiplier >= 10 ** (-self.rounding_decimal_points), f"Multiplier {multiplier} of unit {input_unit} is smaller than rounding tolerance {10 ** (-self.rounding_decimal_points)}"
             # round to decimal points
-            return round(multiplier,self.roundingDecimalPoints)
+            return round(multiplier, self.rounding_decimal_points)
 
-    def setBaseUnitCombination(self,inputUnit,attribute):
+    def set_base_unit_combination(self, input_unit, attribute):
         """ converts the input unit to the corresponding base unit """
         # if input unit is already in base units --> the input unit is base unit
-        if inputUnit in self.baseUnits:
-            baseUnitCombination = self.calculateCombinedUnit(inputUnit,returnCombination=True)
+        if input_unit in self.base_units:
+            base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
         # if input unit is nan --> dimensionless
-        elif type(inputUnit) != str and np.isnan(inputUnit):
-            baseUnitCombination = pd.Series(index=self.dimMatrix.columns,data=0)
+        elif type(input_unit) != str and np.isnan(input_unit):
+            base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
         else:
-            baseUnitCombination = self.calculateCombinedUnit(inputUnit,returnCombination=True)
-        if (baseUnitCombination != 0).any():
-            self.dictAttributeValues[attribute] = {"baseCombination": baseUnitCombination,"values":None}
+            base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
+        if (base_unit_combination != 0).any():
+            self.dict_attribute_values[attribute] = {"base_combination": base_unit_combination, "values": None}
 
-    def setAttributeValues(self,dfOutput,attribute):
+    def set_attribute_values(self, df_output, attribute):
         """ saves the attributes values of an attribute """
-        if attribute in self.dictAttributeValues.keys():
-            self.dictAttributeValues[attribute]["values"] = dfOutput
+        if attribute in self.dict_attribute_values.keys():
+            self.dict_attribute_values[attribute]["values"] = df_output
 
-    def recommendBaseUnits(self,immutableUnit,unitExps):
+    def recommend_base_units(self, immutable_unit, unit_exps):
         """ gets the best base units based on the input parameter values """
-        logging.info(f"Check for best base unit combination between 10^{unitExps['min']} and 10^{unitExps['max']} (interval: 10^{unitExps['stepWidth']})")
-        smallestRange   = {"comb":None,"val":np.inf,"originalVal":np.inf}
-        dictValues  = {}
-        dictUnits   = {}
-        baseUnits   = self.dimMatrix.columns.copy()
-        for item in self.dictAttributeValues:
-            if self.dictAttributeValues[item]["values"] is not None:
-                _dfValuesTemp           = self.dictAttributeValues[item]["values"].reset_index(drop=True)
-                _dfUnitsTemp            = pd.DataFrame(index=_dfValuesTemp.index,columns=baseUnits)
-                _dfUnitsTemp.loc[_dfValuesTemp.index,:] = self.dictAttributeValues[item]["baseCombination"][baseUnits].values
-                dictValues[item]    = _dfValuesTemp
-                dictUnits[item]     = _dfUnitsTemp
-        dfValues    = pd.concat(dictValues,ignore_index=True).abs()
-        dfUnits     = pd.concat(dictUnits, ignore_index=True)
-        dfDupl      = pd.concat([dfValues,dfUnits],axis=1).drop_duplicates()
-        dfValues    = dfValues.loc[dfDupl.index]
-        dfUnits     = dfUnits.loc[dfDupl.index,:]
+        logging.info(f"Check for best base unit combination between 10^{unit_exps['min']} and 10^{unit_exps['max']} (interval: 10^{unit_exps['step_width']})")
+        smallest_range = {"comb": None, "val": np.inf, "originalVal": np.inf}
+        dict_values = {}
+        dict_units = {}
+        base_units = self.dim_matrix.columns.copy()
+        for item in self.dict_attribute_values:
+            if self.dict_attribute_values[item]["values"] is not None:
+                _df_values_temp = self.dict_attribute_values[item]["values"].reset_index(drop=True)
+                _df_units_temp = pd.DataFrame(index=_df_values_temp.index, columns=base_units)
+                _df_units_temp.loc[_df_values_temp.index, :] = self.dict_attribute_values[item]["base_combination"][base_units].values
+                dict_values[item] = _df_values_temp
+                dict_units[item] = _df_units_temp
+        df_values = pd.concat(dict_values, ignore_index=True).abs()
+        df_units = pd.concat(dict_units, ignore_index=True)
+        df_dupl = pd.concat([df_values, df_units], axis=1).drop_duplicates()
+        df_values = df_values.loc[df_dupl.index]
+        df_units = df_units.loc[df_dupl.index, :]
         # original var and range
-        smallestRange["originalVal"]    = np.log10(dfValues.max()) - np.log10(dfValues.min())
-        smallestRange["val"]    = copy.copy(smallestRange["originalVal"])
-        smallestRange["comb"]   = "original"
-        minExp      = unitExps["min"]
-        maxExp      = unitExps["max"]
-        stepWidth   = unitExps["stepWidth"]
-        rangeExp    = range(minExp,maxExp+1,stepWidth)
-        mutableUnit = self.dimMatrix.columns[self.dimMatrix.columns.isin(baseUnits.difference(immutableUnit))]
-        dfUnits = dfUnits.loc[:,mutableUnit]
-        combMult    = itertools.product(rangeExp,repeat = len(mutableUnit))
-        for comb in combMult:
-            dfScaled    = dfUnits.multiply(comb,axis=1)*(-1)
-            dfScaled    = 10**dfScaled.sum(axis=1).astype(float)
-            scaledVals  = dfValues*dfScaled
-            valRange    = np.log10(scaledVals.max()) - np.log10(scaledVals.min())
-            if valRange < smallestRange["val"]:
-                smallestRange["comb"]   = comb
-                smallestRange["val"]    = valRange
-        if smallestRange["val"] == smallestRange["originalVal"]:
+        smallest_range["originalVal"] = np.log10(df_values.max()) - np.log10(df_values.min())
+        smallest_range["val"] = copy.copy(smallest_range["originalVal"])
+        smallest_range["comb"] = "original"
+        min_exp = unit_exps["min"]
+        max_exp = unit_exps["max"]
+        step_width = unit_exps["step_width"]
+        range_exp = range(min_exp, max_exp + 1, step_width)
+        mutable_unit = self.dim_matrix.columns[self.dim_matrix.columns.isin(base_units.difference(immutable_unit))]
+        df_units = df_units.loc[:, mutable_unit]
+        comb_mult = itertools.product(range_exp, repeat=len(mutable_unit))
+        for comb in comb_mult:
+            df_scaled = df_units.multiply(comb, axis=1) * (-1)
+            df_scaled = 10 ** df_scaled.sum(axis=1).astype(float)
+            scaled_vals = df_values * df_scaled
+            val_range = np.log10(scaled_vals.max()) - np.log10(scaled_vals.min())
+            if val_range < smallest_range["val"]:
+                smallest_range["comb"] = comb
+                smallest_range["val"] = val_range
+        if smallest_range["val"] == smallest_range["originalVal"]:
             logging.info("The current base unit setting is the best in the given search interval")
         else:
-            listUnits = []
-            for exp,unit in zip(smallestRange["comb"],mutableUnit):
+            list_units = []
+            for exp, unit in zip(smallest_range["comb"], mutable_unit):
                 if exp != 0:
-                    listUnits.append(str(self.ureg(f"{10**exp} {unit}").to_compact()))
-            logging.info(f"A better base unit combination is {', '.join(listUnits)}. This reduces the parameter range by 10^{int(np.round(smallestRange['originalVal']-smallestRange['val']))}")
+                    list_units.append(str(self.ureg(f"{10 ** exp} {unit}").to_compact()))
+            logging.info(f"A better base unit combination is {', '.join(list_units)}. This reduces the parameter range by 10^{int(np.round(smallest_range['originalVal'] - smallest_range['val']))}")
 
-    def checkIfInvalidHourString(self,inputUnit):
-        """ checks if "h" and thus "planck_constant" in inputUnit
-        :param inputUnit: string of inputUnit """
-        _tupleUnits = self.ureg(inputUnit).to_tuple()[1]
-        _listUnits = [_item[0] for _item in _tupleUnits]
-        assert "planck_constant" not in _listUnits, f"Error in input unit '{inputUnit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"
+    def check_if_invalid_hourstring(self, input_unit):
+        """ checks if "h" and thus "planck_constant" in input_unit
+        :param input_unit: string of input_unit """
+        _tuple_units = self.ureg(input_unit).to_tuple()[1]
+        _list_units = [_item[0] for _item in _tuple_units]
+        assert "planck_constant" not in _list_units, f"Error in input unit '{input_unit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"
 
     @staticmethod
-    def checkIfPosNegBoolean(array,axis=None):
+    def check_pos_neg_boolean(array, axis=None):
         """ checks if the array has only positive or negative booleans (-1,0,1)
         :param array: numeric numpy array
         :param axis:
-        :return isPosNegBoolean """
+        :return is_pos_neg_boolean """
         if axis:
-            isPosNegBoolean = np.apply_along_axis(lambda row: np.array_equal(np.abs(row), np.abs(row).astype(bool)),1,array).any()
+            is_pos_neg_boolean = np.apply_along_axis(lambda row: np.array_equal(np.abs(row), np.abs(row).astype(bool)), 1, array).any()
         else:
-            isPosNegBoolean = np.array_equal(np.abs(array), np.abs(array).astype(bool))
-        return isPosNegBoolean
+            is_pos_neg_boolean = np.array_equal(np.abs(array), np.abs(array).astype(bool))
+        return is_pos_neg_boolean
