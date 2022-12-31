@@ -566,8 +566,12 @@ class DataInput():
         """
         #check if input data is time-dependent and has yearly time steps
         if time_steps is self.energy_system.set_time_steps_yearly:
+            #check if temporal header of input data is still given as 'time' instead of 'year'
+            if "time" in df_input.axes[1]:
+                warnings.warn(f"The column header 'time' won't be supported for input data with yearly time steps any longer! Use the header 'year' instead")
             #check if input data is still given with generic time indices
-            if max(df_input.loc[:,"time"]) < self.analysis["earliest_year_of_data"]:
+            temporal_header = df_input.axes[1][0]
+            if max(df_input.loc[:,temporal_header]) < self.analysis["earliest_year_of_data"]:
                 warnings.warn(f"Generic time indices won't be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
                 return df_input
 
@@ -578,12 +582,12 @@ class DataInput():
             if file_name not in file_names_int_off:
                 parameters = df_input.axes[1]
                 for param in parameters:
-                    if param == "time":
+                    if param == temporal_header:
                         continue
                     for year in self.energy_system.set_time_step_years:
-                        if year not in df_input.time.values:
-                            df_input = df_input.append({"time": year, param: float("nan")}, ignore_index=True)
-                    df_input = df_input.sort_values("time")
+                        if year not in df_input.get(temporal_header).values:
+                            df_input = df_input.append({temporal_header: year, param: float("nan")}, ignore_index=True)
+                    df_input = df_input.sort_values(temporal_header)
                     df_input[param] = df_input[param].interpolate()
             else:
                 logging.info(f"Parameter {file_name} data won't be interpolated to cover years without given values")
@@ -591,14 +595,14 @@ class DataInput():
             #remove data of years that won't be simulated
             unnecessary_rows = []
             for count in df_input.axes[0]:
-                if df_input.at[count,"time"] not in self.energy_system.set_time_step_years:
+                if df_input.at[count,temporal_header] not in self.energy_system.set_time_step_years:
                     unnecessary_rows.append(count)
             df_input = df_input.drop(index=unnecessary_rows)
 
             #convert yearly time indices to generic ones
             counter = 0
             for index in df_input.axes[0]:
-                df_input.at[index,"time"] = df_input.at[index,"time"] - self.system["reference_year"] - (self.system["interval_between_years"] - 1) * counter
+                df_input.at[index,temporal_header] = df_input.at[index,temporal_header] - self.system["reference_year"] - (self.system["interval_between_years"] - 1) * counter
                 counter += 1
 
         return df_input
