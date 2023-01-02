@@ -56,7 +56,7 @@ class DataInput():
         # if time steps are the yearly base time steps
         elif time_steps is self.energy_system.set_base_time_steps_yearly:
             yearly_variation = True
-            self.extract_yearly_variation(file_name, index_sets, column)
+            self.extract_yearly_variation(file_name, index_sets, column, scenario)
 
         # if existing capacities and existing capacities not used
         if (file_name == "existing_capacity" or file_name == "existing_capacity_energy") and not self.analysis["use_existing_capacities"]:
@@ -203,7 +203,7 @@ class DataInput():
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param column: select specific column
         """
-        # remove intrayearly time steps from index set and add interyearly time steps
+        # remove intra-yearly time steps from index set and add inter-yearly time steps
         _index_sets = copy.deepcopy(index_sets)
         _index_sets.remove("set_time_steps")
         _index_sets.append("set_time_steps_yearly")
