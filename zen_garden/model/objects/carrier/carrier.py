@@ -44,19 +44,13 @@ class Carrier(Element):
         # raw import
         self.raw_time_series = {}
         self.raw_time_series["demand_carrier"] = self.datainput.extract_input_data("demand_carrier", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["availability_carrier_import"] = self.datainput.extract_input_data("availability_carrier", index_sets=["set_nodes", "set_time_steps"],
-                                                                                                column="availability_carrier_import", time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["availability_carrier_export"] = self.datainput.extract_input_data("availability_carrier", index_sets=["set_nodes", "set_time_steps"],
-                                                                                                column="availability_carrier_export", time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["export_price_carrier"] = self.datainput.extract_input_data("price_carrier", index_sets=["set_nodes", "set_time_steps"], column="export_price_carrier",
-                                                                                         time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["import_price_carrier"] = self.datainput.extract_input_data("price_carrier", index_sets=["set_nodes", "set_time_steps"], column="import_price_carrier",
-                                                                                         time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["availability_carrier_import"] = self.datainput.extract_input_data("availability_carrier_import", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["availability_carrier_export"] = self.datainput.extract_input_data("availability_carrier_export", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["export_price_carrier"] = self.datainput.extract_input_data("export_price_carrier", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["import_price_carrier"] = self.datainput.extract_input_data("import_price_carrier", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
         # non-time series input data
-        self.availability_carrier_import_yearly = self.datainput.extract_input_data("availability_carrier_yearly", index_sets=["set_nodes", "set_time_steps_yearly"],
-                                                                                    column="availability_carrier_import_yearly", time_steps=set_time_steps_yearly)
-        self.availability_carrier_export_yearly = self.datainput.extract_input_data("availability_carrier_yearly", index_sets=["set_nodes", "set_time_steps_yearly"],
-                                                                                    column="availability_carrier_export_yearly", time_steps=set_time_steps_yearly)
+        self.availability_carrier_import_yearly = self.datainput.extract_input_data("availability_carrier_import_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        self.availability_carrier_export_yearly = self.datainput.extract_input_data("availability_carrier_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.carbon_intensity_carrier = self.datainput.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.shed_demand_price = self.datainput.extract_input_data("shed_demand_price", index_sets=[])
 
