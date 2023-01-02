@@ -166,8 +166,8 @@ class OptimizationSetup():
                 if "set_existing_technologies" in _index_sets:
                     # update setExistingTechnologies and existingLifetime
                     _existing_technologies = element.datainput.extract_set_existing_technologies(scenario=scenario)
-                    _lifetime_existing_technologies = element.datainput.extract_lifetime_existing_technology(param, index_sets=_index_sets, scenario=scenario)
                     setattr(element, "set_existing_technologies", _existing_technologies)
+                    _lifetime_existing_technologies = element.datainput.extract_lifetime_existing_technology(param,index_sets=_index_sets,scenario=scenario)
                     setattr(element, "lifetime_existing_technology", _lifetime_existing_technologies)
                 # set new parameter value
                 if hasattr(element, "raw_time_series") and param in element.raw_time_series.keys():
