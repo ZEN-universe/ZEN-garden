@@ -93,7 +93,7 @@ class DataInput():
         :param time_steps: specific time_steps of element
         :return df_output: filled output dataframe """
 
-        df_input = self.convert_real_to_generic_time_indices(df_input,time_steps,file_name)
+        df_input = self.convert_real_to_generic_time_indices(df_input,time_steps,file_name, index_name_list)
 
         # select and drop scenario
         assert df_input.columns is not None, f"Input file '{file_name}' has no columns"
@@ -211,7 +211,7 @@ class DataInput():
         _index_sets.remove("set_time_steps")
         _index_sets.append("set_time_steps_yearly")
         # add YearlyVariation to file_name
-        file_name += "YearlyVariation"
+        file_name += "_yearly_variation"
         # read input data
         df_input = self.read_input_data(file_name + scenario)
         if scenario and df_input is None:
@@ -228,7 +228,7 @@ class DataInput():
             else:
                 _selected_column = None
                 _name_yearly_variation = file_name
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, _selected_column, default_value, time_steps=None)
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, _selected_column, default_value, time_steps=self.energy_system.set_time_steps_yearly)
             setattr(self, _name_yearly_variation, df_output)
 
     def extract_locations(self, extract_nodes=True):
@@ -326,12 +326,14 @@ class DataInput():
         # attribute names
         if variable_type == "capex":
             _attribute_name = "capex_specific"
+            _index_sets = ["set_nodes", "set_time_steps_yearly"]
+            _time_steps = self.energy_system.set_time_steps_yearly
         elif variable_type == "conver_efficiency":
             _attribute_name = "conver_efficiency"
+            _index_sets = ["set_nodes", "set_time_steps"]
+            _time_steps = self.energy_system.set_base_time_steps
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
-        _index_sets = ["set_nodes", "set_time_steps"]
-        _time_steps = self.energy_system.set_time_steps_yearly
         # import all input data
         df_input_nonlinear = self.read_pwa_files(variable_type, fileType="nonlinear_")
         df_input_breakpoints = self.read_pwa_files(variable_type, fileType="breakpoints_pwa_")
@@ -557,11 +559,12 @@ class DataInput():
         else:
             return False
 
-    def convert_real_to_generic_time_indices(self, df_input, time_steps, file_name):
+    def convert_real_to_generic_time_indices(self, df_input, time_steps, file_name, index_name_list):
         """convert yearly time indices to generic time indices
         :param df_input: raw input dataframe
         :param time_steps: specific time_steps of element
         :param file_name: name of selected file
+        :param index_name_list: list of name of indices
         :return df_input: input dataframe with generic time indices
         """
         #check if input data is time-dependent and has yearly time steps
@@ -574,6 +577,8 @@ class DataInput():
             if max(df_input.loc[:,temporal_header]) < self.analysis["earliest_year_of_data"]:
                 warnings.warn(f"Generic time indices won't be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
                 return df_input
+            #assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
+            assert temporal_header in index_name_list, f"Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"
 
             #interpolate missing data
             file_names_int_off = []
