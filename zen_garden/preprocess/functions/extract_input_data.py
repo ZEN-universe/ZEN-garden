@@ -208,7 +208,7 @@ class DataInput():
         _index_sets.remove("set_time_steps")
         _index_sets.append("set_time_steps_yearly")
         # add YearlyVariation to file_name
-        file_name += "YearlyVariation"
+        file_name += "_yearly_variation"
         # read input data
         df_input = self.read_input_data(file_name + scenario)
         if scenario and df_input is None:
@@ -221,7 +221,7 @@ class DataInput():
             # set yearlyVariation attribute to df_output
             if column:
                 _selected_column = column
-                _name_yearly_variation = column + "YearlyVariation"
+                _name_yearly_variation = column + "_yearly_variation"
             else:
                 _selected_column = None
                 _name_yearly_variation = file_name
@@ -273,6 +273,8 @@ class DataInput():
         """ reads input data and creates setExistingCapacity for each technology
         :param storage_energy: boolean if existing energy capacity of storage technology (instead of power)
         :return set_existing_technologies: return set existing technologies"""
+        #TODO merge changes in extract input data and optimization setup
+        set_existing_technologies = np.array([0])
         if self.analysis["use_existing_capacities"]:
             if storage_energy:
                 _energy_string = "Energy"
@@ -287,9 +289,8 @@ class DataInput():
             else:
                 location = "node"
             _max_node_count = df_input[location].value_counts().max()
-            set_existing_technologies = np.arange(0, _max_node_count)
-        else:
-            set_existing_technologies = np.array([0])
+            if _max_node_count is not np.nan:
+                setExistingTechnologies = np.arange(0, _max_node_count)
 
         return set_existing_technologies
 
