@@ -207,7 +207,7 @@ class DataInput():
         _index_sets = copy.deepcopy(index_sets)
         _index_sets.remove("set_time_steps")
         _index_sets.append("set_time_steps_yearly")
-        # add YearlyVariation to file_name
+        # add Yearly_variation to file_name
         file_name += "_yearly_variation"
         # read input data
         df_input = self.read_input_data(file_name + scenario)
@@ -218,7 +218,7 @@ class DataInput():
             if column is not None and column not in df_input:
                 return
             df_output, default_value, index_name_list = self.create_default_output(_index_sets, column, file_name=file_name, manual_default_value=1)
-            # set yearlyVariation attribute to df_output
+            # set yearly variation attribute to df_output
             if column:
                 _selected_column = column
                 _name_yearly_variation = column + "_yearly_variation"
