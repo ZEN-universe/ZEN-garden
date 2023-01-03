@@ -10,7 +10,6 @@ dependencies:
   - geopandas
   - pandas
   - pip
-#  - pyomo=6.2
   - pyomo=6.*
   - python=3.9.*
   - coverage
@@ -23,11 +22,11 @@ dependencies:
   - entsoe-py
   - matplotlib
   - mpmath
-  - pyogrio
   - openpyxl
   - pip:
       - tsam
       - hdfdict
+      - pyogrio
       - -e .
 
 # conda env create -f zen_garden_env.yml

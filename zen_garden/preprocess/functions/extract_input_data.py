@@ -280,7 +280,7 @@ class DataInput():
         set_existing_technologies = np.array([0])
         if self.analysis["use_existing_capacities"]:
             if storage_energy:
-                _energy_string = "Energy"
+                _energy_string = "_energy"
             else:
                 _energy_string = ""
 
@@ -293,7 +293,7 @@ class DataInput():
                 location = "node"
             _max_node_count = df_input[location].value_counts().max()
             if _max_node_count is not np.nan:
-                setExistingTechnologies = np.arange(0, _max_node_count)
+                set_existing_technologies = np.arange(0, _max_node_count)
 
         return set_existing_technologies
 

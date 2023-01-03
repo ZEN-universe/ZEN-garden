@@ -727,7 +727,7 @@ def objective_total_cost_rule(model):
                 ((1 / (1 + system["social_discount_rate"])) ** (system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1)))) for year in model.set_time_steps_yearly))
 
 
-def objectiveNPVRule(model):
+def objective_NPV_rule(model):
     """ objective function to minimize NPV """
     return (sum(model.NPV[year] for year in model.set_time_steps_yearly))
 

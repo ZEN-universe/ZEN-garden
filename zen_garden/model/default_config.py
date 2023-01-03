@@ -130,6 +130,7 @@ class Config(object):
         self.system["set_conditioning_technologies"] = []
         # set of storage technologies
         self.system["set_storage_technologies"] = []
+        self.system["storage_periodicity"] = True
         # set of transport technologies
         self.system["set_transport_technologies"] = []
         self.system['double_capex_transport'] = False
@@ -150,9 +151,8 @@ class Config(object):
         self.system["knowledge_spillover_rate"] = 0.05
         # social discount rate
         self.system["social_discount_rate"] = 0
-        # folder output
-
-
+        # enforce selfish behavior
+        self.system["enforce_selfish_behavior"] = False
 
         ## Solver - Items assignment
         # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
