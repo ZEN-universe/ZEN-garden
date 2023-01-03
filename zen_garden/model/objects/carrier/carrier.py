@@ -270,8 +270,8 @@ def constraint_carbon_emissions_carrier_rule(model, carrier, node, time):
     # get parameter object
     params = Parameter.get_component_object()
     base_time_step = EnergySystem.decode_time_step(carrier, time)
-    yearlyTimeStep = EnergySystem.encode_time_step(None, base_time_step, "yearly")
-    return (model.carbon_emissions_carrier[carrier, node, time] == params.carbon_intensity_carrier[carrier, node, yearlyTimeStep] * (
+    yearly_time_step = EnergySystem.encode_time_step(None, base_time_step, "yearly")
+    return (model.carbon_emissions_carrier[carrier, node, time] == params.carbon_intensity_carrier[carrier, node, yearly_time_step] * (
                 model.import_carrier_flow[carrier, node, time] - model.export_carrier_flow[carrier, node, time]))
 
 
