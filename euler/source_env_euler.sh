@@ -14,5 +14,6 @@ module load python/3.9.9
 # $BASH_SOURCE contains the path that was sourced 
 source $(realpath $BASH_SOURCE | xargs dirname)/zen_garden_env/bin/activate
 
-# backend for the solver
+# backend for the solvers
 module load glpk
+module load gurobi/9.5.1
