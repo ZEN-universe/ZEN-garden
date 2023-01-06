@@ -20,7 +20,7 @@ dependencies:
   - jupyter
   - pint
   - entsoe-py
-  - matplotlib
+  - matplotlib=3.5.*
   - mpmath
   - openpyxl
   - pip:
