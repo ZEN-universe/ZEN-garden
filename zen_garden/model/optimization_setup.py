@@ -156,7 +156,7 @@ class OptimizationSetup():
                     file_name, column = param
                     param = param[1]
                 if "yearly_variation" in param:
-                    param    = param.replace("_yearly_variation","")
+                    param = param.replace("_yearly_variation", "")
                     file_name = param
                 # get old param value
                 _old_param = getattr(element, param)
@@ -167,8 +167,8 @@ class OptimizationSetup():
                 if "set_existing_technologies" in _index_sets:
                     # update setExistingTechnologies and existingLifetime
                     _existing_technologies = element.datainput.extract_set_existing_technologies(scenario=scenario)
-                    setattr(element, "set_existing_technologies", _existing_technologies)
                     _lifetime_existing_technologies = element.datainput.extract_lifetime_existing_technology(param, index_sets=_index_sets, scenario=scenario)
+                    setattr(element, "set_existing_technologies", _existing_technologies)
                     setattr(element, "lifetime_existing_technology", _lifetime_existing_technologies)
                 # set new parameter value
                 if hasattr(element, "raw_time_series") and param in element.raw_time_series.keys():
