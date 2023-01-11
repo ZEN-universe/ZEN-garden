@@ -256,7 +256,7 @@ class TimeSeriesAggregation():
         """ this method sets the indicators that element is aggregated """
         # add order of time steps to Energy System
         EnergySystem.set_sequence_time_steps(element.name, element.sequence_time_steps, time_step_type="operation")
-        element.set_aggregated()
+        element.aggregated = True
 
     @classmethod
     def unique_time_steps_multiple_indices(cls, list_sequence_time_steps):

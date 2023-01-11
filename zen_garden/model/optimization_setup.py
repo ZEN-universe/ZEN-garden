@@ -25,14 +25,15 @@ from .objects.technology import *
 from .objects.carrier import *
 from .objects.energy_system import EnergySystem
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
+from ..preprocess.prepare import Prepare
 
 
 class OptimizationSetup(object):
 
-    def __init__(self, analysis, prepare):
+    def __init__(self, analysis: dict, prepare: Prepare):
         """setup Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
-        :param prepare: A prepare instance for the Optimization setup"""
+        :param prepare: A Prepare instance for the Optimization setup"""
 
         self.prepare = prepare
         self.analysis = analysis
@@ -48,6 +49,8 @@ class OptimizationSetup(object):
 
         # set base scenario
         self.set_base_configuration()
+        # empty list of elements
+        self.list_of_elements = []
         # add Elements to optimization
         self.add_elements()
 
@@ -56,15 +59,15 @@ class OptimizationSetup(object):
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system"""
         logging.info("\n--- Add elements to model--- \n")
-        
-        for element_name in EnergySystem.get_element_list():
-            element_class = EnergySystem.dict_element_classes[element_name]
+
+        for element_name in self.energy_system.get_element_list():
+            element_class = self.energy_system.dict_element_classes[element_name]
             element_name = element_class.label
             element_set = self.system[element_name]
 
             # before adding the carriers, get set_carriers and check if carrier data exists
             if element_name == "set_carriers":
-                element_set = EnergySystem.get_attribute("set_carriers")
+                element_set = self.energy_system.set_carriers
                 self.system["set_carriers"] = element_set
                 self.prepare.check_existing_carrier_data(self.system)
 

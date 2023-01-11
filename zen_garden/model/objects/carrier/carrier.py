@@ -25,16 +25,15 @@ class Carrier(Element):
     # empty list of elements
     list_of_elements = []
 
-    def __init__(self, carrier):
+    def __init__(self, carrier, energy_system):
         """initialization of a generic carrier object
-        :param carrier: carrier that is added to the model"""
+        :param carrier: carrier that is added to the model
+        :param energy_system: The energy system the element is part of"""
 
         logging.info(f'Initialize carrier {carrier}')
-        super().__init__(carrier)
+        super().__init__(carrier, energy_system)
         # store input data
         self.store_input_data()
-        # add carrier to list
-        Carrier.add_element(self)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """

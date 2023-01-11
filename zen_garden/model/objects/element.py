@@ -23,32 +23,33 @@ from .component import Parameter, Variable, Constraint
 class Element:
     # set label
     label = "set_elements"
-    # empty list of elements
-    list_of_elements = []
 
-    def __init__(self, element):
+    def __init__(self, element: str, energy_system: EnergySystem):
         """ initialization of an element
-        :param element: element that is added to the model"""
+        :param element: element that is added to the model
+        :param energy_system: The energy system the element is part of """
         # set attributes
         self.name = element
+        # energy system
+        self.energy_system = energy_system
         # set if aggregated
         self.aggregated = False
         # get input path
         self.get_input_path()
         # create DataInput object
-        self.datainput = DataInput(self, EnergySystem.get_system(), EnergySystem.get_analysis(), EnergySystem.get_solver(), EnergySystem.get_energy_system(), EnergySystem.get_unit_handling())
-        # add element to list
-        Element.add_element(self)
+        self.datainput = DataInput(element=self, system=self.energy_system.system, analysis=self.energy_system.analysis,
+                                   solver=self.energy_system.solver, energy_system=self.energy_system,
+                                   unit_handling=self.energy_system.unit_handling)
 
     def get_input_path(self):
         """ get input path where input data is stored input_path"""
         # get technology type
-        class_label = type(self)._get_class_label()
+        class_label = self.label
         # get path dictionary
-        paths = EnergySystem.get_paths()
+        paths = self.energy_system.paths
         # check if class is a subset
         if class_label not in paths.keys():
-            subsets = EnergySystem.get_analysis()["subsets"]
+            subsets = self.energy_system.analysis["subsets"]
             # iterate through subsets and check if class belongs to any of the subsets
             for set_name, subsets_list in subsets.items():
                 if class_label in subsets_list:
@@ -57,25 +58,12 @@ class Element:
         # get input path for current class_label
         self.input_path = paths[class_label][self.name]["folder"]
 
-    def set_aggregated(self):
-        """ this method sets self.aggregated to True """
-        self.aggregated = True
-
-    def is_aggregated(self):
-        """ this method returns the aggregation status """
-        return self.aggregated
-
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites time steps. Must be implemented in child classes """
         raise NotImplementedError("overwrite_time_steps must be implemented in child classes!")
 
     ### --- classmethods --- ###
     # setter/getter classmethods
-    @classmethod
-    def add_element(cls, element):
-        """ add element to element list. Inherited by child classes.
-        :param element: new element that is to be added to the list """
-        cls.list_of_elements.append(element)
 
     @classmethod
     def get_all_elements(cls):
@@ -190,11 +178,6 @@ class Element:
         assert hasattr(_element, attribute_name), f"Element {element_name} does not have attribute {attribute_name}"
         attribute_value = getattr(_element, attribute_name)
         return attribute_value
-
-    @classmethod
-    def _get_class_label(cls):
-        """ returns label of class """
-        return cls.label
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
     # Here, after defining EnergySystem-specific components, the components of the other classes are constructed
