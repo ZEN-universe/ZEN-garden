@@ -27,23 +27,25 @@ from .objects.energy_system import EnergySystem
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 
-class OptimizationSetup():
+class OptimizationSetup(object):
 
     def __init__(self, analysis, prepare):
         """setup Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system
-        :param paths: dictionary defining the paths of the model
-        :param solver: dictionary defining the solver"""
+        :param prepare: A prepare instance for the Optimization setup"""
+
         self.prepare = prepare
         self.analysis = analysis
         self.system = prepare.system
         self.paths = prepare.paths
         self.solver = prepare.solver
+
         # step of optimization horizon
         self.step_horizon = 0
+
         # set optimization attributes (the five set above) to class <EnergySystem>
-        EnergySystem.set_optimization_attributes(analysis, self.system, self.paths, self.solver)
+        self.energy_system = EnergySystem.set_optimization_attributes(analysis, self.system, self.paths, self.solver)
+
         # set base scenario
         self.set_base_configuration()
         # add Elements to optimization

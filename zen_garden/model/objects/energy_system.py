@@ -21,40 +21,11 @@ from .time_steps import SequenceTimeStepsDicts
 
 
 class EnergySystem:
-    # energy_system
-    energy_system = None
-    # pe.ConcreteModel
-    pyomo_model = None
-    # analysis
-    analysis = None
-    # system
-    system = None
-    # paths
-    paths = None
-    # solver
-    solver = None
-    # unit handling instance
-    unit_handling = None
-    # empty list of indexing sets
-    indexing_sets = []
-    # empty dict of technologies of carrier
-    dict_technology_of_carrier = {}
-    # empty dict of sequence of time steps operation
-    dict_sequence_time_steps_operation = {}
-    # empty dict of sequence of time steps yearly
-    dict_sequence_time_steps_yearly = {}
-    # empty dict of conversion from energy time steps to power time steps for storage technologies
-    dict_time_steps_energy2power = {}
-    # empty dict of conversion from operational time steps to invest time steps for technologies
-    dict_time_steps_operation2invest = {}
-    # empty dict of matching the last time step of the year in the storage domain to the first
-    dict_time_steps_storage_level_startend_year = {}
+
     # empty dict of element classes
     dict_element_classes = {}
     # empty list of class names
     element_list = {}
-    # The timesteps
-    sequence_time_steps = SequenceTimeStepsDicts()
 
     def __init__(self, name_energy_system):
         """ initialization of the energy_system
@@ -65,15 +36,42 @@ class EnergySystem:
 
         # set attributes
         self.name = name_energy_system
-
-        # add energy_system to list
-        EnergySystem.set_energy_system(self)
+        # energy_system
+        self.energy_system = None
+        # pe.ConcreteModel
+        self.pyomo_model = None
+        # analysis
+        self.analysis = None
+        # system
+        self.system = None
+        # paths
+        self.paths = None
+        # solver
+        self.solver = None
+        # unit handling instance
+        self.unit_handling = None
+        # empty list of indexing sets
+        self.indexing_sets = []
+        # empty dict of technologies of carrier
+        self.dict_technology_of_carrier = {}
+        # empty dict of sequence of time steps operation
+        self.dict_sequence_time_steps_operation = {}
+        # empty dict of sequence of time steps yearly
+        self.dict_sequence_time_steps_yearly = {}
+        # empty dict of conversion from energy time steps to power time steps for storage technologies
+        self.dict_time_steps_energy2power = {}
+        # empty dict of conversion from operational time steps to invest time steps for technologies
+        self.dict_time_steps_operation2invest = {}
+        # empty dict of matching the last time step of the year in the storage domain to the first
+        self.dict_time_steps_storage_level_startend_year = {}
+        # The timesteps
+        self.sequence_time_steps = SequenceTimeStepsDicts()
 
         # get input path
         self.get_input_path()
 
         # create UnitHandling object
-        EnergySystem.create_unit_handling()
+        self.unit_handling = UnitHandling(self.input_path, self.solver["rounding_decimal_points"])
 
         # create DataInput object
         self.datainput = DataInput(self, EnergySystem.get_system(), EnergySystem.get_analysis(), EnergySystem.get_solver(), EnergySystem.get_energy_system(), self.unit_handling)
@@ -138,19 +136,13 @@ class EnergySystem:
 
     def get_input_path(self):
         """ get input path where input data is stored input_path"""
-        _folder_label = EnergySystem.get_analysis()["folder_name_system_specification"]
+        _folder_label = self.analysis["folder_name_system_specification"]
 
-        paths = EnergySystem.get_paths()
         # get input path of energy system specification
-        self.input_path = paths[_folder_label]["folder"]
+        self.input_path = self.paths[_folder_label]["folder"]
 
     ### CLASS METHODS ###
     # setter/getter classmethods
-    @classmethod
-    def set_energy_system(cls, energy_system):
-        """ set energy_system.
-        :param energy_system: new energy_system that is set """
-        cls.energy_system = energy_system
 
     @classmethod
     def set_optimization_attributes(cls, analysis, system, paths, solver):
