@@ -27,31 +27,32 @@ class EnergySystem:
     # empty list of class names
     element_list = {}
 
-    def __init__(self, name_energy_system):
+    def __init__(self, name_energy_system, analysis, system, paths, solver):
         """ initialization of the energy_system
-        :param name_energy_system: name of energy_system that is added to the model """
-
-        # only one energy system can be defined
-        assert not EnergySystem.get_energy_system(), "Only one energy system can be defined."
+        :param name_energy_system: name of energy_system that is added to the model
+        :param analysis: dictionary defining the analysis framework
+        :param system: dictionary defining the system
+        :param paths: paths to input folders of data
+        :param solver: dictionary defining the solver"""
 
         # set attributes
         self.name = name_energy_system
+        # set analysis
+        self.analysis = analysis
+        # set system
+        self.system = system
+        # set input paths
+        self.paths = paths
+        # set solver
+        self.solver = solver
+        # empty list of indexing sets
+        self.indexing_sets = []
         # energy_system
         self.energy_system = None
         # pe.ConcreteModel
         self.pyomo_model = None
-        # analysis
-        self.analysis = None
-        # system
-        self.system = None
-        # paths
-        self.paths = None
-        # solver
-        self.solver = None
         # unit handling instance
         self.unit_handling = None
-        # empty list of indexing sets
-        self.indexing_sets = []
         # empty dict of technologies of carrier
         self.dict_technology_of_carrier = {}
         # empty dict of sequence of time steps operation
@@ -67,14 +68,21 @@ class EnergySystem:
         # The timesteps
         self.sequence_time_steps = SequenceTimeStepsDicts()
 
-        # get input path
-        self.get_input_path()
+        # set indexing sets
+        for key in system:
+            if "set" in key:
+                self.indexing_sets.append(key)
+
+        # set input path
+        _folder_label = self.analysis["folder_name_system_specification"]
+        self.input_path = self.paths[_folder_label]["folder"]
 
         # create UnitHandling object
         self.unit_handling = UnitHandling(self.input_path, self.solver["rounding_decimal_points"])
 
         # create DataInput object
-        self.datainput = DataInput(self, EnergySystem.get_system(), EnergySystem.get_analysis(), EnergySystem.get_solver(), EnergySystem.get_energy_system(), self.unit_handling)
+        self.data_input = DataInput(element=self, system=self.system, analysis=self.analysis, solver=self.solver,
+                                    energy_system=self, unit_handling=self.unit_handling)
 
         # store input data
         self.store_input_data()
@@ -82,100 +90,82 @@ class EnergySystem:
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
 
-        system = EnergySystem.get_system()
-        self.paths = EnergySystem.get_paths()
-
         # in class <EnergySystem>, all sets are constructed
-        self.set_nodes = self.datainput.extract_locations()
+        self.set_nodes = self.data_input.extract_locations()
         self.set_nodes_on_edges = self.calculate_edges_from_nodes()
         self.set_edges = list(self.set_nodes_on_edges.keys())
         self.set_carriers = []
-        self.set_technologies = system["set_technologies"]
+        self.set_technologies = self.system["set_technologies"]
         # base time steps
-        self.set_base_time_steps = list(range(0, system["unaggregated_time_steps_per_year"] * system["optimized_years"]))
-        self.set_base_time_steps_yearly = list(range(0, system["unaggregated_time_steps_per_year"]))
+        self.set_base_time_steps = list(range(0, self.system["unaggregated_time_steps_per_year"] * self.system["optimized_years"]))
+        self.set_base_time_steps_yearly = list(range(0, self.system["unaggregated_time_steps_per_year"]))
 
         # yearly time steps
         self.set_time_steps_yearly = list(range(self.system["optimized_years"]))
         self.set_time_steps_yearly_entire_horizon = copy.deepcopy(self.set_time_steps_yearly)
-        time_steps_yearly_duration = EnergySystem.calculate_time_step_duration(self.set_time_steps_yearly)
+        time_steps_yearly_duration = self.calculate_time_step_duration(self.set_time_steps_yearly)
         self.sequence_time_steps_yearly = np.concatenate([[time_step] * time_steps_yearly_duration[time_step] for time_step in time_steps_yearly_duration])
-        self.set_sequence_time_steps(None, self.sequence_time_steps_yearly, time_step_type="yearly")
+        self.sequence_time_steps.set_sequence_time_steps(None, self.sequence_time_steps_yearly, time_step_type="yearly")
 
         # technology-specific
-        self.set_conversion_technologies = system["set_conversion_technologies"]
-        self.set_transport_technologies = system["set_transport_technologies"]
-        self.set_storage_technologies = system["set_storage_technologies"]
+        self.set_conversion_technologies = self.system["set_conversion_technologies"]
+        self.set_transport_technologies = self.system["set_transport_technologies"]
+        self.set_storage_technologies = self.system["set_storage_technologies"]
         # carbon emissions limit
-        self.carbon_emissions_limit = self.datainput.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps"], time_steps=self.set_time_steps_yearly)
-        _fraction_year = system["unaggregated_time_steps_per_year"] / system["total_hours_per_year"]
+        self.carbon_emissions_limit = self.data_input.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps"], time_steps=self.set_time_steps_yearly)
+        _fraction_year = self.system["unaggregated_time_steps_per_year"] / self.system["total_hours_per_year"]
         self.carbon_emissions_limit = self.carbon_emissions_limit * _fraction_year  # reduce to fraction of year
-        self.carbon_emissions_budget = self.datainput.extract_input_data("carbon_emissions_budget", index_sets=[])
-        self.previous_carbon_emissions = self.datainput.extract_input_data("previous_carbon_emissions", index_sets=[])
+        self.carbon_emissions_budget = self.data_input.extract_input_data("carbon_emissions_budget", index_sets=[])
+        self.previous_carbon_emissions = self.data_input.extract_input_data("previous_carbon_emissions", index_sets=[])
         # carbon price
-        self.carbon_price = self.datainput.extract_input_data("carbon_price", index_sets=["set_time_steps"], time_steps=self.set_time_steps_yearly)
-        self.carbon_price_overshoot = self.datainput.extract_input_data("carbon_price_overshoot", index_sets=[])
+        self.carbon_price = self.data_input.extract_input_data("carbon_price", index_sets=["set_time_steps"], time_steps=self.set_time_steps_yearly)
+        self.carbon_price_overshoot = self.data_input.extract_input_data("carbon_price_overshoot", index_sets=[])
 
     def calculate_edges_from_nodes(self):
         """ calculates set_nodes_on_edges from set_nodes
         :return set_nodes_on_edges: dict with edges and corresponding nodes """
-        system = EnergySystem.get_system()
+
         set_nodes_on_edges = {}
         # read edge file
-        set_edges_input = self.datainput.extract_locations(extract_nodes=False)
+        set_edges_input = self.data_input.extract_locations(extract_nodes=False)
         if set_edges_input is not None:
             for edge in set_edges_input.index:
                 set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
         else:
-            warnings.warn(f"Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{system['''folder_name_system_specification''']}' instead!", FutureWarning)
+            warnings.warn(f"Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{self.system['''folder_name_system_specification''']}' instead!", FutureWarning)
             for node_from in self.set_nodes:
                 for node_to in self.set_nodes:
                     if node_from != node_to:
                         set_nodes_on_edges[node_from + "-" + node_to] = (node_from, node_to)
         return set_nodes_on_edges
 
-    def get_input_path(self):
-        """ get input path where input data is stored input_path"""
-        _folder_label = self.analysis["folder_name_system_specification"]
+    def calculate_time_step_duration(self, input_time_steps, manual_base_time_steps=None):
+        """ calculates (equidistant) time step durations for input time steps
+        :param input_time_steps: input time steps
+        :param manual_base_time_steps: manual list of base time steps
+        :return time_step_duration_dict: dict with duration of each time step """
+        if manual_base_time_steps is not None:
+            base_time_steps = manual_base_time_steps
+        else:
+            base_time_steps = self.set_base_time_steps
+        duration_input_time_steps = len(base_time_steps) / len(input_time_steps)
+        time_step_duration_dict = {time_step: int(duration_input_time_steps) for time_step in input_time_steps}
+        if not duration_input_time_steps.is_integer():
+            logging.warning(f"The duration of each time step {duration_input_time_steps} of input time steps {input_time_steps} does not evaluate to an integer. \n"
+                            f"The duration of the last time step is set to compensate for the difference")
+            duration_last_time_step = len(base_time_steps) - sum(time_step_duration_dict[key] for key in time_step_duration_dict if key != input_time_steps[-1])
+            time_step_duration_dict[input_time_steps[-1]] = duration_last_time_step
+        return time_step_duration_dict
 
-        # get input path of energy system specification
-        self.input_path = self.paths[_folder_label]["folder"]
 
     ### CLASS METHODS ###
     # setter/getter classmethods
-
-    @classmethod
-    def set_optimization_attributes(cls, analysis, system, paths, solver):
-        """ set attributes of class <EnergySystem> with inputs 
-        :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system
-        :param paths: paths to input folders of data
-        :param solver: dictionary defining the solver"""
-        # set analysis
-        cls.analysis = analysis
-        # set system
-        cls.system = system
-        # set input paths
-        cls.paths = paths
-        # set solver
-        cls.solver = solver
-        # set indexing sets
-        cls.set_indexing_sets()
 
     @classmethod
     def set_pyomo_model(cls, pyomo_model):
         """ sets empty concrete model to energy_system
         :param pyomo_model: pe.ConcreteModel"""
         cls.pyomo_model = pyomo_model
-
-    @classmethod
-    def set_indexing_sets(cls):
-        """ set sets that serve as an index for other sets """
-        system = cls.get_system()
-        # iterate over sets
-        for key in system:
-            if "set" in key:
-                cls.indexing_sets.append(key)
 
     @classmethod
     def set_manual_set_to_indexing_sets(cls, manual_set):
@@ -221,6 +211,7 @@ class EnergySystem:
 
     @classmethod
     def set_sequence_time_steps(cls, element, sequence_time_steps, time_step_type=None):
+        # TODO: REMOVE
         """ sets sequence of time steps, either of operation, invest, or year
         :param element: name of element in model
         :param sequence_time_steps: list of time steps corresponding to base time step
@@ -239,36 +230,6 @@ class EnergySystem:
         """ get pyomo_model of the class <EnergySystem>. Every child class can access model and add components.
         :return pyomo_model: pe.ConcreteModel """
         return cls.pyomo_model
-
-    @classmethod
-    def get_analysis(cls):
-        """ get analysis of the class <EnergySystem>.
-        :return analysis: dictionary defining the analysis framework """
-        return cls.analysis
-
-    @classmethod
-    def get_system(cls):
-        """ get system
-        :return system: dictionary defining the system """
-        return cls.system
-
-    @classmethod
-    def get_paths(cls):
-        """ get paths
-        :return paths: paths to folders of input data """
-        return cls.paths
-
-    @classmethod
-    def get_solver(cls):
-        """ get solver
-        :return solver: dictionary defining the analysis solver """
-        return cls.solver
-
-    @classmethod
-    def get_energy_system(cls):
-        """ get energy_system.
-        :return energy_system: return energy_system """
-        return cls.energy_system
 
     @classmethod
     def get_element_list(cls):
@@ -379,25 +340,6 @@ class EnergySystem:
             if _node_out == energy_system.set_nodes_on_edges[_reversed_edge][1] and _node_in == energy_system.set_nodes_on_edges[_reversed_edge][0]:
                 return _reversed_edge
         raise KeyError(f"Edge {edge} has no reversed edge. However, at least one transport technology is bidirectional")
-
-    @classmethod
-    def calculate_time_step_duration(cls, input_time_steps, manual_base_time_steps=None):
-        """ calculates (equidistant) time step durations for input time steps
-        :param input_time_steps: input time steps
-        :param manual_base_time_steps: manual list of base time steps
-        :return time_step_duration_dict: dict with duration of each time step """
-        if manual_base_time_steps is not None:
-            base_time_steps = manual_base_time_steps
-        else:
-            base_time_steps = cls.get_energy_system().set_base_time_steps
-        duration_input_time_steps = len(base_time_steps) / len(input_time_steps)
-        time_step_duration_dict = {time_step: int(duration_input_time_steps) for time_step in input_time_steps}
-        if not duration_input_time_steps.is_integer():
-            logging.warning(f"The duration of each time step {duration_input_time_steps} of input time steps {input_time_steps} does not evaluate to an integer. \n"
-                            f"The duration of the last time step is set to compensate for the difference")
-            duration_last_time_step = len(base_time_steps) - sum(time_step_duration_dict[key] for key in time_step_duration_dict if key != input_time_steps[-1])
-            time_step_duration_dict[input_time_steps[-1]] = duration_last_time_step
-        return time_step_duration_dict
 
     @classmethod
     def decode_time_step(cls, element, element_time_step: int, time_step_type: str = None):

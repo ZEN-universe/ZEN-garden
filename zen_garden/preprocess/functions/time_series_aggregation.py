@@ -212,8 +212,8 @@ class TimeSeriesAggregation():
         :param ts_name: name of time series
         :param ts: time series
         :return multipliedTimeSeries: ts multiplied with yearly variation """
-        if hasattr(element.datainput, ts_name + "_yearly_variation"):
-            _yearly_variation = getattr(element.datainput, ts_name + "_yearly_variation")
+        if hasattr(element.data_input, ts_name + "_yearly_variation"):
+            _yearly_variation = getattr(element.data_input, ts_name + "_yearly_variation")
             header_set_time_steps = EnergySystem.get_analysis()['header_data_inputs']["set_time_steps"]
             header_set_time_steps_yearly = EnergySystem.get_analysis()['header_data_inputs']["set_time_steps_yearly"]
             _ts = ts.unstack(header_set_time_steps)

@@ -44,7 +44,7 @@ class OptimizationSetup(object):
         self.step_horizon = 0
 
         # set optimization attributes (the five set above) to class <EnergySystem>
-        self.energy_system = EnergySystem.set_optimization_attributes(analysis, self.system, self.paths, self.solver)
+        self.energy_system = EnergySystem("energy_system", self.analysis, self.system, self.paths, self.solver)
 
         # set base scenario
         self.set_base_configuration()
@@ -56,9 +56,7 @@ class OptimizationSetup(object):
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system"""
         logging.info("\n--- Add elements to model--- \n")
-        # add energy system to define system
-        EnergySystem("energy_system")
-
+        
         for element_name in EnergySystem.get_element_list():
             element_class = EnergySystem.dict_element_classes[element_name]
             element_name = element_class.label
@@ -163,25 +161,25 @@ class OptimizationSetup(object):
                 # get old param value
                 _old_param = getattr(element, param)
                 _index_names = _old_param.index.names
-                _index_sets = [index_set for index_set, index_name in element.datainput.index_names.items() if index_name in _index_names]
+                _index_sets = [index_set for index_set, index_name in element.data_input.index_names.items() if index_name in _index_names]
                 _time_steps = None
                 # if existing capacity is changed, setExistingTechnologies, existing lifetime, and capexExistingCapacity have to be updated as well
                 if "set_existing_technologies" in _index_sets:
                     # update setExistingTechnologies and existingLifetime
-                    _existing_technologies = element.datainput.extract_set_existing_technologies(scenario=scenario)
+                    _existing_technologies = element.data_input.extract_set_existing_technologies(scenario=scenario)
                     setattr(element, "set_existing_technologies", _existing_technologies)
-                    _lifetime_existing_technologies = element.datainput.extract_lifetime_existing_technology(param, index_sets=_index_sets, scenario=scenario)
+                    _lifetime_existing_technologies = element.data_input.extract_lifetime_existing_technology(param, index_sets=_index_sets, scenario=scenario)
                     setattr(element, "lifetime_existing_technology", _lifetime_existing_technologies)
                 # set new parameter value
                 if hasattr(element, "raw_time_series") and param in element.raw_time_series.keys():
                     conduct_tsa = True
                     _time_steps = EnergySystem.get_energy_system().set_base_time_steps_yearly
-                    element.raw_time_series[param] = element.datainput.extract_input_data(file_name, index_sets=_index_sets, column=column, time_steps=_time_steps, scenario=scenario)
+                    element.raw_time_series[param] = element.data_input.extract_input_data(file_name, index_sets=_index_sets, column=column, time_steps=_time_steps, scenario=scenario)
                 else:
                     assert isinstance(_old_param, pd.Series) or isinstance(_old_param, pd.DataFrame), f"Param values of '{param}' have to be a pd.DataFrame or pd.Series."
                     if "time" in _index_names:
                         _time_steps = list(_old_param.index.unique("time"))
-                    _new_param = element.datainput.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
+                    _new_param = element.data_input.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
                     setattr(element, param, _new_param)
                     # if existing capacity is changed, capexExistingCapacity also has to be updated
                     if "existing_capacity" in param:
