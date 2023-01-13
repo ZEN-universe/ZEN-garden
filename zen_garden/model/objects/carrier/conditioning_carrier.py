@@ -19,19 +19,16 @@ from ..component import Parameter, Variable, Constraint
 class ConditioningCarrier(Carrier):
     # set label
     label = "set_conditioning_carriers"
-    # empty list of elements
-    list_of_elements = []
 
-    def __init__(self, carrier):
+    def __init__(self, carrier: str, energy_system: EnergySystem):
         """initialization of a generic carrier object
-        :param carrier: carrier that is added to the model"""
+        :param carrier: carrier that is added to the model
+        :param energy_system: The energy system the element is part of"""
 
         logging.info(f'Initialize conditioning carrier {carrier}')
-        super().__init__(carrier)
+        super().__init__(carrier, energy_system)
         # store input data
         self.store_input_data()
-        # add carrier to list
-        ConditioningCarrier.add_element(self)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -40,25 +37,27 @@ class ConditioningCarrier(Carrier):
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
-    def construct_vars(cls):
-        """ constructs the pe.Vars of the class <Carrier> """
-        model = EnergySystem.get_pyomo_model()
+    def construct_vars(cls, energy_system: EnergySystem):
+        """ constructs the pe.Vars of the class <Carrier>
+        :param energy_system: The Energy system to add everything"""
+        model = energy_system.pyomo_model
 
         # flow of imported carrier
-        Variable.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"]),
+        Variable.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             domain=pe.NonNegativeReals, doc='node- and time-dependent model endogenous carrier demand')
 
     @classmethod
-    def construct_constraints(cls):
-        """ constructs the pe.Constraints of the class <Carrier> """
-        model = EnergySystem.get_pyomo_model()
+    def construct_constraints(cls, energy_system: EnergySystem):
+        """ constructs the pe.Constraints of the class <Carrier>
+        :param energy_system: The Energy system to add everything"""
+        model = energy_system.pyomo_model
 
         # limit import flow by availability
-        Constraint.add_constraint(model, name="constraint_carrier_demand_coupling", index_sets=cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"]),
+        Constraint.add_constraint(model, name="constraint_carrier_demand_coupling", index_sets=cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=constraint_carrier_demand_coupling_rule, doc='coupling model endogenous and exogenous carrier demand', )
         # overwrite energy balance when conditioning carriers are included
         model.constraint_nodal_energy_balance.deactivate()
-        Constraint.add_constraint(model, name="constraint_nodal_energy_balance_conditioning", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        Constraint.add_constraint(model, name="constraint_nodal_energy_balance_conditioning", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=constraint_nodal_energy_balance_conditioning_rule, doc='node- and time-dependent energy balance for each carrier', )
 
 
