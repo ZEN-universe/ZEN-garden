@@ -71,13 +71,13 @@ class Element:
         :param energy_system: The Energy system to add everything"""
         logging.info("\n--- Construct model components ---\n")
         # construct pe.Sets
-        cls.construct_sets()
+        cls.construct_sets(energy_system)
         # construct pe.Params
-        cls.construct_params()
+        cls.construct_params(energy_system)
         # construct pe.Vars
-        cls.construct_vars()
+        cls.construct_vars(energy_system)
         # construct pe.Constraints
-        cls.construct_constraints()
+        cls.construct_constraints(energy_system)
         # construct pe.Objective
         energy_system.construct_objective()
 

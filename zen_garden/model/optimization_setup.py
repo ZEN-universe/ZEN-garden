@@ -96,9 +96,9 @@ class OptimizationSetup(object):
         """ constructs the optimization problem """
         # create empty ConcreteModel
         self.model = pe.ConcreteModel()
-        EnergySystem.set_pyomo_model(self.model)
+        self.energy_system.set_pyomo_model(self.model)
         # define and construct components of self.model
-        Element.construct_model_components()
+        Element.construct_model_components(self.energy_system)
         logging.info("Apply Big-M GDP ")
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)

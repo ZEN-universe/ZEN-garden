@@ -478,10 +478,10 @@ class EnergySystem:
             else:
                 component_data = component.squeeze()
         else:
-            component_data, attribute_is_series = calling_class.get_attribute_of_all_elements(component_name, capacity_types=capacity_types, return_attribute_is_series=True)
+            component_data, attribute_is_series = self.get_attribute_of_all_elements(calling_class, component_name, capacity_types=capacity_types, return_attribute_is_series=True)
             index_list = []
             if index_names:
-                custom_set, index_list = calling_class.create_custom_set(index_names)
+                custom_set, index_list = calling_class.create_custom_set(index_names, self)
                 if np.size(custom_set):
                     if attribute_is_series:
                         component_data = pd.concat(component_data, keys=component_data.keys())
