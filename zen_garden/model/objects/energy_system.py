@@ -163,13 +163,14 @@ class EnergySystem:
             time_step_duration_dict[input_time_steps[-1]] = duration_last_time_step
         return time_step_duration_dict
 
-    def add_element(self, element):
+    def add_element(self, element_class, name):
         """
         Adds an element to the element_dict with the class labels as key
-        :param element: The element instance
+        :param element_class: Class of the element
+        :param name: Name of the element
         """
 
-        self.dict_elements[type(element).__name__].append(element)
+        self.dict_elements[element_class.__name__].append(element_class(name, self))
 
     def get_all_elements(self, cls):
         """ get all elements of the class in the enrgysystem.

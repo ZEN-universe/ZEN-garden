@@ -44,7 +44,7 @@ class Technology(Element):
         set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
         set_time_steps_yearly = self.energy_system.set_time_steps_yearly
         self.reference_carrier = [self.datainput.extract_attribute("reference_carrier", skip_warning=True)]
-        EnergySystem.set_technology_of_carrier(self.name, self.reference_carrier)
+        self.energy_system.set_technology_of_carrier(self.name, self.reference_carrier)
         self.min_built_capacity = self.datainput.extract_attribute("min_built_capacity")["value"]
         self.max_built_capacity = self.datainput.extract_attribute("max_built_capacity")["value"]
         self.lifetime = self.datainput.extract_attribute("lifetime")["value"]
