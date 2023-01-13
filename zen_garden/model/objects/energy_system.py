@@ -522,31 +522,31 @@ class EnergySystem:
         # construct pe.Sets of the class <EnergySystem>
 
         # nodes
-        self.model.set_nodes = pe.Set(initialize=self.set_nodes, doc='Set of nodes')
+        self.pyomo_model.set_nodes = pe.Set(initialize=self.set_nodes, doc='Set of nodes')
         # edges
-        self.model.set_edges = pe.Set(initialize=self.set_edges, doc='Set of edges')
+        self.pyomo_model.set_edges = pe.Set(initialize=self.set_edges, doc='Set of edges')
         # nodes on edges
-        self.model.set_nodes_on_edges = pe.Set(self.model.set_edges, initialize=self.set_nodes_on_edges, doc='Set of nodes that constitute an edge. Edge connects first node with second node.')
+        self.pyomo_model.set_nodes_on_edges = pe.Set(self.pyomo_model.set_edges, initialize=self.set_nodes_on_edges, doc='Set of nodes that constitute an edge. Edge connects first node with second node.')
         # carriers
-        self.model.set_carriers = pe.Set(initialize=self.set_carriers, doc='Set of carriers')
+        self.pyomo_model.set_carriers = pe.Set(initialize=self.set_carriers, doc='Set of carriers')
         # technologies
-        self.model.set_technologies = pe.Set(initialize=self.set_technologies, doc='Set of technologies')
+        self.pyomo_model.set_technologies = pe.Set(initialize=self.set_technologies, doc='Set of technologies')
         # all elements
-        self.model.set_elements = pe.Set(initialize=self.model.set_technologies | self.model.set_carriers, doc='Set of elements')
+        self.pyomo_model.set_elements = pe.Set(initialize=self.pyomo_model.set_technologies | self.pyomo_model.set_carriers, doc='Set of elements')
         # set set_elements to indexing_sets
         self.set_manual_set_to_indexing_sets("set_elements")
         # time-steps
-        self.model.set_base_time_steps = pe.Set(initialize=self.set_base_time_steps, doc='Set of base time-steps')
+        self.pyomo_model.set_base_time_steps = pe.Set(initialize=self.set_base_time_steps, doc='Set of base time-steps')
         # yearly time steps
-        self.model.set_time_steps_yearly = pe.Set(initialize=self.set_time_steps_yearly, doc='Set of yearly time-steps')
+        self.pyomo_model.set_time_steps_yearly = pe.Set(initialize=self.set_time_steps_yearly, doc='Set of yearly time-steps')
         # yearly time steps of entire optimization horizon
-        self.model.set_time_steps_yearly_entire_horizon = pe.Set(initialize=self.set_time_steps_yearly_entire_horizon, doc='Set of yearly time-steps of entire optimization horizon')
+        self.pyomo_model.set_time_steps_yearly_entire_horizon = pe.Set(initialize=self.set_time_steps_yearly_entire_horizon, doc='Set of yearly time-steps of entire optimization horizon')
 
     def construct_params(self):
         """ constructs the pe.Params of the class <EnergySystem> """
         # carbon emissions limit
         cls = self.__class__
-        self.parameters.add_parameter(name="carbon_emissions_limit", data=self.initialize_component(cls, "carbon_emissions_limit", set_time_steps=self.model.set_time_steps_yearly),
+        self.parameters.add_parameter(name="carbon_emissions_limit", data=self.initialize_component(cls, "carbon_emissions_limit", set_time_steps=self.pyomo_model.set_time_steps_yearly),
             doc='Parameter which specifies the total limit on carbon emissions')
         # carbon emissions budget
         self.parameters.add_parameter(name="carbon_emissions_budget", data=self.initialize_component(cls, "carbon_emissions_budget"),
@@ -554,49 +554,48 @@ class EnergySystem:
         # carbon emissions budget
         self.parameters.add_parameter(name="previous_carbon_emissions", data=self.initialize_component(cls, "previous_carbon_emissions"), doc='Parameter which specifies the total previous carbon emissions')
         # carbon price
-        self.parameters.add_parameter(name="carbon_price", data=self.initialize_component(cls, "carbon_price", set_time_steps=self.model.set_time_steps_yearly),
+        self.parameters.add_parameter(name="carbon_price", data=self.initialize_component(cls, "carbon_price", set_time_steps=self.pyomo_model.set_time_steps_yearly),
             doc='Parameter which specifies the yearly carbon price')
         # carbon price of overshoot
         self.parameters.add_parameter(name="carbon_price_overshoot", data=self.initialize_component(cls, "carbon_price_overshoot"), doc='Parameter which specifies the carbon price for budget overshoot')
 
-    @classmethod
     def construct_vars(self):
         """ constructs the pe.Vars of the class <EnergySystem> """
         # carbon emissions
-        self.variables.add_variable(self.model, name="carbon_emissions_total", index_sets=self.model.set_time_steps_yearly, domain=pe.Reals, doc="total carbon emissions of energy system")
+        self.variables.add_variable(self.pyomo_model, name="carbon_emissions_total", index_sets=self.pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="total carbon emissions of energy system")
         # cumulative carbon emissions
-        self.variables.add_variable(self.model, name="carbon_emissions_cumulative", index_sets=self.model.set_time_steps_yearly, domain=pe.Reals,
+        self.variables.add_variable(self.pyomo_model, name="carbon_emissions_cumulative", index_sets=self.pyomo_model.set_time_steps_yearly, domain=pe.Reals,
             doc="cumulative carbon emissions of energy system over time for each year")
         # carbon emission overshoot
-        self.variables.add_variable(self.model, name="carbon_emissions_overshoot", index_sets=self.model.set_time_steps_yearly, domain=pe.NonNegativeReals,
+        self.variables.add_variable(self.pyomo_model, name="carbon_emissions_overshoot", index_sets=self.pyomo_model.set_time_steps_yearly, domain=pe.NonNegativeReals,
             doc="overshoot carbon emissions of energy system at the end of the time horizon")
         # cost of carbon emissions
-        self.variables.add_variable(self.model, name="cost_carbon_emissions_total", index_sets=self.model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of carbon emissions of energy system")
+        self.variables.add_variable(self.pyomo_model, name="cost_carbon_emissions_total", index_sets=self.pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of carbon emissions of energy system")
         # costs
-        self.variables.add_variable(self.model, name="cost_total", index_sets=self.model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of energy system")
+        self.variables.add_variable(self.pyomo_model, name="cost_total", index_sets=self.pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of energy system")
         # NPV
-        self.variables.add_variable(self.model, name="NPV", index_sets=self.model.set_time_steps_yearly, domain=pe.Reals, doc="NPV of energy system")
+        self.variables.add_variable(self.pyomo_model, name="NPV", index_sets=self.pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="NPV of energy system")
 
     def construct_constraints(self):
         """ constructs the pe.Constraints of the class <EnergySystem> """
         # carbon emissions
-        self.constraints.add_constraint(self.model, name="constraint_carbon_emissions_total", index_sets=self.model.set_time_steps_yearly, rule=constraint_carbon_emissions_total_rule,
+        self.constraints.add_constraint(self.pyomo_model, name="constraint_carbon_emissions_total", index_sets=self.pyomo_model.set_time_steps_yearly, rule=constraint_carbon_emissions_total_rule,
             doc="total carbon emissions of energy system")
         # carbon emissions
-        self.constraints.add_constraint(self.model, name="constraint_carbon_emissions_cumulative", index_sets=self.model.set_time_steps_yearly, rule=constraint_carbon_emissions_cumulative_rule,
+        self.constraints.add_constraint(self.pyomo_model, name="constraint_carbon_emissions_cumulative", index_sets=self.pyomo_model.set_time_steps_yearly, rule=constraint_carbon_emissions_cumulative_rule,
             doc="cumulative carbon emissions of energy system over time")
         # cost of carbon emissions
-        self.constraints.add_constraint(self.model, name="constraint_carbon_cost_total", index_sets=self.model.set_time_steps_yearly, rule=constraint_carbon_cost_total_rule, doc="total carbon cost of energy system")
+        self.constraints.add_constraint(self.pyomo_model, name="constraint_carbon_cost_total", index_sets=self.pyomo_model.set_time_steps_yearly, rule=constraint_carbon_cost_total_rule, doc="total carbon cost of energy system")
         # carbon emissions
-        self.constraints.add_constraint(self.model, name="constraint_carbon_emissions_limit", index_sets=self.model.set_time_steps_yearly, rule=constraint_carbon_emissions_limit_rule,
+        self.constraints.add_constraint(self.pyomo_model, name="constraint_carbon_emissions_limit", index_sets=self.pyomo_model.set_time_steps_yearly, rule=constraint_carbon_emissions_limit_rule,
             doc="limit of total carbon emissions of energy system")
         # carbon emissions
-        self.constraints.add_constraint(self.model, name="constraint_carbon_emissions_budget", index_sets=self.model.set_time_steps_yearly, rule=constraint_carbon_emissions_budget_rule,
+        self.constraints.add_constraint(self.pyomo_model, name="constraint_carbon_emissions_budget", index_sets=self.pyomo_model.set_time_steps_yearly, rule=constraint_carbon_emissions_budget_rule,
             doc="Budget of total carbon emissions of energy system")
         # costs
-        self.constraints.add_constraint(self.model, name="constraint_cost_total", index_sets=self.model.set_time_steps_yearly, rule=constraint_cost_total_rule, doc="total cost of energy system")
+        self.constraints.add_constraint(self.pyomo_model, name="constraint_cost_total", index_sets=self.pyomo_model.set_time_steps_yearly, rule=constraint_cost_total_rule, doc="total cost of energy system")
         # NPV
-        self.constraints.add_constraint(self.model, name="constraint_NPV", index_sets=self.model.set_time_steps_yearly, rule=constraint_NPV_rule, doc="NPV of energy system")
+        self.constraints.add_constraint(self.pyomo_model, name="constraint_NPV", index_sets=self.pyomo_model.set_time_steps_yearly, rule=constraint_NPV_rule, doc="NPV of energy system")
 
     def construct_objective(self):
         """ constructs the pe.Objective of the class <EnergySystem> """
@@ -622,7 +621,7 @@ class EnergySystem:
             raise KeyError(f"Objective sense {self.analysis['sense']} not known")
 
         # construct objective
-        self.model.objective = pe.Objective(rule=objective_rule, sense=objective_sense)
+        self.pyomo_model.objective = pe.Objective(rule=objective_rule, sense=objective_sense)
 
 
 def constraint_carbon_emissions_total_rule(model, year):
