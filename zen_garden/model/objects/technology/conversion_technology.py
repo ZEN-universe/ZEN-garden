@@ -111,10 +111,10 @@ class ConversionTechnology(Technology):
         for _element in _class_elements:
             # extract for pwa
             if getattr(_element, _is_pwa_attribute) and selectPWA:
-                dict_of_attributes, _ = energy_system.append_attribute_of_element_to_dict(cls, _element, _attribute_name_pwa, dict_of_attributes)
+                dict_of_attributes, _ = energy_system.append_attribute_of_element_to_dict(_element, _attribute_name_pwa, dict_of_attributes)
             # extract for linear
             elif not getattr(_element, _is_pwa_attribute) and not selectPWA:
-                dict_of_attributes, _ = energy_system.append_attribute_of_element_to_dict(cls, _element, _attribute_name_linear, dict_of_attributes)
+                dict_of_attributes, _ = energy_system.append_attribute_of_element_to_dict(_element, _attribute_name_linear, dict_of_attributes)
             if not dict_of_attributes:
                 _, index_names = cls.create_custom_set(index_names, energy_system)
                 return (dict_of_attributes, index_names)

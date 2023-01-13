@@ -413,7 +413,7 @@ class Technology(Element):
 
         model = energy_system.pyomo_model
         # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
-        techs_on_off = cls.create_custom_set(["set_technologies", "set_on_off"])[0]
+        techs_on_off = cls.create_custom_set(["set_technologies", "set_on_off"], energy_system)[0]
         # construct pe.Vars of the class <Technology>
         # install technology
         energy_system.variables.add_variable(model, name="install_technology", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], energy_system), domain=pe.Binary,

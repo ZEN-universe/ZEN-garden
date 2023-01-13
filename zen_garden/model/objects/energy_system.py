@@ -173,8 +173,9 @@ class EnergySystem:
         instance = element_class(name, self)
         # add to class specific list
         self.dict_elements[element_class.__name__].append(instance)
-        # all elements are added to the main class list
-        self.dict_elements["Element"].append(instance)
+        # Add the instance to all parents as well
+        for cls in element_class.__mro__:
+            self.dict_elements[cls.__name__].append(instance)
 
     def get_all_elements(self, cls):
         """ get all elements of the class in the enrgysystem.
