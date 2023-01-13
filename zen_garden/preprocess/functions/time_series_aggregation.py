@@ -16,20 +16,18 @@ from zen_garden.model.objects.technology.technology import Technology
 from zen_garden.model.objects.technology.storage_technology import StorageTechnology
 
 
-class TimeSeriesAggregation():
-    time_series_aggregation = None
+class TimeSeriesAggregation(object):
 
-    def __init__(self):
-        """ initializes the time series aggregation. The data is aggregated for a single year and then concatenated"""
-        self.system = EnergySystem.get_system()
-        self.analysis = EnergySystem.get_analysis()
-        self.energy_system = EnergySystem.get_energy_system()
+    def __init__(self, energy_system: EnergySystem):
+        """ initializes the time series aggregation. The data is aggregated for a single year and then concatenated
+        :param energy_system: The energy system to use"""
+        self.energy_system = energy_system
+        self.system = energy_system.system
+        self.analysis = energy_system.analysis
         self.header_set_time_steps = self.analysis['header_data_inputs']["set_time_steps"]
         # if set_time_steps as input (because already aggregated), use this as base time step, otherwise self.set_base_time_steps
         self.set_base_time_steps = self.energy_system.set_base_time_steps_yearly
         self.number_typical_periods = min(self.system["unaggregated_time_steps_per_year"], self.system["aggregated_time_steps_per_year"])
-        # set time_series_aggregation
-        TimeSeriesAggregation.set_tsa(self)
         self.conducted_tsa = False
         # if number of time steps >= number of base time steps, skip aggregation
         if self.number_typical_periods < np.size(self.set_base_time_steps) and self.system["conduct_time_series_aggregation"]:
@@ -41,9 +39,9 @@ class TimeSeriesAggregation():
         else:
             self.typical_periods = pd.DataFrame()
             _set_time_steps = self.set_base_time_steps
-            _time_step_duration = EnergySystem.calculate_time_step_duration(_set_time_steps, self.set_base_time_steps)
+            _time_step_duration = self.energy_system.calculate_time_step_duration(_set_time_steps, self.set_base_time_steps)
             _sequence_time_steps = np.concatenate([[time_step] * _time_step_duration[time_step] for time_step in _time_step_duration])
-            TimeSeriesAggregation.set_time_attributes(self, _set_time_steps, _time_step_duration, _sequence_time_steps)
+            self.set_time_attributes(self, _set_time_steps, _time_step_duration, _sequence_time_steps)
             # set aggregated time series
             self.set_aggregated_ts_all_elements()
 
@@ -52,7 +50,7 @@ class TimeSeriesAggregation():
         Only in aligned time grid approach! """
 
         _dict_raw_ts = {}
-        for element in Element.get_all_elements():
+        for element in self.energy_system.get_all_elements(Element):
             df_ts_raw = TimeSeriesAggregation.extract_raw_ts(element, self.header_set_time_steps)
             if not df_ts_raw.empty:
                 _dict_raw_ts[element.name] = df_ts_raw
@@ -300,12 +298,6 @@ class TimeSeriesAggregation():
             element.set_time_steps_operation = set_time_steps
             element.time_steps_operation_duration = time_steps_duration
             element.sequence_time_steps = sequence_time_steps
-
-    @classmethod
-    def set_tsa(cls, time_series_aggregation):
-        """ sets empty time_series_aggregation to time_series_aggregation
-        :param time_series_aggregation: time_series_aggregation """
-        cls.time_series_aggregation = time_series_aggregation
 
     @classmethod
     def conduct_tsa(cls):

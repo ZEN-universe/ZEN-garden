@@ -30,7 +30,7 @@ from ..preprocess.prepare import Prepare
 
 class OptimizationSetup(object):
 
-    def __init__(self, analysis: dict, prepare: Prepare):
+    def __init__(self, analysis: dict, prepare: Prepare, energy_system_name="energy_system"):
         """setup Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
         :param prepare: A Prepare instance for the Optimization setup"""
@@ -44,13 +44,15 @@ class OptimizationSetup(object):
         # step of optimization horizon
         self.step_horizon = 0
 
-        # set optimization attributes (the five set above) to class <EnergySystem>
-        self.energy_system = EnergySystem("energy_system", self.analysis, self.system, self.paths, self.solver)
+        # Init the energy system
+        self.energy_system = EnergySystem(energy_system_name, self.analysis, self.system, self.paths, self.solver)
+
+        # The time serier aggregation
+        self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
         # set base scenario
         self.set_base_configuration()
-        # empty list of elements
-        self.list_of_elements = []
+
         # add Elements to optimization
         self.add_elements()
 
@@ -80,11 +82,14 @@ class OptimizationSetup(object):
 
             # add element class
             for item in element_set:
-                element_class(item)
-        if EnergySystem.get_solver()["analyze_numerics"]:
-            EnergySystem.get_unit_handling().recommend_base_units(immutable_unit=EnergySystem.get_solver()["immutable_unit"], unit_exps=EnergySystem.get_solver()["rangeUnitExponents"])
+                self.energy_system.add_element(element_class, item)
+        if self.energy_system.solver["analyze_numerics"]:
+            self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.energy_system.solver["immutable_unit"],
+                                                                  unit_exps=self.energy_system.solver["rangeUnitExponents"])
         # conduct  time series aggregation
         TimeSeriesAggregation.conduct_tsa()
+
+
 
     def construct_optimization_problem(self):
         """ constructs the optimization problem """
