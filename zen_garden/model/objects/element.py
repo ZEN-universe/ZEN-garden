@@ -68,7 +68,7 @@ class Element:
     @classmethod
     def construct_model_components(cls, energy_system: EnergySystem):
         """ constructs the model components of the class <Element>
-        :param energy_system: The Energy sytem to add everything"""
+        :param energy_system: The Energy system to add everything"""
         logging.info("\n--- Construct model components ---\n")
         # construct pe.Sets
         cls.construct_sets()
@@ -84,7 +84,7 @@ class Element:
     @classmethod
     def construct_sets(cls, energy_system: EnergySystem):
         """ constructs the pe.Sets of the class <Element>
-        :param energy_system: The Energy sytem to add everything"""
+        :param energy_system: The Energy system to add everything"""
         logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
         energy_system.construct_sets()
@@ -101,7 +101,7 @@ class Element:
     @classmethod
     def construct_params(cls, energy_system: EnergySystem):
         """ constructs the pe.Params of the class <Element>
-        :param energy_system: The Energy sytem to add everything"""
+        :param energy_system: The Energy system to add everything"""
         logging.info("Construct pe.Params")
         # construct pe.Params of energy system
         energy_system.construct_params()
@@ -118,7 +118,7 @@ class Element:
     @classmethod
     def construct_vars(cls, energy_system: EnergySystem):
         """ constructs the pe.Vars of the class <Element>
-        :param energy_system: The Energy sytem to add everything"""
+        :param energy_system: The Energy system to add everything"""
         logging.info("Construct pe.Vars")
         # construct pe.Vars of energy system
         energy_system.construct_vars()
@@ -129,7 +129,7 @@ class Element:
     @classmethod
     def construct_constraints(cls, energy_system: EnergySystem):
         """ constructs the pe.Constraints of the class <Element>
-        :param energy_system: The Energy sytem to add everything"""
+        :param energy_system: The Energy system to add everything"""
         logging.info("Construct pe.Constraints")
         # construct pe.Constraints of energy system
         energy_system.construct_constraints()
@@ -138,14 +138,14 @@ class Element:
             subclass.construct_constraints()
 
     @classmethod
-    def create_custom_set(cls, list_index, energy_sytem: EnergySystem):
+    def create_custom_set(cls, list_index, energy_system: EnergySystem):
         """ creates custom set for model component 
         :param list_index: list of names of indices
-        :param energy_system: The Energy sytem to add everything
+        :param energy_system: The Energy system of the elements
         :return list_index: list of names of indices """
         list_index_overwrite = copy.copy(list_index)
-        model = energy_sytem.pyomo_model
-        indexing_sets = energy_sytem.indexing_sets
+        model = energy_system.pyomo_model
+        indexing_sets = energy_system.indexing_sets
         # check if all index sets are already defined in model and no set is indexed
         if all([(hasattr(model, index) and not model.find_component(index).is_indexed()) for index in list_index]):
             # check if no set is indexed
@@ -197,7 +197,7 @@ class Element:
                         # if set is built for pwa capex:
                         elif "set_capex" in index:
                             if element in model.set_conversion_technologies:
-                                _capex_is_pwa = energy_sytem.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
+                                _capex_is_pwa = energy_system.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
                                 # if technology is modeled as pwa, break for linear index
                                 if "linear" in index and _capex_is_pwa:
                                     append_element = False
@@ -213,7 +213,7 @@ class Element:
                         # if set is built for pwa conver_efficiency:
                         elif "set_conver_efficiency" in index:
                             if element in model.set_conversion_technologies:  # or element in model.set_storage_technologies:
-                                _conver_efficiency_is_pwa = energy_sytem.get_attribute_of_specific_element(cls, element, "conver_efficiency_is_pwa")
+                                _conver_efficiency_is_pwa = energy_system.get_attribute_of_specific_element(cls, element, "conver_efficiency_is_pwa")
                                 dependent_carrier = list(model.set_dependent_carriers[element])
                                 # TODO for more than one carrier
                                 # _pwa_conver_efficiency = cls.get_attribute_of_specific_element(element,"pwa_conver_efficiency")
@@ -232,7 +232,7 @@ class Element:
                         # if set is used to determine if on-off behavior is modeled
                         # exclude technologies which have no min_load and dependentCarrierFlow at reference_carrierFlow = 0 is also equal to 0
                         elif "on_off" in index:
-                            model_on_off = cls.check_on_off_modeled(element, energy_sytem)
+                            model_on_off = cls.check_on_off_modeled(element, energy_system)
                             if "set_no_on_off" in index:
                                 # if modeled as on off, do not append to set_no_on_off
                                 if model_on_off:
@@ -245,7 +245,7 @@ class Element:
                                     break
                         # split in capacity types of power and energy
                         elif index == "set_capacity_types":
-                            system = energy_sytem.system
+                            system = energy_system.system
                             if element in model.set_storage_technologies:
                                 list_sets.append(system["set_capacity_types"])
                             else:
@@ -269,7 +269,7 @@ class Element:
         and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as pwa),
         then on-off-behavior is not necessary to model
         :param tech: technology in model
-        :param energy_system: The Energy sytem to add everything
+        :param energy_system: The Energy System of the element
         :returns model_on_off: boolean to indicate that on-off-behavior modeled """
         model = energy_system.pyomo_model
 
