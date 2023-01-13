@@ -22,21 +22,18 @@ class TransportTechnology(Technology):
     # set label
     label = "set_transport_technologies"
     location_type = "set_edges"
-    # empty list of elements
-    list_of_elements = []
-    # dict of reversed edges
-    dict_reversed_edges = {}
 
-    def __init__(self, tech):
+    def __init__(self, tech: str, energy_system: EnergySystem):
         """init transport technology object
-        :param tech: name of added technology"""
+        :param tech: name of added technology
+        :param energy_system: The energy system the element is part of"""
 
         logging.info(f'Initialize transport technology {tech}')
-        super().__init__(tech)
+        super().__init__(tech, energy_system)
+        # dict of reversed edges
+        self.dict_reversed_edges = {}
         # store input data
         self.store_input_data()
-        # add TransportTechnology to list
-        TransportTechnology.add_element(self)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -52,14 +49,14 @@ class TransportTechnology(Technology):
         # calculate capex of existing capacity
         self.capex_existing_capacity = self.calculate_capex_of_existing_capacities()
         # check that existing capacities are equal in both directions if technology is bidirectional
-        if self.name in EnergySystem.get_system()["set_bidirectional_transport_technologies"]:
+        if self.name in self.energy_system.system["set_bidirectional_transport_technologies"]:
             self.check_if_bidirectional()
 
     def get_capex_transport(self):
         """get capex of transport technology"""
-        set_time_steps_yearly = EnergySystem.get_energy_system().set_time_steps_yearly
+        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
         # check if there are separate capex for capacity and distance
-        if EnergySystem.system['double_capex_transport']:
+        if self.energy_system.system['double_capex_transport']:
             # both capex terms must be specified
             self.capex_specific = self.datainput.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps"], time_steps=set_time_steps_yearly)
             self.capex_per_distance = self.datainput.extract_input_data("capex_per_distance", index_sets=["set_edges", "set_time_steps"], time_steps=set_time_steps_yearly)
@@ -77,8 +74,7 @@ class TransportTechnology(Technology):
     def convert_to_annualized_capex(self):
         """ this method converts the total capex to annualized capex """
         fractional_annuity = self.calculate_fractional_annuity()
-        system = EnergySystem.get_system()
-        _fraction_year = system["unaggregated_time_steps_per_year"] / system["total_hours_per_year"]
+        _fraction_year = self.energy_system.system["unaggregated_time_steps_per_year"] / self.energy_system.system["total_hours_per_year"]
         # annualize capex
         self.capex_specific = self.capex_specific * fractional_annuity + self.fixed_opex_specific * _fraction_year
         self.capex_per_distance = self.capex_per_distance * fractional_annuity
@@ -93,55 +89,54 @@ class TransportTechnology(Technology):
 
     def check_if_bidirectional(self):
         """ checks that the existing capacities in both directions of bidirectional capacities are equal """
-        energy_system = EnergySystem.get_energy_system()
-        for edge in energy_system.set_edges:
-            _reversed_edge = EnergySystem.calculate_reversed_edge(edge)
-            TransportTechnology.set_reversed_edge(edge=edge, _reversed_edge=_reversed_edge)
+        for edge in self.energy_system.set_edges:
+            _reversed_edge = self.energy_system.calculate_reversed_edge(edge)
+            self.set_reversed_edge(edge=edge, _reversed_edge=_reversed_edge)
             _existing_capacity_edge = self.existing_capacity[edge]
             _existing_capacity_reversed_edge = self.existing_capacity[_reversed_edge]
             assert (
                         _existing_capacity_edge == _existing_capacity_reversed_edge).all(), f"The existing capacities of the bidirectional transport technology {self.name} are not equal on the edge pair {edge} and {_reversed_edge} ({_existing_capacity_edge.to_dict()} and {_existing_capacity_reversed_edge.to_dict()})"
 
     ### --- getter/setter classmethods
-    @classmethod
-    def set_reversed_edge(cls, edge, _reversed_edge):
+    def set_reversed_edge(self, edge, _reversed_edge):
         """ maps the reversed edge to an edge """
-        cls.dict_reversed_edges[edge] = _reversed_edge
+        self.dict_reversed_edges[edge] = _reversed_edge
 
-    @classmethod
-    def getReversedEdge(cls, edge):
+    def get_reversed_edge(self, edge):
         """ get the reversed edge corresponding to an edge """
-        return cls.dict_reversed_edges[edge]
+        return self.dict_reversed_edges[edge]
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
     @classmethod
-    def construct_sets(cls):
-        """ constructs the pe.Sets of the class <TransportTechnology> """
+    def construct_sets(cls, energy_system: EnergySystem):
+        """ constructs the pe.Sets of the class <TransportTechnology>
+        :param energy_system: The Energy system to add everything"""
         pass
 
     @classmethod
-    def construct_params(cls):
-        """ constructs the pe.Params of the class <TransportTechnology> """
-        model = EnergySystem.get_pyomo_model()
+    def construct_params(cls, energy_system: EnergySystem):
+        """ constructs the pe.Params of the class <TransportTechnology>
+        :param energy_system: The Energy system to add everything"""
 
         # distance between nodes
-        Parameter.add_parameter(name="distance", data=EnergySystem.initialize_component(cls, "distance", index_names=["set_transport_technologies", "set_edges"]),
+        energy_system.parameters.add_parameter(name="distance", data=energy_system.initialize_component(cls, "distance", index_names=["set_transport_technologies", "set_edges"]),
             doc='distance between two nodes for transport technologies')
         # capital cost per unit
-        Parameter.add_parameter(name="capex_specific_transport",
-            data=EnergySystem.initialize_component(cls, "capex_specific", index_names=["set_transport_technologies", "set_edges", "set_time_steps_yearly"]),
+        energy_system.parameters.add_parameter(name="capex_specific_transport",
+            data=energy_system.initialize_component(cls, "capex_specific", index_names=["set_transport_technologies", "set_edges", "set_time_steps_yearly"]),
             doc='capex per unit for transport technologies')
         # capital cost per distance
-        Parameter.add_parameter(name="capex_per_distance",
-            data=EnergySystem.initialize_component(cls, 'capex_per_distance', index_names=['set_transport_technologies', "set_edges", "set_time_steps_yearly"]),
+        energy_system.parameters.add_parameter(name="capex_per_distance",
+            data=energy_system.initialize_component(cls, 'capex_per_distance', index_names=['set_transport_technologies', "set_edges", "set_time_steps_yearly"]),
             doc='capex per distance for transport technologies')
         # carrier losses
-        Parameter.add_parameter(name="loss_flow", data=EnergySystem.initialize_component(cls, "loss_flow", index_names=["set_transport_technologies"]),
+        energy_system.parameters.add_parameter(name="loss_flow", data=energy_system.initialize_component(cls, "loss_flow", index_names=["set_transport_technologies"]),
             doc='carrier losses due to transport with transport technologies')
 
     @classmethod
-    def construct_vars(cls):
-        """ constructs the pe.Vars of the class <TransportTechnology> """
+    def construct_vars(cls, energy_system):
+        """ constructs the pe.Vars of the class <TransportTechnology>
+        :param energy_system: The Energy system to add everything"""
 
         def carrier_flow_bounds(model, tech, edge, time):
             """ return bounds of carrier_flow for bigM expression
@@ -155,27 +150,27 @@ class TransportTechnology(Technology):
             bounds = model.capacity[tech, "power", edge, time_step_year].bounds
             return (bounds)
 
-        model = EnergySystem.get_pyomo_model()
+        model = energy_system.pyomo_model
         # flow of carrier on edge
-        Variable.add_variable(model, name="carrier_flow", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        energy_system.variables.add_variable(model, name="carrier_flow", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             bounds=carrier_flow_bounds, doc='carrier flow through transport technology on edge i and time t')
         # loss of carrier on edge
-        Variable.add_variable(model, name="carrier_loss", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        energy_system.variables.add_variable(model, name="carrier_loss", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc='carrier flow through transport technology on edge i and time t')
 
     @classmethod
-    def construct_constraints(cls):
-        """ constructs the pe.Constraints of the class <TransportTechnology> """
-        model = EnergySystem.get_pyomo_model()
-        system = EnergySystem.get_system()
+    def construct_constraints(cls, energy_system):
+        """ constructs the pe.Constraints of the class <TransportTechnology>
+        :param energy_system: The Energy system to add everything"""
+        model = energy_system.pyomo_model
         # Carrier Flow Losses 
-        Constraint.add_constraint(model, name="constraint_transport_technology_losses_flow", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"]),
+        energy_system.constraints.add_constraint(model, name="constraint_transport_technology_losses_flow", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], energy_system),
             rule=constraint_transport_technology_losses_flow_rule, doc='Carrier loss due to transport with through transport technology')
         # capex of transport technologies
-        Constraint.add_constraint(model, name="constraint_transport_technology_capex", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"]),
+        energy_system.constraints.add_constraint(model, name="constraint_transport_technology_capex", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], energy_system),
             rule=constraint_transport_technology_capex_rule, doc='Capital expenditures for installing transport technology')
         # bidirectional transport technologies: capacity on edge must be equal in both directions
-        Constraint.add_constraint(model, name="constraint_transport_technology_bidirectional", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"]),
+        energy_system.constraints.add_constraint(model, name="constraint_transport_technology_bidirectional", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], energy_system),
             rule=constraint_transport_technology_bidirectional_rule, doc='Forces that transport technology capacity must be equal in both directions')
 
     # defines disjuncts if technology on/off
@@ -224,7 +219,7 @@ def constraint_transport_technology_bidirectional_rule(model, tech, edge, time):
     """ Forces that transport technology capacity must be equal in both direction"""
     system = EnergySystem.get_system()
     if tech in system["set_bidirectional_transport_technologies"]:
-        _reversed_edge = TransportTechnology.getReversedEdge(edge)
+        _reversed_edge = TransportTechnology.get_reversed_edge(edge)
         return (model.built_capacity[tech, "power", edge, time] == model.built_capacity[tech, "power", _reversed_edge, time])
     else:
         return pe.Constraint.Skip
