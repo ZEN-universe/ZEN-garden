@@ -25,7 +25,7 @@ class Carrier(Element):
     # empty list of elements
     list_of_elements = []
 
-    def __init__(self, carrier, energy_system):
+    def __init__(self, carrier: str, energy_system: EnergySystem):
         """initialization of a generic carrier object
         :param carrier: carrier that is added to the model
         :param energy_system: The energy system the element is part of"""
@@ -37,8 +37,8 @@ class Carrier(Element):
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
-        set_base_time_steps_yearly = EnergySystem.get_energy_system().set_base_time_steps_yearly
-        set_time_steps_yearly = EnergySystem.get_energy_system().set_time_steps_yearly
+        set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
+        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
         # set attributes of carrier
         # raw import
         self.raw_time_series = {}
@@ -59,129 +59,133 @@ class Carrier(Element):
         self.carbon_intensity_carrier = self.datainput.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps"], time_steps=set_time_steps_yearly)
         self.shed_demand_price = self.datainput.extract_input_data("shed_demand_price", index_sets=[])
 
-    def overwrite_time_steps(self, base_time_steps):
+    def overwrite_time_steps(self, base_time_steps: int):
         """ overwrites set_time_steps_operation"""
-        set_time_steps_operation = EnergySystem.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation", yearly=True)
+        set_time_steps_operation = self.energy_system.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation", yearly=True)
         setattr(self, "set_time_steps_operation", set_time_steps_operation.squeeze().tolist())
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod
-    def construct_sets(cls):
-        """ constructs the pe.Sets of the class <Carrier> """
+    def construct_sets(cls, energy_system: EnergySystem):
+        """ constructs the pe.Sets of the class <Carrier>
+        :param energy_system: The Energy system to add everything"""
         pass
 
     @classmethod
-    def construct_params(cls):
-        """ constructs the pe.Params of the class <Carrier> """
+    def construct_params(cls, energy_system: EnergySystem):
+        """ constructs the pe.Params of the class <Carrier>
+        :param energy_system: The Energy system to add everything"""
         # demand of carrier
-        Parameter.add_parameter(name="demand_carrier", data=EnergySystem.initialize_component(cls, "demand_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.parameters.add_parameter(name="demand_carrier", data=energy_system.initialize_component(cls, "demand_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
             doc='Parameter which specifies the carrier demand')
         # availability of carrier
-        Parameter.add_parameter(name="availability_carrier_import",
-            data=EnergySystem.initialize_component(cls, "availability_carrier_import", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.parameters.add_parameter(name="availability_carrier_import",
+            data=energy_system.initialize_component(cls, "availability_carrier_import", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
             doc='Parameter which specifies the maximum energy that can be imported from outside the system boundaries')
         # availability of carrier
-        Parameter.add_parameter(name="availability_carrier_export",
-            data=EnergySystem.initialize_component(cls, "availability_carrier_export", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.parameters.add_parameter(name="availability_carrier_export",
+            data=energy_system.initialize_component(cls, "availability_carrier_export", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
             doc='Parameter which specifies the maximum energy that can be exported to outside the system boundaries')
         # availability of carrier
-        Parameter.add_parameter(name="availability_carrier_import_yearly",
-            data=EnergySystem.initialize_component(cls, "availability_carrier_import_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
+        energy_system.parameters.add_parameter(name="availability_carrier_import_yearly",
+            data=energy_system.initialize_component(cls, "availability_carrier_import_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
             doc='Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year')
         # availability of carrier
-        Parameter.add_parameter(name="availability_carrier_export_yearly",
-            data=EnergySystem.initialize_component(cls, "availability_carrier_export_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
+        energy_system.parameters.add_parameter(name="availability_carrier_export_yearly",
+            data=energy_system.initialize_component(cls, "availability_carrier_export_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
             doc='Parameter which specifies the maximum energy that can be exported to outside the system boundaries for the entire year')
         # import price
-        Parameter.add_parameter(name="import_price_carrier", data=EnergySystem.initialize_component(cls, "import_price_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.parameters.add_parameter(name="import_price_carrier", data=energy_system.initialize_component(cls, "import_price_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
             doc='Parameter which specifies the import carrier price')
         # export price
-        Parameter.add_parameter(name="export_price_carrier", data=EnergySystem.initialize_component(cls, "export_price_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.parameters.add_parameter(name="export_price_carrier", data=energy_system.initialize_component(cls, "export_price_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
             doc='Parameter which specifies the export carrier price')
         # demand shedding price
-        Parameter.add_parameter(name="shed_demand_price", data=EnergySystem.initialize_component(cls, "shed_demand_price", index_names=["set_carriers"]),
+        energy_system.parameters.add_parameter(name="shed_demand_price", data=energy_system.initialize_component(cls, "shed_demand_price", index_names=["set_carriers"]),
             doc='Parameter which specifies the price to shed demand')
         # carbon intensity
-        Parameter.add_parameter(name="carbon_intensity_carrier",
-            data=EnergySystem.initialize_component(cls, "carbon_intensity_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
+        energy_system.parameters.add_parameter(name="carbon_intensity_carrier",
+            data=energy_system.initialize_component(cls, "carbon_intensity_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
             doc='Parameter which specifies the carbon intensity of carrier')
 
     @classmethod
-    def construct_vars(cls):
-        """ constructs the pe.Vars of the class <Carrier> """
-        model = EnergySystem.get_pyomo_model()
+    def construct_vars(cls, energy_system: EnergySystem):
+        """ constructs the pe.Vars of the class <Carrier>
+        :param energy_system: The Energy system to add everything"""
+        model = energy_system.pyomo_model
 
         # flow of imported carrier
-        Variable.add_variable(model, name="import_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        energy_system.variables.add_variable(model, name="import_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc='node- and time-dependent carrier import from the grid')
         # flow of exported carrier
-        Variable.add_variable(model, name="export_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        energy_system.variables.add_variable(model, name="export_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc='node- and time-dependent carrier export from the grid')
         # carrier import/export cost
-        Variable.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.Reals,
+        energy_system.variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.Reals,
             doc='node- and time-dependent carrier cost due to import and export')
         # total carrier import/export cost
-        Variable.add_variable(model, name="cost_carrier_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc='total carrier cost due to import and export')
+        energy_system.variables.add_variable(model, name="cost_carrier_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc='total carrier cost due to import and export')
         # carbon emissions
-        Variable.add_variable(model, name="carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.Reals,
+        energy_system.variables.add_variable(model, name="carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.Reals,
             doc="carbon emissions of importing and exporting carrier")
         # carbon emissions carrier
-        Variable.add_variable(model, name="carbon_emissions_carrier_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc="total carbon emissions of importing and exporting carrier")
+        energy_system.variables.add_variable(model, name="carbon_emissions_carrier_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc="total carbon emissions of importing and exporting carrier")
         # shed demand
-        Variable.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        energy_system.variables.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc="shed demand of carrier")
         # cost of shed demand
-        Variable.add_variable(model, name="costShedDemandCarrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        energy_system.variables.add_variable(model, name="costShedDemandCarrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc="shed demand of carrier")
 
         # add pe.Sets of the child classes
-        for subclass in cls.get_all_subclasses():
-            if np.size(EnergySystem.get_system()[subclass.label]):
-                subclass.construct_vars()
+        for subclass in cls.__subclasses__():
+            if np.size(energy_system.system[subclass.label]):
+                subclass.construct_vars(energy_system)
 
     @classmethod
-    def construct_constraints(cls):
-        """ constructs the pe.Constraints of the class <Carrier> """
-        model = EnergySystem.get_pyomo_model()
+    def construct_constraints(cls, energy_system: EnergySystem):
+        """ constructs the pe.Constraints of the class <Carrier>
+        :param energy_system: The Energy system to add everything"""
+        model = energy_system.pyomo_model
 
         # limit import flow by availability
-        Constraint.add_constraint(model, name="constraint_availability_carrier_import", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.constraints.add_constraint(model, name="constraint_availability_carrier_import", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=constraint_availability_carrier_import_rule, doc='node- and time-dependent carrier availability to import from outside the system boundaries', )
         # limit export flow by availability
-        Constraint.add_constraint(model, name="constraint_availability_carrier_export", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.constraints.add_constraint(model, name="constraint_availability_carrier_export", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=constraint_availability_carrier_export_rule, doc='node- and time-dependent carrier availability to export to outside the system boundaries', )
         # limit import flow by availability for each year
-        Constraint.add_constraint(model, name="constraint_availability_carrier_import_yearly", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"]),
+        energy_system.constraints.add_constraint(model, name="constraint_availability_carrier_import_yearly", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"], energy_system),
             rule=constraint_availability_carrier_import_yearly_rule, doc='node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year', )
         # limit export flow by availability for each year
-        Constraint.add_constraint(model, name="constraint_availability_carrier_export_yearly", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"]),
+        energy_system.constraints.add_constraint(model, name="constraint_availability_carrier_export_yearly", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"], energy_system),
             rule=constraint_availability_carrier_export_yearly_rule, doc='node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year', )
         # cost for carrier
-        Constraint.add_constraint(model, name="constraint_cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), rule=constraint_cost_carrier_rule,
+        energy_system.constraints.add_constraint(model, name="constraint_cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), rule=constraint_cost_carrier_rule,
             doc="cost of importing and exporting carrier")
         # cost for shed demand
-        Constraint.add_constraint(model, name="constraint_cost_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.constraints.add_constraint(model, name="constraint_cost_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=constraint_cost_shed_demand_rule, doc="cost of shedding carrier demand")
         # limit of shed demand
-        Constraint.add_constraint(model, name="constraint_limit_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.constraints.add_constraint(model, name="constraint_limit_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=constraint_limit_shed_demand_rule, doc="limit of shedding carrier demand")
         # total cost for carriers
-        Constraint.add_constraint(model, name="constraint_cost_carrier_total", index_sets=model.set_time_steps_yearly, rule=constraint_cost_carrier_total_rule,
+        energy_system.constraints.add_constraint(model, name="constraint_cost_carrier_total", index_sets=model.set_time_steps_yearly, rule=constraint_cost_carrier_total_rule,
             doc="total cost of importing and exporting carriers")
         # carbon emissions
-        Constraint.add_constraint(model, name="constraint_carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.constraints.add_constraint(model, name="constraint_carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=constraint_carbon_emissions_carrier_rule, doc="carbon emissions of importing and exporting carrier")
 
         # carbon emissions carrier
-        Constraint.add_constraint(model, name="constraint_carbon_emissions_carrier_total", index_sets=model.set_time_steps_yearly, rule=constraint_carbon_emissions_carrier_total_rule,
+        energy_system.constraints.add_constraint(model, name="constraint_carbon_emissions_carrier_total", index_sets=model.set_time_steps_yearly, rule=constraint_carbon_emissions_carrier_total_rule,
             doc="total carbon emissions of importing and exporting carriers")
         # energy balance
-        Constraint.add_constraint(model, name="constraint_nodal_energy_balance", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.constraints.add_constraint(model, name="constraint_nodal_energy_balance", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=constraint_nodal_energy_balance_rule, doc='node- and time-dependent energy balance for each carrier', )
         # add pe.Sets of the child classes
-        for subclass in cls.get_all_subclasses():
-            if np.size(EnergySystem.get_system()[subclass.label]):
-                subclass.construct_constraints()
+        for subclass in cls.__subclasses__():
+            if np.size(energy_system[subclass.label]):
+                subclass.construct_constraints(energy_system)
 
 
 # %% Constraint rules defined in current class
