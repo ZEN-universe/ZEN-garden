@@ -54,18 +54,18 @@ class ConditioningTechnology(ConversionTechnology):
         """retrieves and stores conver_efficiency for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as pwa_conver_efficiency"""
         set_time_steps_yearly = self.energy_system.set_time_steps_yearly
-        specific_heat = self.datainput.extract_attribute("specific_heat")["value"]
-        specific_heat_ratio = self.datainput.extract_attribute("specific_heat_ratio")["value"]
-        pressure_in = self.datainput.extract_attribute("pressure_in")["value"]
-        pressure_out = self.datainput.extract_attribute("pressure_out")["value"]
-        temperature_in = self.datainput.extract_attribute("temperature_in")["value"]
-        isentropic_efficiency = self.datainput.extract_attribute("isentropic_efficiency")["value"]
+        specific_heat = self.data_input.extract_attribute("specific_heat")["value"]
+        specific_heat_ratio = self.data_input.extract_attribute("specific_heat_ratio")["value"]
+        pressure_in = self.data_input.extract_attribute("pressure_in")["value"]
+        pressure_out = self.data_input.extract_attribute("pressure_out")["value"]
+        temperature_in = self.data_input.extract_attribute("temperature_in")["value"]
+        isentropic_efficiency = self.data_input.extract_attribute("isentropic_efficiency")["value"]
 
         # calculate energy consumption
         _pressure_ratio = pressure_out / pressure_in
         _exponent = (specific_heat_ratio - 1) / specific_heat_ratio
-        if self.datainput.exists_attribute("lower_heating_value", column=None):
-            _lower_heating_value = self.datainput.extract_attribute("lower_heating_value")["value"]
+        if self.data_input.exists_attribute("lower_heating_value", column=None):
+            _lower_heating_value = self.data_input.extract_attribute("lower_heating_value")["value"]
             specific_heat = specific_heat / _lower_heating_value
         _energy_consumption = specific_heat * temperature_in / isentropic_efficiency * (_pressure_ratio ** _exponent - 1)
 
@@ -79,10 +79,10 @@ class ConditioningTechnology(ConversionTechnology):
         self.conver_efficiency_is_pwa = False
         self.conver_efficiency_linear = dict()
         self.conver_efficiency_linear[self.output_carrier[0]] = \
-        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps"], column=None, time_steps=set_time_steps_yearly, manual_default_value=1)[
+        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps"], column=None, time_steps=set_time_steps_yearly, manual_default_value=1)[
             0]  # TODO losses are not yet accounted for
         self.conver_efficiency_linear[_input_carriers[0]] = \
-        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps"], column=None, time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
+        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps"], column=None, time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
         # dict to dataframe
         self.conver_efficiency_linear = pd.DataFrame.from_dict(self.conver_efficiency_linear)
         self.conver_efficiency_linear.columns.name = "carrier"

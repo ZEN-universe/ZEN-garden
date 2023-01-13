@@ -38,9 +38,9 @@ class Element:
         # get input path
         self.get_input_path()
         # create DataInput object
-        self.datainput = DataInput(element=self, system=self.energy_system.system, analysis=self.energy_system.analysis,
-                                   solver=self.energy_system.solver, energy_system=self.energy_system,
-                                   unit_handling=self.energy_system.unit_handling)
+        self.data_input = DataInput(element=self, system=self.energy_system.system, analysis=self.energy_system.analysis,
+                                    solver=self.energy_system.solver, energy_system=self.energy_system,
+                                    unit_handling=self.energy_system.unit_handling)
 
     def get_input_path(self):
         """ get input path where input data is stored input_path"""

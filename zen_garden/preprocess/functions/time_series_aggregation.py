@@ -122,7 +122,7 @@ class TimeSeriesAggregation(object):
                 df_aggregated_ts = df_aggregated_ts.stack(_index_names)
                 df_aggregated_ts.index = df_aggregated_ts.index.reorder_levels(_index_names + [self.header_set_time_steps])
                 setattr(element, ts, df_aggregated_ts)
-                TimeSeriesAggregation.set_aggregation_indicators(element)
+                self.set_aggregation_indicators(element)
 
     def extract_raw_ts(self, element, header_set_time_steps):
         """ extract the time series from an element and concatenates the non-constant time series to a pd.DataFrame

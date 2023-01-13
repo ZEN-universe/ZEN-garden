@@ -38,8 +38,8 @@ class ConversionTechnology(Technology):
         # get attributes from class <Technology>
         super().store_input_data()
         # define input and output carrier
-        self.input_carrier = self.datainput.extract_conversion_carriers()["input_carrier"]
-        self.output_carrier = self.datainput.extract_conversion_carriers()["output_carrier"]
+        self.input_carrier = self.data_input.extract_conversion_carriers()["input_carrier"]
+        self.output_carrier = self.data_input.extract_conversion_carriers()["output_carrier"]
         self.energy_system.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.reference_carrier[0] in (
@@ -52,7 +52,7 @@ class ConversionTechnology(Technology):
         """retrieves and stores conver_efficiency for <ConversionTechnology>.
         Each Child class overwrites method to store different conver_efficiency """
         # TODO read pwa Dict and set Params
-        _pwa_conver_efficiency, self.conver_efficiency_is_pwa = self.datainput.extract_pwa_data("conver_efficiency")
+        _pwa_conver_efficiency, self.conver_efficiency_is_pwa = self.data_input.extract_pwa_data("conver_efficiency")
         if self.conver_efficiency_is_pwa:
             self.pwa_conver_efficiency = _pwa_conver_efficiency
         else:
@@ -60,7 +60,7 @@ class ConversionTechnology(Technology):
 
     def get_annualized_capex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
-        _pwa_capex, self.capex_is_pwa = self.datainput.extract_pwa_data("capex")
+        _pwa_capex, self.capex_is_pwa = self.data_input.extract_pwa_data("capex")
         # annualize capex
         fractional_annuity = self.calculate_fractional_annuity()
         system = self.energy_system.system

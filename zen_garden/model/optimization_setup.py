@@ -48,7 +48,7 @@ class OptimizationSetup(object):
         self.energy_system = EnergySystem(energy_system_name, self.analysis, self.system, self.paths, self.solver)
 
         # The time serier aggregation
-        self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
+        self.time_series_aggregation = None
 
         # set base scenario
         self.set_base_configuration()
@@ -87,7 +87,8 @@ class OptimizationSetup(object):
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.energy_system.solver["immutable_unit"],
                                                                   unit_exps=self.energy_system.solver["rangeUnitExponents"])
         # conduct  time series aggregation
-        TimeSeriesAggregation.conduct_tsa()
+        self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
+        self.time_series_aggregation.conduct_tsa()
 
 
 
