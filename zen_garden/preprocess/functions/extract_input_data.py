@@ -82,7 +82,7 @@ class DataInput():
         self.save_values_of_attribute(df_output=df_output, file_name=default_name)
         return df_output
 
-    def extract_general_input_data(self, df_input, df_output, file_name, index_name_list, column, default_value,time_steps):
+    def extract_general_input_data(self, df_input, df_output, file_name, index_name_list, column, default_value, time_steps):
         """ fills df_output with data from df_input
         :param df_input: raw input dataframe
         :param df_output: empty output dataframe, only filled with default_value
