@@ -50,7 +50,7 @@ We follow the [PEP-8](https://peps.python.org/pep-0008/)
 
 ### Methods
 * the name of the methods should always be in lower case letters
-* the name can be composed by two words, in that case the second word should be capitalised e.g. addVariables()
+* the name can be composed by multiple words, seprated by underscores
 * main methods should all have a short desciption of what they do, e.g.:
 
         """
