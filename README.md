@@ -29,7 +29,7 @@ git push origin new_branch_name
 * the reference of the merging to the issue can also be done in a second stage, with the generated '#commit_number'
 
 ## Discussion forum
-Please refer to the [Discussion Forum]{https://github.com/RRE-ETH/ZEN-garden/discussions} for the description of several functionalities of the ZEN-garden framework.
+Please refer to the [Discussion Forum](https://github.com/RRE-ETH/ZEN-garden/discussions) for the description of several functionalities of the ZEN-garden framework.
 
 ## Creating issues
 Apart from the first stages of development, very specific issues should be opened when the need of improvements occur.
