@@ -101,6 +101,8 @@ class DataInput():
             missing_index = missing_index[0]
             # check if special case of existing Technology
             if "existingTechnology" in missing_index:
+                if "year_construction" in df_input.columns and hasattr(self.element, "existing_capacity"):
+                    file_name = "year_construction"
                 df_output = DataInput.extract_from_input_for_existing_capacities(df_input, df_output, index_name_list, file_name, missing_index)
                 if isinstance(default_value, dict):
                     df_output = df_output * default_value["multiplier"]
@@ -284,7 +286,6 @@ class DataInput():
         :param file_name:  name of selected file
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return df_output: return existing capacity and existing lifetime """
-        column = "year_construction"
         index_list, index_name_list = self.construct_index_list(index_sets, None)
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multiidx, data=0)
@@ -295,7 +296,7 @@ class DataInput():
         if f"{file_name}{scenario}.csv" in os.listdir(self.folder_path):
             df_input = self.read_input_data(file_name + scenario)
             # fill output dataframe
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, column, default_value=0, time_steps=None)
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value=0, time_steps=None)
             # get reference year
             reference_year = self.system["reference_year"]
             # calculate remaining lifetime
