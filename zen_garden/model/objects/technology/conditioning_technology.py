@@ -82,10 +82,10 @@ class ConditioningTechnology(ConversionTechnology):
         self.conver_efficiency_is_pwa = False
         self.conver_efficiency_linear = dict()
         self.conver_efficiency_linear[self.output_carrier[0]] = \
-        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], column=None, time_steps=set_time_steps_yearly, manual_default_value=1)[
+        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=1)[
             0]  # TODO losses are not yet accounted for
         self.conver_efficiency_linear[_input_carriers[0]] = \
-        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], column=None, time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
+        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
         # dict to dataframe
         self.conver_efficiency_linear = pd.DataFrame.from_dict(self.conver_efficiency_linear)
         self.conver_efficiency_linear.columns.name = "carrier"
