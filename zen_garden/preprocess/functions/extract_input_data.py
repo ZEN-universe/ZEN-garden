@@ -364,7 +364,7 @@ class DataInput():
                     if _relative_intercept <= self.solver["linear_regression_check"]["eps_intercept"] and linear_regress_object.rvalue >= self.solver["linear_regression_check"]["epsRvalue"]:
                         # model as linear function
                         slope_lin_reg = linear_regress_object.slope
-                        linear_dict[value_variable] = self.create_default_output(index_sets=_index_sets, column=column, time_steps=_time_steps, manual_default_value=slope_lin_reg)[0]
+                        linear_dict[value_variable] = self.create_default_output(index_sets=_index_sets, time_steps=_time_steps, manual_default_value=slope_lin_reg)[0]
                     else:
                         # model as pwa function
                         pwa_dict[value_variable] = list(np.interp(breakpoints, nonlinear_values[breakpoint_variable], nonlinear_values[value_variable]))
