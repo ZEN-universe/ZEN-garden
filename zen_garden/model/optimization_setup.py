@@ -296,13 +296,13 @@ class OptimizationSetup(object):
             _built_capacity = pd.Series(self.model.built_capacity.extract_values())
             _invest_capacity = pd.Series(self.model.invested_capacity.extract_values())
             _capex = pd.Series(self.model.capex.extract_values())
-            _rounding_value = 10 ** (-self.energy_system.system["rounding_decimal_points"])
+            _rounding_value = 10 ** (-self.energy_system.solver["rounding_decimal_points"])
             _built_capacity[_built_capacity <= _rounding_value] = 0
             _invest_capacity[_invest_capacity <= _rounding_value] = 0
             _capex[_capex <= _rounding_value] = 0
             _base_time_steps = self.energy_system.decode_yearly_time_steps([step_horizon])
             Technology = getattr(sys.modules[__name__], "Technology")
-            for tech in Technology.get_all_elements():
+            for tech in self.energy_system.get_all_elements(Technology):
                 # new capacity
                 _built_capacity_tech = _built_capacity.loc[tech.name].unstack()
                 _invested_capacity_tech = _invest_capacity.loc[tech.name].unstack()

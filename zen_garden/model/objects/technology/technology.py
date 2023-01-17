@@ -9,18 +9,14 @@ Description:    Class defining the parameters, variables and constraints that ho
                 The class takes the abstract optimization model as an input, and returns the parameters, variables and
                 constraints that hold for all technologies.
 ==========================================================================================================================================================================="""
-import copy
 import logging
 
 import pandas as pd
 import pyomo.environ as pe
 import pyomo.gdp as pgdp
 import numpy as np
-import cProfile
-import pstats
 from ..element import Element
 from ..energy_system import EnergySystem
-from ..component import Parameter, Variable, Constraint
 
 
 class Technology(Element):

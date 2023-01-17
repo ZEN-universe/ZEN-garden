@@ -13,7 +13,6 @@ import logging
 import pyomo.environ as pe
 from ..energy_system import EnergySystem
 from .carrier import Carrier
-from ..component import Parameter, Variable, Constraint
 
 
 class ConditioningCarrier(Carrier):
@@ -43,7 +42,7 @@ class ConditioningCarrier(Carrier):
         model = energy_system.pyomo_model
 
         # flow of imported carrier
-        Variable.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
+        energy_system.variables.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             domain=pe.NonNegativeReals, doc='node- and time-dependent model endogenous carrier demand')
 
     @classmethod
@@ -53,11 +52,11 @@ class ConditioningCarrier(Carrier):
         model = energy_system.pyomo_model
         rules = ConditioningCarrierRules(energy_system)
         # limit import flow by availability
-        Constraint.add_constraint(model, name="constraint_carrier_demand_coupling", index_sets=cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], energy_system),
+        energy_system.constraints.add_constraint(model, name="constraint_carrier_demand_coupling", index_sets=cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=rules.constraint_carrier_demand_coupling_rule, doc='coupling model endogenous and exogenous carrier demand', )
         # overwrite energy balance when conditioning carriers are included
         model.constraint_nodal_energy_balance.deactivate()
-        Constraint.add_constraint(model, name="constraint_nodal_energy_balance_conditioning", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
+        energy_system.constraints.add_constraint(model, name="constraint_nodal_energy_balance_conditioning", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=rules.constraint_nodal_energy_balance_conditioning_rule, doc='node- and time-dependent energy balance for each carrier', )
 
 

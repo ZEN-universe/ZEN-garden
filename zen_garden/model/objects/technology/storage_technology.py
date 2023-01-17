@@ -14,7 +14,6 @@ import pyomo.environ as pe
 import numpy as np
 from .technology import Technology
 from ..energy_system import EnergySystem
-from ..component import Parameter, Variable, Constraint
 
 
 class StorageTechnology(Technology):

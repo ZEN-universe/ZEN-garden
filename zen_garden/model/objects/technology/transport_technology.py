@@ -10,12 +10,10 @@ Description:    Class defining the parameters, variables and constraints that ho
                 constraints that hold for the transport technologies.
 ==========================================================================================================================================================================="""
 import logging
-import warnings
 import pyomo.environ as pe
 import numpy as np
 from .technology import Technology
 from ..energy_system import EnergySystem
-from ..component import Parameter, Variable, Constraint
 
 
 class TransportTechnology(Technology):

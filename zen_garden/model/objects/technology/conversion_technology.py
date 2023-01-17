@@ -15,7 +15,6 @@ import numpy as np
 import pandas as pd
 from .technology import Technology
 from ..energy_system import EnergySystem
-from ..component import Parameter, Variable, Constraint
 
 
 class ConversionTechnology(Technology):
@@ -295,11 +294,11 @@ class ConversionTechnology(Technology):
         disjunct.constraint_min_load = pe.Constraint(expr=reference_flow >= params.min_load[tech, capacity_type, node, time] * model.capacity[tech, capacity_type, node, time_step_year])
         # couple reference flows
         rules = ConversionTechnologyRules(energy_system)
-        Constraint.add_constraint(disjunct, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
+        energy_system.constraints.add_constraint(disjunct, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
             index_sets=[[[tech], model.set_dependent_carriers[tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
             rule=rules.constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables", )
         # couple dependent flows
-        Constraint.add_constraint(disjunct, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
+        energy_system.constraints.add_constraint(disjunct, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
             index_sets=[[[tech], model.set_dependent_carriers[tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
             rule=rules.constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables", )
 

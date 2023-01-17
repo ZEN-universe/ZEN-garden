@@ -12,12 +12,8 @@ Description:    Class defining a generic energy carrier.
 import logging
 import pyomo.environ as pe
 import numpy as np
-import pandas as pd
 from ..element import Element
 from ..energy_system import EnergySystem
-from ..technology.technology import Technology
-from ..component import Parameter, Variable, Constraint
-
 
 class Carrier(Element):
     # set label

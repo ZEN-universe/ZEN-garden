@@ -11,7 +11,6 @@ Description:    Class defining the parameters, variables and constraints of the 
 import logging
 import pyomo.environ as pe
 import pandas as pd
-import numpy as np
 from ..energy_system import EnergySystem
 from .conversion_technology import ConversionTechnology
 
