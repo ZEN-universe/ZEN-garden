@@ -236,6 +236,7 @@ class ConversionTechnology(Technology):
         :param energy_system: The Energy system to add everything"""
         model = energy_system.pyomo_model
         # add pwa constraints
+        rules = ConversionTechnologyRules(energy_system)
         # capex
         set_pwa_capex = cls.create_custom_set(["set_conversion_technologies", "set_capex_pwa", "set_nodes", "set_time_steps_yearly"], energy_system)
         set_linear_capex = cls.create_custom_set(["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"], energy_system)
@@ -246,7 +247,7 @@ class ConversionTechnology(Technology):
                                                       unbounded_domain_var=True, warn_domain_coverage=False, pw_repn="BIGM_BIN")
         if set_linear_capex[0]:
             # if set_linear_capex contains technologies:
-            energy_system.constraints.add_constraint(model, name="constraint_linear_capex", index_sets=set_linear_capex, rule=constraint_linear_capex_rule, doc="Linear relationship in capex")
+            energy_system.constraints.add_constraint(model, name="constraint_linear_capex", index_sets=set_linear_capex, rule=rules.constraint_linear_capex_rule, doc="Linear relationship in capex")
         # Conversion Efficiency
         set_pwa_conver_efficiency = cls.create_custom_set(["set_conversion_technologies", "set_conver_efficiency_pwa", "set_nodes", "set_time_steps_operation"], energy_system)
         set_linear_conver_efficiency = cls.create_custom_set(["set_conversion_technologies", "set_conver_efficiency_linear", "set_nodes", "set_time_steps_operation"], energy_system)
@@ -257,49 +258,50 @@ class ConversionTechnology(Technology):
                                                                   pw_constr_type="EQ", f_rule=pwa_values, unbounded_domain_var=True, warn_domain_coverage=False, pw_repn="BIGM_BIN")
         if set_linear_conver_efficiency[0]:
             # if set_linear_conver_efficiency contains technologies:
-            energy_system.constraints.add_constraint(model, name="constraint_linear_conver_efficiency", index_sets=set_linear_conver_efficiency, rule=constraint_linear_conver_efficiency_rule,
+            energy_system.constraints.add_constraint(model, name="constraint_linear_conver_efficiency", index_sets=set_linear_conver_efficiency, rule=rules.constraint_linear_conver_efficiency_rule,
                 doc="Linear relationship in conver_efficiency")  # Coupling constraints
         # couple the real variables with the auxiliary variables
         energy_system.constraints.add_constraint(model, name="constraint_capex_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], energy_system),
-            rule=constraint_capex_coupling_rule, doc="couples the real capex variables with the approximated variables")
+            rule=rules.constraint_capex_coupling_rule, doc="couples the real capex variables with the approximated variables")
         # capacity
         energy_system.constraints.add_constraint(model, name="constraint_capacity_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], energy_system),
-            rule=constraint_capacity_coupling_rule, doc="couples the real capacity variables with the approximated variables")
+            rule=rules.constraint_capacity_coupling_rule, doc="couples the real capacity variables with the approximated variables")
 
         # flow coupling constraints for technologies, which are not modeled with an on-off-behavior
         # reference flow coupling
         energy_system.constraints.add_constraint(model, name="constraint_reference_flow_coupling",
             index_sets=cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], energy_system),
-            rule=constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables")
+            rule=rules.constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables")
         # dependent flow coupling
         energy_system.constraints.add_constraint(model, name="constraint_dependent_flow_coupling",
             index_sets=cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], energy_system),
-            rule=constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables")
+            rule=rules.constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables")
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunct_on_technology_rule(cls, disjunct, tech, capacity_type, node, time):
+    def disjunct_on_technology_rule(cls, energy_system, disjunct, tech, capacity_type, node, time):
         """definition of disjunct constraints if technology is On"""
         model = disjunct.model()
         # get parameter object
-        params = Parameter.get_component_object()
+        params = energy_system.parameters
         reference_carrier = model.set_reference_carriers[tech].at(1)
         if reference_carrier in model.set_input_carriers[tech]:
             reference_flow = model.input_flow[tech, reference_carrier, node, time]
         else:
             reference_flow = model.output_flow[tech, reference_carrier, node, time]
         # get invest time step
-        time_step_year = EnergySystem.convert_time_step_operation2invest(tech, time)
+        time_step_year = energy_system.convert_time_step_operation2invest(tech, time)
         # disjunct constraints min load
         disjunct.constraint_min_load = pe.Constraint(expr=reference_flow >= params.min_load[tech, capacity_type, node, time] * model.capacity[tech, capacity_type, node, time_step_year])
         # couple reference flows
+        rules = ConversionTechnologyRules(energy_system)
         Constraint.add_constraint(disjunct, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
             index_sets=[[[tech], model.set_dependent_carriers[tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
-            rule=constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables", )
+            rule=rules.constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables", )
         # couple dependent flows
         Constraint.add_constraint(disjunct, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
             index_sets=[[[tech], model.set_dependent_carriers[tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
-            rule=constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables", )
+            rule=rules.constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables", )
 
     @classmethod
     def disjunct_off_technology_rule(cls, disjunct, tech, capacity_type, node, time):
@@ -341,48 +343,56 @@ class ConversionTechnology(Technology):
         return pwa_breakpoints, pwa_values
 
 
-### --- functions with constraint rules --- ###
-def constraint_linear_capex_rule(model, tech, node, time):
-    """ if capacity and capex have a linear relationship"""
-    # get parameter object
-    params = Parameter.get_component_object()
-    return (model.capex_approximation[tech, node, time] == params.capex_specific_conversion[tech, node, time] * model.capacity_approximation[tech, node, time])
+class ConversionTechnologyRules:
+    """
+    Rules for the ConversionTechnology class
+    """
 
+    def __init__(self, energy_system: EnergySystem):
+        """
+        Inits the rules for a given EnergySystem
+        :param energy_system: The EnergySystem
+        """
 
-def constraint_linear_conver_efficiency_rule(model, tech, dependent_carrier, node, time):
-    """ if reference carrier and dependent carrier have a linear relationship"""
-    # get parameter object
-    params = Parameter.get_component_object()
-    # get invest time step
-    time_step_year = EnergySystem.convert_time_step_operation2invest(tech, time)
-    return (model.dependent_flow_approximation[tech, dependent_carrier, node, time] == params.conver_efficiency_specific[tech, dependent_carrier, node, time_step_year] *
-            model.reference_flow_approximation[tech, dependent_carrier, node, time])
+        self.energy_system = energy_system
 
+    ### --- functions with constraint rules --- ###
+    def constraint_linear_capex_rule(self, model, tech, node, time):
+        """ if capacity and capex have a linear relationship"""
+        # get parameter object
+        params = self.energy_system.parameters
+        return (model.capex_approximation[tech, node, time] == params.capex_specific_conversion[tech, node, time] * model.capacity_approximation[tech, node, time])
 
-def constraint_capex_coupling_rule(model, tech, node, time):
-    """ couples capex variables based on modeling technique"""
-    return (model.capex[tech, "power", node, time] == model.capex_approximation[tech, node, time])
+    def constraint_linear_conver_efficiency_rule(self, model, tech, dependent_carrier, node, time):
+        """ if reference carrier and dependent carrier have a linear relationship"""
+        # get parameter object
+        params = self.energy_system.parameters
+        # get invest time step
+        time_step_year = self.energy_system.convert_time_step_operation2invest(tech, time)
+        return (model.dependent_flow_approximation[tech, dependent_carrier, node, time] == params.conver_efficiency_specific[tech, dependent_carrier, node, time_step_year] *
+                model.reference_flow_approximation[tech, dependent_carrier, node, time])
 
+    def constraint_capex_coupling_rule(self, model, tech, node, time):
+        """ couples capex variables based on modeling technique"""
+        return (model.capex[tech, "power", node, time] == model.capex_approximation[tech, node, time])
 
-def constraint_capacity_coupling_rule(model, tech, node, time):
-    """ couples capacity variables based on modeling technique"""
-    return (model.built_capacity[tech, "power", node, time] == model.capacity_approximation[tech, node, time])
+    def constraint_capacity_coupling_rule(self, model, tech, node, time):
+        """ couples capacity variables based on modeling technique"""
+        return (model.built_capacity[tech, "power", node, time] == model.capacity_approximation[tech, node, time])
 
+    def constraint_reference_flow_coupling_rule(self, disjunct, tech, dependent_carrier, node, time):
+        """ couples reference flow variables based on modeling technique"""
+        model = disjunct.model()
+        reference_carrier = model.set_reference_carriers[tech].at(1)
+        if reference_carrier in model.set_input_carriers[tech]:
+            return (model.input_flow[tech, reference_carrier, node, time] == model.reference_flow_approximation[tech, dependent_carrier, node, time])
+        else:
+            return (model.output_flow[tech, reference_carrier, node, time] == model.reference_flow_approximation[tech, dependent_carrier, node, time])
 
-def constraint_reference_flow_coupling_rule(disjunct, tech, dependent_carrier, node, time):
-    """ couples reference flow variables based on modeling technique"""
-    model = disjunct.model()
-    reference_carrier = model.set_reference_carriers[tech].at(1)
-    if reference_carrier in model.set_input_carriers[tech]:
-        return (model.input_flow[tech, reference_carrier, node, time] == model.reference_flow_approximation[tech, dependent_carrier, node, time])
-    else:
-        return (model.output_flow[tech, reference_carrier, node, time] == model.reference_flow_approximation[tech, dependent_carrier, node, time])
-
-
-def constraint_dependent_flow_coupling_rule(disjunct, tech, dependent_carrier, node, time):
-    """ couples dependent flow variables based on modeling technique"""
-    model = disjunct.model()
-    if dependent_carrier in model.set_input_carriers[tech]:
-        return (model.input_flow[tech, dependent_carrier, node, time] == model.dependent_flow_approximation[tech, dependent_carrier, node, time])
-    else:
-        return (model.output_flow[tech, dependent_carrier, node, time] == model.dependent_flow_approximation[tech, dependent_carrier, node, time])
+    def constraint_dependent_flow_coupling_rule(self, disjunct, tech, dependent_carrier, node, time):
+        """ couples dependent flow variables based on modeling technique"""
+        model = disjunct.model()
+        if dependent_carrier in model.set_input_carriers[tech]:
+            return (model.input_flow[tech, dependent_carrier, node, time] == model.dependent_flow_approximation[tech, dependent_carrier, node, time])
+        else:
+            return (model.output_flow[tech, dependent_carrier, node, time] == model.dependent_flow_approximation[tech, dependent_carrier, node, time])

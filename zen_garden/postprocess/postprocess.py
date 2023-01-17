@@ -22,8 +22,6 @@ import zlib
 import os
 
 from .. import utils
-from ..model.objects.energy_system import EnergySystem
-from ..model.objects.component import Parameter, Variable, Constraint
 from ..utils import RedirectStdStreams
 
 
@@ -45,9 +43,10 @@ class Postprocess:
         self.analysis = model.analysis
         self.solver = model.solver
         self.opt = model.opt
-        self.params = Parameter.get_component_object()
-        self.vars = Variable.get_component_object()
-        self.constraints = Constraint.get_component_object()
+        self.energy_system = model.energy_system
+        self.params = model.energy_system.parameters
+        self.vars = model.energy_system.variables
+        self.constraints = model.energy_system.constraints
 
         # get name or directory
         self.model_name = model_name
@@ -82,7 +81,7 @@ class Postprocess:
             self.save_opt()
 
         # extract and save sequence time steps, we transform the arrays to lists
-        self.dict_sequence_time_steps = self.flatten_dict(EnergySystem.get_sequence_time_steps_dict())
+        self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.get_sequence_time_steps_dict())
         self.save_sequence_time_steps(scenario=scenario_name)
 
         # case where we should run the post-process as normal

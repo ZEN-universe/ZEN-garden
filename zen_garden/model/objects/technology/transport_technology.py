@@ -163,25 +163,26 @@ class TransportTechnology(Technology):
         """ constructs the pe.Constraints of the class <TransportTechnology>
         :param energy_system: The Energy system to add everything"""
         model = energy_system.pyomo_model
+        rules = TransportTechnologyRules(energy_system)
         # Carrier Flow Losses 
         energy_system.constraints.add_constraint(model, name="constraint_transport_technology_losses_flow", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], energy_system),
-            rule=constraint_transport_technology_losses_flow_rule, doc='Carrier loss due to transport with through transport technology')
+            rule=rules.constraint_transport_technology_losses_flow_rule, doc='Carrier loss due to transport with through transport technology')
         # capex of transport technologies
         energy_system.constraints.add_constraint(model, name="constraint_transport_technology_capex", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], energy_system),
-            rule=constraint_transport_technology_capex_rule, doc='Capital expenditures for installing transport technology')
+            rule=rules.constraint_transport_technology_capex_rule, doc='Capital expenditures for installing transport technology')
         # bidirectional transport technologies: capacity on edge must be equal in both directions
         energy_system.constraints.add_constraint(model, name="constraint_transport_technology_bidirectional", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], energy_system),
-            rule=constraint_transport_technology_bidirectional_rule, doc='Forces that transport technology capacity must be equal in both directions')
+            rule=rules.constraint_transport_technology_bidirectional_rule, doc='Forces that transport technology capacity must be equal in both directions')
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunct_on_technology_rule(cls, disjunct, tech, capacity_type, edge, time):
+    def disjunct_on_technology_rule(cls, energy_system, disjunct, tech, capacity_type, edge, time):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
         # get parameter object
-        params = Parameter.get_component_object()
+        params = energy_system.parameters
         # get invest time step
-        time_step_year = EnergySystem.convert_time_step_operation2invest(tech, time)
+        time_step_year = energy_system.convert_time_step_operation2invest(tech, time)
         # disjunct constraints min load
         disjunct.constraint_min_load = pe.Constraint(
             expr=model.carrier_flow[tech, edge, time] >= params.min_load[tech, capacity_type, edge, time] * model.capacity[tech, capacity_type, edge, time_step_year])
@@ -193,33 +194,44 @@ class TransportTechnology(Technology):
         disjunct.constraint_no_load = pe.Constraint(expr=model.carrier_flow[tech, edge, time] == 0)
 
 
-### --- functions with constraint rules --- ###
-def constraint_transport_technology_losses_flow_rule(model, tech, edge, time):
-    """compute the flow losses for a carrier through a transport technology"""
-    # get parameter object
-    params = Parameter.get_component_object()
-    if np.isinf(params.distance[tech, edge]):
-        return model.carrier_loss[tech, edge, time] == 0
-    else:
-        return (model.carrier_loss[tech, edge, time] == params.distance[tech, edge] * params.loss_flow[tech] * model.carrier_flow[tech, edge, time])
+class TransportTechnologyRules:
+    """
+    Rules for the TransportTechnology class
+    """
 
+    def __init__(self, energy_system: EnergySystem):
+        """
+        Inits the rules for a given EnergySystem
+        :param energy_system: The EnergySystem
+        """
 
-def constraint_transport_technology_capex_rule(model, tech, edge, time):
-    """ definition of the capital expenditures for the transport technology"""
-    # get parameter object
-    params = Parameter.get_component_object()
-    if np.isinf(params.distance[tech, edge]):
-        return model.built_capacity[tech, "power", edge, time] == 0
-    else:
-        return (model.capex[tech, "power", edge, time] == model.built_capacity[tech, "power", edge, time] * params.capex_specific_transport[tech, edge, time] + model.install_technology[
-            tech, "power", edge, time] * params.distance[tech, edge] * params.capex_per_distance[tech, edge, time])
+        self.energy_system = energy_system
 
+    ### --- functions with constraint rules --- ###
+    def constraint_transport_technology_losses_flow_rule(self, model, tech, edge, time):
+        """compute the flow losses for a carrier through a transport technology"""
+        # get parameter object
+        params = self.energy_system.parameters
+        if np.isinf(params.distance[tech, edge]):
+            return model.carrier_loss[tech, edge, time] == 0
+        else:
+            return (model.carrier_loss[tech, edge, time] == params.distance[tech, edge] * params.loss_flow[tech] * model.carrier_flow[tech, edge, time])
 
-def constraint_transport_technology_bidirectional_rule(model, tech, edge, time):
-    """ Forces that transport technology capacity must be equal in both direction"""
-    system = EnergySystem.get_system()
-    if tech in system["set_bidirectional_transport_technologies"]:
-        _reversed_edge = TransportTechnology.get_reversed_edge(edge)
-        return (model.built_capacity[tech, "power", edge, time] == model.built_capacity[tech, "power", _reversed_edge, time])
-    else:
-        return pe.Constraint.Skip
+    def constraint_transport_technology_capex_rule(self, model, tech, edge, time):
+        """ definition of the capital expenditures for the transport technology"""
+        # get parameter object
+        params = self.energy_system.parameters
+        if np.isinf(params.distance[tech, edge]):
+            return model.built_capacity[tech, "power", edge, time] == 0
+        else:
+            return (model.capex[tech, "power", edge, time] == model.built_capacity[tech, "power", edge, time] * params.capex_specific_transport[tech, edge, time] + model.install_technology[
+                tech, "power", edge, time] * params.distance[tech, edge] * params.capex_per_distance[tech, edge, time])
+
+    def constraint_transport_technology_bidirectional_rule(self, model, tech, edge, time):
+        """ Forces that transport technology capacity must be equal in both direction"""
+        system = self.energy_system.system
+        if tech in system["set_bidirectional_transport_technologies"]:
+            _reversed_edge = TransportTechnology.get_reversed_edge(edge)
+            return (model.built_capacity[tech, "power", edge, time] == model.built_capacity[tech, "power", _reversed_edge, time])
+        else:
+            return pe.Constraint.Skip

@@ -135,7 +135,7 @@ class Element:
         energy_system.construct_constraints()
         # construct pe.Constraints of the child classes
         for subclass in cls.__subclasses__():
-            subclass.construct_constraints()
+            subclass.construct_constraints(energy_system)
 
     @classmethod
     def create_custom_set(cls, list_index, energy_system: EnergySystem):
