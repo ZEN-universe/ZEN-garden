@@ -146,7 +146,7 @@ class TransportTechnology(Technology):
             :param time: time index
             :return bounds: bounds of carrier_flow"""
             # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-            time_step_year = EnergySystem.convert_time_step_operation2invest(tech, time)
+            time_step_year = energy_system.convert_time_step_operation2invest(tech, time)
             bounds = model.capacity[tech, "power", edge, time_step_year].bounds
             return (bounds)
 
