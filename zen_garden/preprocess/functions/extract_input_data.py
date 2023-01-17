@@ -123,7 +123,7 @@ class DataInput():
                 index_multi_index = pd.MultiIndex.from_tuples([(index_list[0],)], names=[df_input.index.name])
             else:
                 index_multi_index = pd.MultiIndex.from_product([index_list], names=[df_input.index.name])
-            df_input = pd.Series(index=index_multi_index, data=df_input.to_list())
+            df_input = pd.Series(index=index_multi_index, data=df_input.to_list(),dtype=float)
         common_index = df_output.index.intersection(df_input.index)
         assert default_value is not None or len(common_index) == len(df_output.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.csv"
         df_output.loc[common_index] = df_input.loc[common_index]
@@ -185,7 +185,7 @@ class DataInput():
             if attribute_name not in df_input.index:
                 return None
             elif not skip_warning:
-                warnings.warn(f"Attribute names without '_default' suffix will be deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}", FutureWarning)
+                warnings.warn(f"Attribute names without '_default' suffix are deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}",DeprecationWarning)
         else:
             attribute_name = attribute_name + "_default"
         return attribute_name
@@ -212,7 +212,7 @@ class DataInput():
             # set yearly variation attribute to df_output
             _selected_column = None
             _name_yearly_variation = file_name
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, _selected_column, default_value, time_steps=self.energy_system.set_time_steps_yearly)
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps=self.energy_system.set_time_steps_yearly)
             setattr(self, _name_yearly_variation, df_output)
 
     def extract_locations(self, extract_nodes=True):
@@ -413,7 +413,8 @@ class DataInput():
                     assert (df_input_linear is not None), f"input file for linear_conver_efficiency could not be imported."
                     df_input_linear = df_input_linear.rename(columns={'year': 'time'})
                     for carrier in _dependent_carrier:
-                        linear_dict[carrier] = self.extract_general_input_data(df_input_linear, df_output, "linearConverEfficiency", index_name_list, carrier, default_value, time_steps=None).copy(deep=True)
+                        df_input_carrier = df_input_linear[["time",carrier]]
+                        linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "linear_conver_efficiency", index_name_list, default_value, time_steps=None).copy(deep=True)
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
@@ -550,11 +551,11 @@ class DataInput():
         if time_steps is self.energy_system.set_time_steps_yearly:
             #check if temporal header of input data is still given as 'time' instead of 'year'
             if "time" in df_input.axes[1]:
-                warnings.warn(f"The column header 'time' won't be supported for input data with yearly time steps any longer! Use the header 'year' instead")
+                warnings.warn(f"The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead",DeprecationWarning)
             #check if input data is still given with generic time indices
             temporal_header = df_input.axes[1][0]
             if max(df_input.loc[:,temporal_header]) < self.analysis["earliest_year_of_data"]:
-                warnings.warn(f"Generic time indices won't be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
+                warnings.warn(f"Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead",DeprecationWarning)
                 return df_input
             #assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
             assert temporal_header in index_name_list, f"Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"
@@ -570,7 +571,9 @@ class DataInput():
                         continue
                     for year in self.energy_system.set_time_step_years:
                         if year not in df_input.get(temporal_header).values:
-                            df_input = df_input.append({temporal_header: year, param: float("nan")}, ignore_index=True)
+                            additional_row = pd.DataFrame({temporal_header: year, param: float("nan")},index=[0])
+                            df_input = pd.concat([df_input,additional_row],ignore_index=True)
+                            # df_input = df_input.append({temporal_header: year, param: float("nan")}, ignore_index=True)
                     df_input = df_input.sort_values(temporal_header)
                     df_input[param] = df_input[param].interpolate()
             else:

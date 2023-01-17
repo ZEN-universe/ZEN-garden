@@ -77,11 +77,11 @@ class Config(object):
                 "set_nodes": "node",
                 "set_edges": "edge",
                 "set_location": "location",
-                "set_time_steps":"time",
-                "set_time_steps_operation":"timeOperation",
+                "set_time_steps":"time", # IMPORTANT: time must be unique
+                "set_time_steps_operation":"time_operation",
                 "set_time_steps_storage_level":"time_storage_level",
-                "set_time_steps_yearly":"year",
-                "set_time_steps_yearly_entire_horizon":"year",
+                "set_time_steps_yearly":"year", # IMPORTANT: year must be unique
+                "set_time_steps_yearly_entire_horizon":"year_entire_horizon",
                 "set_carriers":"carrier",
                 "set_input_carriers":"carrier",
                 "set_output_carriers":"carrier",
