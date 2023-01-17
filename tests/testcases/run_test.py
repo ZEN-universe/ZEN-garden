@@ -9,7 +9,6 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
-from zen_garden.restore_default_state import restore_default_state
 from zen_garden._internal import main
 
 import pytest
@@ -68,7 +67,6 @@ def compare_variables(test_model, optimization_setup,folder_path):
 
 def test_1a(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_1a"))
 
@@ -77,7 +75,6 @@ def test_1a(config):
 
 def test_1b(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_1b"))
 
@@ -86,7 +83,6 @@ def test_1b(config):
 
 def test_1c(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_1c"))
 
@@ -95,7 +91,6 @@ def test_1c(config):
 
 def test_1d(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_1d"))
 
@@ -104,7 +99,6 @@ def test_1d(config):
 
 def test_2a(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_2a"))
 
@@ -113,7 +107,6 @@ def test_2a(config):
 
 def test_2b(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_2b"))
 
@@ -122,7 +115,6 @@ def test_2b(config):
 
 def test_2c(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_2c"))
 
@@ -131,7 +123,6 @@ def test_2c(config):
 
 def test_2d(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_2d"))
 
@@ -140,7 +131,6 @@ def test_2d(config):
 
 def test_3a(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_3a"))
 
@@ -149,7 +139,6 @@ def test_3a(config):
 
 def test_3b(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_3b"))
 
@@ -158,7 +147,6 @@ def test_3b(config):
 
 def test_4a(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4a"))
 
@@ -167,7 +155,6 @@ def test_4a(config):
 
 def test_4b(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4b"))
 
@@ -176,7 +163,6 @@ def test_4b(config):
 
 def test_4c(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4c"))
 
@@ -185,7 +171,6 @@ def test_4c(config):
 
 def test_4d(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4d"))
 
@@ -194,7 +179,6 @@ def test_4d(config):
 
 def test_4e(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4e"))
 
@@ -203,7 +187,6 @@ def test_4e(config):
 
 def test_4f(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4f"))
 
@@ -212,7 +195,6 @@ def test_4f(config):
 
 def test_4g(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4g"))
 
@@ -221,7 +203,6 @@ def test_4g(config):
 
 def test_5a(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_5a"))
 
@@ -230,7 +211,6 @@ def test_5a(config):
 
 def test_6a(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_6a"))
 
@@ -239,7 +219,6 @@ def test_6a(config):
 
 def test_7a(config):
     # run the test
-    restore_default_state()
     folder_path = os.path.dirname(__file__)
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_7a"))
 
