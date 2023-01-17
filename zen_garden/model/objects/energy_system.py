@@ -70,9 +70,9 @@ class EnergySystem:
         self.sequence_time_steps = SequenceTimeStepsDicts()
 
         # the components
-        self.variables = Variable()
-        self.parameters = Parameter()
-        self.constraints = Constraint()
+        self.variables = None
+        self.parameters = None
+        self.constraints = None
 
         # set indexing sets
         for key in system:
@@ -295,6 +295,10 @@ class EnergySystem:
         """ sets empty concrete model to energy_system
         :param pyomo_model: pe.ConcreteModel"""
         self.pyomo_model = pyomo_model
+        # we need to reset the components to not carry them over
+        self.variables = Variable()
+        self.parameters = Parameter()
+        self.constraints = Constraint()
 
     def set_manual_set_to_indexing_sets(self, manual_set):
         """ manually set to cls.indexing_sets """

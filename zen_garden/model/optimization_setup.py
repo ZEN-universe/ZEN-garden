@@ -201,6 +201,8 @@ class OptimizationSetup(object):
                         setattr(element, "capex_existing_capacity", _capex_existing_capacities)
         # if scenario contains timeSeries dependent params conduct tsa
         if conduct_tsa:
+            # we need to reset the Aggregation because the energy system might have changed
+            self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
             self.time_series_aggregation.conduct_tsa()
 
     def overwrite_time_indices(self, step_horizon):

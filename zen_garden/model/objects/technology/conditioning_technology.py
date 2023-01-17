@@ -93,7 +93,7 @@ class ConditioningTechnology(ConversionTechnology):
     def construct_sets(cls, energy_system: EnergySystem):
         """ constructs the pe.Sets of the class <ConditioningTechnology>
         :param energy_system: The Energy system to add everything"""
-        model = energy_system
+        model = energy_system.pyomo_model
         # get parent carriers
         _output_carriers = energy_system.get_attribute_of_all_elements(cls, "output_carrier")
         _reference_carriers = energy_system.get_attribute_of_all_elements(cls, "reference_carrier")
