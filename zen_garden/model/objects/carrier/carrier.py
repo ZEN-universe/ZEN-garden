@@ -174,7 +174,7 @@ class Carrier(Element):
             rule=rules.constraint_nodal_energy_balance_rule, doc='node- and time-dependent energy balance for each carrier', )
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
-            if len(energy_system.dict_elements[subclass.label]) > 0:
+            if len(energy_system.system[subclass.label]) > 0:
                 subclass.construct_constraints(energy_system)
 
 

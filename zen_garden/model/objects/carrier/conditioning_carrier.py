@@ -94,8 +94,8 @@ class ConditioningCarrierRules:
                 carrier_conversion_out += model.output_flow[tech, carrier, node, time]
         # carrier flow transport technologies
         carrier_flow_in, carrier_flow_out = 0, 0
-        set_edges_in = EnergySystem.calculate_connected_edges(node, "in")
-        set_edges_out = EnergySystem.calculate_connected_edges(node, "out")
+        set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
+        set_edges_out = self.energy_system.calculate_connected_edges(node, "out")
         for tech in model.set_transport_technologies:
             if carrier in model.set_reference_carriers[tech]:
                 carrier_flow_in += sum(model.carrier_flow[tech, edge, time] - model.carrier_loss[tech, edge, time] for edge in set_edges_in)
