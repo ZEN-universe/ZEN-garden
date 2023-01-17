@@ -50,7 +50,7 @@ class Technology(Element):
         self.lifetime = self.data_input.extract_attribute("lifetime")["value"]
         self.construction_time = self.data_input.extract_attribute("construction_time")["value"]
         # maximum diffusion rate
-        self.max_diffusion_rate = self.data_input.extract_input_data("max_diffusion_rate", index_sets=["set_time_steps"], time_steps=set_time_steps_yearly)
+        self.max_diffusion_rate = self.datainput.extract_input_data("max_diffusion_rate", index_sets=["set_time_steps_yearly"], time_steps=set_time_steps_yearly)
 
         # add all raw time series to dict
         self.raw_time_series = {}
@@ -58,14 +58,14 @@ class Technology(Element):
         self.raw_time_series["max_load"] = self.data_input.extract_input_data("max_load", index_sets=[_set_location, "set_time_steps"], time_steps=set_base_time_steps_yearly)
         self.raw_time_series["opex_specific"] = self.data_input.extract_input_data("opex_specific", index_sets=[_set_location, "set_time_steps"], time_steps=set_base_time_steps_yearly)
         # non-time series input data
-        self.fixed_opex_specific = self.data_input.extract_input_data("fixed_opex_specific", index_sets=[_set_location, "set_time_steps"], time_steps=set_time_steps_yearly)
-        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[_set_location])
-        self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[_set_location])
+        self.fixed_opex_specific = self.datainput.extract_input_data("fixed_opex_specific", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        self.capacity_limit = self.datainput.extract_input_data("capacity_limit", index_sets=[_set_location])
+        self.carbon_intensity_technology = self.datainput.extract_input_data("carbon_intensity", index_sets=[_set_location])
         # extract existing capacity
-        self.set_existing_technologies = self.data_input.extract_set_existing_technologies()
-        self.existing_capacity = self.data_input.extract_input_data("existing_capacity", index_sets=[_set_location, "set_existing_technologies"])
-        self.existing_invested_capacity = self.data_input.extract_input_data("existing_invested_capacity", index_sets=[_set_location, "set_time_steps"], time_steps=set_time_steps_yearly)
-        self.lifetime_existing_technology = self.data_input.extract_lifetime_existing_technology("existing_capacity", index_sets=[_set_location, "set_existing_technologies"])
+        self.set_existing_technologies = self.datainput.extract_set_existing_technologies()
+        self.existing_capacity = self.datainput.extract_input_data("existing_capacity", index_sets=[_set_location, "set_existing_technologies"])
+        self.existing_invested_capacity = self.datainput.extract_input_data("existing_invested_capacity", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        self.lifetime_existing_technology = self.datainput.extract_lifetime_existing_technology("existing_capacity", index_sets=[_set_location, "set_existing_technologies"])
 
     def calculate_capex_of_existing_capacities(self, storage_energy=False):
         """ this method calculates the annualized capex of the existing capacities """
