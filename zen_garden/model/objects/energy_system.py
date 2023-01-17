@@ -115,20 +115,20 @@ class EnergySystem:
         #list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_step_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
-        self.parameters_interpolation_off = self.datainput.read_input_data("parameters_interpolation_off")
+        self.parameters_interpolation_off = self.data_input.read_input_data("parameters_interpolation_off")
         # technology-specific
         self.set_conversion_technologies = self.system["set_conversion_technologies"]
         self.set_transport_technologies = self.system["set_transport_technologies"]
         self.set_storage_technologies = self.system["set_storage_technologies"]
         # carbon emissions limit
-        self.carbon_emissions_limit = self.datainput.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps_yearly"], time_steps=self.set_time_steps_yearly)
-        _fraction_year = system["unaggregated_time_steps_per_year"] / system["total_hours_per_year"]
+        self.carbon_emissions_limit = self.data_input.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps_yearly"], time_steps=self.set_time_steps_yearly)
+        _fraction_year = self.system["unaggregated_time_steps_per_year"] / self.system["total_hours_per_year"]
         self.carbon_emissions_limit = self.carbon_emissions_limit * _fraction_year  # reduce to fraction of year
         self.carbon_emissions_budget = self.data_input.extract_input_data("carbon_emissions_budget", index_sets=[])
         self.previous_carbon_emissions = self.data_input.extract_input_data("previous_carbon_emissions", index_sets=[])
         # carbon price
-        self.carbon_price = self.datainput.extract_input_data("carbon_price", index_sets=["set_time_steps_yearly"], time_steps=self.set_time_steps_yearly)
-        self.carbon_price_overshoot = self.datainput.extract_input_data("carbon_price_overshoot", index_sets=[])
+        self.carbon_price = self.data_input.extract_input_data("carbon_price", index_sets=["set_time_steps_yearly"], time_steps=self.set_time_steps_yearly)
+        self.carbon_price_overshoot = self.data_input.extract_input_data("carbon_price_overshoot", index_sets=[])
 
     def calculate_edges_from_nodes(self):
         """ calculates set_nodes_on_edges from set_nodes

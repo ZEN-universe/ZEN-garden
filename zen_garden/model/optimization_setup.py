@@ -175,15 +175,15 @@ class OptimizationSetup(object):
                 # if existing capacity is changed, setExistingTechnologies, existing lifetime, and capexExistingCapacity have to be updated as well
                 if "set_existing_technologies" in _index_sets:
                     # update setExistingTechnologies and existingLifetime
-                    _existing_technologies = element.datainput.extract_set_existing_technologies(scenario=scenario)
-                    _lifetime_existing_technologies = element.datainput.extract_lifetime_existing_technology(param, index_sets=_index_sets, scenario=scenario)
+                    _existing_technologies = element.data_input.extract_set_existing_technologies(scenario=scenario)
+                    _lifetime_existing_technologies = element.data_input.extract_lifetime_existing_technology(param, index_sets=_index_sets, scenario=scenario)
                     setattr(element, "set_existing_technologies", _existing_technologies)
                     setattr(element, "lifetime_existing_technology", _lifetime_existing_technologies)
                 # set new parameter value
                 if hasattr(element, "raw_time_series") and param in element.raw_time_series.keys():
                     conduct_tsa = True
                     _time_steps = energy_system.set_base_time_steps_yearly
-                    element.raw_time_series[param] = element.datainput.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
+                    element.raw_time_series[param] = element.data_input.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
                 else:
                     assert isinstance(_old_param, pd.Series) or isinstance(_old_param, pd.DataFrame), f"Param values of '{param}' have to be a pd.DataFrame or pd.Series."
                     if "time" in _index_names:
@@ -191,7 +191,7 @@ class OptimizationSetup(object):
                         _time_steps = energy_system.set_base_time_steps_yearly
                     elif "year" in _index_names:
                         _time_steps = energy_system.set_time_steps_yearly
-                    _new_param = element.datainput.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
+                    _new_param = element.data_input.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
                     setattr(element, param, _new_param)
                     # if existing capacity is changed, capexExistingCapacity also has to be updated
                     if "existing_capacity" in param:
