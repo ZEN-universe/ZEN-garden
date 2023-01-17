@@ -77,11 +77,11 @@ class Config(object):
                 "set_nodes": "node",
                 "set_edges": "edge",
                 "set_location": "location",
-                "set_time_steps":"time",
-                "set_time_steps_operation":"timeOperation",
+                "set_time_steps":"time", # IMPORTANT: time must be unique
+                "set_time_steps_operation":"time_operation",
                 "set_time_steps_storage_level":"time_storage_level",
-                "set_time_steps_yearly":"year",
-                "set_time_steps_yearly_entire_horizon":"year",
+                "set_time_steps_yearly":"year", # IMPORTANT: year must be unique
+                "set_time_steps_yearly_entire_horizon":"year_entire_horizon",
                 "set_carriers":"carrier",
                 "set_input_carriers":"carrier",
                 "set_output_carriers":"carrier",
@@ -116,7 +116,8 @@ class Config(object):
         self.analysis["max_output_size_mb"] = 500
         # name of data folder for energy system specification
         self.analysis["folder_name_system_specification"] = "system_specification"
-
+        #earliest possible year of in input data, needed to differentiate between yearly and generic time indices
+        self.analysis["earliest_year_of_data"] = 1900
         ## System - Items assignment
         # set of energy carriers
         self.system["set_carriers"] = []
