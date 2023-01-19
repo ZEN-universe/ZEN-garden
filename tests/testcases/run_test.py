@@ -9,19 +9,38 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
-from zen_garden.restore_default_state import restore_default_state
+import numpy as np
+
 from zen_garden._internal import main
+from zen_garden.postprocess.results import Results
 
 import pytest
 from copy import deepcopy
 import pandas as pd
 import os
+from collections import defaultdict
 
-# fixture to get the default config (always as new instance)
+# fixtures
+##########
+
 @pytest.fixture
 def config():
+    """
+    :return: A new instance of the config
+    """
     from config import config
     return deepcopy(config)
+
+@pytest.fixture
+def folder_path():
+    """
+    :return: Returns the path of the testcase folder
+    """
+    return os.path.dirname(__file__)
+
+
+# helper functions
+##################
 
 def compare_variables(test_model, optimization_setup,folder_path):
     # import csv file containing selected variable values of test model collection
@@ -60,188 +79,278 @@ def compare_variables(test_model, optimization_setup,folder_path):
     for failed_var in failed_variables:
         assertion_string += f"\n{failed_var}{failed_variables[failed_var]}"
 
-    return failed_variables, assertion_string
+    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+
+
+def compare_variables_results(test_model: str, results: Results, folder_path: str):
+    """
+    Compares the variables of a Results object from the test run to precomputed values
+    :param test_model: The model to test (name of the data set)
+    :param results: The Results object
+    :param folder_path: The path to the folder containing the file with the correct variables
+    """
+    # import csv file containing selected variable values of test model collection
+    test_variables = pd.read_csv(os.path.join(folder_path, 'test_variables_readable.csv'),header=0, index_col=None)
+    # dictionary to store variable names, indices, values and test values of variables which don't match the test values
+    failed_variables = defaultdict(dict)
+    # iterate through dataframe rows
+    for data_row in test_variables[test_variables["test"] == test_model].values:
+        # get the corresponding data frame from the results
+        variable_df = results.get_df(data_row[1])
+        # iterate through indices of current variable
+        for variable_index, variable_value in variable_df.items():
+            # ensure equality of dataRow index and variable index
+            if str(variable_index) == data_row[2]:
+                # check if close
+                if not np.isclose(variable_value, data_row[3], rtol=1e-3):
+                    failed_variables[data_row[1]][data_row[2]] = {"computedValue": variable_value,
+                                                                  "test_value": data_row[3]}
+    # create the string of all failed variables
+    assertion_string = ""
+    for failed_var, failed_value in failed_variables.items():
+        assertion_string += f"\n{failed_var}: {failed_value}"
+
+    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
 
 
 # All the tests
 ###############
 
-def test_1a(config):
+def test_1a(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_1a"))
+    data_set_name = "test_1a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_1a",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_1b(config):
+
+def test_1b(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_1b"))
+    data_set_name = "test_1b"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_1b",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_1c(config):
+
+def test_1c(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_1c"))
+    data_set_name = "test_1c"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_1c",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_1d(config):
+
+def test_1d(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_1d"))
+    data_set_name = "test_1d"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_1d",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_2a(config):
+
+def test_2a(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_2a"))
+    data_set_name = "test_2a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_2a",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_2b(config):
+
+def test_2b(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_2b"))
+    data_set_name = "test_2b"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_2b",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_2c(config):
+
+def test_2c(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_2c"))
+    data_set_name = "test_2c"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_2c",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_2d(config):
+
+def test_2d(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_2d"))
+    data_set_name = "test_2d"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_2d",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_3a(config):
+
+def test_3a(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_3a"))
+    data_set_name = "test_3a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_3a",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_3b(config):
+
+def test_3b(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_3b"))
+    data_set_name = "test_3b"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_3b",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_4a(config):
+
+def test_4a(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4a"))
+    data_set_name = "test_4a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_4a",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_4b(config):
+
+def test_4b(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4b"))
+    data_set_name = "test_4b"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_4b",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_4c(config):
+
+def test_4c(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4c"))
+    data_set_name = "test_4c"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_4c",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_4d(config):
+
+def test_4d(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4d"))
+    data_set_name = "test_4d"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_4d",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_4e(config):
+
+def test_4e(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4e"))
+    data_set_name = "test_4e"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_4e",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_4f(config):
+
+def test_4f(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4f"))
+    data_set_name = "test_4f"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_4f",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_4g(config):
+
+def test_4g(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_4g"))
+    data_set_name = "test_4g"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_4g",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_5a(config):
+
+def test_5a(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_5a"))
+    data_set_name = "test_5a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_5a",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_6a(config):
+
+def test_6a(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_6a"))
+    data_set_name = "test_6a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_6a",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
 
-def test_7a(config):
+
+def test_7a(config, folder_path):
     # run the test
-    restore_default_state()
-    folder_path = os.path.dirname(__file__)
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, "test_7a"))
+    data_set_name = "test_7a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    failed_variables, assertion_string = compare_variables("test_7a",optimization_setup,folder_path)
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)

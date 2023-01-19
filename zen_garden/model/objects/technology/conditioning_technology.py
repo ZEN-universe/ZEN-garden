@@ -11,7 +11,6 @@ Description:    Class defining the parameters, variables and constraints of the 
 import logging
 import pyomo.environ as pe
 import pandas as pd
-import numpy as np
 from ..energy_system import EnergySystem
 from .conversion_technology import ConversionTechnology
 
@@ -19,19 +18,16 @@ from .conversion_technology import ConversionTechnology
 class ConditioningTechnology(ConversionTechnology):
     # set label
     label = "set_conditioning_technologies"
-    # empty list of elements
-    list_of_elements = []
 
-    def __init__(self, tech):
+    def __init__(self, tech, energy_system):
         """init conditioning technology object
-        :param tech: name of added technology"""
+        :param tech: name of added technology
+        :param energy_system: The energy system the element is part of"""
 
         logging.info(f'Initialize conditioning technology {tech}')
-        super().__init__(tech)
+        super().__init__(tech, energy_system)
         # store input data
         self.store_input_data()
-        # add ConversionTechnology to list
-        ConditioningTechnology.add_element(self)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -42,8 +38,8 @@ class ConditioningTechnology(ConversionTechnology):
     def add_conditioning_carriers(self):
         """add conditioning carriers to system"""
         subset = "set_conditioning_carriers"
-        analysis = EnergySystem.get_analysis()
-        system = EnergySystem.get_system()
+        analysis = self.energy_system.analysis
+        system = self.energy_system.system
         # add set_conditioning_carriers to analysis and indexing_sets
         if subset not in analysis["subsets"]["set_carriers"]:
             analysis["subsets"]["set_carriers"].append(subset)
@@ -56,19 +52,19 @@ class ConditioningTechnology(ConversionTechnology):
     def get_conver_efficiency(self):
         """retrieves and stores conver_efficiency for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as pwa_conver_efficiency"""
-        set_time_steps_yearly = EnergySystem.get_energy_system().set_time_steps_yearly
-        specific_heat = self.datainput.extract_attribute("specific_heat")["value"]
-        specific_heat_ratio = self.datainput.extract_attribute("specific_heat_ratio")["value"]
-        pressure_in = self.datainput.extract_attribute("pressure_in")["value"]
-        pressure_out = self.datainput.extract_attribute("pressure_out")["value"]
-        temperature_in = self.datainput.extract_attribute("temperature_in")["value"]
-        isentropic_efficiency = self.datainput.extract_attribute("isentropic_efficiency")["value"]
+        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
+        specific_heat = self.data_input.extract_attribute("specific_heat")["value"]
+        specific_heat_ratio = self.data_input.extract_attribute("specific_heat_ratio")["value"]
+        pressure_in = self.data_input.extract_attribute("pressure_in")["value"]
+        pressure_out = self.data_input.extract_attribute("pressure_out")["value"]
+        temperature_in = self.data_input.extract_attribute("temperature_in")["value"]
+        isentropic_efficiency = self.data_input.extract_attribute("isentropic_efficiency")["value"]
 
         # calculate energy consumption
         _pressure_ratio = pressure_out / pressure_in
         _exponent = (specific_heat_ratio - 1) / specific_heat_ratio
-        if self.datainput.exists_attribute("lower_heating_value", column=None):
-            _lower_heating_value = self.datainput.extract_attribute("lower_heating_value")["value"]
+        if self.data_input.exists_attribute("lower_heating_value", column=None):
+            _lower_heating_value = self.data_input.extract_attribute("lower_heating_value")["value"]
             specific_heat = specific_heat / _lower_heating_value
         _energy_consumption = specific_heat * temperature_in / isentropic_efficiency * (_pressure_ratio ** _exponent - 1)
 
@@ -82,10 +78,10 @@ class ConditioningTechnology(ConversionTechnology):
         self.conver_efficiency_is_pwa = False
         self.conver_efficiency_linear = dict()
         self.conver_efficiency_linear[self.output_carrier[0]] = \
-        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=1)[
+        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=1)[
             0]  # TODO losses are not yet accounted for
         self.conver_efficiency_linear[_input_carriers[0]] = \
-        self.datainput.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
+        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
         # dict to dataframe
         self.conver_efficiency_linear = pd.DataFrame.from_dict(self.conver_efficiency_linear)
         self.conver_efficiency_linear.columns.name = "carrier"
@@ -94,12 +90,13 @@ class ConditioningTechnology(ConversionTechnology):
         self.conver_efficiency_linear = self.conver_efficiency_linear.reorder_levels(_conver_efficiency_levels)
 
     @classmethod
-    def construct_sets(cls):
-        """ constructs the pe.Sets of the class <ConditioningTechnology> """
-        model = EnergySystem.get_pyomo_model()
+    def construct_sets(cls, energy_system: EnergySystem):
+        """ constructs the pe.Sets of the class <ConditioningTechnology>
+        :param energy_system: The Energy system to add everything"""
+        model = energy_system.pyomo_model
         # get parent carriers
-        _output_carriers = cls.get_attribute_of_all_elements("output_carrier")
-        _reference_carriers = cls.get_attribute_of_all_elements("reference_carrier")
+        _output_carriers = energy_system.get_attribute_of_all_elements(cls, "output_carrier")
+        _reference_carriers = energy_system.get_attribute_of_all_elements(cls, "reference_carrier")
         _parent_carriers = list()
         _child_carriers = dict()
         for tech, carrier_ref in _reference_carriers.items():
@@ -112,8 +109,8 @@ class ConditioningTechnology(ConversionTechnology):
         _conditioning_carriers = _parent_carriers + [carrier[0] for carrier in _child_carriers.values()]
 
         # update indexing sets
-        EnergySystem.indexing_sets.append("set_conditioning_carriers")
-        EnergySystem.indexing_sets.append("set_conditioning_carrier_parents")
+        energy_system.indexing_sets.append("set_conditioning_carriers")
+        energy_system.indexing_sets.append("set_conditioning_carrier_parents")
 
         # set of conditioning carriers
         model.set_conditioning_carriers = pe.Set(initialize=_conditioning_carriers, doc="set of conditioning carriers")

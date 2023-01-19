@@ -23,7 +23,7 @@ for (_, moduleName, _) in iter_modules([packageDir]):
     for attribute_name in dir(module):
         attribute = getattr(module, attribute_name)
         # if attribute is class, add class to variables
-        if isclass(attribute) and "Technology" in attribute_name:
+        if isclass(attribute) and "Technology" in attribute_name and "Rule" not in attribute_name:
             if attribute_name not in technology_classes.keys():
                 globals()[attribute_name]         = attribute
                 technology_classes[attribute_name] = attribute
