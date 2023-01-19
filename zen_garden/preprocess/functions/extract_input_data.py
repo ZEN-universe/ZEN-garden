@@ -40,11 +40,10 @@ class DataInput():
         # self.index_names     = {index_name: self.analysis['header_data_inputs'][index_name][0] for index_name in self.analysis['header_data_inputs']}
         self.index_names = self.analysis['header_data_inputs']
 
-    def extract_input_data(self, file_name, index_sets, column=None, time_steps=None, scenario=""):
+    def extract_input_data(self, file_name, index_sets, time_steps=None, scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param column: select specific column
         :param time_steps: specific time_steps of element
         :param scenario: scenario name
         :return dataDict: dictionary with attribute values """
@@ -56,41 +55,38 @@ class DataInput():
         # if time steps are the yearly base time steps
         elif time_steps is self.energy_system.set_base_time_steps_yearly:
             yearly_variation = True
-            self.extract_yearly_variation(file_name, index_sets, column, scenario)
+            self.extract_yearly_variation(file_name, index_sets, scenario)
 
         # if existing capacities and existing capacities not used
         if (file_name == "existing_capacity" or file_name == "existing_capacity_energy") and not self.analysis["use_existing_capacities"]:
-            df_output, *_ = self.create_default_output(index_sets, column, file_name=file_name, time_steps=time_steps, manual_default_value=0, scenario=scenario)
+            df_output, *_ = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=0, scenario=scenario)
             return df_output
         else:
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, column, file_name=file_name, time_steps=time_steps, scenario=scenario)
-        # set default_name
-        if column:
-            default_name = column
-        else:
-            default_name = file_name
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, scenario=scenario)
         # read input file
         df_input = self.read_input_data(file_name + scenario)
         if scenario and yearly_variation and df_input is None:
             logging.info(f"{file_name}{scenario} is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_data(file_name)
 
-        assert (df_input is not None or default_value is not None), f"input file for attribute {default_name} could not be imported and no default value is given."
+        assert (df_input is not None or default_value is not None), f"input file for attribute {file_name} could not be imported and no default value is given."
         if df_input is not None and not df_input.empty:
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, column, default_value)
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value,time_steps)
         # save parameter values for analysis of numerics
-        self.save_values_of_attribute(df_output=df_output, file_name=default_name)
+        self.save_values_of_attribute(df_output=df_output, file_name=file_name)
         return df_output
 
-    def extract_general_input_data(self, df_input, df_output, file_name, index_name_list, column, default_value):
+    def extract_general_input_data(self, df_input, df_output, file_name, index_name_list, default_value, time_steps):
         """ fills df_output with data from df_input
         :param df_input: raw input dataframe
         :param df_output: empty output dataframe, only filled with default_value
         :param file_name: name of selected file
         :param index_name_list: list of name of indices
-        :param column: select specific column
         :param default_value: default for dataframe
+        :param time_steps: specific time_steps of element
         :return df_output: filled output dataframe """
+
+        df_input = self.convert_real_to_generic_time_indices(df_input,time_steps,file_name, index_name_list)
 
         # select and drop scenario
         assert df_input.columns is not None, f"Input file '{file_name}' has no columns"
@@ -100,25 +96,20 @@ class DataInput():
 
         # no indices missing
         if len(missing_index) == 0:
-            if column not in df_input.columns and column is not None:
-                return df_output
-            else:
-                df_input = DataInput.extract_from_input_without_missing_index(df_input, index_name_list, column, file_name)
+            df_input = DataInput.extract_from_input_without_missing_index(df_input, index_name_list, file_name)
         else:
             missing_index = missing_index[0]
             # check if special case of existing Technology
             if "existingTechnology" in missing_index:
-                if column:
-                    default_name = column
-                else:
-                    default_name = file_name
-                df_output = DataInput.extract_from_input_for_existing_capacities(df_input, df_output, index_name_list, default_name, missing_index)
+                if "year_construction" in df_input.columns and hasattr(self.element, "existing_capacity"):
+                    file_name = "year_construction"
+                df_output = DataInput.extract_from_input_for_existing_capacities(df_input, df_output, index_name_list, file_name, missing_index)
                 if isinstance(default_value, dict):
                     df_output = df_output * default_value["multiplier"]
                 return df_output
             # index missing
             else:
-                df_input = DataInput.extract_from_input_with_missing_index(df_input, df_output, copy.deepcopy(index_name_list), column, file_name, missing_index)
+                df_input = DataInput.extract_from_input_with_missing_index(df_input, df_output, copy.deepcopy(index_name_list), file_name, missing_index)
 
         # apply multiplier to input data
         df_input = df_input * default_value["multiplier"]
@@ -132,7 +123,7 @@ class DataInput():
                 index_multi_index = pd.MultiIndex.from_tuples([(index_list[0],)], names=[df_input.index.name])
             else:
                 index_multi_index = pd.MultiIndex.from_product([index_list], names=[df_input.index.name])
-            df_input = pd.Series(index=index_multi_index, data=df_input.to_list())
+            df_input = pd.Series(index=index_multi_index, data=df_input.to_list(),dtype=float)
         common_index = df_output.index.intersection(df_input.index)
         assert default_value is not None or len(common_index) == len(df_output.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.csv"
         df_output.loc[common_index] = df_input.loc[common_index]
@@ -194,17 +185,16 @@ class DataInput():
             if attribute_name not in df_input.index:
                 return None
             elif not skip_warning:
-                warnings.warn(f"Attribute names without '_default' suffix will be deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}", FutureWarning)
+                warnings.warn(f"Attribute names without '_default' suffix are deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}",DeprecationWarning)
         else:
             attribute_name = attribute_name + "_default"
         return attribute_name
 
-    def extract_yearly_variation(self, file_name, index_sets, column, scenario=""):
+    def extract_yearly_variation(self, file_name, index_sets, scenario=""):
         """ reads the yearly variation of a time dependent quantity
         :param self.folder_path: path to input files
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param column: select specific column
         """
         # remove intra-yearly time steps from index set and add inter-yearly time steps
         _index_sets = copy.deepcopy(index_sets)
@@ -218,17 +208,11 @@ class DataInput():
             logging.info(f"{file_name}{scenario} is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_data(file_name)
         if df_input is not None:
-            if column is not None and column not in df_input:
-                return
-            df_output, default_value, index_name_list = self.create_default_output(_index_sets, column, file_name=file_name, manual_default_value=1)
+            df_output, default_value, index_name_list = self.create_default_output(_index_sets, file_name=file_name, manual_default_value=1)
             # set yearly variation attribute to df_output
-            if column:
-                _selected_column = column
-                _name_yearly_variation = column + "_yearly_variation"
-            else:
-                _selected_column = None
-                _name_yearly_variation = file_name
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, _selected_column, default_value)
+            _selected_column = None
+            _name_yearly_variation = file_name
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps=self.energy_system.set_time_steps_yearly)
             setattr(self, _name_yearly_variation, df_output)
 
     def extract_locations(self, extract_nodes=True):
@@ -302,7 +286,6 @@ class DataInput():
         :param file_name:  name of selected file
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :return df_output: return existing capacity and existing lifetime """
-        column = "year_construction"
         index_list, index_name_list = self.construct_index_list(index_sets, None)
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multiidx, data=0)
@@ -313,7 +296,7 @@ class DataInput():
         if f"{file_name}{scenario}.csv" in os.listdir(self.folder_path):
             df_input = self.read_input_data(file_name + scenario)
             # fill output dataframe
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, column, default_value=0)
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value=0, time_steps=None)
             # get reference year
             reference_year = self.system["reference_year"]
             # calculate remaining lifetime
@@ -327,12 +310,14 @@ class DataInput():
         # attribute names
         if variable_type == "capex":
             _attribute_name = "capex_specific"
+            _index_sets = ["set_nodes", "set_time_steps_yearly"]
+            _time_steps = self.energy_system.set_time_steps_yearly
         elif variable_type == "conver_efficiency":
             _attribute_name = "conver_efficiency"
+            _index_sets = ["set_nodes", "set_time_steps"]
+            _time_steps = self.energy_system.set_base_time_steps
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
-        _index_sets = ["set_nodes", "set_time_steps"]
-        _time_steps = self.energy_system.set_time_steps_yearly
         # import all input data
         df_input_nonlinear = self.read_pwa_files(variable_type, fileType="nonlinear_")
         df_input_breakpoints = self.read_pwa_files(variable_type, fileType="breakpoints_pwa_")
@@ -380,7 +365,7 @@ class DataInput():
                     if _relative_intercept <= self.solver["linear_regression_check"]["eps_intercept"] and linear_regress_object.rvalue >= self.solver["linear_regression_check"]["epsRvalue"]:
                         # model as linear function
                         slope_lin_reg = linear_regress_object.slope
-                        linear_dict[value_variable] = self.create_default_output(index_sets=_index_sets, column=column, time_steps=_time_steps, manual_default_value=slope_lin_reg)[0]
+                        linear_dict[value_variable] = self.create_default_output(index_sets=_index_sets, time_steps=_time_steps, manual_default_value=slope_lin_reg)[0]
                     else:
                         # model as pwa function
                         pwa_dict[value_variable] = list(np.interp(breakpoints, nonlinear_values[breakpoint_variable], nonlinear_values[value_variable]))
@@ -428,7 +413,8 @@ class DataInput():
                     assert (df_input_linear is not None), f"input file for linear_conver_efficiency could not be imported."
                     df_input_linear = df_input_linear.rename(columns={'year': 'time'})
                     for carrier in _dependent_carrier:
-                        linear_dict[carrier] = self.extract_general_input_data(df_input_linear, df_output, "linearConverEfficiency", index_name_list, carrier, default_value).copy(deep=True)
+                        df_input_carrier = df_input_linear[["time",carrier]]
+                        linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "linear_conver_efficiency", index_name_list, default_value, time_steps=None).copy(deep=True)
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
@@ -454,11 +440,10 @@ class DataInput():
             df_input[columns] = df_input[columns] * _df_input_multiplier
         return df_input
 
-    def create_default_output(self, index_sets, column, file_name=None, time_steps=None, manual_default_value=None, scenario=""):
+    def create_default_output(self, index_sets, file_name=None, time_steps=None, manual_default_value=None, scenario=""):
         """ creates default output dataframe
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param column: select specific column
         :param time_steps: specific time_steps of element
         :param scenario: investigated scenario
         :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv"""
@@ -473,11 +458,7 @@ class DataInput():
             default_value = {"value": manual_default_value, "multiplier": 1}
             default_name = None
         else:
-            # check if default value exists in attributes.csv, with or without "Default" Suffix
-            if column:
-                default_name = column
-            else:
-                default_name = file_name
+            default_name = file_name
             default_value = self.extract_attribute(default_name, scenario=scenario)
 
         # create output Series filled with default value
@@ -558,35 +539,83 @@ class DataInput():
         else:
             return False
 
+    def convert_real_to_generic_time_indices(self, df_input, time_steps, file_name, index_name_list):
+        """convert yearly time indices to generic time indices
+        :param df_input: raw input dataframe
+        :param time_steps: specific time_steps of element
+        :param file_name: name of selected file
+        :param index_name_list: list of name of indices
+        :return df_input: input dataframe with generic time indices
+        """
+        #check if input data is time-dependent and has yearly time steps
+        if time_steps is self.energy_system.set_time_steps_yearly:
+            #check if temporal header of input data is still given as 'time' instead of 'year'
+            if "time" in df_input.axes[1]:
+                warnings.warn(f"The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead",DeprecationWarning)
+            #check if input data is still given with generic time indices
+            temporal_header = df_input.axes[1][0]
+            if max(df_input.loc[:,temporal_header]) < self.analysis["earliest_year_of_data"]:
+                warnings.warn(f"Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead",DeprecationWarning)
+                return df_input
+            #assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
+            assert temporal_header in index_name_list, f"Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"
+
+            #interpolate missing data
+            file_names_int_off = []
+            if self.energy_system.parameters_interpolation_off is not None:
+                file_names_int_off = self.energy_system.parameters_interpolation_off.values
+            if file_name not in file_names_int_off:
+                parameters = df_input.axes[1]
+                for param in parameters:
+                    if param == temporal_header:
+                        continue
+                    for year in self.energy_system.set_time_step_years:
+                        if year not in df_input.get(temporal_header).values:
+                            additional_row = pd.DataFrame({temporal_header: year, param: float("nan")},index=[0])
+                            df_input = pd.concat([df_input,additional_row],ignore_index=True)
+                            # df_input = df_input.append({temporal_header: year, param: float("nan")}, ignore_index=True)
+                    df_input = df_input.sort_values(temporal_header)
+                    df_input[param] = df_input[param].interpolate()
+            else:
+                logging.info(f"Parameter {file_name} data won't be interpolated to cover years without given values")
+
+            #remove data of years that won't be simulated
+            unnecessary_rows = []
+            for count in df_input.axes[0]:
+                if df_input.at[count,temporal_header] not in self.energy_system.set_time_step_years:
+                    unnecessary_rows.append(count)
+            df_input = df_input.drop(index=unnecessary_rows)
+
+            #convert yearly time indices to generic ones
+            counter = 0
+            for index in df_input.axes[0]:
+                df_input.at[index,temporal_header] = df_input.at[index,temporal_header] - self.system["reference_year"] - (self.system["interval_between_years"] - 1) * counter
+                counter += 1
+
+        return df_input
+
     @staticmethod
-    def extract_from_input_without_missing_index(df_input, index_name_list, column, file_name):
+    def extract_from_input_without_missing_index(df_input, index_name_list, file_name):
         """ extracts the demanded values from Input dataframe and reformulates dataframe
         :param df_input: raw input dataframe
         :param index_name_list: list of name of indices
-        :param column: select specific column
         :param file_name: name of selected file
         :return df_input: reformulated input dataframe
         """
         if index_name_list:
             df_input = df_input.set_index(index_name_list)
-        if column:
-            assert column in df_input.columns, f"Requested column {column} not in columns {df_input.columns.to_list()} of input file {file_name}"
-            df_input = df_input[column]
-        else:
-            # check if only one column remaining
-            assert len(df_input.columns) == 1, f"Input file for {file_name} has more than one value column: {df_input.columns.to_list()}"
-            df_input = df_input.squeeze(axis=1)
+        assert len(df_input.columns) == 1, f"Input file for {file_name} has more than one value column: {df_input.columns.to_list()}"
+        df_input = df_input.squeeze(axis=1)
         return df_input
 
     @staticmethod
-    def extract_from_input_with_missing_index(df_input, df_output, index_name_list, column, file_name, missing_index):
+    def extract_from_input_with_missing_index(df_input, df_output, index_name_list, file_name, missing_index):
         """ extracts the demanded values from Input dataframe and reformulates dataframe if the index is missing.
         Either, the missing index is the column of df_input, or it is actually missing in df_input.
         Then, the values in df_input are extended to all missing index values.
         :param df_input: raw input dataframe
         :param df_output: default output dataframe
         :param index_name_list: list of name of indices
-        :param column: select specific column
         :param file_name: name of selected file
         :param missing_index: missing index in df_input
         :return df_input: reformulated input dataframe
@@ -608,16 +637,13 @@ class DataInput():
             # logging.info(f"Missing index {missing_index} detected in {file_name}. Input dataframe is extended by this index")
             _df_input_index_temp = pd.MultiIndex.from_product([df_input.index, requested_index_values], names=df_input.index.names + [missing_index])
             _df_input_temp = pd.Series(index=_df_input_index_temp, dtype=float)
-            if column in df_input.columns:
-                df_input = df_input[column].loc[_df_input_index_temp.get_level_values(df_input.index.names[0])].squeeze()
+            if isinstance(df_input, pd.Series):
+                df_input = df_input.to_frame()
+            if df_input.shape[1] == 1:
+                df_input = df_input.loc[_df_input_index_temp.get_level_values(df_input.index.names[0])].squeeze()
             else:
-                if isinstance(df_input, pd.Series):
-                    df_input = df_input.to_frame()
-                if df_input.shape[1] == 1:
-                    df_input = df_input.loc[_df_input_index_temp.get_level_values(df_input.index.names[0])].squeeze()
-                else:
-                    assert _df_input_temp.index.names[-1] != "time", f"Only works if columns contain time index and not for {_df_input_temp.index.names[-1]}"
-                    df_input = _df_input_temp.to_frame().apply(lambda row: df_input.loc[row.name[0:-1], str(row.name[-1])], axis=1)
+                assert _df_input_temp.index.names[-1] != "time", f"Only works if columns contain time index and not for {_df_input_temp.index.names[-1]}"
+                df_input = _df_input_temp.to_frame().apply(lambda row: df_input.loc[row.name[0:-1], str(row.name[-1])], axis=1)
             df_input.index = _df_input_temp.index
             df_input = df_input.reorder_levels(order=df_output.index.names)
             if isinstance(df_input, pd.DataFrame):

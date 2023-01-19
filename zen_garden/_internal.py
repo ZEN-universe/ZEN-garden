@@ -94,8 +94,7 @@ def main(config, dataset_path=None):
 
     # update input data
     for scenario, elements in config.scenarios.items():
-        optimization_setup.restore_base_configuration(scenario,
-                                                      elements)  # per default scenario="" is used as base configuration. Use set_base_configuration(scenario, elements) if you want to change that
+        optimization_setup.restore_base_configuration(scenario,elements)  # per default scenario="" is used as base configuration. Use set_base_configuration(scenario, elements) if you want to change that
         optimization_setup.overwrite_params(scenario, elements)
         # iterate through horizon steps
         for step_horizon in steps_optimization_horizon:
@@ -128,4 +127,5 @@ def main(config, dataset_path=None):
             # write results
             evaluation = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
                                      model_name=model_name, scenario_name=scenario_name)
+
     return optimization_setup

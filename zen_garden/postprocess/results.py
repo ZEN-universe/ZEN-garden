@@ -385,7 +385,7 @@ class Results(object):
                     _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
 
                     # single element that is not a year
-                    if len(_var) == 1 and not np.isfinite(_var.index[0]):
+                    if len(_var) == 1 and len(_var.index[0]) == 1 and not np.isfinite(_var.index[0]):
                         _data[scenario] = _var
                         break
                     # if the year is in the index (no multiindex)
@@ -436,7 +436,7 @@ class Results(object):
                                 _dfIndex = _dfIndex.droplevel(level)
                                 break
                         _df.index = _dfIndex
-                        if year not in _var.index:
+                        if year not in _df.index:
                             _indexSort = list(range(0, _df.index.nlevels))
                             _indexSort.append(_indexSort[0])
                             _indexSort.pop(0)
