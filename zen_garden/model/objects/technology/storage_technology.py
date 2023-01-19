@@ -143,12 +143,13 @@ class StorageTechnology(Technology):
         energy_system.parameters.add_parameter(name="efficiency_discharge",
             data=energy_system.initialize_component(cls, "efficiency_discharge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"]),
             doc='efficiency during discharging for storage technologies')
-         # initial storage level
-        Parameter.add_parameter(name="initial_storage_level",
-            data=EnergySystem.initialize_component(cls, "initial_storage_level", index_names=["set_storage_technologies", "set_nodes"]),
+        # initial storage level
+        energy_system.parameters.add_parameter(name="initial_storage_level",
+            data=energy_system.initialize_component(cls, "initial_storage_level", index_names=["set_storage_technologies", "set_nodes"]),
             doc='initial storage level of storage technologies.')
         # self discharge
-        energy_system.parameters.add_parameter(name="self_discharge", data=energy_system.initialize_component(cls, "self_discharge", index_names=["set_storage_technologies", "set_nodes"]),
+        energy_system.parameters.add_parameter(name="self_discharge",
+            data=energy_system.initialize_component(cls, "self_discharge", index_names=["set_storage_technologies", "set_nodes"]),
             doc='self discharge of storage technologies')
         # capex specific
         energy_system.parameters.add_parameter(name="capex_specific_storage",

@@ -122,7 +122,7 @@ class Carrier(Element):
             :param time: operational time step
             :return bounds: bounds of shedDemandCarrierLow"""
             # bounds only needed for Big-M formulation, if enforce_selfish_behavior
-            system = energy_system.get_system()
+            system = energy_system.system
             if "enforce_selfish_behavior" in system.keys() and system["enforce_selfish_behavior"]:
                 params = energy_system.parameters.get_component_object()
                 demand_carrier = params.demand_carrier[carrier,node,time]
@@ -152,13 +152,13 @@ class Carrier(Element):
         energy_system.variables.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc="shed demand of carrier")
         # shed demand high
-        energy_system.variables.add_variable(model, name="shed_demand_carrier_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,bounds=shed_demand_carrier_bounds,
+        energy_system.variables.add_variable(model, name="shed_demand_carrier_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,bounds=shed_demand_carrier_bounds,
             doc="shed demand of carrier at high price")
         # cost of shed demand
-        energy_system.variables.add_variable(model, name="cost_shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        energy_system.variables.add_variable(model, name="cost_shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc="cost of shedding demand of carrier")
         # cost of shed demand high
-        energy_system.variables.add_variable(model, name="cost_shed_demand_carrier_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]), domain=pe.NonNegativeReals,
+        energy_system.variables.add_variable(model, name="cost_shed_demand_carrier_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc="cost of shedding demand of carrier at high price")
 
         # add pe.Sets of the child classes
@@ -191,13 +191,13 @@ class Carrier(Element):
         energy_system.constraints.add_constraint(model, name="constraint_cost_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=rules.constraint_cost_shed_demand_rule, doc="cost of shedding carrier demand")
         # cost for shed demand high
-        energy_system.constraints.add_constraint(model, name="constraint_cost_shed_demand_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.constraints.add_constraint(model, name="constraint_cost_shed_demand_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=rules.constraint_cost_shed_demand_high_rule, doc="cost of shedding carrier demand at high price")
         # limit of shed demand
         energy_system.constraints.add_constraint(model, name="constraint_limit_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=rules.constraint_limit_shed_demand_rule, doc="limit of shedding carrier demand")
         # limit of shed demand
-        energy_system.constraints.add_constraint(model, name="constraint_limit_shed_demand_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
+        energy_system.constraints.add_constraint(model, name="constraint_limit_shed_demand_high", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system),
             rule=rules.constraint_limit_shed_demand_high_rule, doc="limit of shedding carrier demand a high price")
         # total cost for carriers
         energy_system.constraints.add_constraint(model, name="constraint_cost_carrier_total", index_sets=model.set_time_steps_yearly, rule=rules.constraint_cost_carrier_total_rule,

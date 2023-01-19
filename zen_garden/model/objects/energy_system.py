@@ -144,7 +144,7 @@ class EnergySystem:
             for edge in set_edges_input.index:
                 set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
         else:
-            warnings.warn(f"Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{self.system['''folder_name_system_specification''']}' instead!", FutureWarning)
+            logging.warning(f"DeprecationWarning: Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{self.system['''folder_name_system_specification''']}' instead!")
             for node_from in self.set_nodes:
                 for node_to in self.set_nodes:
                     if node_from != node_to:
