@@ -300,11 +300,11 @@ class CarrierRules:
             return (model.shed_demand_carrier_high[carrier, node, time] == 0)
 
     def constraint_limit_shed_demand_rule(self, model, carrier, node, time):
-        """ limit of shedding demand of carrier to demand --> endogenous demand cannot not be supplied by shed demand """
+        """ limit demand shedding at low price """
         # get parameter object
         params = self.energy_system.parameters
         if params.max_shed_demand[carrier] < 1:
-            return (model.shed_demand_carrier[carrier, node, time] <= params.demand_carrier[carrier, node, time])
+            return (model.shed_demand_carrier[carrier, node, time] <= params.demand_carrier[carrier, node, time] * params.max_shed_demand[carrier])
         else:
             return pe.Constraint.Skip
 
