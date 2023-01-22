@@ -100,9 +100,7 @@ class DataInput():
         else:
             missing_index = missing_index[0]
             # check if special case of existing Technology
-            if "existingTechnology" in missing_index:
-                if "year_construction" in df_input.columns and hasattr(self.element, "existing_capacity"):
-                    file_name = "year_construction"
+            if "existing_technology" in missing_index:
                 df_output = DataInput.extract_from_input_for_existing_capacities(df_input, df_output, index_name_list, file_name, missing_index)
                 if isinstance(default_value, dict):
                     df_output = df_output * default_value["multiplier"]
@@ -185,7 +183,7 @@ class DataInput():
             if attribute_name not in df_input.index:
                 return None
             elif not skip_warning:
-                warnings.warn(f"Attribute names without '_default' suffix are deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}",DeprecationWarning)
+                logging.warning(f"DeprecationWarning: Attribute names without '_default' suffix are deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}")
         else:
             attribute_name = attribute_name + "_default"
         return attribute_name
@@ -296,7 +294,7 @@ class DataInput():
         if f"{file_name}{scenario}.csv" in os.listdir(self.folder_path):
             df_input = self.read_input_data(file_name + scenario)
             # fill output dataframe
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value=0, time_steps=None)
+            df_output = self.extract_general_input_data(df_input, df_output, "year_construction", index_name_list, default_value=0, time_steps=None)
             # get reference year
             reference_year = self.system["reference_year"]
             # calculate remaining lifetime
@@ -547,20 +545,25 @@ class DataInput():
         :param index_name_list: list of name of indices
         :return df_input: input dataframe with generic time indices
         """
-        #check if input data is time-dependent and has yearly time steps
+        # check if input data is time-dependent and has yearly time steps
         if time_steps is self.energy_system.set_time_steps_yearly:
-            #check if temporal header of input data is still given as 'time' instead of 'year'
+            # check if temporal header of input data is still given as 'time' instead of 'year'
             if "time" in df_input.axes[1]:
-                warnings.warn(f"The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead",DeprecationWarning)
-            #check if input data is still given with generic time indices
-            temporal_header = df_input.axes[1][0]
-            if max(df_input.loc[:,temporal_header]) < self.analysis["earliest_year_of_data"]:
-                warnings.warn(f"Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead",DeprecationWarning)
+                logging.warning(f"DeprecationWarning: The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead")
+                df_input = df_input.rename(
+                    {self.index_names["set_time_steps"]: self.index_names["set_time_steps_yearly"]}, axis=1)
+            # does not contain annual index
+            elif self.index_names["set_time_steps_yearly"] not in df_input.axes[1]:
                 return df_input
-            #assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
+            # check if input data is still given with generic time indices
+            temporal_header = self.index_names["set_time_steps_yearly"]
+            if max(df_input.loc[:,temporal_header]) < self.analysis["earliest_year_of_data"]:
+                logging.warning(f"DeprecationWarning: Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
+                return df_input
+            # assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
             assert temporal_header in index_name_list, f"Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"
 
-            #interpolate missing data
+            # interpolate missing data
             file_names_int_off = []
             if self.energy_system.parameters_interpolation_off is not None:
                 file_names_int_off = self.energy_system.parameters_interpolation_off.values

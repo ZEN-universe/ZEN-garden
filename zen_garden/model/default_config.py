@@ -93,7 +93,7 @@ class Config(object):
                 "set_transport_technologies":"technology",
                 "set_storage_technologies":"technology",
                 "set_technologies":"technology",
-                "set_existing_technologies": "existingTechnology",
+                "set_existing_technologies": "existing_technology",
                 "set_capacity_types":"capacity_type"}
         # time series aggregation
         self.analysis["time_series_aggregation"] = {

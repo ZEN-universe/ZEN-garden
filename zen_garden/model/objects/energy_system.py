@@ -115,7 +115,7 @@ class EnergySystem:
         time_steps_yearly_duration = self.calculate_time_step_duration(self.set_time_steps_yearly)
         self.sequence_time_steps_yearly = np.concatenate([[time_step] * time_steps_yearly_duration[time_step] for time_step in time_steps_yearly_duration])
         self.set_sequence_time_steps(None, self.sequence_time_steps_yearly, time_step_type="yearly")
-        #list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
+        # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_step_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
         self.parameters_interpolation_off = self.data_input.read_input_data("parameters_interpolation_off")
@@ -144,7 +144,7 @@ class EnergySystem:
             for edge in set_edges_input.index:
                 set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
         else:
-            warnings.warn(f"Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{self.system['''folder_name_system_specification''']}' instead!", FutureWarning)
+            logging.warning(f"DeprecationWarning: Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{self.system['''folder_name_system_specification''']}' instead!")
             for node_from in self.set_nodes:
                 for node_to in self.set_nodes:
                     if node_from != node_to:
