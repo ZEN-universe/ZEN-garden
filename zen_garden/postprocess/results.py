@@ -15,6 +15,7 @@ import importlib
 import json
 import zlib
 import os
+import matplotlib.pyplot as plt
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import SequenceTimeStepsDicts
@@ -124,6 +125,8 @@ class Results(object):
         # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
+
+        self.plot("import_carrier_flow", True)
 
     @classmethod
     def _read_file(cls, name, lazy=True):
@@ -697,6 +700,41 @@ class Results(object):
 
     def __str__(self):
         return f"Results of '{self.path}'"
+
+    def plot(self, component,yearly = False):
+        """
+        Plots component data as specified by the arguments
+        :param component: Either the dataframe of a component as pandas.Series or the name of the component
+        :return:
+        """
+        if yearly:
+            ts_type = "yearly"
+        else:
+            component_name, component_data = self._get_component_data(component)
+            ts_type = self._get_ts_type(component_data, component_name)
+
+        data_df = self.get_df(component)
+        data_total = self.get_total(component)
+        data_full_ts = self.get_full_ts(component)
+
+        if ts_type == "operational":
+            plt.plot(data_full_ts.columns.values, data_full_ts.values.transpose())
+            plt.xlabel("hours")
+            plt.legend(data_total.index.values)
+        elif ts_type == "yearly":
+            bars = []
+            for ind, row in enumerate(data_total.values):
+                bar = plt.bar(data_total.columns.values + 1/data_total.shape[0] * ind, row, 1/data_total.shape[0])
+                bars.append(bar)
+            plt.xticks(data_total.columns.values)
+            plt.legend((bars),(data_total.index.values))
+            plt.xlabel("years")
+        elif ts_type == "storage":
+            plt.plot(data_total.columns.values, data_total.values.transpose())
+
+        plt.ylabel("Power [MW]")
+        plt.title(component)
+        plt.show()
 
 
 if __name__ == "__main__":
