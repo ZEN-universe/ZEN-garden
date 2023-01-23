@@ -28,7 +28,7 @@ jobs:
 
       - name: Check Env File
         id: check-env-file
-        uses: tj-actions/changed-files@v29.0.7
+        uses: tj-actions/changed-files@v35
         with:
           files: |
             zen_garden_env.yml
@@ -71,7 +71,7 @@ jobs:
         run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
 
       # reset cache if env file changed
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ${{ matrix.prefix }}
           key: ${{ matrix.label }}-conda-${{ hashFiles('zen_garden_env.yml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
@@ -101,7 +101,7 @@ jobs:
 
       - name: Create Coverage Badge
         if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
-        uses: schneegans/dynamic-badges-action@v1.4.0
+        uses: schneegans/dynamic-badges-action@v1.6.0
         with:
           auth: ${{ secrets.COVERAGE_SECRET }}
           gistID: 5d0d79e86182cd9ccd785d824b1f9ac7
