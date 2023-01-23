@@ -60,7 +60,7 @@ class OptimizationSetup(object):
         :param system: dictionary defining the system"""
         logging.info("\n--- Add elements to model--- \n")
 
-        for element_name in self.energy_system.get_element_list():
+        for element_name in self.energy_system.element_list:
             element_class = self.energy_system.dict_element_classes[element_name]
             element_name = element_class.label
             element_set = self.system[element_name]

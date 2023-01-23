@@ -24,10 +24,8 @@ from .time_steps import SequenceTimeStepsDicts
 
 class EnergySystem:
 
-    # empty dict of element classes
+    # dict of element classes, this dict is filled in the __init__ of the package
     dict_element_classes = {}
-    # empty list of class names
-    element_list = {}
 
     def __init__(self, name_energy_system, analysis, system, paths, solver):
         """ initialization of the energy_system
@@ -67,6 +65,12 @@ class EnergySystem:
         self.dict_time_steps_storage_level_startend_year = {}
         # The timesteps
         self.sequence_time_steps = SequenceTimeStepsDicts()
+
+        # sorted list of class names
+        element_classes = self.dict_element_classes.keys()
+        carrier_classes = [element_name for element_name in element_classes if "Carrier" in element_name]
+        technology_classes = [element_name for element_name in element_classes if "Technology" in element_name]
+        self.element_list = technology_classes + carrier_classes
 
         # the components
         self.variables = None
@@ -350,16 +354,6 @@ class EnergySystem:
         """ sets all dicts of sequences of time steps.
         :param dict_all_sequence_time_steps: dict of all dict_sequence_time_steps"""
         self.sequence_time_steps.reset_dicts(dict_all_sequence_time_steps=dict_all_sequence_time_steps)
-
-    def get_element_list(self):
-        """ get attribute value of energy_system
-        :param attribute_name: str name of attribute
-        :return attribute: returns attribute values """
-        element_classes = self.dict_element_classes.keys()
-        carrier_classes = [element_name for element_name in element_classes if "Carrier" in element_name]
-        technology_classes = [element_name for element_name in element_classes if "Technology" in element_name]
-        self.element_list = technology_classes + carrier_classes
-        return self.element_list
 
     def get_technology_of_carrier(self, carrier):
         """ gets technologies which are connected by carrier
