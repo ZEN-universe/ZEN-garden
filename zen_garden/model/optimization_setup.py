@@ -13,7 +13,6 @@ Description:  Class defining the Concrete optimization model.
 ==========================================================================================================================================================================="""
 import logging
 import os
-import sys
 
 import numpy as np
 import pandas as pd
@@ -22,6 +21,7 @@ from pyomo.core.expr.current import decompose_term
 
 from .objects.element import Element
 from .objects.energy_system import EnergySystem
+from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 from ..preprocess.prepare import Prepare
 
@@ -299,7 +299,6 @@ class OptimizationSetup(object):
             _invest_capacity[_invest_capacity <= _rounding_value] = 0
             _capex[_capex <= _rounding_value] = 0
             _base_time_steps = self.energy_system.decode_yearly_time_steps([step_horizon])
-            Technology = getattr(sys.modules[__name__], "Technology")
             for tech in self.energy_system.get_all_elements(Technology):
                 # new capacity
                 _built_capacity_tech = _built_capacity.loc[tech.name].unstack()
