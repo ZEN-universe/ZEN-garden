@@ -10,7 +10,6 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
 ==========================================================================================================================================================================="""
 import copy
 import logging
-import warnings
 from collections import defaultdict
 
 import numpy as np

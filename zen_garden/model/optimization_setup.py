@@ -12,17 +12,15 @@ Description:  Class defining the Concrete optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ as pe
-from pyomo.core.expr.current import decompose_term
 import os
 import sys
-import pandas as pd
+
 import numpy as np
-# import elements of the optimization problem
-# technology and carrier classes from technology and carrier directory, respectively
+import pandas as pd
+import pyomo.environ as pe
+from pyomo.core.expr.current import decompose_term
+
 from .objects.element import Element
-from .objects.technology import *
-from .objects.carrier import *
 from .objects.energy_system import EnergySystem
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 from ..preprocess.prepare import Prepare
@@ -89,8 +87,6 @@ class OptimizationSetup(object):
         # conduct  time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
         self.time_series_aggregation.conduct_tsa()
-
-
 
     def construct_optimization_problem(self):
         """ constructs the optimization problem """
