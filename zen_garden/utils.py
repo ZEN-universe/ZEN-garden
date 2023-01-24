@@ -17,6 +17,24 @@ import numpy as np
 from numpy import string_
 from contextlib import contextmanager
 
+
+def get_inheritors(klass):
+    """
+    Get all child classes of a given class
+    :param klass: The class to get all children
+    :return: All children as a set
+    """
+
+    subclasses = set()
+    work = [klass]
+    while work:
+        parent = work.pop()
+        for child in parent.__subclasses__():
+            if child not in subclasses:
+                subclasses.add(child)
+                work.append(child)
+    return subclasses
+
 # This redirects output streams to files
 
 class RedirectStdStreams(object):
