@@ -126,7 +126,7 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot("import_carrier_flow", True)
+        self.plot("output_flow", True)
 
     @classmethod
     def _read_file(cls, name, lazy=True):
@@ -718,17 +718,17 @@ class Results(object):
         data_full_ts = self.get_full_ts(component)
 
         if ts_type == "operational":
-            plt.plot(data_full_ts.columns.values, data_full_ts.values.transpose())
-            plt.xlabel("hours")
+            plt.plot(data_full_ts.columns.values, data_full_ts.values.transpose(), lw=1/len(data_full_ts.columns.values)*3000)
+            plt.xlabel("Time [hours]")
             plt.legend(data_total.index.values)
         elif ts_type == "yearly":
             bars = []
             for ind, row in enumerate(data_total.values):
-                bar = plt.bar(data_total.columns.values + 1/data_total.shape[0] * ind, row, 1/data_total.shape[0])
+                bar = plt.bar(data_total.columns.values + 1/(data_total.shape[0]+1) * ind, row, 1/(data_total.shape[0]+1))
                 bars.append(bar)
-            plt.xticks(data_total.columns.values)
-            plt.legend((bars),(data_total.index.values))
-            plt.xlabel("years")
+            plt.xticks(data_total.columns.values + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), data_total.columns.values+self.results["system"]["reference_year"])
+            plt.legend((bars),(data_total.index.values),ncols=max(1,int(data_total.shape[0]/7)))
+            plt.xlabel("Time [years]")
         elif ts_type == "storage":
             plt.plot(data_total.columns.values, data_total.values.transpose())
 
