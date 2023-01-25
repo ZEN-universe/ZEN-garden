@@ -191,7 +191,7 @@ class Results(object):
         """
         Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
         :param string: The string to decode
-        :return: The corresponding datafram
+        :return: The corresponding dataframe
         """
 
         # transform back to dataframes
@@ -379,20 +379,36 @@ class Results(object):
             else:
                 # init the scenario
                 _mf_data = {}
-
+                _is_multiindex = False
                 # cycle through all MFs
                 for year, mf in enumerate(self.mf):
                     _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
 
-                    # single element that is not a year
-                    if len(_var) == 1 and len(_var.index[0]) == 1 and not np.isfinite(_var.index[0]):
-                        _data[scenario] = _var
-                        break
-                    # if the year is in the index (no multiindex)
-                    elif year in _var.index:
-                        _mf_data[year] = _var.loc[year]
-                        yearly_component = True
+                    # # single element that is not a year
+                    # if len(_var) == 1 and _var.index.nlevels == 1 and not np.isfinite(_var.index[0]):
+                    #     _data[scenario] = _var
+                    #     break
+                    # # if the year is in the index (no multiindex)
+                    # elif year in _var.index:
+                    #     _mf_data[year] = _var.loc[year]
+                    #     yearly_component = True
+
+                    # no multiindex
+                    if _var.index.nlevels == 1:
+                        ts_type = self._get_ts_type(_var.T,name,force_output=True)
+                        # if yearly variable
+                        if ts_type == "yearly":
+                            _mf_data[year] = _var.loc[year].squeeze()
+                            yearly_component = True
+                            time_header = _var.index.name
+                        elif ts_type is None:
+                            _data[scenario] = _var
+                            break
+                        else:
+                            raise KeyError(f"The time step type '{ts_type}' was not expected for variable '{name}'")
+                    # multiindex
                     else:
+                        _is_multiindex = True
                         # unstack the year
                         _varSeries = _var.squeeze().unstack()
                         # get type of time steps
@@ -434,15 +450,20 @@ class Results(object):
                     # deal with the years
                     if yearly_component:
                         # concat
-                        new_header = [time_header]+tmp_data.index.names
-                        new_order = tmp_data.index.names + [time_header]
-                        _df = pd.concat(_mf_data, axis=0, keys=_mf_data.keys(),names=new_header).reorder_levels(new_order)
-                        _dfIndex = _df.index.copy()
-                        for level, codes in enumerate(_df.index.codes):
-                            if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
-                                _dfIndex = _dfIndex.droplevel(level)
-                                break
-                        _df.index = _dfIndex
+                        if _is_multiindex:
+                            new_header = [time_header]+tmp_data.index.names
+                            new_order = tmp_data.index.names + [time_header]
+                            _df = pd.concat(_mf_data, axis=0, keys=_mf_data.keys(),names=new_header).reorder_levels(new_order)
+                            _df_index = _df.index.copy()
+                            for level, codes in enumerate(_df.index.codes):
+                                if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
+                                    _df_index = _df_index.droplevel(level)
+                                    break
+                            _df.index = _df_index
+                        else:
+                            _df = pd.Series(_mf_data,index=_mf_data.keys())
+                            _df.index.name = time_header
+
                         # if year not in _df.index:
                         #     _indexSort = list(range(0, _df.index.nlevels))
                         #     _indexSort.append(_indexSort[0])
@@ -515,7 +536,8 @@ class Results(object):
         component_name, component_data = self._get_component_data(component, scenario)
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
-
+        if isinstance(component_data,pd.Series):
+            return component_data
         ts_type = self._get_ts_type(component_data, component_name)
 
         if ts_type == "yearly":
@@ -573,7 +595,8 @@ class Results(object):
         component_name, component_data = self._get_component_data(component, scenario)
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
-
+        if isinstance(component_data,pd.Series):
+            return component_data
         ts_type = self._get_ts_type(component_data, component_name)
 
         if ts_type == "yearly":
@@ -671,9 +694,11 @@ class Results(object):
             component_name = component
             # only use the data from one scenario if specified
             if scenario is not None:
-                component_data = self.get_df(component)[scenario].unstack()
+                component_data = self.get_df(component)[scenario]
             else:
-                component_data = self.get_df(component).unstack()
+                component_data = self.get_df(component)
+            if isinstance(component_data.index,pd.MultiIndex):
+                component_data = component_data.unstack()
         elif isinstance(component, pd.Series):
             component_name = component.name
             component_data = component.unstack()
