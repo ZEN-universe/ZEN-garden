@@ -167,9 +167,9 @@ class Technology(Element):
             time_step_year = energy_system.encode_time_step(tech, base_time_steps, time_step_type, yearly=True)
         else:
             time_step_year = time
-        tStart, tEnd = cls.get_start_end_time_of_period(energy_system, tech, time_step_year)
+        t_start, t_end = cls.get_start_end_time_of_period(energy_system, tech, time_step_year)
 
-        return range(tStart, tEnd + 1)
+        return range(t_start, t_end + 1)
 
     @classmethod
     def get_available_existing_quantity(cls, energy_system: EnergySystem, tech, capacity_type, loc, time, type_existing_quantity, time_step_type: str = None):
@@ -203,7 +203,7 @@ class Technology(Element):
             raise KeyError(f"Wrong type of existing quantity {type_existing_quantity}")
 
         for id_existing_capacity in model.set_existing_technologies[tech]:
-            tStart = cls.get_start_end_time_of_period(energy_system, tech, time_step_year, id_existing_capacity=id_existing_capacity, loc=loc)
+            t_start = cls.get_start_end_time_of_period(energy_system, tech, time_step_year, id_existing_capacity=id_existing_capacity, loc=loc)
             # discount existing capex
             if type_existing_quantity == "capex":
                 year_construction = max(0, time * system["interval_between_years"] - params.lifetime_technology[tech] + params.lifetime_existing_technology[tech, loc, id_existing_capacity])
@@ -211,13 +211,13 @@ class Technology(Element):
             else:
                 discount_factor = 1
             # if still available at first base time step, add to list
-            if tStart == model.set_base_time_steps.at(1) or tStart == time_step_year:
+            if t_start == model.set_base_time_steps.at(1) or t_start == time_step_year:
                 existing_quantity += existing_variable[tech, capacity_type, loc, id_existing_capacity] * discount_factor
         return existing_quantity
 
     @classmethod
     def get_start_end_time_of_period(cls, energy_system: EnergySystem, tech, time_step_year, period_type="lifetime", clip_to_first_time_step=True, id_existing_capacity=None, loc=None):
-        """ counts back the period (either lifetime of construction_time) back to get the start invest time step and returns starttime_step_year
+        """ counts back the period (either lifetime of construction_time) back to get the start invest time step and returns start_time_step_year
         :param energy_system: The Energy system to add everything
         :param tech: name of technology
         :param time_step_year: current investment time step
@@ -226,7 +226,7 @@ class Technology(Element):
         :param id_existing_capacity: id of existing capacity
         :param loc: location (node or edge) of existing capacity
         :return beganInPast: boolean if the period began before the first optimization step
-        :return starttime_step_year,endtime_step_year: start and end of period in invest time step domain"""
+        :return start_time_step_year,end_time_step_year: start and end of period in invest time step domain"""
 
         # get model and system
         params = energy_system.parameters
@@ -238,15 +238,15 @@ class Technology(Element):
         elif period_type == "construction_time":
             period_time = params.construction_time_technology
         else:
-            raise NotImplemented(f"getStartEndOfPeriod not yet implemented for {period_type}")
-        # get endtime_step_year
+            raise NotImplemented(f"get_start_end_time_of_period not yet implemented for {period_type}")
+        # get end_time_step_year
         if not isinstance(time_step_year, np.ndarray):
-            endtime_step_year = time_step_year
+            end_time_step_year = time_step_year
         elif len(time_step_year) == 1:
-            endtime_step_year = time_step_year[0]
+            end_time_step_year = time_step_year[0]
         # if more than one investment time step
         else:
-            endtime_step_year = time_step_year[-1]
+            end_time_step_year = time_step_year[-1]
             time_step_year = time_step_year[0]
         # convert period to interval of base time steps
         if id_existing_capacity is None:
@@ -278,9 +278,9 @@ class Technology(Element):
         # if period of existing capacity, then only return the start base time step
         if id_existing_capacity is not None:
             return start_base_time_step
-        starttime_step_year = energy_system.encode_time_step(tech, start_base_time_step, time_step_type="yearly", yearly=True)[0]
+        start_time_step_year = energy_system.encode_time_step(tech, start_base_time_step, time_step_type="yearly", yearly=True)[0]
 
-        return starttime_step_year, endtime_step_year
+        return start_time_step_year, end_time_step_year
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
     @classmethod
