@@ -8,16 +8,16 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Functions to extract the input data from the provided input files
 ==========================================================================================================================================================================="""
 import copy
-import os
 import logging
-import warnings
 import math
+import os
+
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
 
 
-class DataInput():
+class DataInput:
 
     def __init__(self, element, system, analysis, solver, energy_system, unit_handling):
         """ data input object to extract input data

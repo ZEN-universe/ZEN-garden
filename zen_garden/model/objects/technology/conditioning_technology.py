@@ -38,8 +38,8 @@ class ConditioningTechnology(ConversionTechnology):
     def add_conditioning_carriers(self):
         """add conditioning carriers to system"""
         subset = "set_conditioning_carriers"
-        analysis = self.energy_system.analysis
-        system = self.energy_system.system
+        analysis = self.optimization_setup.analysis
+        system = self.optimization_setup.system
         # add set_conditioning_carriers to analysis and indexing_sets
         if subset not in analysis["subsets"]["set_carriers"]:
             analysis["subsets"]["set_carriers"].append(subset)
@@ -52,7 +52,7 @@ class ConditioningTechnology(ConversionTechnology):
     def get_conver_efficiency(self):
         """retrieves and stores conver_efficiency for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as pwa_conver_efficiency"""
-        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
+        set_time_steps_yearly = self.optimization_setup.set_time_steps_yearly
         specific_heat = self.data_input.extract_attribute("specific_heat")["value"]
         specific_heat_ratio = self.data_input.extract_attribute("specific_heat_ratio")["value"]
         pressure_in = self.data_input.extract_attribute("pressure_in")["value"]
