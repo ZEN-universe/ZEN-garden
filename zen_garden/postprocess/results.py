@@ -126,7 +126,7 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot("output_flow", True)
+        self.plot("output_flow", yearly=True, sum_nodes=True)
 
     @classmethod
     def _read_file(cls, name, lazy=True):
@@ -701,7 +701,7 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
-    def plot(self, component,yearly = False):
+    def plot(self, component,yearly = False, sum_nodes = False):
         """
         Plots component data as specified by the arguments
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -721,7 +721,10 @@ class Results(object):
             plt.plot(data_full_ts.columns.values, data_full_ts.values.transpose(), lw=1/len(data_full_ts.columns.values)*3000)
             plt.xlabel("Time [hours]")
             plt.legend(data_total.index.values)
+
         elif ts_type == "yearly":
+            if sum_nodes:
+                data_total = Results.sum_over_nodes(data_total)
             bars = []
             for ind, row in enumerate(data_total.values):
                 bar = plt.bar(data_total.columns.values + 1/(data_total.shape[0]+1) * ind, row, 1/(data_total.shape[0]+1))
@@ -729,12 +732,27 @@ class Results(object):
             plt.xticks(data_total.columns.values + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), data_total.columns.values+self.results["system"]["reference_year"])
             plt.legend((bars),(data_total.index.values),ncols=max(1,int(data_total.shape[0]/7)))
             plt.xlabel("Time [years]")
+
         elif ts_type == "storage":
             plt.plot(data_total.columns.values, data_total.values.transpose())
 
         plt.ylabel("Power [MW]")
         plt.title(component)
         plt.show()
+
+    @classmethod
+    def sum_over_nodes(cls,data):
+        index_list = []
+        for pos, index in enumerate(data.index):
+            if index[0] == data.index[pos+1][0] and index[1] == data.index[pos+1][1]:
+                index_list.append(index)
+            else:
+                index_list.append(index)
+                test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                for ind, summed_values in enumerate(test_data):
+                    data.at[index_list[0],ind] = test_data[ind]
+                #data.rename({index_list[0]: index_list[0][0] + index_list[0][1]}, axis=index)
+        return data
 
 
 if __name__ == "__main__":
