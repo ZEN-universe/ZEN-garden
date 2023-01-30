@@ -303,10 +303,6 @@ class EnergySystem:
         self.parameters = Parameter()
         self.constraints = Constraint()
 
-    def set_manual_set_to_indexing_sets(self, manual_set):
-        """ manually set to cls.indexing_sets """
-        self.indexing_sets.append(manual_set)
-
     ### CLASS METHODS ###
     # setter/getter classmethods
 
@@ -354,15 +350,6 @@ class EnergySystem:
         """ sets all dicts of sequences of time steps.
         :param dict_all_sequence_time_steps: dict of all dict_sequence_time_steps"""
         self.sequence_time_steps.reset_dicts(dict_all_sequence_time_steps=dict_all_sequence_time_steps)
-
-    def get_technology_of_carrier(self, carrier):
-        """ gets technologies which are connected by carrier
-        :param carrier: carrier which connects technologies
-        :return listOfTechnologies: list of technologies connected by carrier"""
-        if carrier in self.dict_technology_of_carrier:
-            return self.dict_technology_of_carrier[carrier]
-        else:
-            return None
 
     def get_time_steps_energy2power(self, element):
         """ gets the dict of converting the energy time steps to the power time steps of storage technologies """
@@ -543,7 +530,7 @@ class EnergySystem:
         # all elements
         self.pyomo_model.set_elements = pe.Set(initialize=self.pyomo_model.set_technologies | self.pyomo_model.set_carriers, doc='Set of elements')
         # set set_elements to indexing_sets
-        self.set_manual_set_to_indexing_sets("set_elements")
+        self.indexing_sets.append("set_elements")
         # time-steps
         self.pyomo_model.set_base_time_steps = pe.Set(initialize=self.set_base_time_steps, doc='Set of base time-steps')
         # yearly time steps
