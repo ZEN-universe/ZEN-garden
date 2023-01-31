@@ -357,7 +357,7 @@ class ConversionTechnologyRules:
         """
 
         self.optimization_setup = optimization_setup
-        self.energy_sytem = optimization_setup.energy_system
+        self.energy_system = optimization_setup.energy_system
 
     ### --- functions with constraint rules --- ###
     def constraint_linear_capex_rule(self, model, tech, node, time):

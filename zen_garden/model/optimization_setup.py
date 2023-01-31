@@ -354,7 +354,7 @@ class OptimizationSetup(object):
 
         if self.system["use_rolling_horizon"]:
             _time_steps_yearly_horizon = self.steps_horizon[step_horizon]
-            _base_time_steps_horizon = self.energy_system.decode_yearly_time_steps(_time_steps_yearly_horizon)
+            _base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(_time_steps_yearly_horizon)
             # overwrite time steps of each element
             for element in self.get_all_elements(Element):
                 element.overwrite_time_steps(_base_time_steps_horizon)
@@ -445,8 +445,8 @@ class OptimizationSetup(object):
             _built_capacity[_built_capacity <= _rounding_value] = 0
             _invest_capacity[_invest_capacity <= _rounding_value] = 0
             _capex[_capex <= _rounding_value] = 0
-            _base_time_steps = self.energy_system.decode_yearly_time_steps([step_horizon])
-            for tech in self.energy_system.get_all_elements(Technology):
+            _base_time_steps = self.energy_system.time_steps.decode_yearly_time_steps([step_horizon])
+            for tech in self.get_all_elements(Technology):
                 # new capacity
                 _built_capacity_tech = _built_capacity.loc[tech.name].unstack()
                 _invested_capacity_tech = _invest_capacity.loc[tech.name].unstack()
@@ -472,8 +472,8 @@ class OptimizationSetup(object):
         :param capacity_types: boolean if extracted for capacities
         :return component_data: data to initialize the component """
         # if calling class is EnergySystem
-        if calling_class == type(self):
-            component = getattr(self, component_name)
+        if calling_class == EnergySystem:
+            component = getattr(self.energy_system, component_name)
             if index_names is not None:
                 index_list = index_names
             elif set_time_steps is not None:
@@ -535,12 +535,12 @@ class OptimizationSetup(object):
 
         # get selected objective rule
         if self.analysis["objective"] == "total_cost":
-            objective_rule = self.rules.objective_total_cost_rule
+            objective_rule = self.objectives.objective_total_cost_rule
         elif self.analysis["objective"] == "total_carbon_emissions":
-            objective_rule = self.rules.objective_total_carbon_emissions_rule
+            objective_rule = self.objectives.objective_total_carbon_emissions_rule
         elif self.analysis["objective"] == "risk":
             logging.info("Objective of minimizing risk not yet implemented")
-            objective_rule = self.rules.objective_risk_rule
+            objective_rule = self.objectives.objective_risk_rule
         else:
             raise KeyError(f"Objective type {self.analysis['objective']} not known")
 
@@ -553,7 +553,7 @@ class OptimizationSetup(object):
             raise KeyError(f"Objective sense {self.analysis['sense']} not known")
 
         # construct objective
-        self.pyomo_model.objective = pe.Objective(rule=objective_rule, sense=objective_sense)
+        self.model.objective = pe.Objective(rule=objective_rule, sense=objective_sense)
 
 
 class Objectives:

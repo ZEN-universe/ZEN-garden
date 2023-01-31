@@ -163,7 +163,7 @@ class Technology(Element):
         """ returns lifetime range of technology. If time_step_type, then converts the yearly time step 'time' to time_step_type """
         if time_step_type:
             base_time_steps = optimization_setup.energy_system.time_steps.decode_time_step(None, time, "yearly")
-            time_step_year = optimization_setup.enery_system.time_steps.encode_time_step(tech, base_time_steps, time_step_type, yearly=True)
+            time_step_year = optimization_setup.energy_system.time_steps.encode_time_step(tech, base_time_steps, time_step_type, yearly=True)
         else:
             time_step_year = time
         t_start, t_end = cls.get_start_end_time_of_period(optimization_setup, tech, time_step_year)

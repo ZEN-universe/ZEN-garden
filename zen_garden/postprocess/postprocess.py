@@ -44,9 +44,9 @@ class Postprocess:
         self.solver = model.solver
         self.opt = model.opt
         self.energy_system = model.energy_system
-        self.params = model.energy_system.parameters
-        self.vars = model.energy_system.variables
-        self.constraints = model.energy_system.constraints
+        self.params = model.parameters
+        self.vars = model.variables
+        self.constraints = model.constraints
 
         # get name or directory
         self.model_name = model_name
@@ -81,7 +81,7 @@ class Postprocess:
             self.save_opt()
 
         # extract and save sequence time steps, we transform the arrays to lists
-        self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.get_sequence_time_steps_dict())
+        self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
         self.save_sequence_time_steps(scenario=scenario_name)
 
         # case where we should run the post-process as normal

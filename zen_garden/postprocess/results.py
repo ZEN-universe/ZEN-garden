@@ -17,7 +17,7 @@ import zlib
 import os
 
 from zen_garden import utils
-from zen_garden.model.objects.time_steps import SequenceTimeStepsDicts
+from zen_garden.model.objects.time_steps import TimeStepsDicts
 
 
 class Results(object):
@@ -87,7 +87,7 @@ class Results(object):
             # load the corresponding timestep dict
             time_dict = self.load_sequence_time_steps(self.path, scenario)
             self.results[scenario]["dict_sequence_time_steps"] = time_dict
-            self.results[scenario]["sequence_time_steps_dicts"] = SequenceTimeStepsDicts(time_dict)
+            self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
 
             for mf in self.mf:
                 # init dict
