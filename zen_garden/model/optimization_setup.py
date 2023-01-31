@@ -423,7 +423,7 @@ class OptimizationSetup(object):
 
         if solver_name == "gurobi_persistent":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
-            self.opt.set_instance(self.model, symbolic_solver_labels=solver["useSymbolicLabels"])
+            self.opt.set_instance(self.model, symbolic_solver_labels=solver["use_symbolic_labels"])
             self.results = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"], options_string=solver_parameters)
         else:
             self.opt = pe.SolverFactory(solver_name)

@@ -546,6 +546,7 @@ class DataInput:
         :return df_input: input dataframe with generic time indices
         """
         # check if input data is time-dependent and has yearly time steps
+        idx_name_year = self.index_names["set_time_steps_yearly"]
         if time_steps is self.energy_system.set_time_steps_yearly:
             # check if temporal header of input data is still given as 'time' instead of 'year'
             if "time" in df_input.axes[1]:
@@ -553,8 +554,19 @@ class DataInput:
                 df_input = df_input.rename(
                     {self.index_names["set_time_steps"]: self.index_names["set_time_steps_yearly"]}, axis=1)
             # does not contain annual index
-            elif self.index_names["set_time_steps_yearly"] not in df_input.axes[1]:
-                return df_input
+            elif idx_name_year not in df_input.axes[1]:
+                idx_name_list = [idx for idx in index_name_list if idx != idx_name_year]
+                df_input = df_input.set_index(idx_name_list)
+                df_input = df_input.rename(columns={col: int(col) for col in df_input.columns})
+                requested_index_values = set(self.energy_system.set_time_step_years)
+                _requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
+                if not _requested_index_values_in_columns:
+                    return df_input
+                else:
+                    requested_index_values = _requested_index_values_in_columns
+                    df_input.columns = df_input.columns.set_names(idx_name_year)
+                    df_input = df_input[list(requested_index_values)].stack()
+                    df_input = df_input.reset_index()
             # check if input data is still given with generic time indices
             temporal_header = self.index_names["set_time_steps_yearly"]
             if max(df_input.loc[:,temporal_header]) < self.analysis["earliest_year_of_data"]:

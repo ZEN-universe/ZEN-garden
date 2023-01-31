@@ -166,7 +166,7 @@ class Config(object):
             "Method":       None
         }
         # use symbolic labels, only sensible for debugging infeasible problems. Adds overhead
-        self.solver["useSymbolicLabels"] = False
+        self.solver["use_symbolic_labels"] = False
         # analyze numerics
         self.solver["analyze_numerics"]   = False
         self.solver["immutable_unit"]     = []
