@@ -743,16 +743,26 @@ class Results(object):
     @classmethod
     def sum_over_nodes(cls,data):
         index_list = []
+        data_new = pd.DataFrame()
         for pos, index in enumerate(data.index):
-            if index[0] == data.index[pos+1][0] and index[1] == data.index[pos+1][1]:
+            if pos == data.index.shape[0] - 1:
                 index_list.append(index)
+                test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                test_data = test_data.rename((index_list[0][0], index_list[0][1]))
+                data_new = data_new.append(test_data)
+
+            elif index[0] == data.index[pos+1][0] and index[1] == data.index[pos+1][1]:
+                index_list.append(index)
+
             else:
                 index_list.append(index)
                 test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                for ind, summed_values in enumerate(test_data):
-                    data.at[index_list[0],ind] = test_data[ind]
-                #data.rename({index_list[0]: index_list[0][0] + index_list[0][1]}, axis=index)
-        return data
+                test_data = test_data.rename((index_list[0][0],index_list[0][1]))
+                data_new = data_new.append(test_data)
+
+                index_list = []
+
+        return data_new
 
 
 if __name__ == "__main__":
