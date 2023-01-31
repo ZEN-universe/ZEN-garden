@@ -97,7 +97,7 @@ class TimeSeriesAggregation(object):
             # set_time_steps, duration and sequence time steps
             element.set_time_steps_operation = list(self.set_time_steps)
             element.time_steps_operation_duration = self.time_steps_duration
-            element.time_steps = self.sequence_time_steps
+            element.sequence_time_steps = self.sequence_time_steps
 
             # iterate through raw time series
             for ts in raw_ts:
@@ -177,7 +177,7 @@ class TimeSeriesAggregation(object):
         :param set_time_steps_operation: new time steps operation
         :param sequence_time_steps: new order of operational time steps """
         header_set_time_steps = self.analysis['header_data_inputs']["set_time_steps"]
-        old_sequence_time_steps = element.time_steps
+        old_sequence_time_steps = element.sequence_time_steps
         _idx_old2new = np.array([np.unique(old_sequence_time_steps[np.argwhere(idx == sequence_time_steps)]) for idx in set_time_steps_operation]).squeeze()
         for ts in element.raw_time_series:
             _old_ts = getattr(element, ts).unstack(header_set_time_steps)
@@ -236,8 +236,8 @@ class TimeSeriesAggregation(object):
             # optimized_years = EnergySystem.get_system()["optimized_years"]
             old_sequence_time_steps = self.optimization_setup.get_attribute_of_specific_element(Element, element.name, "sequence_time_steps")
             new_sequence_time_steps = np.hstack([old_sequence_time_steps] * optimized_years)
-            element.time_steps = new_sequence_time_steps
-            self.energy_system.time_steps.set_sequence_time_steps(element.name, element.time_steps)
+            element.sequence_time_steps = new_sequence_time_steps
+            self.energy_system.time_steps.set_sequence_time_steps(element.name, element.sequence_time_steps)
             # calculate the time steps in operation to link with investment and yearly time steps
             self.link_time_steps(element)
             # set operation2invest time step dict
@@ -247,7 +247,7 @@ class TimeSeriesAggregation(object):
     def set_aggregation_indicators(self, element):
         """ this method sets the indicators that element is aggregated """
         # add order of time steps to Energy System
-        self.energy_system.time_steps.set_sequence_time_steps(element.name, element.time_steps, time_step_type="operation")
+        self.energy_system.time_steps.set_sequence_time_steps(element.name, element.sequence_time_steps, time_step_type="operation")
         element.aggregated = True
 
     def unique_time_steps_multiple_indices(self, list_sequence_time_steps):
@@ -289,7 +289,7 @@ class TimeSeriesAggregation(object):
         else:
             element.set_time_steps_operation = set_time_steps
             element.time_steps_operation_duration = time_steps_duration
-            element.time_steps = sequence_time_steps
+            element.sequence_time_steps = sequence_time_steps
 
     def conduct_tsa(self):
         """ this method conducts time series aggregation """

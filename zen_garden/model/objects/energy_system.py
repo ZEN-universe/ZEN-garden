@@ -60,7 +60,7 @@ class EnergySystem:
         self.store_input_data()
 
         # create the rules
-        self.rules = EnergySystemRules(self)
+        self.rules = EnergySystemRules(optimization_setup)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -247,13 +247,13 @@ class EnergySystemRules:
     This class takes care of the rules for the EnergySystem
     """
 
-    def __init__(self, energy_system: EnergySystem):
+    def __init__(self, optimization_setup):
         """
         Inits the constraints for a given energy syste,
-        :param energy_system: The energy system used to build the constraints
+        optimization_setup
         """
 
-        self.energy_system = energy_system
+        self.optimization_setup = optimization_setup
 
     def constraint_carbon_emissions_total_rule(self, model, year):
         """ add up all carbon emissions from technologies and carriers """
@@ -265,8 +265,8 @@ class EnergySystemRules:
     def constraint_carbon_emissions_cumulative_rule(self, model, year):
         """ cumulative carbon emissions over time """
         # get parameter object
-        params = self.energy_system.parameters
-        interval_between_years = self.energy_system.system["interval_between_years"]
+        params = self.optimization_setup.parameters
+        interval_between_years = self.optimization_setup.system["interval_between_years"]
         if year == model.set_time_steps_yearly.at(1):
             return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_total[year] + params.previous_carbon_emissions)
         else:
@@ -276,14 +276,14 @@ class EnergySystemRules:
     def constraint_carbon_cost_total_rule(self, model, year):
         """ carbon cost associated with the carbon emissions of the system in each year """
         # get parameter object
-        params = self.energy_system.parameters
+        params = self.optimization_setup.parameters
         return (model.cost_carbon_emissions_total[year] == params.carbon_price[year] * model.carbon_emissions_total[year] # add overshoot price
                 + model.carbon_emissions_overshoot[year] * params.carbon_price_overshoot)
 
     def constraint_carbon_emissions_limit_rule(self, model, year):
         """ time dependent carbon emissions limit from technologies and carriers"""
         # get parameter object
-        params = self.energy_system.parameters
+        params = self.optimization_setup.parameters
         if params.carbon_emissions_limit[year] != np.inf:
             return (params.carbon_emissions_limit[year] >= model.carbon_emissions_total[year])
         else:
@@ -294,8 +294,8 @@ class EnergySystemRules:
         The prediction extends until the end of the horizon, i.e.,
         last optimization time step plus the current carbon emissions until the end of the horizon """
         # get parameter object
-        params = self.energy_system.parameters
-        interval_between_years = self.energy_system.system["interval_between_years"]
+        params = self.optimization_setup.parameters
+        interval_between_years = self.optimization_setup.system["interval_between_years"]
         if params.carbon_emissions_budget != np.inf:  # TODO check for last year - without last term?
             return (params.carbon_emissions_budget + model.carbon_emissions_overshoot[year] >= model.carbon_emissions_cumulative[year] + model.carbon_emissions_total[year] * (interval_between_years - 1))
         else:
@@ -312,8 +312,8 @@ class EnergySystemRules:
 
     def constraint_NPV_rule(self, model, year):
         """ discounts the annual capital flows to calculate the NPV """
-        system = self.energy_system.system
-        discount_rate = self.energy_system.analysis["discount_rate"]
+        system = self.optimization_setup.system
+        discount_rate = self.optimization_setup.analysis["discount_rate"]
         if system["optimized_years"] > 1:
             interval_between_years = system["interval_between_years"]
         else:

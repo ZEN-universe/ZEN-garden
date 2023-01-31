@@ -241,7 +241,7 @@ class OptimizationSetup(object):
         self.parameters = Parameter()
         self.constraints = Constraint()
         # define and construct components of self.model
-        Element.construct_model_components(self.energy_system)
+        Element.construct_model_components(self)
         logging.info("Apply Big-M GDP ")
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)

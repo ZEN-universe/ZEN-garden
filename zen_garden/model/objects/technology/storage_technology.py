@@ -108,7 +108,7 @@ class StorageTechnology(Technology):
         # set the dict time_steps_energy2power
         self.energy_system.time_steps.set_time_steps_energy2power(self.name, time_steps_energy2power)
         # set the first and last time step of each year
-        self.energy_system.time_steps.set_time_steps_storage_startend(self.name)
+        self.energy_system.time_steps.set_time_steps_storage_startend(self.name, self.optimization_setup.system)
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites set_time_steps_storage_level """

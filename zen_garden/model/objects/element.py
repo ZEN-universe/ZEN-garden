@@ -195,7 +195,7 @@ class Element:
                         # if set is built for pwa capex:
                         elif "set_capex" in index:
                             if element in model.set_conversion_technologies:
-                                _capex_is_pwa = optimization_setup.energy_system.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
+                                _capex_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
                                 # if technology is modeled as pwa, break for linear index
                                 if "linear" in index and _capex_is_pwa:
                                     append_element = False
@@ -211,7 +211,7 @@ class Element:
                         # if set is built for pwa conver_efficiency:
                         elif "set_conver_efficiency" in index:
                             if element in model.set_conversion_technologies:  # or element in model.set_storage_technologies:
-                                _conver_efficiency_is_pwa = optimization_setup.energy_system.get_attribute_of_specific_element(cls, element, "conver_efficiency_is_pwa")
+                                _conver_efficiency_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "conver_efficiency_is_pwa")
                                 dependent_carrier = list(model.set_dependent_carriers[element])
                                 # TODO for more than one carrier
                                 # _pwa_conver_efficiency = cls.get_attribute_of_specific_element(element,"pwa_conver_efficiency")
