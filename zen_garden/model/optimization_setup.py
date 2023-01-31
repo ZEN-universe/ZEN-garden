@@ -297,7 +297,7 @@ class OptimizationSetup(object):
             if element_name == "EnergySystem":
                 element = self.energy_system
             else:
-                element = self.energy_system.get_element(Element, element_name)
+                element = self.get_element(Element, element_name)
             # overwrite scenario dependent parameters
             for param in params:
                 assert "pwa" not in param, "Scenarios are not implemented for piece-wise affine parameters."
