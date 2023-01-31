@@ -52,7 +52,7 @@ class ConditioningTechnology(ConversionTechnology):
     def get_conver_efficiency(self):
         """retrieves and stores conver_efficiency for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as pwa_conver_efficiency"""
-        set_time_steps_yearly = self.optimization_setup.set_time_steps_yearly
+        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
         specific_heat = self.data_input.extract_attribute("specific_heat")["value"]
         specific_heat_ratio = self.data_input.extract_attribute("specific_heat_ratio")["value"]
         pressure_in = self.data_input.extract_attribute("pressure_in")["value"]

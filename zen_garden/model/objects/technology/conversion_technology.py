@@ -40,7 +40,7 @@ class ConversionTechnology(Technology):
         # define input and output carrier
         self.input_carrier = self.data_input.extract_conversion_carriers()["input_carrier"]
         self.output_carrier = self.data_input.extract_conversion_carriers()["output_carrier"]
-        self.optimization_setup.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
+        self.energy_system.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.reference_carrier[0] in (
                     self.input_carrier + self.output_carrier), f"reference carrier {self.reference_carrier} of technology {self.name} not in input and output carriers {self.input_carrier + self.output_carrier}"
