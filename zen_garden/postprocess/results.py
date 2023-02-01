@@ -191,7 +191,7 @@ class Results(object):
         """
         Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
         :param string: The string to decode
-        :return: The corresponding datafram
+        :return: The corresponding dataframe
         """
 
         # transform back to dataframes
@@ -379,47 +379,68 @@ class Results(object):
             else:
                 # init the scenario
                 _mf_data = {}
-
+                _is_multiindex = False
                 # cycle through all MFs
                 for year, mf in enumerate(self.mf):
                     _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
 
-                    # single element that is not a year
-                    if len(_var) == 1 and len(_var.index[0]) == 1 and not np.isfinite(_var.index[0]):
-                        _data[scenario] = _var
-                        break
-                    # if the year is in the index (no multiindex)
-                    elif year in _var.index:
-                        _mf_data[year] = _var.loc[year]
-                        yearly_component = True
+                    # # single element that is not a year
+                    # if len(_var) == 1 and _var.index.nlevels == 1 and not np.isfinite(_var.index[0]):
+                    #     _data[scenario] = _var
+                    #     break
+                    # # if the year is in the index (no multiindex)
+                    # elif year in _var.index:
+                    #     _mf_data[year] = _var.loc[year]
+                    #     yearly_component = True
+
+                    # no multiindex
+                    if _var.index.nlevels == 1:
+                        ts_type = self._get_ts_type(_var.T,name,force_output=True)
+                        # if yearly variable
+                        if ts_type == "yearly":
+                            _mf_data[year] = _var.loc[year].squeeze()
+                            yearly_component = True
+                            time_header = _var.index.name
+                        elif ts_type is None:
+                            _data[scenario] = _var
+                            break
+                        else:
+                            raise KeyError(f"The time step type '{ts_type}' was not expected for variable '{name}'")
+                    # multiindex
                     else:
+                        _is_multiindex = True
                         # unstack the year
-                        _varSeries = _var.unstack()
+                        _varSeries = _var.squeeze().unstack()
+                        # get type of time steps
+                        ts_type = self._get_ts_type(_varSeries,name,force_output=True)
                         # if all columns in years (drop the value level)
-                        if _varSeries.columns.droplevel(0).difference(self.years).empty:
+                        # if _varSeries.columns.droplevel(0).difference(self.years).empty:
+                        if ts_type == "yearly":
                             # get the data
-                            tmp_data = _varSeries[("value", year)]
+                            tmp_data = _varSeries[year]
                             # rename
-                            tmp_data.name = "value"
+                            tmp_data.name = _varSeries.columns.name
                             # set
                             _mf_data[year] = tmp_data
                             yearly_component = True
+                            time_header = _varSeries.columns.name
                         # if more time steps than years, then it is operational ts (we drop value in columns)
-                        elif pd.to_numeric(_varSeries.columns.droplevel(0), errors="coerce").equals(_varSeries.columns.droplevel(0)):
-                            if is_storage:
+                        # elif pd.to_numeric(_varSeries.columns.droplevel(0), errors="coerce").equals(_varSeries.columns.droplevel(0)):
+                        elif ts_type is not None:
+                            if ts_type == "storage":
                                 techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" in k.lower()][0]
                             else:
-                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys()
-                                             if "storage_level" not in k.lower() and "natural" in k.lower()][0]
+                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" not in k.lower()][0]
                             # get the timesteps
                             time_steps_year = sequence_time_steps_dicts.encode_time_step(techProxy, sequence_time_steps_dicts.decode_time_step(None, year, "yearly"), yearly=True)
                             # get the data
-                            tmp_data = _varSeries[[("value", tstep) for tstep in time_steps_year]]
+                            tmp_data = _varSeries[[tstep for tstep in time_steps_year]]
                             # rename
-                            tmp_data.name = "value"
+                            tmp_data.name = _varSeries.columns.name
                             # set
                             _mf_data[year] = tmp_data
                             yearly_component = False
+                            time_header = _varSeries.columns.name
                         # else not a time index
                         else:
                             _data[scenario] = _varSeries.stack()
@@ -429,18 +450,25 @@ class Results(object):
                     # deal with the years
                     if yearly_component:
                         # concat
-                        _df = pd.concat(_mf_data, axis=0, keys=_mf_data.keys())
-                        _dfIndex = _df.index.copy()
-                        for level, codes in enumerate(_df.index.codes):
-                            if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
-                                _dfIndex = _dfIndex.droplevel(level)
-                                break
-                        _df.index = _dfIndex
-                        if year not in _df.index:
-                            _indexSort = list(range(0, _df.index.nlevels))
-                            _indexSort.append(_indexSort[0])
-                            _indexSort.pop(0)
-                            _df = _df.reorder_levels(_indexSort)
+                        if _is_multiindex:
+                            new_header = [time_header]+tmp_data.index.names
+                            new_order = tmp_data.index.names + [time_header]
+                            _df = pd.concat(_mf_data, axis=0, keys=_mf_data.keys(),names=new_header).reorder_levels(new_order)
+                            _df_index = _df.index.copy()
+                            for level, codes in enumerate(_df.index.codes):
+                                if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
+                                    _df_index = _df_index.droplevel(level)
+                                    break
+                            _df.index = _df_index
+                        else:
+                            _df = pd.Series(_mf_data,index=_mf_data.keys())
+                            _df.index.name = time_header
+
+                        # if year not in _df.index:
+                        #     _indexSort = list(range(0, _df.index.nlevels))
+                        #     _indexSort.append(_indexSort[0])
+                        #     _indexSort.pop(0)
+                        #     _df = _df.reorder_levels(_indexSort)
                     else:
                         _df = pd.concat(_mf_data, axis=1)
                         _df.columns = _df.columns.droplevel(0)
@@ -508,7 +536,8 @@ class Results(object):
         component_name, component_data = self._get_component_data(component, scenario)
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
-
+        if isinstance(component_data,pd.Series):
+            return component_data
         ts_type = self._get_ts_type(component_data, component_name)
 
         if ts_type == "yearly":
@@ -566,7 +595,8 @@ class Results(object):
         component_name, component_data = self._get_component_data(component, scenario)
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
-
+        if isinstance(component_data,pd.Series):
+            return component_data
         ts_type = self._get_ts_type(component_data, component_name)
 
         if ts_type == "yearly":
@@ -664,9 +694,11 @@ class Results(object):
             component_name = component
             # only use the data from one scenario if specified
             if scenario is not None:
-                component_data = self.get_df(component)[scenario].unstack()
+                component_data = self.get_df(component)[scenario]
             else:
-                component_data = self.get_df(component).unstack()
+                component_data = self.get_df(component)
+            if isinstance(component_data.index,pd.MultiIndex):
+                component_data = component_data.unstack()
         elif isinstance(component, pd.Series):
             component_name = component.name
             component_data = component.unstack()
@@ -675,7 +707,7 @@ class Results(object):
 
         return component_name, component_data
 
-    def _get_ts_type(self, component_data, component_name):
+    def _get_ts_type(self, component_data, component_name,force_output = False):
         """ get time step type (operational, storage, yearly) """
         _header_operational = self.results["analysis"]["header_data_inputs"]["set_time_steps_operation"]
         _header_storage = self.results["analysis"]["header_data_inputs"]["set_time_steps_storage_level"]
@@ -687,7 +719,10 @@ class Results(object):
         elif component_data.columns.name == _header_yearly:
             return "yearly"
         else:
-            raise KeyError(f"Column index name of '{component_name}' ({component_data.columns.name}) is unknown. Should be (operational, storage, yearly)")
+            if force_output:
+                return None
+            else:
+                raise KeyError(f"Column index name of '{component_name}' ({component_data.columns.name}) is unknown. Should be (operational, storage, yearly)")
 
     def _get_hours_of_year(self, year):
         """ get total hours of year """

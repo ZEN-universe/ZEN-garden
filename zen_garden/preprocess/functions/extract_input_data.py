@@ -100,8 +100,6 @@ class DataInput():
             missing_index = missing_index[0]
             # check if special case of existing Technology
             if "existing_technology" in missing_index:
-                # if "year_construction" in df_input.columns and hasattr(self.element, "existing_capacity"):
-                #     file_name = "year_construction"
                 df_output = DataInput.extract_from_input_for_existing_capacities(df_input, df_output, index_name_list, file_name, missing_index)
                 if isinstance(default_value, dict):
                     df_output = df_output * default_value["multiplier"]
@@ -549,9 +547,10 @@ class DataInput():
         # check if input data is time-dependent and has yearly time steps
         if time_steps is self.energy_system.set_time_steps_yearly:
             # check if temporal header of input data is still given as 'time' instead of 'year'
-            if self.index_names["set_time_steps"] in df_input.axes[1]:
-                logging.warning(f"DeprecationWarning: The column header {self.index_names['set_time_steps']} (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header {self.index_names['set_time_steps_yearly']} instead")
-                df_input = df_input.rename({self.index_names["set_time_steps"]:self.index_names["set_time_steps_yearly"]},axis=1)
+            if "time" in df_input.axes[1]:
+                logging.warning(f"DeprecationWarning: The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead")
+                df_input = df_input.rename(
+                    {self.index_names["set_time_steps"]: self.index_names["set_time_steps_yearly"]}, axis=1)
             # does not contain annual index
             elif self.index_names["set_time_steps_yearly"] not in df_input.axes[1]:
                 return df_input

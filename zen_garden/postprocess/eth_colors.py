@@ -149,7 +149,13 @@ class ETHColors:
             "short0": self.getColor("blue",60),
             "short100": self.getColor("blue","dark"),
             "short100noPer": self.getColor("bronze",60),
-            "short100noStor": self.getColor("bronze","dark")
+            "short100noStor": self.getColor("bronze","dark"),
+            # new
+            # "ref_PI": self.getColor("green"), "ref_PD": self.getColor("blue"), "ref_MD": self.getColor("red"), "ref_MI": self.getColor("petrol"),
+            "GS_PI": self.getColor("green"),
+            "GS_PD": self.getColor("blue"),
+            "GS_MD": self.getColor("red"),
+            "GS_MI": self.getColor("petrol"),
         }
 
     def setManualColors(self):
