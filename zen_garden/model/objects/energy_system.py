@@ -116,7 +116,7 @@ class EnergySystem:
         self.sequence_time_steps_yearly = np.concatenate([[time_step] * time_steps_yearly_duration[time_step] for time_step in time_steps_yearly_duration])
         self.set_sequence_time_steps(None, self.sequence_time_steps_yearly, time_step_type="yearly")
         # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
-        self.set_time_step_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
+        self.set_time_steps_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
         self.parameters_interpolation_off = self.data_input.read_input_data("parameters_interpolation_off")
         # technology-specific
