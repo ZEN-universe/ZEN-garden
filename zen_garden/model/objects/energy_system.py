@@ -667,10 +667,10 @@ class EnergySystemRules:
         params = self.energy_system.parameters
         interval_between_years = self.energy_system.system["interval_between_years"]
         if year == model.set_time_steps_yearly.at(1):
-            return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_total[year] + params.previous_carbon_emissions)
+            return (model.carbon_emissions_cumulative[year] == (model.carbon_emissions_total[year] - model.carbon_emissions_overshoot[year]) + params.previous_carbon_emissions)
         else:
-            return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_cumulative[year - 1] + model.carbon_emissions_total[year - 1] * (interval_between_years - 1) +
-                    model.carbon_emissions_total[year])
+            return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_cumulative[year - 1] + (model.carbon_emissions_total[year - 1] - model.carbon_emissions_overshoot[year - 1]) * (interval_between_years - 1) +
+                    (model.carbon_emissions_total[year]-model.carbon_emissions_overshoot[year]))
 
     def constraint_carbon_cost_total_rule(self, model, year):
         """ carbon cost associated with the carbon emissions of the system in each year """
@@ -695,8 +695,11 @@ class EnergySystemRules:
         # get parameter object
         params = self.energy_system.parameters
         interval_between_years = self.energy_system.system["interval_between_years"]
-        if params.carbon_emissions_budget != np.inf:  # TODO check for last year - without last term?
-            return (params.carbon_emissions_budget + model.carbon_emissions_overshoot[year] >= model.carbon_emissions_cumulative[year] + model.carbon_emissions_total[year] * (interval_between_years - 1))
+        if params.carbon_emissions_budget != np.inf:
+            if year == model.set_time_steps_yearly.at(-1):
+                return (params.carbon_emissions_budget >= model.carbon_emissions_cumulative[year])
+            else:
+                return (params.carbon_emissions_budget >= model.carbon_emissions_cumulative[year] + (model.carbon_emissions_total[year] - model.carbon_emissions_overshoot[year]) * (interval_between_years - 1))
         else:
             return pe.Constraint.Skip
 
