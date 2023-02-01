@@ -124,7 +124,7 @@ class Carrier(Element):
         energy_system.variables.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc="shed demand of carrier")
         # cost of shed demand
-        energy_system.variables.add_variable(model, name="costShedDemandCarrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
+        energy_system.variables.add_variable(model, name="cost_shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], energy_system), domain=pe.NonNegativeReals,
             doc="shed demand of carrier")
 
         # add pe.Sets of the child classes
@@ -244,7 +244,7 @@ class CarrierRules:
         # get parameter object
         params = self.energy_system.parameters
         if params.shed_demand_price[carrier] != np.inf:
-            return (model.costShedDemandCarrier[carrier, node, time] == model.shed_demand_carrier[carrier, node, time] * params.shed_demand_price[carrier])
+            return (model.cost_shed_demand_carrier[carrier, node, time] == model.shed_demand_carrier[carrier, node, time] * params.shed_demand_price[carrier])
         else:
             return (model.shed_demand_carrier[carrier, node, time] == 0)
 
@@ -260,7 +260,7 @@ class CarrierRules:
         params = self.energy_system.parameters
         base_time_step = self.energy_system.decode_time_step(None, year, "yearly")
         return (model.cost_carrier_total[year] == sum(sum(
-            (model.cost_carrier[carrier, node, time] + model.costShedDemandCarrier[carrier, node, time]) * params.time_steps_operation_duration[carrier, time] for time in
+            (model.cost_carrier[carrier, node, time] + model.cost_shed_demand_carrier[carrier, node, time]) * params.time_steps_operation_duration[carrier, time] for time in
             self.energy_system.encode_time_step(carrier, base_time_step, yearly=True)) for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.energy_system)[0]))
 
     def constraint_carbon_emissions_carrier_rule(self, model, carrier, node, time):

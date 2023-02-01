@@ -713,7 +713,7 @@ class EnergySystemRules:
         """ discounts the annual capital flows to calculate the NPV """
         system = self.energy_system.system
         discount_rate = self.energy_system.analysis["discount_rate"]
-        if system["optimized_years"] > 1:
+        if system["optimized_years"] > 1 or year == model.set_time_steps_yearly.at(-1):
             interval_between_years = system["interval_between_years"]
         else:
             interval_between_years = 1
