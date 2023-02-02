@@ -48,26 +48,56 @@ class ETHColors:
             "cost_carbon_emissions_total": self.getColor("purple"), }
 
     def setColorsTechs(self):
-        self.colors["techs"] = {"natural_gas_turbine": self.getColor("petrol"), "hard_coal_plant": self.getColor("grey", "dark"), "natural_gas_turbine_CCS": self.getColor("petrol", 60),
-            "hard_coal_plant_CCS": self.getColor("grey"), "coal": self.getColor("bronze", "dark"), "nuclear": self.getColor("purple"), "lignite_coal_plant": self.getColor("bronze", "dark"),
-            "oil_plant": self.getColor("grey"), "lng_terminal": self.getColor("grey", 40), "wind_onshore": self.getColor("blue"), "wind": self.getColor("blue", 60),
-            "photovoltaics": self.getColor("bronze", 60), "wind_offshore": self.getColor("blue", "dark"), "biomass_plant": self.getColor("green"), "biomass_plant_CCS": self.getColor("green", 60),
-            "CCS": self.getColor("red"), "waste_plant": self.getColor("grey", 60), "run-of-river_hydro": self.getColor("blue", 80), "reservoir_hydro": self.getColor("blue", 60),
-            "hydro": self.getColor("blue"), "renewables": self.getColor("green", 60), "heat_pump": self.getColor("blue"), "natural_gas_boiler": self.getColor("petrol", 60),
-            "oil_boiler": self.getColor("bronze", 60), "electrode_boiler": self.getColor("blue", 60), "others": self.getColor("grey", 60), "battery": self.getColor("bronze", 60),
-            "hydrogen_storage": self.getColor("purple", 60), "natural_gas_storage": self.getColor("petrol", 60), "pumped_hydro": self.getColor("blue", 60), "power_line": self.getColor("blue", 60),
+        self.colors["techs"] = {
+            "natural_gas_turbine": self.getColor("petrol"),
+            "hard_coal_plant": self.getColor("grey", "dark"),
+            "hard_coal_boiler": self.getColor("grey", "dark"),
+            "natural_gas_turbine_CCS": self.getColor("petrol", 60),
+            "hard_coal_plant_CCS": self.getColor("grey"),
+            "coal": self.getColor("bronze", "dark"),
+            "nuclear": self.getColor("purple"),
+            "lignite_coal_plant": self.getColor("bronze", "dark"),
+            "oil_plant": self.getColor("grey"),
+            "lng_terminal": self.getColor("grey", 40), "wind_onshore": self.getColor("blue"),
+            "wind": self.getColor("blue", 60),
+            "wind_solar": self.getColor("blue"),
+            "photovoltaics": self.getColor("bronze", 60),
+            "wind_offshore": self.getColor("blue", "dark"),
+            "biomass_plant": self.getColor("green"),
+            "biomass_boiler": self.getColor("green"),
+            "biomass_plant_CCS": self.getColor("green", 60),
+            "CCS": self.getColor("red"),
+            "waste_plant": self.getColor("grey", 60),
+            "run-of-river_hydro": self.getColor("blue", 80),
+            "reservoir_hydro": self.getColor("blue", 60),
+            "hydro": self.getColor("blue"),
+            "renewables": self.getColor("green", 60),
+            "heat_pump": self.getColor("blue"),
+            "natural_gas_boiler": self.getColor("petrol", 60),
+            "oil_boiler": self.getColor("bronze", 60),
+            "electrode_boiler": self.getColor("blue", 60),
+            "others": self.getColor("grey", 60),
+            "battery": self.getColor("bronze", 60),
+            "hydrogen_storage": self.getColor("purple", 60),
+            "natural_gas_storage": self.getColor("petrol", 60),
+            "pumped_hydro": self.getColor("blue", 60),
+            "power_line": self.getColor("blue", 60),
             "natural_gas_pipeline": self.getColor("petrol", 60), }
 
     def setColorsScenarios(self):
         self.colors["scenarios"] = {# Gas phase-out scenarios
             "PF": self.getColor("blue"), "MF": self.getColor("red"), "PI": self.getColor("green"), "PD": self.getColor("blue"), "MI": self.getColor("petrol"), "MD": self.getColor("red"),
             "ref_PI": self.getColor("green"), "ref_PD": self.getColor("blue"), "ref_MD": self.getColor("red"), "ref_MI": self.getColor("petrol"), "ref_MF": self.getColor("blue", 40),
-            "ref_MF2": self.getColor("blue", 60), "ref_MF3": self.getColor("blue", 20), "noG_PF": self.getColor("red", "dark"), "noG_MF": self.getColor("red", 60), "noRG_PI": self.getColor("green"),
+            "ref_MF2": self.getColor("blue", 60), "ref_MF3": self.getColor("blue", 20), "noRG_PI": self.getColor("green"),
             "noRG_PD4": self.getColor("blue", "dark"), "noRG_PD3": self.getColor("blue"), "noRG_PD2": self.getColor("blue", 80), "noRG_PD1": self.getColor("blue", 60),
             "noRG_MI": self.getColor("petrol"), "noRG_MI2": self.getColor("petrol", 60), "noRG_MI4": self.getColor("petrol", 40), "noRG_MD4": self.getColor("red", "dark"),
             "noRG_MD3": self.getColor("red"), "noRG_MD2": self.getColor("red", 80), "noRG_MD1": self.getColor("red", 60), "noRG_PF_noBudget": self.getColor("bronze"),
             # "noRG_PF2": self.getColor("green"),
-            "noRG_MF": self.getColor("red", 80), "noRG_MF2": self.getColor("red", 60), "noRG_MF4": self.getColor("red", 20), }
+            "noRG_MF": self.getColor("red", 80), "noRG_MF2": self.getColor("red", 60), "noRG_MF4": self.getColor("red", 20),
+            # new
+            # "ref_PI": self.getColor("green"), "ref_PD": self.getColor("blue"), "ref_MD": self.getColor("red"), "ref_MI": self.getColor("petrol"),
+            "GS_PI": self.getColor("green"), "GS_PD": self.getColor("blue"), "GS_MD": self.getColor("red"), "GS_MI": self.getColor("petrol"),
+        }
 
     def setManualColors(self):
         self.manualColors = {}
