@@ -410,7 +410,7 @@ class Results(object):
                     else:
                         _is_multiindex = True
                         # unstack the year
-                        _varSeries = _var.squeeze().unstack()
+                        _varSeries = _var["value"].unstack()
                         # get type of time steps
                         ts_type = self._get_ts_type(_varSeries,name,force_output=True)
                         # if all columns in years (drop the value level)

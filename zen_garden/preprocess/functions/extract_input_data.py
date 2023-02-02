@@ -562,7 +562,26 @@ class DataInput():
                 return df_input
             # assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
             assert temporal_header in index_name_list, f"Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"
-
+            # set index
+            index_names_column = df_input.columns.intersection(index_name_list).to_list()
+            df_input = df_input.set_index(index_names_column)
+            combined_years = df_input.index.get_level_values(temporal_header).union(
+                self.energy_system.set_time_steps_years).sort_values().to_list()
+            if df_input.index.nlevels == 1:
+                combined_index = pd.Index(combined_years, name=temporal_header)
+                is_single_index = True
+            else:
+                index_list = []
+                for index_name in index_names_column:
+                    if index_name == temporal_header:
+                        index_list.append(combined_years)
+                    else:
+                        index_list.append(df_input.index.get_level_values(index_name).unique())
+                combined_index = pd.MultiIndex.from_product(index_list, names=index_name_list).sort_values()
+                is_single_index = False
+            df_input_temp = pd.DataFrame(index=combined_index, columns=df_input.columns)
+            df_input_temp.loc[df_input.index] = df_input
+            df_input = df_input_temp.astype(float)
             # interpolate missing data
             file_names_int_off = []
             if self.energy_system.parameters_interpolation_off is not None:
@@ -570,31 +589,23 @@ class DataInput():
             if file_name not in file_names_int_off:
                 parameters = df_input.axes[1]
                 for param in parameters:
-                    if param == temporal_header:
-                        continue
-                    for year in self.energy_system.set_time_step_years:
-                        if year not in df_input.get(temporal_header).values:
-                            additional_row = pd.DataFrame({temporal_header: year, param: float("nan")},index=[0])
-                            df_input = pd.concat([df_input,additional_row],ignore_index=True)
-                            # df_input = df_input.append({temporal_header: year, param: float("nan")}, ignore_index=True)
-                    df_input = df_input.sort_values(temporal_header)
-                    df_input[param] = df_input[param].interpolate()
+                    if param not in index_names_column and df_input[param].isna().any():
+                        if is_single_index:
+                            df_input[param] = df_input[param].astype(float).interpolate(method="index")
+                        else:
+                            df_input_temp = df_input[param].unstack(df_input.index.names.difference([temporal_header]))
+                            df_input[param] = df_input_temp.interpolate(method="index", axis=0).stack().reorder_levels(
+                                df_input.index.names)
+                            a = 1
             else:
                 logging.info(f"Parameter {file_name} data won't be interpolated to cover years without given values")
-
-            #remove data of years that won't be simulated
-            unnecessary_rows = []
-            for count in df_input.axes[0]:
-                if df_input.at[count,temporal_header] not in self.energy_system.set_time_step_years:
-                    unnecessary_rows.append(count)
-            df_input = df_input.drop(index=unnecessary_rows)
-
-            #convert yearly time indices to generic ones
-            counter = 0
-            for index in df_input.axes[0]:
-                df_input.at[index,temporal_header] = df_input.at[index,temporal_header] - self.system["reference_year"] - (self.system["interval_between_years"] - 1) * counter
-                counter += 1
-
+            df_input = df_input.reset_index()
+            # remove data of years that won't be simulated
+            df_input = df_input[df_input[temporal_header].isin(self.energy_system.set_time_steps_years)]
+            # convert yearly time indices to generic ones
+            year2step = {year: step for year, step in
+                         zip(self.energy_system.set_time_steps_years, self.energy_system.set_time_steps_yearly)}
+            df_input[temporal_header] = df_input[temporal_header].apply(lambda year: year2step[year])
         return df_input
 
     @staticmethod
