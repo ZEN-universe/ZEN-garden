@@ -82,7 +82,7 @@ class EnergySystem:
         self.sequence_time_steps_yearly = np.concatenate([[time_step] * time_steps_yearly_duration[time_step] for time_step in time_steps_yearly_duration])
         self.time_steps.set_sequence_time_steps(None, self.sequence_time_steps_yearly, time_step_type="yearly")
         # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
-        self.set_time_step_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
+        self.set_time_steps_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
         self.parameters_interpolation_off = self.data_input.read_input_data("parameters_interpolation_off")
         # technology-specific
@@ -314,7 +314,7 @@ class EnergySystemRules:
         """ discounts the annual capital flows to calculate the NPV """
         system = self.optimization_setup.system
         discount_rate = self.optimization_setup.analysis["discount_rate"]
-        if system["optimized_years"] > 1:
+        if system["optimized_years"] > 1 or year == model.set_time_steps_yearly.at(-1):
             interval_between_years = system["interval_between_years"]
         else:
             interval_between_years = 1
