@@ -12,18 +12,16 @@ Description:  Class defining the Concrete optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
 import logging
+import os
+
+import numpy as np
+import pandas as pd
 import pyomo.environ as pe
 from pyomo.core.expr.current import decompose_term
-import os
-import sys
-import pandas as pd
-import numpy as np
-# import elements of the optimization problem
-# technology and carrier classes from technology and carrier directory, respectively
+
 from .objects.element import Element
-from .objects.technology import *
-from .objects.carrier import *
 from .objects.energy_system import EnergySystem
+from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 from ..preprocess.prepare import Prepare
 
@@ -62,7 +60,7 @@ class OptimizationSetup(object):
         :param system: dictionary defining the system"""
         logging.info("\n--- Add elements to model--- \n")
 
-        for element_name in self.energy_system.get_element_list():
+        for element_name in self.energy_system.element_list:
             element_class = self.energy_system.dict_element_classes[element_name]
             element_name = element_class.label
             element_set = self.system[element_name]
@@ -89,8 +87,6 @@ class OptimizationSetup(object):
         # conduct  time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
         self.time_series_aggregation.conduct_tsa()
-
-
 
     def construct_optimization_problem(self):
         """ constructs the optimization problem """
@@ -280,7 +276,7 @@ class OptimizationSetup(object):
 
         if solver_name == "gurobi_persistent":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
-            self.opt.set_instance(self.model, symbolic_solver_labels=solver["useSymbolicLabels"])
+            self.opt.set_instance(self.model, symbolic_solver_labels=solver["use_symbolic_labels"])
             self.results = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"], options_string=solver_parameters)
         else:
             self.opt = pe.SolverFactory(solver_name)
@@ -303,7 +299,6 @@ class OptimizationSetup(object):
             _invest_capacity[_invest_capacity <= _rounding_value] = 0
             _capex[_capex <= _rounding_value] = 0
             _base_time_steps = self.energy_system.decode_yearly_time_steps([step_horizon])
-            Technology = getattr(sys.modules[__name__], "Technology")
             for tech in self.energy_system.get_all_elements(Technology):
                 # new capacity
                 _built_capacity_tech = _built_capacity.loc[tech.name].unstack()
