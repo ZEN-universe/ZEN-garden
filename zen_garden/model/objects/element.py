@@ -77,7 +77,7 @@ class Element:
         # construct pe.Constraints
         cls.construct_constraints(optimization_setup)
         # construct pe.Objective
-        optimization_setup.construct_objective()
+        optimization_setup.energy_system.construct_objective()
 
     @classmethod
     def construct_sets(cls, optimization_setup):

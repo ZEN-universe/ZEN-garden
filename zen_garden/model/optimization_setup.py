@@ -48,8 +48,6 @@ class OptimizationSetup(object):
         self.dict_elements = defaultdict(list)
         # pe.ConcreteModel
         self.pyomo_model = None
-        # the objectives
-        self.objectives = Objectives(self)
         # the components
         self.variables = None
         self.parameters = None
@@ -528,61 +526,3 @@ class OptimizationSetup(object):
                 return component_data
             except KeyError:
                 raise KeyError(f"the custom set {custom_set} cannot be used as a subindex of {component_data.index}")
-
-    def construct_objective(self):
-        """ constructs the pe.Objective of the class <EnergySystem> """
-        logging.info("Construct pe.Objective")
-
-        # get selected objective rule
-        if self.analysis["objective"] == "total_cost":
-            objective_rule = self.objectives.objective_total_cost_rule
-        elif self.analysis["objective"] == "total_carbon_emissions":
-            objective_rule = self.objectives.objective_total_carbon_emissions_rule
-        elif self.analysis["objective"] == "risk":
-            logging.info("Objective of minimizing risk not yet implemented")
-            objective_rule = self.objectives.objective_risk_rule
-        else:
-            raise KeyError(f"Objective type {self.analysis['objective']} not known")
-
-        # get selected objective sense
-        if self.analysis["sense"] == "minimize":
-            objective_sense = pe.minimize
-        elif self.analysis["sense"] == "maximize":
-            objective_sense = pe.maximize
-        else:
-            raise KeyError(f"Objective sense {self.analysis['sense']} not known")
-
-        # construct objective
-        self.model.objective = pe.Objective(rule=objective_rule, sense=objective_sense)
-
-
-class Objectives:
-    """
-    This class contains the objectives for the obtimization setup
-    """
-    def __init__(self, optimization_setup):
-        """
-        Inits the objectives
-        :param optimization_setup: The optimization setup for the objectives
-        """
-        self.optimization_setup = optimization_setup
-
-    # objective rules
-    def objective_total_cost_rule(self, model):
-        """objective function to minimize the total cost"""
-        system = self.optimization_setup.system
-        return (sum(model.NPV[year] * # discounted utility function
-                    ((1 / (1 + system["social_discount_rate"])) ** (system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1)))) for year in model.set_time_steps_yearly))
-
-    def objectiveNPVRule(self, model):
-        """ objective function to minimize NPV """
-        return (sum(model.NPV[year] for year in model.set_time_steps_yearly))
-
-    def objective_total_carbon_emissions_rule(self, model):
-        """objective function to minimize total emissions"""
-        return (sum(model.carbon_emissions_total[year] for year in model.set_time_steps_yearly))
-
-    def objective_risk_rule(self, model):
-        """objective function to minimize total risk"""
-        # TODO implement objective functions for risk
-        return pe.Constraint.Skip

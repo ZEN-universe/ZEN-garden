@@ -241,6 +241,32 @@ class EnergySystem:
         # NPV
         constraints.add_constraint(pyomo_model, name="constraint_NPV", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_NPV_rule, doc="NPV of energy system")
 
+    def construct_objective(self):
+        """ constructs the pe.Objective of the class <EnergySystem> """
+        logging.info("Construct pe.Objective")
+
+        # get selected objective rule
+        if self.optimization_setup.analysis["objective"] == "total_cost":
+            objective_rule = self.rules.objective_total_cost_rule
+        elif self.optimization_setup.analysis["objective"] == "total_carbon_emissions":
+            objective_rule = self.rules.objective_total_carbon_emissions_rule
+        elif self.optimization_setup.analysis["objective"] == "risk":
+            logging.info("Objective of minimizing risk not yet implemented")
+            objective_rule = self.rules.objective_risk_rule
+        else:
+            raise KeyError(f"Objective type {self.optimization_setup.analysis['objective']} not known")
+
+        # get selected objective sense
+        if self.optimization_setup.analysis["sense"] == "minimize":
+            objective_sense = pe.minimize
+        elif self.optimization_setup.analysis["sense"] == "maximize":
+            objective_sense = pe.maximize
+        else:
+            raise KeyError(f"Objective sense {self.optimization_setup.analysis['sense']} not known")
+
+        # construct objective
+        self.optimization_setup.model.objective = pe.Objective(rule=objective_rule, sense=objective_sense)
+
 
 class EnergySystemRules:
     """
@@ -321,3 +347,23 @@ class EnergySystemRules:
 
         return (model.NPV[year] == model.cost_total[year] * sum(# economic discount
             ((1 / (1 + discount_rate)) ** (interval_between_years * (year - model.set_time_steps_yearly.at(1)) + _intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years)))
+
+    # objective rules
+    def objective_total_cost_rule(self, model):
+        """objective function to minimize the total cost"""
+        system = self.optimization_setup.system
+        return (sum(model.NPV[year] * # discounted utility function
+                    ((1 / (1 + system["social_discount_rate"])) ** (system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1)))) for year in model.set_time_steps_yearly))
+
+    def objectiveNPVRule(self, model):
+        """ objective function to minimize NPV """
+        return (sum(model.NPV[year] for year in model.set_time_steps_yearly))
+
+    def objective_total_carbon_emissions_rule(self, model):
+        """objective function to minimize total emissions"""
+        return (sum(model.carbon_emissions_total[year] for year in model.set_time_steps_yearly))
+
+    def objective_risk_rule(self, model):
+        """objective function to minimize total risk"""
+        # TODO implement objective functions for risk
+        return pe.Constraint.Skip
