@@ -707,10 +707,10 @@ class EnergySystemRules:
         """ add up all costs from technologies and carriers"""
         return (model.cost_total[year] ==
                 # capex
-                model.capex_total[year] + # opex
-                model.opex_total[year] + # carrier costs
-                model.cost_carrier_total[year] + # carbon costs
-                model.cost_carbon_emissions_total[year])
+                model.capex_total[year] + # capex
+                model.opex_total[year] + # opex
+                model.cost_carrier_total[year] + # carrier costs
+                model.cost_carbon_emissions_total[year]) # carbon costs
 
     def constraint_NPV_rule(self, model, year):
         """ discounts the annual capital flows to calculate the NPV """
