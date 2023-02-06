@@ -577,7 +577,9 @@ class DataInput():
                 combined_index = pd.MultiIndex.from_product(index_list,names=index_name_list).sort_values()
                 is_single_index = False
             df_input_temp = pd.DataFrame(index = combined_index,columns=df_input.columns)
-            df_input_temp.loc[df_input.index] = df_input
+            common_index = df_input.index.intersection(combined_index)
+            df_input_temp.loc[common_index] = df_input.loc[common_index]
+            # df_input_temp.loc[df_input.index] = df_input
             df_input = df_input_temp.astype(float)
             # interpolate missing data
             file_names_int_off = []
