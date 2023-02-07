@@ -312,8 +312,9 @@ class DataInput:
             _time_steps = self.energy_system.set_time_steps_yearly
         elif variable_type == "conver_efficiency":
             _attribute_name = "conver_efficiency"
-            _index_sets = ["set_nodes", "set_time_steps"]
-            _time_steps = self.energy_system.set_base_time_steps
+            _index_sets = ["set_nodes", "set_time_steps_yearly"]
+            _index_name = self.index_names[_index_sets[-1]]
+            _time_steps = self.energy_system.set_time_steps_yearly
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
         # import all input data
@@ -322,7 +323,8 @@ class DataInput:
         df_input_linear = self.read_pwa_files(variable_type, fileType="linear_")
         df_linear_exist = self.exists_attribute(_attribute_name)
         assert (
-                           df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
+                           df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, \
+            f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
         # check if capex_specific exists
         if (df_input_nonlinear is not None and df_input_breakpoints is not None):
             # select data
@@ -337,8 +339,8 @@ class DataInput:
                 nonlinear_values[column] = df_input_nonlinear[column].to_list()
 
             # assert that breakpoint variable (x variable in nonlinear input)
-            assert df_input_breakpoints.columns[
-                       0] in df_input_nonlinear.columns, f"breakpoint variable for pwa '{df_input_breakpoints.columns[0]}' is not in nonlinear variables [{df_input_nonlinear.columns}]"
+            assert df_input_breakpoints.columns[0] in df_input_nonlinear.columns, \
+                f"breakpoint variable for pwa '{df_input_breakpoints.columns[0]}' is not in nonlinear variables [{df_input_nonlinear.columns}]"
             breakpoint_variable = df_input_breakpoints.columns[0]
             breakpoints = df_input_breakpoints[breakpoint_variable].to_list()
 
@@ -353,25 +355,33 @@ class DataInput:
                     pwa_dict["bounds"][value_variable] = (min_capacity_tech, max_capacity_tech)
                 else:
                     # conduct linear regress
-                    linear_regress_object = linregress(nonlinear_values[breakpoint_variable], nonlinear_values[value_variable])
+                    linear_regress_object = linregress(nonlinear_values[breakpoint_variable],
+                                                       nonlinear_values[value_variable])
                     # calculate relative intercept (intercept/slope) if slope != 0
                     if linear_regress_object.slope != 0:
                         _relative_intercept = np.abs(linear_regress_object.intercept / linear_regress_object.slope)
                     else:
                         _relative_intercept = np.abs(linear_regress_object.intercept)
                     # check if to a reasonable degree linear
-                    if _relative_intercept <= self.solver["linear_regression_check"]["eps_intercept"] and linear_regress_object.rvalue >= self.solver["linear_regression_check"]["epsRvalue"]:
+                    if _relative_intercept <= self.solver["linear_regression_check"][
+                        "eps_intercept"] and linear_regress_object.rvalue >= self.solver["linear_regression_check"][
+                        "epsRvalue"]:
                         # model as linear function
                         slope_lin_reg = linear_regress_object.slope
-                        linear_dict[value_variable] = self.create_default_output(index_sets=_index_sets, time_steps=_time_steps, manual_default_value=slope_lin_reg)[0]
+                        linear_dict[value_variable] = \
+                        self.create_default_output(index_sets=_index_sets, time_steps=_time_steps,
+                                                   manual_default_value=slope_lin_reg)[0]
                     else:
                         # model as pwa function
-                        pwa_dict[value_variable] = list(np.interp(breakpoints, nonlinear_values[breakpoint_variable], nonlinear_values[value_variable]))
+                        pwa_dict[value_variable] = list(np.interp(breakpoints, nonlinear_values[breakpoint_variable],
+                                                                  nonlinear_values[value_variable]))
                         pwa_dict["pwa_variables"].append(value_variable)
                         # save bounds
-                        _values_between_bounds = [pwa_dict[value_variable][idxBreakpoint] for idxBreakpoint, breakpoint in enumerate(breakpoints) if
+                        _values_between_bounds = [pwa_dict[value_variable][idxBreakpoint] for idxBreakpoint, breakpoint
+                                                  in enumerate(breakpoints) if
                                                   breakpoint >= min_capacity_tech and breakpoint <= max_capacity_tech]
-                        _values_between_bounds.extend(list(np.interp([min_capacity_tech, max_capacity_tech], breakpoints, pwa_dict[value_variable])))
+                        _values_between_bounds.extend(list(
+                            np.interp([min_capacity_tech, max_capacity_tech], breakpoints, pwa_dict[value_variable])))
                         pwa_dict["bounds"][value_variable] = (min(_values_between_bounds), max(_values_between_bounds))
             # pwa
             if (len(pwa_dict["pwa_variables"]) > 0 and len(linear_dict) == 0):
@@ -391,28 +401,39 @@ class DataInput:
                 is_pwa = False
                 return None, is_pwa
             else:
-                raise NotImplementedError(f"There are both linearly and nonlinearly modeled variables in {variable_type} of {self.element.name}. Not yet implemented")
+                raise NotImplementedError(
+                    f"There are both linearly and nonlinearly modeled variables in {variable_type} of {self.element.name}. Not yet implemented")
         # linear
         else:
             is_pwa = False
             linear_dict = {}
             if variable_type == "capex":
-                linear_dict["capex"] = self.extract_input_data(_attribute_name, index_sets=_index_sets, time_steps=_time_steps)
+                linear_dict["capex"] = self.extract_input_data(_attribute_name, index_sets=_index_sets,
+                                                               time_steps=_time_steps)
                 return linear_dict, is_pwa
             else:
-                _dependent_carrier = list(set(self.element.input_carrier + self.element.output_carrier).difference(self.element.reference_carrier))
+                _dependent_carrier = list(set(self.element.input_carrier + self.element.output_carrier).difference(
+                    self.element.reference_carrier))
                 # TODO implement for more than 1 carrier
                 if _dependent_carrier == []:
                     return None, is_pwa
                 elif len(_dependent_carrier) == 1 and df_input_linear is None:
-                    linear_dict[_dependent_carrier[0]] = self.extract_input_data(_attribute_name, index_sets=_index_sets, time_steps=_time_steps)
+                    linear_dict[_dependent_carrier[0]] = self.extract_input_data(_attribute_name,
+                                                                                 index_sets=_index_sets,
+                                                                                 time_steps=_time_steps)
                 else:
-                    df_output, default_value, index_name_list = self.create_default_output(_index_sets, None, time_steps=_time_steps, manual_default_value=1)
-                    assert (df_input_linear is not None), f"input file for linear_conver_efficiency could not be imported."
-                    df_input_linear = df_input_linear.rename(columns={'year': 'time'})
+                    df_output, default_value, index_name_list = self.create_default_output(_index_sets, None,
+                                                                                           time_steps=_time_steps,
+                                                                                           manual_default_value=1)
+                    assert (
+                                df_input_linear is not None), f"input file for linear_conver_efficiency could not be imported."
+                    # df_input_linear = df_input_linear.rename(columns={'year': 'time'})
                     for carrier in _dependent_carrier:
-                        df_input_carrier = df_input_linear[["time",carrier]]
-                        linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "linear_conver_efficiency", index_name_list, default_value, time_steps=None).copy(deep=True)
+                        df_input_carrier = df_input_linear[[_index_name, carrier]]
+                        linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output,
+                                                                               "linear_conver_efficiency",
+                                                                               index_name_list, default_value,
+                                                                               time_steps=None).copy(deep=True)
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
