@@ -181,7 +181,8 @@ class EnergySystem:
         self.dict_elements[element_class.__name__].append(instance)
         # Add the instance to all parents as well
         for cls in element_class.__mro__:
-            self.dict_elements[cls.__name__].append(instance)
+            if cls != element_class:
+                self.dict_elements[cls.__name__].append(instance)
 
     def get_all_elements(self, cls):
         """ get all elements of the class in the enrgysystem.
