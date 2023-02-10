@@ -291,6 +291,7 @@ class OptimizationSetup(object):
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
             self.opt.set_instance(self.model, symbolic_solver_labels=solver["use_symbolic_labels"])
             self.results = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"], options_string=solver_parameters,save_results=False, load_solutions=False)
+            self.opt.load_vars()
         elif solver_name == "gurobi":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
             self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"])
