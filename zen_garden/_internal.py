@@ -127,5 +127,5 @@ def main(config, dataset_path=None):
             # write results
             evaluation = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
                                      model_name=model_name, scenario_name=scenario_name)
-
+    logging.info("Optimization finished")
     return optimization_setup

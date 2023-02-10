@@ -16,6 +16,7 @@ import pyomo.environ as pe
 from pyomo.core.expr.current import decompose_term
 import os
 import sys
+import time
 import pandas as pd
 import numpy as np
 # import elements of the optimization problem
@@ -85,18 +86,18 @@ class OptimizationSetup(object):
                 self.energy_system.add_element(element_class, item)
         if self.energy_system.solver["analyze_numerics"]:
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.energy_system.solver["immutable_unit"],
-                                                                  unit_exps=self.energy_system.solver["rangeUnitExponents"])
+                                                                  unit_exps=self.energy_system.solver["range_unit_exponents"])
         # conduct  time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
         self.time_series_aggregation.conduct_tsa()
-
-
 
     def construct_optimization_problem(self):
         """ constructs the optimization problem """
         # create empty ConcreteModel
         self.model = pe.ConcreteModel()
         self.energy_system.set_pyomo_model(self.model)
+        # add duals
+        self.add_duals()
         # define and construct components of self.model
         Element.construct_model_components(self.energy_system)
         logging.info("Apply Big-M GDP ")
@@ -104,6 +105,7 @@ class OptimizationSetup(object):
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)
         # find smallest and largest coefficient and RHS
         self.analyze_numerics()
+
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
@@ -262,11 +264,18 @@ class OptimizationSetup(object):
                             smallest_rhs[1] = _RHS
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
+    
+    def add_duals(self):
+        """ adds duals of constraints """
+        if self.solver["add_duals"]:
+            logging.info("Add dual variables")
+            self.model.dual = pe.Suffix(direction=pe.Suffix.IMPORT)
+            # self.model.dual = pe.Suffix(direction=pe.Suffix.IMPORT_EXPORT)
+            # self.model.dual2 = pe.Suffix(direction=pe.Suffix.IMPORT)
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """
-
         solver_name = solver["name"]
         # remove options that are None
         solver_options = {key: solver["solver_options"][key] for key in solver["solver_options"] if solver["solver_options"][key] is not None}
@@ -280,16 +289,18 @@ class OptimizationSetup(object):
 
         if solver_name == "gurobi_persistent":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
-            self.opt.set_instance(self.model, symbolic_solver_labels=solver["useSymbolicLabels"])
-            self.results = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"], options_string=solver_parameters)
+            self.opt.set_instance(self.model, symbolic_solver_labels=solver["use_symbolic_labels"])
+            self.results = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"], options_string=solver_parameters,save_results=False, load_solutions=False)
+        elif solver_name == "gurobi":
+            self.opt = pe.SolverFactory(solver_name, options=solver_options)
+            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"])
         else:
             self.opt = pe.SolverFactory(solver_name)
             self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"])
         # enable logger
         logging.disable(logging.NOTSET)
-
         # store the solution into the results
-        self.model.solutions.store_to(self.results, skip_stale_vars=True)
+        # self.model.solutions.store_to(self.results, skip_stale_vars=True)
 
     def add_newly_built_capacity(self, step_horizon):
         """ adds the newly built capacity to the existing capacity

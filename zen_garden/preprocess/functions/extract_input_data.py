@@ -565,13 +565,13 @@ class DataInput():
             index_names_column = df_input.columns.intersection(index_name_list).to_list()
             df_input = df_input.set_index(index_names_column)
             if df_input.index.nlevels == 1:
-                combined_index = pd.Index(self.energy_system.set_time_steps_years,name=temporal_header)
+                combined_index = df_input.index.union(self.energy_system.set_time_steps_years)
                 is_single_index = True
             else:
                 index_list = []
                 for index_name in index_names_column:
                     if index_name == temporal_header:
-                        index_list.append(self.energy_system.set_time_steps_years)
+                        index_list.append(df_input.index.get_level_values(index_name).unique().union(self.energy_system.set_time_steps_years))
                     else:
                         index_list.append(df_input.index.get_level_values(index_name).unique())
                 combined_index = pd.MultiIndex.from_product(index_list,names=index_name_list).sort_values()
@@ -594,7 +594,6 @@ class DataInput():
                         else:
                             df_input_temp = df_input[param].unstack(df_input.index.names.difference([temporal_header]))
                             df_input[param] = df_input_temp.interpolate(method="index",axis=0).stack().reorder_levels(df_input.index.names)
-                            a=1
             else:
                 logging.info(f"Parameter {file_name} data won't be interpolated to cover years without given values")
             df_input = df_input.reset_index()

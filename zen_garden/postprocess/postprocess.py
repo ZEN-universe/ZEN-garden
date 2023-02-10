@@ -8,7 +8,7 @@ Description:  Class is defining the postprocessing of the results.
               The class takes as inputs the optimization problem (model) and the system configurations (system).
               The class contains methods to read the results and save them in a result dictionary (resultDict).
 ==========================================================================================================================================================================="""
-
+import logging
 import sys
 
 import numpy as np
@@ -35,7 +35,7 @@ class Postprocess:
         :param scenario_name: The name of the current scenario
         :param save_opt: Save the dict of the opt as gszip
         """
-
+        logging.info("Postprocess results")
         # get the necessary stuff from the model
         self.model = model.model
         self.scenarios = scenarios
@@ -73,6 +73,7 @@ class Postprocess:
         # save everything
         self.save_param()
         self.save_var()
+        self.save_duals()
         self.save_system()
         self.save_analysis()
         self.save_scenarios()
@@ -183,12 +184,7 @@ class Postprocess:
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
 
             # update dict
-            if self.output_format == "h5":
-                # need an array wrap because null bytes cause errors
-                compressed_df = np.array([zlib.compress(df.to_json(orient="table", indent=2).encode())])
-                data_frames[param] = {"dataframe": compressed_df, "docstring": doc}
-            else:
-                data_frames[param] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)), "docstring": doc}
+            data_frames[param] = self._transform_df(df,doc)
 
         # write to json
         self.write_file(self.name_dir.joinpath('param_dict'), data_frames)
@@ -232,16 +228,58 @@ class Postprocess:
             df = pd.DataFrame(data=values, columns=["value"], index=indices)
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
-            if self.output_format == "h5":
-                # need an array wrap because null bytes cause errors
-                compressed_df = np.array([zlib.compress(df.to_json(orient="table", indent=2).encode())])
-                data_frames[var.name] = {"dataframe": compressed_df,
-                                         "docstring": doc}
-            else:
-                data_frames[var.name] = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                         "docstring": doc}
+            data_frames[var.name] = self._transform_df(df,doc)
 
         self.write_file(self.name_dir.joinpath('var_dict'), data_frames)
+        
+    def save_duals(self):
+        """ Saves the dual variable values to a json file which can then be
+        post-processed immediately or loaded and postprocessed at some other time"""
+        if not self.solver["add_duals"]:
+            return
+        # dataframe serialization
+        data_frames_duals = {}
+        data_frames_expr = {}
+        for constraint in self.model.component_objects(pe.Constraint, active=True):
+            if constraint.name in self.constraints.docs:
+                doc = self.constraints.docs[constraint.name]
+                index_list = self.get_index_list(doc)
+                if len(index_list) == 0:
+                    index_names = None
+                elif len(index_list) == 1:
+                    index_names = index_list[0]
+                else:
+                    index_names = index_list
+            else:
+                index_list = []
+                doc = None
+            # get indices and values
+            indices = [index for index in constraint]
+            duals = [self.model.dual[constraint[index]] for index in indices if constraint[index] in self.model.dual]
+            # expr = [constraint[index].expr.to_string() for index in indices]
+
+            # create a multi index if necessary
+            if len(indices) >= 1 and isinstance(indices[0], tuple):
+                if len(index_list) == len(indices[0]):
+                    indices = pd.MultiIndex.from_tuples(indices, names=index_names)
+                else:
+                    indices = pd.MultiIndex.from_tuples(indices)
+            else:
+                if len(index_list) == 1:
+                    indices = pd.Index(data=indices, name=index_names)
+                else:
+                    indices = pd.Index(data=indices)
+
+            # create dataframe
+            df_dual = pd.DataFrame(data=duals, columns=["value"], index=indices)
+            # df_expr = pd.DataFrame(data=expr, columns=["value"], index=indices)
+
+            data_frames_duals[constraint.name] = self._transform_df(df_dual,doc)
+            # data_frames_expr[constraint.name] = self._transform_df(df_expr,doc)
+
+        # self.write_file(self.name_dir.joinpath('constraint_dict'), data_frames_expr)
+        self.write_file(self.name_dir.joinpath('dual_dict'), data_frames_duals)
+
 
     def save_system(self):
         """
@@ -318,6 +356,19 @@ class Postprocess:
             fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
 
         self.write_file(fname, self.dict_sequence_time_steps)
+
+    def _transform_df(self,df,doc):
+        """
+        we transform the dataframe to a json string and load it into the dictionary as dict
+        """
+        if self.output_format == "h5":
+            # need an array wrap because null bytes cause errors
+            compressed_df = np.array([zlib.compress(df.to_json(orient="table", indent=2).encode())])
+            dataframe = {"dataframe": compressed_df, "docstring": doc}
+        else:
+            dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
+                                            "docstring": doc}
+        return dataframe
 
     def flatten_dict(self, dictionary):
         """
