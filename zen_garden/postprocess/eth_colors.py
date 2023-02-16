@@ -153,6 +153,7 @@ class ETHColors:
             # new
             # "ref_PI": self.getColor("green"), "ref_PD": self.getColor("blue"), "ref_MD": self.getColor("red"), "ref_MI": self.getColor("petrol"),
             "GS_PI": self.getColor("green"),
+            "GS_PI_no_lim": self.getColor("bronze"),
             "GS_PD": self.getColor("blue"),
             "GS_MD": self.getColor("red"),
             "GS_MI": self.getColor("petrol"),

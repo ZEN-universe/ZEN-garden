@@ -117,6 +117,10 @@ class Results(object):
                 self._lazydicts.append([vars])
                 self.results[scenario][mf]["pars_and_vars"].update(vars)
 
+                # load duals
+                if self.results["solver"]["add_duals"]:
+                    duals = self.load_duals(current_path, lazy = True)
+                    self.results[scenario][mf]["duals"] = duals
                 # the opt we only load when requested
                 if load_opt:
                     self.results[scenario][mf]["optdict"] = self.load_opt(current_path)
@@ -237,6 +241,23 @@ class Results(object):
             return cls._dict2df(raw_dict)
 
     @classmethod
+    def load_duals(cls, path, lazy=False):
+        """
+        Loads the dual dict from a given path
+        :param path: Path to load the dual dict from
+        :param lazy: Load lazy, this will not transform the data into dataframes
+        :return: The var dict
+        """
+
+        # load the raw dict
+        raw_dict = cls._read_file(os.path.join(path, "dual_dict"))
+
+        if lazy:
+            return raw_dict
+        else:
+            return cls._dict2df(raw_dict)
+
+    @classmethod
     def load_system(cls, path):
         """
         Loads the system dict from a given path
@@ -348,14 +369,14 @@ class Results(object):
 
         return out_dict
 
-    def get_df(self, name, is_storage=False, scenario=None, to_csv=None, csv_kwargs=None):
+    def get_df(self, name, scenario=None, to_csv=None, csv_kwargs=None,is_dual = False):
         """
         Extracts the dataframe from the results
         :param name: The name of the dataframe to extract
-        :param is_storage: Whether it is a storage or not
         :param scenario: If multiple scenarios are in the results, only consider this one
         :param to_csv: Save the dataframes to a csv file
         :param csv_kwargs: additional keyword arguments forwarded to the to_csv method of pandas
+        :param is_dual: if dual variable dict is selected
         :return: The dataframe that should have been extracted. If multiple scenarios are present a dictionary
                  with scenarios as keys and dataframes as value is returned
         """
@@ -374,7 +395,10 @@ class Results(object):
 
             if not self.has_MF:
                 # we set the dataframe of the variable into the data dict
-                _data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
+                if not is_dual:
+                    _data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
+                else:
+                    _data[scenario] = self._to_df(self.results[scenario][None]["duals"][name]["dataframe"])
 
             else:
                 # init the scenario
@@ -382,8 +406,10 @@ class Results(object):
                 _is_multiindex = False
                 # cycle through all MFs
                 for year, mf in enumerate(self.mf):
-                    _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
-
+                    if not is_dual:
+                        _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
+                    else:
+                        _var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
                     # # single element that is not a year
                     # if len(_var) == 1 and _var.index.nlevels == 1 and not np.isfinite(_var.index[0]):
                     #     _data[scenario] = _var
@@ -522,9 +548,9 @@ class Results(object):
         """
         Loads duration of operational time steps
         """
-        return self.get_df("time_steps_storage_level_duration", is_storage=True)
+        return self.get_df("time_steps_storage_level_duration")
 
-    def get_full_ts(self, component, element_name=None, year=None, scenario=None):
+    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False):
         """
         Calculates the full timeseries for a given element
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -533,7 +559,8 @@ class Results(object):
         :return: A dataframe containing the full timeseries of the element
         """
         # extract the data
-        component_name, component_data = self._get_component_data(component, scenario)
+        component_name, component_data = self._get_component_data(component, scenario,is_dual = is_dual)
+
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
         if isinstance(component_data,pd.Series):
@@ -554,11 +581,15 @@ class Results(object):
                 return component_data
         elif ts_type == "operational":
             _storage_string = ""
+            time_step_duration = self._get_ts_duration(scenario, is_storage=False)
         else:
             _storage_string = "_storage_level"
+            time_step_duration = self._get_ts_duration(scenario, is_storage=True)
 
         # calculate the full time series
         _output_temp = {}
+        # extract time step duration
+
         for row in component_data.index:
             # we know the name
             if element_name:
@@ -566,7 +597,9 @@ class Results(object):
             # we extract the name
             else:
                 _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(row[0] + _storage_string)
-
+            # if dual variables, divide by time step operational duration
+            if is_dual:
+                component_data.loc[row] = component_data.loc[row]/time_step_duration.loc[row[0]]
             # throw together
             _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(component_data.columns))]
             _output_temp[row] = component_data.loc[row, _sequence_time_steps].reset_index(drop=True)
@@ -578,8 +611,8 @@ class Results(object):
                     print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
 
         # concat and return
-        outputDf = pd.concat(_output_temp, axis=0, keys=_output_temp.keys()).unstack()
-        return outputDf
+        output_df = pd.concat(_output_temp, axis=0, keys=_output_temp.keys()).unstack()
+        return output_df
 
     def get_total(self, component, element_name=None, year=None, scenario=None, split_years=True):
         """
@@ -669,6 +702,14 @@ class Results(object):
                     total_value = total_value.sum(axis=1)
         return total_value
 
+    def get_dual(self,constraint,scenario=None):
+        """ extracts the dual variables of a constraint """
+        if not self.results["solver"]["add_duals"]:
+            logging.warning("Duals are not calculated. Skip.")
+            return
+        _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True)
+        return _duals
+
     def _get_ts_duration(self, scenario=None, is_storage=False):
         """ extracts the time steps duration """
         # extract the right timestep duration
@@ -687,16 +728,16 @@ class Results(object):
                 time_step_duration = self.time_step_operational_duration.unstack()
         return time_step_duration
 
-    def _get_component_data(self, component, scenario=None):
+    def _get_component_data(self, component, scenario=None,is_dual=False):
         """ extracts the data for a component"""
         # extract the data
         if isinstance(component, str):
             component_name = component
             # only use the data from one scenario if specified
             if scenario is not None:
-                component_data = self.get_df(component)[scenario]
+                component_data = self.get_df(component,is_dual=is_dual)[scenario]
             else:
-                component_data = self.get_df(component)
+                component_data = self.get_df(component,is_dual=is_dual)
             if isinstance(component_data.index,pd.MultiIndex):
                 component_data = component_data.unstack()
         elif isinstance(component, pd.Series):
@@ -745,4 +786,3 @@ if __name__ == "__main__":
         r = Results(out_folder)
     else:
         logging.critical("No results folder found!")
-    a=1

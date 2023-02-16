@@ -320,8 +320,7 @@ class DataInput():
         df_input_breakpoints = self.read_pwa_files(variable_type, fileType="breakpoints_pwa_")
         df_input_linear = self.read_pwa_files(variable_type, fileType="linear_")
         df_linear_exist = self.exists_attribute(_attribute_name)
-        assert (
-                           df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
+        assert (df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
         # check if capex_specific exists
         if (df_input_nonlinear is not None and df_input_breakpoints is not None):
             # select data

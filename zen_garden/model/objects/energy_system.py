@@ -607,9 +607,12 @@ class EnergySystem:
         # carbon emissions
         self.constraints.add_constraint(self.pyomo_model, name="constraint_carbon_emissions_limit", index_sets=self.pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_limit_rule,
             doc="limit of total carbon emissions of energy system")
-        # carbon emissions
+        # carbon emission budget
         self.constraints.add_constraint(self.pyomo_model, name="constraint_carbon_emissions_budget", index_sets=self.pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_budget_rule,
             doc="Budget of total carbon emissions of energy system")
+        # limit carbon emission overshoot
+        self.constraints.add_constraint(self.pyomo_model, name="constraint_carbon_emissions_overshoot_limit", index_sets=self.pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_overshoot_limit_rule,
+            doc="Limit of overshot carbon emissions of energy system")
         # costs
         self.constraints.add_constraint(self.pyomo_model, name="constraint_cost_total", index_sets=self.pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_cost_total_rule, doc="total cost of energy system")
         # NPV
@@ -703,6 +706,10 @@ class EnergySystemRules:
                 return (params.carbon_emissions_budget >= model.carbon_emissions_cumulative[year] + (model.carbon_emissions_total[year] - model.carbon_emissions_overshoot[year]) * (interval_between_years - 1))
         else:
             return pe.Constraint.Skip
+
+    def constraint_carbon_emissions_overshoot_limit_rule(self, model, year):
+        """ ensure that overshoot is lower or equal to total carbon emissions -> overshoot cannot be banked """
+        return (model.carbon_emissions_total[year] >= model.carbon_emissions_overshoot[year])
 
     def constraint_cost_total_rule(self, model, year):
         """ add up all costs from technologies and carriers"""
