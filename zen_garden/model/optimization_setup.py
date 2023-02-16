@@ -270,8 +270,6 @@ class OptimizationSetup(object):
         if self.solver["add_duals"]:
             logging.info("Add dual variables")
             self.model.dual = pe.Suffix(direction=pe.Suffix.IMPORT)
-            # self.model.dual = pe.Suffix(direction=pe.Suffix.IMPORT_EXPORT)
-            # self.model.dual2 = pe.Suffix(direction=pe.Suffix.IMPORT)
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets

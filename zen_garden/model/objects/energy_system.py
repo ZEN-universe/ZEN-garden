@@ -700,7 +700,7 @@ class EnergySystemRules:
         params = self.energy_system.parameters
         interval_between_years = self.energy_system.system["interval_between_years"]
         if params.carbon_emissions_budget != np.inf:
-            if year == model.set_time_steps_yearly.at(-1):
+            if year == model.set_time_steps_yearly_entire_horizon.at(-1):
                 return (params.carbon_emissions_budget >= model.carbon_emissions_cumulative[year])
             else:
                 return (params.carbon_emissions_budget >= model.carbon_emissions_cumulative[year] + (model.carbon_emissions_total[year] - model.carbon_emissions_overshoot[year]) * (interval_between_years - 1))
