@@ -233,9 +233,12 @@ class EnergySystem:
         # carbon emissions
         constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_limit", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_limit_rule,
             doc="limit of total carbon emissions of energy system")
-        # carbon emissions
+        # carbon emission budget
         constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_budget", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_budget_rule,
             doc="Budget of total carbon emissions of energy system")
+        # limit carbon emission overshoot
+        constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_overshoot_limit", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_overshoot_limit_rule,
+            doc="Limit of overshot carbon emissions of energy system")
         # costs
         constraints.add_constraint(pyomo_model, name="constraint_cost_total", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_cost_total_rule, doc="total cost of energy system")
         # NPV
@@ -294,10 +297,10 @@ class EnergySystemRules:
         params = self.optimization_setup.parameters
         interval_between_years = self.optimization_setup.system["interval_between_years"]
         if year == model.set_time_steps_yearly.at(1):
-            return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_total[year] + params.previous_carbon_emissions)
+            return (model.carbon_emissions_cumulative[year] == (model.carbon_emissions_total[year] - model.carbon_emissions_overshoot[year]) + params.previous_carbon_emissions)
         else:
-            return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_cumulative[year - 1] + model.carbon_emissions_total[year - 1] * (interval_between_years - 1) +
-                    model.carbon_emissions_total[year])
+            return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_cumulative[year - 1] + (model.carbon_emissions_total[year - 1] - model.carbon_emissions_overshoot[year - 1]) * (interval_between_years - 1) +
+                    (model.carbon_emissions_total[year]-model.carbon_emissions_overshoot[year]))
 
     def constraint_carbon_cost_total_rule(self, model, year):
         """ carbon cost associated with the carbon emissions of the system in each year """
@@ -322,19 +325,27 @@ class EnergySystemRules:
         # get parameter object
         params = self.optimization_setup.parameters
         interval_between_years = self.optimization_setup.system["interval_between_years"]
-        if params.carbon_emissions_budget != np.inf:  # TODO check for last year - without last term?
-            return (params.carbon_emissions_budget + model.carbon_emissions_overshoot[year] >= model.carbon_emissions_cumulative[year] + model.carbon_emissions_total[year] * (interval_between_years - 1))
+        if params.carbon_emissions_budget != np.inf:
+            max_budget = max(params.carbon_emissions_budget, params.previous_carbon_emissions)
+            if year == model.set_time_steps_yearly_entire_horizon.at(-1):
+                return (max_budget >= model.carbon_emissions_cumulative[year])
+            else:
+                return (max_budget >= model.carbon_emissions_cumulative[year] + (model.carbon_emissions_total[year] - model.carbon_emissions_overshoot[year]) * (interval_between_years - 1))
         else:
             return pe.Constraint.Skip
+
+    def constraint_carbon_emissions_overshoot_limit_rule(self, model, year):
+        """ ensure that overshoot is lower or equal to total carbon emissions -> overshoot cannot be banked """
+        return (model.carbon_emissions_total[year] >= model.carbon_emissions_overshoot[year])
 
     def constraint_cost_total_rule(self, model, year):
         """ add up all costs from technologies and carriers"""
         return (model.cost_total[year] ==
                 # capex
-                model.capex_total[year] + # opex
-                model.opex_total[year] + # carrier costs
-                model.cost_carrier_total[year] + # carbon costs
-                model.cost_carbon_emissions_total[year])
+                model.capex_total[year] + # capex
+                model.opex_total[year] + # opex
+                model.cost_carrier_total[year] + # carrier costs
+                model.cost_carbon_emissions_total[year]) # carbon costs
 
     def constraint_NPV_rule(self, model, year):
         """ discounts the annual capital flows to calculate the NPV """
@@ -355,7 +366,7 @@ class EnergySystemRules:
         return (sum(model.NPV[year] * # discounted utility function
                     ((1 / (1 + system["social_discount_rate"])) ** (system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1)))) for year in model.set_time_steps_yearly))
 
-    def objectiveNPVRule(self, model):
+    def objective_NPV_rule(self, model):
         """ objective function to minimize NPV """
         return (sum(model.NPV[year] for year in model.set_time_steps_yearly))
 

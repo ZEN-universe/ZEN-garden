@@ -144,7 +144,8 @@ class StorageTechnology(Technology):
             data=optimization_setup.initialize_component(cls, "efficiency_discharge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"]),
             doc='efficiency during discharging for storage technologies')
         # self discharge
-        optimization_setup.parameters.add_parameter(name="self_discharge", data=optimization_setup.initialize_component(cls, "self_discharge", index_names=["set_storage_technologies", "set_nodes"]),
+        optimization_setup.parameters.add_parameter(name="self_discharge",
+            data=optimization_setup.initialize_component(cls, "self_discharge", index_names=["set_storage_technologies", "set_nodes"]),
             doc='self discharge of storage technologies')
         # capex specific
         optimization_setup.parameters.add_parameter(name="capex_specific_storage",
@@ -265,20 +266,26 @@ class StorageTechnologyRules:
         """couple subsequent storage levels (time coupling constraints)"""
         # get parameter object
         params = self.optimization_setup.parameters
+        system = self.optimization_setup.system
         element_time_step = self.energy_system.time_steps.convert_time_step_energy2power(tech, time)
         # get invest time step
         time_step_year = self.energy_system.time_steps.convert_time_step_operation2invest(tech, element_time_step)
         # get corresponding start time step at beginning of the year, if time is last time step in year
         time_step_end = self.energy_system.time_steps.get_time_steps_storage_startend(tech, time)
+        enforce_periodicity = True
         if time_step_end is not None:
             previous_level_time_step = time_step_end
+            if not system["storage_periodicity"]:
+                enforce_periodicity = False
         else:
             previous_level_time_step = time - 1
-
-        return (model.level_charge[tech, node, time] == model.level_charge[tech, node, previous_level_time_step] * (1 - params.self_discharge[tech, node]) ** params.time_steps_storage_level_duration[
-            tech, time] + (model.carrier_flow_charge[tech, node, element_time_step] * params.efficiency_charge[tech, node, time_step_year] - model.carrier_flow_discharge[tech, node, element_time_step] /
-                           params.efficiency_discharge[tech, node, time_step_year]) * sum(
-            (1 - params.self_discharge[tech, node]) ** interimTimeStep for interimTimeStep in range(0, params.time_steps_storage_level_duration[tech, time])))
+        if enforce_periodicity:
+            return (model.level_charge[tech, node, time] == model.level_charge[tech, node, previous_level_time_step] * (1 - params.self_discharge[tech, node]) ** params.time_steps_storage_level_duration[
+                tech, time] + (model.carrier_flow_charge[tech, node, element_time_step] * params.efficiency_charge[tech, node, time_step_year] - model.carrier_flow_discharge[tech, node, element_time_step] /
+                               params.efficiency_discharge[tech, node, time_step_year]) * sum(
+                (1 - params.self_discharge[tech, node]) ** interimTimeStep for interimTimeStep in range(0, params.time_steps_storage_level_duration[tech, time])))
+        else:
+            return pe.Constraint.Skip
 
     def constraint_storage_technology_capex_rule(self, model, tech, capacity_type, node, time):
         """ definition of the capital expenditures for the storage technology"""

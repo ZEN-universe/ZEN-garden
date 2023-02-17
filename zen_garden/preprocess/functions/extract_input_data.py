@@ -88,7 +88,6 @@ class DataInput:
 
         df_input = self.convert_real_to_generic_time_indices(df_input,time_steps,file_name, index_name_list)
 
-        # select and drop scenario
         assert df_input.columns is not None, f"Input file '{file_name}' has no columns"
         # set index by index_name_list
         missing_index = list(set(index_name_list) - set(index_name_list).intersection(set(df_input.columns)))
@@ -311,6 +310,7 @@ class DataInput:
             _index_sets = ["set_nodes", "set_time_steps_yearly"]
             _time_steps = self.energy_system.set_time_steps_yearly
         elif variable_type == "conver_efficiency":
+            # TODO decide if yearly or hourly
             _attribute_name = "conver_efficiency"
             _index_sets = ["set_nodes", "set_time_steps_yearly"]
             _index_name = self.index_names[_index_sets[-1]]
@@ -322,9 +322,7 @@ class DataInput:
         df_input_breakpoints = self.read_pwa_files(variable_type, fileType="breakpoints_pwa_")
         df_input_linear = self.read_pwa_files(variable_type, fileType="linear_")
         df_linear_exist = self.exists_attribute(_attribute_name)
-        assert (
-                           df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, \
-            f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
+        assert (df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
         # check if capex_specific exists
         if (df_input_nonlinear is not None and df_input_breakpoints is not None):
             # select data
@@ -422,18 +420,13 @@ class DataInput:
                                                                                  index_sets=_index_sets,
                                                                                  time_steps=_time_steps)
                 else:
-                    df_output, default_value, index_name_list = self.create_default_output(_index_sets, None,
-                                                                                           time_steps=_time_steps,
-                                                                                           manual_default_value=1)
-                    assert (
-                                df_input_linear is not None), f"input file for linear_conver_efficiency could not be imported."
+                    df_output, default_value, index_name_list = self.create_default_output(_index_sets, None, time_steps=_time_steps, manual_default_value=1)
+                    assert (df_input_linear is not None), f"input file for linear_conver_efficiency could not be imported."
                     # df_input_linear = df_input_linear.rename(columns={'year': 'time'})
                     for carrier in _dependent_carrier:
-                        df_input_carrier = df_input_linear[[_index_name, carrier]]
-                        linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output,
-                                                                               "linear_conver_efficiency",
-                                                                               index_name_list, default_value,
-                                                                               time_steps=None).copy(deep=True)
+                        df_input_carrier = df_input_linear[[_index_name,carrier]]
+                        linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "linear_conver_efficiency", index_name_list, default_value, time_steps=_time_steps).copy(deep=True)
+
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
@@ -598,22 +591,22 @@ class DataInput:
             # set index
             index_names_column = df_input.columns.intersection(index_name_list).to_list()
             df_input = df_input.set_index(index_names_column)
-            combined_years = df_input.index.get_level_values(temporal_header).union(
-                self.energy_system.set_time_steps_years).sort_values().to_list()
             if df_input.index.nlevels == 1:
-                combined_index = pd.Index(combined_years, name=temporal_header)
+                combined_index = df_input.index.union(self.energy_system.set_time_steps_years)
                 is_single_index = True
             else:
                 index_list = []
                 for index_name in index_names_column:
                     if index_name == temporal_header:
-                        index_list.append(combined_years)
+                        index_list.append(df_input.index.get_level_values(index_name).unique().union(self.energy_system.set_time_steps_years))
                     else:
                         index_list.append(df_input.index.get_level_values(index_name).unique())
-                combined_index = pd.MultiIndex.from_product(index_list, names=index_name_list).sort_values()
+                combined_index = pd.MultiIndex.from_product(index_list,names=index_name_list).sort_values()
                 is_single_index = False
-            df_input_temp = pd.DataFrame(index=combined_index, columns=df_input.columns)
-            df_input_temp.loc[df_input.index] = df_input
+            df_input_temp = pd.DataFrame(index = combined_index,columns=df_input.columns)
+            common_index = df_input.index.intersection(combined_index)
+            df_input_temp.loc[common_index] = df_input.loc[common_index]
+            # df_input_temp.loc[df_input.index] = df_input
             df_input = df_input_temp.astype(float)
             # interpolate missing data
             file_names_int_off = []
@@ -627,17 +620,14 @@ class DataInput:
                             df_input[param] = df_input[param].astype(float).interpolate(method="index")
                         else:
                             df_input_temp = df_input[param].unstack(df_input.index.names.difference([temporal_header]))
-                            df_input[param] = df_input_temp.interpolate(method="index", axis=0).stack().reorder_levels(
-                                df_input.index.names)
-                            a = 1
+                            df_input[param] = df_input_temp.interpolate(method="index",axis=0).stack().reorder_levels(df_input.index.names)
             else:
                 logging.info(f"Parameter {file_name} data won't be interpolated to cover years without given values")
             df_input = df_input.reset_index()
             # remove data of years that won't be simulated
             df_input = df_input[df_input[temporal_header].isin(self.energy_system.set_time_steps_years)]
             # convert yearly time indices to generic ones
-            year2step = {year: step for year, step in
-                         zip(self.energy_system.set_time_steps_years, self.energy_system.set_time_steps_yearly)}
+            year2step = {year:step for year,step in zip(self.energy_system.set_time_steps_years,self.energy_system.set_time_steps_yearly)}
             df_input[temporal_header] = df_input[temporal_header].apply(lambda year: year2step[year])
         return df_input
 
