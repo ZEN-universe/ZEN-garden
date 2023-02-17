@@ -50,9 +50,6 @@ class Carrier(Element):
         self.availability_carrier_export_yearly = self.data_input.extract_input_data("availability_carrier_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.shed_demand_price = self.data_input.extract_input_data("shed_demand_price", index_sets=[])
-        self.shed_demand_price_high = self.data_input.extract_input_data("shed_demand_price_high", index_sets=[])
-        self.max_shed_demand = self.data_input.extract_input_data("max_shed_demand", index_sets=[])
-        self.max_shed_demand_high = self.data_input.extract_input_data("max_shed_demand_high", index_sets=[])
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites set_time_steps_operation"""
@@ -260,10 +257,7 @@ class CarrierRules:
         """ limit demand shedding at low price """
         # get parameter object
         params = self.optimization_setup.parameters
-        if params.max_shed_demand[carrier] < 1:
-            return (model.shed_demand_carrier[carrier, node, time] <= params.demand_carrier[carrier, node, time] * params.max_shed_demand[carrier])
-        else:
-            return pe.Constraint.Skip
+        return (model.shed_demand_carrier[carrier, node, time] <= params.demand_carrier[carrier, node, time])
 
     def constraint_cost_carrier_total_rule(self, model, year):
         """ total cost of importing and exporting carrier"""
@@ -328,12 +322,11 @@ class CarrierRules:
         carrier_demand = params.demand_carrier[carrier, node, time]
         # shed demand
         carrier_shed_demand = model.shed_demand_carrier[carrier, node, time]
-        carrier_shed_demand_high = model.shed_demand_carrier_high[carrier, node, time]
         return (# conversion technologies
                 carrier_conversion_out - carrier_conversion_in # transport technologies
                 + carrier_flow_in - carrier_flow_out # storage technologies
                 + carrier_flow_discharge - carrier_flow_charge # import and export
                 + carrier_import - carrier_export # demand
                 - carrier_demand # shed demand
-                + carrier_shed_demand  + carrier_shed_demand_high
+                + carrier_shed_demand
                 == 0)

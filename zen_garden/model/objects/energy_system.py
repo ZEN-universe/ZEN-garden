@@ -237,7 +237,7 @@ class EnergySystem:
         constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_budget", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_budget_rule,
             doc="Budget of total carbon emissions of energy system")
         # limit carbon emission overshoot
-        constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_overshoot_limit", index_sets=self.pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_overshoot_limit_rule,
+        constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_overshoot_limit", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_overshoot_limit_rule,
             doc="Limit of overshot carbon emissions of energy system")
         # costs
         constraints.add_constraint(pyomo_model, name="constraint_cost_total", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_cost_total_rule, doc="total cost of energy system")
