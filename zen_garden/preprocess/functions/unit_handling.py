@@ -131,8 +131,8 @@ class UnitHandling:
             else:
                 calculated_multiplier = False
                 for unit, power in zip(dim_matrix_reduced.columns, combination_solution):
-                    # try to substitute unit with power > 1 by a dependent unit
-                    if np.abs(power) > 1 and not calculated_multiplier:
+                    # try to substitute unit by a dependent unit
+                    if not calculated_multiplier:
                         # iterate through dependent units
                         for dependent_unit, dependent_dim in zip(dim_analysis["dependent_units"], dim_analysis["dependent_dims"]):
                             idx_unit_in_reduced_matrix = list(dim_matrix_reduced.columns).index(unit)

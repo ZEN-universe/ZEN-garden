@@ -1,31 +1,26 @@
 name: zen-garden
 channels:
   - conda-forge
-  - defaults
   - gurobi
 dependencies:
-  - numpy
-  - gurobi=9.*
-  - glpk
-  - geopandas
-  - pandas
-  - pip
-#  - pyomo=6.2
-  - pyomo=6.*
-  - python=3.9.*
-  - coverage
+  - python=3.11
   - pytest
+  - pip
+  - numpy
+  - pandas
+  - geopandas
   - scipy
-  - sympy
-  - ipython
-  - jupyter
+  - coverage
+  - glpk
   - pint
-  - entsoe-py
   - matplotlib
-  - mpmath
+  - entsoe-py
+  - pyomo=6
+  - gurobi
   - pip:
       - tsam
       - hdfdict
+      - pyogrio
       - -e .
 
 # conda env create -f zen_garden_env.yml
