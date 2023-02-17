@@ -20,6 +20,7 @@ dependencies:
   - pip:
       - tsam
       - hdfdict
+      - pyogrio
       - -e .
 
 # conda env create -f zen_garden_env.yml

@@ -187,7 +187,7 @@ class TransportTechnology(Technology):
             expr=model.carrier_flow[tech, edge, time] >= params.min_load[tech, capacity_type, edge, time] * model.capacity[tech, capacity_type, edge, time_step_year])
 
     @classmethod
-    def disjunct_off_technology_rule(cls, disjunct, tech, capacity_type, edge, time):
+    def disjunct_off_technology_rule(cls,optimization_setup, disjunct, tech, capacity_type, edge, time):
         """definition of disjunct constraints if technology is off"""
         model = disjunct.model()
         disjunct.constraint_no_load = pe.Constraint(expr=model.carrier_flow[tech, edge, time] == 0)
@@ -229,7 +229,7 @@ class TransportTechnologyRules:
         """ Forces that transport technology capacity must be equal in both direction"""
         system = self.optimization_setup.system
         if tech in system["set_bidirectional_transport_technologies"]:
-            _reversed_edge = TransportTechnology.get_reversed_edge(edge)
+            _reversed_edge = self.get_reversed_edge(edge)
             return (model.built_capacity[tech, "power", edge, time] == model.built_capacity[tech, "power", _reversed_edge, time])
         else:
             return pe.Constraint.Skip

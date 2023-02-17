@@ -50,6 +50,9 @@ class Carrier(Element):
         self.availability_carrier_export_yearly = self.data_input.extract_input_data("availability_carrier_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.shed_demand_price = self.data_input.extract_input_data("shed_demand_price", index_sets=[])
+        self.shed_demand_price_high = self.data_input.extract_input_data("shed_demand_price_high", index_sets=[])
+        self.max_shed_demand = self.data_input.extract_input_data("max_shed_demand", index_sets=[])
+        self.max_shed_demand_high = self.data_input.extract_input_data("max_shed_demand_high", index_sets=[])
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites set_time_steps_operation"""
@@ -167,7 +170,6 @@ class Carrier(Element):
         # carbon emissions
         optimization_setup.constraints.add_constraint(model, name="constraint_carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
             rule=rules.constraint_carbon_emissions_carrier_rule, doc="carbon emissions of importing and exporting carrier")
-
         # carbon emissions carrier
         optimization_setup.constraints.add_constraint(model, name="constraint_carbon_emissions_carrier_total", index_sets=model.set_time_steps_yearly, rule=rules.constraint_carbon_emissions_carrier_total_rule,
             doc="total carbon emissions of importing and exporting carriers")
@@ -239,8 +241,11 @@ class CarrierRules:
         """ cost of importing and exporting carrier"""
         # get parameter object
         params = self.optimization_setup.parameters
-        return (model.cost_carrier[carrier, node, time] == params.import_price_carrier[carrier, node, time] * model.import_carrier_flow[carrier, node, time] - params.export_price_carrier[
+        if params.availability_carrier_import[carrier, node, time] != 0 or params.availability_carrier_export[carrier, node, time] != 0:
+            return (model.cost_carrier[carrier, node, time] == params.import_price_carrier[carrier, node, time] * model.import_carrier_flow[carrier, node, time] - params.export_price_carrier[
             carrier, node, time] * model.export_carrier_flow[carrier, node, time])
+        else:
+            return (model.cost_carrier[carrier, node, time] == 0)
 
     def constraint_cost_shed_demand_rule(self, model, carrier, node, time):
         """ cost of shedding demand of carrier """
@@ -252,10 +257,13 @@ class CarrierRules:
             return (model.shed_demand_carrier[carrier, node, time] == 0)
 
     def constraint_limit_shed_demand_rule(self, model, carrier, node, time):
-        """ limit of shedding demand of carrier to demand --> endogenous demand cannot not be supplied by shed demand """
+        """ limit demand shedding at low price """
         # get parameter object
         params = self.optimization_setup.parameters
-        return (model.shed_demand_carrier[carrier, node, time] <= params.demand_carrier[carrier, node, time])
+        if params.max_shed_demand[carrier] < 1:
+            return (model.shed_demand_carrier[carrier, node, time] <= params.demand_carrier[carrier, node, time] * params.max_shed_demand[carrier])
+        else:
+            return pe.Constraint.Skip
 
     def constraint_cost_carrier_total_rule(self, model, year):
         """ total cost of importing and exporting carrier"""
@@ -272,8 +280,11 @@ class CarrierRules:
         params = self.optimization_setup.parameters
         base_time_step = self.energy_system.time_steps.decode_time_step(carrier, time)
         yearly_time_step = self.energy_system.time_steps.encode_time_step(None, base_time_step, "yearly")
-        return (model.carbon_emissions_carrier[carrier, node, time] == params.carbon_intensity_carrier[carrier, node, yearly_time_step] * (
+        if params.availability_carrier_import[carrier, node, time] != 0 or params.availability_carrier_export[carrier, node, time] != 0:
+            return (model.carbon_emissions_carrier[carrier, node, time] == params.carbon_intensity_carrier[carrier, node, yearly_time_step] * (
                     model.import_carrier_flow[carrier, node, time] - model.export_carrier_flow[carrier, node, time]))
+        else:
+            return (model.carbon_emissions_carrier[carrier, node, time] == 0)
 
     def constraint_carbon_emissions_carrier_total_rule(self, model, year):
         """ total carbon emissions of importing and exporting carrier"""
@@ -317,10 +328,12 @@ class CarrierRules:
         carrier_demand = params.demand_carrier[carrier, node, time]
         # shed demand
         carrier_shed_demand = model.shed_demand_carrier[carrier, node, time]
+        carrier_shed_demand_high = model.shed_demand_carrier_high[carrier, node, time]
         return (# conversion technologies
                 carrier_conversion_out - carrier_conversion_in # transport technologies
                 + carrier_flow_in - carrier_flow_out # storage technologies
                 + carrier_flow_discharge - carrier_flow_charge # import and export
                 + carrier_import - carrier_export # demand
                 - carrier_demand # shed demand
-                + carrier_shed_demand == 0)
+                + carrier_shed_demand  + carrier_shed_demand_high
+                == 0)

@@ -103,7 +103,7 @@ class OptimizationSetup(object):
                 self.add_element(element_class, item)
         if self.solver["analyze_numerics"]:
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
-                                                                  unit_exps=self.solver["rangeUnitExponents"])
+                                                                  unit_exps=self.solver["range_unit_exponents"])
         # conduct  time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
         self.time_series_aggregation.conduct_tsa()
@@ -120,7 +120,8 @@ class OptimizationSetup(object):
         self.dict_elements[element_class.__name__].append(instance)
         # Add the instance to all parents as well
         for cls in element_class.__mro__:
-            self.dict_elements[cls.__name__].append(instance)
+            if cls != element_class:
+                self.dict_elements[cls.__name__].append(instance)
 
     def get_all_elements(self, cls):
         """ get all elements of the class in the enrgysystem.
@@ -238,6 +239,8 @@ class OptimizationSetup(object):
         self.variables = Variable()
         self.parameters = Parameter()
         self.constraints = Constraint()
+        # add duals
+        self.add_duals()
         # define and construct components of self.model
         Element.construct_model_components(self)
         logging.info("Apply Big-M GDP ")
@@ -404,10 +407,15 @@ class OptimizationSetup(object):
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
 
+    def add_duals(self):
+        """ adds duals of constraints """
+        if self.solver["add_duals"]:
+            logging.info("Add dual variables")
+            self.model.dual = pe.Suffix(direction=pe.Suffix.IMPORT)
+
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """
-
         solver_name = solver["name"]
         # remove options that are None
         solver_options = {key: solver["solver_options"][key] for key in solver["solver_options"] if solver["solver_options"][key] is not None}
@@ -422,15 +430,18 @@ class OptimizationSetup(object):
         if solver_name == "gurobi_persistent":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
             self.opt.set_instance(self.model, symbolic_solver_labels=solver["use_symbolic_labels"])
-            self.results = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"], options_string=solver_parameters)
+            self.results = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"], options_string=solver_parameters,save_results=False, load_solutions=False)
+            self.opt.load_vars()
+        elif solver_name == "gurobi":
+            self.opt = pe.SolverFactory(solver_name, options=solver_options)
+            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"])
         else:
             self.opt = pe.SolverFactory(solver_name)
             self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"])
         # enable logger
         logging.disable(logging.NOTSET)
-
         # store the solution into the results
-        self.model.solutions.store_to(self.results, skip_stale_vars=True)
+        # self.model.solutions.store_to(self.results, skip_stale_vars=True)
 
     def add_newly_built_capacity(self, step_horizon):
         """ adds the newly built capacity to the existing capacity
@@ -459,7 +470,8 @@ class OptimizationSetup(object):
             interval_between_years = self.energy_system.system["interval_between_years"]
             _carbon_emissions_cumulative = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
             carbon_emissions = self.model.carbon_emissions_total.extract_values()[step_horizon]
-            self.energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + carbon_emissions * (interval_between_years - 1)
+            carbon_emissions_overshoot = self.model.carbon_emissions_overshoot.extract_values()[step_horizon]
+            self.energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + (carbon_emissions - carbon_emissions_overshoot) * (interval_between_years - 1)
 
     def initialize_component(self, calling_class, component_name, index_names=None, set_time_steps=None, capacity_types=False):
         """ this method initializes a modeling component by extracting the stored input data.
