@@ -11,6 +11,7 @@ Description:  Class defining the Concrete optimization model.
               class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
+import cProfile
 import logging
 import pyomo.environ as pe
 from pyomo.core.expr.current import decompose_term
@@ -99,7 +100,11 @@ class OptimizationSetup(object):
         # add duals
         self.add_duals()
         # define and construct components of self.model
+        cp = cProfile.Profile()
+        cp.enable()
         Element.construct_model_components(self.energy_system)
+        cp.disable()
+        cp.print_stats(sort="cumtime")
         logging.info("Apply Big-M GDP ")
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)
