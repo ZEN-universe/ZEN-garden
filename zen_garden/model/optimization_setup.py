@@ -100,11 +100,7 @@ class OptimizationSetup(object):
         # add duals
         self.add_duals()
         # define and construct components of self.model
-        cp = cProfile.Profile()
-        cp.enable()
         Element.construct_model_components(self.energy_system)
-        cp.disable()
-        cp.print_stats(sort="cumtime")
         logging.info("Apply Big-M GDP ")
         # add transformation factory so that disjuncts are solved
         pe.TransformationFactory("gdp.bigm").apply_to(self.model)
