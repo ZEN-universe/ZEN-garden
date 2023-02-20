@@ -126,8 +126,7 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot("output_flow", yearly=True, sum_nodes=True)
-
+        self.plot("input_flow", yearly=True, sum_nodes=True, sum_technologies=True)
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -701,69 +700,155 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
-    def plot(self, component,yearly = False, sum_nodes = False):
+    def plot(self, component,yearly=False, sum_nodes=False, sum_technologies=False):
         """
         Plots component data as specified by the arguments
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
+        :param yearly: plot data of operational variables with yearly resolution
+        :param sum_nodes: sum values of identical technologies and carriers over spatial distribution (nodes)
+        :param sum_technologies: sum values of technologies per carrier
         :return:
         """
+        #set timeseries type
         if yearly:
             ts_type = "yearly"
         else:
             component_name, component_data = self._get_component_data(component)
             ts_type = self._get_ts_type(component_data, component_name)
 
-        data_df = self.get_df(component)
-        data_total = self.get_total(component)
-        data_full_ts = self.get_full_ts(component)
-
+        #plot variable with operational time steps
         if ts_type == "operational":
+            data_full_ts = self.get_full_ts(component)
+            if sum_nodes:
+                data_full_ts = Results.sum_over_nodes(data_full_ts)
             plt.plot(data_full_ts.columns.values, data_full_ts.values.transpose(), lw=1/len(data_full_ts.columns.values)*3000)
             plt.xlabel("Time [hours]")
-            plt.legend(data_total.index.values)
+            plt.legend(data_full_ts.index.values)
+            plt.ylabel("Power [GW]")
 
+        #plot variable with yearly time steps
         elif ts_type == "yearly":
+            data_total = self.get_total(component)
+            #sum data according to chosen options
             if sum_nodes:
                 data_total = Results.sum_over_nodes(data_total)
+            if sum_technologies:
+                data_total = Results.sum_over_technologies(data_total)
+            #set up bar plot
             bars = []
             for ind, row in enumerate(data_total.values):
                 bar = plt.bar(data_total.columns.values + 1/(data_total.shape[0]+1) * ind, row, 1/(data_total.shape[0]+1))
                 bars.append(bar)
             plt.xticks(data_total.columns.values + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), data_total.columns.values+self.results["system"]["reference_year"])
             plt.legend((bars),(data_total.index.values),ncols=max(1,int(data_total.shape[0]/7)))
+            if component in ["input_flow","out_oput_flow"]:
+                plt.ylabel("Energy [GWh]")
+            elif component in ["carbon_emissions_carrier"]:
+                plt.ylabel("Carbon Emissions [Mt]")
             plt.xlabel("Time [years]")
 
+        #plot variable with storage time steps
         elif ts_type == "storage":
+            data_total = self.get_total(component)
             plt.plot(data_total.columns.values, data_total.values.transpose())
 
-        plt.ylabel("Power [MW]")
-        plt.title(component)
+        plt.title(component + ": sum_nodes-" + str(sum_nodes) + ", sum_technologies-" + str(sum_technologies))
         plt.show()
 
     @classmethod
     def sum_over_nodes(cls,data):
         index_list = []
         data_new = pd.DataFrame()
-        for pos, index in enumerate(data.index):
-            if pos == data.index.shape[0] - 1:
-                index_list.append(index)
-                test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                test_data = test_data.rename((index_list[0][0], index_list[0][1]))
-                data_new = data_new.append(test_data)
+        #check if data indices have 3 levels as it is the case for: input_flow, output_flow, ...
+        if len(data.index.levels) == 3:
+            for pos, index in enumerate(data.index):
+                if pos == data.index.shape[0] - 1:
+                    index_list.append(index)
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    test_data = test_data.rename((index_list[0][0], index_list[0][1]))
+                    data_new = data_new.append(test_data)
 
-            elif index[0] == data.index[pos+1][0] and index[1] == data.index[pos+1][1]:
-                index_list.append(index)
+                elif index[0] == data.index[pos+1][0] and index[1] == data.index[pos+1][1]:
+                    index_list.append(index)
 
-            else:
-                index_list.append(index)
-                test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                test_data = test_data.rename((index_list[0][0],index_list[0][1]))
-                data_new = data_new.append(test_data)
+                else:
+                    index_list.append(index)
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    test_data = test_data.rename((index_list[0][0],index_list[0][1]))
+                    data_new = data_new.append(test_data)
 
-                index_list = []
+                    index_list = []
 
+            return data_new
+
+        # check if data indices have 2 levels as it is the case for: carbon_emissions_carrier, ...
+        elif len(data.index.levels) == 2:
+            for pos, index in enumerate(data.index):
+                if pos == data.index.shape[0] - 1:
+                    index_list.append(index)
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    test_data = test_data.rename(index_list[0][0])
+                    data_new = data_new.append(test_data)
+
+                elif index[0] == data.index[pos + 1][0]:
+                    index_list.append(index)
+
+                else:
+                    index_list.append(index)
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    test_data = test_data.rename(index_list[0][0])
+                    data_new = data_new.append(test_data)
+
+                    index_list = []
+
+            return data_new
+
+    @classmethod
+    def sum_over_technologies(cls, data):
+        #return data as it doesn't have multiple levels (nothing can be summed up)
+        if data.index.nlevels == 1:
+            return data
+        #return data as technology is not contained in the index levels
+        if "technology" not in data.index.dtypes:
+            return data
+        index_list = []
+        data_new = pd.DataFrame()
+        #check if there is only one level besides technology
+        if data.index.nlevels == 2:
+            data = data.sort_index(axis=0,level=1)
+            for pos, index in enumerate(data.index):
+                if pos == data.index.shape[0] - 1:
+                    index_list.append(index)
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    test_data = test_data.rename(index_list[0][1])
+                    data_new = data_new.append(test_data)
+                elif index[1] == data.index[pos+1][1]:
+                    index_list.append(index)
+                else:
+                    index_list.append(index)
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    test_data = test_data.rename(index_list[0][1])
+                    data_new = data_new.append(test_data)
+                    index_list = []
+            return data_new
+
+        elif data.index.nlevels == 3:
+            data = data.sort_index(axis=0, level=[1,2])
+            for pos, index in enumerate(data.index):
+                if pos == data.index.shape[0] - 1:
+                    index_list.append(index)
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    test_data = test_data.rename((index_list[0][1], index_list[0][2]))
+                    data_new = data_new.append(test_data)
+                elif index[1] == data.index[pos + 1][1] and index[2] == data.index[pos + 1][2]:
+                    index_list.append(index)
+                else:
+                    index_list.append(index)
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    test_data = test_data.rename((index_list[0][1], index_list[0][2]))
+                    data_new = data_new.append(test_data)
+                    index_list = []
         return data_new
-
 
 if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location("module", "config.py")
