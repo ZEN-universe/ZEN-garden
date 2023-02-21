@@ -7,6 +7,7 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 Description:  Class is defining to read in the results of an Optimization problem.
 ==========================================================================================================================================================================="""
 import logging
+import warnings
 
 import h5py
 import numpy as np
@@ -739,7 +740,8 @@ class Results(object):
             for ind, row in enumerate(data_total.values):
                 bar = plt.bar(data_total.columns.values + 1/(data_total.shape[0]+1) * ind, row, 1/(data_total.shape[0]+1))
                 bars.append(bar)
-            plt.xticks(data_total.columns.values + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), data_total.columns.values+self.results["system"]["reference_year"])
+            #data_total.columns.values dtype needs to be cast to an integer as sum_over_nodes changes the dtype to an object
+            plt.xticks(np.array(data_total.columns.values, dtype=int) + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), np.array(data_total.columns.values, dtype=int)+self.results["system"]["reference_year"])
             plt.legend((bars),(data_total.index.values),ncols=max(1,int(data_total.shape[0]/7)))
             if component in ["input_flow","out_oput_flow"]:
                 plt.ylabel("Energy [GWh]")
@@ -757,52 +759,50 @@ class Results(object):
 
     @classmethod
     def sum_over_nodes(cls,data):
+        #check if data contains nodes
+        if "node" not in data.index.dtypes:
+            return data
         index_list = []
-        data_new = pd.DataFrame()
-        #check if data indices have 3 levels as it is the case for: input_flow, output_flow, ...
-        if len(data.index.levels) == 3:
+        multi_index_list = []
+        data_nodes_summed = pd.DataFrame()
+        #check if data contains technology and carrier index levels as it is the case for: input_flow, output_flow, ...
+        if "technology" in data.index.dtypes and "carrier" in data.index.dtypes:
+            #sort data such that identical technologies and carries lie next to each other
+            data = data.sort_index(axis=0,level=["technology","carrier"])
+            #iterate over rows of data to find entries with same technologies and carriers at multiple nodes
             for pos, index in enumerate(data.index):
+                #ensure that data isn't accessed out of bound and assess last row of data
                 if pos == data.index.shape[0] - 1:
                     index_list.append(index)
                     test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    test_data = test_data.rename((index_list[0][0], index_list[0][1]))
-                    data_new = data_new.append(test_data)
-
+                    data_nodes_summed = pd.concat([data_nodes_summed,test_data],axis=1)
+                    multi_index_list.append((index[0],index[1]))
+                #check if technology and carrier at current row match the ones from the next row
                 elif index[0] == data.index[pos+1][0] and index[1] == data.index[pos+1][1]:
+                    #store index to sum corresponding value later on
                     index_list.append(index)
-
+                #sum the values of identical technologies and carriers of different nodes
                 else:
                     index_list.append(index)
+                    #sum values
                     test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    test_data = test_data.rename((index_list[0][0],index_list[0][1]))
-                    data_new = data_new.append(test_data)
-
+                    #add sum to data frame with summed values of other technologies and carriers
+                    data_nodes_summed = pd.concat([data_nodes_summed,test_data],axis=1)
+                    #empty index_list such that indices of next technology/carrier combination can be stored
                     index_list = []
+                    #store index of current technology/carrier combination such that data_nodes_summed can be indexed later on
+                    multi_index_list.append((index[0],index[1]))
+            #transpose DataFrame to overcome concat limitation
+            data_nodes_summed = data_nodes_summed.transpose()
+            #create MultiIndex of the gathered technology/carrier combinations
+            multi_index = pd.MultiIndex.from_tuples(multi_index_list, names=["technology","carrier"])
+            #set multi index
+            data_nodes_summed = data_nodes_summed.set_index(multi_index)
+            return data_nodes_summed
 
-            return data_new
-
-        # check if data indices have 2 levels as it is the case for: carbon_emissions_carrier, ...
-        elif len(data.index.levels) == 2:
-            for pos, index in enumerate(data.index):
-                if pos == data.index.shape[0] - 1:
-                    index_list.append(index)
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    test_data = test_data.rename(index_list[0][0])
-                    data_new = data_new.append(test_data)
-
-                elif index[0] == data.index[pos + 1][0]:
-                    index_list.append(index)
-
-                else:
-                    index_list.append(index)
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    test_data = test_data.rename(index_list[0][0])
-                    data_new = data_new.append(test_data)
-
-                    index_list = []
-
-            return data_new
-
+        else:
+            warnings.warn("further implementation needed to sum over nodes of this variable")
+            return data
     @classmethod
     def sum_over_technologies(cls, data):
         #return data as it doesn't have multiple levels (nothing can be summed up)
@@ -812,43 +812,79 @@ class Results(object):
         if "technology" not in data.index.dtypes:
             return data
         index_list = []
-        data_new = pd.DataFrame()
-        #check if there is only one level besides technology
-        if data.index.nlevels == 2:
-            data = data.sort_index(axis=0,level=1)
-            for pos, index in enumerate(data.index):
-                if pos == data.index.shape[0] - 1:
-                    index_list.append(index)
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    test_data = test_data.rename(index_list[0][1])
-                    data_new = data_new.append(test_data)
-                elif index[1] == data.index[pos+1][1]:
-                    index_list.append(index)
-                else:
-                    index_list.append(index)
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    test_data = test_data.rename(index_list[0][1])
-                    data_new = data_new.append(test_data)
-                    index_list = []
-            return data_new
+        multi_index_list = []
+        data_technologies_summed = pd.DataFrame()
+        #check if data contains technology and carrier index levels as it is the case for: input_flow, output_flow, ...
+        if "technology" in data.index.dtypes and "carrier" in data.index.dtypes:
 
-        elif data.index.nlevels == 3:
-            data = data.sort_index(axis=0, level=[1,2])
-            for pos, index in enumerate(data.index):
-                if pos == data.index.shape[0] - 1:
-                    index_list.append(index)
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    test_data = test_data.rename((index_list[0][1], index_list[0][2]))
-                    data_new = data_new.append(test_data)
-                elif index[1] == data.index[pos + 1][1] and index[2] == data.index[pos + 1][2]:
-                    index_list.append(index)
-                else:
-                    index_list.append(index)
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    test_data = test_data.rename((index_list[0][1], index_list[0][2]))
-                    data_new = data_new.append(test_data)
-                    index_list = []
-        return data_new
+            if "node" in data.index.dtypes:
+                #sort data such that identical carries and nodes lie next to each other
+                data = data.sort_index(axis=0, level=["carrier","node"])
+                #iterate over rows of data to find technologies with identical carrier
+                for pos, index in enumerate(data.index):
+                    #ensure that data isn't accessed out of bound and assess last row of data
+                    if pos == data.index.shape[0] - 1:
+                        index_list.append(index)
+                        test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                        data_technologies_summed = pd.concat([data_technologies_summed,test_data],axis=1)
+                        multi_index_list.append((index[1],index[2]))
+                    #check if technology and carrier at current row match the ones from the next row
+                    elif index[1] == data.index[pos+1][1] and index[2] == data.index[pos+1][2]:
+                        #store index to sum corresponding value later on
+                        index_list.append(index)
+                    #sum the values of identical technologies and carriers of different nodes
+                    else:
+                        index_list.append(index)
+                        #sum values
+                        test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                        #add sum to data frame with summed values of other technologies and carriers
+                        data_technologies_summed = pd.concat([data_technologies_summed,test_data],axis=1)
+                        #empty index_list such that indices of next technology/carrier combination can be stored
+                        index_list = []
+                        #store index of current technology/carrier combination such that data_technologies_summed can be indexed later on
+                        multi_index_list.append((index[1],index[2]))
+                #transpose DataFrame to overcome concat limitation
+                data_technologies_summed = data_technologies_summed.transpose()
+                #create MultiIndex of the gathered technology/carrier combinations
+                multi_index = pd.MultiIndex.from_tuples(multi_index_list, names=["carrier","node"])
+                #set multi index
+                data_technologies_summed = data_technologies_summed.set_index(multi_index)
+                return data_technologies_summed
+            #data doesn't have a node index
+            else:
+                # sort data such that identical carries lie next to each other
+                data = data.sort_index(axis=0, level=["carrier"])
+                # iterate over rows of data to find technologies with identical carrier
+                for pos, index in enumerate(data.index):
+                    # ensure that data isn't accessed out of bound and assess last row of data
+                    if pos == data.index.shape[0] - 1:
+                        index_list.append(index)
+                        test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                        data_technologies_summed = pd.concat([data_technologies_summed, test_data], axis=1)
+                        multi_index_list.append(index[1])
+                    # check if technology and carrier at current row match the ones from the next row
+                    elif index[1] == data.index[pos + 1][1]:
+                        # store index to sum corresponding value later on
+                        index_list.append(index)
+                    # sum the values of identical technologies and carriers of different nodes
+                    else:
+                        index_list.append(index)
+                        # sum values
+                        test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                        # add sum to data frame with summed values of other technologies and carriers
+                        data_technologies_summed = pd.concat([data_technologies_summed, test_data], axis=1)
+                        # empty index_list such that indices of next technology/carrier combination can be stored
+                        index_list = []
+                        # store index of current technology/carrier combination such that data_technologies_summed can be indexed later on
+                        multi_index_list.append(index[1])
+                # transpose DataFrame to overcome concat limitation
+                data_technologies_summed = data_technologies_summed.transpose()
+                data_technologies_summed = data_technologies_summed.set_index([multi_index_list])
+                return data_technologies_summed
+
+        else:
+            warnings.warn("Technologies using same carrier cannot be summed as variable doesn't have a technology AND a carrier index")
+            return data
 
 if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location("module", "config.py")
