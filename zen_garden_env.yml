@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - gurobi
 dependencies:
-  - python=3.11
+  - python=3.10
   - pytest
   - pip
   - numpy
@@ -13,7 +13,7 @@ dependencies:
   - coverage
   - glpk
   - pint
-  - matplotlib
+  - matplotlib=3.6
   - entsoe-py
   - pyomo=6
   - gurobi
