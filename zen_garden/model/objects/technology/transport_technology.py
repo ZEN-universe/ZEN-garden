@@ -145,7 +145,7 @@ class TransportTechnology(Technology):
             :param time: time index
             :return bounds: bounds of carrier_flow"""
             # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2invest(tech, time)
+            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
             bounds = model.capacity[tech, "power", edge, time_step_year].bounds
             return (bounds)
 
@@ -181,7 +181,7 @@ class TransportTechnology(Technology):
         # get parameter object
         params = optimization_setup.parameters
         # get invest time step
-        time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2invest(tech, time)
+        time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
         # disjunct constraints min load
         disjunct.constraint_min_load = pe.Constraint(
             expr=model.carrier_flow[tech, edge, time] >= params.min_load[tech, capacity_type, edge, time] * model.capacity[tech, capacity_type, edge, time_step_year])
