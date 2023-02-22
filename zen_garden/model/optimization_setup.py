@@ -121,7 +121,7 @@ class OptimizationSetup(object):
         self.dict_elements[element_class.__name__].append(instance)
         # Add the instance to all parents as well
         for cls in element_class.__mro__:
-            if cls != element_class:
+            if not cls == element_class:
                 self.dict_elements[cls.__name__].append(instance)
 
     def get_all_elements(self, cls):
