@@ -30,7 +30,9 @@ class TimeStepsDicts(object):
         # empty dict of conversion from energy time steps to power time steps for storage technologies
         self.dict_time_steps_energy2power = {}
         # empty dict of conversion from operational time steps to invest time steps for technologies
-        self.dict_time_steps_operation2invest = {}
+        self.dict_time_steps_operation2year = {}
+        # empty dict of conversion from invest time steps to operation time steps for technologies
+        self.dict_time_steps_year2operation = {}
         # empty dict of matching the last time step of the year in the storage domain to the first
         self.dict_time_steps_storage_level_startend_year = {}
 
@@ -149,9 +151,24 @@ class TimeStepsDicts(object):
         """ sets the dict of converting the energy time steps to the power time steps of storage technologies """
         self.dict_time_steps_energy2power[element] = time_steps_energy2power
 
-    def set_time_steps_operation2invest(self, element, time_steps_operation2invest):
-        """ sets the dict of converting the operational time steps to the invest time steps of all technologies """
-        self.dict_time_steps_operation2invest[element] = time_steps_operation2invest
+    def set_time_steps_operation2year_both_dir(self,element_name,sequence_operation,sequence_yearly):
+        """ calculates the conversion of operational time steps to invest/yearly time steps """
+        time_steps_combi = np.unique(np.vstack([sequence_operation, sequence_yearly]), axis=1)
+        time_steps_operation2year = {key: val for key, val in zip(time_steps_combi[0, :], time_steps_combi[1, :])}
+        self.set_time_steps_operation2year(element_name, time_steps_operation2year)
+        # calculate year2operation
+        time_steps_year2operation = {}
+        for year in np.unique(time_steps_combi[1]):
+            time_steps_year2operation[year] = time_steps_combi[0][time_steps_combi[1] == year]
+        self.set_time_steps_year2operation(element_name, time_steps_year2operation)
+
+    def set_time_steps_operation2year(self, element, time_steps_operation2year):
+        """ sets the dict of converting the operational time steps to the invest time steps of all elements """
+        self.dict_time_steps_operation2year[element] = time_steps_operation2year
+
+    def set_time_steps_year2operation(self, element, time_steps_year2operation):
+        """ sets the dict of converting the operational time steps to the invest time steps of all elements """
+        self.dict_time_steps_year2operation[element] = time_steps_year2operation
 
     def set_time_steps_storage_startend(self, element, system):
         """ sets the dict of matching the last time step of the year in the storage level domain to the first """
@@ -175,9 +192,16 @@ class TimeStepsDicts(object):
         """ gets the dict of converting the energy time steps to the power time steps of storage technologies """
         return self.dict_time_steps_energy2power[element]
 
-    def get_time_steps_operation2invest(self, element):
+    def get_time_steps_operation2year(self, element):
         """ gets the dict of converting the operational time steps to the invest time steps of technologies """
-        return self.dict_time_steps_operation2invest[element]
+        return self.dict_time_steps_operation2year[element]
+
+    def get_time_steps_year2operation(self, element,year=None):
+        """ gets the dict of converting the invest time steps to the operation time steps of technologies """
+        if year is None:
+            return self.dict_time_steps_year2operation[element]
+        else:
+            return self.dict_time_steps_year2operation[element][year]
 
     def get_time_steps_storage_startend(self, element, time_step):
         """ gets the dict of converting the operational time steps to the invest time steps of technologies """
@@ -196,12 +220,12 @@ class TimeStepsDicts(object):
         _full_base_time_steps = np.concatenate(_list_base_time_steps)
         return _full_base_time_steps
 
-    def convert_time_step_energy2power(self, element, timeStepEnergy):
+    def convert_time_step_energy2power(self, element, _time_step_energy):
         """ converts the time step of the energy quantities of a storage technology to the time step of the power quantities """
-        _timeStepsEnergy2Power = self.get_time_steps_energy2power(element)
-        return _timeStepsEnergy2Power[timeStepEnergy]
+        _time_steps_energy2power = self.get_time_steps_energy2power(element)
+        return _time_steps_energy2power[_time_step_energy]
 
-    def convert_time_step_operation2invest(self, element, time_step_operation):
+    def convert_time_step_operation2year(self, element, time_step_operation):
         """ converts the operational time step to the invest time step """
-        time_steps_operation2invest = self.get_time_steps_operation2invest(element)
-        return time_steps_operation2invest[time_step_operation]
+        time_steps_operation2year = self.get_time_steps_operation2year(element)
+        return time_steps_operation2year[time_step_operation]

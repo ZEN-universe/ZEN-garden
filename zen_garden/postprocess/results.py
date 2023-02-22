@@ -88,7 +88,9 @@ class Results(object):
             time_dict = self.load_sequence_time_steps(self.path, scenario)
             self.results[scenario]["dict_sequence_time_steps"] = time_dict
             self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
-
+            # load the operation2year and year2operation time steps
+            for element in time_dict["operation"]:
+                self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_operation2year_both_dir(element,time_dict["operation"][element],time_dict["yearly"][None])
             for mf in self.mf:
                 # init dict
                 self.results[scenario][mf] = {}
@@ -458,7 +460,7 @@ class Results(object):
                             else:
                                 techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" not in k.lower()][0]
                             # get the timesteps
-                            time_steps_year = sequence_time_steps_dicts.encode_time_step(techProxy, sequence_time_steps_dicts.decode_time_step(None, year, "yearly"), yearly=True)
+                            time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(techProxy, year)
                             # get the data
                             tmp_data = _varSeries[[tstep for tstep in time_steps_year]]
                             # rename
@@ -666,7 +668,7 @@ class Results(object):
 
             if year is not None:
                 # only for the given year
-                time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name + _storage_string, sequence_time_steps_dicts.decode_time_step(None, year, "yearly"), yearly=True)
+                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(element_name + _storage_string,  year)
                 total_value = (component_data * time_step_duration_element)[time_steps_year].sum(axis=1)
             else:
                 # for all years
@@ -674,7 +676,7 @@ class Results(object):
                     total_value_temp = pd.DataFrame(index=component_data.index, columns=self.years)
                     for year_temp in self.years:
                         # set a proxy for the element name
-                        time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name + _storage_string, sequence_time_steps_dicts.decode_time_step(None, year_temp, "yearly"), yearly=True)
+                        time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(element_name + _storage_string, year_temp)
                         total_value_temp[year_temp] = (component_data * time_step_duration_element)[time_steps_year].sum(axis=1)
                     total_value = total_value_temp
                 else:
@@ -686,7 +688,7 @@ class Results(object):
             if year is not None:
                 # set a proxy for the element name
                 element_name_proxy = component_data.index.get_level_values(level=0)[0]
-                time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name_proxy + _storage_string, sequence_time_steps_dicts.decode_time_step(None, year, "yearly"), yearly=True)
+                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_proxy + _storage_string, year)
                 total_value = total_value[time_steps_year].sum(axis=1)
             else:
                 if split_years:
@@ -694,8 +696,7 @@ class Results(object):
                     for year_temp in self.years:
                         # set a proxy for the element name
                         element_name_proxy = component_data.index.get_level_values(level=0)[0]
-                        time_steps_year = sequence_time_steps_dicts.encode_time_step(element_name_proxy + _storage_string, sequence_time_steps_dicts.decode_time_step(None, year_temp, "yearly"),
-                                                                                     yearly=True)
+                        time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_proxy + _storage_string, year_temp)
                         total_value_temp[year_temp] = total_value[time_steps_year].sum(axis=1)
                     total_value = total_value_temp
                 else:
