@@ -127,7 +127,7 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot("capacity", yearly=True, sum_nodes=False, sum_technologies=False, technology_type="storage_power")
+        self.plot("capacity", yearly=True, sum_nodes=False, sum_technologies=False, technology_type="conversion", reference_carrier="electricity")
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -701,7 +701,7 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
-    def plot(self, component, yearly=False, sum_nodes=False, sum_technologies=False, technology_type=None):
+    def plot(self, component, yearly=False, sum_nodes=False, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None):
         """
         Plots component data as specified by the arguments
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -709,6 +709,8 @@ class Results(object):
         :param sum_nodes: sum values of identical technologies and carriers over spatial distribution (nodes)
         :param sum_technologies: sum values of technologies per carrier
         :param technology_type: to specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity)
+        :param: plot_type: choose between different plot types such as bar, stacked_bar, etc.
+        :reference_carrier:
         :return:
         """
         #set timeseries type
@@ -732,34 +734,33 @@ class Results(object):
         elif ts_type == "yearly":
             data_total = self.get_total(component)
             if technology_type != None:
-                if technology_type == "conversion":
-                    data_total = Results.extract_technology(data_total, technology_type)
-                elif technology_type == "transport":
-                    data_total = Results.extract_technology(data_total, technology_type)
-                elif "storage" in technology_type:
-                    data_total = Results.extract_technology(data_total, technology_type)
-                else:
-                    warnings.warn("Chosen technology doesn't exist!")
+                data_total = self.extract_technology(data_total, technology_type)
+            if reference_carrier != None:
+                data_total = self.extract_reference_carrier(data_total, reference_carrier)
             #sum data according to chosen options
             if sum_nodes:
                 data_total = Results.sum_over_nodes(data_total)
             if sum_technologies:
                 data_total = Results.sum_over_technologies(data_total)
-            #set up bar plot
-            bars = []
-            for ind, row in enumerate(data_total.values):
-                bar = plt.bar(data_total.columns.values + 1/(data_total.shape[0]+1) * ind, row, 1/(data_total.shape[0]+1))
-                bars.append(bar)
-            #data_total.columns.values dtype needs to be cast to an integer as sum_over_nodes changes the dtype to an object
-            plt.xticks(np.array(data_total.columns.values, dtype=int) + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), np.array(data_total.columns.values, dtype=int)+self.results["system"]["reference_year"])
-            plt.legend((bars),(data_total.index.values),ncols=max(1,int(data_total.shape[0]/7)))
-            if component in ["input_flow","out_oput_flow"]:
-                plt.ylabel("Energy [GWh]")
-            elif component in ["carbon_emissions_carrier"]:
-                plt.ylabel("Carbon Emissions [Mt]")
-            elif component in ["capacity"]:
-                plt.ylabel("Capacity [GW]")
-            plt.xlabel("Time [years]")
+
+            if plot_type == None:
+                #set up bar plot
+                bars = []
+                for ind, row in enumerate(data_total.values):
+                    bar = plt.bar(data_total.columns.values + 1/(data_total.shape[0]+1) * ind, row, 1/(data_total.shape[0]+1))
+                    bars.append(bar)
+                #data_total.columns.values dtype needs to be cast to an integer as sum_over_nodes changes the dtype to an object
+                plt.xticks(np.array(data_total.columns.values, dtype=int) + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), np.array(data_total.columns.values, dtype=int)+self.results["system"]["reference_year"])
+                plt.legend((bars),(data_total.index.values),ncols=max(1,int(data_total.shape[0]/7)))
+                if component in ["input_flow","out_oput_flow"]:
+                    plt.ylabel("Energy [GWh]")
+                elif component in ["carbon_emissions_carrier"]:
+                    plt.ylabel("Carbon Emissions [Mt]")
+                elif component in ["capacity"]:
+                    plt.ylabel("Capacity [GW]")
+                plt.xlabel("Time [years]")
+            elif plot_type == "stacked_bar":
+                return
 
         #plot variable with storage time steps
         elif ts_type == "storage":
@@ -898,8 +899,7 @@ class Results(object):
             warnings.warn("Technologies using same carrier cannot be summed as variable doesn't have a technology AND a carrier index")
             return data
 
-    @classmethod
-    def extract_technology(cls, data, type):
+    def extract_technology(self, data, type):
         #check if data contains technologies
         if "technology" not in data.index.dtypes:
             return data
@@ -910,20 +910,28 @@ class Results(object):
                 #iterate over rows of data to find technologies with identical carrier
                 for pos, index in enumerate(data.index):
                     if type == "conversion":
-                        if index[0] in ["biomass_boiler","biomass_plant","electrode_boiler","hard_coal_boiler","hard_coal_plant","heat_pump","lignite_coal_plant","natural_gas_boiler","natural_gas_turbine","nuclear","oil_boiler","photovoltaics","wind_onshore"]:
+                        if index[0] in self.results["system"]["set_conversion_technologies"]:
                             index_list.append(index)
                     elif type == "transport":
-                        if index[0] in ["natural_gas_pipeline","power_line"]:
+                        if index[0] in self.results["system"]["set_transport_technologies"]:
                             index_list.append(index)
-                    else:
-                        if index[0] in ["battery","natural_gas_storage","reservoir_hydro"]:
+                    elif "storage" in type:
+                        if index[0] in self.results["system"]["set_storage_technologies"]:
                             if "power" in type and index[1] == "power":
                                 index_list.append(index)
                             elif "energy" in type and index[1] == "energy":
                                 index_list.append(index)
                             elif "power" not in type and "energy" not in type:
                                 index_list.append(index)
+                    else:
+                        warnings.warn("Technology type doesn't exist!")
         return data.loc[data.index.isin(index_list)]
+
+    def extract_reference_carrier(self, data, type):
+        _output_carriers = self.get_df("output_flow").index.droplevel(
+            level=["node", "time_operation"]).unique().to_frame().set_index("technology")
+
+        return
 
 if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location("module", "config.py")
