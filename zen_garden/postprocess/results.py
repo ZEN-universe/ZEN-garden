@@ -127,7 +127,7 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot("input_flow", yearly=True, sum_nodes=True, sum_technologies=True)
+        self.plot("capacity", yearly=True, sum_nodes=False, sum_technologies=False, technology_type="storage_power")
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -701,13 +701,14 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
-    def plot(self, component,yearly=False, sum_nodes=False, sum_technologies=False):
+    def plot(self, component, yearly=False, sum_nodes=False, sum_technologies=False, technology_type=None):
         """
         Plots component data as specified by the arguments
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
         :param yearly: plot data of operational variables with yearly resolution
         :param sum_nodes: sum values of identical technologies and carriers over spatial distribution (nodes)
         :param sum_technologies: sum values of technologies per carrier
+        :param technology_type: to specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity)
         :return:
         """
         #set timeseries type
@@ -730,6 +731,15 @@ class Results(object):
         #plot variable with yearly time steps
         elif ts_type == "yearly":
             data_total = self.get_total(component)
+            if technology_type != None:
+                if technology_type == "conversion":
+                    data_total = Results.extract_technology(data_total, technology_type)
+                elif technology_type == "transport":
+                    data_total = Results.extract_technology(data_total, technology_type)
+                elif "storage" in technology_type:
+                    data_total = Results.extract_technology(data_total, technology_type)
+                else:
+                    warnings.warn("Chosen technology doesn't exist!")
             #sum data according to chosen options
             if sum_nodes:
                 data_total = Results.sum_over_nodes(data_total)
@@ -747,6 +757,8 @@ class Results(object):
                 plt.ylabel("Energy [GWh]")
             elif component in ["carbon_emissions_carrier"]:
                 plt.ylabel("Carbon Emissions [Mt]")
+            elif component in ["capacity"]:
+                plt.ylabel("Capacity [GW]")
             plt.xlabel("Time [years]")
 
         #plot variable with storage time steps
@@ -885,6 +897,33 @@ class Results(object):
         else:
             warnings.warn("Technologies using same carrier cannot be summed as variable doesn't have a technology AND a carrier index")
             return data
+
+    @classmethod
+    def extract_technology(cls, data, type):
+        #check if data contains technologies
+        if "technology" not in data.index.dtypes:
+            return data
+        index_list = []
+        #check if data contains technology and capacity_type index levels as it is the case for: capacity, ...
+        if "technology" in data.index.dtypes and "capacity_type" in data.index.dtypes:
+            if "location" in data.index.dtypes:
+                #iterate over rows of data to find technologies with identical carrier
+                for pos, index in enumerate(data.index):
+                    if type == "conversion":
+                        if index[0] in ["biomass_boiler","biomass_plant","electrode_boiler","hard_coal_boiler","hard_coal_plant","heat_pump","lignite_coal_plant","natural_gas_boiler","natural_gas_turbine","nuclear","oil_boiler","photovoltaics","wind_onshore"]:
+                            index_list.append(index)
+                    elif type == "transport":
+                        if index[0] in ["natural_gas_pipeline","power_line"]:
+                            index_list.append(index)
+                    else:
+                        if index[0] in ["battery","natural_gas_storage","reservoir_hydro"]:
+                            if "power" in type and index[1] == "power":
+                                index_list.append(index)
+                            elif "energy" in type and index[1] == "energy":
+                                index_list.append(index)
+                            elif "power" not in type and "energy" not in type:
+                                index_list.append(index)
+        return data.loc[data.index.isin(index_list)]
 
 if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location("module", "config.py")
