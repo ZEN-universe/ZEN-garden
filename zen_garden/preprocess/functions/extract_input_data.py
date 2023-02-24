@@ -519,7 +519,7 @@ class DataInput:
         # add rest of indices
         for index in index_sets:
             index_name_list.append(self.index_names[index])
-            if index == "set_time_steps" and time_steps:
+            if "set_time_steps" in index and time_steps:
                 index_list.append(time_steps)
             elif index == "set_existing_technologies":
                 index_list.append(self.element.set_existing_technologies)
