@@ -16,39 +16,39 @@ import logging
 import pyomo.environ as pe
 
 from zen_garden.preprocess.functions.extract_input_data import DataInput
-from .energy_system import EnergySystem
-
 
 class Element:
     # set label
     label = "set_elements"
 
-    def __init__(self, element: str, energy_system: EnergySystem):
+    def __init__(self, element: str, optimization_setup):
         """ initialization of an element
         :param element: element that is added to the model
-        :param energy_system: The energy system the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of """
         # set attributes
         self.name = element
+        # optimization setup
+        self.optimization_setup = optimization_setup
         # energy system
-        self.energy_system = energy_system
+        self.energy_system = optimization_setup.energy_system
         # set if aggregated
         self.aggregated = False
         # get input path
         self.get_input_path()
         # create DataInput object
-        self.data_input = DataInput(element=self, system=self.energy_system.system, analysis=self.energy_system.analysis,
-                                    solver=self.energy_system.solver, energy_system=self.energy_system,
-                                    unit_handling=self.energy_system.unit_handling)
+        self.data_input = DataInput(element=self, system=self.optimization_setup.system,
+                                    analysis=self.optimization_setup.analysis, solver=self.optimization_setup.solver,
+                                    energy_system=self.energy_system, unit_handling=self.energy_system.unit_handling)
 
     def get_input_path(self):
         """ get input path where input data is stored input_path"""
         # get technology type
         class_label = self.label
         # get path dictionary
-        paths = self.energy_system.paths
+        paths = self.optimization_setup.paths
         # check if class is a subset
         if class_label not in paths.keys():
-            subsets = self.energy_system.analysis["subsets"]
+            subsets = self.optimization_setup.analysis["subsets"]
             # iterate through subsets and check if class belongs to any of the subsets
             for set_name, subsets_list in subsets.items():
                 if class_label in subsets_list:
@@ -64,86 +64,86 @@ class Element:
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
     # Here, after defining EnergySystem-specific components, the components of the other classes are constructed
     @classmethod
-    def construct_model_components(cls, energy_system: EnergySystem):
+    def construct_model_components(cls, optimization_setup):
         """ constructs the model components of the class <Element>
-        :param energy_system: The Energy system to add everything"""
+        :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("\n--- Construct model components ---\n")
         # construct pe.Sets
-        cls.construct_sets(energy_system)
+        cls.construct_sets(optimization_setup)
         # construct pe.Params
-        cls.construct_params(energy_system)
+        cls.construct_params(optimization_setup)
         # construct pe.Vars
-        cls.construct_vars(energy_system)
+        cls.construct_vars(optimization_setup)
         # construct pe.Constraints
-        cls.construct_constraints(energy_system)
+        cls.construct_constraints(optimization_setup)
         # construct pe.Objective
-        energy_system.construct_objective()
+        optimization_setup.energy_system.construct_objective()
 
     @classmethod
-    def construct_sets(cls, energy_system: EnergySystem):
+    def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <Element>
-        :param energy_system: The Energy system to add everything"""
+        :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
-        energy_system.construct_sets()
+        optimization_setup.energy_system.construct_sets()
         # construct pe.Sets of class elements
-        model = energy_system.pyomo_model
+        model = optimization_setup.model
         # operational time steps
-        model.set_time_steps_operation = pe.Set(model.set_elements, initialize=energy_system.get_attribute_of_all_elements(cls, "set_time_steps_operation"),
+        model.set_time_steps_operation = pe.Set(model.set_elements, initialize=optimization_setup.get_attribute_of_all_elements(cls, "set_time_steps_operation"),
             doc="Set of time steps in operation for all technologies. Dimensions: set_elements")
         # construct pe.Sets of the child classes
         for subclass in cls.__subclasses__():
             print(subclass.__name__)
-            subclass.construct_sets(energy_system)
+            subclass.construct_sets(optimization_setup)
 
     @classmethod
-    def construct_params(cls, energy_system: EnergySystem):
+    def construct_params(cls, optimization_setup):
         """ constructs the pe.Params of the class <Element>
-        :param energy_system: The Energy system to add everything"""
+        :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("Construct pe.Params")
         # construct pe.Params of energy system
-        energy_system.construct_params()
+        optimization_setup.energy_system.construct_params()
         # construct pe.Sets of class elements
         # operational time step duration
-        energy_system.parameters.add_parameter(name="time_steps_operation_duration",
-            data=energy_system.initialize_component(cls, "time_steps_operation_duration", index_names=["set_elements", "set_time_steps_operation"]),  # .astype(int),
+        optimization_setup.parameters.add_parameter(name="time_steps_operation_duration",
+            data=optimization_setup.initialize_component(cls, "time_steps_operation_duration", index_names=["set_elements", "set_time_steps_operation"]),  # .astype(int),
             # doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: set_elements, set_time_steps_operation"
             doc="Parameter which specifies the time step duration in operation for all technologies")
         # construct pe.Params of the child classes
         for subclass in cls.__subclasses__():
-            subclass.construct_params(energy_system)
+            subclass.construct_params(optimization_setup)
 
     @classmethod
-    def construct_vars(cls, energy_system: EnergySystem):
+    def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <Element>
-        :param energy_system: The Energy system to add everything"""
+        :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("Construct pe.Vars")
         # construct pe.Vars of energy system
-        energy_system.construct_vars()
+        optimization_setup.energy_system.construct_vars()
         # construct pe.Vars of the child classes
         for subclass in cls.__subclasses__():
-            subclass.construct_vars(energy_system)
+            subclass.construct_vars(optimization_setup)
 
     @classmethod
-    def construct_constraints(cls, energy_system: EnergySystem):
+    def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <Element>
-        :param energy_system: The Energy system to add everything"""
+        :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("Construct pe.Constraints")
         # construct pe.Constraints of energy system
-        energy_system.construct_constraints()
+        optimization_setup.energy_system.construct_constraints()
         # construct pe.Constraints of the child classes
         for subclass in cls.__subclasses__():
-            subclass.construct_constraints(energy_system)
+            subclass.construct_constraints(optimization_setup)
 
     @classmethod
-    def create_custom_set(cls, list_index, energy_system: EnergySystem):
+    def create_custom_set(cls, list_index, optimization_setup):
         """ creates custom set for model component 
         :param list_index: list of names of indices
-        :param energy_system: The Energy system of the elements
+        :param optimization_setup: The OptimizationSetup the element is part of
         :return list_index: list of names of indices """
         list_index_overwrite = copy.copy(list_index)
-        model = energy_system.pyomo_model
-        indexing_sets = energy_system.indexing_sets
+        model = optimization_setup.model
+        indexing_sets = optimization_setup.energy_system.indexing_sets
         # check if all index sets are already defined in model and no set is indexed
         if all([(hasattr(model, index) and not model.find_component(index).is_indexed()) for index in list_index]):
             # check if no set is indexed
@@ -195,7 +195,7 @@ class Element:
                         # if set is built for pwa capex:
                         elif "set_capex" in index:
                             if element in model.set_conversion_technologies:
-                                _capex_is_pwa = energy_system.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
+                                _capex_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
                                 # if technology is modeled as pwa, break for linear index
                                 if "linear" in index and _capex_is_pwa:
                                     append_element = False
@@ -211,7 +211,7 @@ class Element:
                         # if set is built for pwa conver_efficiency:
                         elif "set_conver_efficiency" in index:
                             if element in model.set_conversion_technologies:  # or element in model.set_storage_technologies:
-                                _conver_efficiency_is_pwa = energy_system.get_attribute_of_specific_element(cls, element, "conver_efficiency_is_pwa")
+                                _conver_efficiency_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "conver_efficiency_is_pwa")
                                 dependent_carrier = list(model.set_dependent_carriers[element])
                                 # TODO for more than one carrier
                                 # _pwa_conver_efficiency = cls.get_attribute_of_specific_element(element,"pwa_conver_efficiency")
@@ -230,7 +230,7 @@ class Element:
                         # if set is used to determine if on-off behavior is modeled
                         # exclude technologies which have no min_load and dependentCarrierFlow at reference_carrierFlow = 0 is also equal to 0
                         elif "on_off" in index:
-                            model_on_off = cls.check_on_off_modeled(element, energy_system)
+                            model_on_off = cls.check_on_off_modeled(element, optimization_setup)
                             if "set_no_on_off" in index:
                                 # if modeled as on off, do not append to set_no_on_off
                                 if model_on_off:
@@ -243,7 +243,7 @@ class Element:
                                     break
                         # split in capacity types of power and energy
                         elif index == "set_capacity_types":
-                            system = energy_system.system
+                            system = optimization_setup.system
                             if element in model.set_storage_technologies:
                                 list_sets.append(system["set_capacity_types"])
                             else:
@@ -261,19 +261,18 @@ class Element:
                 raise NotImplementedError
 
     @classmethod
-    def check_on_off_modeled(cls, tech, energy_system):
+    def check_on_off_modeled(cls, tech, optimization_setup):
         """ this classmethod checks if the on-off-behavior of a technology needs to be modeled.
         If the technology has a minimum load of 0 for all nodes and time steps,
         and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as pwa),
         then on-off-behavior is not necessary to model
         :param tech: technology in model
-        :param energy_system: The Energy System of the element
-        :returns model_on_off: boolean to indicate that on-off-behavior modeled """
-        model = energy_system.pyomo_model
+        :param optimization_setup: The OptimizationSetup the element is part of """
+        model = optimization_setup.model
 
         model_on_off = True
         # check if any min
-        _unique_min_load = list(set(energy_system.get_attribute_of_specific_element(cls, tech, "min_load").values))
+        _unique_min_load = list(set(optimization_setup.get_attribute_of_specific_element(cls, tech, "min_load").values))
         # if only one unique min_load which is zero
         if len(_unique_min_load) == 1 and _unique_min_load[0] == 0:
             # if not a conversion technology, break for current technology
@@ -282,12 +281,12 @@ class Element:
             # if a conversion technology, check if all dependentCarrierFlow at reference_carrierFlow = 0 equal to 0
             else:
                 # if technology is approximated (by either pwa or linear)
-                _isPWA = energy_system.get_attribute_of_specific_element(cls, tech, "conver_efficiency_is_pwa")
+                _isPWA = optimization_setup.get_attribute_of_specific_element(cls, tech, "conver_efficiency_is_pwa")
                 # if not modeled as pwa
                 if not _isPWA:
                     model_on_off = False
                 else:
-                    _pwa_parameter = energy_system.get_attribute_of_specific_element(cls, tech, "pwa_conver_efficiency")
+                    _pwa_parameter = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conver_efficiency")
                     # iterate through all dependent carriers and check if all lower bounds are equal to 0
                     _only_zero_dependent_bound = True
                     for PWAVariable in _pwa_parameter["pwa_variables"]:
