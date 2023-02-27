@@ -163,13 +163,11 @@ class TimeSeriesAggregation(object):
             # check to multiply the time series with the yearly variation
             self.yearly_variation_nonaggregated_ts(element)
 
-    def calculate_time_steps_operation2invest(self, element):
-        """ calculates the conversion of operational time steps to invest time steps """
+    def convert_time_steps_operation2year(self, element):
+        """ calculates the conversion of operational time steps to invest/yearly time steps """
         _sequence_time_steps_operation = getattr(element, "sequence_time_steps")
         _sequence_time_steps_yearly = getattr(self.energy_system, "sequence_time_steps_yearly")
-        time_steps_operation2invest = np.unique(np.vstack([_sequence_time_steps_operation, _sequence_time_steps_yearly]), axis=1)
-        time_steps_operation2invest = {key: val for key, val in zip(time_steps_operation2invest[0, :], time_steps_operation2invest[1, :])}
-        self.energy_system.time_steps.set_time_steps_operation2invest(element.name, time_steps_operation2invest)
+        self.energy_system.time_steps.set_time_steps_operation2year_both_dir(element.name,_sequence_time_steps_operation,_sequence_time_steps_yearly)
 
     def overwrite_ts_with_expanded_timeindex(self, element, set_time_steps_operation, sequence_time_steps):
         """ this method expands the aggregated time series to match the extended operational time steps because of matching the investment and operational time sequences.
@@ -240,9 +238,8 @@ class TimeSeriesAggregation(object):
             self.energy_system.time_steps.set_sequence_time_steps(element.name, element.sequence_time_steps)
             # calculate the time steps in operation to link with investment and yearly time steps
             self.link_time_steps(element)
-            # set operation2invest time step dict
-            if element in self.optimization_setup.get_all_elements(Technology):
-                self.calculate_time_steps_operation2invest(element)
+            # set operation2year and year2operation time step dict
+            self.convert_time_steps_operation2year(element)
 
     def set_aggregation_indicators(self, element):
         """ this method sets the indicators that element is aggregated """
@@ -296,7 +293,7 @@ class TimeSeriesAggregation(object):
         logging.info("\n--- Time series aggregation ---")
         # repeat order of operational time steps and link with investment and yearly time steps
         self.repeat_sequence_time_steps_for_all_years()
-        logging.info("Calculate operational time steps for storage levels and energy balances")
+        logging.info("Calculate operational time steps for storage levels")
         for element in self.optimization_setup.get_all_elements(StorageTechnology):
             # calculate time steps of storage levels
             element.calculate_time_steps_storage_level(conducted_tsa=self.conducted_tsa)

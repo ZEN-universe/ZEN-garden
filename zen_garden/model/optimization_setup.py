@@ -11,6 +11,7 @@ Description:  Class defining the Concrete optimization model.
               class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
+import cProfile
 import logging
 import os
 from collections import defaultdict

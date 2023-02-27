@@ -216,10 +216,10 @@ class CarrierRules:
         """node- and year-dependent carrier availability to import from outside the system boundaries"""
         # get parameter object
         params = self.optimization_setup.parameters
-        base_time_step = self.energy_system.time_steps.decode_time_step(None, year, "yearly")
+        operational_time_steps = self.energy_system.time_steps.get_time_steps_year2operation(carrier,year)
         if params.availability_carrier_import_yearly[carrier, node, year] != np.inf:
             return (params.availability_carrier_import_yearly[carrier, node, year] >= sum(
-                model.import_carrier_flow[carrier, node, time] * params.time_steps_operation_duration[carrier, time] for time in self.energy_system.time_steps.encode_time_step(carrier, base_time_step, yearly=True)))
+                model.import_carrier_flow[carrier, node, time] * params.time_steps_operation_duration[carrier, time] for time in operational_time_steps))
         else:
             return pe.Constraint.Skip
 
@@ -227,10 +227,10 @@ class CarrierRules:
         """node- and year-dependent carrier availability to export to outside the system boundaries"""
         # get parameter object
         params = self.optimization_setup.parameters
-        base_time_step = self.energy_system.time_steps.decode_time_step(None, year, "yearly")
+        operational_time_steps = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
         if params.availability_carrier_export_yearly[carrier, node, year] != np.inf:
             return (params.availability_carrier_export_yearly[carrier, node, year] >= sum(
-                model.export_carrier_flow[carrier, node, time] * params.time_steps_operation_duration[carrier, time] for time in self.energy_system.time_steps.encode_time_step(carrier, base_time_step, yearly=True)))
+                model.export_carrier_flow[carrier, node, time] * params.time_steps_operation_duration[carrier, time] for time in operational_time_steps))
         else:
             return pe.Constraint.Skip
 
@@ -263,17 +263,15 @@ class CarrierRules:
         """ total cost of importing and exporting carrier"""
         # get parameter object
         params = self.optimization_setup.parameters
-        base_time_step = self.energy_system.time_steps.decode_time_step(None, year, "yearly")
         return (model.cost_carrier_total[year] == sum(sum(
             (model.cost_carrier[carrier, node, time] + model.cost_shed_demand_carrier[carrier, node, time]) * params.time_steps_operation_duration[carrier, time] for time in
-            self.energy_system.time_steps.encode_time_step(carrier, base_time_step, yearly=True)) for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)[0]))
+            self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)) for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)[0]))
 
     def constraint_carbon_emissions_carrier_rule(self, model, carrier, node, time):
         """ carbon emissions of importing and exporting carrier"""
         # get parameter object
         params = self.optimization_setup.parameters
-        base_time_step = self.energy_system.time_steps.decode_time_step(carrier, time)
-        yearly_time_step = self.energy_system.time_steps.encode_time_step(None, base_time_step, "yearly")
+        yearly_time_step = self.energy_system.time_steps.convert_time_step_operation2year(carrier,time)
         if params.availability_carrier_import[carrier, node, time] != 0 or params.availability_carrier_export[carrier, node, time] != 0:
             return (model.carbon_emissions_carrier[carrier, node, time] == params.carbon_intensity_carrier[carrier, node, yearly_time_step] * (
                     model.import_carrier_flow[carrier, node, time] - model.export_carrier_flow[carrier, node, time]))
@@ -284,9 +282,8 @@ class CarrierRules:
         """ total carbon emissions of importing and exporting carrier"""
         # get parameter object
         params = self.optimization_setup.parameters
-        base_time_step = self.energy_system.time_steps.decode_time_step(None, year, "yearly")
         return (model.carbon_emissions_carrier_total[year] == sum(
-            sum(model.carbon_emissions_carrier[carrier, node, time] * params.time_steps_operation_duration[carrier, time] for time in self.energy_system.time_steps.encode_time_step(carrier, base_time_step, yearly=True))
+            sum(model.carbon_emissions_carrier[carrier, node, time] * params.time_steps_operation_duration[carrier, time] for time in self.energy_system.time_steps.get_time_steps_year2operation(carrier, year))
             for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)[0]))
 
     def constraint_nodal_energy_balance_rule(self, model, carrier, node, time):

@@ -189,7 +189,7 @@ class ConversionTechnology(Technology):
                 bounds = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conver_efficiency")["bounds"][carrier]
             else:
                 # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-                time_step_year = energy_system.time_steps.convert_time_step_operation2invest(tech, time)
+                time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, time)
                 if carrier == model.set_reference_carriers[tech].at(1):
                     _conver_efficiency = 1
                 else:
@@ -292,7 +292,7 @@ class ConversionTechnology(Technology):
         else:
             reference_flow = model.output_flow[tech, reference_carrier, node, time]
         # get invest time step
-        time_step_year = energy_system.time_steps.convert_time_step_operation2invest(tech, time)
+        time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, time)
         # disjunct constraints min load
         disjunct.constraint_min_load = pe.Constraint(expr=reference_flow >= params.min_load[tech, capacity_type, node, time] * model.capacity[tech, capacity_type, node, time_step_year])
         # couple reference flows
@@ -371,7 +371,7 @@ class ConversionTechnologyRules:
         # get parameter object
         params = self.optimization_setup.parameters
         # get invest time step
-        time_step_year = self.energy_system.time_steps.convert_time_step_operation2invest(tech, time)
+        time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, time)
         return (model.dependent_flow_approximation[tech, dependent_carrier, node, time] == params.conver_efficiency_specific[tech, dependent_carrier, node, time_step_year] *
                 model.reference_flow_approximation[tech, dependent_carrier, node, time])
 

@@ -162,8 +162,7 @@ class Technology(Element):
     def get_lifetime_range(cls, optimization_setup, tech, time, time_step_type: str = None):
         """ returns lifetime range of technology. If time_step_type, then converts the yearly time step 'time' to time_step_type """
         if time_step_type:
-            base_time_steps = optimization_setup.energy_system.time_steps.decode_time_step(None, time, "yearly")
-            time_step_year = optimization_setup.energy_system.time_steps.encode_time_step(tech, base_time_steps, time_step_type, yearly=True)
+            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech,time)
         else:
             time_step_year = time
         t_start, t_end = cls.get_start_end_time_of_period(optimization_setup, tech, time_step_year)
@@ -187,8 +186,7 @@ class Technology(Element):
         system = optimization_setup.system
         discount_rate = optimization_setup.analysis["discount_rate"]
         if time_step_type:
-            base_time_steps = optimization_setup.energy_system.time_steps.decode_time_step(None, time, "yearly")
-            time_step_year = optimization_setup.energy_system.time_steps.encode_time_step(tech, base_time_steps, time_step_type, yearly=True)
+            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech,time)
         else:
             time_step_year = time
 
@@ -708,18 +706,16 @@ class TechnologyRules:
         """ calculate total carbon emissions of each technology"""
         # get parameter object
         params = self.optimization_setup.parameters
-        base_time_step = self.optimization_setup.energy_system.time_steps.decode_time_step(None, year, "yearly")
         return (model.carbon_emissions_technology_total[year] == sum(sum(
-            model.carbon_emissions_technology[tech, loc, time] * params.time_steps_operation_duration[tech, time] for time in self.optimization_setup.energy_system.time_steps.encode_time_step(tech, base_time_step, "operation", yearly=True))
+            model.carbon_emissions_technology[tech, loc, time] * params.time_steps_operation_duration[tech, time] for time in self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year))
                                                                      for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]))
 
     def constraint_opex_total_rule(self, model, year):
         """ sums over all technologies to calculate total opex """
         # get parameter object
         params = self.optimization_setup.parameters
-        base_time_step = self.optimization_setup.energy_system.time_steps.decode_time_step(None, year, "yearly")
         return (model.opex_total[year] == sum(
-            sum(model.opex[tech, loc, time] * params.time_steps_operation_duration[tech, time] for time in self.optimization_setup.energy_system.time_steps.encode_time_step(tech, base_time_step, "operation", yearly=True)) for tech, loc in
+            sum(model.opex[tech, loc, time] * params.time_steps_operation_duration[tech, time] for time in self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)) for tech, loc in
             Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]))
 
     def constraint_capacity_factor_rule(self, model, tech, capacity_type, loc, time):
@@ -728,7 +724,7 @@ class TechnologyRules:
         params = self.optimization_setup.parameters
         reference_carrier = model.set_reference_carriers[tech].at(1)
         # get invest time step
-        time_step_year = self.optimization_setup.energy_system.time_steps.convert_time_step_operation2invest(tech, time)
+        time_step_year = self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
         # conversion technology
         if tech in model.set_conversion_technologies:
             if reference_carrier in model.set_input_carriers[tech]:

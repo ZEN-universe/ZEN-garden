@@ -9,6 +9,7 @@ Description:    Class defining the parameters, variables and constraints that ho
                 The class takes the abstract optimization model as an input, and returns the parameters, variables and
                 constraints that hold for the storage technologies.
 ==========================================================================================================================================================================="""
+import cProfile
 import logging
 
 import numpy as np
@@ -165,7 +166,7 @@ class StorageTechnology(Technology):
             :param time: time index
             :return bounds: bounds of carrier_flow"""
             # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2invest(tech, time)
+            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
             bounds = model.capacity[tech, "power", node, time_step_year].bounds
             return bounds
 
@@ -206,8 +207,7 @@ class StorageTechnology(Technology):
         params = optimization_setup.parameters
         energy_system = optimization_setup.energy_system
         # get invest time step
-        base_time_step = energy_system.time_steps.decode_time_step(tech, time, "operation")
-        time_step_year = energy_system.time_steps.encode_time_step(tech, base_time_step, "yearly")
+        time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech,time)
         # disjunct constraints min load charge
         disjunct.constraint_min_load_charge = pe.Constraint(
             expr=model.carrier_flow_charge[tech, node, time] >= params.min_load[tech, capacity_type, node, time] * model.capacity[tech, capacity_type, node, time_step_year])
@@ -223,22 +223,6 @@ class StorageTechnology(Technology):
         disjunct.constraint_no_load_charge = pe.Constraint(expr=model.carrier_flow_charge[tech, node, time] == 0)
         # off discharging
         disjunct.constraint_no_load_discharge = pe.Constraint(expr=model.carrier_flow_discharge[tech, node, time] == 0)
-
-    @classmethod
-    def getStorageLevelTimeStep(cls, optimization_setup, tech, time):
-        """ gets current and previous time step of storage level """
-        sequence_storage_level = optimization_setup.get_attribute_of_specific_element(cls, tech, "sequence_storage_level")
-        set_time_steps_operation = optimization_setup.get_attribute_of_specific_element(cls, tech, "set_time_steps_operation")
-        index_current_time_step = set_time_steps_operation.index(time)
-        current_level_time_step = sequence_storage_level[index_current_time_step]
-        # if first time step
-        if index_current_time_step == 0:
-            previous_level_time_step = sequence_storage_level[-1]
-        # if any other time step
-        else:
-            previous_level_time_step = sequence_storage_level[index_current_time_step - 1]
-        return current_level_time_step, previous_level_time_step
-
 
 class StorageTechnologyRules:
     """
@@ -259,7 +243,7 @@ class StorageTechnologyRules:
         """limit maximum storage level to capacity"""
         # get invest time step
         element_time_step = self.energy_system.time_steps.convert_time_step_energy2power(tech, time)
-        time_step_year = self.energy_system.time_steps.convert_time_step_operation2invest(tech, element_time_step)
+        time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, element_time_step)
         return (model.level_charge[tech, node, time] <= model.capacity[tech, "energy", node, time_step_year])
 
     def constraint_couple_storage_level_rule(self, model, tech, node, time):
@@ -269,7 +253,7 @@ class StorageTechnologyRules:
         system = self.optimization_setup.system
         element_time_step = self.energy_system.time_steps.convert_time_step_energy2power(tech, time)
         # get invest time step
-        time_step_year = self.energy_system.time_steps.convert_time_step_operation2invest(tech, element_time_step)
+        time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, element_time_step)
         # get corresponding start time step at beginning of the year, if time is last time step in year
         time_step_end = self.energy_system.time_steps.get_time_steps_storage_startend(tech, time)
         enforce_periodicity = True
@@ -279,11 +263,17 @@ class StorageTechnologyRules:
                 enforce_periodicity = False
         else:
             previous_level_time_step = time - 1
+        # self discharge, reformulate as partial geometric series
+        if params.self_discharge[tech, node] != 0:
+            after_self_discharge = (1-(1 - params.self_discharge[tech, node])**params.time_steps_storage_level_duration[tech, time])/(1-(1 - params.self_discharge[tech, node]))
+        else:
+            after_self_discharge = 1
         if enforce_periodicity:
-            return (model.level_charge[tech, node, time] == model.level_charge[tech, node, previous_level_time_step] * (1 - params.self_discharge[tech, node]) ** params.time_steps_storage_level_duration[
-                tech, time] + (model.carrier_flow_charge[tech, node, element_time_step] * params.efficiency_charge[tech, node, time_step_year] - model.carrier_flow_discharge[tech, node, element_time_step] /
-                               params.efficiency_discharge[tech, node, time_step_year]) * sum(
-                (1 - params.self_discharge[tech, node]) ** interimTimeStep for interimTimeStep in range(0, params.time_steps_storage_level_duration[tech, time])))
+            return (model.level_charge[tech, node, time] ==
+                    model.level_charge[tech, node, previous_level_time_step] * (1 - params.self_discharge[tech, node]) ** params.time_steps_storage_level_duration[tech, time]
+                    + (model.carrier_flow_charge[tech, node, element_time_step] * params.efficiency_charge[tech, node, time_step_year]
+                       - model.carrier_flow_discharge[tech, node, element_time_step] / params.efficiency_discharge[tech, node, time_step_year]) * after_self_discharge)
+                    # sum((1 - params.self_discharge[tech, node]) ** interimTimeStep for interimTimeStep in range(0, params.time_steps_storage_level_duration[tech, time])))
         else:
             return pe.Constraint.Skip
 
