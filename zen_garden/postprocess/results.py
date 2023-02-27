@@ -133,7 +133,7 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot("capacity", yearly=True, sum_nodes=False, sum_technologies=False, technology_type=None, reference_carrier="heat")
+        self.plot("capacity", yearly=True, sum_nodes=False, sum_technologies=False, technology_type=None, plot_type="stacked_bar", reference_carrier="heat")
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -837,6 +837,21 @@ class Results(object):
                     plt.ylabel("Capacity [GW]")
                 plt.xlabel("Time [years]")
             elif plot_type == "stacked_bar":
+                weight_counts = {}
+                for ind in data_total.index:
+                    weight_counts[str(ind)] = np.array(data_total.loc[ind,:])
+                width = 0.5
+                fig, ax = plt.subplots()
+                bottom = np.zeros(3)
+
+                for boolean, weight_count in weight_counts.items():
+                    p = ax.bar([2022,2023,2024], weight_count, width, label=boolean, bottom=bottom)
+                    bottom += weight_count
+
+                ax.set_title("Number of penguins with above average body mass")
+                ax.legend(loc="upper right")
+
+                plt.show()
                 return
 
         #plot variable with storage time steps
