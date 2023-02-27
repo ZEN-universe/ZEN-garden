@@ -75,11 +75,11 @@ class ConditioningCarrierRules:
         self.optimization_setup = optimization_setup
         self.energy_system = optimization_setup.energy_system
 
-    def constraint_carrier_demand_coupling_rule(self, model, parentCarrier, node, time):
+    def constraint_carrier_demand_coupling_rule(self, model, parent_carrier, node, time):
         """ sum conditioning Carriers"""
 
-        return (model.endogenous_carrier_demand[parentCarrier, node, time] == sum(
-            model.endogenous_carrier_demand[conditioning_carrier, node, time] for conditioning_carrier in model.set_conditioning_carrier_children[parentCarrier]))
+        return (model.endogenous_carrier_demand[parent_carrier, node, time] == sum(
+            model.endogenous_carrier_demand[conditioning_carrier, node, time] for conditioning_carrier in model.set_conditioning_carrier_children[parent_carrier]))
 
     def constraint_nodal_energy_balance_conditioning_rule(self, model, carrier, node, time):
         """
@@ -117,7 +117,7 @@ class ConditioningCarrierRules:
 
         # check if carrier is conditioning carrier:
         if carrier in model.set_conditioning_carriers:
-            # check if carrier is parentCarrier of a conditioning_carrier
+            # check if carrier is parent_carrier of a conditioning_carrier
             if carrier in model.set_conditioning_carrier_parents:
                 endogenous_carrier_demand = - model.endogenous_carrier_demand[carrier, node, time]
             else:
