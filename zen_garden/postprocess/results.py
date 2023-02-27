@@ -133,7 +133,7 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot("capacity", yearly=True, sum_nodes=False, sum_technologies=False, technology_type="conversion", reference_carrier="electricity")
+        self.plot("capacity", yearly=True, sum_nodes=False, sum_technologies=False, technology_type=None, reference_carrier="heat")
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -1005,10 +1005,20 @@ class Results(object):
         return data.loc[data.index.isin(index_list)]
 
     def extract_reference_carrier(self, data, type):
+        """
+        Extracts technologies of reference carrier type
+        :param data: Data Frame containing set of technologies with different reference carriers
+        :param type: String specifying reference carrier whose technologies should be extraced from data
+        :return: Data Frame containing technologies of reference carrier only
+        """
         _output_carriers = self.get_df("output_flow").index.droplevel(
             level=["node", "time_operation"]).unique().to_frame().set_index("technology")
+        index_list = []
+        for tech, carrier in enumerate(_output_carriers["carrier"]):
+            if carrier == type:
+                index_list.extend([index for index in data.index if index[0] == _output_carriers.index[tech]])
 
-        return
+        return data.loc[data.index.isin(index_list)]
 
 if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location("module", "config.py")
