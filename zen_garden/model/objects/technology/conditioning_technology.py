@@ -106,7 +106,7 @@ class ConditioningTechnology(ConversionTechnology):
             if _output_carriers[tech] not in _child_carriers[carrier_ref[0]]:
                 _child_carriers[carrier_ref[0]] += _output_carriers[tech]
                 _conditioning_carriers = list()
-        _conditioning_carriers = _parent_carriers + [carrier[0] for carrier in _child_carriers.values()]
+        _conditioning_carriers = _parent_carriers + [carrier for carriers in _child_carriers.values() for carrier in carriers]
 
         # update indexing sets
         optimization_setup.energy_system.indexing_sets.append("set_conditioning_carriers")
