@@ -571,12 +571,12 @@ class DataInput:
             elif idx_name_year not in df_input.axes[1]:
                 idx_name_list = [idx for idx in index_name_list if idx != idx_name_year]
                 df_input = df_input.set_index(idx_name_list)
-                df_input = df_input.rename(columns={col: int(col) for col in df_input.columns})
-                requested_index_values = set(self.energy_system.set_time_step_years)
+                requested_index_values = set([str(year) for year in self.energy_system.set_time_steps_years])
                 _requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
                 if not _requested_index_values_in_columns:
-                    return df_input
+                    return df_input.reset_index()
                 else:
+                    df_input = df_input.rename(columns={col: int(col) for col in df_input.columns})
                     requested_index_values = _requested_index_values_in_columns
                     df_input.columns = df_input.columns.set_names(idx_name_year)
                     df_input = df_input[list(requested_index_values)].stack()
