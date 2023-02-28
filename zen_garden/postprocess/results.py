@@ -133,7 +133,7 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot("capacity", yearly=True, sum_nodes=False, sum_technologies=False, technology_type=None, plot_type="stacked_bar", reference_carrier="heat")
+        self.plot("capacity", yearly=True, sum_nodes=True, sum_technologies=False, technology_type="conversion", plot_type="stacked_bar", reference_carrier="electricity")
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -778,7 +778,13 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
-    def plot(self, component, yearly=False, sum_nodes=False, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None):
+    def standard_plots(self):
+        """
+        Plots standard variables such as capacity,
+        """
+        self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="electricity", plot_strings={"title": "Capacities of Electricity Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
+        self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="heat", plot_strings={"title": "Capacities of Heat Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
+    def plot(self, component, yearly=False, sum_nodes=True, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings=None):
         """
         Plots component data as specified by the arguments
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -788,13 +794,14 @@ class Results(object):
         :param technology_type: to specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity)
         :param: plot_type: choose between different plot types such as bar, stacked_bar, etc.
         :reference_carrier:
+        :plot_strings: Dict of strings used to set title and labels of plot
         :return:
         """
+        component_name, component_data = self._get_component_data(component)
         #set timeseries type
         if yearly:
             ts_type = "yearly"
         else:
-            component_name, component_data = self._get_component_data(component)
             ts_type = self._get_ts_type(component_data, component_name)
 
         #plot variable with operational time steps
@@ -837,35 +844,24 @@ class Results(object):
                     plt.ylabel("Capacity [GW]")
                 plt.xlabel("Time [years]")
             elif plot_type == "stacked_bar":
-                weight_counts = {}
-                for ind in data_total.index:
-                    weight_counts[str(ind)] = np.array(data_total.loc[ind,:])
-                width = 0.5
-                fig, ax = plt.subplots()
-                bottom = np.zeros(3)
-
-                for boolean, weight_count in weight_counts.items():
-                    p = ax.bar([2022,2023,2024], weight_count, width, label=boolean, bottom=bottom)
-                    bottom += weight_count
-
-                ax.set_title("Number of penguins with above average body mass")
-                ax.legend(loc="upper right")
-
-                plt.show()
-                return
-
+                data_total = data_total.transpose()
+                data_total = data_total.set_index(np.array(data_total.index.values, dtype=int) + self.results["system"]["reference_year"])
+                data_total.plot( kind='bar', stacked=True,
+                        title=plot_strings["title"], rot=0, xlabel='Year', ylabel=plot_strings["ylabel"])
+                plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
+                #plt.tight_layout(rect=[0, 0, 0.75, 1])
+                plt.subplots_adjust(right=0.6)
         #plot variable with storage time steps
         elif ts_type == "storage":
             data_total = self.get_total(component)
             plt.plot(data_total.columns.values, data_total.values.transpose())
 
-        plt.title(component + ": sum_nodes-" + str(sum_nodes) + ", sum_technologies-" + str(sum_technologies))
         plt.show()
 
     @classmethod
     def sum_over_nodes(cls,data):
         #check if data contains nodes
-        if "node" not in data.index.dtypes:
+        if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
             return data
         index_list = []
         multi_index_list = []
@@ -905,6 +901,40 @@ class Results(object):
             data_nodes_summed = data_nodes_summed.set_index(multi_index)
             return data_nodes_summed
 
+        #check if data contains technology and capacity_type index levels as it is the case for: capacity, ...
+        elif "technology" in data.index.dtypes and "capacity_type" in data.index.dtypes:
+            #sort data such that identical technologies and capacity_types lie next to each other
+            data = data.sort_index(axis=0,level=["technology","capacity_type"])
+            #iterate over rows of data to find entries with same technologies and carriers at multiple locations
+            for pos, index in enumerate(data.index):
+                #ensure that data isn't accessed out of bound and assess last row of data
+                if pos == data.index.shape[0] - 1:
+                    index_list.append(index)
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    data_nodes_summed = pd.concat([data_nodes_summed,test_data],axis=1)
+                    multi_index_list.append((index[0],index[1]))
+                #check if technology and carrier at current row match the ones from the next row
+                elif index[0] == data.index[pos+1][0] and index[1] == data.index[pos+1][1]:
+                    #store index to sum corresponding value later on
+                    index_list.append(index)
+                #sum the values of identical technologies and carriers of different nodes
+                else:
+                    index_list.append(index)
+                    #sum values
+                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
+                    #add sum to data frame with summed values of other technologies and carriers
+                    data_nodes_summed = pd.concat([data_nodes_summed,test_data],axis=1)
+                    #empty index_list such that indices of next technology/carrier combination can be stored
+                    index_list = []
+                    #store index of current technology/carrier combination such that data_nodes_summed can be indexed later on
+                    multi_index_list.append((index[0],index[1]))
+            #transpose DataFrame to overcome concat limitation
+            data_nodes_summed = data_nodes_summed.transpose()
+            #create MultiIndex of the gathered technology/carrier combinations
+            multi_index = pd.MultiIndex.from_tuples(multi_index_list, names=["technology","capacity_type"])
+            #set multi index
+            data_nodes_summed = data_nodes_summed.set_index(multi_index)
+            return data_nodes_summed
         else:
             warnings.warn("further implementation needed to sum over nodes of this variable")
             return data
@@ -1023,7 +1053,7 @@ class Results(object):
         """
         Extracts technologies of reference carrier type
         :param data: Data Frame containing set of technologies with different reference carriers
-        :param type: String specifying reference carrier whose technologies should be extraced from data
+        :param type: String specifying reference carrier whose technologies should be extracted from data
         :return: Data Frame containing technologies of reference carrier only
         """
         _output_carriers = self.get_df("output_flow").index.droplevel(
