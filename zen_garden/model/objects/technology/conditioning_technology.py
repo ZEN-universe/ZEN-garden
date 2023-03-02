@@ -19,13 +19,13 @@ class ConditioningTechnology(ConversionTechnology):
     # set label
     label = "set_conditioning_technologies"
 
-    def __init__(self, tech, energy_system):
+    def __init__(self, tech, optimization_setup):
         """init conditioning technology object
         :param tech: name of added technology
-        :param energy_system: The energy system the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of """
 
         logging.info(f'Initialize conditioning technology {tech}')
-        super().__init__(tech, energy_system)
+        super().__init__(tech, optimization_setup)
         # store input data
         self.store_input_data()
 
@@ -38,8 +38,8 @@ class ConditioningTechnology(ConversionTechnology):
     def add_conditioning_carriers(self):
         """add conditioning carriers to system"""
         subset = "set_conditioning_carriers"
-        analysis = self.energy_system.analysis
-        system = self.energy_system.system
+        analysis = self.optimization_setup.analysis
+        system = self.optimization_setup.system
         # add set_conditioning_carriers to analysis and indexing_sets
         if subset not in analysis["subsets"]["set_carriers"]:
             analysis["subsets"]["set_carriers"].append(subset)
@@ -90,13 +90,13 @@ class ConditioningTechnology(ConversionTechnology):
         self.conver_efficiency_linear = self.conver_efficiency_linear.reorder_levels(_conver_efficiency_levels)
 
     @classmethod
-    def construct_sets(cls, energy_system: EnergySystem):
+    def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <ConditioningTechnology>
-        :param energy_system: The Energy system to add everything"""
-        model = energy_system.pyomo_model
+        :param optimization_setup: The OptimizationSetup the element is part of """
+        model = optimization_setup.model
         # get parent carriers
-        _output_carriers = energy_system.get_attribute_of_all_elements(cls, "output_carrier")
-        _reference_carriers = energy_system.get_attribute_of_all_elements(cls, "reference_carrier")
+        _output_carriers = optimization_setup.get_attribute_of_all_elements(cls, "output_carrier")
+        _reference_carriers = optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier")
         _parent_carriers = list()
         _child_carriers = dict()
         for tech, carrier_ref in _reference_carriers.items():
@@ -106,11 +106,11 @@ class ConditioningTechnology(ConversionTechnology):
             if _output_carriers[tech] not in _child_carriers[carrier_ref[0]]:
                 _child_carriers[carrier_ref[0]] += _output_carriers[tech]
                 _conditioning_carriers = list()
-        _conditioning_carriers = _parent_carriers + [carrier[0] for carrier in _child_carriers.values()]
+        _conditioning_carriers = _parent_carriers + [carrier for carriers in _child_carriers.values() for carrier in carriers]
 
         # update indexing sets
-        energy_system.indexing_sets.append("set_conditioning_carriers")
-        energy_system.indexing_sets.append("set_conditioning_carrier_parents")
+        optimization_setup.energy_system.indexing_sets.append("set_conditioning_carriers")
+        optimization_setup.energy_system.indexing_sets.append("set_conditioning_carrier_parents")
 
         # set of conditioning carriers
         model.set_conditioning_carriers = pe.Set(initialize=_conditioning_carriers, doc="set of conditioning carriers")

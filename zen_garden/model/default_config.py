@@ -131,6 +131,7 @@ class Config(object):
         self.system["set_conditioning_technologies"] = []
         # set of storage technologies
         self.system["set_storage_technologies"] = []
+        self.system["storage_periodicity"] = True
         # set of transport technologies
         self.system["set_transport_technologies"] = []
         self.system['double_capex_transport'] = False
@@ -151,9 +152,8 @@ class Config(object):
         self.system["knowledge_spillover_rate"] = 0.05
         # social discount rate
         self.system["social_discount_rate"] = 0
-        # folder output
-
-
+        # enforce selfish behavior
+        self.system["enforce_selfish_behavior"] = False
 
         ## Solver - Items assignment
         # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
@@ -170,24 +170,15 @@ class Config(object):
         # analyze numerics
         self.solver["analyze_numerics"]   = False
         self.solver["immutable_unit"]     = []
-        self.solver["rangeUnitExponents"]    = {"min":-1,"max":1,"step_width":1}
+        self.solver["range_unit_exponents"]    = {"min":-1,"max":1,"step_width":1}
         # round down to number of decimal points, for new capacity and unit multipliers
         self.solver["rounding_decimal_points"]     = 5
         # round down to number of decimal points, for time series after TSA
         self.solver["rounding_decimal_points_ts"]   = 3
         # verbosity
         self.solver["verbosity"] = True
-        # typology of model solved: MILP or MINLP
-        self.solver["model"]      = "MILP"
-        # parameters of meta-heuristic algorithm
-        self.solver["parametersMetaheuristic"] = {
-            "FEsMax":1e12, "kNumber":90, "mNumber":5, "q":0.05099, "xi":0.6795, "epsilon":1e-5, "MaxStagIter":650,
-            "minVal":1e-6, "maxVal":1e6,"runsNumber":1
-            }
-        # evaluation of convergence in meta-heuristic. conditionDelta: (i) relative, (ii) absolute
-        self.solver["convergenceCriterion"] = {"check": True, "conditionDelta":"relative", "restart":True}
-        # settings for performance check
-        self.solver["performanceCheck"] = {"printDeltaRun":1, "printDeltaIteration":1}
+        # add duals 
+        self.solver["add_duals"] = False
         # settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly:
         # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
         self.solver["linear_regression_check"] = {"eps_intercept":0.1,"epsRvalue":1-(1E-5)}

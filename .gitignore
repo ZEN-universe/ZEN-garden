@@ -9,6 +9,7 @@ outputs*/
 /data_generation/
 /postprocessing_JM/results_JM.py
 /postprocessing_JM/results_MH.py
+/postprocessing_JM/read_result.py
 /postprocessing_JM/visualization_JM.py
 /postprocessing_JM/visualization_JM_maps.py
 /postprocessing_JM/visualization_MH.py
