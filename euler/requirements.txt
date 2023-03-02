@@ -1,7 +1,8 @@
 numpy
-gurobipy
 glpk
 geopandas
+gurobipy==9.5.1
+hdfdict
 pandas
 pip
 pyomo>=6.0
@@ -11,7 +12,7 @@ scipy
 sympy
 ipython
 jupyter
-pint
+pint<0.20
 entsoe-py
 matplotlib
 mpmath

@@ -13,12 +13,15 @@ import sys
 import logging
 import importlib.util
 import pkg_resources
-from   .preprocess.prepare             import Prepare
-from   .model.optimization_setup       import OptimizationSetup
-from   .postprocess.results            import Postprocess
+
+from shutil import rmtree
+
+from .preprocess.prepare import Prepare
+from .model.optimization_setup import OptimizationSetup
+from .postprocess.postprocess import Postprocess
 
 
-def compile(config, dataset_path=None):
+def main(config, dataset_path=None):
     """
     This function runs the compile.py script that was used in ZEN-Garden prior to the package build, it is executed
     in the __main__.py script
@@ -29,8 +32,7 @@ def compile(config, dataset_path=None):
     log_format = '%(asctime)s %(filename)s: %(message)s'
     log_path = os.path.join('outputs', 'logs')
     os.makedirs(log_path, exist_ok=True)
-    logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=logging.INFO,
-                        format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
     logging.captureWarnings(True)
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.INFO)
@@ -49,63 +51,81 @@ def compile(config, dataset_path=None):
         config.analysis["dataset"] = dataset_path
     # get the abs path to avoid working dir stuff
     config.analysis["dataset"] = os.path.abspath(config.analysis['dataset'])
+    config.analysis["folder_output"] = os.path.abspath(config.analysis['folder_output'])
 
     ### System - load system configurations
     system_path = os.path.join(config.analysis['dataset'], "system.py")
     if not os.path.exists(system_path):
         raise FileNotFoundError(f"system.py not found in dataset: {config.analysis['dataset']}")
-    spec    = importlib.util.spec_from_file_location("module", system_path)
-    module  = importlib.util.module_from_spec(spec)
+    spec = importlib.util.spec_from_file_location("module", system_path)
+    module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    system  = module.system
+    system = module.system
     config.system.update(system)
 
     ### overwrite default system and scenario dictionaries
-    if config.system["conductScenarioAnalysis"]:
+    if config.system["conduct_scenario_analysis"]:
         scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
         if not os.path.exists(scenarios_path):
             raise FileNotFoundError(f"scenarios.py not found in dataset: {config.analysis['dataset']}")
-        spec        = importlib.util.spec_from_file_location("module", scenarios_path)
-        module      = importlib.util.module_from_spec(spec)
+        spec = importlib.util.spec_from_file_location("module", scenarios_path)
+        module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        scenarios   = module.scenarios
+        scenarios = module.scenarios
         config.scenarios.update(scenarios)
 
     # create a dictionary with the paths to access the model inputs and check if input data exists
     prepare = Prepare(config)
     # check if all data inputs exist and remove non-existent
-    prepare.checkExistingInputData()
+    prepare.check_existing_input_data()
 
     # FORMULATE THE OPTIMIZATION PROBLEM
     # add the elements and read input data
-    optimizationSetup           = OptimizationSetup(config.analysis, prepare)
+    optimization_setup = OptimizationSetup(config.analysis, prepare)
     # get rolling horizon years
-    stepsOptimizationHorizon    = optimizationSetup.getOptimizationHorizon()
+    steps_optimization_horizon = optimization_setup.get_optimization_horizon()
+
+    # get the name of the dataset
+    model_name = os.path.basename(config.analysis["dataset"])
+    if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
+        logging.warning(f"The output folder '{out_folder}' already exists")
+        if config.analysis["overwrite_output"]:
+            logging.warning("Existing files will be overwritten!")
 
     # update input data
     for scenario, elements in config.scenarios.items():
-        optimizationSetup.restoreBaseConfiguration(scenario, elements)  # per default scenario="" is used as base configuration. Use setBaseConfiguration(scenario, elements) if you want to change that
-        optimizationSetup.overwriteParams(scenario, elements)
+        optimization_setup.restore_base_configuration(scenario,elements)  # per default scenario="" is used as base configuration. Use set_base_configuration(scenario, elements) if you want to change that
+        optimization_setup.overwrite_params(scenario, elements)
         # iterate through horizon steps
-        for stepHorizon in stepsOptimizationHorizon:
-            if len(stepsOptimizationHorizon) == 1:
+        for step_horizon in steps_optimization_horizon:
+            if len(steps_optimization_horizon) == 1:
                 logging.info("\n--- Conduct optimization for perfect foresight --- \n")
             else:
-                logging.info(f"\n--- Conduct optimization for rolling horizon step {stepHorizon} of {max(stepsOptimizationHorizon)}--- \n")
+                logging.info(f"\n--- Conduct optimization for rolling horizon step {step_horizon} of {max(steps_optimization_horizon)}--- \n")
             # overwrite time indices
-            optimizationSetup.overwriteTimeIndices(stepHorizon)
+            optimization_setup.overwrite_time_indices(step_horizon)
             # create optimization problem
-            optimizationSetup.constructOptimizationProblem()
+            optimization_setup.construct_optimization_problem()
             # SOLVE THE OPTIMIZATION PROBLEM
-            optimizationSetup.solve(config.solver)
-            # add newly builtCapacity of first year to existing capacity
-            optimizationSetup.addNewlyBuiltCapacity(stepHorizon)
+            optimization_setup.solve(config.solver)
+            # add newly built_capacity of first year to existing capacity
+            optimization_setup.add_newly_built_capacity(step_horizon)
             # add cumulative carbon emissions to previous carbon emissions
-            optimizationSetup.addCarbonEmissionsCumulative(stepHorizon)
+            optimization_setup.add_carbon_emission_cumulative(step_horizon)
             # EVALUATE RESULTS
-            modelName = os.path.basename(config.analysis["dataset"])
-            if len(stepsOptimizationHorizon) > 1:
-                modelName += f"_MF{stepHorizon}"
-            if config.system["conductScenarioAnalysis"]:
-                modelName += f"_{scenario}"
-            evaluation = Postprocess(optimizationSetup, modelName=modelName)
+            subfolder = ""
+            scenario_name = None
+            if config.system["conduct_scenario_analysis"]:
+                # handle scenarios
+                subfolder += f"scenario_{scenario}"
+                scenario_name = subfolder
+            # handle myopic foresight
+            if len(steps_optimization_horizon) > 1:
+                if subfolder != "":
+                    subfolder += f"_"
+                subfolder += f"MF_{step_horizon}"
+            # write results
+            evaluation = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
+                                     model_name=model_name, scenario_name=scenario_name)
+
+    return optimization_setup

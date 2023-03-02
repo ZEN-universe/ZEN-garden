@@ -19,19 +19,19 @@ analysis = config.analysis
 solver = config.solver
 
 ## Analysis - settings update compared to default values
-analysis["objective"]                               = "TotalCost"                     # choose from "TotalCost", "TotalCarbonEmissions", "Risk"
-analysis["useExistingCapacities"]                   = True                           # use greenfield or brownfield approach
+analysis["objective"]                               = "total_cost"                     # choose from "total_cost", "total_carbon_emissions", "risk"
+analysis["use_existing_capacities"]                   = True                           # use greenfield or brownfield approach
 
 ## Solver - settings update compared to default values
 solver["name"] = "glpk" # free solver
-# solver["solverOptions"]["Method"]       = 2
-# solver["solverOptions"]["NodeMethod"]   = 2
-solver["solverOptions"]["BarHomogeneous"]   = 1
-# solver["solverOptions"]["Presolve"]     = -1
-solver["solverOptions"]["Threads"]      = 46
-# solver["solverOptions"]["CrossoverBasis"]   = 0
-# solver["solverOptions"]["Crossover"]    = 0
-solver["solverOptions"]["ScaleFlag"]    = 2
-solver["analyzeNumerics"]               = True
-solver["immutableUnit"]                 = ["hour","km"]
+# solver["solver_options"]["Method"]       = 2
+# solver["solver_options"]["NodeMethod"]   = 2
+solver["solver_options"]["BarHomogeneous"]   = 1
+# solver["solver_options"]["Presolve"]     = -1
+solver["solver_options"]["Threads"]      = 46
+# solver["solver_options"]["CrossoverBasis"]   = 0
+# solver["solver_options"]["Crossover"]    = 0
+solver["solver_options"]["ScaleFlag"]    = 2
+solver["analyze_numerics"]               = True
+solver["immutable_unit"]                 = ["hour","km"]
 

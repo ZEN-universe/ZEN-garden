@@ -5,7 +5,7 @@ channels:
   - gurobi
 dependencies:
   - numpy
-  - gurobi
+  - gurobi=9.*
   - glpk
   - geopandas
   - pandas
@@ -25,6 +25,8 @@ dependencies:
   - mpmath
   - pip:
       - tsam
+      - hdfdict
+      - -e .
 
 # conda env create -f zen_garden_env.yml
 # conda remove --name zen-garden --all

@@ -28,11 +28,16 @@ git push origin new_branch_name
 * at the stage of merging, it's possible to reference to an existing issue with '#issue_number'
 * the reference of the merging to the issue can also be done in a second stage, with the generated '#commit_number'
 
+## Discussion forum
+Please refer to the [Discussion Forum](https://github.com/RRE-ETH/ZEN-garden/discussions) for the description of several functionalities of the ZEN-garden framework.
+
 ## Creating issues
 Apart from the first stages of development, very specific issues should be opened when the need of improvements occur.
 When an issue is opened, it should be assigned to one or more developers and it should be classified according to the typology of issue (e.g. documentation, improvement).
 
 ## Coding rules
+We follow the [PEP-8](https://peps.python.org/pep-0008/)
+ coding style.
 ### Classes
 * the name of the classes should always be with the first capital letter
 * classes should all have a short description of what they do, e.g.:
@@ -45,7 +50,7 @@ When an issue is opened, it should be assigned to one or more developers and it 
 
 ### Methods
 * the name of the methods should always be in lower case letters
-* the name can be composed by two words, in that case the second word should be capitalised e.g. addVariables()
+* the name can be composed by multiple words, seprated by underscores
 * main methods should all have a short desciption of what they do, e.g.:
 
         """
@@ -76,8 +81,8 @@ When an issue is opened, it should be assigned to one or more developers and it 
         """
 
 ### Variables name
-* the name of the variables should always be in lower case letters
-* the name can be composed by two words, in that case the second word should be capitalised e.g. myVariable
+* the variable name should always be lower case
+* the name can be composed by multiple words, seprated by underscores
 
 ### Files name
 * the files name should always be lower case

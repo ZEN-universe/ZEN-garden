@@ -9,128 +9,113 @@ Description:    Class defining the parameters, variables and constraints of the 
                 constraints of the conversion technologies.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ                                as pe
-import pandas                                       as pd
-import numpy                                        as np
-from ..energy_system                    import EnergySystem
+import pyomo.environ as pe
+import pandas as pd
+from ..energy_system import EnergySystem
 from .conversion_technology import ConversionTechnology
+
 
 class ConditioningTechnology(ConversionTechnology):
     # set label
-    label = "setConditioningTechnologies"
-    # empty list of elements
-    listOfElements = []
+    label = "set_conditioning_technologies"
 
-    def __init__(self, tech):
+    def __init__(self, tech, energy_system):
         """init conditioning technology object
-        :param tech: name of added technology"""
+        :param tech: name of added technology
+        :param energy_system: The energy system the element is part of"""
 
         logging.info(f'Initialize conditioning technology {tech}')
-        super().__init__(tech)
+        super().__init__(tech, energy_system)
         # store input data
-        self.storeInputData()
-        # add ConversionTechnology to list
-        ConditioningTechnology.addElement(self)
+        self.store_input_data()
 
-    def storeInputData(self):
+    def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # get attributes from class <Technology>
-        super().storeInputData()
-        self.setConditioningCarriers()
+        super().store_input_data()
+        self.add_conditioning_carriers()
 
-    def setConditioningCarriers(self):
+    def add_conditioning_carriers(self):
         """add conditioning carriers to system"""
-        subset   = "setConditioningCarriers"
-        analysis = EnergySystem.getAnalysis()
-        system   = EnergySystem.getSystem()
-        # add setConditioningCarriers to analysis and indexingSets
-        if subset not in analysis["subsets"]["setCarriers"]:
-            analysis["subsets"]["setCarriers"].append(subset)
-        # add setConditioningCarriers to system
+        subset = "set_conditioning_carriers"
+        analysis = self.energy_system.analysis
+        system = self.energy_system.system
+        # add set_conditioning_carriers to analysis and indexing_sets
+        if subset not in analysis["subsets"]["set_carriers"]:
+            analysis["subsets"]["set_carriers"].append(subset)
+        # add set_conditioning_carriers to system
         if subset not in system.keys():
             system[subset] = []
-        if self.outputCarrier[0] not in system[subset]:
-            system[subset] += self.outputCarrier
+        if self.output_carrier[0] not in system[subset]:
+            system[subset] += self.output_carrier
 
-    def getConverEfficiency(self):
-        """retrieves and stores converEfficiency for <ConditioningTechnology>.
-        Create dictionary with input parameters with the same format as PWAConverEfficiency"""
-        #self.dataInput.extractAttributeData("minBuiltCapacity")["value"]
-        self.specificHeat         = self.dataInput.extractAttributeData("specificHeat")["value"]
-        self.specificHeatRatio    = self.dataInput.extractAttributeData("specificHeatRatio")["value"]
-        self.pressureIn           = self.dataInput.extractAttributeData("pressureIn")["value"]
-        self.pressureOut          = self.dataInput.extractAttributeData("pressureOut")["value"]
-        self.temperatureIn        = self.dataInput.extractAttributeData("temperatureIn")["value"]
-        self.isentropicEfficiency = self.dataInput.extractAttributeData("isentropicEfficiency")["value"]
+    def get_conver_efficiency(self):
+        """retrieves and stores conver_efficiency for <ConditioningTechnology>.
+        Create dictionary with input parameters with the same format as pwa_conver_efficiency"""
+        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
+        specific_heat = self.data_input.extract_attribute("specific_heat")["value"]
+        specific_heat_ratio = self.data_input.extract_attribute("specific_heat_ratio")["value"]
+        pressure_in = self.data_input.extract_attribute("pressure_in")["value"]
+        pressure_out = self.data_input.extract_attribute("pressure_out")["value"]
+        temperature_in = self.data_input.extract_attribute("temperature_in")["value"]
+        isentropic_efficiency = self.data_input.extract_attribute("isentropic_efficiency")["value"]
 
         # calculate energy consumption
-        _pressureRatio     = self.pressureOut / self.pressureIn
-        _exponent          = (self.specificHeatRatio - 1) / self.specificHeatRatio
-        if self.dataInput.ifAttributeExists("lowerHeatingValue", column=None):
-            _lowerHeatingValue = self.dataInput.extractAttributeData("lowerHeatingValue")["value"]
-            self.specificHeat  = self.specificHeat / _lowerHeatingValue
-        _energyConsumption = self.specificHeat * self.temperatureIn / self.isentropicEfficiency \
-                            * (_pressureRatio ** _exponent - 1)
+        _pressure_ratio = pressure_out / pressure_in
+        _exponent = (specific_heat_ratio - 1) / specific_heat_ratio
+        if self.data_input.exists_attribute("lower_heating_value", column=None):
+            _lower_heating_value = self.data_input.extract_attribute("lower_heating_value")["value"]
+            specific_heat = specific_heat / _lower_heating_value
+        _energy_consumption = specific_heat * temperature_in / isentropic_efficiency * (_pressure_ratio ** _exponent - 1)
 
         # check input and output carriers
-        _inputCarriers = self.inputCarrier.copy()
-        if self.referenceCarrier[0] in _inputCarriers:
-            _inputCarriers.remove(self.referenceCarrier[0])
-        assert len(_inputCarriers) == 1, f"{self.name} can only have 1 input carrier besides the reference carrier."
-        assert len(self.outputCarrier) == 1, f"{self.name} can only have 1 output carrier."
+        _input_carriers = self.input_carrier.copy()
+        if self.reference_carrier[0] in _input_carriers:
+            _input_carriers.remove(self.reference_carrier[0])
+        assert len(_input_carriers) == 1, f"{self.name} can only have 1 input carrier besides the reference carrier."
+        assert len(self.output_carrier) == 1, f"{self.name} can only have 1 output carrier."
         # create dictionary
-        self.converEfficiencyIsPWA                            = False
-        self.converEfficiencyLinear                           = dict()
-        self.converEfficiencyLinear[self.outputCarrier[0]]    = self.dataInput.createDefaultOutput(indexSets=["setNodes","setTimeSteps"],
-                                                                                                   column=None,
-                                                                                                   timeSteps=self.setTimeStepsInvest,
-                                                                                                   manualDefaultValue = 1)[0] # TODO losses are not yet accounted for
-        self.converEfficiencyLinear[_inputCarriers[0]]        = self.dataInput.createDefaultOutput(indexSets=["setNodes", "setTimeSteps"],
-                                                                                                   column=None,
-                                                                                                   timeSteps=self.setTimeStepsInvest,
-                                                                                                   manualDefaultValue=_energyConsumption)[0]
+        self.conver_efficiency_is_pwa = False
+        self.conver_efficiency_linear = dict()
+        self.conver_efficiency_linear[self.output_carrier[0]] = \
+        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=1)[
+            0]  # TODO losses are not yet accounted for
+        self.conver_efficiency_linear[_input_carriers[0]] = \
+        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
         # dict to dataframe
-        self.converEfficiencyLinear              = pd.DataFrame.from_dict(self.converEfficiencyLinear)
-        self.converEfficiencyLinear.columns.name = "carrier"
-        self.converEfficiencyLinear              = self.converEfficiencyLinear.stack()
-        _converEfficiencyLevels                  = [self.converEfficiencyLinear.index.names[-1]] + self.converEfficiencyLinear.index.names[:-1]
-        self.converEfficiencyLinear              = self.converEfficiencyLinear.reorder_levels(_converEfficiencyLevels)
+        self.conver_efficiency_linear = pd.DataFrame.from_dict(self.conver_efficiency_linear)
+        self.conver_efficiency_linear.columns.name = "carrier"
+        self.conver_efficiency_linear = self.conver_efficiency_linear.stack()
+        _conver_efficiency_levels = [self.conver_efficiency_linear.index.names[-1]] + self.conver_efficiency_linear.index.names[:-1]
+        self.conver_efficiency_linear = self.conver_efficiency_linear.reorder_levels(_conver_efficiency_levels)
 
     @classmethod
-    def constructSets(cls):
-        """ constructs the pe.Sets of the class <ConditioningTechnology> """
-        model = EnergySystem.getConcreteModel()
+    def construct_sets(cls, energy_system: EnergySystem):
+        """ constructs the pe.Sets of the class <ConditioningTechnology>
+        :param energy_system: The Energy system to add everything"""
+        model = energy_system.pyomo_model
         # get parent carriers
-        _outputCarriers    = cls.getAttributeOfAllElements("outputCarrier")
-        _referenceCarriers = cls.getAttributeOfAllElements("referenceCarrier")
-        _parentCarriers    = list()
-        _childCarriers     = dict()
-        for tech, carrierRef in _referenceCarriers.items():
-            if carrierRef[0] not in _parentCarriers:
-                _parentCarriers += carrierRef
-                _childCarriers[carrierRef[0]] = list()
-            if _outputCarriers[tech] not in _childCarriers[carrierRef[0]]:
-                _childCarriers[carrierRef[0]] +=_outputCarriers[tech]
-                _conditioningCarriers = list()
-        _conditioningCarriers = _parentCarriers+[carrier[0] for carrier in _childCarriers.values()]
+        _output_carriers = energy_system.get_attribute_of_all_elements(cls, "output_carrier")
+        _reference_carriers = energy_system.get_attribute_of_all_elements(cls, "reference_carrier")
+        _parent_carriers = list()
+        _child_carriers = dict()
+        for tech, carrier_ref in _reference_carriers.items():
+            if carrier_ref[0] not in _parent_carriers:
+                _parent_carriers += carrier_ref
+                _child_carriers[carrier_ref[0]] = list()
+            if _output_carriers[tech] not in _child_carriers[carrier_ref[0]]:
+                _child_carriers[carrier_ref[0]] += _output_carriers[tech]
+                _conditioning_carriers = list()
+        _conditioning_carriers = _parent_carriers + [carrier[0] for carrier in _child_carriers.values()]
 
         # update indexing sets
-        EnergySystem.indexingSets.append("setConditioningCarriers")
-        EnergySystem.indexingSets.append("setConditioningCarrierParents")
+        energy_system.indexing_sets.append("set_conditioning_carriers")
+        energy_system.indexing_sets.append("set_conditioning_carrier_parents")
 
         # set of conditioning carriers
-        model.setConditioningCarriers = pe.Set(
-            initialize=_conditioningCarriers,
-            doc="set of conditioning carriers. Dimensions: setConditioningCarriers"
-        )
+        model.set_conditioning_carriers = pe.Set(initialize=_conditioning_carriers, doc="set of conditioning carriers")
         # set of parent carriers
-        model.setConditioningCarrierParents = pe.Set(
-            initialize=_parentCarriers,
-            doc="set of parent carriers of conditioning. Dimensions: setConditioningCarrierParents"
-        )
+        model.set_conditioning_carrier_parents = pe.Set(initialize=_parent_carriers, doc="set of parent carriers of conditioning")
         # set that maps parent and child carriers
-        model.setConditioningCarrierChildren = pe.Set(
-            model.setConditioningCarrierParents,
-            initialize=_childCarriers,
-            doc="set of child carriers associated with parent carrier used in conditioning. Dimensions: setConditioningCarrierChildren"
-        )
+        model.set_conditioning_carrier_children = pe.Set(model.set_conditioning_carrier_parents, initialize=_child_carriers,
+            doc="set of child carriers associated with parent carrier used in conditioning")
