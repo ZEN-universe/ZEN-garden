@@ -133,7 +133,8 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot("capacity", yearly=True, sum_nodes=True, sum_technologies=False, technology_type="conversion", plot_type="stacked_bar", reference_carrier="electricity")
+        #self.standard_plots()
+        self.plot_energy_balance("CH")
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -616,7 +617,8 @@ class Results(object):
                     print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
 
         # concat and return
-        output_df = pd.concat(_output_temp, axis=0, keys=_output_temp.keys()).unstack()
+        #output_df = pd.concat(_output_temp, axis=0, keys=_output_temp.keys()).unstack()
+        output_df = pd.concat(_output_temp, axis=0, keys=component_data.index).unstack()
         return output_df
 
     def get_total(self, component, element_name=None, year=None, scenario=None, split_years=True):
@@ -780,16 +782,45 @@ class Results(object):
 
     def standard_plots(self):
         """
-        Plots standard variables such as capacity,
+        Plots standard variables such as capacity, built capacity, input/output flow, total capex/opex
         """
         self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="electricity", plot_strings={"title": "Capacities of Electricity Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
         self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="heat", plot_strings={"title": "Capacities of Heat Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
-    def plot(self, component, yearly=False, sum_nodes=True, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings=None):
+        ##self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="transport", plot_strings={"title": "Capacities of Transport Technologies", "ylabel": "Capacity [GW]"})
+        ##self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="storage_energy", plot_strings={"title": "Storage Capacities of Storage Technologies", "ylabel": "Capacity [GWh]"})
+        ##self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="storage_power", plot_strings={"title": "Charge/Discharge Capacities of Storage Technologies", "ylabel": "Capacity [GW]"})
+        self.plot("built_capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="electricity", plot_strings={"title": "Built Capacities of Electricity Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
+        self.plot("built_capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="heat", plot_strings={"title": "Built Capacities of Heat Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
+        self.plot("input_flow", yearly=True, plot_type="stacked_bar", sum_technologies=True, plot_strings={"title": "Input Flows Summed Over Technologies", "ylabel": "Input Flow [GW]"})
+        self.plot("output_flow", yearly=True, plot_type="stacked_bar", sum_technologies=True, plot_strings={"title": "Output Flows Summed Over Technologies", "ylabel": "Output Flow [GW]"})
+        self.plot("capex_total",yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Capex", "ylabel": "Capex [MEUR]"})
+        self.plot("opex_total", yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Opex", "ylabel": "Opex [MEUR]"})
+
+    def plot_energy_balance(self, node):
+        """
+
+        """
+        for carrier in ["electricity"]:
+            for component in ["output_flow", "input_flow"]:
+                data_full_ts = self.get_full_ts(component)
+                data_nodes_summed = Results.edit_nodes(data_full_ts,node)
+                data_technologies_summed = Results.sum_over_technologies(data_nodes_summed)
+                data_technologies_summed = data_technologies_summed.transpose()
+
+                plt.rcParams["figure.figsize"] = (9.5, 6.5)
+                fig, ax = plt.subplots()
+                data_technologies_summed[carrier].plot(ax=ax, title="", rot=0, xlabel='Year', ylabel="", lw=1)
+                pos = ax.get_position()
+                ax.set_position([pos.x0, pos.y0, pos.width * 0.8, pos.height])
+                ax.legend(loc='center right', bbox_to_anchor=(1.4, 0.5))
+            plt.show()
+
+    def plot(self, component, yearly=False, node_edit=True, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}):
         """
         Plots component data as specified by the arguments
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
         :param yearly: plot data of operational variables with yearly resolution
-        :param sum_nodes: sum values of identical technologies and carriers over spatial distribution (nodes)
+        :param node_edit: sum values of identical technologies and carriers over spatial distribution (nodes)
         :param sum_technologies: sum values of technologies per carrier
         :param technology_type: to specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity)
         :param: plot_type: choose between different plot types such as bar, stacked_bar, etc.
@@ -807,8 +838,8 @@ class Results(object):
         #plot variable with operational time steps
         if ts_type == "operational":
             data_full_ts = self.get_full_ts(component)
-            if sum_nodes:
-                data_full_ts = Results.sum_over_nodes(data_full_ts)
+            if node_edit:
+                data_full_ts = Results.edit_nodes(data_full_ts, node_edit)
             plt.plot(data_full_ts.columns.values, data_full_ts.values.transpose(), lw=1/len(data_full_ts.columns.values)*3000)
             plt.xlabel("Time [hours]")
             plt.legend(data_full_ts.index.values)
@@ -822,8 +853,8 @@ class Results(object):
             if reference_carrier != None:
                 data_total = self.extract_reference_carrier(data_total, reference_carrier)
             #sum data according to chosen options
-            if sum_nodes:
-                data_total = Results.sum_over_nodes(data_total)
+            if node_edit:
+                data_total = Results.edit_nodes(data_total, node_edit)
             if sum_technologies:
                 data_total = Results.sum_over_technologies(data_total)
 
@@ -833,7 +864,7 @@ class Results(object):
                 for ind, row in enumerate(data_total.values):
                     bar = plt.bar(data_total.columns.values + 1/(data_total.shape[0]+1) * ind, row, 1/(data_total.shape[0]+1))
                     bars.append(bar)
-                #data_total.columns.values dtype needs to be cast to an integer as sum_over_nodes changes the dtype to an object
+                #data_total.columns.values dtype needs to be cast to an integer as edit_nodes changes the dtype to an object
                 plt.xticks(np.array(data_total.columns.values, dtype=int) + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), np.array(data_total.columns.values, dtype=int)+self.results["system"]["reference_year"])
                 plt.legend((bars),(data_total.index.values),ncols=max(1,int(data_total.shape[0]/7)))
                 if component in ["input_flow","out_oput_flow"]:
@@ -844,13 +875,18 @@ class Results(object):
                     plt.ylabel("Capacity [GW]")
                 plt.xlabel("Time [years]")
             elif plot_type == "stacked_bar":
-                data_total = data_total.transpose()
-                data_total = data_total.set_index(np.array(data_total.index.values, dtype=int) + self.results["system"]["reference_year"])
-                data_total.plot( kind='bar', stacked=True,
+                if isinstance(data_total, pd.Series):
+                    data_total = pd.Series(np.array(data_total.values), np.array(data_total.index.values, dtype=int) + self.results["system"]["reference_year"])
+                elif isinstance(data_total, pd.DataFrame):
+                    data_total = data_total.transpose()
+                    data_total = data_total.set_index(np.array(data_total.index.values, dtype=int) + self.results["system"]["reference_year"])
+                plt.rcParams["figure.figsize"] = (9.5, 6.5)
+                fig, ax = plt.subplots()
+                data_total.plot(ax=ax, kind='bar', stacked=True,
                         title=plot_strings["title"], rot=0, xlabel='Year', ylabel=plot_strings["ylabel"])
-                plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
-                #plt.tight_layout(rect=[0, 0, 0.75, 1])
-                plt.subplots_adjust(right=0.6)
+                pos = ax.get_position()
+                ax.set_position([pos.x0, pos.y0, pos.width * 0.8, pos.height])
+                ax.legend(loc='center right', bbox_to_anchor=(1.4, 0.5))
         #plot variable with storage time steps
         elif ts_type == "storage":
             data_total = self.get_total(component)
@@ -859,11 +895,22 @@ class Results(object):
         plt.show()
 
     @classmethod
-    def sum_over_nodes(cls,data):
+    def edit_nodes(cls, data, node_edit):
+        """
+        Either returns data of a single node or sums data of identical indices at different nodes
+        :param node_edit: Either True (sum over nodes) or a string specifying a specific node
+        """
+        index_list = []
+        #check if data of a specific node should be returned
+        if isinstance(node_edit, str):
+            index_list.extend([index for index in data.index if index[2] == node_edit])
+            return data.loc[data.index.isin(index_list)]
+        #return data as it doesn't have multiple levels (nothing can be summed up)
+        if data.index.nlevels == 1:
+            return data
         #check if data contains nodes
         if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
             return data
-        index_list = []
         multi_index_list = []
         data_nodes_summed = pd.DataFrame()
         #check if data contains technology and carrier index levels as it is the case for: input_flow, output_flow, ...
