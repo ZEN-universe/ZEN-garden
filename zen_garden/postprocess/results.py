@@ -134,7 +134,7 @@ class Results(object):
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
         #self.standard_plots()
-        self.plot_energy_balance("CH")
+        self.plot_energy_balance("CH", "electricity")
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -796,37 +796,51 @@ class Results(object):
         self.plot("capex_total",yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Capex", "ylabel": "Capex [MEUR]"})
         self.plot("opex_total", yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Opex", "ylabel": "Opex [MEUR]"})
 
-    def plot_energy_balance(self, node):
+    def plot_energy_balance(self, node, carrier):
         """
-
+        Visualizes the energy balance of a specific carrier at a single node
+        :param node: String of node of interest
+        :param carrier: String of carrier of interest
         """
-        for carrier in ["electricity"]:
-            for component in ["output_flow", "input_flow"]:
-                data_full_ts = self.get_full_ts(component)
-                data_nodes_summed = Results.edit_nodes(data_full_ts,node)
-                data_technologies_summed = Results.sum_over_technologies(data_nodes_summed)
-                data_technologies_summed = data_technologies_summed.transpose()
+        plt.rcParams["figure.figsize"] = (30, 6.5)
+        fig, ax = plt.subplots()
+        components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier"]
+        lowers = ["input_flow", "import_carrier_flow", "carrier_flow_charge"]
+        for component in components:
+            data_full_ts = self.get_full_ts(component)
+            data_node_extracted = Results.edit_nodes(data_full_ts,node)
+            data_technologies_summed = Results.sum_over_technologies(data_node_extracted)
+            data_technologies_summed = data_technologies_summed.transpose()
 
-                plt.rcParams["figure.figsize"] = (9.5, 6.5)
-                fig, ax = plt.subplots()
-                data_technologies_summed[carrier].plot(ax=ax, title="", rot=0, xlabel='Year', ylabel="", lw=1)
-                pos = ax.get_position()
-                ax.set_position([pos.x0, pos.y0, pos.width * 0.8, pos.height])
-                ax.legend(loc='center right', bbox_to_anchor=(1.4, 0.5))
-            plt.show()
+            if component in lowers:
+                data_technologies_summed = data_technologies_summed.multiply(-1)
+
+            if component in ["carrier_flow_charge", "carrier_flow_discharge"]:
+                carrier = "battery"
+
+            line_style = "solid"
+            if component == "demand_carrier":
+                line_style = "dashed"
+
+            data_technologies_summed[(carrier, node)].plot(ax=ax, title=carrier + ", " + node, rot=0, xlabel='Time [h]', ylabel="Power [GW]", lw=1, linestyle=line_style)
+
+            carrier = "electricity"
+
+        ax.legend(labels=components)
+        plt.show()
 
     def plot(self, component, yearly=False, node_edit=True, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}):
         """
-        Plots component data as specified by the arguments
+        Plots component data as specified by arguments
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
-        :param yearly: plot data of operational variables with yearly resolution
-        :param node_edit: sum values of identical technologies and carriers over spatial distribution (nodes)
-        :param sum_technologies: sum values of technologies per carrier
-        :param technology_type: to specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity)
-        :param: plot_type: choose between different plot types such as bar, stacked_bar, etc.
-        :reference_carrier:
+        :param yearly: Operational time steps if false, else yearly time steps
+        :param node_edit: If true: sum values of identical technologies and carriers over spatial distribution (nodes), if string of specific node is passed, its data is returned
+        :param sum_technologies: sum values of technologies per carrier if true
+        :param technology_type: specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity, etc.)
+        :param: plot_type: per default bar plot, passing stacked_bar will plot stacked bar plot
+        :reference_carrier: specify reference carrier such as electricity, heat, etc. to extract their data
         :plot_strings: Dict of strings used to set title and labels of plot
-        :return:
+        :return: plot
         """
         component_name, component_data = self._get_component_data(component)
         #set timeseries type
@@ -887,6 +901,7 @@ class Results(object):
                 pos = ax.get_position()
                 ax.set_position([pos.x0, pos.y0, pos.width * 0.8, pos.height])
                 ax.legend(loc='center right', bbox_to_anchor=(1.4, 0.5))
+
         #plot variable with storage time steps
         elif ts_type == "storage":
             data_total = self.get_total(component)
@@ -898,13 +913,17 @@ class Results(object):
     def edit_nodes(cls, data, node_edit):
         """
         Either returns data of a single node or sums data of identical indices at different nodes
+        :param data: data frame of component
         :param node_edit: Either True (sum over nodes) or a string specifying a specific node
         """
         index_list = []
         #check if data of a specific node should be returned
         if isinstance(node_edit, str):
-            index_list.extend([index for index in data.index if index[2] == node_edit])
+            for ind, name in enumerate(data.index.names):
+                if name in ["node", "location"]:
+                    index_list.extend([index for index in data.index if index[ind] == node_edit])
             return data.loc[data.index.isin(index_list)]
+
         #return data as it doesn't have multiple levels (nothing can be summed up)
         if data.index.nlevels == 1:
             return data
