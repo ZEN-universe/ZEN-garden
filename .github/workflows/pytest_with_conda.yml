@@ -125,11 +125,11 @@ jobs:
           ref: development
           fetch-depth: 0
 
-      - name: Pull Request develop -> master
+      - name: Pull Request develop -> main
         uses: devops-infra/action-pull-request@v0.5.3
         with:
           github_token: ${{ github.token }}
-          target_branch: master
+          target_branch: main
           title: "AUTO PR"
           body: "**This is an automated pull request triggered by successfull tests of the dev branch!**"
           label: 'automated pr'
