@@ -94,20 +94,27 @@ def main(config, dataset_path=None):
 
     # update input data
     for scenario, elements in config.scenarios.items():
+        if len(config.scenarios.items()) > 1:
+            additional_scenario_string = f"for scenario {scenario} "
+        else:
+            additional_scenario_string = ""
         optimization_setup.restore_base_configuration(scenario,elements)  # per default scenario="" is used as base configuration. Use set_base_configuration(scenario, elements) if you want to change that
         optimization_setup.overwrite_params(scenario, elements)
         # iterate through horizon steps
         for step_horizon in steps_optimization_horizon:
             if len(steps_optimization_horizon) == 1:
-                logging.info("\n--- Conduct optimization for perfect foresight --- \n")
+                logging.info(f"\n--- Conduct optimization for perfect foresight {additional_scenario_string}--- \n")
             else:
-                logging.info(f"\n--- Conduct optimization for rolling horizon step {step_horizon} of {max(steps_optimization_horizon)}--- \n")
+                logging.info(f"\n--- Conduct optimization for rolling horizon step {step_horizon} of {max(steps_optimization_horizon)} {additional_scenario_string}--- \n")
             # overwrite time indices
             optimization_setup.overwrite_time_indices(step_horizon)
             # create optimization problem
             optimization_setup.construct_optimization_problem()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve(config.solver)
+            # break if infeasible
+            if not optimization_setup.optimality:
+                break
             # add newly built_capacity of first year to existing capacity
             optimization_setup.add_newly_built_capacity(step_horizon)
             # add cumulative carbon emissions to previous carbon emissions

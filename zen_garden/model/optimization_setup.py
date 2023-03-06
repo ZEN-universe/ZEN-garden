@@ -19,6 +19,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import pyomo.environ as pe
+from pyomo.opt import TerminationCondition
 from pyomo.core.expr.current import decompose_term
 
 from .objects.element import Element
@@ -426,7 +427,7 @@ class OptimizationSetup(object):
         logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
-        solver_parameters = f"ResultFile={os.path.dirname(solver['solver_options']['logfile'])}//infeasibleModelIIS.ilp"
+        solver_parameters = f"ResultFile={os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
 
         if solver_name == "gurobi_persistent":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
@@ -435,12 +436,19 @@ class OptimizationSetup(object):
             self.opt.load_vars()
         elif solver_name == "gurobi":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
-            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"])
+            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"], options_string=solver_parameters)
         else:
             self.opt = pe.SolverFactory(solver_name)
-            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"])
+            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"])
         # enable logger
         logging.disable(logging.NOTSET)
+        # write IIS
+        if self.results.solver.termination_condition != TerminationCondition.optimal:
+            logging.info("The optimization is infeasible or unbounded")
+            self.optimality = False
+        else:
+            self.optimality = True
+
         # store the solution into the results
         # self.model.solutions.store_to(self.results, skip_stale_vars=True)
 
