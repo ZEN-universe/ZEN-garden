@@ -134,7 +134,7 @@ class Results(object):
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
         #self.standard_plots()
-        self.plot_energy_balance("CH", "electricity")
+        self.plot_energy_balance("DE", "electricity", 2022)
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -617,7 +617,6 @@ class Results(object):
                     print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
 
         # concat and return
-        #output_df = pd.concat(_output_temp, axis=0, keys=_output_temp.keys()).unstack()
         output_df = pd.concat(_output_temp, axis=0, keys=component_data.index).unstack()
         return output_df
 
@@ -796,38 +795,49 @@ class Results(object):
         self.plot("capex_total",yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Capex", "ylabel": "Capex [MEUR]"})
         self.plot("opex_total", yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Opex", "ylabel": "Opex [MEUR]"})
 
-    def plot_energy_balance(self, node, carrier):
+    def plot_energy_balance(self, node, carrier, year):
         """
         Visualizes the energy balance of a specific carrier at a single node
         :param node: String of node of interest
         :param carrier: String of carrier of interest
+        :param year: Year of interest
         """
-        plt.rcParams["figure.figsize"] = (30, 6.5)
-        fig, ax = plt.subplots()
+        plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
         components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier"]
         lowers = ["input_flow", "import_carrier_flow", "carrier_flow_charge"]
+        data_plot = pd.DataFrame()
         for component in components:
             data_full_ts = self.get_full_ts(component)
-            data_node_extracted = Results.edit_nodes(data_full_ts,node)
-            data_technologies_summed = Results.sum_over_technologies(data_node_extracted)
-            data_technologies_summed = data_technologies_summed.transpose()
-
-            if component in lowers:
-                data_technologies_summed = data_technologies_summed.multiply(-1)
+            data_full_ts = Results.edit_nodes_v2(data_full_ts, node)
 
             if component in ["carrier_flow_charge", "carrier_flow_discharge"]:
                 carrier = "battery"
 
-            line_style = "solid"
-            if component == "demand_carrier":
-                line_style = "dashed"
+            data_full_ts = Results.extract_carrier(data_full_ts, carrier)
+            if component in lowers:
+                data_full_ts = data_full_ts.multiply(-1)
 
-            data_technologies_summed[(carrier, node)].plot(ax=ax, title=carrier + ", " + node, rot=0, xlabel='Time [h]', ylabel="Power [GW]", lw=1, linestyle=line_style)
+            data_full_ts = pd.concat([data_full_ts], keys=[component], names=["variable"])
+            if data_full_ts.index.nlevels == 3:
+                data_full_ts = data_full_ts.droplevel([1,2])
+            elif data_full_ts.index.nlevels == 4:
+                data_full_ts = data_full_ts.droplevel([2,3])
+            data_full_ts = data_full_ts.transpose()
+            data_plot = pd.concat([data_plot, data_full_ts], axis=1)
 
             carrier = "electricity"
 
-        ax.legend(labels=components)
+        #extract the rows of the desired year
+        data_plot = data_plot.iloc[8760*(year-self.results["system"]["reference_year"]):8760*(year-self.results["system"]["reference_year"])+8760]
+        #sort data frame columns such that columns whose values are constantly zero are plotted "first" later on (else the plot can look wrong due to bad resolution)
+        avg_values = data_plot.mean().sort_values()
+        data_plot = data_plot[avg_values.index]
+
+        colors = plt.cm.tab20(range(data_plot.shape[1]))
+        data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power [GW]", xlabel="Time [h]")
+
         plt.show()
+        debug = 1
 
     def plot(self, component, yearly=False, node_edit=True, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}):
         """
@@ -908,6 +918,33 @@ class Results(object):
             plt.plot(data_total.columns.values, data_total.values.transpose())
 
         plt.show()
+
+    @classmethod
+    def edit_nodes_v2(cls, data, node_edit):
+        if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
+            return data
+        if data.index.nlevels == 2:
+            data = data.loc[(slice(None), node_edit), :]
+            return data
+        elif data.index.nlevels == 3:
+            data = data.loc[(slice(None), slice(None), node_edit), :]
+            return data
+        elif data.index.nlevels == 4:
+            return
+
+    @classmethod
+    def extract_carrier(cls, data, carrier):
+        if "carrier" not in data.index.dtypes:
+            if "technology" not in data.index.dtypes:
+                return data
+        if data.index.nlevels == 2:
+            data = data.loc[(carrier, slice(None)), :]
+            return data
+        elif data.index.nlevels == 3:
+            data = data.loc[(slice(None), carrier, slice(None)), :]
+            return data
+        elif data.index.nlevels == 4:
+            return
 
     @classmethod
     def edit_nodes(cls, data, node_edit):
