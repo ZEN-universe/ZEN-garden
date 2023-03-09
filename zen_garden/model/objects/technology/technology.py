@@ -513,6 +513,7 @@ class Technology(Element):
 
         # add pe.Constraints of the child classes
         for subclass in cls.__subclasses__():
+            logging.info(f"Construct pe.Constraints of {subclass.__name__}")
             subclass.construct_constraints(optimization_setup)
 
 
@@ -706,9 +707,11 @@ class TechnologyRules:
         """ calculate total carbon emissions of each technology"""
         # get parameter object
         params = self.optimization_setup.parameters
-        return (model.carbon_emissions_technology_total[year] == sum(sum(
-            model.carbon_emissions_technology[tech, loc, time] * params.time_steps_operation_duration[tech, time] for time in self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year))
-                                                                     for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]))
+        return (model.carbon_emissions_technology_total[year] == sum(
+            sum(
+                model.carbon_emissions_technology[tech, loc, time] * params.time_steps_operation_duration[tech, time]
+                for time in self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year))
+            for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]))
 
     def constraint_opex_total_rule(self, model, year):
         """ sums over all technologies to calculate total opex """
