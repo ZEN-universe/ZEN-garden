@@ -112,6 +112,12 @@ class Results(object):
                 # Add together
                 current_path = os.path.join(self.path, subfolder)
 
+                #create dict containing sets
+                self.results[scenario][mf]["sets"] = {}
+                sets = self.load_sets(current_path, lazy=True)
+                self._lazydicts.append([sets])
+                self.results[scenario][mf]["sets"].update(sets)
+
                 # create dict containing params and vars
                 self.results[scenario][mf]["pars_and_vars"] = {}
                 pars = self.load_params(current_path, lazy=True)
@@ -133,8 +139,11 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
+        data_1 = self.get_df("output_flow")
+        data = self.get_df("set_reference_carriers", is_set=True)
+        #self.plot("input_flow", node_edit=True)
         #self.standard_plots()
-        self.plot_energy_balance("DE", "electricity", 2022)
+        self.plot_energy_balance("DE", "heat", 2022)
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -211,6 +220,23 @@ class Results(object):
             json_dump = json.dumps(string)
 
         return pd.read_json(json_dump, orient="table")
+
+    @classmethod
+    def load_sets(cls, path, lazy=False):
+        """
+        Loads the set dict from a given path
+        :param path: Path to load the parameter dict from
+        :param lazy: Load lazy, this will not transform the data into dataframes
+        :return: The set dict
+        """
+
+        # load the raw dict
+        raw_dict = cls._read_file(os.path.join(path, "set_dict"))
+
+        if lazy:
+            return raw_dict
+        else:
+            return cls._dict2df(raw_dict)
 
     @classmethod
     def load_params(cls, path, lazy=False):
@@ -375,7 +401,7 @@ class Results(object):
 
         return out_dict
 
-    def get_df(self, name, scenario=None, to_csv=None, csv_kwargs=None,is_dual = False):
+    def get_df(self, name, scenario=None, to_csv=None, csv_kwargs=None,is_dual=False, is_set=False):
         """
         Extracts the dataframe from the results
         :param name: The name of the dataframe to extract
@@ -400,11 +426,14 @@ class Results(object):
             sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
 
             if not self.has_MF:
-                # we set the dataframe of the variable into the data dict
-                if not is_dual:
-                    _data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
+                if not is_set:
+                    # we set the dataframe of the variable into the data dict
+                    if not is_dual:
+                        _data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
+                    else:
+                        _data[scenario] = self._to_df(self.results[scenario][None]["duals"][name]["dataframe"])
                 else:
-                    _data[scenario] = self._to_df(self.results[scenario][None]["duals"][name]["dataframe"])
+                    _data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
 
             else:
                 # init the scenario
@@ -795,49 +824,55 @@ class Results(object):
         self.plot("capex_total",yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Capex", "ylabel": "Capex [MEUR]"})
         self.plot("opex_total", yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Opex", "ylabel": "Opex [MEUR]"})
 
-    def plot_energy_balance(self, node, carrier, year):
+    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None):
         """
         Visualizes the energy balance of a specific carrier at a single node
         :param node: String of node of interest
         :param carrier: String of carrier of interest
         :param year: Year of interest
+        :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
+        :param duration: Number of hours that should be plotted from start_hour
         """
         plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
         components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier"]
         lowers = ["input_flow", "import_carrier_flow", "carrier_flow_charge"]
         data_plot = pd.DataFrame()
         for component in components:
-            data_full_ts = self.get_full_ts(component)
-            data_full_ts = Results.edit_nodes_v2(data_full_ts, node)
+            #get full timeseries of component and extract rows of relevant node
+            data_full_ts = Results.edit_nodes_v2(self.get_full_ts(component), node)
 
             if component in ["carrier_flow_charge", "carrier_flow_discharge"]:
-                carrier = "battery"
-
+                carrier = "pumped_hydro"
+            #extract data of desired carrier
             data_full_ts = Results.extract_carrier(data_full_ts, carrier)
+            #change sign of variables which enter the node
             if component in lowers:
                 data_full_ts = data_full_ts.multiply(-1)
-
+            #add variable name to multi-index such that they can be shown in plot legend
             data_full_ts = pd.concat([data_full_ts], keys=[component], names=["variable"])
+            #drop unnecessary index levels to improve the plot legend's appearance
             if data_full_ts.index.nlevels == 3:
                 data_full_ts = data_full_ts.droplevel([1,2])
             elif data_full_ts.index.nlevels == 4:
                 data_full_ts = data_full_ts.droplevel([2,3])
+            #transpose data frame as pandas plot function plots column-wise
             data_full_ts = data_full_ts.transpose()
+            #add data of current variable to the plot data frame
             data_plot = pd.concat([data_plot, data_full_ts], axis=1)
 
             carrier = "electricity"
 
         #extract the rows of the desired year
         data_plot = data_plot.iloc[8760*(year-self.results["system"]["reference_year"]):8760*(year-self.results["system"]["reference_year"])+8760]
-        #sort data frame columns such that columns whose values are constantly zero are plotted "first" later on (else the plot can look wrong due to bad resolution)
-        avg_values = data_plot.mean().sort_values()
-        data_plot = data_plot[avg_values.index]
-
+        #extrect specific hours of year
+        if start_hour is not None and duration is not None:
+            data_plot = data_plot.iloc[start_hour:start_hour+duration]
+        #remove columns(technologies/variables) with constant zero value
+        data_plot = data_plot.loc[:, (data_plot != 0).any(axis=0)]
+        #set colors and plot data frame
         colors = plt.cm.tab20(range(data_plot.shape[1]))
         data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power [GW]", xlabel="Time [h]")
-
         plt.show()
-        debug = 1
 
     def plot(self, component, yearly=False, node_edit=True, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}):
         """
@@ -863,7 +898,7 @@ class Results(object):
         if ts_type == "operational":
             data_full_ts = self.get_full_ts(component)
             if node_edit:
-                data_full_ts = Results.edit_nodes(data_full_ts, node_edit)
+                data_full_ts = Results.edit_nodes_v2(data_full_ts, node_edit)
             plt.plot(data_full_ts.columns.values, data_full_ts.values.transpose(), lw=1/len(data_full_ts.columns.values)*3000)
             plt.xlabel("Time [hours]")
             plt.legend(data_full_ts.index.values)
@@ -923,15 +958,26 @@ class Results(object):
     def edit_nodes_v2(cls, data, node_edit):
         if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
             return data
-        if data.index.nlevels == 2:
-            data = data.loc[(slice(None), node_edit), :]
-            return data
-        elif data.index.nlevels == 3:
-            data = data.loc[(slice(None), slice(None), node_edit), :]
-            return data
-        elif data.index.nlevels == 4:
-            return
-
+        #check if data of specific node, specified by string, should be extracted
+        if isinstance(node_edit,str):
+            if data.index.nlevels == 2:
+                data = data.loc[(slice(None), node_edit), :]
+                return data
+            elif data.index.nlevels == 3:
+                data = data.loc[(slice(None), slice(None), node_edit), :]
+                return data
+            elif data.index.nlevels == 4:
+                return
+        #check if data varying only in node value should be summed
+        elif node_edit == True:
+            level_names = {}
+            for level in data.index.levels:
+                if level.name not in ["node", "location"]:
+                    level_names[level.name] = level.values
+            if len(level_names) == 2:
+                for level_name_1 in level_names[0]:
+                    for level_name_2 in level_names[1]:
+                        data = data
     @classmethod
     def extract_carrier(cls, data, carrier):
         if "carrier" not in data.index.dtypes:
