@@ -598,13 +598,17 @@ class Results(object):
 
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
-        if isinstance(component_data,pd.Series):
-            return component_data
         ts_type = self._get_ts_type(component_data, component_name)
-
+        if is_dual:
+            annuity = self._get_annuity()
+        else:
+            annuity = pd.Series(index=self.years,data=1)
+        if isinstance(component_data,pd.Series):
+            return component_data/annuity
         if ts_type == "yearly":
             if element_name is not None:
                 component_data = component_data.loc[element_name]
+            component_data = component_data.div(annuity,axis=1)
             # component indexed by yearly component
             if year is not None:
                 if year in component_data.columns:
@@ -620,21 +624,31 @@ class Results(object):
         else:
             _storage_string = "_storage_level"
             time_step_duration = self._get_ts_duration(scenario, is_storage=True)
-
+        if element_name is not None:
+            component_data = component_data.loc[element_name]
         # calculate the full time series
         _output_temp = {}
         # extract time step duration
-
         for row in component_data.index:
             # we know the name
             if element_name:
                 _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + _storage_string)
+                ts_duration = time_step_duration.loc[element_name]
             # we extract the name
             else:
                 _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(row[0] + _storage_string)
+                ts_duration = time_step_duration.loc[row[0]]
             # if dual variables, divide by time step operational duration
             if is_dual:
-                component_data.loc[row] = component_data.loc[row]/time_step_duration.loc[row[0]]
+
+                component_data.loc[row] = component_data.loc[row]/ts_duration
+                for _year in annuity.index:
+                    if element_name:
+                        _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(element_name + _storage_string,_year)
+                    else:
+                        _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(row[0] + _storage_string,_year)
+                    component_data.loc[row,_yearly_ts] = component_data.loc[row,_yearly_ts] / annuity[_year]
+
             # throw together
             _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(component_data.columns))]
             _output_temp[row] = component_data.loc[row, _sequence_time_steps].reset_index(drop=True)
@@ -736,13 +750,31 @@ class Results(object):
                     total_value = total_value.sum(axis=1)
         return total_value
 
-    def get_dual(self,constraint,scenario=None):
+    def get_dual(self,constraint,scenario=None, element_name=None, year=None):
         """ extracts the dual variables of a constraint """
         if not self.results["solver"]["add_duals"]:
             logging.warning("Duals are not calculated. Skip.")
             return
-        _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True)
+        _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True, element_name=element_name, year=year)
         return _duals
+
+    def _get_annuity(self):
+        """ discounts the duals """
+        system = self.results["system"]
+        # calculate annuity
+        discount_rate = self.results["analysis"]["discount_rate"]
+        annuity = pd.Series(index=self.years,dtype=float)
+        for year in self.years:
+            if year == self.years[-1]:
+                interval_between_years = 1
+            else:
+                interval_between_years = system["interval_between_years"]
+            if self.has_MF:
+                annuity[year] = sum(((1 / (1 + discount_rate)) ** (_intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years))
+            else:
+                annuity[year] = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.years[0]) + _intermediate_time_step))
+                        for _intermediate_time_step in range(0, interval_between_years))
+        return annuity
 
     def _get_ts_duration(self, scenario=None, is_storage=False):
         """ extracts the time steps duration """
@@ -787,17 +819,21 @@ class Results(object):
         _header_operational = self.results["analysis"]["header_data_inputs"]["set_time_steps_operation"]
         _header_storage = self.results["analysis"]["header_data_inputs"]["set_time_steps_storage_level"]
         _header_yearly = self.results["analysis"]["header_data_inputs"]["set_time_steps_yearly"]
-        if component_data.columns.name == _header_operational:
+        if isinstance(component_data,pd.Series):
+            axis_name = component_data.index.name
+        else:
+            axis_name = component_data.columns.name
+        if axis_name == _header_operational:
             return "operational"
-        elif component_data.columns.name == _header_storage:
+        elif axis_name == _header_storage:
             return "storage"
-        elif component_data.columns.name == _header_yearly:
+        elif axis_name == _header_yearly:
             return "yearly"
         else:
             if force_output:
                 return None
             else:
-                raise KeyError(f"Column index name of '{component_name}' ({component_data.columns.name}) is unknown. Should be (operational, storage, yearly)")
+                raise KeyError(f"Axis index name of '{component_name}' ({axis_name}) is unknown. Should be (operational, storage, yearly)")
 
     def _get_hours_of_year(self, year):
         """ get total hours of year """

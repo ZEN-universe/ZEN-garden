@@ -267,7 +267,7 @@ class StorageTechnologyRules:
         if params.self_discharge[tech, node] != 0:
             after_self_discharge = (1-(1 - params.self_discharge[tech, node])**params.time_steps_storage_level_duration[tech, time])/(1-(1 - params.self_discharge[tech, node]))
         else:
-            after_self_discharge = 1
+            after_self_discharge = params.time_steps_storage_level_duration[tech, time]
         if enforce_periodicity:
             return (model.level_charge[tech, node, time] ==
                     model.level_charge[tech, node, previous_level_time_step] * (1 - params.self_discharge[tech, node]) ** params.time_steps_storage_level_duration[tech, time]

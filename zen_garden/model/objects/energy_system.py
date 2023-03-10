@@ -288,7 +288,8 @@ class EnergySystemRules:
         """ add up all carbon emissions from technologies and carriers """
         return (model.carbon_emissions_total[year] ==
                 # technologies
-                model.carbon_emissions_technology_total[year] + # carriers
+                model.carbon_emissions_technology_total[year] +
+                # carriers
                 model.carbon_emissions_carrier_total[year])
 
     def constraint_carbon_emissions_cumulative_rule(self, model, year):
@@ -351,10 +352,10 @@ class EnergySystemRules:
         """ discounts the annual capital flows to calculate the NPV """
         system = self.optimization_setup.system
         discount_rate = self.optimization_setup.analysis["discount_rate"]
-        if system["optimized_years"] > 1 or year == model.set_time_steps_yearly.at(-1):
-            interval_between_years = system["interval_between_years"]
-        else:
+        if year == model.set_time_steps_yearly_entire_horizon.at(-1):
             interval_between_years = 1
+        else:
+            interval_between_years = system["interval_between_years"]
 
         return (model.NPV[year] == model.cost_total[year] * sum(# economic discount
             ((1 / (1 + discount_rate)) ** (interval_between_years * (year - model.set_time_steps_yearly.at(1)) + _intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years)))

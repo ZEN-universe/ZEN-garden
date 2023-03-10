@@ -8,6 +8,7 @@ Description:  This file implements a helper class to deal with timesteps
 ==========================================================================================================================================================================="""
 
 import numpy as np
+import pandas as pd
 import logging
 
 
@@ -153,13 +154,14 @@ class TimeStepsDicts(object):
 
     def set_time_steps_operation2year_both_dir(self,element_name,sequence_operation,sequence_yearly):
         """ calculates the conversion of operational time steps to invest/yearly time steps """
-        time_steps_combi = np.unique(np.vstack([sequence_operation, sequence_yearly]), axis=1)
+        # time_steps_combi = np.unique(np.vstack([sequence_operation, sequence_yearly]), axis=1)
+        time_steps_combi = np.vstack(pd.unique(list(zip(sequence_operation, sequence_yearly)))).T
         time_steps_operation2year = {key: val for key, val in zip(time_steps_combi[0, :], time_steps_combi[1, :])}
         self.set_time_steps_operation2year(element_name, time_steps_operation2year)
         # calculate year2operation
         time_steps_year2operation = {}
-        for year in np.unique(time_steps_combi[1]):
-            time_steps_year2operation[year] = time_steps_combi[0][time_steps_combi[1] == year]
+        for year in pd.unique(time_steps_combi[1]):
+            time_steps_year2operation[year] = time_steps_combi[0,time_steps_combi[1] == year]
         self.set_time_steps_year2operation(element_name, time_steps_year2operation)
 
     def set_time_steps_operation2year(self, element, time_steps_operation2year):
