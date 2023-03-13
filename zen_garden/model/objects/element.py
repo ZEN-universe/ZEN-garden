@@ -86,11 +86,9 @@ class Element:
         logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
         optimization_setup.energy_system.construct_sets()
-        # construct pe.Sets of class elements
-        model = optimization_setup.model
         # operational time steps
-        model.set_time_steps_operation = pe.Set(model.set_elements, initialize=optimization_setup.get_attribute_of_all_elements(cls, "set_time_steps_operation"),
-            doc="Set of time steps in operation for all technologies. Dimensions: set_elements")
+        optimization_setup.sets.add_set(name="set_time_steps_operation", data=optimization_setup.get_attribute_of_all_elements(cls, "set_time_steps_operation"),
+                                        doc="Set of time steps in operation for all technologies. Dimensions: set_elements", index_set="set_elements")
         # construct pe.Sets of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_sets(optimization_setup)
@@ -142,18 +140,18 @@ class Element:
         :param optimization_setup: The OptimizationSetup the element is part of
         :return list_index: list of names of indices """
         list_index_overwrite = copy.copy(list_index)
-        model = optimization_setup.model
+        sets = optimization_setup.sets
         indexing_sets = optimization_setup.energy_system.indexing_sets
         # check if all index sets are already defined in model and no set is indexed
-        if all([(hasattr(model, index) and not model.find_component(index).is_indexed()) for index in list_index]):
+        if all([(index in sets and not sets.is_indexed(index)) for index in list_index]):
             # check if no set is indexed
             list_sets = []
             # iterate through indices
             for index in list_index:
                 # if the set already exists in model
-                if hasattr(model, index):
+                if index in sets:
                     # append set to list
-                    list_sets.append(model.find_component(index))
+                    list_sets.append(sets[index])
             # return indices as cartesian product of sets
             if len(list_index) > 1:
                 custom_set = list(itertools.product(*list_sets))
@@ -167,7 +165,7 @@ class Element:
                 # empty custom index set
                 custom_set = []
                 # iterate through
-                for element in model.find_component(list_index[0]):
+                for element in sets[list_index[0]]:
                     # default: append element
                     append_element = True
                     # create empty list of sets
@@ -175,26 +173,26 @@ class Element:
                     # iterate through indices without first index
                     for index in list_index[1:]:
                         # if the set already exist in model
-                        if hasattr(model, index):
+                        if index in sets:
                             # if not indexed
-                            if not model.find_component(index).is_indexed():
-                                list_sets.append(model.find_component(index))
+                            if not sets.is_indexed(index):
+                                list_sets.append(sets[index])
                             # if indexed by first entry
-                            elif model.find_component(index).index_set().name in indexing_sets:
-                                list_sets.append(model.find_component(index)[element])
+                            elif sets.get_index_name(index) in indexing_sets:
+                                list_sets.append(sets[index][element])
                             else:
                                 raise NotImplementedError
                         # if index is set_location
                         elif index == "set_location":
                             # if element in set_conversion_technologies or set_storage_technologies, append set_nodes
-                            if element in model.set_conversion_technologies or element in model.set_storage_technologies:
-                                list_sets.append(model.set_nodes)
+                            if element in sets["set_conversion_technologies"] or element in sets["set_storage_technologies"]:
+                                list_sets.append(sets["set_nodes"])
                             # if element in set_transport_technologies
-                            elif element in model.set_transport_technologies:
-                                list_sets.append(model.set_edges)
+                            elif element in sets["set_transport_technologies"]:
+                                list_sets.append(sets["set_edges"])
                         # if set is built for pwa capex:
                         elif "set_capex" in index:
-                            if element in model.set_conversion_technologies:
+                            if element in sets["set_conversion_technologies"]:
                                 _capex_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
                                 # if technology is modeled as pwa, break for linear index
                                 if "linear" in index and _capex_is_pwa:
@@ -210,9 +208,9 @@ class Element:
                                 break
                         # if set is built for pwa conver_efficiency:
                         elif "set_conver_efficiency" in index:
-                            if element in model.set_conversion_technologies:  # or element in model.set_storage_technologies:
+                            if element in sets["set_conversion_technologies"]:  # or element in model.set_storage_technologies:
                                 _conver_efficiency_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "conver_efficiency_is_pwa")
-                                dependent_carrier = list(model.set_dependent_carriers[element])
+                                dependent_carrier = list(sets["set_dependent_carriers"][element])
                                 # TODO for more than one carrier
                                 # _pwa_conver_efficiency = cls.get_attribute_of_specific_element(element,"pwa_conver_efficiency")
                                 # dependent_carrier_pwa     = _pwa_conver_efficiency["pwa_variables"]
@@ -244,7 +242,7 @@ class Element:
                         # split in capacity types of power and energy
                         elif index == "set_capacity_types":
                             system = optimization_setup.system
-                            if element in model.set_storage_technologies:
+                            if element in sets["set_storage_technologies"]:
                                 list_sets.append(system["set_capacity_types"])
                             else:
                                 list_sets.append([system["set_capacity_types"][0]])

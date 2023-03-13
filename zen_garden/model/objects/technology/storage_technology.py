@@ -122,10 +122,10 @@ class StorageTechnology(Technology):
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <StorageTechnology>
         :param optimization_setup: The OptimizationSetup the element is part of """
-        model = optimization_setup.model
         # time steps of storage levels
-        model.set_time_steps_storage_level = pe.Set(model.set_storage_technologies, initialize=optimization_setup.get_attribute_of_all_elements(cls, "set_time_steps_storage_level"),
-            doc="Set of time steps of storage levels for all storage technologies. Dimensions: set_storage_technologies")
+        optimization_setup.sets.add_set(name="set_time_steps_storage_level", data=optimization_setup.get_attribute_of_all_elements(cls, "set_time_steps_storage_level"),
+                                        doc="Set of time steps of storage levels for all storage technologies. Dimensions: set_storage_technologies",
+                                        index_set="set_storage_technologies")
 
     @classmethod
     def construct_params(cls, optimization_setup):

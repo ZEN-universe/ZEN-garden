@@ -290,17 +290,24 @@ class Technology(Element):
         model = optimization_setup.model
 
         # conversion technologies
+        optimization_setup.sets.add_set(name="set_conversion_technologies", data=energy_system.set_conversion_technologies,
+                                        doc="Set of conversion technologies. Subset: set_technologies")
         model.set_conversion_technologies = pe.Set(initialize=energy_system.set_conversion_technologies, doc='Set of conversion technologies. Subset: set_technologies')
         # transport technologies
+        optimization_setup.sets.add_set(name="set_transport_technologies", data=energy_system.set_transport_technologies,
+                                        doc="Set of transport technologies. Subset: set_technologies")
         model.set_transport_technologies = pe.Set(initialize=energy_system.set_transport_technologies, doc='Set of transport technologies. Subset: set_technologies')
         # storage technologies
-        model.set_storage_technologies = pe.Set(initialize=energy_system.set_storage_technologies, doc='Set of storage technologies. Subset: set_technologies')
+        optimization_setup.sets.add_set(name="set_storage_technologies", data=energy_system.set_storage_technologies,
+                                        doc="Set of storage technologies. Subset: set_technologies")
         # existing installed technologies
-        model.set_existing_technologies = pe.Set(model.set_technologies, initialize=optimization_setup.get_attribute_of_all_elements(cls, "set_existing_technologies"),
-            doc='Set of existing technologies. Subset: set_technologies')
+        optimization_setup.sets.add_set(name="set_existing_technologies", data=optimization_setup.get_attribute_of_all_elements(cls, "set_existing_technologies"),
+                                        doc="Set of existing technologies. Subset: set_technologies",
+                                        index_set="set_technologies")
         # reference carriers
-        model.set_reference_carriers = pe.Set(model.set_technologies, initialize=optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier"),
-            doc="set of all reference carriers correspondent to a technology. Dimensions: set_technologies")
+        optimization_setup.sets.add_set(name="set_reference_carriers", data=optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier"),
+                                        doc="set of all reference carriers correspondent to a technology. Dimensions: set_technologies",
+                                        index_set="set_technologies")
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_sets(optimization_setup)

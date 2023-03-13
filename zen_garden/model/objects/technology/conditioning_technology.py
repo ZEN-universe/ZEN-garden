@@ -93,7 +93,6 @@ class ConditioningTechnology(ConversionTechnology):
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <ConditioningTechnology>
         :param optimization_setup: The OptimizationSetup the element is part of """
-        model = optimization_setup.model
         # get parent carriers
         _output_carriers = optimization_setup.get_attribute_of_all_elements(cls, "output_carrier")
         _reference_carriers = optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier")
@@ -113,9 +112,9 @@ class ConditioningTechnology(ConversionTechnology):
         optimization_setup.energy_system.indexing_sets.append("set_conditioning_carrier_parents")
 
         # set of conditioning carriers
-        model.set_conditioning_carriers = pe.Set(initialize=_conditioning_carriers, doc="set of conditioning carriers")
+        optimization_setup.sets.add_set(name="set_conditioning_carriers", data=_conditioning_carriers, doc="set of conditioning carriers")
         # set of parent carriers
-        model.set_conditioning_carrier_parents = pe.Set(initialize=_parent_carriers, doc="set of parent carriers of conditioning")
+        optimization_setup.sets.add_set(name="set_conditioning_carrier_parents", data=_parent_carriers, doc="set of parent carriers of conditioning")
         # set that maps parent and child carriers
-        model.set_conditioning_carrier_children = pe.Set(model.set_conditioning_carrier_parents, initialize=_child_carriers,
-            doc="set of child carriers associated with parent carrier used in conditioning")
+        optimization_setup.sets.add_set(name="set_conditioning_carrier_children", data=_child_carriers, doc="set of child carriers associated with parent carrier used in conditioning",
+                                        index_set="set_conditioning_carrier_parents")

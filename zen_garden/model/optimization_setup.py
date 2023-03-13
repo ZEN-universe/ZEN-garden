@@ -21,10 +21,11 @@ import pandas as pd
 import pyomo.environ as pe
 from pyomo.opt import TerminationCondition
 from pyomo.core.expr.current import decompose_term
+import linopy as lp
 
 from .objects.element import Element
 from .objects.energy_system import EnergySystem
-from .objects.component import Parameter, Variable, Constraint
+from .objects.component import Parameter, Variable, Constraint, IndexSet
 from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 from ..preprocess.prepare import Prepare
@@ -54,6 +55,7 @@ class OptimizationSetup(object):
         self.variables = None
         self.parameters = None
         self.constraints = None
+        self.sets = None
 
         # sorted list of class names
         element_classes = self.dict_element_classes.keys()
@@ -241,6 +243,7 @@ class OptimizationSetup(object):
         self.variables = Variable()
         self.parameters = Parameter()
         self.constraints = Constraint()
+        self.sets = IndexSet()
         # add duals
         self.add_duals()
         # define and construct components of self.model
@@ -515,7 +518,7 @@ class OptimizationSetup(object):
         :param calling_class: class from where the method is called
         :param component_name: name of modeling component
         :param index_names: names of index sets, only if calling_class is not EnergySystem
-        :param set_time_steps: time steps, only if calling_class is EnergySystem
+        :param set_time_steps: name time steps set, only if calling_class is EnergySystem
         :param capacity_types: boolean if extracted for capacities
         :return component_data: data to initialize the component """
         # if calling class is EnergySystem
@@ -524,11 +527,11 @@ class OptimizationSetup(object):
             if index_names is not None:
                 index_list = index_names
             elif set_time_steps is not None:
-                index_list = [set_time_steps.name]
+                index_list = [set_time_steps]
             else:
                 index_list = []
             if set_time_steps:
-                component_data = component[set_time_steps]
+                component_data = component[self.sets[set_time_steps]]
             elif type(component) == float:
                 component_data = component
             else:

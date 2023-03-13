@@ -56,6 +56,72 @@ class Component:
         return index_values, index_names
 
 
+class IndexSet(Component):
+    def __init__(self):
+        """ initialization of the IndexSet object """
+        # base class init
+        super().__init__()
+
+        # attributes
+        self.sets = {}
+        self.index_sets = {}
+
+    def add_set(self, name, data, doc, index_set=None):
+        """
+        Adds a set to the IndexSets (this set it not indexed)
+        :param data: The data used for the init
+        :param doc: The docstring of the set
+        :param index_set: The name of the index set if the set itself is indexed
+        """
+
+        if name in self.sets:
+            logging.warning(f"{name} already added. Will be overwritten!")
+
+        # added data and docs
+        self.sets[name] = data
+        self.docs[name] = doc
+        if index_set is not None:
+            self.index_sets[name] = index_set
+
+    def is_indexed(self, name):
+        """
+        Checks if the set with the name is indexed
+        :param name: The name of the set
+        :return: True if indexed, False otherwise
+        """
+
+        return name in self.index_sets
+
+    def get_index_name(self, name):
+        """
+        Returns the index name of an indexed set
+        :param name: The name of the indexed set
+        :return: The name of the index set
+        """
+
+        if not self.is_indexed(name=name):
+            raise ValueError(f"Set {name} is not an indexed set!")
+        return self.index_sets[name]
+
+    def __getitem__(self, name):
+        """
+        Returns a set
+        :param name: The name of the set to get
+        :return: The set that has the name
+        """
+
+        return self.sets[name]
+
+    def __contains__(self, item):
+        """
+        The is for the "in" keyword
+        :param item: The item to check
+        :return: True if item is contained, False otherwies
+        """
+
+        return item in self.sets
+
+
 class Parameter(Component):
     def __init__(self):
         """ initialization of the parameter object """

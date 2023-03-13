@@ -160,33 +160,34 @@ class EnergySystem:
         # construct pe.Sets of the class <EnergySystem>
         pyomo_model = self.optimization_setup.model
         # nodes
-        pyomo_model.set_nodes = pe.Set(initialize=self.set_nodes, doc='Set of nodes')
+        self.optimization_setup.sets.add_set(name="set_nodes", data=self.set_nodes, doc="Set of nodes")
         # edges
-        pyomo_model.set_edges = pe.Set(initialize=self.set_edges, doc='Set of edges')
+        self.optimization_setup.sets.add_set(name="set_edges", data=self.set_edges, doc="Set of edges")
         # nodes on edges
-        pyomo_model.set_nodes_on_edges = pe.Set(pyomo_model.set_edges, initialize=self.set_nodes_on_edges, doc='Set of nodes that constitute an edge. Edge connects first node with second node.')
+        self.optimization_setup.sets.add_set(name="set_nodes_on_edges", data=self.set_nodes_on_edges, doc="Set of nodes that constitute an edge. Edge connects first node with second node.",
+                                             index_set="set_edges")
         # carriers
-        pyomo_model.set_carriers = pe.Set(initialize=self.set_carriers, doc='Set of carriers')
+        self.optimization_setup.sets.add_set(name="set_carriers", data=self.set_carriers, doc="Set of carriers")
         # technologies
-        pyomo_model.set_technologies = pe.Set(initialize=self.set_technologies, doc='Set of technologies')
+        self.optimization_setup.sets.add_set(name="set_technologies", data=self.set_technologies, doc="set_technologies")
         # all elements
-        pyomo_model.set_elements = pe.Set(initialize=pyomo_model.set_technologies | pyomo_model.set_carriers, doc='Set of elements')
+        data = list(set(self.optimization_setup.sets["set_technologies"]) | set(self.optimization_setup.sets["set_carriers"]))
+        self.optimization_setup.sets.add_set(name="set_elements", data=data, doc="Set of elements")
         # set set_elements to indexing_sets
         self.indexing_sets.append("set_elements")
         # time-steps
-        pyomo_model.set_base_time_steps = pe.Set(initialize=self.set_base_time_steps, doc='Set of base time-steps')
+        self.optimization_setup.sets.add_set(name="set_base_time_steps", data=self.set_base_time_steps, doc="Set of base time-steps")
         # yearly time steps
-        pyomo_model.set_time_steps_yearly = pe.Set(initialize=self.set_time_steps_yearly, doc='Set of yearly time-steps')
+        self.optimization_setup.sets.add_set(name="set_time_steps_yearly", data=self.set_time_steps_yearly, doc="Set of yearly time-steps")
         # yearly time steps of entire optimization horizon
-        pyomo_model.set_time_steps_yearly_entire_horizon = pe.Set(initialize=self.set_time_steps_yearly_entire_horizon, doc='Set of yearly time-steps of entire optimization horizon')
+        self.optimization_setup.sets.add_set(name="set_time_steps_yearly_entire_horizon", data=self.set_time_steps_yearly_entire_horizon, doc="Set of yearly time-steps of entire optimization horizon")
 
     def construct_params(self):
         """ constructs the pe.Params of the class <EnergySystem> """
         # carbon emissions limit
         cls = self.__class__
         parameters = self.optimization_setup.parameters
-        pyomo_model = self.optimization_setup.model
-        parameters.add_parameter(name="carbon_emissions_limit", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_limit", set_time_steps=pyomo_model.set_time_steps_yearly),
+        parameters.add_parameter(name="carbon_emissions_limit", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_limit", set_time_steps="set_time_steps_yearly"),
             doc='Parameter which specifies the total limit on carbon emissions')
         # carbon emissions budget
         parameters.add_parameter(name="carbon_emissions_budget", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_budget"),
@@ -194,7 +195,7 @@ class EnergySystem:
         # carbon emissions budget
         parameters.add_parameter(name="previous_carbon_emissions", data=self.optimization_setup.initialize_component(cls, "previous_carbon_emissions"), doc='Parameter which specifies the total previous carbon emissions')
         # carbon price
-        parameters.add_parameter(name="carbon_price", data=self.optimization_setup.initialize_component(cls, "carbon_price", set_time_steps=pyomo_model.set_time_steps_yearly),
+        parameters.add_parameter(name="carbon_price", data=self.optimization_setup.initialize_component(cls, "carbon_price", set_time_steps="set_time_steps_yearly"),
             doc='Parameter which specifies the yearly carbon price')
         # carbon price of overshoot
         parameters.add_parameter(name="carbon_price_overshoot", data=self.optimization_setup.initialize_component(cls, "carbon_price_overshoot"), doc='Parameter which specifies the carbon price for budget overshoot')

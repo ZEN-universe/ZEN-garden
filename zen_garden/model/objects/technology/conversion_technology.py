@@ -142,14 +142,17 @@ class ConversionTechnology(Technology):
             _dependent_carriers[tech] = _input_carriers[tech] + _output_carriers[tech]
             _dependent_carriers[tech].remove(_reference_carrier[tech][0])
         # input carriers of technology
-        model.set_input_carriers = pe.Set(model.set_conversion_technologies, initialize=_input_carriers,
-            doc="set of carriers that are an input to a specific conversion technology. Dimensions: set_conversion_technologies")
+        optimization_setup.sets.add_set(name="set_input_carriers", data=_input_carriers,
+                                        doc="set of carriers that are an input to a specific conversion technology. Dimensions: set_conversion_technologies",
+                                        index_set="set_conversion_technologies")
         # output carriers of technology
-        model.set_output_carriers = pe.Set(model.set_conversion_technologies, initialize=_output_carriers,
-            doc="set of carriers that are an output to a specific conversion technology. Dimensions: set_conversion_technologies")
+        optimization_setup.sets.add_set(name="set_output_carriers", data=_output_carriers,
+                                        doc="set of carriers that are an output to a specific conversion technology. Dimensions: set_conversion_technologies",
+                                        index_set="set_conversion_technologies")
         # dependent carriers of technology
-        model.set_dependent_carriers = pe.Set(model.set_conversion_technologies, initialize=_dependent_carriers,
-            doc="set of carriers that are an output to a specific conversion technology.\n\t Dimensions: set_conversion_technologies")
+        optimization_setup.sets.add_set(name="set_dependent_carriers", data=_dependent_carriers,
+                                        doc="set of carriers that are an output to a specific conversion technology.\n\t Dimensions: set_conversion_technologies",
+                                        index_set="set_conversion_technologies")
 
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
