@@ -428,6 +428,9 @@ class Technology(Element):
         # annual capex of having capacity
         optimization_setup.variables.add_variable(model, name="capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             domain=pe.NonNegativeReals, doc='annual capex for having technology at location l')
+        # salvage value of investment, discounted to year
+        # optimization_setup.variables.add_variable(model, name="salvage_value", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
+        #     domain=pe.NonNegativeReals, doc='salvage value for investing technology at location l at time t')
         # total capex
         optimization_setup.variables.add_variable(model, name="capex_total", index_sets=model.set_time_steps_yearly, domain=pe.NonNegativeReals,
             doc='total capex for installing all technologies in all locations at all times')
@@ -483,6 +486,9 @@ class Technology(Element):
         # annual capex of having capacity
         optimization_setup.constraints.add_constraint(model, name="constraint_capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_capex_yearly_rule, doc='annual capex of having capacity of technology.')
+        # # salvage value of technology investment discounted to year
+        # optimization_setup.constraints.add_constraint(model, name="constraint_salvage_value", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
+        #     rule=rules.constraint_salvage_value_rule, doc='salvage value of technology investment discounted to year.')
         # total capex of all technologies
         optimization_setup.constraints.add_constraint(model, name="constraint_capex_total", index_sets=model.set_time_steps_yearly, rule=rules.constraint_capex_total_rule,
             doc='total capex of all technology that can be installed.')
@@ -665,6 +671,14 @@ class TechnologyRules:
             model.capex[tech, capacity_type, loc, time] * (1 / (1 + discount_rate)) ** (system["interval_between_years"] * (time - model.set_time_steps_yearly.at(1))) for time in
             Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly"))) + Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, year, type_existing_quantity="capex",
                                                                                                                               time_step_type="yearly"))
+    # def constraint_salvage_value_rule(self, model, tech, capacity_type, loc, year):
+    #     """ calculates the salvage value of an investment by sinking fund and discounts the salvage value to year """
+    #     system = self.optimization_setup.system
+    #     discount_rate = self.optimization_setup.analysis["discount_rate"]
+    #     return (model.capex_yearly[tech, capacity_type, loc, year] == (1 + discount_rate) ** (system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1))) * (sum(
+    #         model.capex[tech, capacity_type, loc, time] * (1 / (1 + discount_rate)) ** (system["interval_between_years"] * (time - model.set_time_steps_yearly.at(1))) for time in
+    #         Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly"))) + Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, year, type_existing_quantity="capex",
+    #                                                                                                                           time_step_type="yearly"))
 
     def constraint_capex_total_rule(self, model, year):
         """ sums over all technologies to calculate total capex """
