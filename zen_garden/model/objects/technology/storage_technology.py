@@ -158,6 +158,9 @@ class StorageTechnology(Technology):
         """ constructs the pe.Vars of the class <StorageTechnology>
         :param optimization_setup: The OptimizationSetup the element is part of """
 
+        model = optimization_setup.model
+        sets = optimization_setup.sets
+
         def carrier_flow_bounds(model, tech, node, time):
             """ return bounds of carrier_flow for bigM expression
             :param model: pe.ConcreteModel
@@ -167,10 +170,10 @@ class StorageTechnology(Technology):
             :return bounds: bounds of carrier_flow"""
             # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
             time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
-            bounds = model.capacity[tech, "power", node, time_step_year].bounds
-            return bounds
+            lower = model.variables["capacity"].upper[tech, "power", node, time_step_year]
+            upper = model.variables["capacity"].upper[tech, "power", node, time_step_year]
+            return lower, upper
 
-        model = optimization_setup.model
         # flow of carrier on node into storage
         optimization_setup.variables.add_variable(model, name="carrier_flow_charge", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
             bounds=carrier_flow_bounds, doc='carrier flow into storage technology on node i and time t')

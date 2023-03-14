@@ -266,7 +266,8 @@ class Element:
         then on-off-behavior is not necessary to model
         :param tech: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of """
-        model = optimization_setup.model
+
+        sets = optimization_setup.sets
 
         model_on_off = True
         # check if any min
@@ -274,7 +275,7 @@ class Element:
         # if only one unique min_load which is zero
         if len(_unique_min_load) == 1 and _unique_min_load[0] == 0:
             # if not a conversion technology, break for current technology
-            if tech not in model.set_conversion_technologies:
+            if tech not in sets["set_conversion_technologies"]:
                 model_on_off = False
             # if a conversion technology, check if all dependentCarrierFlow at reference_carrierFlow = 0 equal to 0
             else:

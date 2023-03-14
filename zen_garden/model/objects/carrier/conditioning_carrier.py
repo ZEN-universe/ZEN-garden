@@ -12,6 +12,7 @@ Description:    Class defining compressable energy carriers.
 import logging
 
 import pyomo.environ as pe
+import numpy as np
 
 from .carrier import Carrier
 
@@ -41,10 +42,11 @@ class ConditioningCarrier(Carrier):
         """ constructs the pe.Vars of the class <Carrier>
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
+        variables = optimization_setup.variables
 
         # flow of imported carrier
-        optimization_setup.variables.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            domain=pe.NonNegativeReals, doc='node- and time-dependent model endogenous carrier demand')
+        variables.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0, np.inf),
+                               doc="node- and time-dependent model endogenous carrier demand")
 
     @classmethod
     def construct_constraints(cls, optimization_setup):

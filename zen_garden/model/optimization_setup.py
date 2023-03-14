@@ -238,7 +238,7 @@ class OptimizationSetup(object):
     def construct_optimization_problem(self):
         """ constructs the optimization problem """
         # create empty ConcreteModel
-        self.model = pe.ConcreteModel()
+        self.model = lp.Model()
         # we need to reset the components to not carry them over
         self.variables = Variable()
         self.parameters = Parameter()

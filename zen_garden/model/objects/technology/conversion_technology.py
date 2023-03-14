@@ -178,9 +178,12 @@ class ConversionTechnology(Technology):
         """ constructs the pe.Vars of the class <ConversionTechnology>
         :param optimization_setup: The OptimizationSetup the element is part of """
 
-        def carrier_flow_bounds(model, tech, carrier, node, time):
+        model = optimization_setup.model
+        variables = optimization_setup.variables
+        sets = optimization_setup.sets
+
+        def carrier_flow_bounds(tech, carrier, node, time):
             """ return bounds of carrier_flow for bigM expression
-            :param model: pe.ConcreteModel
             :param tech: tech index
             :param carrier: carrier index
             :param node: node index
@@ -190,49 +193,53 @@ class ConversionTechnology(Technology):
             energy_system = optimization_setup.energy_system
             if optimization_setup.get_attribute_of_specific_element(cls, tech, "conver_efficiency_is_pwa"):
                 bounds = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conver_efficiency")["bounds"][carrier]
+                # make sure lower bound is above 0
+                if bounds[0] is None or bounds[0] < 0:
+                    return 0, bounds[1]
+                return bounds
             else:
                 # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
                 time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, time)
-                if carrier == model.set_reference_carriers[tech].at(1):
+                if carrier == sets["set_reference_carriers"][tech][0]:
                     _conver_efficiency = 1
                 else:
                     _conver_efficiency = params.conver_efficiency_specific[tech, carrier, node, time_step_year]
-                bounds = []
-                for _bound in model.capacity[tech, "power", node, time_step_year].bounds:
-                    if _bound is not None:
-                        bounds.append(_bound * _conver_efficiency)
-                    else:
-                        bounds.append(None)
-                bounds = tuple(bounds)
-            return (bounds)
+                lower = float(model.variables["capacity"].lower.loc[tech, "power", node, time_step_year])
+                upper = float(model.variables["capacity"].upper.loc[tech, "power", node, time_step_year])
+                if not np.isinf(lower):
+                    lower = lower * _conver_efficiency
+                if not np.isinf(upper):
+                    upper = lower * _conver_efficiency
 
-        model = optimization_setup.model
+            # make sure lower is never below 0
+            return np.maximum(lower, 0), upper
 
         ## Flow variables
         # input flow of carrier into technology
-        optimization_setup.variables.add_variable(model, name="input_flow", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_input_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            domain=pe.NonNegativeReals, bounds=carrier_flow_bounds, doc='Carrier input of conversion technologies')
+        variables.add_variable(model, name="input_flow", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_input_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
+            bounds=carrier_flow_bounds, doc='Carrier input of conversion technologies')
         # output flow of carrier into technology
-        optimization_setup.variables.add_variable(model, name="output_flow", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_output_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            domain=pe.NonNegativeReals, bounds=carrier_flow_bounds, doc='Carrier output of conversion technologies')
+        variables.add_variable(model, name="output_flow", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_output_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
+            bounds=carrier_flow_bounds, doc='Carrier output of conversion technologies')
 
         ## pwa Variables - Capex
         # pwa capacity
-        optimization_setup.variables.add_variable(model, name="capacity_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="capacity_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
             doc='pwa variable for size of installed technology on edge i and time t')
         # pwa capex technology
-        optimization_setup.variables.add_variable(model, name="capex_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="capex_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
             doc='pwa variable for capex for installing technology on edge i and time t')
 
         ## pwa Variables - Conversion Efficiency
         # pwa reference flow of carrier into technology
-        optimization_setup.variables.add_variable(model, name="reference_flow_approximation",
-            index_sets=cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="reference_flow_approximation",
+            index_sets=cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
             bounds=carrier_flow_bounds, doc='pwa of flow of reference carrier of conversion technologies')
         # pwa dependent flow of carrier into technology
-        optimization_setup.variables.add_variable(model, name="dependent_flow_approximation",
-            index_sets=cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="dependent_flow_approximation",
+            index_sets=cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
             bounds=carrier_flow_bounds, doc='pwa of flow of dependent carriers of conversion technologies')
+        exit(0)
 
     @classmethod
     def construct_constraints(cls, optimization_setup):

@@ -203,21 +203,25 @@ class EnergySystem:
     def construct_vars(self):
         """ constructs the pe.Vars of the class <EnergySystem> """
         variables = self.optimization_setup.variables
-        pyomo_model = self.optimization_setup.model
+        sets = self.optimization_setup.sets
+        model = self.optimization_setup.model
         # carbon emissions
-        variables.add_variable(pyomo_model, name="carbon_emissions_total", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="total carbon emissions of energy system")
+        variables.add_variable(model, name="carbon_emissions_total", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False, doc="total carbon emissions of energy system")
         # cumulative carbon emissions
-        variables.add_variable(pyomo_model, name="carbon_emissions_cumulative", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals,
-            doc="cumulative carbon emissions of energy system over time for each year")
+        variables.add_variable(model, name="carbon_emissions_cumulative", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False,
+                               doc="cumulative carbon emissions of energy system over time for each year")
         # carbon emission overshoot
-        variables.add_variable(pyomo_model, name="carbon_emissions_overshoot", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.NonNegativeReals,
-            doc="overshoot carbon emissions of energy system at the end of the time horizon")
+        variables.add_variable(model, name="carbon_emissions_overshoot", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False, bounds=(0, np.inf),
+                               doc="overshoot carbon emissions of energy system at the end of the time horizon")
         # cost of carbon emissions
-        variables.add_variable(pyomo_model, name="cost_carbon_emissions_total", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of carbon emissions of energy system")
+        variables.add_variable(model, name="cost_carbon_emissions_total", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False,
+                               doc="total cost of carbon emissions of energy system")
         # costs
-        variables.add_variable(pyomo_model, name="cost_total", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of energy system")
+        variables.add_variable(model, name="cost_total", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False,
+                               doc="total cost of energy system")
         # NPV
-        variables.add_variable(pyomo_model, name="NPV", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="NPV of energy system")
+        variables.add_variable(model, name="NPV", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False,
+                               doc="NPV of energy system")
 
     def construct_constraints(self):
         """ constructs the pe.Constraints of the class <EnergySystem> """

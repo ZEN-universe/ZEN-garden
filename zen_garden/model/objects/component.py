@@ -11,9 +11,11 @@ import logging
 import numpy as np
 import pandas as pd
 import pyomo.environ as pe
+import linopy as lp
 import pyomo.gdp as pgdp
 import itertools
 from typing import Union
+import xarray as xr
 
 
 class Component:
@@ -45,9 +47,6 @@ class Component:
         """ splits index_list in data and index names """
         if isinstance(index_list, tuple):
             index_values, index_names = index_list
-        elif isinstance(index_list, pe.Set):
-            index_values = copy.copy(index_list)
-            index_names = [index_list.name]
         elif isinstance(index_list, list):
             index_values = list(itertools.product(*index_list[0]))
             index_names = index_list[1]
@@ -102,6 +101,65 @@ class IndexSet(Component):
         if not self.is_indexed(name=name):
             raise ValueError(f"Set {name} is not an indexed set!")
         return self.index_sets[name]
+
+    @staticmethod
+    def indices_to_mask(index_values, index_list, bounds):
+        """
+        Transforms a list of index values into a mask
+        :param index_values: A list of index values (tuples)
+        :param index_list: The list of the names of the indices
+        :param bounds: Either None, tuple or callable to define the bounds of the variable
+        :return: The mask as xarray
+        """
+
+        # get the coords
+        ndims = len(index_list)
+        if ndims == 1:
+            coords = [np.unique(index_values)]
+            index_arrs = [xr.DataArray(index_values)]
+        else:
+            tmp_vals = [[] for i in range(ndims)]
+            for t in index_values:
+                for i in range(ndims):
+                    tmp_vals[i].append(t[i])
+            coords = [np.unique(t) for t in tmp_vals]
+            index_arrs = [xr.DataArray(t) for t in tmp_vals]
+
+        # init the mask
+        mask = xr.DataArray(False, coords=coords, dims=index_list)
+        mask.loc[*index_arrs] = True
+
+        # get the bounds
+        lower = xr.DataArray(-np.inf, coords=coords, dims=index_list)
+        upper = xr.DataArray(np.inf, coords=coords, dims=index_list)
+        if isinstance(bounds, tuple):
+            lower[...] = bounds[0]
+            upper[...] = bounds[1]
+        elif callable(bounds):
+            tmp_low = []
+            tmp_up = []
+            for t in index_values:
+                b = bounds(*t)
+                tmp_low.append(b[0])
+                tmp_up.append(b[1])
+            lower.loc[*index_arrs] = tmp_low
+            upper.loc[*index_arrs] = tmp_up
+        elif bounds is None:
+            lower = -np.inf
+            upper = np.inf
+        else:
+            raise ValueError(f"bounds should be None, tuple or callable, is: {bounds}")
+
+        return mask, lower, upper
+
+    def as_tuple(self, name):
+        """
+        Returns the tuple, (set, [name]), e.g. for variable creation
+        :param name: The name to retrieve
+        :return: The tuple
+        """
+
+        return self.sets[name], [name]
 
     def __getitem__(self, name):
         """
@@ -198,21 +256,34 @@ class Variable(Component):
     def __init__(self):
         super().__init__()
 
-    def add_variable(self, block_component: pe.ConcreteModel, name, index_sets, domain, bounds=(None, None), doc=""):
+    def add_variable(self, model: lp.Model, name, index_sets, integer=False, binary=False, bounds=None, doc=""):
         """ initialization of a variable
-        :param block_component: parent block component of variable, must be pe.ConcreteModel
+        :param model: parent block component of variable, must be linopy model
         :param name: name of variable
-        :param index_sets: indices and sets by which the variable is indexed
-        :param domain: domain of variable
+        :param index_sets: Tuple of index values and index names
+        :param integer: If it is an integer variable
+        :param binary: If it is a binary variable
         :param bounds:  bounds of variable
         :param doc: docstring of variable """
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
-            var = pe.Var(index_values, domain=domain, bounds=bounds, doc=doc)
-            block_component.add_component(name, var)
+            mask, lower, upper = IndexSet.indices_to_mask(index_values, index_list, bounds)
+            model.add_variables(lower=lower, upper=upper, integer=integer, binary=binary, name=name, mask=mask, coords=mask.coords)
+
             # save variable doc
-            self.docs[name] = self.compile_doc_string(doc, index_list, name, domain.name)
+            if integer:
+                domain = "Integers"
+            elif binary:
+                domain = "Binary"
+            else:
+                if isinstance(bounds, tuple) and bounds[0] == 0:
+                    domain = "NonNegativeReals"
+                elif callable(bounds):
+                    domain = "BoundedReals"
+                else:
+                    domain = "Reals"
+            self.docs[name] = self.compile_doc_string(doc, index_list, name, domain)
         else:
             logging.warning(f"Variable {name} already added. Can only be added once")
 

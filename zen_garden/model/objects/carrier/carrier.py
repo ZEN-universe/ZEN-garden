@@ -105,29 +105,33 @@ class Carrier(Element):
         """ constructs the pe.Vars of the class <Carrier>
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
+        variables = optimization_setup.variables
+        sets = optimization_setup.sets
 
         # flow of imported carrier
-        optimization_setup.variables.add_variable(model, name="import_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
-            doc='node- and time-dependent carrier import from the grid')
+        variables.add_variable(model, name="import_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0,np.inf),
+                               doc="node- and time-dependent carrier import from the grid")
         # flow of exported carrier
-        optimization_setup.variables.add_variable(model, name="export_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
-            doc='node- and time-dependent carrier export from the grid')
+        variables.add_variable(model, name="export_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0,np.inf),
+                               doc="node- and time-dependent carrier export from the grid")
         # carrier import/export cost
-        optimization_setup.variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.Reals,
-            doc='node- and time-dependent carrier cost due to import and export')
+        variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False,
+                               doc="node- and time-dependent carrier cost due to import and export")
         # total carrier import/export cost
-        optimization_setup.variables.add_variable(model, name="cost_carrier_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc='total carrier cost due to import and export')
+        variables.add_variable(model, name="cost_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False,
+                               doc="total carrier cost due to import and export")
         # carbon emissions
-        optimization_setup.variables.add_variable(model, name="carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.Reals,
-            doc="carbon emissions of importing and exporting carrier")
+        variables.add_variable(model, name="carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False,
+                               doc="carbon emissions of importing and exporting carrier")
         # carbon emissions carrier
-        optimization_setup.variables.add_variable(model, name="carbon_emissions_carrier_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals, doc="total carbon emissions of importing and exporting carrier")
+        variables.add_variable(model, name="carbon_emissions_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False,
+                               doc="total carbon emissions of importing and exporting carrier")
         # shed demand
-        optimization_setup.variables.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
-            doc="shed demand of carrier")
+        variables.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0,np.inf),
+                               doc="shed demand of carrier")
         # cost of shed demand
-        optimization_setup.variables.add_variable(model, name="cost_shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
-            doc="shed demand of carrier")
+        variables.add_variable(model, name="cost_shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0,np.inf),
+                               doc="shed demand of carrier")
 
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():

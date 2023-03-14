@@ -292,11 +292,9 @@ class Technology(Element):
         # conversion technologies
         optimization_setup.sets.add_set(name="set_conversion_technologies", data=energy_system.set_conversion_technologies,
                                         doc="Set of conversion technologies. Subset: set_technologies")
-        model.set_conversion_technologies = pe.Set(initialize=energy_system.set_conversion_technologies, doc='Set of conversion technologies. Subset: set_technologies')
         # transport technologies
         optimization_setup.sets.add_set(name="set_transport_technologies", data=energy_system.set_transport_technologies,
                                         doc="Set of transport technologies. Subset: set_technologies")
-        model.set_transport_technologies = pe.Set(initialize=energy_system.set_transport_technologies, doc='Set of transport technologies. Subset: set_technologies')
         # storage technologies
         optimization_setup.sets.add_set(name="set_storage_technologies", data=energy_system.set_storage_technologies,
                                         doc="Set of storage technologies. Subset: set_technologies")
@@ -378,9 +376,12 @@ class Technology(Element):
         """ constructs the pe.Vars of the class <Technology>
         :param optimization_setup: The OptimizationSetup the element is part of """
 
-        def capacity_bounds(pyomo_model, tech, capacity_type, loc, time):
+        model = optimization_setup.model
+        variables = optimization_setup.variables
+        sets = optimization_setup.sets
+
+        def capacity_bounds(tech, capacity_type, loc, time):
             """ return bounds of capacity for bigM expression
-            :param pyomo_model: pe.ConcreteModel
             :param tech: tech index
             :param capacity_type: either power or energy
             :param loc: location of capacity
@@ -398,56 +399,54 @@ class Technology(Element):
                 _max_built_capacity = getattr(params, "max_built_capacity" + _energy_string)
                 _capacity_limit_technology = getattr(params, "capacity_limit_technology" + _energy_string)
                 existing_capacities = 0
-                for id_existing_technology in pyomo_model.set_existing_technologies[tech]:
+                for id_existing_technology in sets["set_existing_technologies"][tech]:
                     if params.lifetime_existing_technology[tech, loc, id_existing_technology] > params.lifetime_technology[tech]:
                         if time > params.lifetime_existing_technology[tech, loc, id_existing_technology] - params.lifetime_technology[tech]:
                             existing_capacities += _existing_capacity[tech, capacity_type, loc, id_existing_technology]
                     elif time <= params.lifetime_existing_technology[tech, loc, id_existing_technology] + 1:
                         existing_capacities += _existing_capacity[tech, capacity_type, loc, id_existing_technology]
 
-                max_built_capacity = len(pyomo_model.set_time_steps_yearly) * _max_built_capacity[tech, capacity_type]
+                max_built_capacity = len(sets["set_time_steps_yearly"]) * _max_built_capacity[tech, capacity_type]
                 max_capacity_limit_technology = _capacity_limit_technology[tech, capacity_type, loc]
                 bound_capacity = min(max_built_capacity + existing_capacities, max_capacity_limit_technology + existing_capacities)
-                bounds = (0, bound_capacity)
-                return (bounds)
+                return 0, bound_capacity
             else:
-                return (None, None)
+                return 0, np.inf
 
-        model = optimization_setup.model
         # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
         techs_on_off = cls.create_custom_set(["set_technologies", "set_on_off"], optimization_setup)[0]
         # construct pe.Vars of the class <Technology>
         # install technology
-        optimization_setup.variables.add_variable(model, name="install_technology", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), domain=pe.Binary,
+        variables.add_variable(model, name="install_technology", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), binary=True,
             doc='installment of a technology at location l and time t')
         # capacity technology
-        optimization_setup.variables.add_variable(model, name="capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=capacity_bounds, doc='size of installed technology at location l and time t')
         # built_capacity technology
-        optimization_setup.variables.add_variable(model, name="built_capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            domain=pe.NonNegativeReals, doc='size of built technology (invested capacity after construction) at location l and time t')
+        variables.add_variable(model, name="built_capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
+            bounds=(0,np.inf), doc='size of built technology (invested capacity after construction) at location l and time t')
         # invested_capacity technology
-        optimization_setup.variables.add_variable(model, name="invested_capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            domain=pe.NonNegativeReals, doc='size of invested technology at location l and time t')
+        variables.add_variable(model, name="invested_capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
+            bounds=(0,np.inf), doc='size of invested technology at location l and time t')
         # capex of building capacity
-        optimization_setup.variables.add_variable(model, name="capex", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="capex", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
             doc='capex for building technology at location l and time t')
         # annual capex of having capacity
-        optimization_setup.variables.add_variable(model, name="capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            domain=pe.NonNegativeReals, doc='annual capex for having technology at location l')
+        variables.add_variable(model, name="capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
+            bounds=(0,np.inf), doc='annual capex for having technology at location l')
         # total capex
-        optimization_setup.variables.add_variable(model, name="capex_total", index_sets=model.set_time_steps_yearly, domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="capex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), bounds=(0,np.inf),
             doc='total capex for installing all technologies in all locations at all times')
         # opex
-        optimization_setup.variables.add_variable(model, name="opex", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="opex", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
             doc="opex for operating technology at location l and time t")
         # total opex
-        optimization_setup.variables.add_variable(model, name="opex_total", index_sets=model.set_time_steps_yearly, domain=pe.NonNegativeReals, doc="total opex for operating technology at location l and time t")
+        variables.add_variable(model, name="opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), bounds=(0,np.inf), doc="total opex for operating technology at location l and time t")
         # carbon emissions
-        optimization_setup.variables.add_variable(model, name="carbon_emissions_technology", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup), domain=pe.Reals,
+        variables.add_variable(model, name="carbon_emissions_technology", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
             doc="carbon emissions for operating technology at location l and time t")
         # total carbon emissions technology
-        optimization_setup.variables.add_variable(model, name="carbon_emissions_technology_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals,
+        variables.add_variable(model, name="carbon_emissions_technology_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
             doc="total carbon emissions for operating technology at location l and time t")
 
         # add pe.Vars of the child classes
