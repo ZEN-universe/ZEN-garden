@@ -140,9 +140,9 @@ class Results(object):
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
 
-        #self.plot("input_flow", node_edit=True)
+        #self.plot("input_flow", node_edit="all")
         #self.standard_plots()
-        #self.plot_energy_balance("DE", "electricity", 2022)
+        self.plot_energy_balance("DE", "electricity", 2022, save_fig=True)
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -883,7 +883,7 @@ class Results(object):
                 data_full_ts = self.edit_carrier_flows(self.get_full_ts("carrier_flow"), node, carrier, "out")
             else:
                 #get full timeseries of component and extract rows of relevant node
-                data_full_ts = Results.edit_nodes_v2(self.get_full_ts(component), node)
+                data_full_ts = self.edit_nodes_v2(self.get_full_ts(component), node)
                 #extract data of desired carrier
                 data_full_ts = self.extract_carrier(data_full_ts, carrier)
                 #check if return from extract_carrier() is still a data frame as it is possible that the desired carrier isn't contained --> None returned
@@ -921,11 +921,19 @@ class Results(object):
         ax = data_plot_wo_demand.plot(kind="area", stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
         data_plot["demand_carrier"].plot(kind="line", ax=ax, label='demand', color="black")
         plt.legend()
-        plt.show()
-        #if save_fig:
-            #plt.savefig("C:\Users\Lukas Kunz\ETH\ZEN_garden\ZEN-garden\data\outputs\test_large" + "figure.pdf")
-
-    def plot(self, component, yearly=False, node_edit=True, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}):
+        #plt.show()
+        if save_fig:
+            path = os.path.join(os.getcwd(), "result_plots")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
+            if not os.path.exists(path):
+                os.makedirs(path)
+            if start_hour is None and duration is None:
+                plt.savefig(os.path.join(path,"energy_balance_" +carrier+"_"+node+"_"+str(year)+".pdf"))
+            else:
+                plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration)+ ".pdf"))
+    def plot(self, component, yearly=False, node_edit=None, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}):
         """
         Plots component data as specified by arguments
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -948,8 +956,8 @@ class Results(object):
         #plot variable with operational time steps
         if ts_type == "operational":
             data_full_ts = self.get_full_ts(component)
-            if node_edit:
-                data_full_ts = Results.edit_nodes_v2(data_full_ts, node_edit)
+            if node_edit is not None:
+                data_full_ts = self.edit_nodes_v2(data_full_ts, node_edit)
             plt.plot(data_full_ts.columns.values, data_full_ts.values.transpose(), lw=1/len(data_full_ts.columns.values)*3000)
             plt.xlabel("Time [hours]")
             plt.legend(data_full_ts.index.values)
@@ -1035,12 +1043,16 @@ class Results(object):
         data_extracted = data_extracted.sum()
         return data_extracted
 
-    @classmethod
-    def edit_nodes_v2(cls, data, node_edit):
+
+    def edit_nodes_v2(self, data, node_edit):
+        """
+        :param node_edit: string to specify if data should be summed over nodes (node_edit="all") or if a single node should be extracted (e.g. node_edit="CH")
+        """
         if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
             return data
         #check if data of specific node, specified by string, should be extracted
-        if isinstance(node_edit,str):
+        test = self.get_df("set_nodes_on_edges", is_set=True)
+        if node_edit in ["CH", "DE", "FR"]:
             if data.index.nlevels == 2:
                 data = data.loc[(slice(None), node_edit), :]
                 return data
@@ -1050,7 +1062,7 @@ class Results(object):
             elif data.index.nlevels == 4:
                 return
         #check if data varying only in node value should be summed
-        elif node_edit == True:
+        elif node_edit == "all":
             level_names = {}
             for level in data.index.levels:
                 if level.name not in ["node", "location"]:
@@ -1059,6 +1071,9 @@ class Results(object):
                 for level_name_1 in level_names[0]:
                     for level_name_2 in level_names[1]:
                         data = data
+        else:
+            warnings.warn("Chosen node_edit string is invalid")
+            return data
 
     def extract_carrier(self, data, carrier):
         if "carrier" not in data.index.dtypes:
