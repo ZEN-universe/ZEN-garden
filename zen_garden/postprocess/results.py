@@ -139,11 +139,10 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        data_1 = self.get_df("output_flow")
-        data = self.get_df("set_reference_carriers", is_set=True)
+
         #self.plot("input_flow", node_edit=True)
         #self.standard_plots()
-        self.plot_energy_balance("DE", "heat", 2022)
+        self.plot_energy_balance("DE", "electricity", 2022)
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -441,10 +440,13 @@ class Results(object):
                 _is_multiindex = False
                 # cycle through all MFs
                 for year, mf in enumerate(self.mf):
-                    if not is_dual:
-                        _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
+                    if not is_set:
+                        if not is_dual:
+                            _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
+                        else:
+                            _var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
                     else:
-                        _var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
+                        _data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
                     # # single element that is not a year
                     # if len(_var) == 1 and _var.index.nlevels == 1 and not np.isfinite(_var.index[0]):
                     #     _data[scenario] = _var
@@ -860,7 +862,7 @@ class Results(object):
         self.plot("capex_total",yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Capex", "ylabel": "Capex [MEUR]"})
         self.plot("opex_total", yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Opex", "ylabel": "Opex [MEUR]"})
 
-    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None):
+    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False):
         """
         Visualizes the energy balance of a specific carrier at a single node
         :param node: String of node of interest
@@ -868,35 +870,42 @@ class Results(object):
         :param year: Year of interest
         :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
         :param duration: Number of hours that should be plotted from start_hour
+        :param save_fig: Choose if figure should be saved as pdf
         """
         plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
-        components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier"]
-        lowers = ["input_flow", "import_carrier_flow", "carrier_flow_charge"]
+        components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier", "carrier_flow_in", "carrier_flow_out"]
+        lowers = ["input_flow", "export_carrier_flow", "carrier_flow_charge", "carrier_flow_out"]
         data_plot = pd.DataFrame()
         for component in components:
-            #get full timeseries of component and extract rows of relevant node
-            data_full_ts = Results.edit_nodes_v2(self.get_full_ts(component), node)
-
-            if component in ["carrier_flow_charge", "carrier_flow_discharge"]:
-                carrier = "pumped_hydro"
-            #extract data of desired carrier
-            data_full_ts = Results.extract_carrier(data_full_ts, carrier)
+            if component == "carrier_flow_in":
+                data_full_ts = self.edit_carrier_flows(self.get_full_ts("carrier_flow"), node, carrier, "in")
+            elif component == "carrier_flow_out":
+                data_full_ts = self.edit_carrier_flows(self.get_full_ts("carrier_flow"), node, carrier, "out")
+            else:
+                #get full timeseries of component and extract rows of relevant node
+                data_full_ts = Results.edit_nodes_v2(self.get_full_ts(component), node)
+                #extract data of desired carrier
+                data_full_ts = self.extract_carrier(data_full_ts, carrier)
+                #check if return from extract_carrier() is still a data frame as it is possible that the desired carrier isn't contained --> None returned
+                if not isinstance(data_full_ts, pd.DataFrame):
+                    continue
             #change sign of variables which enter the node
             if component in lowers:
                 data_full_ts = data_full_ts.multiply(-1)
-            #add variable name to multi-index such that they can be shown in plot legend
-            data_full_ts = pd.concat([data_full_ts], keys=[component], names=["variable"])
-            #drop unnecessary index levels to improve the plot legend's appearance
-            if data_full_ts.index.nlevels == 3:
-                data_full_ts = data_full_ts.droplevel([1,2])
-            elif data_full_ts.index.nlevels == 4:
-                data_full_ts = data_full_ts.droplevel([2,3])
-            #transpose data frame as pandas plot function plots column-wise
-            data_full_ts = data_full_ts.transpose()
+            if isinstance(data_full_ts, pd.DataFrame):
+                #add variable name to multi-index such that they can be shown in plot legend
+                data_full_ts = pd.concat([data_full_ts], keys=[component], names=["variable"])
+                #drop unnecessary index levels to improve the plot legend's appearance
+                if data_full_ts.index.nlevels == 3:
+                    data_full_ts = data_full_ts.droplevel([1,2])
+                elif data_full_ts.index.nlevels == 4:
+                    data_full_ts = data_full_ts.droplevel([2,3])
+                #transpose data frame as pandas plot function plots column-wise
+                data_full_ts = data_full_ts.transpose()
+            elif isinstance(data_full_ts, pd.Series):
+                data_full_ts.name = component
             #add data of current variable to the plot data frame
             data_plot = pd.concat([data_plot, data_full_ts], axis=1)
-
-            carrier = "electricity"
 
         #extract the rows of the desired year
         data_plot = data_plot.iloc[8760*(year-self.results["system"]["reference_year"]):8760*(year-self.results["system"]["reference_year"])+8760]
@@ -907,8 +916,14 @@ class Results(object):
         data_plot = data_plot.loc[:, (data_plot != 0).any(axis=0)]
         #set colors and plot data frame
         colors = plt.cm.tab20(range(data_plot.shape[1]))
-        data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power [GW]", xlabel="Time [h]")
+        #data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power [GW]", xlabel="Time [h]")
+        data_plot_wo_demand = data_plot.drop(columns=["demand_carrier"])
+        ax = data_plot_wo_demand.plot(kind="area", stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
+        data_plot["demand_carrier"].plot(kind="line", ax=ax, label='demand', color="black")
+        plt.legend()
         plt.show()
+        if save_fig:
+            plt.savefig("C:\Users\Lukas Kunz\ETH\ZEN_garden\ZEN-garden\data\outputs\test_large" + "figure.pdf")
 
     def plot(self, component, yearly=False, node_edit=True, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}):
         """
@@ -990,6 +1005,36 @@ class Results(object):
 
         plt.show()
 
+    def calculate_connected_edges(self, node, direction: str, set_nodes_on_edges):
+        """ calculates connected edges going in (direction = 'in') or going out (direction = 'out')
+        :param node: current node, connected by edges
+        :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
+        :return _set_connected_edges: list of connected edges """
+        if direction == "in":
+            # second entry is node into which the flow goes
+            _set_connected_edges = [edge for edge in set_nodes_on_edges if set_nodes_on_edges[edge][1] == node]
+        elif direction == "out":
+            # first entry is node out of which the flow starts
+            _set_connected_edges = [edge for edge in set_nodes_on_edges if set_nodes_on_edges[edge][0] == node]
+        else:
+            raise KeyError(f"invalid direction '{direction}'")
+        return _set_connected_edges
+
+    def edit_carrier_flows(self, data, node, carrier, direction):
+        set_nodes_on_edges = self.get_df("set_nodes_on_edges",is_set=True)
+        set_nodes_on_edges = {edge: set_nodes_on_edges[edge].split(",") for edge in set_nodes_on_edges.index}
+        data = data.loc[(slice(None), self.calculate_connected_edges(node, direction, set_nodes_on_edges)), :]
+
+        if "carrier" not in data.index.dtypes:
+            reference_carriers = self.get_df("set_reference_carriers",is_set=True)
+            data_extracted = pd.DataFrame()
+            for ind, tech in enumerate(data.index.get_level_values("technology")):
+                if reference_carriers[tech] == carrier:
+                    data_extracted = pd.concat([data_extracted, data.loc[(tech, data.index.values[ind][1]), :]], axis=1)
+        data_extracted = data_extracted.transpose()
+        data_extracted = data_extracted.sum()
+        return data_extracted
+
     @classmethod
     def edit_nodes_v2(cls, data, node_edit):
         if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
@@ -1014,11 +1059,18 @@ class Results(object):
                 for level_name_1 in level_names[0]:
                     for level_name_2 in level_names[1]:
                         data = data
-    @classmethod
-    def extract_carrier(cls, data, carrier):
+
+    def extract_carrier(self, data, carrier):
         if "carrier" not in data.index.dtypes:
-            if "technology" not in data.index.dtypes:
-                return data
+            reference_carriers = self.get_df("set_reference_carriers",is_set=True)
+            data_extracted = pd.DataFrame()
+            for tech in data.index.get_level_values("technology"):
+                if reference_carriers[tech] == carrier:
+                    data_extracted = pd.concat([data_extracted, data.loc[(tech, slice(None)), :]], axis=1)
+            return  data_extracted
+        #check if desired carrier isn't contained in data (otherwise .loc raises an error)
+        if not carrier in data.index.get_level_values("carrier"):
+            return None
         if data.index.nlevels == 2:
             data = data.loc[(carrier, slice(None)), :]
             return data

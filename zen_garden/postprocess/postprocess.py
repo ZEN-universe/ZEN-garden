@@ -144,7 +144,6 @@ class Postprocess:
         for set in self.model.component_objects(pe.Set):
             if not set.is_indexed():
                 continue
-            #sets[set.name] = set.data()
             vals = set.data()
             index_name = [set.name]
 
@@ -152,10 +151,19 @@ class Postprocess:
             if len(vals) == 0:
                 indices = pd.Index(data=[], name=index_name)
                 data = []
-
             else:
                 indices = list(vals.keys())
                 data = list(vals.values())
+                data_strings = []
+                for tpl in data:
+                    string = ""
+                    for ind, t in enumerate(tpl):
+                        if ind == len(tpl) - 1:
+                            string += str(t)
+                        else:
+                            string += str(t) + ","
+                    data_strings.append(string)
+                data = data_strings
 
                 # create a multi index if necessary
                 if len(indices) >= 1 and isinstance(indices[0], tuple):
@@ -170,12 +178,10 @@ class Postprocess:
                         indices = pd.Index(data=indices)
 
             # create dataframe
-            df = pd.DataFrame(data=data, index=indices)
-
+            df = pd.DataFrame(data=data, columns=["value"], index=indices)
             # update dict
-            doc = "a"
+            doc = set.doc
             data_frames[index_name[0]] = self._transform_df(df,doc)
-
 
         self.write_file(self.name_dir.joinpath('set_dict'), data_frames)
 
