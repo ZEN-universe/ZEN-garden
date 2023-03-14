@@ -149,7 +149,7 @@ class Postprocess:
 
             # if the returned dict is emtpy we create a nan value
             if len(vals) == 0:
-                indices = pd.Index(data=[], name=index_name)
+                indices = pd.Index(data=[], name=index_name[0])
                 data = []
             else:
                 indices = list(vals.keys())

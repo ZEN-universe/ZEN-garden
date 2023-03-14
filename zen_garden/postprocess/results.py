@@ -142,7 +142,7 @@ class Results(object):
 
         #self.plot("input_flow", node_edit=True)
         #self.standard_plots()
-        self.plot_energy_balance("DE", "electricity", 2022)
+        #self.plot_energy_balance("DE", "electricity", 2022)
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -922,8 +922,8 @@ class Results(object):
         data_plot["demand_carrier"].plot(kind="line", ax=ax, label='demand', color="black")
         plt.legend()
         plt.show()
-        if save_fig:
-            plt.savefig("C:\Users\Lukas Kunz\ETH\ZEN_garden\ZEN-garden\data\outputs\test_large" + "figure.pdf")
+        #if save_fig:
+            #plt.savefig("C:\Users\Lukas Kunz\ETH\ZEN_garden\ZEN-garden\data\outputs\test_large" + "figure.pdf")
 
     def plot(self, component, yearly=False, node_edit=True, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}):
         """
