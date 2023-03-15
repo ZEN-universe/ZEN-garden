@@ -14,6 +14,7 @@ import logging
 import numpy as np
 import pandas as pd
 import pyomo.environ as pe
+import xarray as xr
 
 from .technology import Technology
 
@@ -182,45 +183,70 @@ class ConversionTechnology(Technology):
         variables = optimization_setup.variables
         sets = optimization_setup.sets
 
-        def carrier_flow_bounds(tech, carrier, node, time):
+        def get_carrier_flow_bounds(index_values):
             """ return bounds of carrier_flow for bigM expression
-            :param tech: tech index
-            :param carrier: carrier index
-            :param node: node index
-            :param time: time index
+            :param index_values: list of index values
             :return bounds: bounds of carrier_flow"""
             params = optimization_setup.parameters
             energy_system = optimization_setup.energy_system
-            if optimization_setup.get_attribute_of_specific_element(cls, tech, "conver_efficiency_is_pwa"):
-                bounds = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conver_efficiency")["bounds"][carrier]
-                # make sure lower bound is above 0
-                if bounds[0] is None or bounds[0] < 0:
-                    return 0, bounds[1]
-                return bounds
-            else:
-                # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-                time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, time)
-                if carrier == sets["set_reference_carriers"][tech][0]:
-                    _conver_efficiency = 1
+
+            tmp_techs = []
+            tmp_nodes = []
+            tmp_times = []
+            lower = []
+            upper = []
+            convert = []
+            factor = []
+            for (tech, carrier, node, time) in index_values:
+                # add the values to individual arrays
+                tmp_techs.append(tech)
+                tmp_nodes.append(node)
+                if optimization_setup.get_attribute_of_specific_element(cls, tech, "conver_efficiency_is_pwa"):
+                    bounds = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conver_efficiency")["bounds"][carrier]
+                    # make sure lower bound is above 0
+                    if bounds[0] is None or bounds[0] < 0:
+                        lower.append(0)
+                    else:
+                        lower.append(bounds[0])
+                    upper.append(bounds[1])
+                    convert.append(False)
+                    # dummy factor
+                    factor.append(1.0)
+                    tmp_times.append(0)
                 else:
-                    _conver_efficiency = params.conver_efficiency_specific[tech, carrier, node, time_step_year]
-                lower = float(model.variables["capacity"].lower.loc[tech, "power", node, time_step_year])
-                upper = float(model.variables["capacity"].upper.loc[tech, "power", node, time_step_year])
-                if not np.isinf(lower):
-                    lower = lower * _conver_efficiency
-                if not np.isinf(upper):
-                    upper = lower * _conver_efficiency
+                    # we can add a dummy bound since we convert these
+                    convert.append(True)
+                    lower.append(0)
+                    upper.append(0)
+
+                    # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
+                    time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, time)
+                    if carrier == sets["set_reference_carriers"][tech][0]:
+                        _conver_efficiency = 1
+                    else:
+                        _conver_efficiency = params.conver_efficiency_specific[tech, carrier, node, time_step_year]
+                    factor.append(_conver_efficiency)
+                    tmp_times.append(time_step_year)
+
+            # to xarrays
+            tech = xr.DataArray(tmp_techs)
+            node = xr.DataArray(tmp_nodes)
+            time_step_year = xr.DataArray(tmp_times)
+            lower = np.where(convert, np.array(factor) * model.variables["capacity"].lower.loc[tech, "power", node, time_step_year].data, lower)
+            upper = np.where(convert, np.array(factor) * model.variables["capacity"].upper.loc[tech, "power", node, time_step_year].data, upper)
 
             # make sure lower is never below 0
-            return np.maximum(lower, 0), upper
+            return np.stack([lower, upper], axis=-1)
 
         ## Flow variables
         # input flow of carrier into technology
-        variables.add_variable(model, name="input_flow", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_input_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            bounds=carrier_flow_bounds, doc='Carrier input of conversion technologies')
+        index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_input_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
+        variables.add_variable(model, name="input_flow", index_sets=(index_values, index_names),
+            bounds=get_carrier_flow_bounds(index_values), doc='Carrier input of conversion technologies')
         # output flow of carrier into technology
-        variables.add_variable(model, name="output_flow", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_output_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            bounds=carrier_flow_bounds, doc='Carrier output of conversion technologies')
+        index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_output_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
+        variables.add_variable(model, name="output_flow", index_sets=(index_values, index_names),
+            bounds=get_carrier_flow_bounds(index_values), doc='Carrier output of conversion technologies')
 
         ## pwa Variables - Capex
         # pwa capacity
@@ -232,14 +258,15 @@ class ConversionTechnology(Technology):
 
         ## pwa Variables - Conversion Efficiency
         # pwa reference flow of carrier into technology
+        index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
         variables.add_variable(model, name="reference_flow_approximation",
-            index_sets=cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            bounds=carrier_flow_bounds, doc='pwa of flow of reference carrier of conversion technologies')
+            index_sets=(index_values, index_names),
+            bounds=get_carrier_flow_bounds(index_values), doc='pwa of flow of reference carrier of conversion technologies')
         # pwa dependent flow of carrier into technology
+        index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
         variables.add_variable(model, name="dependent_flow_approximation",
-            index_sets=cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            bounds=carrier_flow_bounds, doc='pwa of flow of dependent carriers of conversion technologies')
-        exit(0)
+            index_sets=(index_values, index_names),
+            bounds=get_carrier_flow_bounds(index_values), doc='pwa of flow of dependent carriers of conversion technologies')
 
     @classmethod
     def construct_constraints(cls, optimization_setup):

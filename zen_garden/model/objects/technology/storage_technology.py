@@ -13,6 +13,7 @@ import cProfile
 import logging
 
 import numpy as np
+import xarray as xr
 import pyomo.environ as pe
 
 from .technology import Technology
@@ -159,29 +160,32 @@ class StorageTechnology(Technology):
         :param optimization_setup: The OptimizationSetup the element is part of """
 
         model = optimization_setup.model
+        variables = optimization_setup.variables
         sets = optimization_setup.sets
 
-        def carrier_flow_bounds(model, tech, node, time):
+        def get_carrier_flow_bounds(index_values):
             """ return bounds of carrier_flow for bigM expression
-            :param model: pe.ConcreteModel
-            :param tech: tech index
-            :param node: node index
-            :param time: time index
+            :param index_values: list of tuples with the index values
             :return bounds: bounds of carrier_flow"""
+
+            # get the arrays
+            tech_arr, node_arr, time_arr = sets.tuple_to_arr(index_values)
             # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
-            lower = model.variables["capacity"].upper[tech, "power", node, time_step_year]
-            upper = model.variables["capacity"].upper[tech, "power", node, time_step_year]
-            return lower, upper
+            time_step_year = xr.DataArray([optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time) for tech, time in zip(tech_arr.data, time_arr.data)])
+            lower = model.variables["capacity"].lower.loc[tech_arr, "power", node_arr, time_step_year].data
+            upper = model.variables["capacity"].upper.loc[tech_arr, "power", node_arr, time_step_year].data
+            return np.stack([lower, upper], axis=-1)
 
         # flow of carrier on node into storage
-        optimization_setup.variables.add_variable(model, name="carrier_flow_charge", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
-            bounds=carrier_flow_bounds, doc='carrier flow into storage technology on node i and time t')
+        index_values, index_names = cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)
+        bounds = get_carrier_flow_bounds(index_values)
+        variables.add_variable(model, name="carrier_flow_charge", index_sets=(index_values, index_names),
+            bounds=bounds, doc='carrier flow into storage technology on node i and time t')
         # flow of carrier on node out of storage
-        optimization_setup.variables.add_variable(model, name="carrier_flow_discharge", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
-            bounds=carrier_flow_bounds, doc='carrier flow out of storage technology on node i and time t')
+        variables.add_variable(model, name="carrier_flow_discharge", index_sets=(index_values, index_names),
+            bounds=bounds, doc='carrier flow out of storage technology on node i and time t')
         # loss of carrier on node
-        optimization_setup.variables.add_variable(model, name="level_charge", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup), domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="level_charge", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup), bounds=(0, np.inf),
             doc='storage level of storage technology ón node in each storage time step')
 
     @classmethod

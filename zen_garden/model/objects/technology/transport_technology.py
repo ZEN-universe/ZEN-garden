@@ -12,6 +12,7 @@ Description:    Class defining the parameters, variables and constraints that ho
 import logging
 
 import numpy as np
+import xarray as xr
 import pyomo.environ as pe
 
 from .technology import Technology
@@ -137,24 +138,31 @@ class TransportTechnology(Technology):
         """ constructs the pe.Vars of the class <TransportTechnology>
         :param optimization_setup: The OptimizationSetup the element is part of """
 
-        def carrier_flow_bounds(model, tech, edge, time):
-            """ return bounds of carrier_flow for bigM expression
-            :param model: pe.ConcreteModel
-            :param tech: tech index
-            :param edge: edge index
-            :param time: time index
-            :return bounds: bounds of carrier_flow"""
-            # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
-            bounds = model.capacity[tech, "power", edge, time_step_year].bounds
-            return (bounds)
-
         model = optimization_setup.model
+        variables = optimization_setup.variables
+        sets = optimization_setup.sets
+
+        def get_carrier_flow_bounds(index_values):
+            """ return bounds of carrier_flow for bigM expression
+            :param index_values: list of tuples with the index values
+            :return bounds: bounds of carrier_flow"""
+
+            # get the arrays
+            tech_arr, edge_arr, time_arr = sets.tuple_to_arr(index_values)
+            # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
+            time_step_year = xr.DataArray([optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time) for tech, time in zip(tech_arr.data, time_arr.data)])
+
+            lower = model.variables["capacity"].lower.loc[tech_arr, "power", edge_arr, time_step_year].data
+            upper = model.variables["capacity"].upper.loc[tech_arr, "power", edge_arr, time_step_year].data
+            return np.stack([lower, upper], axis=-1)
+
         # flow of carrier on edge
-        optimization_setup.variables.add_variable(model, name="carrier_flow", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
-            bounds=carrier_flow_bounds, doc='carrier flow through transport technology on edge i and time t')
+        index_values, index_names = cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup)
+        bounds = get_carrier_flow_bounds(index_values)
+        variables.add_variable(model, name="carrier_flow", index_sets=(index_values, index_names),
+            bounds=bounds, doc='carrier flow through transport technology on edge i and time t')
         # loss of carrier on edge
-        optimization_setup.variables.add_variable(model, name="carrier_loss", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
+        variables.add_variable(model, name="carrier_loss", index_sets=(index_values, index_names), bounds=(0,np.inf),
             doc='carrier flow through transport technology on edge i and time t')
 
     @classmethod

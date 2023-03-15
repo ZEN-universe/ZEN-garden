@@ -7,14 +7,14 @@ Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 Description:    Class containing parameters. This is a proxy for pyomo parameters, since the construction of parameters has a significant overhead.
 ==========================================================================================================================================================================="""
 import copy
+import itertools
 import logging
+from itertools import zip_longest
+
+import linopy as lp
 import numpy as np
 import pandas as pd
 import pyomo.environ as pe
-import linopy as lp
-import pyomo.gdp as pgdp
-import itertools
-from typing import Union
 import xarray as xr
 
 
@@ -103,27 +103,38 @@ class IndexSet(Component):
         return self.index_sets[name]
 
     @staticmethod
+    def tuple_to_arr(index_values):
+        """
+        Transforms a list of tuples into a list of xarrays containing all elements from the corresponding tuple entry
+        :param index_values: The list of tuples with the index values
+        :return: A list of arrays
+        """
+
+        if isinstance(index_values[0], tuple):
+            ndims = len(index_values[0])
+            tmp_vals = [[] for _ in range(ndims)]
+            for t in index_values:
+                for i in range(ndims):
+                    tmp_vals[i].append(t[i])
+            index_arrs = [xr.DataArray(t) for t in tmp_vals]
+        else:
+            index_arrs = [xr.DataArray(index_values)]
+
+        return index_arrs
+
+    @staticmethod
     def indices_to_mask(index_values, index_list, bounds):
         """
         Transforms a list of index values into a mask
         :param index_values: A list of index values (tuples)
         :param index_list: The list of the names of the indices
-        :param bounds: Either None, tuple or callable to define the bounds of the variable
+        :param bounds: Either None, tuple, array or callable to define the bounds of the variable
         :return: The mask as xarray
         """
 
         # get the coords
-        ndims = len(index_list)
-        if ndims == 1:
-            coords = [np.unique(index_values)]
-            index_arrs = [xr.DataArray(index_values)]
-        else:
-            tmp_vals = [[] for i in range(ndims)]
-            for t in index_values:
-                for i in range(ndims):
-                    tmp_vals[i].append(t[i])
-            coords = [np.unique(t) for t in tmp_vals]
-            index_arrs = [xr.DataArray(t) for t in tmp_vals]
+        index_arrs = IndexSet.tuple_to_arr(index_values)
+        coords = [np.unique(t.data) for t in index_arrs]
 
         # init the mask
         mask = xr.DataArray(False, coords=coords, dims=index_list)
@@ -135,6 +146,9 @@ class IndexSet(Component):
         if isinstance(bounds, tuple):
             lower[...] = bounds[0]
             upper[...] = bounds[1]
+        elif isinstance(bounds, np.ndarray):
+            lower.loc[*index_arrs] = bounds[:,0]
+            upper.loc[*index_arrs] = bounds[:,1]
         elif callable(bounds):
             tmp_low = []
             tmp_up = []
@@ -148,7 +162,7 @@ class IndexSet(Component):
             lower = -np.inf
             upper = np.inf
         else:
-            raise ValueError(f"bounds should be None, tuple or callable, is: {bounds}")
+            raise ValueError(f"bounds should be None, tuple, array or callable, is: {bounds}")
 
         return mask, lower, upper
 
@@ -279,7 +293,7 @@ class Variable(Component):
             else:
                 if isinstance(bounds, tuple) and bounds[0] == 0:
                     domain = "NonNegativeReals"
-                elif callable(bounds):
+                elif callable(bounds) or isinstance(bounds, np.ndarray):
                     domain = "BoundedReals"
                 else:
                     domain = "Reals"
@@ -292,21 +306,68 @@ class Constraint(Component):
     def __init__(self):
         super().__init__()
 
-    def add_constraint(self, block_component: Union[pe.Constraint, pgdp.Disjunct], name, index_sets, rule, doc="", constraint_class=pe.Constraint):
+    def add_constraint_block(self, model: lp.Model, name, constraint, doc=""):
+        """ initialization of a constraint
+        :param model: The linopy model
+        :param name: name of variable
+        :param constraint: The constraint to add
+        :param doc: docstring of variable
+        """
+
+        if name not in self.docs.keys():
+            model.add_constraints(constraint, name=name)
+            # save constraint doc
+            index_list = list(constraint.coords.dims)
+            self.docs[name] = self.compile_doc_string(doc, index_list, name)
+        else:
+            logging.warning(f"{name} already added. Can only be added once")
+
+    def add_constraint_rule(self, model: lp.Model, name, index_sets, rule, doc="", constraint_class=pe.Constraint):
         """ initialization of a variable
-        :param block_component: pe.Constraint or pgdp.Disjunct
+        :param model: The linopy model
         :param name: name of variable
         :param index_sets: indices and sets by which the variable is indexed
         :param rule: constraint rule
         :param doc: docstring of variable
         :param constraint_class: either pe.Constraint, pgdp.Disjunct,pgdp.Disjunction"""
-        constraint_types = [pe.Constraint, pgdp.Disjunct, pgdp.Disjunction]
-        assert constraint_class in constraint_types, f"Constraint type '{constraint_class.name}' unknown"
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
-            constraint = constraint_class(index_values, rule=rule, doc=doc)
-            block_component.add_component(name, constraint)
+
+            # create the mask
+            index_arrs = IndexSet.tuple_to_arr(index_values)
+            coords = [np.unique(t.data) for t in index_arrs]
+            coords = xr.DataArray(coords=coords, dims=index_list).coords
+            shape = tuple(map(len, coords.values()))
+
+            # if we only have a single index, there is no need to unpack
+            if len(index_list) == 1:
+                cons = [rule(arg) for arg in index_values]
+            else:
+                cons = [rule(*arg) for arg in index_values]
+
+            # low level magic
+            exprs = [con.lhs for con in cons]
+            coeffs = np.array(tuple(zip_longest(*(e.coeffs for e in exprs), fillvalue=np.nan)))
+            vars = np.array(tuple(zip_longest(*(e.vars for e in exprs), fillvalue=-1)))
+
+            nterm = vars.shape[0]
+            coeffs = coeffs.reshape((nterm, -1))
+            vars = vars.reshape((nterm, -1))
+
+            xr_coeffs = xr.DataArray(np.full(shape=(nterm, ) + shape, fill_value=np.nan), coords, dims=("_term", *coords))
+            xr_coeffs.loc[:,*index_arrs] = coeffs
+            xr_vars = xr.DataArray(np.full(shape=(nterm, ) + shape, fill_value=-1), coords, dims=("_term", *coords))
+            xr_vars.loc[:, *index_arrs] = vars
+            xr_ds = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}).transpose(..., "_term")
+            xr_lhs = lp.LinearExpression(xr_ds, model)
+            xr_sign = xr.DataArray("==", coords, dims=index_list)
+            xr_sign.loc[*index_arrs] = [c.sign for c in cons]
+            xr_rhs = xr.DataArray(0, coords, dims=index_list)
+            xr_rhs.loc[*index_arrs] = [c.rhs for c in cons]
+            model.add_constraints(xr_lhs, xr_sign, xr_rhs, name=name)
+
+            constraint_class(index_values, rule=rule, doc=doc)
             # save constraint doc
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
         else:
