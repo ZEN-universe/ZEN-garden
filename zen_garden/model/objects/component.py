@@ -350,14 +350,13 @@ class Constraint(Component):
         else:
             logging.warning(f"{name} already added. Can only be added once")
 
-    def add_constraint_rule(self, model: lp.Model, name, index_sets, rule, doc="", constraint_class=pe.Constraint):
+    def add_constraint_rule(self, model: lp.Model, name, index_sets, rule, doc=""):
         """ initialization of a variable
         :param model: The linopy model
         :param name: name of variable
         :param index_sets: indices and sets by which the variable is indexed
         :param rule: constraint rule
-        :param doc: docstring of variable
-        :param constraint_class: either pe.Constraint, pgdp.Disjunct,pgdp.Disjunction"""
+        :param doc: docstring of variable"""
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
@@ -395,8 +394,7 @@ class Constraint(Component):
             xr_rhs.loc[*index_arrs] = [c.rhs for c in cons]
             model.add_constraints(xr_lhs, xr_sign, xr_rhs, name=name)
 
-            constraint_class(index_values, rule=rule, doc=doc)
             # save constraint doc
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
         else:
-            logging.warning(f"{constraint_class.name} {name} already added. Can only be added once")
+            logging.warning(f"{name} already added. Can only be added once")
