@@ -200,6 +200,7 @@ class Parameter(Component):
         super().__init__()
         self.min_parameter_value = {"name": None, "value": None}
         self.max_parameter_value = {"name": None, "value": None}
+        self.data_set = xr.Dataset()
 
     def add_parameter(self, name, data, doc):
         """ initialization of a parameter
@@ -212,9 +213,10 @@ class Parameter(Component):
             # save if highest or lowest value
             self.save_min_max(data, name)
             # convert to dict
-            data = self.convert_to_dict(data)
+            data = self.convert_to_xarr(data, index_list)
             # set parameter
-            setattr(self, name, data)
+            self.data_set[name] = data
+
             # save additional parameters
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
         else:
@@ -256,13 +258,15 @@ class Parameter(Component):
                 self.min_parameter_value["value"] = _valmin
 
     @staticmethod
-    def convert_to_dict(data):
+    def convert_to_xarr(data, index_list):
         """ converts the data to a dict if pd.Series"""
         if isinstance(data, pd.Series):
             # if single entry in index
             if len(data.index[0]) == 1:
                 data.index = pd.Index(sum(data.index.values, ()))
-            data = data.to_dict()
+            if len(data.index.names) == len(index_list):
+                data.index.names = index_list
+            data = data.to_xarray()
         return data
 
     def as_xarray(self, pname, indices):
@@ -278,6 +282,15 @@ class Parameter(Component):
             return xr.DataArray([p[*args] for args in indices])
         else:
             return xr.DataArray([p[i] for i in indices])
+
+    def __getitem__(self, item):
+        """
+        The get item method to directly access the underlying dataset
+        :param item: The item to retireve
+        :return: The xarray paramter
+        """
+
+        return self.data_set[item]
 
 
 class Variable(Component):
