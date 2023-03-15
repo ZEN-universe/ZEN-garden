@@ -265,6 +265,20 @@ class Parameter(Component):
             data = data.to_dict()
         return data
 
+    def as_xarray(self, pname, indices):
+        """
+        Returns a xarray of the param
+        :param pname: The name of the param
+        :param indices: A list of indices to extract
+        :return: An xarray of the param
+        """
+
+        p = getattr(self, pname)
+        if isinstance(indices[0], tuple):
+            return xr.DataArray([p[*args] for args in indices])
+        else:
+            return xr.DataArray([p[i] for i in indices])
+
 
 class Variable(Component):
     def __init__(self):
