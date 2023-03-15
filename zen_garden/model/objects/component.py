@@ -200,7 +200,6 @@ class Parameter(Component):
         super().__init__()
         self.min_parameter_value = {"name": None, "value": None}
         self.max_parameter_value = {"name": None, "value": None}
-        self.data_set = xr.Dataset()
 
     def add_parameter(self, name, data, doc):
         """ initialization of a parameter
@@ -212,10 +211,10 @@ class Parameter(Component):
             data, index_list = self.get_index_names_data(data)
             # save if highest or lowest value
             self.save_min_max(data, name)
-            # convert to dict
+            # convert to arr
             data = self.convert_to_xarr(data, index_list)
             # set parameter
-            self.data_set[name] = data
+            setattr(self, name, data)
 
             # save additional parameters
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
@@ -318,7 +317,9 @@ class Variable(Component):
             elif binary:
                 domain = "Binary"
             else:
-                if isinstance(bounds, tuple) and bounds[0] == 0:
+                if isinstance(bounds, tuple) and isinstance(bounds[0], xr.DataArray):
+                    domain = "BoundedReals"
+                elif isinstance(bounds, tuple) and bounds[0] == 0:
                     domain = "NonNegativeReals"
                 elif callable(bounds) or isinstance(bounds, np.ndarray):
                     domain = "BoundedReals"

@@ -74,6 +74,7 @@ class Element:
         cls.construct_params(optimization_setup)
         # construct pe.Vars
         cls.construct_vars(optimization_setup)
+        exit(0)
         # construct pe.Constraints
         cls.construct_constraints(optimization_setup)
         # construct pe.Objective
