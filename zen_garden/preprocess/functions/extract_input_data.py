@@ -265,7 +265,7 @@ class DataInput:
             else:
                 _energy_string = ""
 
-            df_input = self.read_input_data(f"existing_capacity{_energy_string}")
+            df_input = self.read_input_data(f"existing_capacity{_energy_string}{scenario}")
             if df_input is None:
                 return [0]
             if self.element.name in self.system["set_transport_technologies"]:
@@ -572,7 +572,7 @@ class DataInput:
                 idx_name_list = [idx for idx in index_name_list if idx != idx_name_year]
                 df_input = df_input.set_index(idx_name_list)
                 df_input = df_input.rename(columns={col: int(col) for col in df_input.columns if col.isnumeric()})
-                requested_index_values = set(self.energy_system.set_time_steps_yearly)
+                requested_index_values = set(self.energy_system.set_time_steps_years)
                 _requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
                 if not _requested_index_values_in_columns:
                     return df_input.reset_index()
