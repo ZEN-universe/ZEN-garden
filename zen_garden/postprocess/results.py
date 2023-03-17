@@ -140,9 +140,9 @@ class Results(object):
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
 
-        #self.plot("input_flow", node_edit="all")
-        #self.standard_plots()
-        self.plot_energy_balance("DE", "electricity", 2022, save_fig=True)
+        #self.plot("cost_total", yearly=True)
+        self.standard_plots()
+        #self.plot_energy_balance("DE", "electricity", 2022, save_fig=True)
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -846,21 +846,35 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
-    def standard_plots(self):
+    def standard_plots(self, save_fig=False):
         """
         Plots standard variables such as capacity, built capacity, input/output flow, total capex/opex
         """
-        self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="electricity", plot_strings={"title": "Capacities of Electricity Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
-        self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="heat", plot_strings={"title": "Capacities of Heat Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
-        ##self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="transport", plot_strings={"title": "Capacities of Transport Technologies", "ylabel": "Capacity [GW]"})
-        ##self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="storage_energy", plot_strings={"title": "Storage Capacities of Storage Technologies", "ylabel": "Capacity [GWh]"})
-        ##self.plot("capacity", yearly=True, plot_type="stacked_bar", technology_type="storage_power", plot_strings={"title": "Charge/Discharge Capacities of Storage Technologies", "ylabel": "Capacity [GW]"})
-        self.plot("built_capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="electricity", plot_strings={"title": "Built Capacities of Electricity Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
-        self.plot("built_capacity", yearly=True, plot_type="stacked_bar", technology_type="conversion", reference_carrier="heat", plot_strings={"title": "Built Capacities of Heat Generating Conversion Technologies", "ylabel": "Capacity [GW]"})
-        self.plot("input_flow", yearly=True, plot_type="stacked_bar", sum_technologies=True, plot_strings={"title": "Input Flows Summed Over Technologies", "ylabel": "Input Flow [GW]"})
-        self.plot("output_flow", yearly=True, plot_type="stacked_bar", sum_technologies=True, plot_strings={"title": "Output Flows Summed Over Technologies", "ylabel": "Output Flow [GW]"})
-        self.plot("capex_total",yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Capex", "ylabel": "Capex [MEUR]"})
-        self.plot("opex_total", yearly=True, plot_type="stacked_bar", plot_strings={"title": "Total Opex", "ylabel": "Opex [MEUR]"})
+        demand_carrier = self.get_df("demand_carrier")
+        #remove carriers without demand
+        demand_carrier = demand_carrier.loc[(demand_carrier != 0),:]
+        for carrier in demand_carrier.index.levels[0].values:
+            if carrier in demand_carrier:
+                self.plot("capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"})
+                self.plot("built_capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Built Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"})
+                self.plot("input_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Input Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Input Flow"})
+                self.plot("output_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Output Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Output Flow"})
+        self.plot("capex_total",yearly=True, plot_strings={"title": "Total Capex", "ylabel": "Capex"})
+        self.plot("opex_total", yearly=True, plot_strings={"title": "Total Opex", "ylabel": "Opex"})
+        self.plot("cost_carrier", yearly=True, plot_strings={"title": "Carrier Cost", "ylabel": "Cost"})
+        self.plot("cost_carbon_emissions_total", yearly=True, plot_strings={"title": "Total Carbon Emissions Cost", "ylabel": "Cost"})
+        #plot total costs as stacked bar plot of individual costs
+        costs = ["capex_total", "opex_total", "cost_carbon_emissions_total", "cost_carrier_total", "cost_shed_demand_carrier"]
+        total_cost = pd.DataFrame()
+        for cost in costs:
+            test = self.get_total(cost)
+            if cost == "cost_shed_demand_carrier":
+                cost_df = self.get_total(cost).sum(axis=0)
+                cost_df.name = "cost_shed_demand_total"
+                total_cost = pd.concat([total_cost, cost_df], axis=1)
+            else:
+                total_cost = pd.concat([total_cost, self.get_total(cost)], axis=1)
+        self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"})
 
     def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False):
         """
@@ -921,32 +935,33 @@ class Results(object):
         ax = data_plot_wo_demand.plot(kind="area", stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
         data_plot["demand_carrier"].plot(kind="line", ax=ax, label='demand', color="black")
         plt.legend()
-        #plt.show()
         if save_fig:
-            path = os.path.join(os.getcwd(), "result_plots")
-            if not os.path.exists(path):
-                os.makedirs(path)
+            path = os.path.join(os.getcwd(), "outputs")
             path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
+            path = os.path.join(path, "result_plots")
             if not os.path.exists(path):
                 os.makedirs(path)
             if start_hour is None and duration is None:
                 plt.savefig(os.path.join(path,"energy_balance_" +carrier+"_"+node+"_"+str(year)+".pdf"))
             else:
                 plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration)+ ".pdf"))
-    def plot(self, component, yearly=False, node_edit=None, sum_technologies=False, technology_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}):
+        plt.show()
+    def plot(self, component, yearly=False, node_edit=None, sum_techs=False, tech_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}, save_fig=False):
         """
         Plots component data as specified by arguments
-        :param component: Either the dataframe of a component as pandas.Series or the name of the component
+        :param component: Either the name of the component or a data frame of the component's data
         :param yearly: Operational time steps if false, else yearly time steps
-        :param node_edit: If true: sum values of identical technologies and carriers over spatial distribution (nodes), if string of specific node is passed, its data is returned
-        :param sum_technologies: sum values of technologies per carrier if true
-        :param technology_type: specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity, etc.)
-        :param: plot_type: per default bar plot, passing stacked_bar will plot stacked bar plot
+        :param node_edit: By default, data is summed over nodes, chose node_edit="all" or a specific node (e.g. node_edit="CH") such that data is not summed over nodes or that a single node's data is extracted, respectively
+        :param sum_techs: sum values of technologies per carrier if true
+        :param tech_type: specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity, etc.)
+        :param: plot_type: per default stacked bar plot, passing bar will plot normal bar plot
         :reference_carrier: specify reference carrier such as electricity, heat, etc. to extract their data
         :plot_strings: Dict of strings used to set title and labels of plot
+        :param save_fig: Choose if figure should be saved as pdf
         :return: plot
         """
-        component_name, component_data = self._get_component_data(component)
+        if isinstance(component, str):
+            component_name, component_data = self._get_component_data(component)
         #set timeseries type
         if yearly:
             ts_type = "yearly"
@@ -955,28 +970,55 @@ class Results(object):
 
         #plot variable with operational time steps
         if ts_type == "operational":
-            data_full_ts = self.get_full_ts(component)
-            if node_edit is not None:
+            if isinstance(component, str):
+                data_full_ts = self.get_full_ts(component)
+            elif isinstance(component, pd.DataFrame):
+                data_total = component
+            if node_edit != "all":
                 data_full_ts = self.edit_nodes_v2(data_full_ts, node_edit)
-            plt.plot(data_full_ts.columns.values, data_full_ts.values.transpose(), lw=1/len(data_full_ts.columns.values)*3000)
+            if sum_techs:
+                data_full_ts = self.sum_over_technologies_v2(data_full_ts)
+
+            data_full_ts = data_full_ts.transpose()
+            # remove columns(technologies/variables) with constant zero value
+            data_full_ts = data_full_ts.loc[:, (data_full_ts != 0).any(axis=0)]
+            colors = plt.cm.tab20(range(data_full_ts.shape[1]))
+            plt.rcParams["figure.figsize"] = (30 * 1, 6.5 * 1)
+            data_full_ts.plot(kind="area", stacked=True, color=colors, title=component)
             plt.xlabel("Time [hours]")
-            plt.legend(data_full_ts.index.values)
             plt.ylabel("Power [GW]")
 
         #plot variable with yearly time steps
         elif ts_type == "yearly":
-            data_total = self.get_total(component)
-            if technology_type != None:
-                data_total = self.extract_technology(data_total, technology_type)
+            if isinstance(component, str):
+                data_total = self.get_total(component)
+            elif isinstance(component, pd.DataFrame):
+                data_total = component
+            if tech_type != None:
+                data_total = self.extract_technology(data_total, tech_type)
             if reference_carrier != None:
                 data_total = self.extract_reference_carrier(data_total, reference_carrier)
             #sum data according to chosen options
-            if node_edit:
-                data_total = Results.edit_nodes(data_total, node_edit)
-            if sum_technologies:
-                data_total = Results.sum_over_technologies(data_total)
+            if node_edit != "all":
+                data_total = self.edit_nodes_v2(data_total, node_edit)
+            if sum_techs:
+                data_total = self.sum_over_technologies_v2(data_total)
 
             if plot_type == None:
+                if isinstance(data_total, pd.Series):
+                    data_total = pd.Series(np.array(data_total.values), np.array(data_total.index.values, dtype=int) + self.results["system"]["reference_year"])
+                elif isinstance(data_total, pd.DataFrame):
+                    data_total = data_total.transpose()
+                    data_total = data_total.set_index(np.array(data_total.index.values, dtype=int) + self.results["system"]["reference_year"])
+                plt.rcParams["figure.figsize"] = (9.5, 6.5)
+                fig, ax = plt.subplots()
+                data_total.plot(ax=ax, kind='bar', stacked=True,
+                        title=plot_strings["title"], rot=0, xlabel='Year', ylabel=plot_strings["ylabel"])
+                pos = ax.get_position()
+                ax.set_position([pos.x0, pos.y0, pos.width * 0.8, pos.height])
+                ax.legend(loc='center right', bbox_to_anchor=(1.4, 0.5))
+
+            elif plot_type == "bar":
                 #set up bar plot
                 bars = []
                 for ind, row in enumerate(data_total.values):
@@ -992,25 +1034,22 @@ class Results(object):
                 elif component in ["capacity"]:
                     plt.ylabel("Capacity [GW]")
                 plt.xlabel("Time [years]")
-            elif plot_type == "stacked_bar":
-                if isinstance(data_total, pd.Series):
-                    data_total = pd.Series(np.array(data_total.values), np.array(data_total.index.values, dtype=int) + self.results["system"]["reference_year"])
-                elif isinstance(data_total, pd.DataFrame):
-                    data_total = data_total.transpose()
-                    data_total = data_total.set_index(np.array(data_total.index.values, dtype=int) + self.results["system"]["reference_year"])
-                plt.rcParams["figure.figsize"] = (9.5, 6.5)
-                fig, ax = plt.subplots()
-                data_total.plot(ax=ax, kind='bar', stacked=True,
-                        title=plot_strings["title"], rot=0, xlabel='Year', ylabel=plot_strings["ylabel"])
-                pos = ax.get_position()
-                ax.set_position([pos.x0, pos.y0, pos.width * 0.8, pos.height])
-                ax.legend(loc='center right', bbox_to_anchor=(1.4, 0.5))
+
+            else:
+                warnings.warn("Chosen plot_type doesn't exist, chose 'bar' or don't pass any argument for stacked bar plot")
 
         #plot variable with storage time steps
         elif ts_type == "storage":
             data_total = self.get_total(component)
             plt.plot(data_total.columns.values, data_total.values.transpose())
 
+        if save_fig:
+            path = os.path.join(os.getcwd(), "outputs")
+            path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
+            path = os.path.join(path, "result_plots")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            plt.savefig(os.path.join(path,component + "_yearly="+str(yearly) + "_" + "node_edit=" + str(node_edit) +".pdf"))
         plt.show()
 
     def calculate_connected_edges(self, node, direction: str, set_nodes_on_edges):
@@ -1048,10 +1087,12 @@ class Results(object):
         """
         :param node_edit: string to specify if data should be summed over nodes (node_edit="all") or if a single node should be extracted (e.g. node_edit="CH")
         """
+        if isinstance(data, pd.Series):
+            return data
         if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
             return data
         #check if data of specific node, specified by string, should be extracted
-        test = self.get_df("set_nodes_on_edges", is_set=True)
+        #test = self.get_df("set_nodes", is_set=True)
         if node_edit in ["CH", "DE", "FR"]:
             if data.index.nlevels == 2:
                 data = data.loc[(slice(None), node_edit), :]
@@ -1062,18 +1103,32 @@ class Results(object):
             elif data.index.nlevels == 4:
                 return
         #check if data varying only in node value should be summed
-        elif node_edit == "all":
-            level_names = {}
-            for level in data.index.levels:
-                if level.name not in ["node", "location"]:
-                    level_names[level.name] = level.values
-            if len(level_names) == 2:
-                for level_name_1 in level_names[0]:
-                    for level_name_2 in level_names[1]:
-                        data = data
+        elif node_edit is None:
+            level_names = [name for name in data.index.names if name not in ["node", "location"]]
+            if len(level_names) == 1:
+                data_summed = data.groupby([level_names[0]]).sum()
+                return data_summed
+            elif len(level_names) == 2:
+                data_summed = data.groupby([level_names[0], level_names[1]]).sum()
+                return data_summed
+            else:
+                warnings.warn("Further implementation needed")
         else:
             warnings.warn("Chosen node_edit string is invalid")
             return data
+
+    def sum_over_technologies_v2(self, data):
+        if "technology" not in data.index.dtypes:
+            return data
+        level_names = [name for name in data.index.names if name not in ["technology"]]
+        if len(level_names) == 1:
+            data_summed = data.groupby([level_names[0]]).sum()
+            return data_summed
+        elif len(level_names) == 2:
+            data_summed = data.groupby([level_names[0], level_names[1]]).sum()
+            return data_summed
+        else:
+            warnings.warn("Further implementation needed")
 
     def extract_carrier(self, data, carrier):
         if "carrier" not in data.index.dtypes:
@@ -1094,184 +1149,6 @@ class Results(object):
             return data
         elif data.index.nlevels == 4:
             return
-
-    @classmethod
-    def edit_nodes(cls, data, node_edit):
-        """
-        Either returns data of a single node or sums data of identical indices at different nodes
-        :param data: data frame of component
-        :param node_edit: Either True (sum over nodes) or a string specifying a specific node
-        """
-        index_list = []
-        #check if data of a specific node should be returned
-        if isinstance(node_edit, str):
-            for ind, name in enumerate(data.index.names):
-                if name in ["node", "location"]:
-                    index_list.extend([index for index in data.index if index[ind] == node_edit])
-            return data.loc[data.index.isin(index_list)]
-
-        #return data as it doesn't have multiple levels (nothing can be summed up)
-        if data.index.nlevels == 1:
-            return data
-        #check if data contains nodes
-        if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
-            return data
-        multi_index_list = []
-        data_nodes_summed = pd.DataFrame()
-        #check if data contains technology and carrier index levels as it is the case for: input_flow, output_flow, ...
-        if "technology" in data.index.dtypes and "carrier" in data.index.dtypes:
-            #sort data such that identical technologies and carries lie next to each other
-            data = data.sort_index(axis=0,level=["technology","carrier"])
-            #iterate over rows of data to find entries with same technologies and carriers at multiple nodes
-            for pos, index in enumerate(data.index):
-                #ensure that data isn't accessed out of bound and assess last row of data
-                if pos == data.index.shape[0] - 1:
-                    index_list.append(index)
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    data_nodes_summed = pd.concat([data_nodes_summed,test_data],axis=1)
-                    multi_index_list.append((index[0],index[1]))
-                #check if technology and carrier at current row match the ones from the next row
-                elif index[0] == data.index[pos+1][0] and index[1] == data.index[pos+1][1]:
-                    #store index to sum corresponding value later on
-                    index_list.append(index)
-                #sum the values of identical technologies and carriers of different nodes
-                else:
-                    index_list.append(index)
-                    #sum values
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    #add sum to data frame with summed values of other technologies and carriers
-                    data_nodes_summed = pd.concat([data_nodes_summed,test_data],axis=1)
-                    #empty index_list such that indices of next technology/carrier combination can be stored
-                    index_list = []
-                    #store index of current technology/carrier combination such that data_nodes_summed can be indexed later on
-                    multi_index_list.append((index[0],index[1]))
-            #transpose DataFrame to overcome concat limitation
-            data_nodes_summed = data_nodes_summed.transpose()
-            #create MultiIndex of the gathered technology/carrier combinations
-            multi_index = pd.MultiIndex.from_tuples(multi_index_list, names=["technology","carrier"])
-            #set multi index
-            data_nodes_summed = data_nodes_summed.set_index(multi_index)
-            return data_nodes_summed
-
-        #check if data contains technology and capacity_type index levels as it is the case for: capacity, ...
-        elif "technology" in data.index.dtypes and "capacity_type" in data.index.dtypes:
-            #sort data such that identical technologies and capacity_types lie next to each other
-            data = data.sort_index(axis=0,level=["technology","capacity_type"])
-            #iterate over rows of data to find entries with same technologies and carriers at multiple locations
-            for pos, index in enumerate(data.index):
-                #ensure that data isn't accessed out of bound and assess last row of data
-                if pos == data.index.shape[0] - 1:
-                    index_list.append(index)
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    data_nodes_summed = pd.concat([data_nodes_summed,test_data],axis=1)
-                    multi_index_list.append((index[0],index[1]))
-                #check if technology and carrier at current row match the ones from the next row
-                elif index[0] == data.index[pos+1][0] and index[1] == data.index[pos+1][1]:
-                    #store index to sum corresponding value later on
-                    index_list.append(index)
-                #sum the values of identical technologies and carriers of different nodes
-                else:
-                    index_list.append(index)
-                    #sum values
-                    test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                    #add sum to data frame with summed values of other technologies and carriers
-                    data_nodes_summed = pd.concat([data_nodes_summed,test_data],axis=1)
-                    #empty index_list such that indices of next technology/carrier combination can be stored
-                    index_list = []
-                    #store index of current technology/carrier combination such that data_nodes_summed can be indexed later on
-                    multi_index_list.append((index[0],index[1]))
-            #transpose DataFrame to overcome concat limitation
-            data_nodes_summed = data_nodes_summed.transpose()
-            #create MultiIndex of the gathered technology/carrier combinations
-            multi_index = pd.MultiIndex.from_tuples(multi_index_list, names=["technology","capacity_type"])
-            #set multi index
-            data_nodes_summed = data_nodes_summed.set_index(multi_index)
-            return data_nodes_summed
-        else:
-            warnings.warn("further implementation needed to sum over nodes of this variable")
-            return data
-    @classmethod
-    def sum_over_technologies(cls, data):
-        #return data as it doesn't have multiple levels (nothing can be summed up)
-        if data.index.nlevels == 1:
-            return data
-        #return data as technology is not contained in the index levels
-        if "technology" not in data.index.dtypes:
-            return data
-        index_list = []
-        multi_index_list = []
-        data_technologies_summed = pd.DataFrame()
-        #check if data contains technology and carrier index levels as it is the case for: input_flow, output_flow, ...
-        if "technology" in data.index.dtypes and "carrier" in data.index.dtypes:
-
-            if "node" in data.index.dtypes:
-                #sort data such that identical carries and nodes lie next to each other
-                data = data.sort_index(axis=0, level=["carrier","node"])
-                #iterate over rows of data to find technologies with identical carrier
-                for pos, index in enumerate(data.index):
-                    #ensure that data isn't accessed out of bound and assess last row of data
-                    if pos == data.index.shape[0] - 1:
-                        index_list.append(index)
-                        test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                        data_technologies_summed = pd.concat([data_technologies_summed,test_data],axis=1)
-                        multi_index_list.append((index[1],index[2]))
-                    #check if technology and carrier at current row match the ones from the next row
-                    elif index[1] == data.index[pos+1][1] and index[2] == data.index[pos+1][2]:
-                        #store index to sum corresponding value later on
-                        index_list.append(index)
-                    #sum the values of identical technologies and carriers of different nodes
-                    else:
-                        index_list.append(index)
-                        #sum values
-                        test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                        #add sum to data frame with summed values of other technologies and carriers
-                        data_technologies_summed = pd.concat([data_technologies_summed,test_data],axis=1)
-                        #empty index_list such that indices of next technology/carrier combination can be stored
-                        index_list = []
-                        #store index of current technology/carrier combination such that data_technologies_summed can be indexed later on
-                        multi_index_list.append((index[1],index[2]))
-                #transpose DataFrame to overcome concat limitation
-                data_technologies_summed = data_technologies_summed.transpose()
-                #create MultiIndex of the gathered technology/carrier combinations
-                multi_index = pd.MultiIndex.from_tuples(multi_index_list, names=["carrier","node"])
-                #set multi index
-                data_technologies_summed = data_technologies_summed.set_index(multi_index)
-                return data_technologies_summed
-            #data doesn't have a node index
-            else:
-                # sort data such that identical carries lie next to each other
-                data = data.sort_index(axis=0, level=["carrier"])
-                # iterate over rows of data to find technologies with identical carrier
-                for pos, index in enumerate(data.index):
-                    # ensure that data isn't accessed out of bound and assess last row of data
-                    if pos == data.index.shape[0] - 1:
-                        index_list.append(index)
-                        test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                        data_technologies_summed = pd.concat([data_technologies_summed, test_data], axis=1)
-                        multi_index_list.append(index[1])
-                    # check if technology and carrier at current row match the ones from the next row
-                    elif index[1] == data.index[pos + 1][1]:
-                        # store index to sum corresponding value later on
-                        index_list.append(index)
-                    # sum the values of identical technologies and carriers of different nodes
-                    else:
-                        index_list.append(index)
-                        # sum values
-                        test_data = data.loc[data.index.isin(index_list)].sum(axis=0)
-                        # add sum to data frame with summed values of other technologies and carriers
-                        data_technologies_summed = pd.concat([data_technologies_summed, test_data], axis=1)
-                        # empty index_list such that indices of next technology/carrier combination can be stored
-                        index_list = []
-                        # store index of current technology/carrier combination such that data_technologies_summed can be indexed later on
-                        multi_index_list.append(index[1])
-                # transpose DataFrame to overcome concat limitation
-                data_technologies_summed = data_technologies_summed.transpose()
-                data_technologies_summed = data_technologies_summed.set_index([multi_index_list])
-                return data_technologies_summed
-
-        else:
-            warnings.warn("Technologies using same carrier cannot be summed as variable doesn't have a technology AND a carrier index")
-            return data
 
     def extract_technology(self, data, type):
         #check if data contains technologies
