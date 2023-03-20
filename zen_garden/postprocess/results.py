@@ -140,9 +140,9 @@ class Results(object):
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
 
-        #self.plot("cost_total", yearly=True)
-        self.standard_plots()
-        #self.plot_energy_balance("DE", "electricity", 2022, save_fig=True)
+        #self.plot("input_flow", yearly=True, save_fig=True, file_type="svg")
+        #self.standard_plots()
+        self.plot_energy_balance("DE", "electricity", 2022, save_fig=True)
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -876,7 +876,7 @@ class Results(object):
                 total_cost = pd.concat([total_cost, self.get_total(cost)], axis=1)
         self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"})
 
-    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False):
+    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None):
         """
         Visualizes the energy balance of a specific carrier at a single node
         :param node: String of node of interest
@@ -885,10 +885,92 @@ class Results(object):
         :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
         :param duration: Number of hours that should be plotted from start_hour
         :param save_fig: Choose if figure should be saved as pdf
+        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
         """
         plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
         components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier", "carrier_flow_in", "carrier_flow_out"]
         lowers = ["input_flow", "export_carrier_flow", "carrier_flow_charge", "carrier_flow_out"]
+        data_plot = pd.DataFrame()
+        for component in components:
+            if component == "carrier_flow_in":
+                data_full_ts = self.edit_carrier_flows(self.get_full_ts("carrier_flow"), node, carrier, "in")
+            elif component == "carrier_flow_out":
+                data_full_ts = self.edit_carrier_flows(self.get_full_ts("carrier_flow"), node, carrier, "out")
+            else:
+                #get full timeseries of component and extract rows of relevant node
+                data_full_ts = self.edit_nodes_v2(self.get_full_ts(component), node)
+                #extract data of desired carrier
+                data_full_ts = self.extract_carrier(data_full_ts, carrier)
+                #check if return from extract_carrier() is still a data frame as it is possible that the desired carrier isn't contained --> None returned
+                if not isinstance(data_full_ts, pd.DataFrame):
+                    continue
+            #change sign of variables which enter the node
+            if component in lowers:
+                data_full_ts = data_full_ts.multiply(-1)
+            if isinstance(data_full_ts, pd.DataFrame):
+                #add variable name to multi-index such that they can be shown in plot legend
+                data_full_ts = pd.concat([data_full_ts], keys=[component], names=["variable"])
+                #drop unnecessary index levels to improve the plot legend's appearance
+                if data_full_ts.index.nlevels == 3:
+                    data_full_ts = data_full_ts.droplevel([2])
+                elif data_full_ts.index.nlevels == 4:
+                    data_full_ts = data_full_ts.droplevel([2,3])
+                #transpose data frame as pandas plot function plots column-wise
+                data_full_ts = data_full_ts.transpose()
+            elif isinstance(data_full_ts, pd.Series):
+                data_full_ts.name = component
+            #add data of current variable to the plot data frame
+            data_plot = pd.concat([data_plot, data_full_ts], axis=1)
+
+        #extract the rows of the desired year
+        data_plot = data_plot.iloc[8760*(year-self.results["system"]["reference_year"]):8760*(year-self.results["system"]["reference_year"])+8760]
+        #extrect specific hours of year
+        if start_hour is not None and duration is not None:
+            data_plot = data_plot.iloc[start_hour:start_hour+duration]
+        #remove columns(technologies/variables) with constant zero value
+        data_plot = data_plot.loc[:, (data_plot != 0).any(axis=0)]
+        #set colors and plot data frame
+        colors = plt.cm.tab20(range(data_plot.shape[1]))
+        #data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power [GW]", xlabel="Time [h]")
+        data_plot_wo_demand = data_plot.drop(columns=["demand_carrier"])
+        ax = data_plot_wo_demand.plot(kind="area", stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
+        data_plot["demand_carrier"].plot(kind="line", ax=ax, label='demand', color="black")
+        plt.legend()
+        if save_fig:
+            path = os.path.join(os.getcwd(), "outputs")
+            path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
+            path = os.path.join(path, "result_plots")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            if file_type in plt.gcf().canvas.get_supported_filetypes():
+                if start_hour is None and duration is None:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "." + file_type))
+                else:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration) + "." + file_type))
+            elif file_type is None:
+                #save figure as pdf if file_type hasn't been specified
+                if start_hour is None and duration is None:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + ".pdf"))
+                else:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration) + ".pdf"))
+            else:
+                warnings.warn("Plot couldn't be saved as specified file type isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
+        plt.show()
+
+    def plot_energy_balance_demand_below(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None):
+        """
+        Visualizes the energy balance of a specific carrier at a single node
+        :param node: String of node of interest
+        :param carrier: String of carrier of interest
+        :param year: Year of interest
+        :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
+        :param duration: Number of hours that should be plotted from start_hour
+        :param save_fig: Choose if figure should be saved as pdf
+        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
+        """
+        plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
+        components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier", "carrier_flow_in", "carrier_flow_out"]
+        lowers = ["input_flow", "export_carrier_flow", "carrier_flow_charge", "carrier_flow_out", "demand_carrier"]
         data_plot = pd.DataFrame()
         for component in components:
             if component == "carrier_flow_in":
@@ -930,23 +1012,28 @@ class Results(object):
         data_plot = data_plot.loc[:, (data_plot != 0).any(axis=0)]
         #set colors and plot data frame
         colors = plt.cm.tab20(range(data_plot.shape[1]))
-        #data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power [GW]", xlabel="Time [h]")
-        data_plot_wo_demand = data_plot.drop(columns=["demand_carrier"])
-        ax = data_plot_wo_demand.plot(kind="area", stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
-        data_plot["demand_carrier"].plot(kind="line", ax=ax, label='demand', color="black")
-        plt.legend()
+        data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
         if save_fig:
             path = os.path.join(os.getcwd(), "outputs")
             path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
             path = os.path.join(path, "result_plots")
             if not os.path.exists(path):
                 os.makedirs(path)
-            if start_hour is None and duration is None:
-                plt.savefig(os.path.join(path,"energy_balance_" +carrier+"_"+node+"_"+str(year)+".pdf"))
+            if file_type in plt.gcf().canvas.get_supported_filetypes():
+                if start_hour is None and duration is None:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "." + file_type))
+                else:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration) + "." + file_type))
+            elif file_type is None:
+                #save figure as pdf if file_type hasn't been specified
+                if start_hour is None and duration is None:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + ".pdf"))
+                else:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration) + ".pdf"))
             else:
-                plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration)+ ".pdf"))
+                warnings.warn("Plot couldn't be saved as specified file type isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
         plt.show()
-    def plot(self, component, yearly=False, node_edit=None, sum_techs=False, tech_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}, save_fig=False):
+    def plot(self, component, yearly=False, node_edit=None, sum_techs=False, tech_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}, save_fig=False, file_type=None):
         """
         Plots component data as specified by arguments
         :param component: Either the name of the component or a data frame of the component's data
@@ -957,7 +1044,8 @@ class Results(object):
         :param: plot_type: per default stacked bar plot, passing bar will plot normal bar plot
         :reference_carrier: specify reference carrier such as electricity, heat, etc. to extract their data
         :plot_strings: Dict of strings used to set title and labels of plot
-        :param save_fig: Choose if figure should be saved as pdf
+        :param save_fig: Choose if figure should be saved as
+        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
         :return: plot
         """
         if isinstance(component, str):
@@ -1049,7 +1137,13 @@ class Results(object):
             path = os.path.join(path, "result_plots")
             if not os.path.exists(path):
                 os.makedirs(path)
-            plt.savefig(os.path.join(path,component + "_yearly="+str(yearly) + "_" + "node_edit=" + str(node_edit) +".pdf"))
+            if file_type in plt.gcf().canvas.get_supported_filetypes():
+                plt.savefig(os.path.join(path,component + "_yearly="+str(yearly) + "_" + "node_edit=" + str(node_edit) +"." + file_type))
+            elif file_type is None:
+                #save figure as pdf if file_type hasn't been specified
+                plt.savefig(os.path.join(path, component + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + ".pdf" ))
+            else:
+                warnings.warn("Plot couldn't be saved as specified file type isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
         plt.show()
 
     def calculate_connected_edges(self, node, direction: str, set_nodes_on_edges):
@@ -1075,12 +1169,12 @@ class Results(object):
         if "carrier" not in data.index.dtypes:
             reference_carriers = self.get_df("set_reference_carriers",is_set=True)
             data_extracted = pd.DataFrame()
+            data = data.groupby(["technology"]).sum()
             for ind, tech in enumerate(data.index.get_level_values("technology")):
                 if reference_carriers[tech] == carrier:
-                    data_extracted = pd.concat([data_extracted, data.loc[(tech, data.index.values[ind][1]), :]], axis=1)
-        data_extracted = data_extracted.transpose()
-        data_extracted = data_extracted.sum()
-        return data_extracted
+                    data_extracted = pd.concat([data_extracted, data.transpose()[tech]], axis=1)
+
+        return data_extracted.transpose()
 
 
     def edit_nodes_v2(self, data, node_edit):
