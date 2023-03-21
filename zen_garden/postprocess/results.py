@@ -139,10 +139,6 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-
-        #self.plot("input_flow", yearly=True, save_fig=True, file_type="svg")
-        #self.standard_plots()
-        self.plot_energy_balance("DE", "electricity", 2022, save_fig=True)
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -846,23 +842,23 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
-    def standard_plots(self, save_fig=False):
+    def standard_plots(self, save_fig=False, file_type=None):
         """
-        Plots standard variables such as capacity, built capacity, input/output flow, total capex/opex
+        Plots data of basic variables to get a first overview of the results
         """
         demand_carrier = self.get_df("demand_carrier")
         #remove carriers without demand
         demand_carrier = demand_carrier.loc[(demand_carrier != 0),:]
         for carrier in demand_carrier.index.levels[0].values:
             if carrier in demand_carrier:
-                self.plot("capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"})
-                self.plot("built_capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Built Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"})
-                self.plot("input_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Input Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Input Flow"})
-                self.plot("output_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Output Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Output Flow"})
-        self.plot("capex_total",yearly=True, plot_strings={"title": "Total Capex", "ylabel": "Capex"})
-        self.plot("opex_total", yearly=True, plot_strings={"title": "Total Opex", "ylabel": "Opex"})
-        self.plot("cost_carrier", yearly=True, plot_strings={"title": "Carrier Cost", "ylabel": "Cost"})
-        self.plot("cost_carbon_emissions_total", yearly=True, plot_strings={"title": "Total Carbon Emissions Cost", "ylabel": "Cost"})
+                self.plot("capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
+                self.plot("built_capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Built Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
+                self.plot("input_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Input Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Input Flow"}, save_fig=save_fig, file_type=file_type)
+                self.plot("output_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Output Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Output Flow"}, save_fig=save_fig, file_type=file_type)
+        self.plot("capex_total",yearly=True, plot_strings={"title": "Total Capex", "ylabel": "Capex"}, save_fig=save_fig, file_type=file_type)
+        self.plot("opex_total", yearly=True, plot_strings={"title": "Total Opex", "ylabel": "Opex"}, save_fig=save_fig, file_type=file_type)
+        self.plot("cost_carrier", yearly=True, plot_strings={"title": "Carrier Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
+        self.plot("cost_carbon_emissions_total", yearly=True, plot_strings={"title": "Total Carbon Emissions Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
         #plot total costs as stacked bar plot of individual costs
         costs = ["capex_total", "opex_total", "cost_carbon_emissions_total", "cost_carrier_total", "cost_shed_demand_carrier"]
         total_cost = pd.DataFrame()
@@ -874,14 +870,14 @@ class Results(object):
                 total_cost = pd.concat([total_cost, cost_df], axis=1)
             else:
                 total_cost = pd.concat([total_cost, self.get_total(cost)], axis=1)
-        self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"})
+        self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
 
     def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None):
         """
         Visualizes the energy balance of a specific carrier at a single node
         :param node: String of node of interest
         :param carrier: String of carrier of interest
-        :param year: Year of interest
+        :param year: Generic index of year of interest
         :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
         :param duration: Number of hours that should be plotted from start_hour
         :param save_fig: Choose if figure should be saved as pdf
@@ -923,15 +919,18 @@ class Results(object):
             data_plot = pd.concat([data_plot, data_full_ts], axis=1)
 
         #extract the rows of the desired year
-        data_plot = data_plot.iloc[8760*(year-self.results["system"]["reference_year"]):8760*(year-self.results["system"]["reference_year"])+8760]
-        #extrect specific hours of year
+        if year not in list(range(self.results["system"]["optimized_years"])):
+            warnings.warn(f"Chosen year '{year}' hasn't been simulated")
+        else:
+            ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
+            data_plot = data_plot.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
+        #extract specific hours of year
         if start_hour is not None and duration is not None:
             data_plot = data_plot.iloc[start_hour:start_hour+duration]
         #remove columns(technologies/variables) with constant zero value
         data_plot = data_plot.loc[:, (data_plot != 0).any(axis=0)]
         #set colors and plot data frame
         colors = plt.cm.tab20(range(data_plot.shape[1]))
-        #data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power [GW]", xlabel="Time [h]")
         data_plot_wo_demand = data_plot.drop(columns=["demand_carrier"])
         ax = data_plot_wo_demand.plot(kind="area", stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
         data_plot["demand_carrier"].plot(kind="line", ax=ax, label='demand', color="black")
@@ -954,7 +953,7 @@ class Results(object):
                 else:
                     plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration) + ".pdf"))
             else:
-                warnings.warn("Plot couldn't be saved as specified file type isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
+                warnings.warn(f"Plot couldn't be saved as specified file type '{file_type}' isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
         plt.show()
 
     def plot_energy_balance_demand_below(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None):
@@ -1005,7 +1004,7 @@ class Results(object):
 
         #extract the rows of the desired year
         data_plot = data_plot.iloc[8760*(year-self.results["system"]["reference_year"]):8760*(year-self.results["system"]["reference_year"])+8760]
-        #extrect specific hours of year
+        #extract specific hours of year
         if start_hour is not None and duration is not None:
             data_plot = data_plot.iloc[start_hour:start_hour+duration]
         #remove columns(technologies/variables) with constant zero value
@@ -1031,9 +1030,9 @@ class Results(object):
                 else:
                     plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration) + ".pdf"))
             else:
-                warnings.warn("Plot couldn't be saved as specified file type isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
+                warnings.warn(f"Plot couldn't be saved as specified file type '{file_type}' isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
         plt.show()
-    def plot(self, component, yearly=False, node_edit=None, sum_techs=False, tech_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}, save_fig=False, file_type=None):
+    def plot(self, component, yearly=False, node_edit=None, sum_techs=False, tech_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}, save_fig=False, file_type=None, year=None, start_hour=None, duration=None):
         """
         Plots component data as specified by arguments
         :param component: Either the name of the component or a data frame of the component's data
@@ -1046,10 +1045,24 @@ class Results(object):
         :plot_strings: Dict of strings used to set title and labels of plot
         :param save_fig: Choose if figure should be saved as
         :param file_type: File type the figure is saved as (pdf, svg, png, ...)
+        :param year: Year of interest (only for operational plots)
+        :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration) (only for operational plots)
+        :param duration: Number of hours that should be plotted from start_hour (only for operational plots)
         :return: plot
         """
         if isinstance(component, str):
-            component_name, component_data = self._get_component_data(component)
+            scenario = None
+            if None in self.scenarios:
+                if component not in self.results[None][None]["pars_and_vars"]:
+                    warnings.warn(f"Chosen component '{component}' doesn't exist")
+                    return
+            else:
+                scenario = self.scenarios[0]
+                if component not in self.results[scenario][None]["pars_and_vars"]:
+                    warnings.warn(f"Chosen component '{component}' doesn't exist")
+                    return
+
+            component_name, component_data = self._get_component_data(component, scenario=scenario)
         #set timeseries type
         if yearly:
             ts_type = "yearly"
@@ -1059,7 +1072,7 @@ class Results(object):
         #plot variable with operational time steps
         if ts_type == "operational":
             if isinstance(component, str):
-                data_full_ts = self.get_full_ts(component)
+                data_full_ts = self.get_full_ts(component, scenario=scenario)
             elif isinstance(component, pd.DataFrame):
                 data_total = component
             if node_edit != "all":
@@ -1068,6 +1081,13 @@ class Results(object):
                 data_full_ts = self.sum_over_technologies_v2(data_full_ts)
 
             data_full_ts = data_full_ts.transpose()
+            if year is not None:
+                # extract the rows of the desired year
+                ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
+                data_full_ts = data_full_ts.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
+                # extract specific hours of year
+                if start_hour is not None and duration is not None:
+                    data_full_ts = data_full_ts.iloc[start_hour:start_hour + duration]
             # remove columns(technologies/variables) with constant zero value
             data_full_ts = data_full_ts.loc[:, (data_full_ts != 0).any(axis=0)]
             colors = plt.cm.tab20(range(data_full_ts.shape[1]))
@@ -1124,7 +1144,7 @@ class Results(object):
                 plt.xlabel("Time [years]")
 
             else:
-                warnings.warn("Chosen plot_type doesn't exist, chose 'bar' or don't pass any argument for stacked bar plot")
+                warnings.warn(f"Chosen plot_type '{plot_type}' doesn't exist, chose 'bar' or don't pass any argument for stacked bar plot")
 
         #plot variable with storage time steps
         elif ts_type == "storage":
@@ -1143,7 +1163,7 @@ class Results(object):
                 #save figure as pdf if file_type hasn't been specified
                 plt.savefig(os.path.join(path, component + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + ".pdf" ))
             else:
-                warnings.warn("Plot couldn't be saved as specified file type isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
+                warnings.warn(f"Plot couldn't be saved as specified file type '{file_type}' isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
         plt.show()
 
     def calculate_connected_edges(self, node, direction: str, set_nodes_on_edges):
@@ -1162,6 +1182,9 @@ class Results(object):
         return _set_connected_edges
 
     def edit_carrier_flows(self, data, node, carrier, direction):
+        """
+        Extracts data of carrier_flow variable as needed for the plot_energy_balance function
+        """
         set_nodes_on_edges = self.get_df("set_nodes_on_edges",is_set=True)
         set_nodes_on_edges = {edge: set_nodes_on_edges[edge].split(",") for edge in set_nodes_on_edges.index}
         data = data.loc[(slice(None), self.calculate_connected_edges(node, direction, set_nodes_on_edges)), :]
@@ -1179,6 +1202,7 @@ class Results(object):
 
     def edit_nodes_v2(self, data, node_edit):
         """
+        Manipulates the data frame 'data' as specified by 'node_edit'
         :param node_edit: string to specify if data should be summed over nodes (node_edit="all") or if a single node should be extracted (e.g. node_edit="CH")
         """
         if isinstance(data, pd.Series):
@@ -1186,8 +1210,7 @@ class Results(object):
         if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
             return data
         #check if data of specific node, specified by string, should be extracted
-        #test = self.get_df("set_nodes", is_set=True)
-        if node_edit in ["CH", "DE", "FR"]:
+        if node_edit in self.results["system"]["set_nodes"]:
             if data.index.nlevels == 2:
                 data = data.loc[(slice(None), node_edit), :]
                 return data
@@ -1206,12 +1229,15 @@ class Results(object):
                 data_summed = data.groupby([level_names[0], level_names[1]]).sum()
                 return data_summed
             else:
-                warnings.warn("Further implementation needed")
+                warnings.warn(f"Further implementation needed")
         else:
-            warnings.warn("Chosen node_edit string is invalid")
+            warnings.warn(f"Chosen node_edit string '{node_edit}' is invalid")
             return data
 
     def sum_over_technologies_v2(self, data):
+        """
+        Sums the data of technologies with the same output carrier
+        """
         if "technology" not in data.index.dtypes:
             return data
         level_names = [name for name in data.index.names if name not in ["technology"]]
@@ -1222,16 +1248,23 @@ class Results(object):
             data_summed = data.groupby([level_names[0], level_names[1]]).sum()
             return data_summed
         else:
-            warnings.warn("Further implementation needed")
+            warnings.warn(f"Further implementation needed")
+            return data
 
     def extract_carrier(self, data, carrier):
+        """
+        Extracts data of all technologies with the specified reference carrier
+        """
+        reference_carriers = self.get_df("set_reference_carriers", is_set=True)
+        if carrier not in reference_carriers.values:
+            warnings.warn(f"Chosen reference carrier '{carrier}' doesn't exist")
+            return
         if "carrier" not in data.index.dtypes:
-            reference_carriers = self.get_df("set_reference_carriers",is_set=True)
             data_extracted = pd.DataFrame()
             for tech in data.index.get_level_values("technology"):
                 if reference_carriers[tech] == carrier:
                     data_extracted = pd.concat([data_extracted, data.loc[(tech, slice(None)), :]], axis=1)
-            return  data_extracted
+            return data_extracted
         #check if desired carrier isn't contained in data (otherwise .loc raises an error)
         if not carrier in data.index.get_level_values("carrier"):
             return None
@@ -1241,10 +1274,11 @@ class Results(object):
         elif data.index.nlevels == 3:
             data = data.loc[(slice(None), carrier, slice(None)), :]
             return data
-        elif data.index.nlevels == 4:
-            return
 
     def extract_technology(self, data, type):
+        """
+        Extracts the technology type specified by 'type'
+        """
         #check if data contains technologies
         if "technology" not in data.index.dtypes:
             return data
@@ -1269,7 +1303,7 @@ class Results(object):
                             elif "power" not in type and "energy" not in type:
                                 index_list.append(index)
                     else:
-                        warnings.warn("Technology type doesn't exist!")
+                        warnings.warn(f"Technology type '{type}' doesn't exist!")
         return data.loc[data.index.isin(index_list)]
 
     def extract_reference_carrier(self, data, type):
@@ -1281,6 +1315,9 @@ class Results(object):
         """
         _output_carriers = self.get_df("output_flow").index.droplevel(
             level=["node", "time_operation"]).unique().to_frame().set_index("technology")
+        if type not in [carrier for carrier in _output_carriers["carrier"]]:
+            warnings.warn(f"Chosen reference carrier '{type}' doesn't exist")
+            return data
         index_list = []
         for tech, carrier in enumerate(_output_carriers["carrier"]):
             if carrier == type:
