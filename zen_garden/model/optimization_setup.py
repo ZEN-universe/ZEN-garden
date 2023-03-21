@@ -436,21 +436,18 @@ class OptimizationSetup(object):
         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
         solver_parameters = f"ResultFile={os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
 
-        if solver_name == "gurobi_persistent":
-            self.opt = pe.SolverFactory(solver_name, options=solver_options)
-            self.opt.set_instance(self.model, symbolic_solver_labels=solver["use_symbolic_labels"])
-            self.results = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"], options_string=solver_parameters,save_results=False, load_solutions=False)
-            self.opt.load_vars()
-        elif solver_name == "gurobi":
-            self.opt = pe.SolverFactory(solver_name, options=solver_options)
-            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"], options_string=solver_parameters)
-        else:
-            self.opt = pe.SolverFactory(solver_name)
-            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"])
+        self.model.solve()
+        # FIXME: map solver shit and adapt default params
+        # elif solver_name == "gurobi":
+        #     self.opt = pe.SolverFactory(solver_name, options=solver_options)
+        #     self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"], options_string=solver_parameters)
+        # else:
+        #     self.opt = pe.SolverFactory(solver_name)
+        #     self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"])
         # enable logger
         logging.disable(logging.NOTSET)
         # write IIS
-        if self.results.solver.termination_condition != TerminationCondition.optimal:
+        if self.model.termination_condition != 'optimal':
             logging.info("The optimization is infeasible or unbounded")
             self.optimality = False
         else:

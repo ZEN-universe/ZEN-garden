@@ -67,9 +67,9 @@ class TimeStepsDicts(object):
         :param dict_all_sequence_time_steps: dict of all dict_sequence_time_steps
         """
 
-        for k, v in dict_all_sequence_time_steps["operation"]:
+        for k, v in dict_all_sequence_time_steps["operation"].items():
             self.set_sequence_time_steps(k, v, time_step_type="operation")
-        for k, v in dict_all_sequence_time_steps["yearly"]:
+        for k, v in dict_all_sequence_time_steps["yearly"].items():
             self.set_sequence_time_steps(k, v, time_step_type="yearly")
 
     def get_sequence_time_steps(self, element, time_step_type=None):

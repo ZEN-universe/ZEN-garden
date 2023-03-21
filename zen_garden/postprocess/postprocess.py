@@ -8,18 +8,18 @@ Description:  Class is defining the postprocessing of the results.
               The class takes as inputs the optimization problem (model) and the system configurations (system).
               The class contains methods to read the results and save them in a result dictionary (resultDict).
 ==========================================================================================================================================================================="""
-import logging
-import sys
-
-import numpy as np
-import pyomo.environ as pe
-import pandas as pd
-import pathlib
-import shutil
-import h5py
 import json
-import zlib
+import logging
 import os
+import pathlib
+import sys
+import zlib
+
+import h5py
+import numpy as np
+import pandas as pd
+import pyomo.environ as pe
+import xarray as xr
 
 from .. import utils
 from ..utils import RedirectStdStreams
@@ -27,13 +27,12 @@ from ..utils import RedirectStdStreams
 
 class Postprocess:
 
-    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None, save_opt=False):
+    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None):
         """postprocessing of the results of the optimization
         :param model: optimization model
         :param model_name: The name of the model used to name the output folder
         :param subfolder: The subfolder used for the results
         :param scenario_name: The name of the current scenario
-        :param save_opt: Save the dict of the opt as gszip
         """
         logging.info("Postprocess results")
         # get the necessary stuff from the model
@@ -42,7 +41,6 @@ class Postprocess:
         self.system = model.system
         self.analysis = model.analysis
         self.solver = model.solver
-        self.opt = model.opt
         self.energy_system = model.energy_system
         self.params = model.parameters
         self.vars = model.variables
@@ -73,13 +71,12 @@ class Postprocess:
         # save everything
         self.save_param()
         self.save_var()
-        self.save_duals()
+        # FIXME: not in linopy
+        #self.save_duals()
         self.save_system()
         self.save_analysis()
         self.save_scenarios()
         self.save_solver()
-        if save_opt:
-            self.save_opt()
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
@@ -146,45 +143,19 @@ class Postprocess:
             vals = getattr(self.params, param)
             doc = self.params.docs[param]
             index_list = self.get_index_list(doc)
-            if len(index_list) == 0:
-                index_names = None
-            elif len(index_list) == 1:
-                index_names = index_list[0]
+            # data frame
+            if isinstance(vals, xr.DataArray):
+                df = vals.to_dataframe("value").dropna()
+            # we have a scalar
             else:
-                index_names = index_list
-            # create a dictionary if necessary
-            if not isinstance(vals, dict):
-                indices = pd.Index(data=[0], name=index_names)
-                data = [vals]
-            # if the returned dict is emtpy we create a nan value
-            elif len(vals) == 0:
-                if len(index_list) > 1:
-                    indices = pd.MultiIndex(levels=[[]] * len(index_names), codes=[[]] * len(index_names), names=index_names)
-                else:
-                    indices = pd.Index(data=[], name=index_names)
-                data = []
-            # we read out everything
-            else:
-                indices = list(vals.keys())
-                data = list(vals.values())
+                df = pd.DataFrame(data=[vals], columns=["value"])
 
-                # create a multi index if necessary
-                if len(indices) >= 1 and isinstance(indices[0], tuple):
-                    if len(index_list) == len(indices[0]):
-                        indices = pd.MultiIndex.from_tuples(indices, names=index_names)
-                    else:
-                        indices = pd.MultiIndex.from_tuples(indices)
-                else:
-                    if len(index_list) == 1:
-                        indices = pd.Index(data=indices, name=index_names)
-                    else:
-                        indices = pd.Index(data=indices)
-
-            # create dataframe
-            df = pd.DataFrame(data=data, columns=["value"], index=indices)
+            # rename the index
+            if len(df.index.names) == len(index_list):
+                df.index.names = index_list
 
             # update dict
-            data_frames[param] = self._transform_df(df,doc)
+            data_frames[param] = self._transform_df(df, doc)
 
         # write to json
         self.write_file(self.name_dir.joinpath('param_dict'), data_frames)
@@ -195,9 +166,9 @@ class Postprocess:
 
         # dataframe serialization
         data_frames = {}
-        for var in self.model.component_objects(pe.Var, active=True):
-            if var.name in self.vars.docs:
-                doc = self.vars.docs[var.name]
+        for name, arr in self.model.solution.items():
+            if name in self.vars.docs:
+                doc = self.vars.docs[name]
                 index_list = self.get_index_list(doc)
                 if len(index_list) == 0:
                     index_names = None
@@ -208,27 +179,15 @@ class Postprocess:
             else:
                 index_list = []
                 doc = None
-            # get indices and values
-            indices = [index for index in var]
-            values = [getattr(var[index], "value", None) for index in indices]
-
-            # create a multi index if necessary
-            if len(indices) >= 1 and isinstance(indices[0], tuple):
-                if len(index_list) == len(indices[0]):
-                    indices = pd.MultiIndex.from_tuples(indices, names=index_names)
-                else:
-                    indices = pd.MultiIndex.from_tuples(indices)
-            else:
-                if len(index_list) == 1:
-                    indices = pd.Index(data=indices, name=index_names)
-                else:
-                    indices = pd.Index(data=indices)
 
             # create dataframe
-            df = pd.DataFrame(data=values, columns=["value"], index=indices)
+            df = arr.to_dataframe("value").dropna()
+            # rename the index
+            if len(df.index.names) == len(index_list):
+                df.index.names = index_list
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[var.name] = self._transform_df(df,doc)
+            data_frames[name] = self._transform_df(df,doc)
 
         self.write_file(self.name_dir.joinpath('var_dict'), data_frames)
         
@@ -329,16 +288,6 @@ class Postprocess:
             fname = self.name_dir.joinpath('solver')
         self.write_file(fname, self.solver, format="json")
 
-    def save_opt(self):
-        """
-        Saves the opt dict as json
-        """
-
-        self.write_file(self.name_dir.joinpath('opt_dict'), self.opt.__dict__)
-
-        # copy the log file
-        shutil.copy2(os.path.abspath(self.opt._log_file), self.name_dir)
-
     def save_sequence_time_steps(self, scenario=None):
         """
         Saves the dict_all_sequence_time_steps dict as json
@@ -356,6 +305,8 @@ class Postprocess:
             fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
 
         self.write_file(fname, self.dict_sequence_time_steps)
+
+
 
     def _transform_df(self,df,doc):
         """
@@ -389,9 +340,9 @@ class Postprocess:
             # recursive call
             if isinstance(v, dict):
                 out_dict[k] = self.flatten_dict(v)  # flatten the array to list
-            elif isinstance(v, np.ndarray):
+            elif isinstance(v, pd.Series):
                 # Note: list(v) creates a list of np objects v.tolist() not
-                out_dict[k] = v.tolist()
+                out_dict[k] = v.values.tolist()
             # take as is
             else:
                 out_dict[k] = v

@@ -9,16 +9,18 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
+import os
+import re
+from collections import defaultdict
+from copy import deepcopy
+
 import numpy as np
+import pandas as pd
+import pytest
 
 from zen_garden._internal import main
 from zen_garden.postprocess.results import Results
 
-import pytest
-from copy import deepcopy
-import pandas as pd
-import os
-from collections import defaultdict
 
 # fixtures
 ##########
@@ -42,6 +44,23 @@ def folder_path():
 # helper functions
 ##################
 
+def str2tuple(string):
+    """
+    Extracts the values of a sting tuple
+    :param string: The string
+    :return: A list of indices
+    """
+    indices = []
+    for s in string.split(","):
+        # string are between single quotes
+        if "'" in s:
+            indices.append(re.search("'([^']+)'", s).group(1))
+        # if it is not a sting it is a int
+        else:
+            indices.append(int(re.search("\d+", s)[0]))
+    return indices
+
+
 def compare_variables(test_model, optimization_setup,folder_path):
     # import csv file containing selected variable values of test model collection
     test_variables = pd.read_csv(os.path.join(folder_path, 'test_variables_readable.csv'),header=0, index_col=None)
@@ -50,31 +69,18 @@ def compare_variables(test_model, optimization_setup,folder_path):
     # iterate through dataframe rows
     for data_row in test_variables.values:
         # skip row if data doesn't correspond to selected test model
-        if data_row[0] != test_model:
-            continue
-        # get variable attribute of optimization_setup object by using string of the variable's name (e.g. optimization_setup.model.importCarrierFLow)
-        variable_attribute = getattr(optimization_setup.model,data_row[1])
-        # iterate through indices of current variable
-        for variable_index in variable_attribute.extract_values():
-            # ensure equality of dataRow index and variable index
-            if str(variable_index) == data_row[2]:
-                # check if variable value at current index differs from zero such that relative error can be computed
-                if variable_attribute.extract_values()[variable_index] != 0:
-                    # check if relative error exceeds limit of 10^-3, i.e. value differs from test value
-                    if abs(variable_attribute.extract_values()[variable_index] - data_row[3]) / variable_attribute.extract_values()[variable_index] > 10**(-3):
-                        if data_row[1] in failed_variables:
-                            failed_variables[data_row[1]][data_row[2]] = {"computedValue" : variable_attribute.extract_values()[variable_index]}
-                        else:
-                            failed_variables[data_row[1]] = {data_row[2] : {"computedValue" : variable_attribute.extract_values()[variable_index]}}
-                        failed_variables[data_row[1]][data_row[2]]["test_value"] = data_row[3]
-                else:
-                    # check if absolute error exceeds specified limit
-                    if abs(variable_attribute.extract_values()[variable_index] - data_row[3]) > 10**(-3):
-                        if data_row[1] in failed_variables:
-                            failed_variables[data_row[1]][data_row[2]] = {"computedValue" : variable_attribute.extract_values()[variable_index]}
-                        else:
-                            failed_variables[data_row[1]] = {data_row[2] : {"computedValue" : variable_attribute.extract_values()[variable_index]}}
-                        failed_variables[data_row[1]][data_row[2]]["test_value"] = data_row[3]
+        if data_row[0] == test_model:
+            # get variable attribute of optimization_setup object by using string of the variable's name (e.g. optimization_setup.model.variables["importCarrierFLow"])
+            variable_attribute = optimization_setup.model.solution[data_row[1]]
+
+            # extract the values
+            index = str2tuple(data_row[2])
+            variable_value = variable_attribute.loc[*index].item()
+
+            if not np.isclose(variable_value, data_row[3], rtol=1e-3):
+                failed_variables[data_row[1]][data_row[2]] = {"computedValue": variable_value,
+                                                              "test_value": data_row[3]}
+
     assertion_string = str()
     for failed_var in failed_variables:
         assertion_string += f"\n{failed_var}{failed_variables[failed_var]}"
