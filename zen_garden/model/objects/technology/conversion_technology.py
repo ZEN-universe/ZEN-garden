@@ -181,7 +181,6 @@ class ConversionTechnology(Technology):
 
         model = optimization_setup.model
         variables = optimization_setup.variables
-        sets = optimization_setup.sets
 
         def get_carrier_flow_bounds(index_values, index_names):
             """ return bounds of carrier_flow for bigM expression

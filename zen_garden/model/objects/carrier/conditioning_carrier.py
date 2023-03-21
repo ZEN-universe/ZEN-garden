@@ -45,7 +45,7 @@ class ConditioningCarrier(Carrier):
         variables = optimization_setup.variables
 
         # flow of imported carrier
-        variables.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0, np.inf),
+        variables.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0, np.inf),
                                doc="node- and time-dependent model endogenous carrier demand")
 
     @classmethod

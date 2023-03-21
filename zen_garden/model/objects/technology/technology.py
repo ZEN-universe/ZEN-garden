@@ -430,19 +430,20 @@ class Technology(Element):
         variables.add_variable(model, name="invested_capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='size of invested technology at location l and time t')
         # capex of building capacity
-        variables.add_variable(model, name="capex", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
-            doc='capex for building technology at location l and time t')
+        variables.add_variable(model, name="capex", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
+            bounds=(0,np.inf), doc='capex for building technology at location l and time t')
         # annual capex of having capacity
         variables.add_variable(model, name="capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='annual capex for having technology at location l')
         # total capex
-        variables.add_variable(model, name="capex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), bounds=(0,np.inf),
-            doc='total capex for installing all technologies in all locations at all times')
+        variables.add_variable(model, name="capex_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
+            bounds=(0,np.inf), doc='total capex for installing all technologies in all locations at all times')
         # opex
-        variables.add_variable(model, name="opex", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-            doc="opex for operating technology at location l and time t")
+        variables.add_variable(model, name="opex", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
+            bounds=(0,np.inf), doc="opex for operating technology at location l and time t")
         # total opex
-        variables.add_variable(model, name="opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), bounds=(0,np.inf), doc="total opex for operating technology at location l and time t")
+        variables.add_variable(model, name="opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
+            bounds=(0,np.inf), doc="total opex for operating technology at location l and time t")
         # carbon emissions
         variables.add_variable(model, name="carbon_emissions_technology", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
             doc="carbon emissions for operating technology at location l and time t")

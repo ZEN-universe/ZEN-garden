@@ -110,28 +110,28 @@ class Carrier(Element):
         sets = optimization_setup.sets
 
         # flow of imported carrier
-        variables.add_variable(model, name="import_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0,np.inf),
+        variables.add_variable(model, name="import_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
                                doc="node- and time-dependent carrier import from the grid")
         # flow of exported carrier
-        variables.add_variable(model, name="export_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0,np.inf),
+        variables.add_variable(model, name="export_carrier_flow", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
                                doc="node- and time-dependent carrier export from the grid")
         # carrier import/export cost
-        variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False,
+        variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
                                doc="node- and time-dependent carrier cost due to import and export")
         # total carrier import/export cost
-        variables.add_variable(model, name="cost_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False,
+        variables.add_variable(model, name="cost_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
                                doc="total carrier cost due to import and export")
         # carbon emissions
-        variables.add_variable(model, name="carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False,
+        variables.add_variable(model, name="carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
                                doc="carbon emissions of importing and exporting carrier")
         # carbon emissions carrier
-        variables.add_variable(model, name="carbon_emissions_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"), integer=False,
+        variables.add_variable(model, name="carbon_emissions_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
                                doc="total carbon emissions of importing and exporting carrier")
         # shed demand
-        variables.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0,np.inf),
+        variables.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
                                doc="shed demand of carrier")
         # cost of shed demand
-        variables.add_variable(model, name="cost_shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), integer=False, bounds=(0,np.inf),
+        variables.add_variable(model, name="cost_shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
                                doc="shed demand of carrier")
 
         # add pe.Sets of the child classes
@@ -355,6 +355,6 @@ class CarrierRules:
                 else:
                     vars = vars + v
             else:
-                constant += v
+                constant -= v
 
         return vars == constant
