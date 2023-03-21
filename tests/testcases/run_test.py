@@ -65,7 +65,7 @@ def compare_variables(test_model, optimization_setup,folder_path):
     # import csv file containing selected variable values of test model collection
     test_variables = pd.read_csv(os.path.join(folder_path, 'test_variables_readable.csv'),header=0, index_col=None)
     # dictionary to store variable names, indices, values and test values of variables which don't match the test values
-    failed_variables = {}
+    failed_variables = defaultdict(dict)
     # iterate through dataframe rows
     for data_row in test_variables.values:
         # skip row if data doesn't correspond to selected test model

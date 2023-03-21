@@ -9,12 +9,13 @@ Description:    Class containing parameters. This is a proxy for pyomo parameter
 import copy
 import itertools
 import logging
+import uuid
+from itertools import combinations
 from itertools import zip_longest
 
 import linopy as lp
 import numpy as np
 import pandas as pd
-import pyomo.environ as pe
 import xarray as xr
 
 
@@ -422,6 +423,71 @@ class Constraint(Component):
 
         else:
             logging.warning(f"{name} already added. Can only be added once")
+
+    def add_pw_constraint(self, model, index_values, yvar, xvar, break_points, f_vals, cons_type="EQ"):
+        """
+        Adds a piece-wise linear constraint of the type f(x) = y for each index in the index_values, where f is defined
+        by the breakpoints and f_vals (x_1, y_1), ..., (x_n, y_n)
+        Note that these method will create helper variables in form of a S0S2, sources:
+         https://support.gurobi.com/hc/en-us/articles/360013421331-How-do-I-model-piecewise-linear-functions-
+         https://medium.com/bcggamma/hands-on-modeling-non-linearity-in-linear-optimization-problems-f9da34c23c9a
+         :param model: The model to add the constraints to
+        :param index_values: A list of index values that will be used to build the constraints
+        :param yvar: The name of the yvar, a variable compatible with the index values used for y
+        :param xvar: The name of the xvar, a variable compatible with the index values used for x
+        :param break_points: A mapping index -> list that provides the breakpoints for each index
+        :param f_vals: A mapping index -> list that provides the function values for each index
+        :param cons_type: Type of the constraint (currently only EQ supported)
+        """
+
+        if cons_type != "EQ":
+            raise NotImplementedError("Currently only EQ constraints are supported")
+
+        # get the variables
+        xvar = model.variables[xvar]
+        yvar = model.variables[yvar]
+
+        # cycle through all indices
+        for index_val in index_values:
+            # extract everyting
+            x = xvar[*index_val]
+            y = yvar[*index_val]
+            br = xr.DataArray(break_points[index_val])
+            fv = xr.DataArray(f_vals[index_val])
+
+            if len(br) != len(fv):
+                raise ValueError("Number of break points should be equal to number of function values for each "
+                                 "index value.")
+
+            # create sos vars
+            sos2_vars = self._get_nonnegative_sos2_vars(model, len(br))
+
+            # add the constraints
+            model.add_constraints(x.to_linexpr() - (br * sos2_vars).sum() == 0)
+            model.add_constraints(y.to_linexpr() - (fv * sos2_vars).sum() == 0)
+
+    def _get_nonnegative_sos2_vars(self, model, n):
+        """
+        Creates a list of continues nonnegative variables in an SOS2
+        :param model: The model to add the variables
+        :param n: The number of variables to create
+        :return: A list of variables that are SOS2 constrained
+        """
+
+        # vars and binaries
+        sos2_var = model.add_variables(lower=np.zeros(n), binary=False, name=f"sos2_var_{uuid.uuid1()}", coords=(np.arange(n), ))
+        sos2_var_bin = model.add_variables(binary=True, name=f"sos2_var_bin_{uuid.uuid1()}", coords=(np.arange(n), ))
+
+        # add the constraints
+        model.add_constraints(sos2_var.sum() == 1.0)
+        model.add_constraints(sos2_var - sos2_var_bin <= 0.0)
+        model.add_constraints(sos2_var_bin.sum() <= 2.0)
+        combi_index = xr.DataArray([c for c in combinations(np.arange(n), 2) if c[0] + 1 != c[1]])
+        model.add_constraints(sos2_var_bin.sel({"dim_0": combi_index[:, 0]})
+                              + sos2_var_bin.sel({"dim_0": combi_index[:, 1]})
+                              <= 1.0)
+
+        return sos2_var
 
     def add_constraint_disjunct(self, model: lp.Model, name, index_sets, rule, doc=""):
         """ initialization of a variable

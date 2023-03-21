@@ -254,47 +254,46 @@ class ConversionTechnology(Technology):
         """ constructs the pe.Constraints of the class <ConversionTechnology>
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
+        constraints = optimization_setup.constraints
         # add pwa constraints
         rules = ConversionTechnologyRules(optimization_setup)
         # capex
         set_pwa_capex = cls.create_custom_set(["set_conversion_technologies", "set_capex_pwa", "set_nodes", "set_time_steps_yearly"], optimization_setup)
         set_linear_capex = cls.create_custom_set(["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"], optimization_setup)
         if len(set_pwa_capex[0]) > 0:
-            # FIXME: implement this
             # if set_pwa_capex contains technologies:
             pwa_breakpoints, pwa_values = cls.calculate_pwa_breakpoints_values(optimization_setup, set_pwa_capex[0], "capex")
-            model.constraint_pwa_capex = pe.Piecewise(set_pwa_capex[0], model.capex_approximation, model.capacity_approximation, pw_pts=pwa_breakpoints, pw_constr_type="EQ", f_rule=pwa_values,
-                                                      unbounded_domain_var=True, warn_domain_coverage=False, pw_repn="BIGM_BIN")
+            constraints.add_pw_constraint(model, index_values=set_pwa_capex[0], yvar="capex_approximation", xvar="capacity_approximation",
+                                          break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ")
         if set_linear_capex[0]:
             # if set_linear_capex contains technologies:
-            optimization_setup.constraints.add_constraint_rule(model, name="constraint_linear_capex", index_sets=set_linear_capex, rule=rules.constraint_linear_capex_rule, doc="Linear relationship in capex")
+            constraints.add_constraint_rule(model, name="constraint_linear_capex", index_sets=set_linear_capex, rule=rules.constraint_linear_capex_rule, doc="Linear relationship in capex")
         # Conversion Efficiency
         set_pwa_conver_efficiency = cls.create_custom_set(["set_conversion_technologies", "set_conver_efficiency_pwa", "set_nodes", "set_time_steps_operation"], optimization_setup)
         set_linear_conver_efficiency = cls.create_custom_set(["set_conversion_technologies", "set_conver_efficiency_linear", "set_nodes", "set_time_steps_operation"], optimization_setup)
         if len(set_pwa_conver_efficiency[0]) > 0:
-            # FIXME: implement this
             # if set_pwa_conver_efficiency contains technologies:
             pwa_breakpoints, pwa_values = cls.calculate_pwa_breakpoints_values(optimization_setup, set_pwa_conver_efficiency[0], "conver_efficiency")
-            model.constraint_pwa_conver_efficiency = pe.Piecewise(set_pwa_conver_efficiency[0], model.dependent_flow_approximation, model.reference_flow_approximation, pw_pts=pwa_breakpoints,
-                                                                  pw_constr_type="EQ", f_rule=pwa_values, unbounded_domain_var=True, warn_domain_coverage=False, pw_repn="BIGM_BIN")
+            constraints.add_pw_constraint(model, index_values=set_pwa_conver_efficiency[0], yvar="dependent_flow_approximation", xvar="reference_flow_approximation",
+                                          break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ")
         if set_linear_conver_efficiency[0]:
             # if set_linear_conver_efficiency contains technologies:
-            optimization_setup.constraints.add_constraint_rule(model, name="constraint_linear_conver_efficiency", index_sets=set_linear_conver_efficiency, rule=rules.constraint_linear_conver_efficiency_rule,
+            constraints.add_constraint_rule(model, name="constraint_linear_conver_efficiency", index_sets=set_linear_conver_efficiency, rule=rules.constraint_linear_conver_efficiency_rule,
                 doc="Linear relationship in conver_efficiency")  # Coupling constraints
         # couple the real variables with the auxiliary variables
-        optimization_setup.constraints.add_constraint_rule(model, name="constraint_capex_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup),
+        constraints.add_constraint_rule(model, name="constraint_capex_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_capex_coupling_rule, doc="couples the real capex variables with the approximated variables")
         # capacity
-        optimization_setup.constraints.add_constraint_rule(model, name="constraint_capacity_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup),
+        constraints.add_constraint_rule(model, name="constraint_capacity_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_capacity_coupling_rule, doc="couples the real capacity variables with the approximated variables")
 
         # flow coupling constraints for technologies, which are not modeled with an on-off-behavior
         # reference flow coupling
-        optimization_setup.constraints.add_constraint_rule(model, name="constraint_reference_flow_coupling",
+        constraints.add_constraint_rule(model, name="constraint_reference_flow_coupling",
             index_sets=cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup),
             rule=rules.constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables")
         # dependent flow coupling
-        optimization_setup.constraints.add_constraint_rule(model, name="constraint_dependent_flow_coupling",
+        constraints.add_constraint_rule(model, name="constraint_dependent_flow_coupling",
             index_sets=cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup),
             rule=rules.constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables")
 

@@ -401,16 +401,16 @@ class Technology(Element):
                 _capacity_limit_technology = getattr(params, "capacity_limit_technology" + _energy_string)
                 existing_capacities = 0
                 for id_existing_technology in sets["set_existing_technologies"][tech]:
-                    if params.lifetime_existing_technology[tech, loc, id_existing_technology] > params.lifetime_technology[tech]:
-                        if time > params.lifetime_existing_technology[tech, loc, id_existing_technology] - params.lifetime_technology[tech]:
-                            existing_capacities += _existing_capacity[tech, capacity_type, loc, id_existing_technology]
-                    elif time <= params.lifetime_existing_technology[tech, loc, id_existing_technology] + 1:
-                        existing_capacities += _existing_capacity[tech, capacity_type, loc, id_existing_technology]
+                    if params.lifetime_existing_technology.loc[tech, loc, id_existing_technology] > params.lifetime_technology.loc[tech]:
+                        if time > params.lifetime_existing_technology.loc[tech, loc, id_existing_technology] - params.lifetime_technology.loc[tech]:
+                            existing_capacities += _existing_capacity.loc[tech, capacity_type, loc, id_existing_technology]
+                    elif time <= params.lifetime_existing_technology.loc[tech, loc, id_existing_technology] + 1:
+                        existing_capacities += _existing_capacity.loc[tech, capacity_type, loc, id_existing_technology]
 
-                max_built_capacity = len(sets["set_time_steps_yearly"]) * _max_built_capacity[tech, capacity_type]
-                max_capacity_limit_technology = _capacity_limit_technology[tech, capacity_type, loc]
+                max_built_capacity = len(sets["set_time_steps_yearly"]) * _max_built_capacity.loc[tech, capacity_type]
+                max_capacity_limit_technology = _capacity_limit_technology.loc[tech, capacity_type, loc]
                 bound_capacity = min(max_built_capacity + existing_capacities, max_capacity_limit_technology + existing_capacities)
-                return 0, bound_capacity
+                return 0, bound_capacity.item()
             else:
                 return 0, np.inf
 

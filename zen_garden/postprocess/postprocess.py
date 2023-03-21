@@ -170,12 +170,8 @@ class Postprocess:
             if name in self.vars.docs:
                 doc = self.vars.docs[name]
                 index_list = self.get_index_list(doc)
-                if len(index_list) == 0:
-                    index_names = None
-                elif len(index_list) == 1:
-                    index_names = index_list[0]
-                else:
-                    index_names = index_list
+            elif name.startswith("sos2_var"):
+                continue
             else:
                 index_list = []
                 doc = None
