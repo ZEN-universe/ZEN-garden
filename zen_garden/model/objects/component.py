@@ -265,7 +265,15 @@ class Parameter(Component):
                 data.index = pd.Index(sum(data.index.values, ()))
             if len(data.index.names) == len(index_list):
                 data.index.names = index_list
+            # transform the type of the coords to str if necessary
             data = data.to_xarray()
+            coords_dict = {}
+            for k, v in data.coords.dtypes.items():
+                if v.hasobject:
+                    coords_dict[k] = data.coords[k].astype(str)
+                else:
+                    coords_dict[k] = data.coords[k]
+            data = data.assign_coords(coords_dict)
         return data
 
     def as_xarray(self, pname, indices):
@@ -398,3 +406,57 @@ class Constraint(Component):
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
         else:
             logging.warning(f"{name} already added. Can only be added once")
+
+    def add_constraint_disjunct(self, model: lp.Model, name, index_sets, rule, doc=""):
+        """ initialization of a variable
+        :param model: The linopy model
+        :param name: name of variable
+        :param index_sets: indices and sets by which the variable is indexed
+        :param rule: constraint rule
+        :param doc: docstring of variable"""
+
+        if name not in self.docs.keys():
+            index_values, index_list = self.get_index_names_data(index_sets)
+
+            # if there is nothing we just return
+            if len(index_values) == 0:
+                return
+
+            # create the mask
+            index_arrs = IndexSet.tuple_to_arr(index_values)
+            coords = [np.unique(t.data) for t in index_arrs]
+            coords = xr.DataArray(coords=coords, dims=index_list).coords
+            shape = tuple(map(len, coords.values()))
+
+            # if we only have a single index, there is no need to unpack
+            if len(index_list) == 1:
+                cons = [rule(arg) for arg in index_values]
+            else:
+                cons = [rule(*arg) for arg in index_values]
+
+            # low level magic
+            exprs = [con.lhs for con in cons]
+            coeffs = np.array(tuple(zip_longest(*(e.coeffs for e in exprs), fillvalue=np.nan)))
+            vars = np.array(tuple(zip_longest(*(e.vars for e in exprs), fillvalue=-1)))
+
+            nterm = vars.shape[0]
+            coeffs = coeffs.reshape((nterm, -1))
+            vars = vars.reshape((nterm, -1))
+
+            xr_coeffs = xr.DataArray(np.full(shape=(nterm, ) + shape, fill_value=np.nan), coords, dims=("_term", *coords))
+            xr_coeffs.loc[:,*index_arrs] = coeffs
+            xr_vars = xr.DataArray(np.full(shape=(nterm, ) + shape, fill_value=-1), coords, dims=("_term", *coords))
+            xr_vars.loc[:, *index_arrs] = vars
+            xr_ds = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}).transpose(..., "_term")
+            xr_lhs = lp.LinearExpression(xr_ds, model)
+            xr_sign = xr.DataArray("==", coords, dims=index_list)
+            xr_sign.loc[*index_arrs] = [c.sign for c in cons]
+            xr_rhs = xr.DataArray(0, coords, dims=index_list)
+            xr_rhs.loc[*index_arrs] = [c.rhs for c in cons]
+            model.add_constraints(xr_lhs, xr_sign, xr_rhs, name=name)
+
+            # save constraint doc
+            self.docs[name] = self.compile_doc_string(doc, index_list, name)
+        else:
+            logging.warning(f"{name} already added. Can only be added once")
+
