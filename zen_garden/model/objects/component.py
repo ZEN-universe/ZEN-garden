@@ -103,14 +103,21 @@ class IndexSet(Component):
         return self.index_sets[name]
 
     @staticmethod
-    def tuple_to_arr(index_values):
+    def tuple_to_arr(index_values, index_list):
         """
         Transforms a list of tuples into a list of xarrays containing all elements from the corresponding tuple entry
         :param index_values: The list of tuples with the index values
+        :param index_list: The names of the indices, used in case of emtpy values
         :return: A list of arrays
         """
 
+        # if the list is empty
+        if len(index_values) == 0:
+            return [xr.DataArray([]) for _ in index_list]
+
+        # multiple indices
         if isinstance(index_values[0], tuple):
+            # there might be more index names than tuple members
             ndims = len(index_values[0])
             tmp_vals = [[] for _ in range(ndims)]
             for t in index_values:
@@ -133,7 +140,7 @@ class IndexSet(Component):
         """
 
         # get the coords
-        index_arrs = IndexSet.tuple_to_arr(index_values)
+        index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
         coords = [np.unique(t.data) for t in index_arrs]
 
         # init the mask
@@ -368,11 +375,16 @@ class Constraint(Component):
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
+
+            # if the list of values is emtpy, there is nothing to add
+            if len(index_values) == 0:
+                return
+
             # save constraint doc
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
 
             # create the mask
-            index_arrs = IndexSet.tuple_to_arr(index_values)
+            index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
             coords = [np.unique(t.data) for t in index_arrs]
 
             # there might be an extra label
@@ -427,7 +439,7 @@ class Constraint(Component):
                 return
 
             # create the mask
-            index_arrs = IndexSet.tuple_to_arr(index_values)
+            index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
             coords = [np.unique(t.data) for t in index_arrs]
             coords = xr.DataArray(coords=coords, dims=index_list).coords
             shape = tuple(map(len, coords.values()))

@@ -191,7 +191,7 @@ class ConversionTechnology(Technology):
             energy_system = optimization_setup.energy_system
 
             # init the bounds
-            index_arrs = sets.tuple_to_arr(index_values)
+            index_arrs = sets.tuple_to_arr(index_values, index_names)
             coords = [np.unique(t.data) for t in index_arrs]
             lower = xr.DataArray(0.0, coords=coords)
             upper = xr.DataArray(np.inf, coords=coords)

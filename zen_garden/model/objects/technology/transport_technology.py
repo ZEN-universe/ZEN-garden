@@ -143,13 +143,14 @@ class TransportTechnology(Technology):
         variables = optimization_setup.variables
         sets = optimization_setup.sets
 
-        def get_carrier_flow_bounds(index_values):
+        def get_carrier_flow_bounds(index_values, index_list):
             """ return bounds of carrier_flow for bigM expression
             :param index_values: list of tuples with the index values
+            :param index_list: The names of the indices
             :return bounds: bounds of carrier_flow"""
 
             # get the arrays
-            tech_arr, edge_arr, time_arr = sets.tuple_to_arr(index_values)
+            tech_arr, edge_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
             # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
             time_step_year = xr.DataArray([optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time) for tech, time in zip(tech_arr.data, time_arr.data)])
 
@@ -159,7 +160,7 @@ class TransportTechnology(Technology):
 
         # flow of carrier on edge
         index_values, index_names = cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup)
-        bounds = get_carrier_flow_bounds(index_values)
+        bounds = get_carrier_flow_bounds(index_values, index_names)
         variables.add_variable(model, name="carrier_flow", index_sets=(index_values, index_names),
             bounds=bounds, doc='carrier flow through transport technology on edge i and time t')
         # loss of carrier on edge
