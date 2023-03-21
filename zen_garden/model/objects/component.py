@@ -368,10 +368,16 @@ class Constraint(Component):
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
+            # save constraint doc
+            self.docs[name] = self.compile_doc_string(doc, index_list, name)
 
             # create the mask
             index_arrs = IndexSet.tuple_to_arr(index_values)
             coords = [np.unique(t.data) for t in index_arrs]
+
+            # there might be an extra label
+            if len(index_list) > 1 and len(index_list) != len(index_values[0]):
+                index_list = [f"dim_{i}" for i in range(len(index_values[0]))]
             coords = xr.DataArray(coords=coords, dims=index_list).coords
             shape = tuple(map(len, coords.values()))
 
@@ -402,8 +408,6 @@ class Constraint(Component):
             xr_rhs.loc[*index_arrs] = [c.rhs for c in cons]
             model.add_constraints(xr_lhs, xr_sign, xr_rhs, name=name)
 
-            # save constraint doc
-            self.docs[name] = self.compile_doc_string(doc, index_list, name)
         else:
             logging.warning(f"{name} already added. Can only be added once")
 

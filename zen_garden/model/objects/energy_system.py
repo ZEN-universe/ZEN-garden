@@ -258,25 +258,25 @@ class EnergySystem:
 
         # get selected objective rule
         if self.optimization_setup.analysis["objective"] == "total_cost":
-            objective_rule = self.rules.objective_total_cost_rule
+            objective_rule = self.rules.objective_total_cost_rule(self.optimization_setup.model)
         elif self.optimization_setup.analysis["objective"] == "total_carbon_emissions":
-            objective_rule = self.rules.objective_total_carbon_emissions_rule
+            objective_rule = self.rules.objective_total_carbon_emissions_rule(self.optimization_setup.model)
         elif self.optimization_setup.analysis["objective"] == "risk":
             logging.info("Objective of minimizing risk not yet implemented")
-            objective_rule = self.rules.objective_risk_rule
+            objective_rule = self.rules.objective_risk_rule(self.optimization_setup.model)
         else:
             raise KeyError(f"Objective type {self.optimization_setup.analysis['objective']} not known")
 
         # get selected objective sense
         if self.optimization_setup.analysis["sense"] == "minimize":
-            objective_sense = pe.minimize
+            logging.info("Using sense 'minimize'")
         elif self.optimization_setup.analysis["sense"] == "maximize":
-            objective_sense = pe.maximize
+            raise NotImplementedError("Currently only minimization supported")
         else:
             raise KeyError(f"Objective sense {self.optimization_setup.analysis['sense']} not known")
 
         # construct objective
-        self.optimization_setup.model.objective = pe.Objective(rule=objective_rule, sense=objective_sense)
+        self.optimization_setup.model.add_objective(objective_rule.to_linexpr())
 
 
 class EnergySystemRules:
@@ -382,17 +382,20 @@ class EnergySystemRules:
     # objective rules
     def objective_total_cost_rule(self, model):
         """objective function to minimize the total cost"""
+        sets = self.optimization_setup.sets
         system = self.optimization_setup.system
-        return (sum(model.NPV[year] * # discounted utility function
-                    ((1 / (1 + system["social_discount_rate"])) ** (system["interval_between_years"] * (year - model.set_time_steps_yearly.at(1)))) for year in model.set_time_steps_yearly))
+        return (sum(model.variables["NPV"][year] * # discounted utility function
+                    ((1 / (1 + system["social_discount_rate"])) ** (system["interval_between_years"] * (year - sets["set_time_steps_yearly"][0]))) for year in sets["set_time_steps_yearly"]))
 
     def objective_NPV_rule(self, model):
         """ objective function to minimize NPV """
-        return (sum(model.NPV[year] for year in model.set_time_steps_yearly))
+        sets = self.optimization_setup.sets
+        return (sum(model.variables["NPV"][year] for year in sets["set_time_steps_yearly"]))
 
     def objective_total_carbon_emissions_rule(self, model):
         """objective function to minimize total emissions"""
-        return (sum(model.carbon_emissions_total[year] for year in model.set_time_steps_yearly))
+        sets = self.optimization_setup.sets
+        return (sum(model.variables["carbon_emissions_total"][year] for year in sets["set_time_steps_yearly"]))
 
     def objective_risk_rule(self, model):
         """objective function to minimize total risk"""

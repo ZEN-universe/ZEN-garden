@@ -240,19 +240,23 @@ class OptimizationSetup(object):
         # create empty ConcreteModel
         self.model = lp.Model()
         # we need to reset the components to not carry them over
+        self.sets = IndexSet()
         self.variables = Variable()
         self.parameters = Parameter()
         self.constraints = Constraint()
-        self.sets = IndexSet()
         # add duals
+        # FIXME: Not with linopy
         self.add_duals()
         # define and construct components of self.model
         Element.construct_model_components(self)
+        # FIXME: Not with linopy
         logging.info("Apply Big-M GDP ")
         # add transformation factory so that disjuncts are solved
-        pe.TransformationFactory("gdp.bigm").apply_to(self.model)
+        # FIXME: Not with linopy
+        # pe.TransformationFactory("gdp.bigm").apply_to(self.model)
         # find smallest and largest coefficient and RHS
-        self.analyze_numerics()
+        # TODO: Implement this in lino
+        #self.analyze_numerics()
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """

@@ -14,6 +14,7 @@ import logging
 import numpy as np
 import xarray as xr
 import pyomo.environ as pe
+import linopy as lp
 
 from .technology import Technology
 
@@ -172,13 +173,13 @@ class TransportTechnology(Technology):
         model = optimization_setup.model
         rules = TransportTechnologyRules(optimization_setup)
         # Carrier Flow Losses 
-        optimization_setup.constraints.add_constraint(model, name="constraint_transport_technology_losses_flow", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup),
+        optimization_setup.constraints.add_constraint_rule(model, name="constraint_transport_technology_losses_flow", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup),
             rule=rules.constraint_transport_technology_losses_flow_rule, doc='Carrier loss due to transport with through transport technology')
         # capex of transport technologies
-        optimization_setup.constraints.add_constraint(model, name="constraint_transport_technology_capex", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup),
+        optimization_setup.constraints.add_constraint_rule(model, name="constraint_transport_technology_capex", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_transport_technology_capex_rule, doc='Capital expenditures for installing transport technology')
         # bidirectional transport technologies: capacity on edge must be equal in both directions
-        optimization_setup.constraints.add_constraint(model, name="constraint_transport_technology_bidirectional", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup),
+        optimization_setup.constraints.add_constraint_rule(model, name="constraint_transport_technology_bidirectional", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_transport_technology_bidirectional_rule, doc='Forces that transport technology capacity must be equal in both directions')
 
     # defines disjuncts if technology on/off
@@ -212,32 +213,43 @@ class TransportTechnologyRules:
         :param optimization_setup: The OptimizationSetup the element is part of
         """
         self.optimization_setup = optimization_setup
+        placeholder_lhs = lp.expressions.ScalarLinearExpression((np.nan,), (-1,), lp.Model())
+        self.emtpy_cons = lp.constraints.AnonymousScalarConstraint(placeholder_lhs, "=", np.nan)
 
     ### --- functions with constraint rules --- ###
-    def constraint_transport_technology_losses_flow_rule(self, model, tech, edge, time):
+    def constraint_transport_technology_losses_flow_rule(self, tech, edge, time):
         """compute the flow losses for a carrier through a transport technology"""
         # get parameter object
         params = self.optimization_setup.parameters
-        if np.isinf(params.distance[tech, edge]):
-            return model.carrier_loss[tech, edge, time] == 0
+        model = self.optimization_setup.model
+        if np.isinf(params.distance.loc[tech, edge]):
+            return model.variables["carrier_loss"][tech, edge, time] == 0
         else:
-            return (model.carrier_loss[tech, edge, time] == params.distance[tech, edge] * params.loss_flow[tech] * model.carrier_flow[tech, edge, time])
+            return (model.variables["carrier_loss"][tech, edge, time]
+                    - params.distance.loc[tech, edge].item() * params.loss_flow.loc[tech].item() * model.variables["carrier_flow"][tech, edge, time]
+                    == 0)
 
-    def constraint_transport_technology_capex_rule(self, model, tech, edge, time):
+    def constraint_transport_technology_capex_rule(self, tech, edge, time):
         """ definition of the capital expenditures for the transport technology"""
         # get parameter object
         params = self.optimization_setup.parameters
-        if np.isinf(params.distance[tech, edge]):
-            return model.built_capacity[tech, "power", edge, time] == 0
+        model = self.optimization_setup.model
+        if np.isinf(params.distance.loc[tech, edge]):
+            return model.variables["built_capacity"][tech, "power", edge, time] == 0
         else:
-            return (model.capex[tech, "power", edge, time] == model.built_capacity[tech, "power", edge, time] * params.capex_specific_transport[tech, edge, time] + model.install_technology[
-                tech, "power", edge, time] * params.distance[tech, edge] * params.capex_per_distance[tech, edge, time])
+            return (model.variables["capex"][tech, "power", edge, time]
+                    - model.variables["built_capacity"][tech, "power", edge, time] * params.capex_specific_transport.loc[tech, edge, time].item()
+                    - model.variables["install_technology"][tech, "power", edge, time] * (params.distance.loc[tech, edge].item() * params.capex_per_distance.loc[tech, edge, time].item())
+                    == 0)
 
-    def constraint_transport_technology_bidirectional_rule(self, model, tech, edge, time):
+    def constraint_transport_technology_bidirectional_rule(self, tech, edge, time):
         """ Forces that transport technology capacity must be equal in both direction"""
         system = self.optimization_setup.system
+        model = self.optimization_setup.model
         if tech in system["set_bidirectional_transport_technologies"]:
             _reversed_edge = self.get_reversed_edge(edge)
-            return (model.built_capacity[tech, "power", edge, time] == model.built_capacity[tech, "power", _reversed_edge, time])
+            return (model.variables["built_capacity"][tech, "power", edge, time]
+                    - model.variables["built_capacity"][tech, "power", _reversed_edge, time]
+                    == 0)
         else:
-            return pe.Constraint.Skip
+            return self.emtpy_cons
