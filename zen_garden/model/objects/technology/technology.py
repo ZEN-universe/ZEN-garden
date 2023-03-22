@@ -510,17 +510,18 @@ class Technology(Element):
 
         # disjunct if technology is on
         # FIXME: Actually implement disjunt shit
-        constraints.add_constraint_disjunct(model, name="disjunct_on_technology",
+        # the disjunction variables
+        tech_on_var = model.add_variables(name="tech_on_var", binary=True)
+        tech_off_var = model.add_variables(name="tech_off_var", binary=True)
+        model.add_constraints(tech_on_var + tech_off_var == 1, name="tech_on_off_cons")
+
+        constraints.add_constraint_rule(model, name="disjunct_on_technology",
             index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_on_technology_rule,
             doc="disjunct to indicate that technology is on")
         # disjunct if technology is off
-        constraints.add_constraint_disjunct(model, name="disjunct_off_technology",
+        constraints.add_constraint_rule(model, name="disjunct_off_technology",
             index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_off_technology_rule,
             doc="disjunct to indicate that technology is off")
-        # disjunction
-        constraints.add_constraint_disjunct(model, name="disjunction_decision_on_off_technology",
-            index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.expression_link_disjuncts_rule,
-            doc="disjunction to link the on off disjuncts")
 
         # add pe.Constraints of the child classes
         for subclass in cls.__subclasses__():
@@ -543,28 +544,23 @@ class TechnologyRules:
         placeholder_lhs = lp.expressions.ScalarLinearExpression((np.nan,), (-1,), lp.Model())
         self.emtpy_cons = lp.constraints.AnonymousScalarConstraint(placeholder_lhs, "=", np.nan)
 
-    def disjunct_on_technology_rule(self, disjunct, tech, capacity_type, loc, time):
+    def disjunct_on_technology_rule(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
         for subclass in Technology.__subclasses__():
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
                 # disjunct is defined in corresponding subclass
-                subclass.disjunct_on_technology_rule(self.optimization_setup, disjunct, tech, capacity_type, loc, time)
-                break
+                subclass.disjunct_on_technology_rule(self.optimization_setup, tech, capacity_type, loc, time)
+                return None
 
-    def disjunct_off_technology_rule(self, disjunct, tech, capacity_type, loc, time):
+    def disjunct_off_technology_rule(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is off
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
         for subclass in Technology.__subclasses__():
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
                 # disjunct is defined in corresponding subclass
-                subclass.disjunct_off_technology_rule(disjunct, tech, capacity_type, loc, time)
-                break
-
-    def expression_link_disjuncts_rule(self, model, tech, capacity_type, loc, time):
-        """ link disjuncts for technology is on and technology is off """
-        return ([model.disjunct_on_technology[tech, capacity_type, loc, time], model.disjunct_off_technology[tech, capacity_type, loc, time]])
-
+                subclass.disjunct_off_technology_rule(self.optimization_setup, tech, capacity_type, loc, time)
+                return None
 
 
     ### --- constraint rules --- ###

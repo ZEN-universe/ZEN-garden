@@ -170,7 +170,7 @@ class Postprocess:
             if name in self.vars.docs:
                 doc = self.vars.docs[name]
                 index_list = self.get_index_list(doc)
-            elif name.startswith("sos2_var"):
+            elif name.startswith("sos2_var") or name in ["tech_on_var", "tech_off_var"]:
                 continue
             else:
                 index_list = []

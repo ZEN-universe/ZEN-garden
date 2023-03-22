@@ -185,7 +185,7 @@ class TransportTechnology(Technology):
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, disjunct, tech, capacity_type, edge, time):
+    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time):
         """definition of disjunct constraints if technology is on"""
         model = disjunct.model()
         # get parameter object

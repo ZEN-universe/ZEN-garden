@@ -299,37 +299,48 @@ class ConversionTechnology(Technology):
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, disjunct, tech, capacity_type, node, time):
+    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
         """definition of disjunct constraints if technology is On"""
-        model = disjunct.model()
         # get parameter object
+        model = optimization_setup.model
         params = optimization_setup.parameters
+        constraints = optimization_setup.constraints
+        sets = optimization_setup.sets
         energy_system = optimization_setup.energy_system
-        reference_carrier = model.set_reference_carriers[tech].at(1)
-        if reference_carrier in model.set_input_carriers[tech]:
-            reference_flow = model.input_flow[tech, reference_carrier, node, time]
+        reference_carrier = sets["set_reference_carriers"][tech][0]
+        if reference_carrier in sets["set_input_carriers"][tech]:
+            reference_flow = model.variables["input_flow"][tech, reference_carrier, node, time]
         else:
-            reference_flow = model.output_flow[tech, reference_carrier, node, time]
+            reference_flow = model.variables["output_flow"][tech, reference_carrier, node, time]
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, time)
         # disjunct constraints min load
-        disjunct.constraint_min_load = pe.Constraint(expr=reference_flow >= params.min_load[tech, capacity_type, node, time] * model.capacity[tech, capacity_type, node, time_step_year])
+        model.add_constraints(reference_flow.to_linexpr()
+                              - model.variables["capacity"][tech, capacity_type, node, time_step_year].to_linexpr(params.min_load.loc[tech, capacity_type, node, time].item())
+                              - constraints.M*model.variables["tech_on_var"]
+                              >= -constraints.M)
         # couple reference flows
         rules = ConversionTechnologyRules(optimization_setup)
-        optimization_setup.constraints.add_constraint(disjunct, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
-            index_sets=[[[tech], model.set_dependent_carriers[tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
-            rule=rules.constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables", )
+        constraints.add_constraint_rule(model, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
+            index_sets=[[[tech], sets["set_dependent_carriers"][tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
+            rule=rules.constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
         # couple dependent flows
-        optimization_setup.constraints.add_constraint(disjunct, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
-            index_sets=[[[tech], model.set_dependent_carriers[tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
-            rule=rules.constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables", )
+        constraints.add_constraint_rule(model, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
+            index_sets=[[[tech], sets["set_dependent_carriers"][tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
+            rule=rules.constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
 
     @classmethod
-    def disjunct_off_technology_rule(cls, disjunct, tech, capacity_type, node, time):
+    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
         """definition of disjunct constraints if technology is off"""
-        model = disjunct.model()
-        disjunct.constraint_no_load = pe.Constraint(expr=sum(model.input_flow[tech, input_carrier, node, time] for input_carrier in model.set_input_carriers[tech]) + sum(
-            model.output_flow[tech, output_carrier, node, time] for output_carrier in model.set_output_carriers[tech]) == 0)
+        sets = optimization_setup.sets
+        model = optimization_setup.model
+        constraints = optimization_setup.constraints
+        lhs = sum(model.variables["input_flow"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
+              + sum(model.variables["input_flow"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
+              + sum(model.variables["output_flow"][tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
+        # equal cons -> to cons
+        model.add_constraints(lhs.to_linexpr() + model.variables["tech_off_var"] * constraints.M <= constraints.M)
+        model.add_constraints(lhs.to_linexpr() - model.variables["tech_off_var"] * constraints.M >= -constraints.M)
 
     @classmethod
     def calculate_pwa_breakpoints_values(cls, optimization_setup, setPWA, type_pwa):

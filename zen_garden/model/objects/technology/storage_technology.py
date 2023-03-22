@@ -210,10 +210,10 @@ class StorageTechnology(Technology):
         # defines disjuncts if technology on/off
 
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, disjunct, tech, capacity_type, node, time):
+    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
         """definition of disjunct constraints if technology is on"""
-        model = disjunct.model()
         params = optimization_setup.parameters
+        model = optimization_setup.model
         energy_system = optimization_setup.energy_system
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech,time)

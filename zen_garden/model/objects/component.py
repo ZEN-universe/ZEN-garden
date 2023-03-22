@@ -349,6 +349,8 @@ class Variable(Component):
 class Constraint(Component):
     def __init__(self):
         super().__init__()
+        # This is the big-M for the constraints
+        self.M = np.iinfo(np.int32).max
 
     def add_constraint_block(self, model: lp.Model, name, constraint, doc=""):
         """ initialization of a constraint
@@ -366,12 +368,14 @@ class Constraint(Component):
         else:
             logging.warning(f"{name} already added. Can only be added once")
 
-    def add_constraint_rule(self, model: lp.Model, name, index_sets, rule, doc=""):
+    def add_constraint_rule(self, model: lp.Model, name, index_sets, rule, doc="", disjunction_var=None):
         """ initialization of a variable
         :param model: The linopy model
         :param name: name of variable
         :param index_sets: indices and sets by which the variable is indexed
         :param rule: constraint rule
+        :param disjunction_var: An optional binary variable. The constraints will only be enforced if this variable is
+                                True
         :param doc: docstring of variable"""
 
         if name not in self.docs.keys():
@@ -384,45 +388,80 @@ class Constraint(Component):
             # save constraint doc
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
 
-            # create the mask
-            index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
-            coords = [np.unique(t.data) for t in index_arrs]
-
-            # there might be an extra label
-            if len(index_list) > 1 and len(index_list) != len(index_values[0]):
-                index_list = [f"dim_{i}" for i in range(len(index_values[0]))]
-            coords = xr.DataArray(coords=coords, dims=index_list).coords
-            shape = tuple(map(len, coords.values()))
-
-            # if we only have a single index, there is no need to unpack
-            if len(index_list) == 1:
-                cons = [rule(arg) for arg in index_values]
+            # eval the rule
+            xr_lhs, xr_sign, xr_rhs = self.rule_to_cons(model=model, rule=rule, index_values=index_values, index_list=index_list)
+            if disjunction_var is not None:
+                # if we have any equal cons, we need to transform them into <= and >=
+                if (xr_sign == "=").any():
+                    # the "<=" cons
+                    sign_c = xr_sign.where(xr_sign != "=", "<=")
+                    m_arr = xr.zeros_like(xr_rhs).where(sign_c != "<=", self.M).where(sign_c != ">=", -self.M)
+                    model.add_constraints(xr_lhs + m_arr * disjunction_var, sign_c, xr_rhs + m_arr, name=name + "<=")
+                    sign_c = xr_sign.where(xr_sign != "=", ">=")
+                    m_arr = xr.zeros_like(xr_rhs).where(sign_c != "<=", self.M).where(sign_c != ">=", -self.M)
+                    model.add_constraints(xr_lhs + m_arr * disjunction_var, sign_c, xr_rhs + m_arr, name=name + ">=")
+                # create the arr
+                else:
+                    m_arr = xr.zeros_like(xr_rhs).where(xr_sign != "<=", self.M).where(xr_sign != ">=", -self.M)
+                    model.add_constraints(xr_lhs + m_arr * disjunction_var, xr_sign, xr_rhs + m_arr, name=name + ">=")
             else:
-                cons = [rule(*arg) for arg in index_values]
-
-            # low level magic
-            exprs = [con.lhs for con in cons]
-            coeffs = np.array(tuple(zip_longest(*(e.coeffs for e in exprs), fillvalue=np.nan)))
-            vars = np.array(tuple(zip_longest(*(e.vars for e in exprs), fillvalue=-1)))
-
-            nterm = vars.shape[0]
-            coeffs = coeffs.reshape((nterm, -1))
-            vars = vars.reshape((nterm, -1))
-
-            xr_coeffs = xr.DataArray(np.full(shape=(nterm, ) + shape, fill_value=np.nan), coords, dims=("_term", *coords))
-            xr_coeffs.loc[:,*index_arrs] = coeffs
-            xr_vars = xr.DataArray(np.full(shape=(nterm, ) + shape, fill_value=-1), coords, dims=("_term", *coords))
-            xr_vars.loc[:, *index_arrs] = vars
-            xr_ds = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}).transpose(..., "_term")
-            xr_lhs = lp.LinearExpression(xr_ds, model)
-            xr_sign = xr.DataArray("==", coords, dims=index_list)
-            xr_sign.loc[*index_arrs] = [c.sign for c in cons]
-            xr_rhs = xr.DataArray(0, coords, dims=index_list)
-            xr_rhs.loc[*index_arrs] = [c.rhs for c in cons]
-            model.add_constraints(xr_lhs, xr_sign, xr_rhs, name=name)
+                model.add_constraints(xr_lhs, xr_sign, xr_rhs, name=name)
 
         else:
             logging.warning(f"{name} already added. Can only be added once")
+
+    def rule_to_cons(self, model, rule, index_values, index_list):
+        """
+        Evaluates the rule on the index_values
+        :param model: The linopy model
+        :param rule: The rule to call
+        :param index_values: A list of index_values to evaluate the rule
+        :param index_list: a list of index names
+        :return: xarrays of the lhs, sign and the rhs
+        """
+
+        # create the mask
+        index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
+        coords = [np.unique(t.data) for t in index_arrs]
+
+        # there might be an extra label
+        if len(index_list) > 1 and len(index_list) != len(index_values[0]):
+            index_list = [f"dim_{i}" for i in range(len(index_values[0]))]
+        coords = xr.DataArray(coords=coords, dims=index_list).coords
+        shape = tuple(map(len, coords.values()))
+
+        # if we only have a single index, there is no need to unpack
+        if len(index_list) == 1:
+            cons = [rule(arg) for arg in index_values]
+        else:
+            cons = [rule(*arg) for arg in index_values]
+
+        # catch Nones
+        placeholder_lhs = lp.expressions.ScalarLinearExpression((np.nan,), (-1,), model)
+        emtpy_cons = lp.constraints.AnonymousScalarConstraint(placeholder_lhs, "=", np.nan)
+        cons = [c if c is not None else emtpy_cons for c in cons]
+
+        # low level magic
+        exprs = [con.lhs for con in cons]
+        coeffs = np.array(tuple(zip_longest(*(e.coeffs for e in exprs), fillvalue=np.nan)))
+        vars = np.array(tuple(zip_longest(*(e.vars for e in exprs), fillvalue=-1)))
+
+        nterm = vars.shape[0]
+        coeffs = coeffs.reshape((nterm, -1))
+        vars = vars.reshape((nterm, -1))
+
+        xr_coeffs = xr.DataArray(np.full(shape=(nterm,) + shape, fill_value=np.nan), coords, dims=("_term", *coords))
+        xr_coeffs.loc[:, *index_arrs] = coeffs
+        xr_vars = xr.DataArray(np.full(shape=(nterm,) + shape, fill_value=-1), coords, dims=("_term", *coords))
+        xr_vars.loc[:, *index_arrs] = vars
+        xr_ds = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}).transpose(..., "_term")
+        xr_lhs = lp.LinearExpression(xr_ds, model)
+        xr_sign = xr.DataArray("==", coords, dims=index_list)
+        xr_sign.loc[*index_arrs] = [c.sign for c in cons]
+        xr_rhs = xr.DataArray(0, coords, dims=index_list)
+        xr_rhs.loc[*index_arrs] = [c.rhs for c in cons]
+
+        return xr_lhs, xr_sign, xr_rhs
 
     def add_pw_constraint(self, model, index_values, yvar, xvar, break_points, f_vals, cons_type="EQ"):
         """
@@ -488,57 +527,3 @@ class Constraint(Component):
                               <= 1.0)
 
         return sos2_var
-
-    def add_constraint_disjunct(self, model: lp.Model, name, index_sets, rule, doc=""):
-        """ initialization of a variable
-        :param model: The linopy model
-        :param name: name of variable
-        :param index_sets: indices and sets by which the variable is indexed
-        :param rule: constraint rule
-        :param doc: docstring of variable"""
-
-        if name not in self.docs.keys():
-            index_values, index_list = self.get_index_names_data(index_sets)
-
-            # if there is nothing we just return
-            if len(index_values) == 0:
-                return
-
-            # create the mask
-            index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
-            coords = [np.unique(t.data) for t in index_arrs]
-            coords = xr.DataArray(coords=coords, dims=index_list).coords
-            shape = tuple(map(len, coords.values()))
-
-            # if we only have a single index, there is no need to unpack
-            if len(index_list) == 1:
-                cons = [rule(arg) for arg in index_values]
-            else:
-                cons = [rule(*arg) for arg in index_values]
-
-            # low level magic
-            exprs = [con.lhs for con in cons]
-            coeffs = np.array(tuple(zip_longest(*(e.coeffs for e in exprs), fillvalue=np.nan)))
-            vars = np.array(tuple(zip_longest(*(e.vars for e in exprs), fillvalue=-1)))
-
-            nterm = vars.shape[0]
-            coeffs = coeffs.reshape((nterm, -1))
-            vars = vars.reshape((nterm, -1))
-
-            xr_coeffs = xr.DataArray(np.full(shape=(nterm, ) + shape, fill_value=np.nan), coords, dims=("_term", *coords))
-            xr_coeffs.loc[:,*index_arrs] = coeffs
-            xr_vars = xr.DataArray(np.full(shape=(nterm, ) + shape, fill_value=-1), coords, dims=("_term", *coords))
-            xr_vars.loc[:, *index_arrs] = vars
-            xr_ds = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}).transpose(..., "_term")
-            xr_lhs = lp.LinearExpression(xr_ds, model)
-            xr_sign = xr.DataArray("==", coords, dims=index_list)
-            xr_sign.loc[*index_arrs] = [c.sign for c in cons]
-            xr_rhs = xr.DataArray(0, coords, dims=index_list)
-            xr_rhs.loc[*index_arrs] = [c.rhs for c in cons]
-            model.add_constraints(xr_lhs, xr_sign, xr_rhs, name=name)
-
-            # save constraint doc
-            self.docs[name] = self.compile_doc_string(doc, index_list, name)
-        else:
-            logging.warning(f"{name} already added. Can only be added once")
-
