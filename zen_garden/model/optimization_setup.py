@@ -461,9 +461,9 @@ class OptimizationSetup(object):
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
-                _built_capacity = pd.Series(self.model.built_capacity.extract_values())
-                _invest_capacity = pd.Series(self.model.invested_capacity.extract_values())
-                _capex = pd.Series(self.model.capex.extract_values())
+                _built_capacity = self.model.solution["built_capacity"].to_series().dropna()
+                _invest_capacity = self.model.solution["invested_capacity"].to_series().dropna()
+                _capex = self.model.solution["capex"].to_series().dropna()
                 _rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
                 _built_capacity[_built_capacity <= _rounding_value] = 0
                 _invest_capacity[_invest_capacity <= _rounding_value] = 0
@@ -506,9 +506,9 @@ class OptimizationSetup(object):
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 interval_between_years = self.energy_system.system["interval_between_years"]
-                _carbon_emissions_cumulative = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
-                carbon_emissions = self.model.carbon_emissions_total.extract_values()[step_horizon]
-                carbon_emissions_overshoot = self.model.carbon_emissions_overshoot.extract_values()[step_horizon]
+                _carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[step_horizon].item()
+                carbon_emissions = self.model.solution["carbon_emissions_total"].loc[step_horizon].item()
+                carbon_emissions_overshoot = self.model.solution["carbon_emissions_overshoot"].loc[step_horizon].item()
                 self.energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + (carbon_emissions - carbon_emissions_overshoot) * (interval_between_years - 1)
             else:
                 self.energy_system.previous_carbon_emissions = self.energy_system.data_input.extract_input_data(

@@ -14,8 +14,6 @@ import logging
 import importlib.util
 import pkg_resources
 
-from shutil import rmtree
-
 from .preprocess.prepare import Prepare
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess

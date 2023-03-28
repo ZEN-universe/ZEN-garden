@@ -316,7 +316,7 @@ class EnergySystemRules:
             return (model.variables["carbon_emissions_cumulative"][year]
                     - model.variables["carbon_emissions_cumulative"][year - 1]
                     - (model.variables["carbon_emissions_total"][year - 1] - model.variables["carbon_emissions_overshoot"][year - 1]) * (interval_between_years - 1)
-                    - (model.variables["carbon_emissions_total"][year]-model.variables["carbon_emissions_overshoot"][year])
+                    - (model.variables["carbon_emissions_total"][year] - model.variables["carbon_emissions_overshoot"][year])
                     == 0)
 
     def get_constraint_carbon_cost_total(self, model):
@@ -333,9 +333,9 @@ class EnergySystemRules:
         # get parameter object
         model = self.optimization_setup.model
         params = self.optimization_setup.parameters
-        if params.carbon_emissions_limit[year] != np.inf:
+        if params.carbon_emissions_limit.loc[year] != np.inf:
             return (model.variables["carbon_emissions_total"][year]
-                    <= params.carbon_emissions_limit[year])
+                    <= params.carbon_emissions_limit.loc[year].item())
         else:
             return self.emtpy_cons
 

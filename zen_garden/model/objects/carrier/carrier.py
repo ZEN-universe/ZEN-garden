@@ -164,8 +164,8 @@ class Carrier(Element):
         constraints.add_constraint_block(model, name="constraint_cost_carrier", constraint=rules.get_constraint_cost_carrier(model),
                                         doc="cost of importing and exporting carrier")
         # cost for shed demand
-        constraints.add_constraint_rule(model, name="constraint_cost_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_cost_shed_demand_rule, doc="cost of shedding carrier demand")
+        constraints.add_constraint_block(model, name="constraint_cost_shed_demand", constraint=rules.get_constraint_cost_shed_demand(),
+                                         doc="cost of shedding carrier demand")
         # limit of shed demand
         constraints.add_constraint_block(model, name="constraint_limit_shed_demand", constraint=rules.get_constraint_limit_shed_demand(model),
                                    doc="limit of shedding carrier demand")
@@ -253,17 +253,18 @@ class CarrierRules:
                   (params.export_price_carrier.where(mask), model.variables["export_carrier_flow"].where(mask))]
         return model.linexpr(*tuples) == 0
 
-    def constraint_cost_shed_demand_rule(self, carrier, node, time):
+    def get_constraint_cost_shed_demand(self):
         """ cost of shedding demand of carrier """
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        if params.shed_demand_price.loc[carrier] != np.inf:
-            return (model.variables["cost_shed_demand_carrier"][carrier, node, time]
-                    - model.variables["shed_demand_carrier"][carrier, node, time] * params.shed_demand_price.loc[carrier].item()
-                    == 0)
-        else:
-            return (model.variables["shed_demand_carrier"][carrier, node, time] == 0)
+        mask = params.shed_demand_price != np.inf
+        mask = xr.align(model.variables.labels, mask)[1]
+        # we do it like this, because the linear expr.where is buggy
+        if_true = model.variables["cost_shed_demand_carrier"] \
+                  - model.variables["shed_demand_carrier"] * params.shed_demand_price
+        if_false = model.variables["shed_demand_carrier"]
+        return if_true.where(mask) + if_false.where(~mask) == 0
 
     def get_constraint_limit_shed_demand(self, model):
         """ limit demand shedding at low price """
