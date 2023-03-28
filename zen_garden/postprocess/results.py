@@ -941,7 +941,7 @@ class Results(object):
         #set colors and plot data frame
         colors = plt.cm.tab20(range(data_plot.shape[1]))
         if demand_area is False:
-            data_plot_wo_demand = data_plot.drop(columns=["demand_carrier"])
+            data_plot_wo_demand = data_plot.drop(columns=[demand_carrier for demand_carrier in data_plot.columns if "demand_carrier" in demand_carrier])
             ax = data_plot_wo_demand.plot(kind="area", stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
             data_plot[[col for col in data_plot.columns if 'demand_carrier' in col][0]].plot(kind="line", ax=ax, label='demand', color="black")
         else:
@@ -1077,7 +1077,7 @@ class Results(object):
                 drop_levs = []
                 for ind, lev_shape in enumerate(data_total.index.levshape):
                     if ind != 0:
-                        if all(lev_value[ind] == data_total.index.values[0][ind] for lev_value in data_total.index.values[ind:]):
+                        if all(lev_value[ind] == data_total.index.values[0][ind] for lev_value in data_total.index.values):
                             drop_levs.append(ind)
                 data_total = data_total.droplevel(level=drop_levs)
 
@@ -1124,10 +1124,16 @@ class Results(object):
             if not os.path.exists(path):
                 os.makedirs(path)
             if file_type in plt.gcf().canvas.get_supported_filetypes():
-                plt.savefig(os.path.join(path,component + "_yearly="+str(yearly) + "_" + "node_edit=" + str(node_edit) +"." + file_type))
+                if isinstance(component,str):
+                    plt.savefig(os.path.join(path,component + "_yearly="+str(yearly) + "_" + "node_edit=" + str(node_edit) +"." + file_type))
+                else:
+                    plt.savefig(os.path.join(path, plot_strings["title"] + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + "." + file_type))
             elif file_type is None:
                 #save figure as pdf if file_type hasn't been specified
-                plt.savefig(os.path.join(path, component + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + ".pdf" ))
+                if isinstance(component, str):
+                    plt.savefig(os.path.join(path, component + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + ".pdf" ))
+                else:
+                    plt.savefig(os.path.join(path, plot_strings["title"] + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + ".pdf"))
             else:
                 warnings.warn(f"Plot couldn't be saved as specified file type '{file_type}' isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
         plt.show()
