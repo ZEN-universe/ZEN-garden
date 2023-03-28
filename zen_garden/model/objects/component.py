@@ -458,7 +458,7 @@ class Constraint(Component):
         xr_lhs = lp.LinearExpression(xr_ds, model)
         xr_sign = xr.DataArray("==", coords, dims=index_list)
         xr_sign.loc[*index_arrs] = [c.sign for c in cons]
-        xr_rhs = xr.DataArray(0, coords, dims=index_list)
+        xr_rhs = xr.DataArray(0.0, coords, dims=index_list)
         xr_rhs.loc[*index_arrs] = [c.rhs for c in cons]
 
         return xr_lhs, xr_sign, xr_rhs
