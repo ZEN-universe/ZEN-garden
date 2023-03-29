@@ -499,8 +499,9 @@ class Technology(Element):
         constraints.add_constraint_rule(model, name="constraint_capex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_capex_total_rule,
             doc='total capex of all technology that can be installed.')
         # calculate opex
-        constraints.add_constraint_rule(model, name="constraint_opex_technology", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_opex_technology_rule, doc="opex for each technology at each location and time step")
+        constraints.add_constraint_block(model, name="constraint_opex_technology",
+                                         constraints=rules.get_constraint_opex_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         doc="opex for each technology at each location and time step")
         # total opex of all technologies
         constraints.add_constraint_rule(model, name="constraint_opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_opex_total_rule, doc='total opex of all technology that are operated.')
         # carbon emissions of technologies
@@ -712,25 +713,31 @@ class TechnologyRules:
                 - sum(model.variables["capex_yearly"][tech, capacity_type, loc, year] for tech, capacity_type, loc in Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location"], self.optimization_setup)[0])
                 == 0)
 
-    def constraint_opex_technology_rule(self, tech, loc, time):
+    def get_constraint_opex_technology(self, index_values, index_names):
         """ calculate opex of each technology"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
         sets = self.optimization_setup.sets
-        reference_carrier = sets["set_reference_carriers"][tech][0]
-        if tech in sets["set_conversion_technologies"]:
-            if reference_carrier in sets["set_input_carriers"][tech]:
-                reference_flow = model.variables["input_flow"][tech, reference_carrier, loc, time]
+
+        # get all the constraints
+        constraints = []
+        index = ZenIndex(index_values, index_names)
+        for tech, loc in index.get_unique(["set_technologies", "set_location"]):
+            reference_carrier = sets["set_reference_carriers"][tech][0]
+            if tech in sets["set_conversion_technologies"]:
+                if reference_carrier in sets["set_input_carriers"][tech]:
+                    reference_flow = model.variables["input_flow"].loc[tech, reference_carrier, loc]
+                else:
+                    reference_flow = model.variables["output_flow"].loc[tech, reference_carrier, loc]
+            elif tech in sets["set_transport_technologies"]:
+                reference_flow = model.variables["carrier_flow"].loc[tech, loc]
             else:
-                reference_flow = model.variables["output_flow"][tech, reference_carrier, loc, time]
-        elif tech in sets["set_transport_technologies"]:
-            reference_flow = model.variables["carrier_flow"][tech, loc, time]
-        else:
-            reference_flow = model.variables["carrier_flow_charge"][tech, loc, time] + model.variables["carrier_flow_discharge"][tech, loc, time]
-        return (model.variables["opex"][tech, loc, time]
-                - params.opex_specific.loc[tech, loc, time].item() * reference_flow
-                == 0)
+                reference_flow = model.variables["carrier_flow_charge"].loc[tech, loc] + model.variables["carrier_flow_discharge"].loc[tech, loc]
+            constraints.append(model.variables["opex"].loc[tech, loc]
+                               - params.opex_specific.loc[tech, loc] * reference_flow
+                               == 0)
+        return constraints
 
     def constraint_carbon_emissions_technology_rule(self, tech, loc, time):
         """ calculate carbon emissions of each technology"""
