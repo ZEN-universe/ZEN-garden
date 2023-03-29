@@ -110,7 +110,7 @@ class TimeStepsDicts(object):
         """
         sequence_time_steps = self.get_sequence_time_steps(element, time_step_type)
         # get time step duration
-        if np.all(base_time_steps >= 0):
+        if np.all(np.asarray(base_time_steps) >= 0):
             element_time_step = np.unique(sequence_time_steps[base_time_steps])
         else:
             element_time_step = [-1]
