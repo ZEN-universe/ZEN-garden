@@ -772,10 +772,14 @@ class TechnologyRules:
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        return (model.variables["carbon_emissions_technology_total"][year]
-                - sum(sum(model.variables["carbon_emissions_technology"][tech, loc, time] * params.time_steps_operation_duration.loc[tech, time].item()
-                        for time in self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year))
-                    for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0])
+
+        # get all the terms
+        terms = []
+        for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]:
+            terms.append((model.variables["carbon_emissions_technology"].loc[tech, loc] * params.time_steps_operation_duration.loc[tech]).sum())
+
+        return (model.variables["carbon_emissions_technology_total"].loc[year]
+                - sum(terms)
                 == 0)
 
     def constraint_opex_total_rule(self, year):
