@@ -59,7 +59,10 @@ class ConditioningCarrier(Carrier):
         constraints.add_constraint_rule(model, name="constraint_carrier_demand_coupling", index_sets=cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], optimization_setup),
             rule=rules.constraint_carrier_demand_coupling_rule, doc='coupling model endogenous and exogenous carrier demand', )
         # overwrite energy balance when conditioning carriers are included
-        model.constraints.remove("constraint_nodal_energy_balance")
+        # FIXME: add a remove function to the constraint class
+        for cname in model.constraints:
+            if cname.startswith("constraint_nodal_energy_balance"):
+                model.constraints.remove(cname)
         constraints.add_constraint_rule(model, name="constraint_nodal_energy_balance_conditioning", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
             rule=rules.constraint_nodal_energy_balance_conditioning_rule, doc='node- and time-dependent energy balance for each carrier', )
 

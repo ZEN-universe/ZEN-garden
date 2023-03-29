@@ -368,15 +368,20 @@ class CarrierRules:
             for v in [carrier_conversion_out, -carrier_conversion_in, carrier_flow_in, -carrier_flow_out,
                       carrier_flow_discharge, -carrier_flow_charge, carrier_import, -carrier_export,
                       carrier_shed_demand, -carrier_demand]:
+                # linexpr
                 if isinstance(v, (lp.Variable, lp.LinearExpression)):
                     if vars is None:
-                        vars = v
+                        vars = v.drop([c for c in v.coords if c != "set_time_steps_operation"])
                     else:
-                        vars = vars + v
+                        vars = vars + v.drop([c for c in v.coords if c != "set_time_steps_operation"])
+                # constant
                 else:
-                    constant -= v
+                    if isinstance(v, xr.DataArray):
+                        constant -= v.drop([c for c in v.coords if c != "set_time_steps_operation"])
+                    else:
+                        constant -= v
 
-            # add the cons
+            # add the cons (drop every level besides the timesteps
             constraints.append(vars == constant)
 
         return constraints

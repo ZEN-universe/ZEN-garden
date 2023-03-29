@@ -366,8 +366,8 @@ class Constraint(Component):
 
         for num, cons in enumerate(constraint):
             current_name = f"{name}_{num}"
-            if name not in self.docs.keys():
-                model.add_constraints(cons, name=current_name)
+            if current_name not in self.docs.keys():
+                _ = model.add_constraints(cons, name=current_name)
                 # save constraint doc
                 index_list = list(cons.coords.dims)
                 self.docs[name] = self.compile_doc_string(doc, index_list, current_name)
