@@ -16,6 +16,7 @@ import xarray as xr
 import pyomo.environ as pe
 import linopy as lp
 
+from zen_garden.utils import ZenIndex, linexpr_from_tuple_np
 from .technology import Technology
 
 
@@ -172,16 +173,20 @@ class TransportTechnology(Technology):
         """ constructs the pe.Constraints of the class <TransportTechnology>
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
+        constraints = optimization_setup.constraints
         rules = TransportTechnologyRules(optimization_setup)
         # Carrier Flow Losses 
-        optimization_setup.constraints.add_constraint_rule(model, name="constraint_transport_technology_losses_flow", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_transport_technology_losses_flow_rule, doc='Carrier loss due to transport with through transport technology')
+        constraints.add_constraint_block(model, name="constraint_transport_technology_losses_flow",
+                                         constraint=rules.get_constraint_transport_technology_losses_flow(*cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup)),
+                                         doc='Carrier loss due to transport with through transport technology')
         # capex of transport technologies
-        optimization_setup.constraints.add_constraint_rule(model, name="constraint_transport_technology_capex", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup),
-            rule=rules.constraint_transport_technology_capex_rule, doc='Capital expenditures for installing transport technology')
+        constraints.add_constraint_block(model, name="constraint_transport_technology_capex",
+                                         constraint=rules.get_constraint_transport_technology_capex(*cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup)),
+                                         doc='Capital expenditures for installing transport technology')
         # bidirectional transport technologies: capacity on edge must be equal in both directions
-        optimization_setup.constraints.add_constraint_rule(model, name="constraint_transport_technology_bidirectional", index_sets=cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup),
-            rule=rules.constraint_transport_technology_bidirectional_rule, doc='Forces that transport technology capacity must be equal in both directions')
+        constraints.add_constraint_block(model, name="constraint_transport_technology_bidirectional",
+                                         constraint=rules.constraint_transport_technology_bidirectional_rule(*cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup)),
+                                         doc='Forces that transport technology capacity must be equal in both directions')
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -218,39 +223,57 @@ class TransportTechnologyRules:
         self.emtpy_cons = lp.constraints.AnonymousScalarConstraint(placeholder_lhs, "=", np.nan)
 
     ### --- functions with constraint rules --- ###
-    def constraint_transport_technology_losses_flow_rule(self, tech, edge, time):
+    def get_constraint_transport_technology_losses_flow(self, index_values, index_list):
         """compute the flow losses for a carrier through a transport technology"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        if np.isinf(params.distance.loc[tech, edge]):
-            return model.variables["carrier_loss"][tech, edge, time] == 0
-        else:
-            return (model.variables["carrier_loss"][tech, edge, time]
-                    - params.distance.loc[tech, edge].item() * params.loss_flow.loc[tech].item() * model.variables["carrier_flow"][tech, edge, time]
-                    == 0)
 
-    def constraint_transport_technology_capex_rule(self, tech, edge, time):
+        # get all constraints
+        constraints = []
+        index = ZenIndex(index_values, index_list)
+        for tech, edge in index.get_unique([0 , 1]):
+            if np.isinf(params.distance.loc[tech, edge]):
+                constraints.append(model.variables["carrier_loss"][tech, edge]
+                                   == 0)
+            else:
+                constraints.append(model.variables["carrier_loss"].loc[tech, edge]
+                                   - params.distance.loc[tech, edge].item() * params.loss_flow.loc[tech].item() * model.variables["carrier_flow"].loc[tech, edge]
+                                   == 0)
+        return constraints
+
+    def get_constraint_transport_technology_capex(self, index_values, index_list):
         """ definition of the capital expenditures for the transport technology"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        if np.isinf(params.distance.loc[tech, edge]):
-            return model.variables["built_capacity"][tech, "power", edge, time] == 0
-        else:
-            return (model.variables["capex"][tech, "power", edge, time]
-                    - model.variables["built_capacity"][tech, "power", edge, time] * params.capex_specific_transport.loc[tech, edge, time].item()
-                    - model.variables["install_technology"][tech, "power", edge, time] * (params.distance.loc[tech, edge].item() * params.capex_per_distance.loc[tech, edge, time].item())
-                    == 0)
 
-    def constraint_transport_technology_bidirectional_rule(self, tech, edge, time):
+        # get all constraints
+        constraints = []
+        index = ZenIndex(index_values, index_list)
+        for tech, edge in index.get_unique([0, 1]):
+            if np.isinf(params.distance.loc[tech, edge]):
+                constraints.append(model.variables["built_capacity"].loc[tech, "power", edge] == 0)
+            else:
+                constraints.append(model.variables["capex"].loc[tech, "power", edge]
+                                   - model.variables["built_capacity"].loc[tech, "power", edge] * params.capex_specific_transport.loc[tech, edge]
+                                   - model.variables["install_technology"].loc[tech, "power", edge] * (params.distance.loc[tech, edge].item() * params.capex_per_distance.loc[tech, edge])
+                                   == 0)
+        return constraints
+
+    def constraint_transport_technology_bidirectional_rule(self, index_values, index_list):
         """ Forces that transport technology capacity must be equal in both direction"""
         system = self.optimization_setup.system
         model = self.optimization_setup.model
-        if tech in system["set_bidirectional_transport_technologies"]:
-            _reversed_edge = self.get_reversed_edge(edge)
-            return (model.variables["built_capacity"][tech, "power", edge, time]
-                    - model.variables["built_capacity"][tech, "power", _reversed_edge, time]
-                    == 0)
-        else:
-            return self.emtpy_cons
+
+        # get all constraints
+        constraints = []
+        index = ZenIndex(index_values, index_list)
+        for tech, edge in index.get_unique([0, 1]):
+            if tech in system["set_bidirectional_transport_technologies"]:
+                _reversed_edge = self.get_reversed_edge(edge)
+                constraints.append(model.variables["built_capacity"].loc[tech, "power", edge]
+                                   - model.variables["built_capacity"].loc[tech, "power", _reversed_edge]
+                                   == 0)
+
+        return constraints
