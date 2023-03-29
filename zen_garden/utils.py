@@ -11,6 +11,7 @@ import sys
 from collections import UserDict
 from contextlib import contextmanager
 from datetime import datetime
+import linopy as lp
 import xarray as xr
 
 import h5py
@@ -66,7 +67,7 @@ class RedirectStdStreams(object):
         :param exc_value: Value of the exit
         :param traceback:  traceback of the error
         """
-        self._stdout.flush();
+        self._stdout.flush()
         self._stderr.flush()
         sys.stdout = self.old_stdout
         sys.stderr = self.old_stderr
@@ -140,6 +141,38 @@ class ZenIndex(object):
         """
 
         return self.index.__repr__()
+
+
+def linexpr_from_tuple_np(tuples, coords, model):
+    """
+    Transforms tuples of (coeff, var) into a linopy linear expression, but uses numpy broadcasting
+    :param tuples: Tuple of (coeff, var)
+    :param coords: The coordinates of the final linear expression
+    :param model: The model to which the linear expression belongs
+    :return: A linear expression
+    """
+
+    # get actual coords
+    if not isinstance(coords, xr.core.dataarray.DataArrayCoordinates):
+        coords = xr.DataArray(coords=coords).coords
+
+    # numpy stack everything
+    coefficients = []
+    variables = []
+    for coeff, var in tuples:
+        var = var.labels.data
+        if isinstance(coeff, (float, int)):
+            coeff = np.full(var.shape, 1.0 * coeff)
+        coefficients.append(coeff)
+        variables.append(var)
+
+    # to linear expression
+    variables = xr.DataArray(np.stack(variables, axis=0), coords=coords, dims=["_term", *coords])
+    coefficients = xr.DataArray(np.stack(coefficients, axis=0), coords=coords, dims=["_term", *coords])
+    xr_ds = xr.Dataset({"coeffs": coefficients, "vars": variables}).transpose(..., "_term")
+
+    return lp.LinearExpression(xr_ds, model)
+
 
 
 # This is to lazy load h5 file most of it is taken from the hdfdict package

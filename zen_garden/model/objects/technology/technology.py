@@ -10,12 +10,13 @@ Description:    Class defining the parameters, variables and constraints that ho
                 constraints that hold for all technologies.
 ==========================================================================================================================================================================="""
 import logging
-from itertools import product
 
 import linopy as lp
 import numpy as np
+import xarray as xr
 import pandas as pd
 
+from zen_garden.utils import ZenIndex, linexpr_from_tuple_np
 from ..element import Element
 
 
@@ -488,8 +489,9 @@ class Technology(Element):
             index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), rule=rules.constraint_technology_diffusion_limit_rule,
             doc="Limits the newly built capacity by the existing knowledge stock")
         # limit max load by installed capacity
-        constraints.add_constraint_block(model, name="constraint_capacity_factor", constraint=rules.get_constraint_capacity_factor(),
-                                        doc='limit max load by installed capacity')
+        constraints.add_constraint_block(model, name="constraint_capacity_factor",
+                                         constraint=rules.get_constraint_capacity_factor(*cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         doc='limit max load by installed capacity')
         # annual capex of having capacity
         constraints.add_constraint_rule(model, name="constraint_capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_capex_yearly_rule, doc='annual capex of having capacity of technology.')
@@ -772,7 +774,7 @@ class TechnologyRules:
                     for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0])
                 == 0)
 
-    def get_constraint_capacity_factor(self):
+    def get_constraint_capacity_factor(self, index_values, index_names):
         """
         tech, capacity_type, loc, time
         Load is limited by the installed capacity and the maximum load factor"""
@@ -783,34 +785,43 @@ class TechnologyRules:
 
         # get all contraints
         constraints = []
-        for tech, capacity_type in Element.create_custom_set(["set_technologies", "set_capacity_types"], self.optimization_setup)[0]:
+        index = ZenIndex(index_values, index_names)
+        for tech, capacity_type, loc in index.get_unique(["set_technologies", "set_capacity_types", "set_location"]):
+            times = index.get_values(locs=[tech, capacity_type, loc], levels='set_time_steps_operation', dtype=list)
             reference_carrier = sets["set_reference_carriers"][tech][0]
+            coords = [model.variables.coords["set_time_steps_operation"]]
             # get invest time step
-            time_step_year = self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, sets["set_time_steps_yearly"]).values
+            time_step_year = self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, times).values
             # conversion technology
             if tech in sets["set_conversion_technologies"]:
                 if reference_carrier in sets["set_input_carriers"][tech]:
-                    constraints.append(model.variables["capacity"].loc[tech, capacity_type, :, time_step_year] * params.max_load.loc[tech, capacity_type]
-                                       - model.variables["input_flow"].loc[tech, reference_carrier]
+                    tuples = [(params.max_load.loc[tech, capacity_type, loc, times], model.variables["capacity"].loc[tech, capacity_type, loc, time_step_year]),
+                              (-1.0, model.variables["input_flow"].loc[tech, reference_carrier, loc, times])]
+                    constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                        >= 0)
                 else:
-                    return (model.variables["capacity"].loc[tech, capacity_type, :, time_step_year] * params.max_load.loc[tech, capacity_type]
-                            - model.variables["output_flow"].loc[tech, reference_carrier]
-                            >= 0)
+                    tuples = [(params.max_load.loc[tech, capacity_type, loc, times], model.variables["capacity"].loc[tech, capacity_type, loc, time_step_year]),
+                              (-1.0, model.variables["output_flow"].loc[tech, reference_carrier, loc, times])]
+                    constraints.append(linexpr_from_tuple_np(tuples, coords, model)
+                                       >= 0)
             # transport technology
             elif tech in sets["set_transport_technologies"]:
-                return (model.variables["capacity"].loc[tech, capacity_type, :, time_step_year] * params.max_load.loc[tech, capacity_type]
-                        - model.variables["carrier_flow"][tech]
-                        >= 0)
+                tuples = [(params.max_load.loc[tech, capacity_type, loc, times], model.variables["capacity"].loc[tech, capacity_type, loc, time_step_year]),
+                          (-1.0, model.variables["carrier_flow"].loc[tech, loc, times])]
+                constraints.append(linexpr_from_tuple_np(tuples, coords, model)
+                                   >= 0)
             # storage technology
             elif tech in sets["set_storage_technologies"]:
                 system = self.optimization_setup.system
                 # if limit power
                 if capacity_type == system["set_capacity_types"][0]:
-                    return (model.variables["capacity"][tech, capacity_type, :, time_step_year] * params.max_load.loc[tech, capacity_type]
-                            - model.variables["carrier_flow_charge"][tech]
-                            - model.variables["carrier_flow_discharge"][tech]
-                            >= 0)
+                    tuples = [(params.max_load.loc[tech, capacity_type, loc, times], model.variables["capacity"].loc[tech, capacity_type, loc, time_step_year]),
+                              (-1.0, model.variables["carrier_flow_charge"].loc[tech, loc, times]),
+                              (-1.0, model.variables["carrier_flow_discharge"].loc[tech, loc, times])]
+                    constraints.append(linexpr_from_tuple_np(tuples, coords, model)
+                                       >= 0)
                 # TODO integrate level storage here as well
                 else:
                     continue
+
+        return constraints
