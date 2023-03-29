@@ -338,8 +338,8 @@ class CarrierRules:
         constraints = []
         for carrier, node in product(sets["set_carriers"], sets["set_nodes"]):
             # carrier input and output conversion technologies
-            carrier_conversion_in = sum([model.variables["input_flow"].loc[tech, carrier] for tech in sets["set_conversion_technologies"] if carrier in sets["set_input_carriers"][tech]])
-            carrier_conversion_out = sum([model.variables["output_flow"].loc[tech, carrier] for tech in sets["set_conversion_technologies"] if carrier in sets["set_output_carriers"][tech]])
+            carrier_conversion_in = sum([model.variables["input_flow"].loc[tech, carrier, node] for tech in sets["set_conversion_technologies"] if carrier in sets["set_input_carriers"][tech]])
+            carrier_conversion_out = sum([model.variables["output_flow"].loc[tech, carrier, node] for tech in sets["set_conversion_technologies"] if carrier in sets["set_output_carriers"][tech]])
             # carrier flow transport technologies
             carrier_flow_in, carrier_flow_out = 0, 0
             set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
