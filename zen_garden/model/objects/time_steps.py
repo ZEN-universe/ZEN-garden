@@ -132,7 +132,7 @@ class TimeStepsDicts(object):
         """
         sequence_time_steps = self.get_sequence_time_steps(element, time_step_type)
         # find where element_time_step in sequence of element time steps
-        base_time_steps = sequence_time_steps[sequence_time_steps == element_time_step].values
+        base_time_steps = sequence_time_steps[sequence_time_steps == element_time_step].index.tolist()
         return base_time_steps
 
     def calculate_time_step_duration(self, input_time_steps, base_time_steps):
