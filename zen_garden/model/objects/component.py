@@ -367,6 +367,7 @@ class Constraint(Component):
         for num, cons in enumerate(constraint):
             current_name = f"{name}_{num}"
             if current_name not in self.docs.keys():
+                # TODO: drop all unnecessary dimensions (intersection between dims and coords)
                 _ = model.add_constraints(cons, name=current_name)
                 # save constraint doc
                 index_list = list(cons.coords.dims)
