@@ -7,15 +7,17 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 Description:  Class is defining to read in the results of an Optimization problem.
 ==========================================================================================================================================================================="""
 
-import os
 import sys
-import h5py
-import yaml
 from collections import UserDict
-from datetime import datetime
-import numpy as np
-from numpy import string_
 from contextlib import contextmanager
+from datetime import datetime
+import xarray as xr
+
+import h5py
+import numpy as np
+import pandas as pd
+import yaml
+from numpy import string_
 
 
 def get_inheritors(klass):
@@ -68,6 +70,76 @@ class RedirectStdStreams(object):
         self._stderr.flush()
         sys.stdout = self.old_stdout
         sys.stderr = self.old_stderr
+
+
+class ZenIndex(object):
+    """
+    A multiindex class that can be easily used with xarray
+    """
+
+    def __init__(self, index_values, index_names=None):
+        """
+        Initialize the multiindex
+        :param index_values: A list of index values as tuples
+        :param index_names: Optional list of index names as strings, if the length does not match the tuple length,
+                            it is ignored
+        """
+
+        # set the index
+        self.index = pd.MultiIndex.from_tuples(index_values)
+        if index_names is not None and len(self.index.names) == len(index_names):
+            self.index.names = index_names
+
+        # dummy dataframe
+        self.df = pd.Series(np.ones(len(self.index)), index=self.index)
+
+    def get_unique(self, levels):
+        """
+        Returns a list of unique tuples across potentially multiple levels
+        :param levels: A list of levels eithes by position or name
+        :return: A list of tuples if multiple levels are given, otherwise a list of values
+        """
+        return self.df.groupby(level=levels).first().index.to_list()
+
+    def get_values(self, locs, levels, dtype=list):
+        """
+        Get all values of the levels over a given set of locations
+        :param locs: A list of locs used for the "get_locs" method of the index
+        :param levels: A single level or a list of levels to get the values for
+        :param dtype: The dtype of the return value, either list or xr.DataArray
+        :return: A single list or xr.DataArray if only one level is given, otherwise a list of lists or xr.DataArrays
+        """
+
+        # handle single or multiple input
+        if isinstance(levels, list):
+            return_list = True
+        else:
+            levels = [levels]
+            return_list = False
+
+        # clycle
+        vals = []
+        for level in levels:
+            indices = self.index.get_locs(locs)
+            val = self.index[indices].get_level_values(level)
+            if dtype is list:
+                vals.append(val.to_list())
+            elif dtype is xr.DataArray:
+                vals.append(xr.DataArray(val.values, dims=val.name))
+            else:
+                raise ValueError("dytpe should be list or xr.DataArray got {dtype}")
+
+        if return_list:
+            return vals
+
+        return vals[0]
+
+    def __repr__(self):
+        """
+        The representation of the ZenIndex
+        """
+
+        return self.index.__repr__()
 
 
 # This is to lazy load h5 file most of it is taken from the hdfdict package
