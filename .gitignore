@@ -27,6 +27,9 @@ postprocess/eth_colorsAG.py
 postprocess/visualizationAG.py
 preprocess_HB
 
+# pytest monitor
+.pymon
+
 # Standard python stuff
 # Byte-compiled / optimized / DLL files
 __pycache__/
