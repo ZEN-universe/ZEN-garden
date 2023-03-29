@@ -173,8 +173,8 @@ class Carrier(Element):
         constraints.add_constraint_rule(model, name="constraint_cost_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_cost_carrier_total_rule,
             doc="total cost of importing and exporting carriers")
         # carbon emissions
-        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_carbon_emissions_carrier_rule, doc="carbon emissions of importing and exporting carrier")
+        constraints.add_constraint_block(model, name="constraint_carbon_emissions_carrier", constraint=rules.get_constraint_carbon_emissions_carrier(),
+                                         doc="carbon emissions of importing and exporting carrier")
         # carbon emissions carrier
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_carbon_emissions_carrier_total_rule,
             doc="total carbon emissions of importing and exporting carriers")
@@ -278,34 +278,51 @@ class CarrierRules:
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        return (model.variables["cost_carrier_total"][year]
-                - sum(sum((model.variables["cost_carrier"][carrier, node, time] + model.variables["cost_shed_demand_carrier"][carrier, node, time]) * params.time_steps_operation_duration.loc[carrier, time].item() for time in
-                          self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)) for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)[0])
+
+        terms = []
+        for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)[0]:
+            time_arr = xr.DataArray(self.energy_system.time_steps.get_time_steps_year2operation(carrier, year),
+                                    dims=["set_time_steps_operation"])
+            expr = (model.variables["cost_carrier"].loc[carrier, node, time_arr] + model.variables["cost_shed_demand_carrier"].loc[carrier, node, time_arr]) * params.time_steps_operation_duration.loc[carrier, time_arr]
+            terms.append(expr.sum())
+        return (model.variables["cost_carrier_total"].loc[year]
+                - sum(terms)
                 == 0)
 
-    def constraint_carbon_emissions_carrier_rule(self, carrier, node, time):
+    def get_constraint_carbon_emissions_carrier(self):
         """ carbon emissions of importing and exporting carrier"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        yearly_time_step = self.energy_system.time_steps.convert_time_step_operation2year(carrier,time)
-        if params.availability_carrier_import.loc[carrier, node, time] != 0 or params.availability_carrier_export.loc[carrier, node, time] != 0:
-            return (model.variables["carbon_emissions_carrier"][carrier, node, time]
-                    - params.carbon_intensity_carrier.loc[carrier, node, yearly_time_step].item() * (
-                    model.variables["import_carrier_flow"][carrier, node, time] - model.variables["export_carrier_flow"][carrier, node, time])
-                    == 0)
-        else:
-            return (model.variables["carbon_emissions_carrier"][carrier, node, time] == 0)
+
+        # create a factor
+        fac = xr.zeros_like(params.availability_carrier_import)
+        time_arr = fac.coords["set_time_steps_operation"].data
+        for carrier, node in zip(fac.coords["set_carriers"].data, fac.coords["set_nodes"].data):
+            yearly_time_steps = self.energy_system.time_steps.convert_time_step_operation2year(carrier, time_arr).values
+            mask = (params.availability_carrier_import.loc[carrier, node, time_arr] != 0) | (params.availability_carrier_export.loc[carrier, node, time_arr] != 0)
+            fac.loc[carrier, node, yearly_time_steps] = np.where(mask, params.carbon_intensity_carrier.loc[carrier, node, yearly_time_steps].data, 0.0)
+
+        return (model.variables["carbon_emissions_carrier"]
+                - fac * (model.variables["import_carrier_flow"] - model.variables["export_carrier_flow"])
+                == 0)
 
     def constraint_carbon_emissions_carrier_total_rule(self, year):
         """ total carbon emissions of importing and exporting carrier"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        return (model.variables["carbon_emissions_carrier_total"][year]
-                - sum(
-            sum(model.variables["carbon_emissions_carrier"][carrier, node, time] * params.time_steps_operation_duration.loc[carrier, time].item() for time in self.energy_system.time_steps.get_time_steps_year2operation(carrier, year))
-            for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)[0])
+
+        # calculate the sums via loop
+        terms = []
+        for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)[0]:
+            time_arr = xr.DataArray(self.energy_system.time_steps.get_time_steps_year2operation(carrier, year),
+                                    dims=["set_time_steps_operation"])
+            expr = model.variables["carbon_emissions_carrier"].loc[carrier, node, time_arr] * params.time_steps_operation_duration.loc[carrier, time_arr]
+            terms.append(expr.sum())
+
+        return (model.variables["carbon_emissions_carrier_total"].loc[year]
+                - sum(terms)
                 == 0)
 
     def constraint_nodal_energy_balance_rule(self, carrier, node, time):

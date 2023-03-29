@@ -443,8 +443,9 @@ class Constraint(Component):
 
         # low level magic
         exprs = [con.lhs for con in cons]
-        coeffs = np.array(tuple(zip_longest(*(e.coeffs for e in exprs), fillvalue=np.nan)))
-        vars = np.array(tuple(zip_longest(*(e.vars for e in exprs), fillvalue=-1)))
+        # complicated expressions might have been initialized with loc arrays
+        coeffs = np.array(tuple(zip_longest(*(e.coeffs.data if isinstance(e.coeffs, xr.DataArray) else e.coeffs for e in exprs), fillvalue=np.nan)))
+        vars = np.array(tuple(zip_longest(*(e.vars.data if isinstance(e.vars, xr.DataArray) else e.vars for e in exprs), fillvalue=-1)))
 
         nterm = vars.shape[0]
         coeffs = coeffs.reshape((nterm, -1))
@@ -457,9 +458,11 @@ class Constraint(Component):
         xr_ds = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}).transpose(..., "_term")
         xr_lhs = lp.LinearExpression(xr_ds, model)
         xr_sign = xr.DataArray("==", coords, dims=index_list)
-        xr_sign.loc[*index_arrs] = [c.sign for c in cons]
+        xr_sign.loc[*index_arrs] = [c.sign.data if isinstance(c.sign, xr.DataArray) else c.sign for c in cons]
         xr_rhs = xr.DataArray(0.0, coords, dims=index_list)
-        xr_rhs.loc[*index_arrs] = [c.rhs for c in cons]
+        # Here we catch infinities in the constraints (gurobi does not care but glpk does)
+        rhs_vals = np.array([c.rhs.data if isinstance(c.rhs, xr.DataArray) else c.rhs for c in cons])
+        xr_rhs.loc[*index_arrs] = np.nan_to_num(rhs_vals, nan=np.nan, posinf=self.M, neginf=-self.M)
 
         return xr_lhs, xr_sign, xr_rhs
 
