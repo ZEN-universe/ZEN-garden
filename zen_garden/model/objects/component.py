@@ -353,20 +353,26 @@ class Constraint(Component):
         self.M = np.iinfo(np.int32).max
 
     def add_constraint_block(self, model: lp.Model, name, constraint, doc=""):
-        """ initialization of a constraint
+        """ initialization of a constraint block (list of constraints)
         :param model: The linopy model
         :param name: name of variable
         :param constraint: The constraint to add
         :param doc: docstring of variable
         """
 
-        if name not in self.docs.keys():
-            model.add_constraints(constraint, name=name)
-            # save constraint doc
-            index_list = list(constraint.coords.dims)
-            self.docs[name] = self.compile_doc_string(doc, index_list, name)
-        else:
-            logging.warning(f"{name} already added. Can only be added once")
+        # convert to list
+        if not isinstance(constraint, list):
+            constraint = [constraint]
+
+        for num, cons in enumerate(constraint):
+            current_name = f"{name}_{num}"
+            if name not in self.docs.keys():
+                model.add_constraints(cons, name=current_name)
+                # save constraint doc
+                index_list = list(cons.coords.dims)
+                self.docs[name] = self.compile_doc_string(doc, index_list, current_name)
+            else:
+                logging.warning(f"{name} already added. Can only be added once")
 
     def add_constraint_rule(self, model: lp.Model, name, index_sets, rule, doc="", disjunction_var=None):
         """ initialization of a variable
