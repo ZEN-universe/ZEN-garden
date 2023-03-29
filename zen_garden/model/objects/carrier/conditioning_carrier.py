@@ -53,13 +53,14 @@ class ConditioningCarrier(Carrier):
         """ constructs the pe.Constraints of the class <Carrier>
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
+        constraints = optimization_setup.constraints
         rules = ConditioningCarrierRules(optimization_setup)
         # limit import flow by availability
-        optimization_setup.constraints.add_constraint(model, name="constraint_carrier_demand_coupling", index_sets=cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], optimization_setup),
+        constraints.add_constraint_rule(model, name="constraint_carrier_demand_coupling", index_sets=cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], optimization_setup),
             rule=rules.constraint_carrier_demand_coupling_rule, doc='coupling model endogenous and exogenous carrier demand', )
         # overwrite energy balance when conditioning carriers are included
-        model.constraint_nodal_energy_balance.deactivate()
-        optimization_setup.constraints.add_constraint(model, name="constraint_nodal_energy_balance_conditioning", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
+        model.constraints.remove("constraint_nodal_energy_balance")
+        constraints.add_constraint_rule(model, name="constraint_nodal_energy_balance_conditioning", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
             rule=rules.constraint_nodal_energy_balance_conditioning_rule, doc='node- and time-dependent energy balance for each carrier', )
 
 
@@ -77,57 +78,70 @@ class ConditioningCarrierRules:
         self.optimization_setup = optimization_setup
         self.energy_system = optimization_setup.energy_system
 
-    def constraint_carrier_demand_coupling_rule(self, model, parent_carrier, node, time):
+    def constraint_carrier_demand_coupling_rule(self, parent_carrier, node, time):
         """ sum conditioning Carriers"""
 
-        return (model.endogenous_carrier_demand[parent_carrier, node, time] == sum(
-            model.endogenous_carrier_demand[conditioning_carrier, node, time] for conditioning_carrier in model.set_conditioning_carrier_children[parent_carrier]))
+        model = self.optimization_setup.model
+        sets = self.optimization_setup.sets
+        return (model.variables["endogenous_carrier_demand"][parent_carrier, node, time]
+                - sum(model.variables["endogenous_carrier_demand"][conditioning_carrier, node, time] for conditioning_carrier in sets["set_conditioning_carrier_children"][parent_carrier])
+                == 0 )
 
-    def constraint_nodal_energy_balance_conditioning_rule(self, model, carrier, node, time):
+    def constraint_nodal_energy_balance_conditioning_rule(self, carrier, node, time):
         """
         nodal energy balance for each time step.
         """
         params = self.optimization_setup.parameters
+        sets = self.optimization_setup.sets
+        model = self.optimization_setup.model
 
         # carrier input and output conversion technologies
         carrier_conversion_in, carrier_conversion_out = 0, 0
-        for tech in model.set_conversion_technologies:
-            if carrier in model.set_input_carriers[tech]:
-                carrier_conversion_in += model.input_flow[tech, carrier, node, time]
-            if carrier in model.set_output_carriers[tech]:
-                carrier_conversion_out += model.output_flow[tech, carrier, node, time]
+        for tech in sets["set_conversion_technologies"]:
+            if carrier in sets["set_input_carriers"][tech]:
+                carrier_conversion_in += model.variables["input_flow"][tech, carrier, node, time]
+            if carrier in sets["set_output_carriers"][tech]:
+                carrier_conversion_out += model.variables["output_flow"][tech, carrier, node, time]
         # carrier flow transport technologies
         carrier_flow_in, carrier_flow_out = 0, 0
         set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
         set_edges_out = self.energy_system.calculate_connected_edges(node, "out")
-        for tech in model.set_transport_technologies:
-            if carrier in model.set_reference_carriers[tech]:
-                carrier_flow_in += sum(model.carrier_flow[tech, edge, time] - model.carrier_loss[tech, edge, time] for edge in set_edges_in)
-                carrier_flow_out += sum(model.carrier_flow[tech, edge, time] for edge in set_edges_out)
+        for tech in sets["set_transport_technologies"]:
+            if carrier in sets["set_reference_carriers"][tech]:
+                carrier_flow_in += sum(model.variables["carrier_flow"][tech, edge, time] - model.variables["carrier_loss"][tech, edge, time] for edge in set_edges_in)
+                carrier_flow_out += sum(model.variables["carrier_flow"][tech, edge, time] for edge in set_edges_out)
         # carrier flow storage technologies
         carrier_flow_discharge, carrier_flow_charge = 0, 0
-        for tech in model.set_storage_technologies:
-            if carrier in model.set_reference_carriers[tech]:
-                carrier_flow_discharge += model.carrier_flow_discharge[tech, node, time]
-                carrier_flow_charge += model.carrier_flow_charge[tech, node, time]
+        for tech in sets["set_storage_technologies"]:
+            if carrier in sets["set_reference_carriers"][tech]:
+                carrier_flow_discharge += model.variables["carrier_flow_discharge"][tech, node, time]
+                carrier_flow_charge += model.variables["carrier_flow_charge"][tech, node, time]
         # carrier import, demand and export
-        carrier_import, carrier_export, carrier_demand = 0, 0, 0
-        carrier_import = model.import_carrier_flow[carrier, node, time]
-        carrier_export = model.export_carrier_flow[carrier, node, time]
-        carrier_demand = params.demand_carrier[carrier, node, time]
+        carrier_import = model.variables["import_carrier_flow"][carrier, node, time]
+        carrier_export = model.variables["export_carrier_flow"][carrier, node, time]
+        carrier_demand = params.demand_carrier.loc[carrier, node, time].item()
         endogenous_carrier_demand = 0
 
         # check if carrier is conditioning carrier:
-        if carrier in model.set_conditioning_carriers:
+        if carrier in sets["set_conditioning_carriers"]:
             # check if carrier is parent_carrier of a conditioning_carrier
-            if carrier in model.set_conditioning_carrier_parents:
-                endogenous_carrier_demand = - model.endogenous_carrier_demand[carrier, node, time]
+            if carrier in sets["set_conditioning_carrier_parents"]:
+                endogenous_carrier_demand = - model.variables["endogenous_carrier_demand"][carrier, node, time]
             else:
-                endogenous_carrier_demand = model.endogenous_carrier_demand[carrier, node, time]
+                endogenous_carrier_demand = model.variables["endogenous_carrier_demand"][carrier, node, time]
 
-        return (# conversion technologies
-                carrier_conversion_out - carrier_conversion_in # transport technologies
-                + carrier_flow_in - carrier_flow_out # storage technologies
-                + carrier_flow_discharge - carrier_flow_charge # import and export
-                + carrier_import - carrier_export # demand
-                - endogenous_carrier_demand - carrier_demand == 0)
+        # aggregate
+        lhs = None
+        rhs = 0
+        for term in [carrier_conversion_out, -carrier_conversion_in, carrier_flow_in, -carrier_flow_out,
+                     carrier_flow_discharge, -carrier_flow_charge, carrier_import, -carrier_export,
+                     -endogenous_carrier_demand, -carrier_demand]:
+            if not isinstance(term, (int, float)):
+                if lhs is None:
+                    lhs = term
+                else:
+                    lhs += term
+            else:
+                rhs -= term
+
+        return (lhs == rhs)
