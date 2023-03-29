@@ -13,9 +13,9 @@ import logging
 
 import numpy as np
 import pandas as pd
-import pyomo.environ as pe
 import xarray as xr
 
+from zen_garden.utils import ZenIndex, linexpr_from_tuple_np
 from .technology import Technology
 
 
@@ -278,8 +278,9 @@ class ConversionTechnology(Technology):
                                           break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ")
         if set_linear_conver_efficiency[0]:
             # if set_linear_conver_efficiency contains technologies:
-            constraints.add_constraint_rule(model, name="constraint_linear_conver_efficiency", index_sets=set_linear_conver_efficiency, rule=rules.constraint_linear_conver_efficiency_rule,
-                doc="Linear relationship in conver_efficiency")  # Coupling constraints
+            constraints.add_constraint_block(model, name="constraint_linear_conver_efficiency",
+                                             constraint=rules.constraint_linear_conver_efficiency_rule(*set_linear_conver_efficiency),
+                                             doc="Linear relationship in conver_efficiency")  # Coupling constraints
         # couple the real variables with the auxiliary variables
         constraints.add_constraint_rule(model, name="constraint_capex_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_capex_coupling_rule, doc="couples the real capex variables with the approximated variables")
@@ -289,13 +290,13 @@ class ConversionTechnology(Technology):
 
         # flow coupling constraints for technologies, which are not modeled with an on-off-behavior
         # reference flow coupling
-        constraints.add_constraint_rule(model, name="constraint_reference_flow_coupling",
-            index_sets=cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables")
+        constraints.add_constraint_block(model, name="constraint_reference_flow_coupling",
+                                         constraint=rules.get_constraint_reference_flow_coupling(*cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         doc="couples the real reference flow variables with the approximated variables")
         # dependent flow coupling
-        constraints.add_constraint_rule(model, name="constraint_dependent_flow_coupling",
-            index_sets=cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables")
+        constraints.add_constraint_block(model, name="constraint_dependent_flow_coupling",
+                                         constraint=rules.get_constraint_dependent_flow_coupling(*cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         doc="couples the real dependent flow variables with the approximated variables")
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -322,12 +323,12 @@ class ConversionTechnology(Technology):
         # couple reference flows
         rules = ConversionTechnologyRules(optimization_setup)
         constraints.add_constraint_rule(model, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
-            index_sets=[[[tech], sets["set_dependent_carriers"][tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
-            rule=rules.constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
+                                        index_sets=[[[tech], sets["set_dependent_carriers"][tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
+                                        rule=rules.get_constraint_reference_flow_coupling, doc="couples the real reference flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
         # couple dependent flows
         constraints.add_constraint_rule(model, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
-            index_sets=[[[tech], sets["set_dependent_carriers"][tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
-            rule=rules.constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
+                                        index_sets=[[[tech], sets["set_dependent_carriers"][tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
+                                        rule=rules.get_constraint_dependent_flow_coupling, doc="couples the real dependent flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
 
     @classmethod
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
@@ -399,16 +400,25 @@ class ConversionTechnologyRules:
                 - params.capex_specific_conversion.loc[tech, node, time].item() * model.variables["capacity_approximation"][tech, node, time]
                 == 0)
 
-    def constraint_linear_conver_efficiency_rule(self, tech, dependent_carrier, node, time):
+    def constraint_linear_conver_efficiency_rule(self, index_values, index_names):
         """ if reference carrier and dependent carrier have a linear relationship"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        # get invest time step
-        time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, time)
-        return (model.variables["dependent_flow_approximation"][tech, dependent_carrier, node, time]
-                - params.conver_efficiency_specific.loc[tech, dependent_carrier, node, time_step_year].item() * model.variables["reference_flow_approximation"][tech, dependent_carrier, node, time]
-                == 0)
+
+        # get all the constraints
+        constraints = []
+        index = ZenIndex(index_values, index_names)
+        for tech, dependent_carrier, node in index.get_unique([0, 1, 2]):
+            # get invest time step
+            coords = [model.variables.coords["set_time_steps_operation"]]
+            times = index.get_values([tech, dependent_carrier, node], 3, dtype=list)
+            time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, times).values
+            tuples = [(1.0, model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier, node]),
+                      (-params.conver_efficiency_specific.loc[tech, dependent_carrier, node, time_step_year], model.variables["reference_flow_approximation"].loc[tech, dependent_carrier, node])]
+            constraints.append(linexpr_from_tuple_np(tuples, coords=coords, model=model)
+                               == 0)
+        return constraints
 
     def constraint_capex_coupling_rule(self, tech, node, time):
         """ couples capex variables based on modeling technique"""
@@ -424,29 +434,45 @@ class ConversionTechnologyRules:
                 - model.variables["capacity_approximation"][tech, node, time]
                 == 0)
 
-    def constraint_reference_flow_coupling_rule(self, tech, dependent_carrier, node, time):
+    def get_constraint_reference_flow_coupling(self, index_values, index_names):
         """ couples reference flow variables based on modeling technique"""
         model = self.optimization_setup.model
         sets = self.optimization_setup.sets
-        reference_carrier = sets["set_reference_carriers"][tech][0]
-        if reference_carrier in sets["set_input_carriers"][tech]:
-            return (model.variables["input_flow"][tech, reference_carrier, node, time]
-                    - model.variables["reference_flow_approximation"][tech, dependent_carrier, node, time]
-                    == 0)
-        else:
-            return (model.variables["output_flow"][tech, reference_carrier, node, time]
-                    - model.variables["reference_flow_approximation"][tech, dependent_carrier, node, time]
-                    == 0)
 
-    def constraint_dependent_flow_coupling_rule(self, tech, dependent_carrier, node, time):
+        # get all the constraints
+        constraints = []
+        index = ZenIndex(index_values, index_names)
+        for tech, dependent_carrier in index.get_unique([0, 1]):
+            reference_carrier = sets["set_reference_carriers"][tech][0]
+            if reference_carrier in sets["set_input_carriers"][tech]:
+                constraints.append(model.variables["input_flow"].loc[tech, reference_carrier]
+                                   - model.variables["reference_flow_approximation"].loc[tech, dependent_carrier]
+                                   == 0)
+            else:
+                constraints.append(model.variables["output_flow"].loc[tech, reference_carrier]
+                                   - model.variables["reference_flow_approximation"].loc[tech, dependent_carrier]
+                                   == 0)
+        return constraints
+
+    def get_constraint_dependent_flow_coupling(self, index_values, index_names):
         """ couples dependent flow variables based on modeling technique"""
         model = self.optimization_setup.model
         sets = self.optimization_setup.sets
-        if dependent_carrier in sets["set_input_carriers"][tech]:
-            return (model.variables["input_flow"][tech, dependent_carrier, node, time]
-                    - model.variables["dependent_flow_approximation"][tech, dependent_carrier, node, time]
-                    == 0)
-        else:
-            return (model.variables["output_flow"][tech, dependent_carrier, node, time]
-                    - model.variables["dependent_flow_approximation"][tech, dependent_carrier, node, time]
-                    == 0)
+
+        # get all the constraints
+        constraints = []
+        index = ZenIndex(index_values, index_names)
+        for tech, dependent_carrier in index.get_unique([0, 1]):
+            if dependent_carrier in sets["set_input_carriers"][tech]:
+                constraints.append(model.variables["input_flow"].loc[tech, dependent_carrier]
+                                   - model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier]
+                                   == 0)
+            else:
+                constraints.append(model.variables["output_flow"].loc[tech, dependent_carrier]
+                                   - model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier]
+                                   == 0)
+
+        return constraints
+
+    # FIXME: The rules version exists because of the disjoint constraints, this should be unified
+    
