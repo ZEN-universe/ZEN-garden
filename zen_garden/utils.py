@@ -86,13 +86,18 @@ class ZenIndex(object):
                             it is ignored
         """
 
-        # set the index
-        self.index = pd.MultiIndex.from_tuples(index_values)
-        if index_names is not None and len(self.index.names) == len(index_names):
-            self.index.names = index_names
+        # if there are no values, we create a dummy index
+        if len(index_values) == 0:
+            self.index = None
+            self.df = None
+        else:
+            # set the index
+            self.index = pd.MultiIndex.from_tuples(index_values)
+            if index_names is not None and len(self.index.names) == len(index_names):
+                self.index.names = index_names
 
-        # dummy dataframe
-        self.df = pd.Series(np.ones(len(self.index)), index=self.index)
+            # dummy dataframe
+            self.df = pd.Series(np.ones(len(self.index)), index=self.index)
 
     def get_unique(self, levels):
         """
@@ -100,6 +105,11 @@ class ZenIndex(object):
         :param levels: A list of levels eithes by position or name
         :return: A list of tuples if multiple levels are given, otherwise a list of values
         """
+
+        # empty index
+        if self.index is None:
+            return []
+
         return self.df.groupby(level=levels).first().index.to_list()
 
     def get_values(self, locs, levels, dtype=list):
@@ -110,6 +120,10 @@ class ZenIndex(object):
         :param dtype: The dtype of the return value, either list or xr.DataArray
         :return: A single list or xr.DataArray if only one level is given, otherwise a list of lists or xr.DataArrays
         """
+
+        # empty index
+        if self.index is None:
+            return []
 
         # handle single or multiple input
         if isinstance(levels, list):
@@ -139,6 +153,10 @@ class ZenIndex(object):
         """
         The representation of the ZenIndex
         """
+
+        # empty index
+        if self.index is None:
+            return "ZenIndex: Empty"
 
         return self.index.__repr__()
 
