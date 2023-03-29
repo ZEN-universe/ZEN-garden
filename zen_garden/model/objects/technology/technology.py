@@ -10,12 +10,12 @@ Description:    Class defining the parameters, variables and constraints that ho
                 constraints that hold for all technologies.
 ==========================================================================================================================================================================="""
 import logging
+from itertools import product
 
-import pandas as pd
-import pyomo.environ as pe
-import pyomo.gdp as pgdp
-import numpy as np
 import linopy as lp
+import numpy as np
+import pandas as pd
+
 from ..element import Element
 
 
@@ -488,8 +488,8 @@ class Technology(Element):
             index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), rule=rules.constraint_technology_diffusion_limit_rule,
             doc="Limits the newly built capacity by the existing knowledge stock")
         # limit max load by installed capacity
-        constraints.add_constraint_rule(model, name="constraint_capacity_factor", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_capacity_factor_rule, doc='limit max load by installed capacity')
+        constraints.add_constraint_block(model, name="constraint_capacity_factor", constraint=rules.get_constraint_capacity_factor(),
+                                        doc='limit max load by installed capacity')
         # annual capex of having capacity
         constraints.add_constraint_rule(model, name="constraint_capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_capex_yearly_rule, doc='annual capex of having capacity of technology.')
@@ -772,39 +772,45 @@ class TechnologyRules:
                     for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0])
                 == 0)
 
-    def constraint_capacity_factor_rule(self, tech, capacity_type, loc, time):
-        """Load is limited by the installed capacity and the maximum load factor"""
+    def get_constraint_capacity_factor(self):
+        """
+        tech, capacity_type, loc, time
+        Load is limited by the installed capacity and the maximum load factor"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
         sets = self.optimization_setup.sets
-        reference_carrier = sets["set_reference_carriers"][tech][0]
-        # get invest time step
-        time_step_year = self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
-        # conversion technology
-        if tech in sets["set_conversion_technologies"]:
-            if reference_carrier in sets["set_input_carriers"][tech]:
-                return (model.variables["capacity"][tech, capacity_type, loc, time_step_year] * params.max_load.loc[tech, capacity_type, loc, time].item()
-                        - model.variables["input_flow"][tech, reference_carrier, loc, time]
+
+        # get all contraints
+        constraints = []
+        for tech, capacity_type in Element.create_custom_set(["set_technologies", "set_capacity_types"], self.optimization_setup)[0]:
+            reference_carrier = sets["set_reference_carriers"][tech][0]
+            # get invest time step
+            time_step_year = self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, sets["set_time_steps_yearly"]).values
+            # conversion technology
+            if tech in sets["set_conversion_technologies"]:
+                if reference_carrier in sets["set_input_carriers"][tech]:
+                    constraints.append(model.variables["capacity"].loc[tech, capacity_type, :, time_step_year] * params.max_load.loc[tech, capacity_type]
+                                       - model.variables["input_flow"].loc[tech, reference_carrier]
+                                       >= 0)
+                else:
+                    return (model.variables["capacity"].loc[tech, capacity_type, :, time_step_year] * params.max_load.loc[tech, capacity_type]
+                            - model.variables["output_flow"].loc[tech, reference_carrier]
+                            >= 0)
+            # transport technology
+            elif tech in sets["set_transport_technologies"]:
+                return (model.variables["capacity"].loc[tech, capacity_type, :, time_step_year] * params.max_load.loc[tech, capacity_type]
+                        - model.variables["carrier_flow"][tech]
                         >= 0)
-            else:
-                return (model.variables["capacity"][tech, capacity_type, loc, time_step_year] * params.max_load.loc[tech, capacity_type, loc, time].item()
-                        - model.variables["output_flow"][tech, reference_carrier, loc, time]
-                        >= 0)
-        # transport technology
-        elif tech in sets["set_transport_technologies"]:
-            return (model.variables["capacity"][tech, capacity_type, loc, time_step_year] * params.max_load.loc[tech, capacity_type, loc, time].item()
-                    - model.variables["carrier_flow"][tech, loc, time]
-                    >= 0)
-        # storage technology
-        elif tech in sets["set_storage_technologies"]:
-            system = self.optimization_setup.system
-            # if limit power
-            if capacity_type == system["set_capacity_types"][0]:
-                return (model.variables["capacity"][tech, capacity_type, loc, time_step_year] * params.max_load.loc[tech, capacity_type, loc, time].item()
-                        - model.variables["carrier_flow_charge"][tech, loc, time]
-                        - model.variables["carrier_flow_discharge"][tech, loc, time]
-                        >= 0)
-            # TODO integrate level storage here as well
-            else:
-                return self.emtpy_cons  # if limit energy  # else:  #     return (model.capacity[tech,capacity_type, loc, time_step_year] * model.max_load[tech,capacity_type, loc, time] >= model.levelStorage[tech,loc,time])
+            # storage technology
+            elif tech in sets["set_storage_technologies"]:
+                system = self.optimization_setup.system
+                # if limit power
+                if capacity_type == system["set_capacity_types"][0]:
+                    return (model.variables["capacity"][tech, capacity_type, :, time_step_year] * params.max_load.loc[tech, capacity_type]
+                            - model.variables["carrier_flow_charge"][tech]
+                            - model.variables["carrier_flow_discharge"][tech]
+                            >= 0)
+                # TODO integrate level storage here as well
+                else:
+                    continue
