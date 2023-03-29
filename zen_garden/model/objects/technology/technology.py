@@ -505,8 +505,9 @@ class Technology(Element):
         # total opex of all technologies
         constraints.add_constraint_rule(model, name="constraint_opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_opex_total_rule, doc='total opex of all technology that are operated.')
         # carbon emissions of technologies
-        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_technology", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_carbon_emissions_technology_rule, doc="carbon emissions for each technology at each location and time step")
+        constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology",
+                                         constraint=rules.get_constraint_carbon_emissions_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         doc="carbon emissions for each technology at each location and time step")
         # total carbon emissions of technologies
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_technology_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_carbon_emissions_technology_total_rule,
             doc="total carbon emissions for each technology at each location and time step")
@@ -739,25 +740,32 @@ class TechnologyRules:
                                == 0)
         return constraints
 
-    def constraint_carbon_emissions_technology_rule(self, tech, loc, time):
+    def get_constraint_carbon_emissions_technology(self, index_values, index_names):
         """ calculate carbon emissions of each technology"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
         sets = self.optimization_setup.sets
-        reference_carrier = sets["set_reference_carriers"][tech][0]
-        if tech in sets["set_conversion_technologies"]:
-            if reference_carrier in sets["set_input_carriers"][tech]:
-                reference_flow = model.variables["input_flow"][tech, reference_carrier, loc, time]
+
+        # get all constraints
+        constraints = []
+        index = ZenIndex(index_values, index_names)
+        for tech, loc in index.get_unique(["set_technologies", "set_location"]):
+            reference_carrier = sets["set_reference_carriers"][tech][0]
+            if tech in sets["set_conversion_technologies"]:
+                if reference_carrier in sets["set_input_carriers"][tech]:
+                    reference_flow = model.variables["input_flow"].loc[tech, reference_carrier, loc]
+                else:
+                    reference_flow = model.variables["output_flow"].loc[tech, reference_carrier, loc]
+            elif tech in sets["set_transport_technologies"]:
+                reference_flow = model.variables["carrier_flow"].loc[tech, loc]
             else:
-                reference_flow = model.variables["output_flow"][tech, reference_carrier, loc, time]
-        elif tech in sets["set_transport_technologies"]:
-            reference_flow = model.variables["carrier_flow"][tech, loc, time]
-        else:
-            reference_flow = model.variables["carrier_flow_charge"][tech, loc, time] + model.variables["carrier_flow_discharge"][tech, loc, time]
-        return (model.variables["carbon_emissions_technology"][tech, loc, time]
-                - params.carbon_intensity_technology.loc[tech, loc].item() * reference_flow
-                == 0)
+                reference_flow = model.variables["carrier_flow_charge"].loc[tech, loc] + model.variables["carrier_flow_discharge"].loc[tech, loc]
+            constraints.append(model.variables["carbon_emissions_technology"].loc[tech, loc]
+                               - params.carbon_intensity_technology.loc[tech, loc].item() * reference_flow
+                               == 0)
+
+        return constraints
 
     def constraint_carbon_emissions_technology_total_rule(self, year):
         """ calculate total carbon emissions of each technology"""
@@ -775,10 +783,14 @@ class TechnologyRules:
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        return (model.variables["opex_total"][year]
-                - sum(sum(model.variables["opex"][tech, loc, time] * params.time_steps_operation_duration.loc[tech, time].item()
-                        for time in self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year))
-                    for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0])
+
+        # get all the terms
+        terms = []
+        for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]:
+            terms.append((model.variables["opex"].loc[tech, loc] * params.time_steps_operation_duration.loc[tech]).sum())
+
+        return (model.variables["opex_total"].loc[year]
+                - sum(terms)
                 == 0)
 
     def get_constraint_capacity_factor(self, index_values, index_names):
