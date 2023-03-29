@@ -500,7 +500,7 @@ class Technology(Element):
             doc='total capex of all technology that can be installed.')
         # calculate opex
         constraints.add_constraint_block(model, name="constraint_opex_technology",
-                                         constraints=rules.get_constraint_opex_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.get_constraint_opex_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
                                          doc="opex for each technology at each location and time step")
         # total opex of all technologies
         constraints.add_constraint_rule(model, name="constraint_opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_opex_total_rule, doc='total opex of all technology that are operated.')
