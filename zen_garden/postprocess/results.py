@@ -7,6 +7,7 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 Description:  Class is defining to read in the results of an Optimization problem.
 ==========================================================================================================================================================================="""
 import logging
+import warnings
 
 import h5py
 import numpy as np
@@ -15,6 +16,7 @@ import importlib
 import json
 import zlib
 import os
+import matplotlib.pyplot as plt
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
@@ -109,6 +111,12 @@ class Results(object):
 
                 # Add together
                 current_path = os.path.join(self.path, subfolder)
+
+                #create dict containing sets
+                self.results[scenario][mf]["sets"] = {}
+                sets = self.load_sets(current_path, lazy=True)
+                self._lazydicts.append([sets])
+                self.results[scenario][mf]["sets"].update(sets)
 
                 # create dict containing params and vars
                 self.results[scenario][mf]["pars_and_vars"] = {}
@@ -207,6 +215,23 @@ class Results(object):
             json_dump = json.dumps(string)
 
         return pd.read_json(json_dump, orient="table")
+
+    @classmethod
+    def load_sets(cls, path, lazy=False):
+        """
+        Loads the set dict from a given path
+        :param path: Path to load the parameter dict from
+        :param lazy: Load lazy, this will not transform the data into dataframes
+        :return: The set dict
+        """
+
+        # load the raw dict
+        raw_dict = cls._read_file(os.path.join(path, "set_dict"))
+
+        if lazy:
+            return raw_dict
+        else:
+            return cls._dict2df(raw_dict)
 
     @classmethod
     def load_params(cls, path, lazy=False):
@@ -371,7 +396,7 @@ class Results(object):
 
         return out_dict
 
-    def get_df(self, name, scenario=None, to_csv=None, csv_kwargs=None,is_dual = False):
+    def get_df(self, name, scenario=None, to_csv=None, csv_kwargs=None,is_dual=False, is_set=False):
         """
         Extracts the dataframe from the results
         :param name: The name of the dataframe to extract
@@ -396,11 +421,14 @@ class Results(object):
             sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
 
             if not self.has_MF:
-                # we set the dataframe of the variable into the data dict
-                if not is_dual:
-                    _data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
+                if not is_set:
+                    # we set the dataframe of the variable into the data dict
+                    if not is_dual:
+                        _data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
+                    else:
+                        _data[scenario] = self._to_df(self.results[scenario][None]["duals"][name]["dataframe"])
                 else:
-                    _data[scenario] = self._to_df(self.results[scenario][None]["duals"][name]["dataframe"])
+                    _data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
 
             else:
                 # init the scenario
@@ -408,10 +436,13 @@ class Results(object):
                 _is_multiindex = False
                 # cycle through all MFs
                 for year, mf in enumerate(self.mf):
-                    if not is_dual:
-                        _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
+                    if not is_set:
+                        if not is_dual:
+                            _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
+                        else:
+                            _var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
                     else:
-                        _var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
+                        _data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
                     # # single element that is not a year
                     # if len(_var) == 1 and _var.index.nlevels == 1 and not np.isfinite(_var.index[0]):
                     #     _data[scenario] = _var
@@ -627,7 +658,7 @@ class Results(object):
                     print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
 
         # concat and return
-        output_df = pd.concat(_output_temp, axis=0, keys=_output_temp.keys()).unstack()
+        output_df = pd.concat(_output_temp, axis=0, keys=component_data.index).unstack()
         return output_df
 
     def get_total(self, component, element_name=None, year=None, scenario=None, split_years=True):
@@ -811,6 +842,459 @@ class Results(object):
     def __str__(self):
         return f"Results of '{self.path}'"
 
+    def standard_plots(self, save_fig=False, file_type=None):
+        """
+        Plots data of basic variables to get a first overview of the results
+        :param save_fig: Choose if figure should be saved as pdf
+        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
+        """
+        scenario = None
+        if None not in self.scenarios:
+            scenario = "scenario_"
+        demand_carrier = self.get_df("demand_carrier", scenario=scenario)
+        #remove carriers without demand
+        demand_carrier = demand_carrier.loc[(demand_carrier != 0),:]
+        for carrier in demand_carrier.index.levels[0].values:
+            if carrier in demand_carrier:
+                self.plot("capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
+                self.plot("built_capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Built Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
+                self.plot("input_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Input Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Input Flow"}, save_fig=save_fig, file_type=file_type)
+                self.plot("output_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Output Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Output Flow"}, save_fig=save_fig, file_type=file_type)
+        self.plot("capex_total",yearly=True, plot_strings={"title": "Total Capex", "ylabel": "Capex"}, save_fig=save_fig, file_type=file_type)
+        self.plot("opex_total", yearly=True, plot_strings={"title": "Total Opex", "ylabel": "Opex"}, save_fig=save_fig, file_type=file_type)
+        self.plot("cost_carrier", yearly=True, plot_strings={"title": "Carrier Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
+        self.plot("cost_carbon_emissions_total", yearly=True, plot_strings={"title": "Total Carbon Emissions Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
+        #plot total costs as stacked bar plot of individual costs
+        costs = ["capex_total", "opex_total", "cost_carbon_emissions_total", "cost_carrier_total", "cost_shed_demand_carrier"]
+        total_cost = pd.DataFrame()
+        for cost in costs:
+            test = self.get_total(cost, scenario=scenario)
+            if cost == "cost_shed_demand_carrier":
+                cost_df = self.get_total(cost, scenario=scenario).sum(axis=0)
+                cost_df.name = "cost_shed_demand_total"
+                total_cost = pd.concat([total_cost, cost_df], axis=1)
+            else:
+                total_cost = pd.concat([total_cost, self.get_total(cost, scenario=scenario)], axis=1)
+        self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
+
+    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None, demand_area=False, scenario=None):
+        """
+        Visualizes the energy balance of a specific carrier at a single node
+        :param node: String of node of interest
+        :param carrier: String of carrier of interest
+        :param year: Generic index of year of interest
+        :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
+        :param duration: Number of hours that should be plotted from start_hour
+        :param save_fig: Choose if figure should be saved as pdf
+        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
+        :param demand_area: Choose if carrier demand should be plotted as area with other negative flows (instead of line)
+        :param scenario: Choose scenario of interest (only for multi-scenario simulations, per default scenario_ is plotted)
+        """
+        plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
+        components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier", "carrier_flow_in", "carrier_flow_out"]
+        lowers = ["input_flow", "export_carrier_flow", "carrier_flow_charge", "carrier_flow_out"]
+        data_plot = pd.DataFrame()
+        if None not in self.scenarios:
+            scenario = "scenario_"
+        for component in components:
+            if component == "carrier_flow_in":
+                data_full_ts = self.edit_carrier_flows(self.get_full_ts("carrier_flow", scenario=scenario), node, carrier, "in", scenario)
+            elif component == "carrier_flow_out":
+                data_full_ts = self.edit_carrier_flows(self.get_full_ts("carrier_flow", scenario=scenario), node, carrier, "out", scenario)
+            else:
+                #get full timeseries of component and extract rows of relevant node
+                data_full_ts = self.edit_nodes_v2(self.get_full_ts(component, scenario=scenario), node)
+                #extract data of desired carrier
+                data_full_ts = self.extract_carrier(data_full_ts, carrier, scenario)
+                #check if return from extract_carrier() is still a data frame as it is possible that the desired carrier isn't contained --> None returned
+                if not isinstance(data_full_ts, pd.DataFrame):
+                    continue
+            #change sign of variables which enter the node
+            if component in lowers:
+                data_full_ts = data_full_ts.multiply(-1)
+            if isinstance(data_full_ts, pd.DataFrame):
+                #add variable name to multi-index such that they can be shown in plot legend
+                data_full_ts = pd.concat([data_full_ts], keys=[component], names=["variable"])
+                #drop unnecessary index levels to improve the plot legend's appearance
+                if data_full_ts.index.nlevels == 3:
+                    data_full_ts = data_full_ts.droplevel([2])
+                elif data_full_ts.index.nlevels == 4:
+                    data_full_ts = data_full_ts.droplevel([2,3])
+                #transpose data frame as pandas plot function plots column-wise
+                data_full_ts = data_full_ts.transpose()
+            elif isinstance(data_full_ts, pd.Series):
+                data_full_ts.name = component
+            #add data of current variable to the plot data frame
+            data_plot = pd.concat([data_plot, data_full_ts], axis=1)
+
+        #extract the rows of the desired year
+        if year not in list(range(self.results["system"]["optimized_years"])):
+            warnings.warn(f"Chosen year '{year}' hasn't been simulated")
+        else:
+            ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
+            data_plot = data_plot.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
+        #extract specific hours of year
+        if start_hour is not None and duration is not None:
+            data_plot = data_plot.iloc[start_hour:start_hour+duration]
+        #remove columns(technologies/variables) with constant zero value
+        data_plot = data_plot.loc[:, (data_plot != 0).any(axis=0)]
+        #set colors and plot data frame
+        colors = plt.cm.tab20(range(data_plot.shape[1]))
+        if demand_area is False:
+            data_plot_wo_demand = data_plot.drop(columns=[demand_carrier for demand_carrier in data_plot.columns if "demand_carrier" in demand_carrier])
+            ax = data_plot_wo_demand.plot(kind="area", stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
+            data_plot[[col for col in data_plot.columns if 'demand_carrier' in col][0]].plot(kind="line", ax=ax, label='demand', color="black")
+        else:
+            data_plot["demand_carrier"] = data_plot["demand_carrier"].multiply(-1)
+            data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
+        plt.legend()
+        if save_fig:
+            path = os.path.join(os.getcwd(), "outputs")
+            path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
+            path = os.path.join(path, "result_plots")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            if file_type in plt.gcf().canvas.get_supported_filetypes():
+                if start_hour is None and duration is None:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "." + file_type))
+                else:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration) + "." + file_type))
+            elif file_type is None:
+                #save figure as pdf if file_type hasn't been specified
+                if start_hour is None and duration is None:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + ".pdf"))
+                else:
+                    plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration) + ".pdf"))
+            else:
+                warnings.warn(f"Plot couldn't be saved as specified file type '{file_type}' isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
+        plt.show()
+
+    def plot(self, component, yearly=False, node_edit=None, sum_techs=False, tech_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}, save_fig=False, file_type=None, year=None, start_hour=None, duration=None, scenario=None):
+        """
+        Plots component data as specified by arguments
+        :param component: Either the name of the component or a data frame of the component's data
+        :param yearly: Operational time steps if false, else yearly time steps
+        :param node_edit: By default, data is summed over nodes, chose node_edit="all" or a specific node (e.g. node_edit="CH") such that data is not summed over nodes or that a single node's data is extracted, respectively
+        :param sum_techs: sum values of technologies per carrier if true
+        :param tech_type: specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity, etc.)
+        :param: plot_type: per default stacked bar plot, passing bar will plot normal bar plot
+        :param: reference_carrier: specify reference carrier such as electricity, heat, etc. to extract their data
+        :param: plot_strings: Dict of strings used to set title and labels of plot
+        :param save_fig: Choose if figure should be saved as
+        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
+        :param year: Year of interest (only for operational plots)
+        :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration) (only for operational plots)
+        :param duration: Number of hours that should be plotted from start_hour (only for operational plots)
+        :param scenario: Choose scenario of interest (only for multi-scenario simulations, per default scenario_ is plotted)
+        :return: plot
+        """
+        if isinstance(component, str):
+            if None in self.scenarios:
+                if component not in self.results[None][None]["pars_and_vars"]:
+                    warnings.warn(f"Chosen component '{component}' doesn't exist")
+                    return
+            else:
+                if scenario is None:
+                    scenario = self.scenarios[0]
+                if component not in self.results[scenario][None]["pars_and_vars"]:
+                    warnings.warn(f"Chosen component '{component}' doesn't exist")
+                    return
+
+            component_name, component_data = self._get_component_data(component, scenario=scenario)
+        #set timeseries type
+        if yearly:
+            ts_type = "yearly"
+        else:
+            ts_type = self._get_ts_type(component_data, component_name)
+
+        #needed for plot titles
+        title = f"{component}, "
+        arguments = [node_edit, sum_techs, tech_type, reference_carrier, year, start_hour, duration, scenario]
+        argument_names = ["node_edit", "sum_techs", "tech_type", "reference_carrier", "year", "start_hour", "duration", "scenario"]
+
+        #plot variable with operational time steps
+        if ts_type == "operational":
+            if isinstance(component, str):
+                data_full_ts = self.get_full_ts(component, scenario=scenario)
+            elif isinstance(component, pd.DataFrame):
+                data_full_ts = component
+            #extract desired data
+            if node_edit != "all":
+                data_full_ts = self.edit_nodes_v2(data_full_ts, node_edit)
+            if sum_techs:
+                data_full_ts = self.sum_over_technologies_v2(data_full_ts)
+            if reference_carrier != None:
+                data_full_ts = self.extract_reference_carrier(data_full_ts, reference_carrier, scenario)
+            #drop index levels having constant value in all indices
+            if isinstance(data_full_ts, pd.DataFrame) and data_full_ts.index.nlevels > 1:
+                drop_levs = []
+                for ind, lev_shape in enumerate(data_full_ts.index.levshape):
+                    if ind != 0:
+                        if all(lev_value[ind] == data_full_ts.index.values[0][ind] for lev_value in data_full_ts.index.values[ind:]):
+                            drop_levs.append(ind)
+                data_full_ts = data_full_ts.droplevel(level=drop_levs)
+            #extract data of a specific year
+            data_full_ts = data_full_ts.transpose()
+            if year is not None:
+                # extract the rows of the desired year
+                ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
+                data_full_ts = data_full_ts.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
+                # extract specific hours of year
+                if start_hour is not None and duration is not None:
+                    data_full_ts = data_full_ts.iloc[start_hour:start_hour + duration]
+            # remove columns(technologies/variables) with constant zero value
+            data_full_ts = data_full_ts.loc[:, (data_full_ts != 0).any(axis=0)]
+            colors = plt.cm.tab20(range(data_full_ts.shape[1]))
+            plt.rcParams["figure.figsize"] = (30 * 1, 6.5 * 1)
+            #create title containing argument values
+            for ind, arg in enumerate(arguments):
+                if arg is not None and arg is not False:
+                    title += argument_names[ind]+": "+ f"{arg}, "
+            #check if there is a title passed by function argument
+            if plot_strings["title"] != "":
+                title = plot_strings["title"]
+            data_full_ts.plot(kind="area", stacked=True, color=colors, title=title)
+            plt.xlabel("Time [hours]")
+            plt.ylabel(component)
+
+        #plot variable with yearly time steps
+        elif ts_type == "yearly":
+            if isinstance(component, str):
+                data_total = self.get_total(component, scenario=scenario)
+            elif isinstance(component, pd.DataFrame):
+                data_total = component
+            if tech_type != None:
+                data_total = self.extract_technology(data_total, tech_type)
+            if reference_carrier != None:
+                data_total = self.extract_reference_carrier(data_total, reference_carrier, scenario)
+            #sum data according to chosen options
+            if node_edit != "all":
+                data_total = self.edit_nodes_v2(data_total, node_edit)
+            if sum_techs:
+                data_total = self.sum_over_technologies_v2(data_total)
+            #drop index levels having constant value in all indices
+            if isinstance(data_total, pd.DataFrame) and data_total.index.nlevels > 1:
+                drop_levs = []
+                for ind, lev_shape in enumerate(data_total.index.levshape):
+                    if ind != 0:
+                        if all(lev_value[ind] == data_total.index.values[0][ind] for lev_value in data_total.index.values):
+                            drop_levs.append(ind)
+                data_total = data_total.droplevel(level=drop_levs)
+
+            #create title containing argument values
+            for ind, arg in enumerate(arguments):
+                if arg is not None and arg is not False:
+                    title += argument_names[ind]+": "+ f"{arg}, "
+            #check if there is a title passed by function argument
+            if plot_strings["title"] != "":
+                title = plot_strings["title"]
+
+            if plot_type == None:
+                if isinstance(data_total, pd.DataFrame):
+                    data_total = data_total.transpose()
+                plt.rcParams["figure.figsize"] = (9.5, 6.5)
+                fig, ax = plt.subplots()
+                data_total.plot(ax=ax, kind='bar', stacked=True,
+                        title=title, rot=0, xlabel='Year', ylabel=plot_strings["ylabel"])
+                pos = ax.get_position()
+                ax.set_position([pos.x0, pos.y0, pos.width * 0.8, pos.height])
+                ax.legend(loc='center right', bbox_to_anchor=(1.4, 0.5))
+
+            elif plot_type == "bar":
+                #set up bar plot
+                bars = []
+                for ind, row in enumerate(data_total.values):
+                    bar = plt.bar(data_total.columns.values + 1/(data_total.shape[0]+1) * ind, row, 1/(data_total.shape[0]+1))
+                    bars.append(bar)
+                #data_total.columns.values dtype needs to be cast to an integer as edit_nodes changes the dtype to an object
+                plt.xticks(np.array(data_total.columns.values, dtype=int) + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), np.array(data_total.columns.values, dtype=int)+self.results["system"]["reference_year"])
+                plt.legend((bars),(data_total.index.values),ncols=max(1,int(data_total.shape[0]/7)))
+
+            else:
+                warnings.warn(f"Chosen plot_type '{plot_type}' doesn't exist, chose 'bar' or don't pass any argument for stacked bar plot")
+
+        #plot variable with storage time steps
+        elif ts_type == "storage":
+            warnings.warn("Further implementation needed")
+
+        if save_fig:
+            path = os.path.join(os.getcwd(), "outputs")
+            path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
+            path = os.path.join(path, "result_plots")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            if file_type in plt.gcf().canvas.get_supported_filetypes():
+                if isinstance(component,str):
+                    plt.savefig(os.path.join(path,component + "_yearly="+str(yearly) + "_" + "node_edit=" + str(node_edit) +"." + file_type))
+                else:
+                    plt.savefig(os.path.join(path, plot_strings["title"] + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + "." + file_type))
+            elif file_type is None:
+                #save figure as pdf if file_type hasn't been specified
+                if isinstance(component, str):
+                    plt.savefig(os.path.join(path, component + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + ".pdf" ))
+                else:
+                    plt.savefig(os.path.join(path, plot_strings["title"] + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + ".pdf"))
+            else:
+                warnings.warn(f"Plot couldn't be saved as specified file type '{file_type}' isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
+        plt.show()
+
+    def calculate_connected_edges(self, node, direction: str, set_nodes_on_edges):
+        """ calculates connected edges going in (direction = 'in') or going out (direction = 'out')
+        :param node: current node, connected by edges
+        :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
+        :return _set_connected_edges: list of connected edges """
+        if direction == "in":
+            # second entry is node into which the flow goes
+            _set_connected_edges = [edge for edge in set_nodes_on_edges if set_nodes_on_edges[edge][1] == node]
+        elif direction == "out":
+            # first entry is node out of which the flow starts
+            _set_connected_edges = [edge for edge in set_nodes_on_edges if set_nodes_on_edges[edge][0] == node]
+        else:
+            raise KeyError(f"invalid direction '{direction}'")
+        return _set_connected_edges
+
+    def edit_carrier_flows(self, data, node, carrier, direction, scenario):
+        """
+        Extracts data of carrier_flow variable as needed for the plot_energy_balance function
+        """
+        set_nodes_on_edges = self.get_df("set_nodes_on_edges",is_set=True, scenario=scenario)
+        set_nodes_on_edges = {edge: set_nodes_on_edges[edge].split(",") for edge in set_nodes_on_edges.index}
+        data = data.loc[(slice(None), self.calculate_connected_edges(node, direction, set_nodes_on_edges)), :]
+
+        if "carrier" not in data.index.dtypes:
+            reference_carriers = self.get_df("set_reference_carriers",is_set=True, scenario=scenario)
+            data_extracted = pd.DataFrame()
+            data = data.groupby(["technology"]).sum()
+            for ind, tech in enumerate(data.index.get_level_values("technology")):
+                if reference_carriers[tech] == carrier:
+                    data_extracted = pd.concat([data_extracted, data.transpose()[tech]], axis=1)
+
+        return data_extracted.transpose()
+
+
+    def edit_nodes_v2(self, data, node_edit):
+        """
+        Manipulates the data frame 'data' as specified by 'node_edit'
+        :param node_edit: string to specify if data should be summed over nodes (node_edit="all") or if a single node should be extracted (e.g. node_edit="CH")
+        """
+        if isinstance(data, pd.Series):
+            return data
+        if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
+            return data
+        #check if data of specific node, specified by string, should be extracted
+        if node_edit in self.results["system"]["set_nodes"]:
+            if data.index.nlevels == 2:
+                data = data.loc[(slice(None), node_edit), :]
+                return data
+            elif data.index.nlevels == 3:
+                data = data.loc[(slice(None), slice(None), node_edit), :]
+                return data
+            elif data.index.nlevels == 4:
+                return
+        #check if data varying only in node value should be summed
+        elif node_edit is None:
+            level_names = [name for name in data.index.names if name not in ["node", "location"]]
+            if len(level_names) == 1:
+                data_summed = data.groupby([level_names[0]]).sum()
+                return data_summed
+            elif len(level_names) == 2:
+                data_summed = data.groupby([level_names[0], level_names[1]]).sum()
+                return data_summed
+            else:
+                warnings.warn(f"Further implementation needed")
+        else:
+            warnings.warn(f"Chosen node_edit string '{node_edit}' is invalid")
+            return data
+
+    def sum_over_technologies_v2(self, data):
+        """
+        Sums the data of technologies with the same output carrier
+        """
+        if "technology" not in data.index.dtypes:
+            return data
+        level_names = [name for name in data.index.names if name not in ["technology"]]
+        if len(level_names) == 1:
+            data_summed = data.groupby([level_names[0]]).sum()
+            return data_summed
+        elif len(level_names) == 2:
+            data_summed = data.groupby([level_names[0], level_names[1]]).sum()
+            return data_summed
+        else:
+            warnings.warn(f"Further implementation needed")
+            return data
+
+    def extract_carrier(self, data, carrier, scenario):
+        """
+        Extracts data of all technologies with the specified reference carrier
+        """
+        reference_carriers = self.get_df("set_reference_carriers", is_set=True, scenario=scenario)
+        if carrier not in reference_carriers.values:
+            warnings.warn(f"Chosen reference carrier '{carrier}' doesn't exist")
+            return
+        if "carrier" not in data.index.dtypes:
+            data_extracted = pd.DataFrame()
+            for tech in data.index.get_level_values("technology"):
+                if reference_carriers[tech] == carrier:
+                    data_extracted = pd.concat([data_extracted, data.loc[(tech, slice(None)), :]], axis=1)
+            return data_extracted
+        #check if desired carrier isn't contained in data (otherwise .loc raises an error)
+        if carrier not in data.index.get_level_values("carrier"):
+            return None
+        if data.index.nlevels == 2:
+            data = data.loc[(carrier, slice(None)), :]
+            return data
+        elif data.index.nlevels == 3:
+            data = data.loc[(slice(None), carrier, slice(None)), :]
+            return data
+
+    def extract_technology(self, data, type):
+        """
+        Extracts the technology type specified by 'type'
+        """
+        #check if data contains technologies
+        if "technology" not in data.index.dtypes:
+            return data
+        index_list = []
+        #check if data contains technology and capacity_type index levels as it is the case for: capacity, ...
+        if "technology" in data.index.dtypes and "capacity_type" in data.index.dtypes:
+            if "location" in data.index.dtypes:
+                #iterate over rows of data to find technologies with identical carrier
+                for pos, index in enumerate(data.index):
+                    if type == "conversion":
+                        if index[0] in self.results["system"]["set_conversion_technologies"]:
+                            index_list.append(index)
+                    elif type == "transport":
+                        if index[0] in self.results["system"]["set_transport_technologies"]:
+                            index_list.append(index)
+                    elif "storage" in type:
+                        if index[0] in self.results["system"]["set_storage_technologies"]:
+                            if "power" in type and index[1] == "power":
+                                index_list.append(index)
+                            elif "energy" in type and index[1] == "energy":
+                                index_list.append(index)
+                            elif "power" not in type and "energy" not in type:
+                                index_list.append(index)
+                    else:
+                        warnings.warn(f"Technology type '{type}' doesn't exist!")
+        return data.loc[data.index.isin(index_list)]
+
+    def extract_reference_carrier(self, data, type, scenario):
+        """
+        Extracts technologies of reference carrier type
+        :param data: Data Frame containing set of technologies with different reference carriers
+        :param type: String specifying reference carrier whose technologies should be extracted from data
+        :return: Data Frame containing technologies of reference carrier only
+        """
+        reference_carriers = self.get_df("set_reference_carriers", is_set=True, scenario=scenario)
+        if type not in [carrier for carrier in reference_carriers]:
+            warnings.warn(f"Chosen reference carrier '{type}' doesn't exist")
+            return data
+        index_list = []
+        for tech, carrier in enumerate(reference_carriers):
+            if carrier == type:
+                index_list.extend([index for index in data.index if index[0] == reference_carriers.index[tech]])
+
+        return data.loc[data.index.isin(index_list)]
 
 if __name__ == "__main__":
     spec = importlib.util.spec_from_file_location("module", "config.py")

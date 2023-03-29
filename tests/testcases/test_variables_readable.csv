@@ -13,8 +13,8 @@ test_1a,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_1a,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
 test_1a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_1a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_1a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
-test_1a,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_1a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_1a,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_1a,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_1a,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_1a,level_charge,"('natural_gas_storage', 'CH', 0)",0
@@ -35,8 +35,8 @@ test_1b,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_1b,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
 test_1b,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_1b,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_1b,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
-test_1b,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_1b,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_1b,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_1b,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_1b,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_1b,level_charge,"('natural_gas_storage', 'CH', 0)",0
@@ -57,8 +57,8 @@ test_2a,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_2a,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",108.5
 test_2a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_2a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_2a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
-test_2a,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_2a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_2a,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_2a,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_2a,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_2a,level_charge,"('natural_gas_storage', 'CH', 0)",0
@@ -79,8 +79,8 @@ test_2b,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_2b,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
 test_2b,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_2b,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_2b,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.05
-test_2b,capex,"('natural_gas_boiler', 'power', 'DE', 0)",0.434
+test_2b,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_2b,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.6
 test_2b,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_2b,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_2b,level_charge,"('natural_gas_storage', 'CH', 0)",0
@@ -101,8 +101,8 @@ test_2c,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_2c,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
 test_2c,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_2c,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_2c,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
-test_2c,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_2c,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_2c,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_2c,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_2c,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_2c,level_charge,"('natural_gas_storage', 'CH', 0)",0
@@ -123,8 +123,8 @@ test_2d,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_2d,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
 test_2d,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",20
 test_2d,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_2d,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.28
-test_2d,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_2d,capex,"('natural_gas_boiler', 'power', 'CH', 0)",2
+test_2d,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_2d,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_2d,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_2d,level_charge,"('natural_gas_storage', 'CH', 0)",0
@@ -149,8 +149,8 @@ test_3a,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_3a,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
 test_3a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_3a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_3a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
-test_3a,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_3a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_3a,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_3a,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_3a,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_3a,level_charge,"('natural_gas_storage', 'CH', 0)",0
@@ -175,8 +175,8 @@ test_3b,input_flow,"('natural_gas_boiler', 'oxygen', 'CH', 0)",8
 test_3b,input_flow,"('natural_gas_boiler', 'oxygen', 'DE', 0)",80
 test_3b,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_3b,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_3b,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
-test_3b,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_3b,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_3b,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_3b,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_3b,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_3b,level_charge,"('natural_gas_storage', 'CH', 0)",0
@@ -209,8 +209,8 @@ test_4c,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 2)",11
 test_4c,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 2)",110
 test_4c,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_4c,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_4c,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
-test_4c,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_4c,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_4c,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_4c,capex,"('natural_gas_boiler', 'power', 'CH', 1)",0
 test_4c,capex,"('natural_gas_boiler', 'power', 'DE', 1)",0
 test_4c,capex,"('natural_gas_boiler', 'power', 'CH', 2)",0
@@ -235,8 +235,8 @@ test_5a,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_5a,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
 test_5a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_5a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_5a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
-test_5a,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_5a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_5a,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_5a,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_5a,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_5a,input_flow,"('natural_gas_compressor', 'natural_gas', 'CH', 0)",110
@@ -263,8 +263,8 @@ test_6a1,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_6a1,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
 test_6a1,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_6a1,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_6a1,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
-test_6a1,capex,"('natural_gas_boiler', 'power', 'DE', 0)",1.4
+test_6a1,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_6a1,capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
 test_6a1,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_6a1,opex,"('natural_gas_boiler', 'DE', 0)",0
 test_6a1,level_charge,"('natural_gas_storage', 'CH', 0)",0
@@ -329,7 +329,7 @@ test_7a,input_flow,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_7a,input_flow,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
 test_7a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_7a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",131.8
-test_7a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.14
+test_7a,capex,"('natural_gas_boiler', 'power', 'CH', 0)",1
 test_7a,capex,"('natural_gas_boiler', 'power', 'DE', 0)",0
 test_7a,opex,"('natural_gas_boiler', 'CH', 0)",0
 test_7a,opex,"('natural_gas_boiler', 'DE', 0)",0
