@@ -11,9 +11,7 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 import logging
 
-import linopy as lp
 import numpy as np
-import xarray as xr
 import pandas as pd
 
 from zen_garden.utils import ZenIndex, linexpr_from_tuple_np
@@ -386,7 +384,9 @@ class Technology(Element):
         sets = optimization_setup.sets
 
         def capacity_bounds(tech, capacity_type, loc, time):
-            """ return bounds of capacity for bigM expression
+            """ 
+            # TODO: This could be vectorized
+            return bounds of capacity for bigM expression
             :param tech: tech index
             :param capacity_type: either power or energy
             :param loc: location of capacity
@@ -554,8 +554,6 @@ class TechnologyRules:
         """
 
         self.optimization_setup = optimization_setup
-        placeholder_lhs = lp.expressions.ScalarLinearExpression((np.nan,), (-1,), lp.Model())
-        self.emtpy_cons = lp.constraints.AnonymousScalarConstraint(placeholder_lhs, "=", np.nan)
 
     def disjunct_on_technology_rule(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
@@ -590,7 +588,7 @@ class TechnologyRules:
             else:
                 return (model.variables["built_capacity"][tech, capacity_type, loc, time] == 0)
         else:
-            return self.emtpy_cons
+            return None
 
     def constraint_technology_min_capacity_rule(self, tech, capacity_type, loc, time):
         """ min capacity expansion of technology."""
@@ -602,7 +600,7 @@ class TechnologyRules:
                     - model.variables["built_capacity"][tech, capacity_type, loc, time]
                     <= 0)
         else:
-            return self.emtpy_cons
+            return None
 
     def constraint_technology_max_capacity_rule(self, tech, capacity_type, loc, time):
         """max capacity expansion of technology"""
@@ -614,7 +612,7 @@ class TechnologyRules:
                     - model.variables["built_capacity"][tech, capacity_type, loc, time]
                     >= 0)
         else:
-            return self.emtpy_cons
+            return None
 
     def constraint_technology_construction_time_rule(self, tech, capacity_type, loc, time):
         """ construction time of technology, i.e., time that passes between investment and availability"""
@@ -702,7 +700,7 @@ class TechnologyRules:
                     <= ((1 + params.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_param # add initial market share until which the diffusion rate is unbounded
                     + unbounded_market_share * total_capacity_all_techs_param)
         else:
-            return self.emtpy_cons
+            return None
 
     def constraint_capex_yearly_rule(self, tech, capacity_type, loc, year):
         """ aggregates the capex of built capacity and of existing capacity """

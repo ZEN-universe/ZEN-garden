@@ -14,8 +14,6 @@ import logging
 
 import numpy as np
 import xarray as xr
-import pyomo.environ as pe
-import linopy as lp
 
 from zen_garden.utils import ZenIndex, linexpr_from_tuple_np
 from .technology import Technology
@@ -216,25 +214,44 @@ class StorageTechnology(Technology):
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
         """definition of disjunct constraints if technology is on"""
         params = optimization_setup.parameters
+        constraints = optimization_setup.constraints
         model = optimization_setup.model
         energy_system = optimization_setup.energy_system
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech,time)
         # disjunct constraints min load charge
-        disjunct.constraint_min_load_charge = pe.Constraint(
-            expr=model.carrier_flow_charge[tech, node, time] >= params.min_load[tech, capacity_type, node, time] * model.capacity[tech, capacity_type, node, time_step_year])
+        model.add_constraints(model.variables["carrier_flow_charge"][tech, node, time].to_expr()
+                              - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
+                              - model.variables["tech_on_var"] * constraints.M
+                              >= -constraints.M)
         # disjunct constraints min load discharge
-        disjunct.constraint_min_load_discharge = pe.Constraint(
-            expr=model.carrier_flow_discharge[tech, node, time] >= params.min_load[tech, capacity_type, node, time] * model.capacity[tech, capacity_type, node, time_step_year])
+        model.add_constraints(model.variables["carrier_flow_discharge"][tech, node, time].to_expr()
+                              - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
+                              - model.variables["tech_on_var"] * constraints.M
+                              >= -constraints.M)
 
     @classmethod
-    def disjunct_off_technology_rule(cls, disjunct, tech, capacity_type, node, time):
+    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
         """definition of disjunct constraints if technology is off"""
-        model = disjunct.model()
+        model = optimization_setup.model
+        constraints = optimization_setup.constraints
+
+        # for equality constraints we need to add upper and lower bounds
         # off charging
-        disjunct.constraint_no_load_charge = pe.Constraint(expr=model.carrier_flow_charge[tech, node, time] == 0)
+        model.add_constraints(model.variables["carrier_flow_charge"][tech, node, time].to_linexpr()
+                              + model.variables["tech_off_var"] * constraints.M
+                              <= constraints.M)
+        model.add_constraints(model.variables["carrier_flow_charge"][tech, node, time].to_linexpr()
+                              - model.variables["tech_off_var"] * constraints.M
+                              >= -constraints.M)
+
         # off discharging
-        disjunct.constraint_no_load_discharge = pe.Constraint(expr=model.carrier_flow_discharge[tech, node, time] == 0)
+        model.add_constraints(model.variables["carrier_flow_discharge"][tech, node, time]
+                              + model.variables["tech_off_var"] * constraints.M
+                              <= constraints.M)
+        model.add_constraints(model.variables["carrier_flow_discharge"][tech, node, time]
+                              - model.variables["tech_off_var"] * constraints.M
+                              >= -constraints.M)
 
 class StorageTechnologyRules:
     """
@@ -249,8 +266,6 @@ class StorageTechnologyRules:
 
         self.optimization_setup = optimization_setup
         self.energy_system = optimization_setup.energy_system
-        placeholder_lhs = lp.expressions.ScalarLinearExpression((np.nan,), (-1,), lp.Model())
-        self.emtpy_cons = lp.constraints.AnonymousScalarConstraint(placeholder_lhs, "=", np.nan)
 
     ### --- functions with constraint rules --- ###
     def get_constraint_storage_level_max(self, index_values, index_names):

@@ -13,10 +13,8 @@ import logging
 
 import numpy as np
 import xarray as xr
-import pyomo.environ as pe
-import linopy as lp
 
-from zen_garden.utils import ZenIndex, linexpr_from_tuple_np
+from zen_garden.utils import ZenIndex
 from .technology import Technology
 
 
@@ -191,20 +189,32 @@ class TransportTechnology(Technology):
     @classmethod
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time):
         """definition of disjunct constraints if technology is on"""
-        model = disjunct.model()
+        model = optimization_setup.model
         # get parameter object
         params = optimization_setup.parameters
+        constraints = optimization_setup.constraints
         # get invest time step
         time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
+
         # disjunct constraints min load
-        disjunct.constraint_min_load = pe.Constraint(
-            expr=model.carrier_flow[tech, edge, time] >= params.min_load[tech, capacity_type, edge, time] * model.capacity[tech, capacity_type, edge, time_step_year])
+        model.add_constraints(model.variables["carrier_flow"][tech, edge, time].to_linexpr()
+                              - params.min_load.loc[tech, capacity_type, edge, time].item() * model.variables["capacity"][tech, capacity_type, edge, time_step_year]
+                              - model.variables["tech_on_var"] * constraints.M
+                              >= -constraints.M)
 
     @classmethod
-    def disjunct_off_technology_rule(cls,optimization_setup, disjunct, tech, capacity_type, edge, time):
+    def disjunct_off_technology_rule(cls, optimization_setup, disjunct, tech, capacity_type, edge, time):
         """definition of disjunct constraints if technology is off"""
-        model = disjunct.model()
-        disjunct.constraint_no_load = pe.Constraint(expr=model.carrier_flow[tech, edge, time] == 0)
+        model = optimization_setup.model
+        constraints = optimization_setup.constraints
+
+        # since it is an equality con we add lower and upper bounds
+        model.add_constraints(model.variables["carrier_flow"][tech, edge, time].to_linexpr()
+                              + model.variables["tech_off_var"] * constraints.M
+                              <= constraints.M)
+        model.add_constraints(model.variables["carrier_flow"][tech, edge, time].to_linexpr()
+                              - model.variables["tech_off_var"] * constraints.M
+                              >= -constraints.M)
 
 
 class TransportTechnologyRules:
@@ -218,8 +228,6 @@ class TransportTechnologyRules:
         :param optimization_setup: The OptimizationSetup the element is part of
         """
         self.optimization_setup = optimization_setup
-        placeholder_lhs = lp.expressions.ScalarLinearExpression((np.nan,), (-1,), lp.Model())
-        self.emtpy_cons = lp.constraints.AnonymousScalarConstraint(placeholder_lhs, "=", np.nan)
 
     ### --- functions with constraint rules --- ###
     def get_constraint_transport_technology_losses_flow(self, index_values, index_list):
