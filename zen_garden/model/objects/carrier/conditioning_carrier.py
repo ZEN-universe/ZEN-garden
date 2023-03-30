@@ -11,9 +11,10 @@ Description:    Class defining compressable energy carriers.
 ==========================================================================================================================================================================="""
 import logging
 
-import pyomo.environ as pe
 import numpy as np
+import xarray as xr
 
+from zen_garden.utils import ZenIndex
 from .carrier import Carrier
 
 
@@ -56,15 +57,14 @@ class ConditioningCarrier(Carrier):
         constraints = optimization_setup.constraints
         rules = ConditioningCarrierRules(optimization_setup)
         # limit import flow by availability
-        constraints.add_constraint_rule(model, name="constraint_carrier_demand_coupling", index_sets=cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_carrier_demand_coupling_rule, doc='coupling model endogenous and exogenous carrier demand', )
+        constraints.add_constraint_block(model, name="constraint_carrier_demand_coupling",
+                                         constraint=rules.get_constraint_carrier_demand_coupling(*cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], optimization_setup)),
+                                         doc='coupling model endogenous and exogenous carrier demand', )
         # overwrite energy balance when conditioning carriers are included
-        # FIXME: add a remove function to the constraint class
-        for cname in model.constraints:
-            if cname.startswith("constraint_nodal_energy_balance"):
-                model.constraints.remove(cname)
-        constraints.add_constraint_rule(model, name="constraint_nodal_energy_balance_conditioning", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_nodal_energy_balance_conditioning_rule, doc='node- and time-dependent energy balance for each carrier', )
+        constraints.remove_constraint(model, "constraint_nodal_energy_balance")
+        constraints.add_constraint_block(model, name="constraint_nodal_energy_balance_conditioning",
+                                         constraint=rules.get_constraint_nodal_energy_balance_conditioning(*cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)),
+                                         doc='node- and time-dependent energy balance for each carrier', )
 
 
 class ConditioningCarrierRules:
@@ -81,16 +81,22 @@ class ConditioningCarrierRules:
         self.optimization_setup = optimization_setup
         self.energy_system = optimization_setup.energy_system
 
-    def constraint_carrier_demand_coupling_rule(self, parent_carrier, node, time):
+    def get_constraint_carrier_demand_coupling(self, index_values, index_names):
         """ sum conditioning Carriers"""
 
         model = self.optimization_setup.model
         sets = self.optimization_setup.sets
-        return (model.variables["endogenous_carrier_demand"][parent_carrier, node, time]
-                - sum(model.variables["endogenous_carrier_demand"][conditioning_carrier, node, time] for conditioning_carrier in sets["set_conditioning_carrier_children"][parent_carrier])
-                == 0 )
 
-    def constraint_nodal_energy_balance_conditioning_rule(self, carrier, node, time):
+        # get all the constraints
+        constraints = []
+        index = ZenIndex(index_values, index_names)
+        for parent_carrier in index.get_unique([0]):
+            constraints.append(model.variables["endogenous_carrier_demand"].loc[parent_carrier]
+                               - model.variables["endogenous_carrier_demand"].loc[np.array(sets["set_conditioning_carrier_children"][parent_carrier])].sum("set_conditioning_carriers")
+                               == 0)
+        return constraints
+
+    def get_constraint_nodal_energy_balance_conditioning(self, index_values, index_names):
         """
         nodal energy balance for each time step.
         """
@@ -98,53 +104,55 @@ class ConditioningCarrierRules:
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model
 
-        # carrier input and output conversion technologies
-        carrier_conversion_in, carrier_conversion_out = 0, 0
-        for tech in sets["set_conversion_technologies"]:
-            if carrier in sets["set_input_carriers"][tech]:
-                carrier_conversion_in += model.variables["input_flow"][tech, carrier, node, time]
-            if carrier in sets["set_output_carriers"][tech]:
-                carrier_conversion_out += model.variables["output_flow"][tech, carrier, node, time]
-        # carrier flow transport technologies
-        carrier_flow_in, carrier_flow_out = 0, 0
-        set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
-        set_edges_out = self.energy_system.calculate_connected_edges(node, "out")
-        for tech in sets["set_transport_technologies"]:
-            if carrier in sets["set_reference_carriers"][tech]:
-                carrier_flow_in += sum(model.variables["carrier_flow"][tech, edge, time] - model.variables["carrier_loss"][tech, edge, time] for edge in set_edges_in)
-                carrier_flow_out += sum(model.variables["carrier_flow"][tech, edge, time] for edge in set_edges_out)
-        # carrier flow storage technologies
-        carrier_flow_discharge, carrier_flow_charge = 0, 0
-        for tech in sets["set_storage_technologies"]:
-            if carrier in sets["set_reference_carriers"][tech]:
-                carrier_flow_discharge += model.variables["carrier_flow_discharge"][tech, node, time]
-                carrier_flow_charge += model.variables["carrier_flow_charge"][tech, node, time]
-        # carrier import, demand and export
-        carrier_import = model.variables["import_carrier_flow"][carrier, node, time]
-        carrier_export = model.variables["export_carrier_flow"][carrier, node, time]
-        carrier_demand = params.demand_carrier.loc[carrier, node, time].item()
-        endogenous_carrier_demand = 0
+        # get all the constraints
+        constraints = []
+        index = ZenIndex(index_values, index_names)
+        for carrier, node in index.get_unique([0, 1]):
 
-        # check if carrier is conditioning carrier:
-        if carrier in sets["set_conditioning_carriers"]:
-            # check if carrier is parent_carrier of a conditioning_carrier
-            if carrier in sets["set_conditioning_carrier_parents"]:
-                endogenous_carrier_demand = - model.variables["endogenous_carrier_demand"][carrier, node, time]
-            else:
-                endogenous_carrier_demand = model.variables["endogenous_carrier_demand"][carrier, node, time]
-
-        # aggregate
-        lhs = None
-        rhs = 0
-        for term in [carrier_conversion_out, -carrier_conversion_in, carrier_flow_in, -carrier_flow_out,
-                     carrier_flow_discharge, -carrier_flow_charge, carrier_import, -carrier_export,
-                     -endogenous_carrier_demand, -carrier_demand]:
-            if not isinstance(term, (int, float)):
-                if lhs is None:
-                    lhs = term
+            # carrier input and output conversion technologies
+            in_techs = [tech for tech in sets["set_conversion_technologies"] if carrier in sets["set_input_carriers"][tech]]
+            carrier_conversion_in = 0
+            if len(in_techs) > 0:
+                carrier_conversion_in = (model.variables["input_flow"].loc[in_techs, carrier, node]).sum("set_conversion_technologies")
+            out_techs = [tech for tech in sets["set_conversion_technologies"] if carrier in sets["set_output_carriers"][tech]]
+            carrier_conversion_out = 0
+            if len(out_techs) > 0:
+                carrier_conversion_out = (model.variables["output_flow"].loc[out_techs, carrier, node]).sum("set_conversion_technologies")
+            # carrier flow transport technologies
+            carrier_flow_in, carrier_flow_out = 0, 0
+            set_edges_in = xr.DataArray(self.energy_system.calculate_connected_edges(node, "in"), dims=["set_edges"])
+            set_edges_out = xr.DataArray(self.energy_system.calculate_connected_edges(node, "out"), dims=["set_edges"])
+            techs = xr.DataArray([tech for tech in sets["set_transport_technologies"] if carrier in sets["set_reference_carriers"][tech]], dims=["set_transport_technologies"])
+            if len(techs) > 0:
+                if len(set_edges_in) > 0:
+                    carrier_flow_in = model.variables["carrier_flow"].loc[techs, set_edges_in].sum(["set_transport_technologies", "set_edges"])
+                    carrier_flow_in -= model.variables["carrier_loss"].loc[techs, set_edges_in].sum(["set_transport_technologies", "set_edges"])
+                if len(set_edges_out) > 0:
+                    carrier_flow_out = model.variables["carrier_flow"].loc[techs, set_edges_out].sum(["set_transport_technologies", "set_edges"])
+            # carrier flow storage technologies
+            carrier_flow_discharge, carrier_flow_charge = 0, 0
+            techs = [tech for tech in sets["set_storage_technologies"] if carrier in sets["set_reference_carriers"][tech]]
+            if len(techs) > 0:
+                carrier_flow_discharge = (model.variables["carrier_flow_discharge"].loc[techs, node]).sum("set_storage_technologies")
+                carrier_flow_charge = (model.variables["carrier_flow_charge"].loc[techs, node]).sum("set_storage_technologies")
+            # carrier import, demand and export
+            carrier_import = model.variables["import_carrier_flow"].loc[carrier, node]
+            carrier_export = model.variables["export_carrier_flow"].loc[carrier, node]
+            carrier_demand = params.demand_carrier.loc[carrier, node]
+            endogenous_carrier_demand = 0
+            # check if carrier is conditioning carrier:
+            if carrier in sets["set_conditioning_carriers"]:
+                # check if carrier is parent_carrier of a conditioning_carrier
+                if carrier in sets["set_conditioning_carrier_parents"]:
+                    endogenous_carrier_demand = -model.variables["endogenous_carrier_demand"].loc[carrier, node]
                 else:
-                    lhs += term
-            else:
-                rhs -= term
+                    endogenous_carrier_demand = model.variables["endogenous_carrier_demand"].loc[carrier, node]
 
-        return (lhs == rhs)
+            # aggregate, note some terms might be 0 so we need to make sure we don't add variabl
+            terms = [carrier_conversion_out, -carrier_conversion_in, carrier_flow_in, -carrier_flow_out, carrier_flow_discharge,
+                     -carrier_flow_charge, carrier_import, -carrier_export, -endogenous_carrier_demand, -carrier_demand]
+            lhs = sum([term for term in terms if not isinstance(term, (xr.DataArray, float, int))])
+            rhs = -sum([term for term in terms if isinstance(term, (xr.DataArray, float, int))])
+
+            constraints.append(lhs == rhs)
+        return constraints

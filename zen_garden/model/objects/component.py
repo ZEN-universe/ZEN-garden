@@ -605,3 +605,18 @@ class Constraint(Component):
                               <= 1.0)
 
         return sos2_var
+
+    def remove_constraint(self, model, name):
+        """
+        Removes a constraint from the model
+        :param model: The model to remove the constraint from
+        :param name: The name of the constraint
+        """
+
+        # remove all constraints and sub-constraints from the model and docs
+        for cname in list(model.constraints):
+            if cname.startswith(name):
+                model.constraints.remove(cname)
+        for cname in list(self.docs.keys()):
+            if cname.startswith(name):
+                del self.docs[cname]
