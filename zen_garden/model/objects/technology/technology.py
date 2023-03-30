@@ -440,13 +440,13 @@ class Technology(Element):
         variables.add_variable(model, name="capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='annual capex for having technology at location l')
         # total capex
-        variables.add_variable(model, name="capex_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
+        variables.add_variable(model, name="capex_total", index_sets=sets["set_time_steps_yearly"],
             bounds=(0,np.inf), doc='total capex for installing all technologies in all locations at all times')
         # opex
         variables.add_variable(model, name="opex", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
             bounds=(0,np.inf), doc="opex for operating technology at location l and time t")
         # total opex
-        variables.add_variable(model, name="opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
+        variables.add_variable(model, name="opex_total", index_sets=sets["set_time_steps_yearly"],
             bounds=(0,np.inf), doc="total opex all technologies and locations in year y")
         # yearly opex
         variables.add_variable(model, name="opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], optimization_setup),
@@ -455,7 +455,7 @@ class Technology(Element):
         variables.add_variable(model, name="carbon_emissions_technology", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
             doc="carbon emissions for operating technology at location l and time t")
         # total carbon emissions technology
-        variables.add_variable(model, name="carbon_emissions_technology_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
+        variables.add_variable(model, name="carbon_emissions_technology_total", index_sets=sets["set_time_steps_yearly"],
             doc="total carbon emissions for operating technology at location l and time t")
 
         # add pe.Vars of the child classes
@@ -502,7 +502,7 @@ class Technology(Element):
         constraints.add_constraint_rule(model, name="constraint_capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_capex_yearly_rule, doc='annual capex of having capacity of technology.')
         # total capex of all technologies
-        constraints.add_constraint_rule(model, name="constraint_capex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_capex_total_rule,
+        constraints.add_constraint_rule(model, name="constraint_capex_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_capex_total_rule,
             doc='total capex of all technology that can be installed.')
         # calculate opex
         constraints.add_constraint_block(model, name="constraint_opex_technology",
@@ -512,13 +512,13 @@ class Technology(Element):
         constraints.add_constraint_rule(model, name="constraint_opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"],optimization_setup),
                                         rule=rules.constraint_opex_yearly_rule, doc='total opex of all technology that are operated.')
         # total opex of all technologies
-        constraints.add_constraint_rule(model, name="constraint_opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_opex_total_rule, doc='total opex of all technology that are operated.')
+        constraints.add_constraint_rule(model, name="constraint_opex_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_opex_total_rule, doc='total opex of all technology that are operated.')
         # carbon emissions of technologies
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology",
                                          constraint=rules.get_constraint_carbon_emissions_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
                                          doc="carbon emissions for each technology at each location and time step")
         # total carbon emissions of technologies
-        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_technology_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_carbon_emissions_technology_total_rule,
+        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_technology_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_carbon_emissions_technology_total_rule,
             doc="total carbon emissions for each technology at each location and time step")
 
         # disjunct if technology is on

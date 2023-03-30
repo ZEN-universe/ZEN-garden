@@ -120,13 +120,13 @@ class Carrier(Element):
         variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
                                doc="node- and time-dependent carrier cost due to import and export")
         # total carrier import/export cost
-        variables.add_variable(model, name="cost_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
+        variables.add_variable(model, name="cost_carrier_total", index_sets=sets["set_time_steps_yearly"],
                                doc="total carrier cost due to import and export")
         # carbon emissions
         variables.add_variable(model, name="carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
                                doc="carbon emissions of importing and exporting carrier")
         # carbon emissions carrier
-        variables.add_variable(model, name="carbon_emissions_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
+        variables.add_variable(model, name="carbon_emissions_carrier_total", index_sets=sets["set_time_steps_yearly"],
                                doc="total carbon emissions of importing and exporting carrier")
         # shed demand
         variables.add_variable(model, name="shed_demand_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
@@ -171,13 +171,13 @@ class Carrier(Element):
         constraints.add_constraint_block(model, name="constraint_limit_shed_demand", constraint=rules.get_constraint_limit_shed_demand(model),
                                    doc="limit of shedding carrier demand")
         # total cost for carriers
-        constraints.add_constraint_rule(model, name="constraint_cost_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_cost_carrier_total_rule,
+        constraints.add_constraint_rule(model, name="constraint_cost_carrier_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_cost_carrier_total_rule,
             doc="total cost of importing and exporting carriers")
         # carbon emissions
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_carrier", constraint=rules.get_constraint_carbon_emissions_carrier(),
                                          doc="carbon emissions of importing and exporting carrier")
         # carbon emissions carrier
-        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_carrier_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_carbon_emissions_carrier_total_rule,
+        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_carrier_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_carbon_emissions_carrier_total_rule,
             doc="total carbon emissions of importing and exporting carriers")
         # energy balance
         constraints.add_constraint_block(model, name="constraint_nodal_energy_balance", constraint=rules.get_constraint_nodal_energy_balance(), doc='node- and time-dependent energy balance for each carrier', )

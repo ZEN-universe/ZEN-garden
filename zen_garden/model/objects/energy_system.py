@@ -11,10 +11,9 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
 import copy
 import logging
 
-import numpy as np
-import xarray as xr
-import pyomo.environ as pe
 import linopy as lp
+import numpy as np
+import pyomo.environ as pe
 
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 from zen_garden.preprocess.functions.unit_handling import UnitHandling
@@ -208,21 +207,21 @@ class EnergySystem:
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model
         # carbon emissions
-        variables.add_variable(model, name="carbon_emissions_total", index_sets=sets.as_tuple("set_time_steps_yearly"), doc="total carbon emissions of energy system")
+        variables.add_variable(model, name="carbon_emissions_total", index_sets=sets["set_time_steps_yearly"], doc="total carbon emissions of energy system")
         # cumulative carbon emissions
-        variables.add_variable(model, name="carbon_emissions_cumulative", index_sets=sets.as_tuple("set_time_steps_yearly"),
+        variables.add_variable(model, name="carbon_emissions_cumulative", index_sets=sets["set_time_steps_yearly"],
                                doc="cumulative carbon emissions of energy system over time for each year")
         # carbon emission overshoot
-        variables.add_variable(model, name="carbon_emissions_overshoot", index_sets=sets.as_tuple("set_time_steps_yearly"), bounds=(0, np.inf),
+        variables.add_variable(model, name="carbon_emissions_overshoot", index_sets=sets["set_time_steps_yearly"], bounds=(0, np.inf),
                                doc="overshoot carbon emissions of energy system at the end of the time horizon")
         # cost of carbon emissions
-        variables.add_variable(model, name="cost_carbon_emissions_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
+        variables.add_variable(model, name="cost_carbon_emissions_total", index_sets=sets["set_time_steps_yearly"],
                                doc="total cost of carbon emissions of energy system")
         # costs
-        variables.add_variable(model, name="cost_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
+        variables.add_variable(model, name="cost_total", index_sets=sets["set_time_steps_yearly"],
                                doc="total cost of energy system")
         # NPV
-        variables.add_variable(model, name="NPV", index_sets=sets.as_tuple("set_time_steps_yearly"),
+        variables.add_variable(model, name="NPV", index_sets=sets["set_time_steps_yearly"],
                                doc="NPV of energy system")
 
     def construct_constraints(self):
@@ -234,15 +233,15 @@ class EnergySystem:
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_total", constraint=self.rules.get_constraint_carbon_emissions_total(model),
                                          doc="total carbon emissions of energy system")
         # carbon emissions
-        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_cumulative", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=self.rules.constraint_carbon_emissions_cumulative_rule,
+        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_cumulative", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_cumulative_rule,
                                         doc="cumulative carbon emissions of energy system over time")
         # cost of carbon emissions
         constraints.add_constraint_block(model, name="constraint_carbon_cost_total", constraint=self.rules.get_constraint_carbon_cost_total(model), doc="total carbon cost of energy system")
         # carbon emissions
-        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_limit", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=self.rules.constraint_carbon_emissions_limit_rule,
+        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_limit", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_limit_rule,
                                    doc="limit of total carbon emissions of energy system")
         # carbon emission budget
-        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_budget", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=self.rules.constraint_carbon_emissions_budget_rule,
+        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_budget", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_budget_rule,
                                    doc="Budget of total carbon emissions of energy system")
         # limit carbon emission overshoot
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_overshoot_limit", constraint=self.rules.get_constraint_carbon_emissions_overshoot_limit(model),
@@ -250,7 +249,7 @@ class EnergySystem:
         # costs
         constraints.add_constraint_block(model, name="constraint_cost_total", constraint=self.rules.get_constraint_cost_total(model), doc="total cost of energy system")
         # NPV
-        constraints.add_constraint_rule(model, name="constraint_NPV", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=self.rules.constraint_NPV_rule, doc="NPV of energy system")
+        constraints.add_constraint_rule(model, name="constraint_NPV", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_NPV_rule, doc="NPV of energy system")
 
     def construct_objective(self):
         """ constructs the pe.Objective of the class <EnergySystem> """
@@ -291,8 +290,6 @@ class EnergySystemRules:
         """
 
         self.optimization_setup = optimization_setup
-        placeholder_lhs = lp.expressions.ScalarLinearExpression((np.nan,), (-1,), lp.Model())
-        self.emtpy_cons = lp.constraints.AnonymousScalarConstraint(placeholder_lhs, "=", np.nan)
 
     def get_constraint_carbon_emissions_total(self, model: lp.Model):
         """ add up all carbon emissions from technologies and carriers """
@@ -337,7 +334,7 @@ class EnergySystemRules:
             return (model.variables["carbon_emissions_total"][year]
                     <= params.carbon_emissions_limit.loc[year].item())
         else:
-            return self.emtpy_cons
+            return None
 
     def constraint_carbon_emissions_budget_rule(self, year):
         """ carbon emissions budget of entire time horizon from technologies and carriers.
@@ -357,7 +354,7 @@ class EnergySystemRules:
                         + (model.variables["carbon_emissions_total"][year] - model.variables["carbon_emissions_overshoot"][year]) * (interval_between_years - 1)
                         <= max_budget)
         else:
-            return self.emtpy_cons
+            return None
 
     def get_constraint_carbon_emissions_overshoot_limit(self, model):
         """ ensure that overshoot is lower or equal to total carbon emissions -> overshoot cannot be banked """

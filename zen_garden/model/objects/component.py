@@ -242,15 +242,6 @@ class IndexSet(Component):
 
         return mask, lower, upper
 
-    def as_tuple(self, name):
-        """
-        Returns the tuple, (set, [name]), e.g. for variable creation
-        :param name: The name to retrieve
-        :return: The tuple
-        """
-
-        return self.sets[name].data, [name]
-
     def __getitem__(self, name):
         """
         Returns a set

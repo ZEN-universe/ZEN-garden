@@ -13,9 +13,8 @@ import copy
 import itertools
 import logging
 
-import pyomo.environ as pe
-
 from zen_garden.preprocess.functions.extract_input_data import DataInput
+
 
 class Element:
     # set label
