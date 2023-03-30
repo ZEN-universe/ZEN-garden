@@ -55,8 +55,8 @@ class StorageTechnology(Technology):
         self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.capex_specific_energy = self.data_input.extract_input_data("capex_specific_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.fixed_opex_specific_energy = self.data_input.extract_input_data("fixed_opex_specific_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
-                                                                            time_steps=set_time_steps_yearly)  # annualize capex
-        self.convert_to_annualized_capex()
+                                                                            time_steps=set_time_steps_yearly)
+        self.convert_to_fraction_of_capex()
         # calculate capex of existing capacity
         self.capex_existing_capacity = self.calculate_capex_of_existing_capacities()
         self.capex_existing_capacity_energy = self.calculate_capex_of_existing_capacities(storage_energy=True)
@@ -64,14 +64,13 @@ class StorageTechnology(Technology):
         self.raw_time_series["min_load_energy"] = self.data_input.extract_input_data("min_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
         self.raw_time_series["max_load_energy"] = self.data_input.extract_input_data("max_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
 
-    def convert_to_annualized_capex(self):
-        """ this method converts the total capex to annualized capex """
-        fractional_annuity = self.calculate_fractional_annuity()
-        system = self.optimization_setup.system
-        _fraction_year = system["unaggregated_time_steps_per_year"] / system["total_hours_per_year"]
-        # annualize capex
-        self.capex_specific = self.capex_specific * fractional_annuity + self.fixed_opex_specific * _fraction_year
-        self.capex_specific_energy = self.capex_specific_energy * fractional_annuity + self.fixed_opex_specific_energy * _fraction_year
+    def convert_to_fraction_of_capex(self):
+        """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
+        fraction_year = self.calculate_fraction_of_year()
+        self.fixed_opex_specific = self.fixed_opex_specific * fraction_year
+        self.fixed_opex_specific_energy = self.fixed_opex_specific_energy * fraction_year
+        self.capex_specific = self.capex_specific * fraction_year
+        self.capex_specific_energy = self.capex_specific_energy * fraction_year
 
     def calculate_capex_of_single_capacity(self, capacity, index, storage_energy=False):
         """ this method calculates the annualized capex of a single existing capacity. """

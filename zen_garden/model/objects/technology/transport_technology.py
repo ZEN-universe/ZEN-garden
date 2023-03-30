@@ -47,7 +47,7 @@ class TransportTechnology(Technology):
         # get capex of transport technology
         self.get_capex_transport()
         # annualize capex
-        self.convert_to_annualized_capex()
+        self.convert_to_fraction_of_capex()
         # calculate capex of existing capacity
         self.capex_existing_capacity = self.calculate_capex_of_existing_capacities()
         # check that existing capacities are equal in both directions if technology is bidirectional
@@ -73,13 +73,12 @@ class TransportTechnology(Technology):
                 raise AttributeError(f"The transport technology {self.name} has neither capex_per_distance nor capex_specific attribute.")
             self.capex_per_distance = self.capex_specific * 0.0
 
-    def convert_to_annualized_capex(self):
-        """ this method converts the total capex to annualized capex """
-        fractional_annuity = self.calculate_fractional_annuity()
-        _fraction_year = self.optimization_setup.system["unaggregated_time_steps_per_year"] / self.optimization_setup.system["total_hours_per_year"]
-        # annualize capex
-        self.capex_specific = self.capex_specific * fractional_annuity + self.fixed_opex_specific * _fraction_year
-        self.capex_per_distance = self.capex_per_distance * fractional_annuity
+    def convert_to_fraction_of_capex(self):
+        """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
+        fraction_year = self.calculate_fraction_of_year()
+        self.fixed_opex_specific = self.fixed_opex_specific * fraction_year
+        self.capex_specific = self.capex_specific * fraction_year
+        self.capex_per_distance = self.capex_per_distance * fraction_year
 
     def calculate_capex_of_single_capacity(self, capacity, index):
         """ this method calculates the annualized capex of a single existing capacity. """

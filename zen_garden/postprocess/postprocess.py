@@ -69,6 +69,8 @@ class Postprocess:
                 model.results.write()
 
         # save everything
+        # FIXME: once the sets are implemented
+        #self.save_sets()
         self.save_param()
         self.save_var()
         # FIXME: not in linopy
@@ -131,6 +133,55 @@ class Postprocess:
                 with h5py.File(f_name, "w") as outfile:
                     utils.dump(data=dictionary, hdf=outfile)
 
+
+    def save_sets(self):
+        """ Saves the Set values to a json file which can then be
+        post-processed immediately or loaded and postprocessed at some other time"""
+        # dataframe serialization
+        data_frames = {}
+        for set in self.model.component_objects(pe.Set):
+            if not set.is_indexed():
+                continue
+            vals = set.data()
+            index_name = [set.name]
+
+            # if the returned dict is emtpy we create a nan value
+            if len(vals) == 0:
+                indices = pd.Index(data=[], name=index_name[0])
+                data = []
+            else:
+                indices = list(vals.keys())
+                data = list(vals.values())
+                data_strings = []
+                for tpl in data:
+                    string = ""
+                    for ind, t in enumerate(tpl):
+                        if ind == len(tpl) - 1:
+                            string += str(t)
+                        else:
+                            string += str(t) + ","
+                    data_strings.append(string)
+                data = data_strings
+
+                # create a multi index if necessary
+                if len(indices) >= 1 and isinstance(indices[0], tuple):
+                    if len(index_name) == len(indices[0]):
+                        indices = pd.MultiIndex.from_tuples(indices, names=index_name)
+                    else:
+                        indices = pd.MultiIndex.from_tuples(indices)
+                else:
+                    if len(index_name) == 1:
+                        indices = pd.Index(data=indices, name=index_name[0])
+                    else:
+                        indices = pd.Index(data=indices)
+
+            # create dataframe
+            df = pd.DataFrame(data=data, columns=["value"], index=indices)
+            # update dict
+            doc = set.doc
+            data_frames[index_name[0]] = self._transform_df(df,doc)
+
+        self.write_file(self.name_dir.joinpath('set_dict'), data_frames)
 
     def save_param(self):
         """ Saves the Param values to a json file which can then be

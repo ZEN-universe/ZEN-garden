@@ -82,14 +82,11 @@ class Technology(Element):
         """ this method calculates the annualized capex of the existing capacities. Is implemented in child class """
         raise NotImplementedError
 
-    def calculate_fractional_annuity(self):
-        """calculate fraction of annuity to depreciate investment"""
-        _lifetime = self.lifetime
-        _annuity = 1 / _lifetime
+    def calculate_fraction_of_year(self):
+        """calculate fraction of year"""
         # only account for fraction of year
         _fraction_year = self.optimization_setup.system["unaggregated_time_steps_per_year"] / self.optimization_setup.system["total_hours_per_year"]
-        _fractional_annuity = _annuity * _fraction_year
-        return _fractional_annuity
+        return _fraction_year
 
     def overwrite_time_steps(self, base_time_steps: int):
         """ overwrites set_time_steps_operation """
@@ -341,7 +338,15 @@ class Technology(Element):
         # lifetime existing technologies
         optimization_setup.parameters.add_parameter(name="capex_existing_capacity",
             data=optimization_setup.initialize_component(cls, "capex_existing_capacity", index_names=["set_technologies", "set_capacity_types", "set_location", "set_existing_technologies"],
-                                                   capacity_types=True), doc='Parameter which specifies the annualized capex of an existing technology which still has to be paid')
+                                                   capacity_types=True), doc='Parameter which specifies the total capex of an existing technology which still has to be paid')
+        # variable specific opex
+        optimization_setup.parameters.add_parameter(name="opex_specific",
+            data=optimization_setup.initialize_component(cls, "opex_specific",index_names=["set_technologies","set_location","set_time_steps_operation"]),
+            doc='Parameter which specifies the variable specific opex')
+        # fixed specific opex
+        optimization_setup.parameters.add_parameter(name="fixed_opex_specific",
+            data=optimization_setup.initialize_component(cls, "fixed_opex_specific",index_names=["set_technologies", "set_capacity_types","set_location","set_time_steps_yearly"], capacity_types=True),
+            doc='Parameter which specifies the fixed annual specific opex')
         # lifetime newly built technologies
         optimization_setup.parameters.add_parameter(name="lifetime_technology", data=optimization_setup.initialize_component(cls, "lifetime", index_names=["set_technologies"]),
             doc='Parameter which specifies the lifetime of a newly built technology')
@@ -363,9 +368,7 @@ class Technology(Element):
         optimization_setup.parameters.add_parameter(name="max_load",
             data=optimization_setup.initialize_component(cls, "max_load", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], capacity_types=True),
             doc='Parameter which specifies the maximum load of technology relative to installed capacity')
-        # specific opex
-        optimization_setup.parameters.add_parameter(name="opex_specific", data=optimization_setup.initialize_component(cls, "opex_specific", index_names=["set_technologies", "set_location", "set_time_steps_operation"]),
-            doc='Parameter which specifies the specific opex')
+
         # carbon intensity
         optimization_setup.parameters.add_parameter(name="carbon_intensity_technology", data=optimization_setup.initialize_component(cls, "carbon_intensity_technology", index_names=["set_technologies", "set_location"]),
             doc='Parameter which specifies the carbon intensity of each technology')
@@ -444,7 +447,10 @@ class Technology(Element):
             bounds=(0,np.inf), doc="opex for operating technology at location l and time t")
         # total opex
         variables.add_variable(model, name="opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"),
-            bounds=(0,np.inf), doc="total opex for operating technology at location l and time t")
+            bounds=(0,np.inf), doc="total opex all technologies and locations in year y")
+        # yearly opex
+        variables.add_variable(model, name="opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], optimization_setup),
+            bounds=(0,np.inf), doc="yearly opex for operating technology at location l and year y")
         # carbon emissions
         variables.add_variable(model, name="carbon_emissions_technology", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
             doc="carbon emissions for operating technology at location l and time t")
@@ -502,6 +508,9 @@ class Technology(Element):
         constraints.add_constraint_block(model, name="constraint_opex_technology",
                                          constraint=rules.get_constraint_opex_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
                                          doc="opex for each technology at each location and time step")
+        # yearly opex
+        constraints.add_constraint_rule(model, name="constraint_opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"],optimization_setup),
+                                        rule=rules.constraint_opex_yearly_rule, doc='total opex of all technology that are operated.')
         # total opex of all technologies
         constraints.add_constraint_rule(model, name="constraint_opex_total", index_sets=sets.as_tuple("set_time_steps_yearly"), rule=rules.constraint_opex_total_rule, doc='total opex of all technology that are operated.')
         # carbon emissions of technologies
@@ -697,15 +706,18 @@ class TechnologyRules:
 
     def constraint_capex_yearly_rule(self, tech, capacity_type, loc, year):
         """ aggregates the capex of built capacity and of existing capacity """
+        # get parameter object
+        params = self.optimization_setup.parameters
         system = self.optimization_setup.system
         model = self.optimization_setup.model
         sets = self.optimization_setup.sets
         discount_rate = self.optimization_setup.analysis["discount_rate"]
+
+        lifetime = params.lifetime_technology.loc[tech].item()
+        annuity = ((1+discount_rate)**lifetime * discount_rate)/((1+discount_rate)**lifetime - 1)
         return (model.variables["capex_yearly"][tech, capacity_type, loc, year]
-                - (1 + discount_rate) ** (system["interval_between_years"] * (year - sets["set_time_steps_yearly"][0]))
-                * (sum(model.variables["capex"][tech, capacity_type, loc, time] * (1 / (1 + discount_rate)) ** (system["interval_between_years"] * (time - sets["set_time_steps_yearly"][0]))
-                       for time in Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly")))
-                == Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, year, type_existing_quantity="capex", time_step_type="yearly"))
+                - annuity * sum(model.variables["capex"][tech, capacity_type, loc, previous_year] for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly"))
+                == annuity * Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, year, type_existing_quantity="capex",time_step_type="yearly"))
 
     def constraint_capex_total_rule(self, year):
         """ sums over all technologies to calculate total capex """
@@ -739,6 +751,20 @@ class TechnologyRules:
                                - params.opex_specific.loc[tech, loc] * reference_flow
                                == 0)
         return constraints
+
+    def constraint_opex_yearly_rule(self, tech, loc, year):
+        """ yearly opex for a technology at a location in each year """
+        # get parameter object
+        params = self.optimization_setup.parameters
+        sets = self.optimization_setup.sets
+        system = self.optimization_setup.system
+        model = self.optimization_setup.model
+        return (model.variables["opex_yearly"][tech, loc, year]
+                - sum(model.variables["opex"][tech, loc, time] * params.time_steps_operation_duration.loc[tech, time].item()
+                      for time in self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year))
+                - sum(params.fixed_opex_specific.loc[tech,capacity_type,loc,year].item()*model.variables["capacity"][tech,capacity_type,loc,year]
+                      for capacity_type in system["set_capacity_types"] if tech in sets["set_storage_technologies"] or capacity_type == system["set_capacity_types"][0])
+                == 0)
 
     def get_constraint_carbon_emissions_technology(self, index_values, index_names):
         """ calculate carbon emissions of each technology"""
@@ -791,7 +817,7 @@ class TechnologyRules:
         # get all the terms
         terms = []
         for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]:
-            terms.append((model.variables["opex"].loc[tech, loc] * params.time_steps_operation_duration.loc[tech]).sum())
+            terms.append((model.variables["opex_yearly"].loc[tech, loc] * params.time_steps_operation_duration.loc[tech]).sum())
 
         return (model.variables["opex_total"].loc[year]
                 - sum(terms)
@@ -799,7 +825,6 @@ class TechnologyRules:
 
     def get_constraint_capacity_factor(self, index_values, index_names):
         """
-        tech, capacity_type, loc, time
         Load is limited by the installed capacity and the maximum load factor"""
         # get parameter object
         params = self.optimization_setup.parameters
