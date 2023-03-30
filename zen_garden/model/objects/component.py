@@ -17,7 +17,72 @@ import linopy as lp
 import numpy as np
 import pandas as pd
 import xarray as xr
+from ordered_set import OrderedSet
 
+
+class ZenSet(OrderedSet):
+    """
+    Similiar to pyomo.Set
+    """
+
+    def __init__(self, data, name="", doc="", index_set="UnnamedIndex"):
+        """
+        Initialize the set
+        :param data: The data of the set, either an iterable or a dictionary for an indexed set
+        :param name: The name of the set
+        :param doc: The corresponding docstring
+        :param index_set: The name of the index set
+        """
+        # set attributes
+        self.data = data
+        self.name = name
+        self.doc = doc
+
+        if isinstance(data, dict):
+            # init the children
+            self.ordered_data = {k: ZenSet(v, name=f"{name}[{k}]") for k, v in data.items()}
+
+            # for an indexed sets the init data are the keys
+            data = data.keys()
+            self.indexed = True
+            self.index_set = index_set
+
+        else:
+            self.indexed = False
+            # index set it None
+            self.index_set = None
+
+        # proper init
+        super().__init__(data)
+
+    def is_indexed(self):
+        """
+        Check if the set is indexed, just here because pyomo has it
+        """
+        return self.indexed
+
+    def get_index_name(self):
+        """
+        Returns the index name if indexed
+        """
+        return self.index_set
+
+    def __repr__(self):
+        """
+        Return a string representation of the set
+        """
+        return f"{super().__repr__()} indexed={self.indexed}"
+
+    def __getitem__(self, item):
+        """
+        Get an item from the set, if it is indexed
+        :param item: The item to retrieve
+        :return: The item
+        """
+        if self.indexed:
+            return self.ordered_data[item]
+        else:
+            return super().__getitem__(item)
 
 class Component:
 
@@ -46,7 +111,10 @@ class Component:
     @staticmethod
     def get_index_names_data(index_list):
         """ splits index_list in data and index names """
-        if isinstance(index_list, tuple):
+        if isinstance(index_list, ZenSet):
+            index_values = list(index_list)
+            index_names = [index_list.name]
+        elif isinstance(index_list, tuple):
             index_values, index_names = index_list
         elif isinstance(index_list, list):
             index_values = list(itertools.product(*index_list[0]))
@@ -62,7 +130,7 @@ class IndexSet(Component):
         # base class init
         super().__init__()
 
-        # attributes
+        # attributes for the actual sets and index sets of the indexed sets
         self.sets = {}
         self.index_sets = {}
 
@@ -78,14 +146,14 @@ class IndexSet(Component):
             logging.warning(f"{name} already added. Will be overwritten!")
 
         # added data and docs
-        self.sets[name] = data
+        self.sets[name] = ZenSet(data=data, name=name, doc=doc, index_set=index_set)
         self.docs[name] = doc
         if index_set is not None:
             self.index_sets[name] = index_set
 
     def is_indexed(self, name):
         """
-        Checks if the set with the name is indexed
+        Checks if the set with the name is indexed, convenience method for ZenSet["name"].is_indexed()
         :param name: The name of the set
         :return: True if indexed, False otherwise
         """
@@ -94,7 +162,7 @@ class IndexSet(Component):
 
     def get_index_name(self, name):
         """
-        Returns the index name of an indexed set
+        Returns the index name of an indexed set, convenience method for ZenSet["name"].get_index_name()
         :param name: The name of the indexed set
         :return: The name of the index set
         """
@@ -181,7 +249,7 @@ class IndexSet(Component):
         :return: The tuple
         """
 
-        return self.sets[name], [name]
+        return self.sets[name].data, [name]
 
     def __getitem__(self, name):
         """
@@ -200,6 +268,14 @@ class IndexSet(Component):
         """
 
         return item in self.sets
+
+    def __iter__(self):
+        """
+        Returns an iterator over the sets
+        :return: The iterator
+        """
+
+        return iter(self.sets.values())
 
 
 class Parameter(Component):

@@ -11,12 +11,12 @@ import sys
 from collections import UserDict
 from contextlib import contextmanager
 from datetime import datetime
-import linopy as lp
-import xarray as xr
 
 import h5py
+import linopy as lp
 import numpy as np
 import pandas as pd
+import xarray as xr
 import yaml
 from numpy import string_
 

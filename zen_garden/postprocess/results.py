@@ -6,17 +6,16 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class is defining to read in the results of an Optimization problem.
 ==========================================================================================================================================================================="""
-import logging
-import warnings
-
-import h5py
-import numpy as np
-import pandas as pd
 import importlib
 import json
-import zlib
+import logging
 import os
+import warnings
+import zlib
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts

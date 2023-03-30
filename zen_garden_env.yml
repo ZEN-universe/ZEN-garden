@@ -20,6 +20,7 @@ dependencies:
   - pip:
       - tsam
       - hdfdict
+      - ordered-set
       - pyogrio
       - -e .
 
