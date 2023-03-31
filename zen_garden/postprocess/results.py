@@ -10,6 +10,7 @@ import logging
 import warnings
 
 import h5py
+import sys
 import numpy as np
 import pandas as pd
 import importlib
@@ -17,10 +18,21 @@ import json
 import zlib
 import os
 import matplotlib.pyplot as plt
+from tqdm import tqdm
+from pathlib import Path
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
 
+# SETUP LOGGER
+log_format = '%(asctime)s %(filename)s: %(message)s'
+log_path = os.path.join('outputs', 'logs')
+os.makedirs(log_path, exist_ok=True)
+logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+logging.captureWarnings(True)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(handler)
 
 class Results(object):
     """
@@ -37,7 +49,7 @@ class Results(object):
 
         # get the abs path
         self.path = os.path.abspath(path)
-
+        self.name = Path(path).name
         # check if the path exists
         if not os.path.exists(self.path):
             raise FileNotFoundError(f"No such file or directory: {self.path}")
@@ -48,7 +60,12 @@ class Results(object):
         self.results["scenarios"] = self.load_scenarios(self.path)
         self.results["solver"] = self.load_solver(self.path)
         self.results["system"] = self.load_system(self.path)
-
+        self.component_names = {
+            "pars": {},
+            "vars": {},
+            "sets": {},
+            "duals": {},
+        }
         # get the years
         self.years = list(range(0, self.results["system"]["optimized_years"]))
 
@@ -115,21 +132,29 @@ class Results(object):
                 #create dict containing sets
                 self.results[scenario][mf]["sets"] = {}
                 sets = self.load_sets(current_path, lazy=True)
+                if not self.component_names["sets"]:
+                    self.component_names["sets"] = list(sets.keys())
                 self._lazydicts.append([sets])
                 self.results[scenario][mf]["sets"].update(sets)
 
                 # create dict containing params and vars
                 self.results[scenario][mf]["pars_and_vars"] = {}
                 pars = self.load_params(current_path, lazy=True)
+                if not self.component_names["pars"]:
+                    self.component_names["pars"] = list(pars.keys())
                 self._lazydicts.append([pars])
                 self.results[scenario][mf]["pars_and_vars"].update(pars)
                 vars = self.load_vars(current_path, lazy=True)
+                if not self.component_names["vars"]:
+                    self.component_names["vars"] = list(vars.keys())
                 self._lazydicts.append([vars])
                 self.results[scenario][mf]["pars_and_vars"].update(vars)
 
                 # load duals
                 if self.results["solver"]["add_duals"]:
                     duals = self.load_duals(current_path, lazy = True)
+                    if not self.component_names["duals"]:
+                        self.component_names["duals"] = list(duals.keys())
                     self.results[scenario][mf]["duals"] = duals
                 # the opt we only load when requested
                 if load_opt:
@@ -396,6 +421,255 @@ class Results(object):
 
         return out_dict
 
+    @classmethod
+    def compare_configs(cls, results:list,scenarios = None):
+        """
+        Compares the configs of two or more results
+        :param results: list of results
+        :return: a dictionary with diverging results
+        """
+        result_dict,scenarios = cls.check_combine_results(results,scenarios)
+        if result_dict is None:
+            return
+
+        logging.info(f"Comparing the configs of {list(result_dict.keys())}")
+        diff_analysis = cls.get_config_diff(result_dict,"analysis")
+        diff_system = cls.get_config_diff(result_dict,"system")
+        diff_solver = cls.get_config_diff(result_dict,"solver")
+
+        diff_dict = {}
+        if diff_analysis:
+            diff_dict["analysis"] = diff_analysis
+        if diff_system:
+            diff_dict["system"] = diff_system
+        if diff_solver:
+            diff_dict["solver"] = diff_solver
+        return diff_dict
+
+    @classmethod
+    def compare_model_parameters(cls, results: list,compare_total = True,scenarios = None):
+        """
+        Compares the input data of two or more results
+        :param results: list of results
+        :return: a dictionary with diverging results
+        """
+        results,scenarios = cls.check_combine_results(results,scenarios)
+        if results is None:
+            return
+        result_names = [res.name for res in results]
+        logging.info(f"Comparing the model parameters of {result_names}")
+        diff_pars = cls.get_component_diff(results,"pars")
+        diff_dict = {}
+        # initialize progress bar
+        pbar = tqdm(total = len(diff_pars))
+        for par in diff_pars:
+            # update progress bar
+            pbar.update(1)
+            pbar.set_description(f"Compare parameter {par}")
+            # check par
+            comparison_df = cls.compare_component_values(results,par,compare_total,scenarios=scenarios)
+            if not comparison_df.empty:
+                logging.info(f"Parameter {par} has different values")
+                diff_dict[par] = comparison_df
+        pbar.close()
+        return diff_dict
+
+    @classmethod
+    def compare_model_variables(cls, results: list,compare_total = True,scenarios = None):
+        """
+        Compares the input data of two or more results
+        :param results: list of results
+        :return: a dictionary with diverging results
+        """
+        results,scenarios = cls.check_combine_results(results,scenarios)
+        if results is None:
+            return
+        result_names = [res.name for res in results]
+        logging.info(f"Comparing the model variables of {result_names}")
+        diff_vars = cls.get_component_diff(results,"vars")
+        diff_dict = {}
+        # initialize progress bar
+        pbar = tqdm(total = len(diff_vars))
+        for var in diff_vars:
+            # update progress bar
+            pbar.update(1)
+            pbar.set_description(f"Compare variable {var}")
+            # check var
+            comparison_df = cls.compare_component_values(results,var,compare_total,scenarios=scenarios)
+            if not comparison_df.empty:
+                logging.info(f"Variable {var} has different values")
+                diff_dict[var] = comparison_df
+        pbar.close()
+        return diff_dict
+
+    @classmethod
+    def compare_component_values(cls,results,component,compare_total,scenarios,rtol=1e-3):
+        """
+        Compares component values of two results
+        :param results: list with results
+        :param component: component name
+        :param compare_total: boolean if total value is compared
+        :param rtol: relative tolerance of equal values
+        :return: dictionary with diverging component values
+        """
+        result_names = [res.name for res in results]
+        if compare_total:
+            val_0 = results[0].get_total(component,scenario=scenarios[0])
+            val_1 = results[1].get_total(component,scenario=scenarios[1])
+        else:
+            val_0 = results[0].get_full_ts(component,scenario=scenarios[0])
+            val_1 = results[1].get_full_ts(component,scenario=scenarios[1])
+        mismatched_index = False
+        if isinstance(val_0, pd.DataFrame):
+            val_0 = val_0.sort_index(axis=0).sort_index(axis=1)
+            val_1 = val_1.sort_index(axis=0).sort_index(axis=1)
+            if not val_0.index.equals(val_1.index) or not val_0.columns.equals(val_1.columns):
+                mismatched_index = True
+        else:
+            val_0 = val_0.sort_index()
+            val_1 = val_1.sort_index()
+            if not val_0.index.equals(val_1.index):
+                mismatched_index = True
+        if mismatched_index:
+            logging.info(f"Component {component} does not have matching index or columns")
+            comparison_df = pd.concat([val_0,val_1],keys=result_names,axis=1)
+            comparison_df = comparison_df.sort_index(axis=1, level=1)
+            return comparison_df
+        is_close = np.isclose(val_0,val_1,rtol=rtol,equal_nan=True)
+        if isinstance(val_0,pd.DataFrame):
+            diff_val_0 = val_0[(~is_close).any(axis=1)]
+            diff_val_1 = val_1[(~is_close).any(axis=1)]
+        else:
+            diff_val_0 = val_0[(~is_close)]
+            diff_val_1 = val_1[(~is_close)]
+        comparison_df = pd.concat([diff_val_0,diff_val_1],keys=result_names,axis=1)
+        comparison_df = comparison_df.sort_index(axis=1,level=1)
+        return comparison_df
+
+    @classmethod
+    def check_combine_results(cls,results:list,scenarios=None):
+        """
+        Checks if results are a list of 2 results with the matching scenarios
+        :param results: list of results
+        :param scenarios: None, str or tuple of scenarios
+        :return: dictionary of results
+        """
+        if len(results) != 2:
+            logging.warning("You must select exactly two results to compare. Skip.")
+            return None,None
+        if type(results) != list:
+            logging.warning("You must pass the results as list. Skip")
+            return None,None
+        for el in results:
+            if type(el) != cls:
+                logging.warning(f"You must pass a list of ZEN-garden results, not type {type(el)}. Skip")
+                return None,None
+        scenarios = cls.check_scenario_results(results,scenarios)
+        return results,scenarios
+
+    @classmethod
+    def check_scenario_results(cls,results:list,scenarios=None):
+        """
+        Checks if results have scenarios and if yes, if the provided scenarios match
+        :param results: list of results
+        :param scenarios: None, str or tuple of scenarios
+        :return: scenarios
+        """
+        # neither result has scenarios
+        if not results[0].has_scenarios and not results[1].has_scenarios:
+            scenarios = (None,None)
+            return scenarios
+        # if scenarios is None, choose base scenario for both
+        elif scenarios is None:
+            scenarios = (results[0].scenarios[0],results[1].scenarios[0])
+            logging.info(f"At least one result has scenarios but no scenarios are provided. Scenarios {scenarios} are selected")
+        # if one scenario string is provided
+        elif type(scenarios) == str:
+            if scenarios not in results[0].scenarios:
+                scenario_0 = results[0].scenarios[0]
+                if results[0].has_scenarios:
+                    logging.info(f"Scenario {scenarios} not in scenarios of {results[0].name} ({results[0].scenarios}). Scenario {scenario_0} is selected")
+            else:
+                scenario_0 = scenarios
+            if scenarios not in results[1].scenarios:
+                scenario_1 = results[1].scenarios[0]
+                if results[1].has_scenarios:
+                    logging.info(
+                        f"Scenario {scenarios} not in scenarios of {results[1].name} ({results[1].scenarios}). Scenario {scenario_1} is selected")
+            else:
+                scenario_1 = scenarios
+            scenarios = (scenario_0,scenario_1)
+        # if scenarios is tuple
+        elif type(scenarios) == tuple:
+            if scenarios[0] not in results[0].scenarios:
+                scenario_0 = results[0].scenarios[0]
+                if results[0].has_scenarios:
+                    logging.info(f"Scenario {scenarios[0]} not in scenarios of {results[0].name} ({results[0].scenarios}). Scenario {scenario_0} is selected")
+            else:
+                scenario_0 = scenarios[0]
+            if scenarios[1] not in results[1].scenarios:
+                scenario_1 = results[1].scenarios[0]
+                if results[1].has_scenarios:
+                    logging.info(
+                        f"Scenario {scenarios[1]} not in scenarios of {results[1].name} ({results[1].scenarios}). Scenario {scenario_1} is selected")
+            else:
+                scenario_1 = scenarios[1]
+            scenarios = (scenario_0,scenario_1)
+        else:
+            raise TypeError(f"Scenarios must be of type <str> or <tuple> not {type(scenarios)}")
+        return scenarios
+
+    @classmethod
+    def get_config_diff(cls,results, attribute):
+        """
+        returns a DeepDiff dict with the differences in attribute values
+        :param results: dictionary with results
+        :param attribute: name of result attribute
+        :return: Dictionary with differences in attribute values
+        """
+        result_names = [res for res in results]
+        diff_dict = cls.compare_dicts(
+            results[0].results[attribute],
+            results[1].results[attribute],result_names)
+        return diff_dict
+
+    @classmethod
+    def compare_dicts(cls,dict1,dict2,result_names):
+        diff_dict = {}
+        for key in dict1.keys() | dict2.keys():
+            if isinstance(dict1.get(key), dict) and isinstance(dict2.get(key), dict):
+                nested_diff = cls.compare_dicts(dict1.get(key, {}), dict2.get(key, {}),result_names)
+                if nested_diff:
+                    diff_dict[key] = nested_diff
+            elif dict1.get(key) != dict2.get(key):
+                if isinstance(dict1.get(key),list) and isinstance(dict2.get(key),list):
+                    if sorted(dict1.get(key)) != sorted(dict2.get(key)):
+                        diff_dict[key] = {result_names[0]:sorted(dict1.get(key)), result_names[1]:sorted(dict2.get(key))}
+                else:
+                    diff_dict[key] = {result_names[0]:dict1.get(key), result_names[1]:dict2.get(key)}
+        return diff_dict if diff_dict else None
+
+    @staticmethod
+    def get_component_diff(results,component_type):
+        """
+        returns a list with the differences in component names
+        :param results: dictionary with results
+        :return: list with the common params
+        """
+        result_names = [res.name for res in results]
+        list_component = [res.component_names[component_type] for res in results]
+        only_in_0 = set(list_component[0]).difference(list_component[1])
+        only_in_1 = set(list_component[1]).difference(list_component[0])
+        common_component = sorted(list(set(list_component[0]).intersection(list_component[1])))
+        if only_in_1 and only_in_0:
+            logging.info(f"Components {only_in_1} are missing from {result_names[0]} and "
+                         f"parameters {only_in_0} are missing from {result_names[1]}")
+        elif only_in_1:
+            logging.info(f"Components {only_in_1} are missing from {result_names[0]}")
+        elif only_in_0:
+            logging.info(f"Components {only_in_0} are missing from {result_names[1]}")
+        return common_component
+
     def get_df(self, name, scenario=None, to_csv=None, csv_kwargs=None,is_dual=False, is_set=False):
         """
         Extracts the dataframe from the results
@@ -583,7 +857,7 @@ class Results(object):
         """
         return self.get_df("time_steps_storage_level_duration")
 
-    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False):
+    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False,discount_years=True):
         """
         Calculates the full timeseries for a given element
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -598,7 +872,7 @@ class Results(object):
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
         ts_type = self._get_ts_type(component_data, component_name)
         if is_dual:
-            annuity = self._get_annuity()
+            annuity = self._get_annuity(discount_years)
         else:
             annuity = pd.Series(index=self.years,data=1)
         if isinstance(component_data,pd.Series):
@@ -627,39 +901,41 @@ class Results(object):
         # calculate the full time series
         _output_temp = {}
         # extract time step duration
-        for row in component_data.index:
-            # we know the name
-            if element_name:
-                _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + _storage_string)
-                ts_duration = time_step_duration.loc[element_name]
-            # we extract the name
+        output_df = component_data.apply(lambda row: self.get_full_ts_of_row(row,sequence_time_steps_dicts,element_name,_storage_string,time_step_duration,is_dual,annuity),axis=1)
+        if year is not None:
+            if year in self.years:
+                hours_of_year = self._get_hours_of_year(year)
+                output_df = (output_df[hours_of_year]).T.reset_index(drop=True).T
             else:
-                _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(row[0] + _storage_string)
-                ts_duration = time_step_duration.loc[row[0]]
-            # if dual variables, divide by time step operational duration
-            if is_dual:
+                print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
 
-                component_data.loc[row] = component_data.loc[row]/ts_duration
-                for _year in annuity.index:
-                    if element_name:
-                        _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(element_name + _storage_string,_year)
-                    else:
-                        _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(row[0] + _storage_string,_year)
-                    component_data.loc[row,_yearly_ts] = component_data.loc[row,_yearly_ts] / annuity[_year]
-
-            # throw together
-            _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(component_data.columns))]
-            _output_temp[row] = component_data.loc[row, _sequence_time_steps].reset_index(drop=True)
-            if year is not None:
-                if year in self.years:
-                    hours_of_year = self._get_hours_of_year(year)
-                    _output_temp[row] = (_output_temp[row][hours_of_year]).reset_index(drop=True)
-                else:
-                    print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
-
-        # concat and return
-        output_df = pd.concat(_output_temp, axis=0, keys=component_data.index).unstack()
         return output_df
+
+    def get_full_ts_of_row(self,row,sequence_time_steps_dicts,element_name,_storage_string,time_step_duration,is_dual,annuity):
+        """ calculates the full ts for a single row of the input data """
+        row_index = row.name
+        # we know the name
+        if element_name:
+            _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + _storage_string)
+            ts_duration = time_step_duration.loc[element_name]
+        # we extract the name
+        else:
+            _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(row_index[0] + _storage_string)
+            ts_duration = time_step_duration.loc[row_index[0]]
+        # if dual variables, divide by time step operational duration
+        if is_dual:
+            row = row / ts_duration
+            if element_name:
+                element_name_temp = element_name
+            else:
+                element_name_temp = row_index[0]
+            for _year in annuity.index:
+                _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_temp + _storage_string,_year)
+                row[_yearly_ts] = row[_yearly_ts] / annuity[_year]
+        # throw together
+        _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(row.index))]
+        _output_temp = row[_sequence_time_steps].reset_index(drop=True)
+        return _output_temp
 
     def get_total(self, component, element_name=None, year=None, scenario=None, split_years=True):
         """
@@ -677,9 +953,10 @@ class Results(object):
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
         if isinstance(component_data,pd.Series):
             return component_data
-        ts_type = self._get_ts_type(component_data, component_name)
-
-        if ts_type == "yearly":
+        ts_type = self._get_ts_type(component_data, component_name,force_output=True)
+        if ts_type is None:
+            return component_data
+        elif ts_type == "yearly":
             if element_name is not None:
                 component_data = component_data.loc[element_name]
             if year is not None:
@@ -729,7 +1006,10 @@ class Results(object):
 
         # if we do not have an element name
         else:
-            total_value = component_data.apply(lambda row: row * time_step_duration.loc[row.name[0]], axis=1)
+            if isinstance(component_data.index,pd.MultiIndex):
+                total_value = component_data.apply(lambda row: row * time_step_duration.loc[row.name[0]], axis=1)
+            else:
+                total_value = component_data.apply(lambda row: row * time_step_duration.loc[row.name], axis=1)
             if year is not None:
                 # set a proxy for the element name
                 element_name_proxy = component_data.index.get_level_values(level=0)[0]
@@ -748,15 +1028,15 @@ class Results(object):
                     total_value = total_value.sum(axis=1)
         return total_value
 
-    def get_dual(self,constraint,scenario=None, element_name=None, year=None):
+    def get_dual(self,constraint,scenario=None, element_name=None, year=None,discount_years=True):
         """ extracts the dual variables of a constraint """
         if not self.results["solver"]["add_duals"]:
             logging.warning("Duals are not calculated. Skip.")
             return
-        _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True, element_name=element_name, year=year)
+        _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True, element_name=element_name, year=year,discount_years=discount_years)
         return _duals
 
-    def _get_annuity(self):
+    def _get_annuity(self,discount_years):
         """ discounts the duals """
         system = self.results["system"]
         # calculate annuity
@@ -772,6 +1052,8 @@ class Results(object):
             else:
                 annuity[year] = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.years[0]) + _intermediate_time_step))
                         for _intermediate_time_step in range(0, interval_between_years))
+            if not discount_years:
+                annuity[year] /= interval_between_years
         return annuity
 
     def _get_ts_duration(self, scenario=None, is_storage=False):
