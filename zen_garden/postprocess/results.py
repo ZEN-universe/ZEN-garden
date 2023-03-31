@@ -18,7 +18,6 @@ import json
 import zlib
 import os
 import matplotlib.pyplot as plt
-from deepdiff import DeepDiff
 from tqdm import tqdm
 
 from zen_garden import utils
