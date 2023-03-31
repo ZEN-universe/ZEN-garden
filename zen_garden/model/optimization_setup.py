@@ -238,22 +238,19 @@ class OptimizationSetup(object):
     def construct_optimization_problem(self):
         """ constructs the optimization problem """
         # create empty ConcreteModel
-        self.model = lp.Model()
+        if self.solver["solver_dir"] is not None and not os.path.exists(self.solver["solver_dir"]):
+            os.makedirs(self.solver["solver_dir"])
+        self.model = lp.Model(solver_dir=self.solver["solver_dir"])
         # we need to reset the components to not carry them over
         self.sets = IndexSet()
         self.variables = Variable()
         self.parameters = Parameter()
         self.constraints = Constraint()
+        # FIXME: Not with linopy yet
         # add duals
-        # FIXME: Not with linopy
-        self.add_duals()
+        # self.add_duals()
         # define and construct components of self.model
         Element.construct_model_components(self)
-        # FIXME: Not with linopy
-        logging.info("Apply Big-M GDP ")
-        # add transformation factory so that disjuncts are solved
-        # FIXME: Not with linopy
-        # pe.TransformationFactory("gdp.bigm").apply_to(self.model)
         # find smallest and largest coefficient and RHS
         # TODO: Implement this in lino
         #self.analyze_numerics()
@@ -416,12 +413,6 @@ class OptimizationSetup(object):
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
 
-    def add_duals(self):
-        """ adds duals of constraints """
-        if self.solver["add_duals"]:
-            logging.info("Add dual variables")
-            self.model.dual = pe.Suffix(direction=pe.Suffix.IMPORT_EXPORT)
-
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
         :param solver: dictionary containing the solver settings """
@@ -432,18 +423,16 @@ class OptimizationSetup(object):
         logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily
         logging.disable(logging.WARNING)
-        # write an ILP file to print the IIS if infeasible
-        # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
-        solver_parameters = f"ResultFile={os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
 
-        self.model.solve()
-        # FIXME: map solver shit and adapt default params
-        # elif solver_name == "gurobi":
-        #     self.opt = pe.SolverFactory(solver_name, options=solver_options)
-        #     self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"], options_string=solver_parameters)
-        # else:
-        #     self.opt = pe.SolverFactory(solver_name)
-        #     self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"])
+        if solver_name == "gurobi":
+            self.model.solve(solver_name=solver_name, keep_files=self.solver["keep_files"], sanitize_zeros=True,
+                             # write an ILP file to print the IIS if infeasible
+                             # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
+                             ResultFile=f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp",
+                             # remaining kwargs are passed to the solver
+                             **solver_options)
+        else:
+            self.model.solve(solver_name=solver_name, keep_files=self.solver["keep_files"], sanitize_zeros=True)
         # enable logger
         logging.disable(logging.NOTSET)
         # write IIS

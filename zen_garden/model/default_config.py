@@ -160,13 +160,16 @@ class Config(object):
         self.solver["name"]      = "glpk"
         # gurobi options
         self.solver["solver_options"] = {
-            "logfile":      ".//outputs//logs//pyomoLogFile.log",
+            "logfile":      ".//outputs//logs//GurobiLogFile.log",
             "MIPGap":       None,
             "TimeLimit":    None,
             "Method":       None
         }
-        # use symbolic labels, only sensible for debugging infeasible problems. Adds overhead
-        self.solver["use_symbolic_labels"] = False
+        # Directory for solver output
+        self.solver["solver_dir"] = ".//outputs//solver_files"
+        self.solver["keep_files"] = True
+        # This is not yet supported in linopy
+        self.solver["add_duals"] = False
         # analyze numerics
         self.solver["analyze_numerics"]   = False
         self.solver["immutable_unit"]     = []
@@ -175,10 +178,6 @@ class Config(object):
         self.solver["rounding_decimal_points"]     = 5
         # round down to number of decimal points, for time series after TSA
         self.solver["rounding_decimal_points_ts"]   = 3
-        # verbosity
-        self.solver["verbosity"] = True
-        # add duals 
-        self.solver["add_duals"] = False
         # settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly:
         # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
         self.solver["linear_regression_check"] = {"eps_intercept":0.1,"epsRvalue":1-(1E-5)}

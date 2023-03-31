@@ -436,7 +436,9 @@ class Constraint(Component):
             if current_name not in self.docs.keys():
                 # drop all unnecessary dimensions
                 lhs = cons.lhs.drop(list(set(cons.lhs.coords) - set(cons.lhs.dims)))
-                _ = model.add_constraints(lhs, cons.sign, cons.rhs, name=current_name)
+                # drop all infinities
+                rhs = self._remove_infs(cons.rhs)
+                _ = model.add_constraints(lhs, cons.sign, rhs, name=current_name)
                 # save constraint doc
                 index_list = list(cons.coords.dims)
                 self.docs[name] = self.compile_doc_string(doc, index_list, current_name)
@@ -537,7 +539,7 @@ class Constraint(Component):
         xr_rhs = xr.DataArray(0.0, coords, dims=index_list)
         # Here we catch infinities in the constraints (gurobi does not care but glpk does)
         rhs_vals = np.array([c.rhs.data if isinstance(c.rhs, xr.DataArray) else c.rhs for c in cons])
-        xr_rhs.loc[*index_arrs] = np.nan_to_num(rhs_vals, nan=np.nan, posinf=self.M, neginf=-self.M)
+        xr_rhs.loc[*index_arrs] = self._remove_infs(rhs_vals)
 
         return xr_lhs, xr_sign, xr_rhs
 
@@ -620,3 +622,15 @@ class Constraint(Component):
         for cname in list(self.docs.keys()):
             if cname.startswith(name):
                 del self.docs[cname]
+
+    def _remove_infs(self, arr):
+        """
+        Replaces infinities with a large number
+        :param arr: The array to replace infinities in
+        :return: The array with infinities replaced
+        """
+
+        if isinstance(arr, xr.DataArray):
+            return arr.where(arr != np.inf, self.M).where(arr != -np.inf, -self.M)
+
+        return np.nan_to_num(arr, nan=np.nan, posinf=self.M, neginf=-self.M)
