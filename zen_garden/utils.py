@@ -161,6 +161,24 @@ class ZenIndex(object):
         return self.index.__repr__()
 
 
+def lp_sum(exprs, dim='_term'):
+    """
+    Sum of linear expressions with lp.expressions.merge, returns 0 if list is emtpy
+    :param exprs: The expressions to sum
+    :param dim: Along which dimension to merge
+    :return: The sum of the expressions
+    """
+
+    # emtpy sum
+    if len(exprs) == 0:
+        return 0
+    # no sum
+    if len(exprs) == 1:
+        return exprs[0]
+    # normal sum
+    return lp.expressions.merge(exprs, dim=dim)
+
+
 def linexpr_from_tuple_np(tuples, coords, model):
     """
     Transforms tuples of (coeff, var) into a linopy linear expression, but uses numpy broadcasting

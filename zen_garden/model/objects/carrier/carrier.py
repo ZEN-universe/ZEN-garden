@@ -10,13 +10,12 @@ Description:    Class defining a generic energy carrier.
                 constraints of a generic carrier and returns the abstract optimization model.
 ==========================================================================================================================================================================="""
 import logging
-from itertools import product
 
 import linopy as lp
 import numpy as np
 import xarray as xr
 
-from zen_garden.utils import ZenIndex
+from zen_garden.utils import ZenIndex, lp_sum
 from ..element import Element
 
 
@@ -193,7 +192,7 @@ class Carrier(Element):
             doc="total carbon emissions of importing and exporting carriers")
         # energy balance
         constraints.add_constraint_block(model, name="constraint_nodal_energy_balance",
-                                         constraint=rules.get_constraint_nodal_energy_balance(),
+                                         constraint=rules.get_constraint_nodal_energy_balance(*cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)),
                                          doc='node- and time-dependent energy balance for each carrier', )
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
@@ -253,7 +252,7 @@ class CarrierRules:
         model = self.optimization_setup.model
         operational_time_steps = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
         if params.availability_carrier_export_yearly.loc[carrier, node, year] != np.inf:
-            return (sum(model.variables["export_carrier_flow"][carrier, node, operational_time_steps] * params.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum()
+            return ((model.variables["export_carrier_flow"][carrier, node, operational_time_steps] * params.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum()
                     <= params.availability_carrier_export_yearly.loc[carrier, node, year].item())
         else:
             return None
@@ -312,7 +311,7 @@ class CarrierRules:
             expr = (model.variables["cost_carrier"].loc[carrier, node, times] + model.variables["cost_shed_demand_carrier"].loc[carrier, node, times]) * params.time_steps_operation_duration.loc[carrier, times]
             terms.append(expr.sum())
         return (model.variables["cost_carrier_total"].loc[year]
-                - sum(terms)
+                - lp_sum(terms)
                 == 0)
 
     def get_constraint_carbon_emissions_carrier(self, index_values, index_names):
@@ -351,39 +350,39 @@ class CarrierRules:
             terms.append(expr.sum())
 
         return (model.variables["carbon_emissions_carrier_total"].loc[year]
-                - sum(terms)
+                - lp_sum(terms)
                 == 0)
 
-    def get_constraint_nodal_energy_balance(self):
+    def get_constraint_nodal_energy_balance(self, index_values, index_names):
         """
         nodal energy balance for each time step.
-        TODO: Optimize the sums
         """
         # get parameter object
         params = self.optimization_setup.parameters
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model
 
+        # get all the constraints
         constraints = []
-        for carrier, node in product(sets["set_carriers"], sets["set_nodes"]):
+        index = ZenIndex(index_values, index_names)
+        for carrier, node in index.get_unique([0, 1]):
             # carrier input and output conversion technologies
-            carrier_conversion_in = sum([model.variables["input_flow"].loc[tech, carrier, node] for tech in sets["set_conversion_technologies"] if carrier in sets["set_input_carriers"][tech]])
-            carrier_conversion_out = sum([model.variables["output_flow"].loc[tech, carrier, node] for tech in sets["set_conversion_technologies"] if carrier in sets["set_output_carriers"][tech]])
+            carrier_conversion_in = lp_sum([1.0*model.variables["input_flow"].loc[tech, carrier, node] for tech in sets["set_conversion_technologies"] if carrier in sets["set_input_carriers"][tech]])
+            carrier_conversion_out = lp_sum([1.0*model.variables["output_flow"].loc[tech, carrier, node] for tech in sets["set_conversion_technologies"] if carrier in sets["set_output_carriers"][tech]])
             # carrier flow transport technologies
-            carrier_flow_in, carrier_flow_out = 0, 0
             set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
             set_edges_out = self.energy_system.calculate_connected_edges(node, "out")
-            carrier_flow_in = sum([model.variables["carrier_flow"].loc[tech, edge] - model.variables["carrier_loss"].loc[tech, edge]
-                                   for edge in set_edges_in
-                                   for tech in sets["set_transport_technologies"] if carrier in sets["set_reference_carriers"][tech]])
-            carrier_flow_out = sum([model.variables["carrier_flow"].loc[tech, edge]
-                                    for edge in set_edges_out
-                                    for tech in sets["set_transport_technologies"] if carrier in sets["set_reference_carriers"][tech]])
+            carrier_flow_in = lp_sum([model.variables["carrier_flow"].loc[tech, edge] - model.variables["carrier_loss"].loc[tech, edge]
+                                      for edge in set_edges_in
+                                      for tech in sets["set_transport_technologies"] if carrier in sets["set_reference_carriers"][tech]])
+            carrier_flow_out = lp_sum([1.0*model.variables["carrier_flow"].loc[tech, edge]
+                                       for edge in set_edges_out
+                                       for tech in sets["set_transport_technologies"] if carrier in sets["set_reference_carriers"][tech]])
             # carrier flow storage technologies
-            carrier_flow_discharge = sum([model.variables["carrier_flow_discharge"].loc[tech, node]
+            carrier_flow_discharge = lp_sum([1.0*model.variables["carrier_flow_discharge"].loc[tech, node]
+                                             for tech in sets["set_storage_technologies"] if carrier in sets["set_reference_carriers"][tech]])
+            carrier_flow_charge = lp_sum([1.0*model.variables["carrier_flow_charge"].loc[tech, node]
                                           for tech in sets["set_storage_technologies"] if carrier in sets["set_reference_carriers"][tech]])
-            carrier_flow_charge = sum([model.variables["carrier_flow_charge"].loc[tech, node]
-                                       for tech in sets["set_storage_technologies"] if carrier in sets["set_reference_carriers"][tech]])
             # carrier import, demand and export
             carrier_import = model.variables["import_carrier_flow"].loc[carrier, node]
             carrier_export = model.variables["export_carrier_flow"].loc[carrier, node]
@@ -391,26 +390,15 @@ class CarrierRules:
             # shed demand
             carrier_shed_demand = model.variables["shed_demand_carrier"].loc[carrier, node]
 
-            # some of the vars might be 0 -> go to the left
-            constant = 0
-            vars = None
-            for v in [carrier_conversion_out, -carrier_conversion_in, carrier_flow_in, -carrier_flow_out,
-                      carrier_flow_discharge, -carrier_flow_charge, carrier_import, -carrier_export,
-                      carrier_shed_demand, -carrier_demand]:
-                # linexpr
-                if isinstance(v, (lp.Variable, lp.LinearExpression)):
-                    if vars is None:
-                        vars = v.drop([c for c in v.coords if c != "set_time_steps_operation"])
-                    else:
-                        vars = vars + v.drop([c for c in v.coords if c != "set_time_steps_operation"])
-                # constant
-                else:
-                    if isinstance(v, xr.DataArray):
-                        constant -= v.drop([c for c in v.coords if c != "set_time_steps_operation"])
-                    else:
-                        constant -= v
+            # some of the vars might be 0 -> go to the right
+            terms = [carrier_conversion_out, -carrier_conversion_in, carrier_flow_in, -carrier_flow_out,
+                     carrier_flow_discharge, -carrier_flow_charge, carrier_import, -carrier_export,
+                     carrier_shed_demand, -carrier_demand]
+            # we multiply everything with 1 to make sure it's valid for lp_sum
+            lhs = lp_sum([1.0*term for term in terms if not isinstance(term, (xr.DataArray, float, int))])
+            rhs = -sum([term for term in terms if isinstance(term, (xr.DataArray, float, int))])
 
             # add the cons (drop every level besides the timesteps
-            constraints.append(vars == constant)
+            constraints.append(lhs == rhs)
 
         return constraints
