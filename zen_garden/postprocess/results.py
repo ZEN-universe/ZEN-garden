@@ -428,14 +428,14 @@ class Results(object):
         :param results: list of results
         :return: a dictionary with diverging results
         """
-        result_dict,scenarios = cls.check_combine_results(results,scenarios)
-        if result_dict is None:
+        results,scenarios = cls.check_combine_results(results,scenarios)
+        if results is None:
             return
-
-        logging.info(f"Comparing the configs of {list(result_dict.keys())}")
-        diff_analysis = cls.get_config_diff(result_dict,"analysis")
-        diff_system = cls.get_config_diff(result_dict,"system")
-        diff_solver = cls.get_config_diff(result_dict,"solver")
+        result_names = [res.name for res in results]
+        logging.info(f"Comparing the configs of {result_names}")
+        diff_analysis = cls.get_config_diff(results,"analysis")
+        diff_system = cls.get_config_diff(results,"system")
+        diff_solver = cls.get_config_diff(results,"solver")
 
         diff_dict = {}
         if diff_analysis:
@@ -627,7 +627,7 @@ class Results(object):
         :param attribute: name of result attribute
         :return: Dictionary with differences in attribute values
         """
-        result_names = [res for res in results]
+        result_names = [res.name for res in results]
         diff_dict = cls.compare_dicts(
             results[0].results[attribute],
             results[1].results[attribute],result_names)
@@ -787,21 +787,16 @@ class Results(object):
                             new_header = [time_header]+tmp_data.index.names
                             new_order = tmp_data.index.names + [time_header]
                             _df = pd.concat(_mf_data, axis=0, keys=_mf_data.keys(),names=new_header).reorder_levels(new_order)
-                            _df_index = _df.index.copy()
-                            for level, codes in enumerate(_df.index.codes):
-                                if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
-                                    _df_index = _df_index.droplevel(level)
-                                    break
-                            _df.index = _df_index
+                            # _df_index = _df.index.copy()
+                            # for level, codes in enumerate(_df.index.codes):
+                            #     if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
+                            #         _df_index = _df_index.droplevel(level)
+                            #         break
+                            # _df.index = _df_index
                         else:
                             _df = pd.Series(_mf_data,index=_mf_data.keys())
                             _df.index.name = time_header
 
-                        # if year not in _df.index:
-                        #     _indexSort = list(range(0, _df.index.nlevels))
-                        #     _indexSort.append(_indexSort[0])
-                        #     _indexSort.pop(0)
-                        #     _df = _df.reorder_levels(_indexSort)
                     else:
                         _df = pd.concat(_mf_data, axis=1)
                         _df.columns = _df.columns.droplevel(0)
