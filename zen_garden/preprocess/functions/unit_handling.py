@@ -17,19 +17,21 @@ import copy
 
 class UnitHandling:
 
-    def __init__(self, folder_path, round_decimal_points):
+    def __init__(self, folder_path, round_decimal_points,define_ton_as_metric_ton = True):
         """ initialization of the unit_handling instance"""
         self.folder_path = folder_path
         self.rounding_decimal_points = round_decimal_points
-        self.get_base_units()
+        self.get_base_units(define_ton_as_metric_ton)
         # dict of element attribute values
         self.dict_attribute_values = {}
 
-    def get_base_units(self):
+    def get_base_units(self,define_ton_as_metric_ton = True):
         """ gets base units of energy system """
         _list_base_unit = self.extract_base_units()
         self.ureg = UnitRegistry()
 
+        if define_ton_as_metric_ton:
+            self.define_ton_as_metric()
         # load additional units
         self.ureg.load_definitions(self.folder_path + "/unit_definitions.txt")
 
@@ -246,6 +248,10 @@ class UnitHandling:
         _tuple_units = self.ureg(input_unit).to_tuple()[1]
         _list_units = [_item[0] for _item in _tuple_units]
         assert "planck_constant" not in _list_units, f"Error in input unit '{input_unit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"
+
+    def define_ton_as_metric(self):
+        """ redefines the "ton" as a metric ton """
+        self.ureg.define("ton = metric_ton")
 
     @staticmethod
     def check_pos_neg_boolean(array, axis=None):

@@ -49,7 +49,9 @@ class EnergySystem:
         self.input_path = self.optimization_setup.paths[_folder_label]["folder"]
 
         # create UnitHandling object
-        self.unit_handling = UnitHandling(self.input_path, self.optimization_setup.solver["rounding_decimal_points"])
+        self.unit_handling = UnitHandling(self.input_path,
+                                          self.optimization_setup.solver["rounding_decimal_points"],
+                                          self.optimization_setup.solver["define_ton_as_metric_ton"])
 
         # create DataInput object
         self.data_input = DataInput(element=self, system=self.system,
