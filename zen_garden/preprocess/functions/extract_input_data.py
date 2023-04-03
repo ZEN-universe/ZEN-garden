@@ -265,7 +265,7 @@ class DataInput:
             else:
                 _energy_string = ""
 
-            df_input = self.read_input_data(f"existing_capacity{_energy_string}{scenario}")
+            df_input = self.read_input_data(f"existing_capacity{_energy_string}")
             if df_input is None:
                 return [0]
             if self.element.name in self.system["set_transport_technologies"]:
@@ -519,7 +519,7 @@ class DataInput:
         # add rest of indices
         for index in index_sets:
             index_name_list.append(self.index_names[index])
-            if index == "set_time_steps" and time_steps:
+            if "set_time_steps" in index and time_steps:
                 index_list.append(time_steps)
             elif index == "set_existing_technologies":
                 index_list.append(self.element.set_existing_technologies)
@@ -570,13 +570,16 @@ class DataInput:
             # does not contain annual index
             elif idx_name_year not in df_input.axes[1]:
                 idx_name_list = [idx for idx in index_name_list if idx != idx_name_year]
+                # no other index called, return original time series
+                if not idx_name_list:
+                    return df_input
                 df_input = df_input.set_index(idx_name_list)
-                requested_index_values = set([str(year) for year in self.energy_system.set_time_steps_years])
+                df_input = df_input.rename(columns={col: int(col) for col in df_input.columns if col.isnumeric()})
+                requested_index_values = set(self.energy_system.set_time_steps_yearly)
                 _requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
                 if not _requested_index_values_in_columns:
                     return df_input.reset_index()
                 else:
-                    df_input = df_input.rename(columns={col: int(col) for col in df_input.columns})
                     requested_index_values = _requested_index_values_in_columns
                     df_input.columns = df_input.columns.set_names(idx_name_year)
                     df_input = df_input[list(requested_index_values)].stack()
@@ -658,6 +661,13 @@ class DataInput:
         :return df_input: reformulated input dataframe
         """
         index_name_list.remove(missing_index)
+        if not index_name_list:
+            # assert that single value
+            assert df_input.size == 1, f"Cannot establish unique values for file {file_name} because of too many columns or not overlapping index"
+            val_input = df_input.squeeze()
+            df_output[:] = val_input
+            df_input = df_output.copy()
+            return df_input
         df_input = df_input.set_index(index_name_list)
         # missing index values
         requested_index_values = set(df_output.index.get_level_values(missing_index))

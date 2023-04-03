@@ -19,6 +19,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import pyomo.environ as pe
+from pyomo.opt import TerminationCondition
 from pyomo.core.expr.current import decompose_term
 
 from .objects.element import Element
@@ -334,7 +335,7 @@ class OptimizationSetup(object):
                         # _time_steps = list(_old_param.index.unique("time"))
                         _time_steps = self.energy_system.set_base_time_steps_yearly
                     elif "year" in _index_names:
-                        _time_steps = self.energy_system.set_time_steps_yearly
+                        _time_steps = self.energy_system.set_time_steps_yearly_entire_horizon
                     _new_param = element.data_input.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
                     setattr(element, param, _new_param)
                     # if existing capacity is changed, capexExistingCapacity also has to be updated
@@ -412,7 +413,7 @@ class OptimizationSetup(object):
         """ adds duals of constraints """
         if self.solver["add_duals"]:
             logging.info("Add dual variables")
-            self.model.dual = pe.Suffix(direction=pe.Suffix.IMPORT)
+            self.model.dual = pe.Suffix(direction=pe.Suffix.IMPORT_EXPORT)
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
@@ -426,7 +427,7 @@ class OptimizationSetup(object):
         logging.disable(logging.WARNING)
         # write an ILP file to print the IIS if infeasible
         # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
-        solver_parameters = f"ResultFile={os.path.dirname(solver['solver_options']['logfile'])}//infeasibleModelIIS.ilp"
+        solver_parameters = f"ResultFile={os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
 
         if solver_name == "gurobi_persistent":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
@@ -435,12 +436,19 @@ class OptimizationSetup(object):
             self.opt.load_vars()
         elif solver_name == "gurobi":
             self.opt = pe.SolverFactory(solver_name, options=solver_options)
-            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"])
+            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"], options_string=solver_parameters)
         else:
             self.opt = pe.SolverFactory(solver_name)
-            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"])
+            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"])
         # enable logger
         logging.disable(logging.NOTSET)
+        # write IIS
+        if self.results.solver.termination_condition != TerminationCondition.optimal:
+            logging.info("The optimization is infeasible or unbounded")
+            self.optimality = False
+        else:
+            self.optimality = True
+
         # store the solution into the results
         # self.model.solutions.store_to(self.results, skip_stale_vars=True)
 
@@ -448,31 +456,59 @@ class OptimizationSetup(object):
         """ adds the newly built capacity to the existing capacity
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
-            _built_capacity = pd.Series(self.model.built_capacity.extract_values())
-            _invest_capacity = pd.Series(self.model.invested_capacity.extract_values())
-            _capex = pd.Series(self.model.capex.extract_values())
-            _rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
-            _built_capacity[_built_capacity <= _rounding_value] = 0
-            _invest_capacity[_invest_capacity <= _rounding_value] = 0
-            _capex[_capex <= _rounding_value] = 0
-            _base_time_steps = self.energy_system.time_steps.decode_yearly_time_steps([step_horizon])
-            for tech in self.get_all_elements(Technology):
-                # new capacity
-                _built_capacity_tech = _built_capacity.loc[tech.name].unstack()
-                _invested_capacity_tech = _invest_capacity.loc[tech.name].unstack()
-                _capex_tech = _capex.loc[tech.name].unstack()
-                tech.add_newly_built_capacity_tech(_built_capacity_tech, _capex_tech, _base_time_steps)
-                tech.add_newly_invested_capacity_tech(_invested_capacity_tech, step_horizon)
+            if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
+                _built_capacity = pd.Series(self.model.built_capacity.extract_values())
+                _invest_capacity = pd.Series(self.model.invested_capacity.extract_values())
+                _capex = pd.Series(self.model.capex.extract_values())
+                _rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
+                _built_capacity[_built_capacity <= _rounding_value] = 0
+                _invest_capacity[_invest_capacity <= _rounding_value] = 0
+                _capex[_capex <= _rounding_value] = 0
+                _base_time_steps = self.energy_system.time_steps.decode_yearly_time_steps([step_horizon])
+                for tech in self.get_all_elements(Technology):
+                    # new capacity
+                    _built_capacity_tech = _built_capacity.loc[tech.name].unstack()
+                    _invested_capacity_tech = _invest_capacity.loc[tech.name].unstack()
+                    _capex_tech = _capex.loc[tech.name].unstack()
+                    tech.add_newly_built_capacity_tech(_built_capacity_tech, _capex_tech, _base_time_steps)
+                    tech.add_newly_invested_capacity_tech(_invested_capacity_tech, step_horizon)
+            else:
+                # TODO clean up
+                # reset to initial values
+                for tech in self.get_all_elements(Technology):
+                    # extract existing capacity
+                    _set_location = tech.location_type
+                    set_time_steps_yearly = self.energy_system.set_time_steps_yearly_entire_horizon
+                    tech.set_existing_technologies = tech.data_input.extract_set_existing_technologies()
+                    tech.existing_capacity = tech.data_input.extract_input_data(
+                        "existing_capacity",index_sets=[_set_location,"set_existing_technologies"])
+                    tech.existing_invested_capacity = tech.data_input.extract_input_data(
+                        "existing_invested_capacity",index_sets=[_set_location,"set_time_steps_yearly"],time_steps=set_time_steps_yearly)
+                    tech.lifetime_existing_technology = tech.data_input.extract_lifetime_existing_technology(
+                        "existing_capacity", index_sets=[_set_location, "set_existing_technologies"])
+                    # calculate capex of existing capacity
+                    tech.capex_existing_capacity = tech.calculate_capex_of_existing_capacities()
+                    if tech.__class__.__name__ == "StorageTechnology":
+                        tech.existing_capacity_energy = tech.data_input.extract_input_data(
+                            "existing_capacity_energy",index_sets=["set_nodes","set_existing_technologies"])
+                        tech.existing_invested_capacity_energy = tech.data_input.extract_input_data(
+                            "existing_invested_capacity_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
+                            time_steps=set_time_steps_yearly)
+                        tech.capex_existing_capacity_energy = tech.calculate_capex_of_existing_capacities(storage_energy=True)
 
     def add_carbon_emission_cumulative(self, step_horizon):
         """ overwrite previous carbon emissions with cumulative carbon emissions
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
-            interval_between_years = self.energy_system.system["interval_between_years"]
-            _carbon_emissions_cumulative = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
-            carbon_emissions = self.model.carbon_emissions_total.extract_values()[step_horizon]
-            carbon_emissions_overshoot = self.model.carbon_emissions_overshoot.extract_values()[step_horizon]
-            self.energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + (carbon_emissions - carbon_emissions_overshoot) * (interval_between_years - 1)
+            if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
+                interval_between_years = self.energy_system.system["interval_between_years"]
+                _carbon_emissions_cumulative = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
+                carbon_emissions = self.model.carbon_emissions_total.extract_values()[step_horizon]
+                carbon_emissions_overshoot = self.model.carbon_emissions_overshoot.extract_values()[step_horizon]
+                self.energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + (carbon_emissions - carbon_emissions_overshoot) * (interval_between_years - 1)
+            else:
+                self.energy_system.previous_carbon_emissions = self.energy_system.data_input.extract_input_data(
+                    "previous_carbon_emissions",index_sets=[])
 
     def initialize_component(self, calling_class, component_name, index_names=None, set_time_steps=None, capacity_types=False):
         """ this method initializes a modeling component by extracting the stored input data.

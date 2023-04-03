@@ -93,7 +93,6 @@ class Element:
             doc="Set of time steps in operation for all technologies. Dimensions: set_elements")
         # construct pe.Sets of the child classes
         for subclass in cls.__subclasses__():
-            print(subclass.__name__)
             subclass.construct_sets(optimization_setup)
 
     @classmethod
@@ -133,6 +132,7 @@ class Element:
         optimization_setup.energy_system.construct_constraints()
         # construct pe.Constraints of the child classes
         for subclass in cls.__subclasses__():
+            logging.info(f"Construct pe.Constraints of {subclass.__name__}")
             subclass.construct_constraints(optimization_setup)
 
     @classmethod
