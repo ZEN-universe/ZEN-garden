@@ -630,6 +630,7 @@ class Constraint(Component):
         :return: The array with infinities replaced
         """
 
+        # TODO: mask constraints instead of replacing infinities
         if isinstance(arr, xr.DataArray):
             return arr.where(arr != np.inf, self.M).where(arr != -np.inf, -self.M)
 
