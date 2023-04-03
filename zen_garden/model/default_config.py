@@ -4,7 +4,7 @@ Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Default settings. Changes from the default values are specified in settings.py
+Description:  Default configuration. Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
 ==========================================================================================================================================================================="""
 
 
@@ -33,7 +33,7 @@ class Config(object):
         self.solver = dict()
 
         ## System - dictionary declaration
-        # This dictionary defines the configuration of the system by selecting the subset of technologies ot be included into the analysis.
+        # This dictionary defines the configuration of the system by selecting the subset of technologies to be included into the analysis.
         self.system = dict()
 
         ## Scenarios - dictionary declaration
@@ -111,7 +111,7 @@ class Config(object):
         self.analysis["folder_output"] = "./outputs/"
         self.analysis["overwrite_output"] = True
         # output format, can be h5, json or gzip
-        self.analysis["output_format"] = "gzip"
+        self.analysis["output_format"] = "h5"
         self.analysis["write_results_yml"] = False
         self.analysis["max_output_size_mb"] = 500
         # name of data folder for energy system specification
