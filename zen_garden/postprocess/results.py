@@ -19,6 +19,7 @@ import zlib
 import os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from pathlib import Path
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
@@ -48,7 +49,7 @@ class Results(object):
 
         # get the abs path
         self.path = os.path.abspath(path)
-        self.name = path.name
+        self.name = Path(path).name
         # check if the path exists
         if not os.path.exists(self.path):
             raise FileNotFoundError(f"No such file or directory: {self.path}")
