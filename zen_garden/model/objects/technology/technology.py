@@ -772,9 +772,10 @@ class TechnologyRules:
         sets = self.optimization_setup.sets
         system = self.optimization_setup.system
         model = self.optimization_setup.model
+
+        times = self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)
         return (model.variables["opex_yearly"].loc[tech, loc, year]
-                - lp_sum([model.variables["opex"].loc[tech, loc, time] * params.time_steps_operation_duration.loc[tech, time].item()
-                          for time in self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)])
+                - (model.variables["opex"].loc[tech, loc, times] * params.time_steps_operation_duration.loc[tech, times]).sum()
                 - lp_sum([params.fixed_opex_specific.loc[tech,capacity_type,loc,year].item()*model.variables["capacity"].loc[tech,capacity_type,loc,year]
                           for capacity_type in system["set_capacity_types"] if tech in sets["set_storage_technologies"] or capacity_type == system["set_capacity_types"][0]])
                 == 0)
