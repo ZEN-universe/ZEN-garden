@@ -18,7 +18,6 @@ from collections import defaultdict
 import linopy as lp
 import numpy as np
 import pandas as pd
-from pyomo.core.expr.current import decompose_term
 
 from .objects.component import Parameter, Variable, Constraint, IndexSet
 from .objects.element import Element
