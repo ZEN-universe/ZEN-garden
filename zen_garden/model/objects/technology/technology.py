@@ -526,6 +526,7 @@ class Technology(Element):
         tech_on_var = model.add_variables(name="tech_on_var", binary=True)
         tech_off_var = model.add_variables(name="tech_off_var", binary=True)
         model.add_constraints(tech_on_var + tech_off_var == 1, name="tech_on_off_cons")
+        n_cons = model.constraints.ncons
 
         constraints.add_constraint_rule(model, name="disjunct_on_technology",
             index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_on_technology_rule,
@@ -534,6 +535,12 @@ class Technology(Element):
         constraints.add_constraint_rule(model, name="disjunct_off_technology",
             index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_off_technology_rule,
             doc="disjunct to indicate that technology is off")
+
+        # if nothing was added we can remove the tech vars again
+        if model.constraints.ncons == n_cons:
+            model.constraints.remove("tech_on_off_cons")
+            model.variables.remove("tech_on_var")
+            model.variables.remove("tech_off_var")
 
         # add pe.Constraints of the child classes
         for subclass in cls.__subclasses__():
