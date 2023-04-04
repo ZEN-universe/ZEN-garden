@@ -320,13 +320,13 @@ class ConversionTechnology(Technology):
                               >= -constraints.M)
         # couple reference flows
         rules = ConversionTechnologyRules(optimization_setup)
-        constraints.add_constraint_rule(model, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
-                                        index_sets=[[[tech], sets["set_dependent_carriers"][tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
-                                        rule=rules.constraint_reference_flow_coupling_rule, doc="couples the real reference flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
+        constraints.add_constraint_block(model, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
+                                         constraint=rules.get_constraint_reference_flow_coupling([(tech, dependent_carrier, node, time) for dependent_carrier in sets["set_dependent_carriers"][tech]], ["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
+                                         doc="couples the real reference flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
         # couple dependent flows
-        constraints.add_constraint_rule(model, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
-                                        index_sets=[[[tech], sets["set_dependent_carriers"][tech], [node], [time]], ["set_conversion_technologies", "setDependentCarriers", "set_nodes", "set_time_steps_operation"]],
-                                        rule=rules.constraint_dependent_flow_coupling_rule, doc="couples the real dependent flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
+        constraints.add_constraint_block(model, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
+                                         constraint=rules.get_constraint_dependent_flow_coupling([(tech, dependent_carrier, node, time) for dependent_carrier in sets["set_dependent_carriers"][tech]], ["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
+                                         doc="couples the real dependent flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
 
     @classmethod
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
@@ -479,32 +479,3 @@ class ConversionTechnologyRules:
                                    == 0)
 
         return constraints
-
-    # FIXME: The rules version exists because of the disjoint constraints, this should be unified
-    def constraint_reference_flow_coupling_rule(self, tech, dependent_carrier, node, time):
-        """ couples reference flow variables based on modeling technique"""
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
-        reference_carrier = sets["set_reference_carriers"][tech][0]
-        if reference_carrier in sets["set_input_carriers"][tech]:
-            return (model.variables["input_flow"][tech, reference_carrier, node, time]
-                    - model.variables["reference_flow_approximation"][tech, dependent_carrier, node, time]
-                    == 0)
-        else:
-            return (model.variables["output_flow"][tech, reference_carrier, node, time]
-                    - model.variables["reference_flow_approximation"][tech, dependent_carrier, node, time]
-                    == 0)
-
-    def constraint_dependent_flow_coupling_rule(self, tech, dependent_carrier, node, time):
-        """ couples dependent flow variables based on modeling technique"""
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
-        if dependent_carrier in sets["set_input_carriers"][tech]:
-            return (model.variables["input_flow"][tech, dependent_carrier, node, time]
-                    - model.variables["dependent_flow_approximation"][tech, dependent_carrier, node, time]
-                    == 0)
-        else:
-            return (model.variables["output_flow"][tech, dependent_carrier, node, time]
-                    - model.variables["dependent_flow_approximation"][tech, dependent_carrier, node, time]
-                    == 0)
-

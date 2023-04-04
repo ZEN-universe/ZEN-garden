@@ -419,12 +419,14 @@ class Constraint(Component):
         # This is the big-M for the constraints
         self.M = np.iinfo(np.int32).max
 
-    def add_constraint_block(self, model: lp.Model, name, constraint, doc=""):
+    def add_constraint_block(self, model: lp.Model, name, constraint, doc="", disjunction_var=None):
         """ initialization of a constraint block (list of constraints)
         :param model: The linopy model
         :param name: name of variable
         :param constraint: The constraint to add
         :param doc: docstring of variable
+        :param disjunction_var: An optional binary variable. The constraints will only be enforced if this variable is
+                                True
         """
 
         # convert to list
@@ -436,9 +438,8 @@ class Constraint(Component):
             if current_name not in self.docs.keys():
                 # drop all unnecessary dimensions
                 lhs = cons.lhs.drop(list(set(cons.lhs.coords) - set(cons.lhs.dims)))
-                # drop all infinities
-                rhs = self._remove_infs(cons.rhs)
-                _ = model.add_constraints(lhs, cons.sign, rhs, name=current_name)
+                # add constraint
+                self._add_con(model, current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var)
                 # save constraint doc
                 index_list = list(cons.coords.dims)
                 self.docs[name] = self.compile_doc_string(doc, index_list, current_name)
@@ -467,25 +468,41 @@ class Constraint(Component):
 
             # eval the rule
             xr_lhs, xr_sign, xr_rhs = self.rule_to_cons(model=model, rule=rule, index_values=index_values, index_list=index_list)
-            if disjunction_var is not None:
-                # if we have any equal cons, we need to transform them into <= and >=
-                if (xr_sign == "=").any():
-                    # the "<=" cons
-                    sign_c = xr_sign.where(xr_sign != "=", "<=")
-                    m_arr = xr.zeros_like(xr_rhs).where(sign_c != "<=", self.M).where(sign_c != ">=", -self.M)
-                    model.add_constraints(xr_lhs + m_arr * disjunction_var, sign_c, xr_rhs + m_arr, name=name + "<=")
-                    sign_c = xr_sign.where(xr_sign != "=", ">=")
-                    m_arr = xr.zeros_like(xr_rhs).where(sign_c != "<=", self.M).where(sign_c != ">=", -self.M)
-                    model.add_constraints(xr_lhs + m_arr * disjunction_var, sign_c, xr_rhs + m_arr, name=name + ">=")
-                # create the arr
-                else:
-                    m_arr = xr.zeros_like(xr_rhs).where(xr_sign != "<=", self.M).where(xr_sign != ">=", -self.M)
-                    model.add_constraints(xr_lhs + m_arr * disjunction_var, xr_sign, xr_rhs + m_arr, name=name + ">=")
-            else:
-                model.add_constraints(xr_lhs, xr_sign, xr_rhs, name=name)
+            self._add_con(model, name, xr_lhs, xr_sign, xr_rhs, disjunction_var=disjunction_var)
 
         else:
             logging.warning(f"{name} already added. Can only be added once")
+
+    def _add_con(self, model, name, lhs, sign, rhs, disjunction_var=None):
+        """ Adds a constraint to the model
+        :param model: The linopy model
+        :param name: name of the constraint
+        :param lhs: left hand side of the constraint
+        :param sign: sign of the constraint
+        :param rhs: right hand side of the constraint
+        :param disjunction_var: An optional binary variable. The constraints will only be enforced if this variable is
+                                True
+        """
+
+        # get the mask, where rhs is not nan and rhs is finite
+        mask = ~np.isnan(rhs) & np.isfinite(rhs)
+
+        if disjunction_var is not None:
+            # if we have any equal cons, we need to transform them into <= and >=
+            if (sign == "=").any():
+                # the "<=" cons
+                sign_c = sign.where(sign != "=", "<=")
+                m_arr = xr.zeros_like(rhs).where(sign_c != "<=", self.M).where(sign_c != ">=", -self.M)
+                model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + "<=", mask=mask)
+                sign_c = sign.where(sign != "=", ">=")
+                m_arr = xr.zeros_like(rhs).where(sign_c != "<=", self.M).where(sign_c != ">=", -self.M)
+                model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + ">=", mask=mask)
+            # create the arr
+            else:
+                m_arr = xr.zeros_like(rhs).where(sign != "<=", self.M).where(sign != ">=", -self.M)
+                model.add_constraints(lhs + m_arr * disjunction_var, sign, rhs + m_arr, name=name + ">=", mask=mask)
+        else:
+            model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
 
     def rule_to_cons(self, model, rule, index_values, index_list):
         """
@@ -539,7 +556,7 @@ class Constraint(Component):
         xr_rhs = xr.DataArray(0.0, coords, dims=index_list)
         # Here we catch infinities in the constraints (gurobi does not care but glpk does)
         rhs_vals = np.array([c.rhs.data if isinstance(c.rhs, xr.DataArray) else c.rhs for c in cons])
-        xr_rhs.loc[*index_arrs] = self._remove_infs(rhs_vals)
+        xr_rhs.loc[*index_arrs] = rhs_vals
 
         return xr_lhs, xr_sign, xr_rhs
 
@@ -622,16 +639,3 @@ class Constraint(Component):
         for cname in list(self.docs.keys()):
             if cname.startswith(name):
                 del self.docs[cname]
-
-    def _remove_infs(self, arr):
-        """
-        Replaces infinities with a large number
-        :param arr: The array to replace infinities in
-        :return: The array with infinities replaced
-        """
-
-        # TODO: mask constraints instead of replacing infinities
-        if isinstance(arr, xr.DataArray):
-            return arr.where(arr != np.inf, self.M).where(arr != -np.inf, -self.M)
-
-        return np.nan_to_num(arr, nan=np.nan, posinf=self.M, neginf=-self.M)

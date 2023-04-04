@@ -252,8 +252,7 @@ class OptimizationSetup(object):
         # define and construct components of self.model
         Element.construct_model_components(self)
         # find smallest and largest coefficient and RHS
-        # TODO: Implement this in lino
-        #self.analyze_numerics()
+        self.analyze_numerics()
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
@@ -380,7 +379,9 @@ class OptimizationSetup(object):
             largest_coeff = [None, 0]
             smallest_coeff = [None, np.inf]
 
-            for cons in self.model.component_objects(pe.Constraint):
+            for cname in self.model.constraints:
+                cons = self.model.constraints[cname]
+                coeffs = cons.lhs.coeffs
                 for idx in cons:
                     deco_lhs = decompose_term(cons[idx].expr.args[0])
                     deco_rhs = decompose_term(cons[idx].expr.args[1])
