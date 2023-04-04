@@ -67,14 +67,32 @@ class Element:
         """ constructs the model components of the class <Element>
         :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("\n--- Construct model components ---\n")
+        import time, psutil, os
+        pid = os.getpid()
         # construct pe.Sets
+        t0 = time.perf_counter()
         cls.construct_sets(optimization_setup)
+        t1 = time.perf_counter()
+        logging.info(f"Time to construct pe.Sets: {t1 - t0:0.4f} seconds")
+        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
         # construct pe.Params
+        t0 = time.perf_counter()
         cls.construct_params(optimization_setup)
+        t1 = time.perf_counter()
+        logging.info(f"Time to construct pe.Params: {t1 - t0:0.4f} seconds")
+        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
         # construct pe.Vars
+        t0 = time.perf_counter()
         cls.construct_vars(optimization_setup)
+        t1 = time.perf_counter()
+        logging.info(f"Time to construct pe.Vars: {t1 - t0:0.4f} seconds")
+        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
         # construct pe.Constraints
+        t0 = time.perf_counter()
         cls.construct_constraints(optimization_setup)
+        t1 = time.perf_counter()
+        logging.info(f"Time to construct pe.Constraints: {t1 - t0:0.4f} seconds")
+        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
         # construct pe.Objective
         optimization_setup.energy_system.construct_objective()
 
