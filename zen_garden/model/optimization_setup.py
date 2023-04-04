@@ -11,21 +11,18 @@ Description:  Class defining the Concrete optimization model.
               class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
-import cProfile
 import logging
 import os
 from collections import defaultdict
 
+import linopy as lp
 import numpy as np
 import pandas as pd
-import pyomo.environ as pe
-from pyomo.opt import TerminationCondition
 from pyomo.core.expr.current import decompose_term
-import linopy as lp
 
+from .objects.component import Parameter, Variable, Constraint, IndexSet
 from .objects.element import Element
 from .objects.energy_system import EnergySystem
-from .objects.component import Parameter, Variable, Constraint, IndexSet
 from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 from ..preprocess.prepare import Prepare
@@ -381,36 +378,31 @@ class OptimizationSetup(object):
 
             for cname in self.model.constraints:
                 cons = self.model.constraints[cname]
-                coeffs = cons.lhs.coeffs
-                for idx in cons:
-                    deco_lhs = decompose_term(cons[idx].expr.args[0])
-                    deco_rhs = decompose_term(cons[idx].expr.args[1])
-                    deco_comb = []
-                    if deco_lhs[0]:
-                        deco_comb += deco_lhs[1]
-                    if deco_rhs[0]:
-                        deco_comb += deco_rhs[1]
-                    _RHS = 0
-                    for item in deco_comb:
-                        _abs = abs(item[0])
-                        if _abs != 0:
-                            if item[1] is not None:
-                                if _abs > largest_coeff[1]:
-                                    largest_coeff[0] = (cons[idx].name, item[1].name)
-                                    largest_coeff[1] = _abs
-                                if _abs < smallest_coeff[1]:
-                                    smallest_coeff[0] = (cons[idx].name, item[1].name)
-                                    smallest_coeff[1] = _abs
-                            else:
-                                _RHS += item[0]
-                    _RHS = abs(_RHS)
-                    if _RHS != 0:
-                        if _RHS > largest_rhs[1]:
-                            largest_rhs[0] = cons[idx].name
-                            largest_rhs[1] = _RHS
-                        if _RHS < smallest_rhs[1]:
-                            smallest_rhs[0] = cons[idx].name
-                            smallest_rhs[1] = _RHS
+                # get smallest coeff and corresponding variable
+                coeffs = np.abs(cons.lhs.coeffs.data).ravel()
+                variables = cons.lhs.vars.data.ravel()
+                argmin = coeffs.argmin()
+                argmax = coeffs.argmax()
+
+                if 0.0 < coeffs[argmin] < smallest_coeff[1]:
+                    smallest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeffs[argmin]], [variables[argmin]], self.model))
+                    smallest_coeff[1] = coeffs[argmin]
+                if coeffs[argmax] > largest_coeff[1]:
+                    largest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeffs[argmax]], [variables[argmax]], self.model))
+                    largest_coeff[1] = coeffs[argmax]
+
+                # smallest and largest rhs
+                rhs = cons.rhs.data.ravel()
+                argmin = rhs.argmin()
+                argmax = rhs.argmax()
+
+                if 0.0 < rhs[argmin] < smallest_rhs[1]:
+                    smallest_rhs[0] = cons.name
+                    smallest_rhs[1] = rhs[argmin]
+                if np.inf > rhs[argmax] > largest_rhs[1]:
+                    largest_rhs[0] = cons.name
+                    largest_rhs[1] = rhs[argmax]
+
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
 
