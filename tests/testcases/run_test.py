@@ -31,6 +31,7 @@ def config():
     :return: A new instance of the config
     """
     from config import config
+    config.solver["keep_files"] = False
     return deepcopy(config)
 
 @pytest.fixture
