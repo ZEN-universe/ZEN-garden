@@ -382,6 +382,7 @@ class Technology(Element):
 
         model = optimization_setup.model
         variables = optimization_setup.variables
+        params = optimization_setup.parameters
         sets = optimization_setup.sets
 
         def capacity_bounds(tech, capacity_type, loc, time):
@@ -423,8 +424,13 @@ class Technology(Element):
         techs_on_off = cls.create_custom_set(["set_technologies", "set_on_off"], optimization_setup)[0]
         # construct pe.Vars of the class <Technology>
         # install technology
-        variables.add_variable(model, name="install_technology", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), binary=True,
-            doc='installment of a technology at location l and time t')
+        # Note: binary variables are written into the lp file by linopy even if they are not relevant for the optimization,
+        # which makes all problems MIPs. Therefore, we only add binary variables, if really necessary. Gurobi can handle this
+        # by noting that the binary variables are not part of the model, however, only if there are no binary variables at all,
+        # it is possible to get the dual values of the constraints.
+        if cls._check_install_technology(optimization_setup):
+            variables.add_variable(model, name="install_technology", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), binary=True,
+                doc='installment of a technology at location l and time t')
         # capacity technology
         variables.add_variable(model, name="capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=capacity_bounds, doc='size of installed technology at location l and time t')
@@ -475,7 +481,7 @@ class Technology(Element):
         #  technology capacity_limit
         t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_technology_capacity_limit",
-                                         constraint=rules.get_constraint_technology_capacity_limit(*cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)),
+                                         constraint=rules.get_constraint_technology_capacity_limit(),
                                          doc='limited capacity of  technology depending on loc and time')
         t1 = time.perf_counter()
         logging.debug(f"Technology: constraint_technology_capacity_limit took {t1 - t0:.4f} seconds")
@@ -581,6 +587,25 @@ class Technology(Element):
             logging.info(f"Construct pe.Constraints of {subclass.__name__}")
             subclass.construct_constraints(optimization_setup)
 
+    @classmethod
+    def _check_install_technology(cls, optimization_setup):
+        """check if the binary variable is necessary"""
+        params = optimization_setup.parameters
+
+        # used in transport technology
+        if np.any(params.distance * params.capex_per_distance != 0):
+            return True
+
+        # used in constraint_technology_min_capacity
+        if np.any(params.min_built_capacity.notnull() & (params.min_built_capacity != 0)):
+            return True
+
+        # used in constraint_technology_max_capacity
+        if np.any(params.max_built_capacity.notnull() & (params.max_built_capacity != np.inf) & (params.max_built_capacity != 0)):
+            return True
+
+        return False
+
 
 class TechnologyRules:
     """
@@ -613,14 +638,17 @@ class TechnologyRules:
                 subclass.disjunct_off_technology_rule(self.optimization_setup, tech, capacity_type, loc, time)
                 return None
 
-
     ### --- constraint rules --- ###
     # %% Constraint rules pre-defined in Technology class
-    def get_constraint_technology_capacity_limit(self, index_values, index_names):
+    def get_constraint_technology_capacity_limit(self):
         """limited capacity_limit of technology"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
+
+        # get the indices
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"],
+                                                              self.optimization_setup)
 
         # get all the constraints
         constraints = []
@@ -666,9 +694,11 @@ class TechnologyRules:
         index = ZenIndex(index_values, index_names)
         for tech, capacity_type in index.get_unique([0, 1]):
             if params.max_built_capacity.loc[tech, capacity_type] != np.inf:
-                constraints.append(params.max_built_capacity.loc[tech, capacity_type].item() * model.variables["install_technology"].loc[tech, capacity_type]
-                                   - model.variables["built_capacity"].loc[tech, capacity_type]
-                                   >= 0)
+                lhs = - model.variables["built_capacity"].loc[tech, capacity_type]
+                # we only want a constraints with a binary variable if the corresponding max_built_capacity is not zero
+                if np.any(params.max_built_capacity.loc[tech, capacity_type].notnull() & (params.max_built_capacity.loc[tech, capacity_type] != 0)):
+                    lhs += params.max_built_capacity.loc[tech, capacity_type].item() * model.variables["install_technology"].loc[tech, capacity_type]
+                constraints.append(lhs >= 0)
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_technology_max_capacity", model)
 
     def constraint_technology_construction_time_rule(self, tech, capacity_type, loc, time):

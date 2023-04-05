@@ -270,10 +270,11 @@ class TransportTechnologyRules:
             if np.isinf(params.distance.loc[tech, edge]):
                 constraints.append(model.variables["built_capacity"].loc[tech, "power", edge] == 0)
             else:
-                constraints.append(model.variables["capex"].loc[tech, "power", edge]
-                                   - model.variables["built_capacity"].loc[tech, "power", edge] * params.capex_specific_transport.loc[tech, edge]
-                                   - model.variables["install_technology"].loc[tech, "power", edge] * (params.distance.loc[tech, edge].item() * params.capex_per_distance.loc[tech, edge])
-                                   == 0)
+                lhs = model.variables["capex"].loc[tech, "power", edge] - model.variables["built_capacity"].loc[tech, "power", edge] * params.capex_specific_transport.loc[tech, edge]
+                # Note: we only want to add the binary variable (install_technology) if really necessary
+                if np.any(params.distance.loc[tech, edge].item() * params.capex_per_distance.loc[tech, edge] != 0):
+                    lhs -= model.variables["install_technology"].loc[tech, "power", edge] * (params.distance.loc[tech, edge].item() * params.capex_per_distance.loc[tech, edge])
+                constraints.append(lhs == 0)
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_transport_technology_capex", model)
 
     def constraint_transport_technology_bidirectional_rule(self, index_values, index_list):

@@ -363,6 +363,9 @@ class Parameter(Component):
                 else:
                     coords_dict[k] = data.coords[k]
             data = data.assign_coords(coords_dict)
+        # sometimes we get emtpy parameters
+        if isinstance(data, dict) and len(data) == 0:
+            data = xr.DataArray([])
         return data
 
     def as_xarray(self, pname, indices):
