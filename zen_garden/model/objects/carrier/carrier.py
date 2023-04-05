@@ -10,10 +10,11 @@ Description:    Class defining a generic energy carrier.
                 constraints of a generic carrier and returns the abstract optimization model.
 ==========================================================================================================================================================================="""
 import logging
+import time
 
+import linopy as lp
 import numpy as np
 import xarray as xr
-import time
 
 from zen_garden.utils import ZenIndex, lp_sum
 from ..element import Element
@@ -215,7 +216,7 @@ class Carrier(Element):
         logging.debug(f"Carrier: constraint_carbon_emissions_carrier_total took {t10 - t9:.4f} seconds")
         # energy balance
         constraints.add_constraint_block(model, name="constraint_nodal_energy_balance",
-                                         constraint=rules.get_constraint_nodal_energy_balance(*cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.get_constraint_nodal_energy_balance(),
                                          doc='node- and time-dependent energy balance for each carrier', )
         t11 = time.perf_counter()
         logging.debug(f"Carrier: constraint_nodal_energy_balance took {t11 - t10:.4f} seconds")
@@ -381,7 +382,7 @@ class CarrierRules:
                 - lp_sum(terms)
                 == 0)
 
-    def get_constraint_nodal_energy_balance(self, index_values, index_names):
+    def get_constraint_nodal_energy_balance(self):
         """
         nodal energy balance for each time step.
         """
@@ -390,43 +391,75 @@ class CarrierRules:
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model
 
-        # get all the constraints
-        constraints = []
-        index = ZenIndex(index_values, index_names)
-        for carrier, node in index.get_unique([0, 1]):
+        # get the index
+        index_values, index_names = Carrier.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
+
+        # define the groups that are summed up (-1 is a dummy value)
+        carrier_conversion_in_group = xr.DataArray(-1, coords=model.variables["input_flow"].coords)
+        carrier_conversion_out_group = xr.DataArray(-1, coords=model.variables["output_flow"].coords)
+        carrier_flow_in_group = xr.DataArray(-1, coords=model.variables["carrier_flow"].coords)
+        carrier_flow_out_group = xr.DataArray(-1, coords=model.variables["carrier_flow"].coords)
+        carrier_flow_discharge_group = xr.DataArray(-1, coords=model.variables["carrier_flow_discharge"].coords)
+        carrier_flow_charge_group = xr.DataArray(-1, coords=model.variables["carrier_flow_charge"].coords)
+        carrier_import_group = xr.DataArray(-1, coords=model.variables["import_carrier_flow"].coords)
+        carrier_export_group = xr.DataArray(-1, coords=model.variables["export_carrier_flow"].coords)
+        carrier_demand_group = xr.DataArray(-1, coords=params.demand_carrier.coords)
+
+        # loop over all index values
+        for num, (carrier, node, time) in enumerate(index_values):
+
             # carrier input and output conversion technologies
-            carrier_conversion_in = lp_sum([1.0*model.variables["input_flow"].loc[tech, carrier, node] for tech in sets["set_conversion_technologies"] if carrier in sets["set_input_carriers"][tech]])
-            carrier_conversion_out = lp_sum([1.0*model.variables["output_flow"].loc[tech, carrier, node] for tech in sets["set_conversion_technologies"] if carrier in sets["set_output_carriers"][tech]])
+            for tech in sets["set_conversion_technologies"]:
+                if carrier in sets["set_input_carriers"][tech]:
+                    carrier_conversion_in_group.loc[tech, carrier, node, time] = num
+                if carrier in sets["set_output_carriers"][tech]:
+                    carrier_conversion_out_group.loc[tech, carrier, node, time] = num
+
             # carrier flow transport technologies
             set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
             set_edges_out = self.energy_system.calculate_connected_edges(node, "out")
-            carrier_flow_in = lp_sum([model.variables["carrier_flow"].loc[tech, edge] - model.variables["carrier_loss"].loc[tech, edge]
-                                      for edge in set_edges_in
-                                      for tech in sets["set_transport_technologies"] if carrier in sets["set_reference_carriers"][tech]])
-            carrier_flow_out = lp_sum([1.0*model.variables["carrier_flow"].loc[tech, edge]
-                                       for edge in set_edges_out
-                                       for tech in sets["set_transport_technologies"] if carrier in sets["set_reference_carriers"][tech]])
+            for tech in sets["set_transport_technologies"]:
+                if carrier in sets["set_reference_carriers"][tech]:
+                    carrier_flow_in_group.loc[tech, set_edges_in, time] = num
+                    carrier_flow_out_group.loc[tech, set_edges_out, time] = num
+
             # carrier flow storage technologies
-            carrier_flow_discharge = lp_sum([1.0*model.variables["carrier_flow_discharge"].loc[tech, node]
-                                             for tech in sets["set_storage_technologies"] if carrier in sets["set_reference_carriers"][tech]])
-            carrier_flow_charge = lp_sum([1.0*model.variables["carrier_flow_charge"].loc[tech, node]
-                                          for tech in sets["set_storage_technologies"] if carrier in sets["set_reference_carriers"][tech]])
+            for tech in sets["set_storage_technologies"]:
+                if carrier in sets["set_reference_carriers"][tech]:
+                    carrier_flow_discharge_group.loc[tech, node, time] = num
+                    carrier_flow_charge_group.loc[tech, node, time] = num
+
             # carrier import, demand and export
-            carrier_import = model.variables["import_carrier_flow"].loc[carrier, node]
-            carrier_export = model.variables["export_carrier_flow"].loc[carrier, node]
-            carrier_demand = params.demand_carrier.loc[carrier, node]
-            # shed demand
-            carrier_shed_demand = model.variables["shed_demand_carrier"].loc[carrier, node]
+            carrier_import_group.loc[carrier, node, time] = num
+            carrier_export_group.loc[carrier, node, time] = num
+            carrier_demand_group.loc[carrier, node, time] = num
 
-            # some of the vars might be 0 -> go to the right
-            terms = [carrier_conversion_out, -carrier_conversion_in, carrier_flow_in, -carrier_flow_out,
-                     carrier_flow_discharge, -carrier_flow_charge, carrier_import, -carrier_export,
-                     carrier_shed_demand, -carrier_demand]
-            # we multiply everything with 1 to make sure it's valid for lp_sum
-            lhs = lp_sum([1.0*term for term in terms if not isinstance(term, (xr.DataArray, float, int))])
-            rhs = -sum([term for term in terms if isinstance(term, (xr.DataArray, float, int))])
+        # some of the expressions might be emtpy
+        exprs = []
+        # carrier_conversion_out - carrier_conversion_in
+        if carrier_conversion_out_group.size > 0:
+            exprs.append((model.variables["output_flow"]).groupby_sum(carrier_conversion_out_group))
+        if carrier_conversion_in_group.size > 0:
+            exprs.append(-(model.variables["input_flow"]).groupby_sum(carrier_conversion_in_group))
+        # carrier_flow_out - carrier_flow_in
+        if carrier_flow_out_group.size > 0:
+            exprs.append((model.variables["carrier_flow"] - model.variables["carrier_loss"]).groupby_sum(carrier_flow_out_group))
+        if carrier_flow_in_group.size > 0:
+            exprs.append(-(model.variables["carrier_flow"]).groupby_sum(carrier_flow_in_group))
+        # carrier_flow_discharge - carrier_flow_charge
+        if carrier_flow_discharge_group.size > 0:
+            exprs.append((model.variables["carrier_flow_discharge"]).groupby_sum(carrier_flow_discharge_group))
+        if carrier_flow_charge_group.size > 0:
+            exprs.append(-(model.variables["carrier_flow_charge"]).groupby_sum(carrier_flow_charge_group))
+        # carrier_demand - carrier_import + carrier_export
+        if carrier_import_group.size > 0:
+            exprs.append((model.variables["import_carrier_flow"]).groupby_sum(carrier_import_group))
+        if carrier_export_group.size > 0:
+            exprs.append(-(model.variables["export_carrier_flow"]).groupby_sum(carrier_export_group))
 
-            # add the cons (drop every level besides the timesteps
-            constraints.append(lhs == rhs)
-
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_nodal_energy_balance", model)
+        # sum over all groups, with merge and broadcast to handle missing dims correctly
+        lhs = lp.expressions.merge(*exprs, compat="broadcast_equals")
+        rhs = params.demand_carrier.groupby(carrier_demand_group).map(lambda x: x.sum())
+        sign = xr.DataArray("==", coords=rhs.coords)
+        # to a nice constraint proper dims
+        return self.optimization_setup.constraints.reorder_group(lhs, sign, rhs, index_values, index_names, model, drop=-1)

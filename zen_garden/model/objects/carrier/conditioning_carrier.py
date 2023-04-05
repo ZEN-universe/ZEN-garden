@@ -10,10 +10,11 @@ Description:    Class defining compressable energy carriers.
                 constraints of a generic carrier and returns the abstract optimization model.
 ==========================================================================================================================================================================="""
 import logging
+import time
 
+import linopy as lp
 import numpy as np
 import xarray as xr
-import time
 
 from zen_garden.utils import ZenIndex
 from .carrier import Carrier
@@ -47,7 +48,9 @@ class ConditioningCarrier(Carrier):
         variables = optimization_setup.variables
 
         # flow of imported carrier
-        variables.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0, np.inf),
+        variables.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(
+            ["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
+                               bounds=(0, np.inf),
                                doc="node- and time-dependent model endogenous carrier demand")
 
     @classmethod
@@ -60,7 +63,9 @@ class ConditioningCarrier(Carrier):
         # limit import flow by availability
         t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_carrier_demand_coupling",
-                                         constraint=rules.get_constraint_carrier_demand_coupling(*cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.get_constraint_carrier_demand_coupling(*cls.create_custom_set(
+                                             ["set_conditioning_carrier_parents", "set_nodes",
+                                              "set_time_steps_operation"], optimization_setup)),
                                          doc='coupling model endogenous and exogenous carrier demand', )
         t1 = time.perf_counter()
         logging.debug(f"Conditioningn Carrier: constraint_carrier_demand_coupling took {t1 - t0:.4f} seconds")
@@ -98,7 +103,9 @@ class ConditioningCarrierRules:
         index = ZenIndex(index_values, index_names)
         for parent_carrier in index.get_unique([0]):
             constraints.append(model.variables["endogenous_carrier_demand"].loc[parent_carrier]
-                               - model.variables["endogenous_carrier_demand"].loc[np.array(sets["set_conditioning_carrier_children"][parent_carrier])].sum("set_conditioning_carriers")
+                               - model.variables["endogenous_carrier_demand"].loc[
+                                   np.array(sets["set_conditioning_carrier_children"][parent_carrier])].sum(
+                "set_conditioning_carriers")
                                == 0)
         return constraints
 
@@ -111,7 +118,8 @@ class ConditioningCarrierRules:
         model = self.optimization_setup.model
 
         # get the index
-        index_values, index_names = ConditioningCarrier.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
+        index_values, index_names = ConditioningCarrier.create_custom_set(
+            ["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
 
         # define the groups that are summed up (-1 is a dummy value)
         carrier_conversion_in_group = xr.DataArray(-1, coords=model.variables["input_flow"].coords)
@@ -122,8 +130,10 @@ class ConditioningCarrierRules:
         carrier_flow_charge_group = xr.DataArray(-1, coords=model.variables["carrier_flow_charge"].coords)
         carrier_import_group = xr.DataArray(-1, coords=model.variables["import_carrier_flow"].coords)
         carrier_export_group = xr.DataArray(-1, coords=model.variables["export_carrier_flow"].coords)
-        endogenous_carrier_demand_group_pos = xr.DataArray(-1, coords=model.variables["endogenous_carrier_demand"].coords)
-        endogenous_carrier_demand_group_neg = xr.DataArray(-1, coords=model.variables["endogenous_carrier_demand"].coords)
+        endogenous_carrier_demand_group_pos = xr.DataArray(-1,
+                                                           coords=model.variables["endogenous_carrier_demand"].coords)
+        endogenous_carrier_demand_group_neg = xr.DataArray(-1,
+                                                           coords=model.variables["endogenous_carrier_demand"].coords)
         carrier_demand_group = xr.DataArray(-1, coords=params.demand_carrier.coords)
         for num, (carrier, node, time) in enumerate(index_values):
 
@@ -156,28 +166,30 @@ class ConditioningCarrierRules:
             if carrier in sets["set_conditioning_carriers"]:
                 # check if carrier is parent_carrier of a conditioning_carrier
                 if carrier in sets["set_conditioning_carrier_parents"]:
-                    endogenous_carrier_demand_group_neg.loc[carrier, node, time] = num
-                else:
                     endogenous_carrier_demand_group_pos.loc[carrier, node, time] = num
+                else:
+                    endogenous_carrier_demand_group_neg.loc[carrier, node, time] = num
 
-        # sum over all groups
-        lhs = (# carrier_conversion_out - carrier_conversion_in
-                 (model.variables["output_flow"]).groupby_sum(carrier_conversion_out_group)
-               - (model.variables["input_flow"]).groupby_sum(carrier_conversion_in_group)
-               # carrier_flow_out - carrier_flow_in
-               + (model.variables["carrier_flow"] - model.variables["carrier_loss"]).groupby_sum(carrier_flow_in_group)
-               - (model.variables["carrier_flow"]).groupby_sum(carrier_flow_out_group)
-               # carrier_flow_discharge - carrier_flow_charge
-               + (model.variables["carrier_flow_discharge"]).groupby_sum(carrier_flow_discharge_group)
-               - (model.variables["carrier_flow_charge"]).groupby_sum(carrier_flow_charge_group)
-               # carrier_import - carrier_export
-               + (model.variables["import_carrier_flow"]).groupby_sum(carrier_import_group)
-               - (model.variables["export_carrier_flow"]).groupby_sum(carrier_export_group)
-               # endogenous_carrier_demand
-               + (model.variables["endogenous_carrier_demand"]).groupby_sum(endogenous_carrier_demand_group_pos)
-               - (model.variables["endogenous_carrier_demand"]).groupby_sum(endogenous_carrier_demand_group_neg)
-              )
+        # sum over all groups, with merge and broadcast to handle missing dims correctly
+        lhs = lp.expressions.merge(
+            # carrier_conversion_out - carrier_conversion_in
+            (model.variables["output_flow"]).groupby_sum(carrier_conversion_out_group),
+            - (model.variables["input_flow"]).groupby_sum(carrier_conversion_in_group),
+            # carrier_flow_out - carrier_flow_in
+            (model.variables["carrier_flow"] - model.variables["carrier_loss"]).groupby_sum(carrier_flow_in_group),
+            - (model.variables["carrier_flow"]).groupby_sum(carrier_flow_out_group),
+            # carrier_flow_discharge - carrier_flow_charge
+            (model.variables["carrier_flow_discharge"]).groupby_sum(carrier_flow_discharge_group),
+            - (model.variables["carrier_flow_charge"]).groupby_sum(carrier_flow_charge_group),
+            # carrier_import - carrier_export
+            (model.variables["import_carrier_flow"]).groupby_sum(carrier_import_group),
+            - (model.variables["export_carrier_flow"]).groupby_sum(carrier_export_group),
+            # endogenous_carrier_demand
+            (model.variables["endogenous_carrier_demand"]).groupby_sum(endogenous_carrier_demand_group_pos),
+            - (model.variables["endogenous_carrier_demand"]).groupby_sum(endogenous_carrier_demand_group_neg),
+            compat="broadcast_equals")
         rhs = params.demand_carrier.groupby(carrier_demand_group).map(lambda x: x.sum())
         sign = xr.DataArray("==", coords=rhs.coords)
         # to a nice constraint proper dims
-        return self.optimization_setup.constraints.reorder_group(lhs, sign, rhs, index_values, index_names, model, drop=-1)
+        return self.optimization_setup.constraints.reorder_group(lhs, sign, rhs, index_values, index_names, model,
+                                                                 drop=-1)
