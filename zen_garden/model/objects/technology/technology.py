@@ -592,11 +592,11 @@ class TechnologyRules:
         constraints = []
         index = ZenIndex(index_values, index_names)
         for tech, capacity_type, loc in index.get_unique([0, 1, 2]):
-            times = index.get_values([tech, capacity_type, loc], 3, dtype=list)
+            times = np.array(index.get_values([tech, capacity_type, loc], 3, dtype=list))
             if params.capacity_limit_technology.loc[tech, capacity_type, loc] != np.inf:
                 existing_capacities = np.array([Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, time, type_existing_quantity="capacity")
                                                 for time in times])
-                mask = existing_capacities < params.capacity_limit_technology.loc[tech, capacity_type, loc]
+                mask = existing_capacities < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
                 if np.any(mask):
                     constraints.append(model.variables["capacity"].loc[tech, capacity_type, loc, times[mask]]
                                        <= params.capacity_limit_technology.loc[tech, capacity_type, loc].item())

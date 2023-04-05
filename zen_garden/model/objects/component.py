@@ -199,12 +199,14 @@ class IndexSet(Component):
         return index_arrs
 
     @staticmethod
-    def indices_to_mask(index_values, index_list, bounds):
+    def indices_to_mask(index_values, index_list, bounds, model=None):
         """
         Transforms a list of index values into a mask
         :param index_values: A list of index values (tuples)
         :param index_list: The list of the names of the indices
         :param bounds: Either None, tuple, array or callable to define the bounds of the variable
+        :param model: The model to which the mask belongs, note that indices which don't match existing indices are
+                      renamed to match the model
         :return: The mask as xarray
         """
 
@@ -213,6 +215,16 @@ class IndexSet(Component):
         coords = [np.unique(t.data) for t in index_arrs]
 
         # init the mask
+        if model is not None:
+            index_names = []
+            for index_name, coord in zip(index_list, coords):
+                # we check if there is already an index with the same name but a different size
+                if index_name in model.variables.coords and coord.size != model.variables.coords[index_name].data.size:
+                    index_names.append(index_name + f"_{uuid.uuid4()}")
+                else:
+                    index_names.append(index_name)
+            index_list = index_names
+
         mask = xr.DataArray(False, coords=coords, dims=index_list)
         mask.loc[*index_arrs] = True
 
@@ -391,7 +403,7 @@ class Variable(Component):
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
-            mask, lower, upper = IndexSet.indices_to_mask(index_values, index_list, bounds)
+            mask, lower, upper = IndexSet.indices_to_mask(index_values, index_list, bounds, model)
             model.add_variables(lower=lower, upper=upper, integer=integer, binary=binary, name=name, mask=mask, coords=mask.coords)
 
             # save variable doc

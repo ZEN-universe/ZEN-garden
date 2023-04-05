@@ -179,10 +179,12 @@ class Carrier(Element):
                                          constraint=rules.get_constraint_limit_shed_demand(),
                                          doc="limit of shedding carrier demand")
         # total cost for carriers
+        # TODO: optimize
         constraints.add_constraint_rule(model, name="constraint_cost_carrier_total",
                                         index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_cost_carrier_total_rule,
                                         doc="total cost of importing and exporting carriers")
         # carbon emissions
+        # TODO: optimize
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_carrier",
                                          constraint=rules.get_constraint_carbon_emissions_carrier(*cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)),
                                          doc="carbon emissions of importing and exporting carrier")
