@@ -12,6 +12,7 @@ import logging
 import uuid
 from itertools import combinations
 from itertools import zip_longest
+import time
 
 import linopy as lp
 import numpy as np
@@ -19,6 +20,7 @@ import pandas as pd
 import xarray as xr
 from ordered_set import OrderedSet
 
+logging.basicConfig(level=logging.DEBUG)
 
 class ZenSet(OrderedSet):
     """
@@ -441,6 +443,8 @@ class Constraint(Component):
                                 True
         """
 
+        t0 = time.perf_counter()
+
         # convert to list
         if not isinstance(constraint, list):
             constraint = [constraint]
@@ -458,6 +462,9 @@ class Constraint(Component):
             else:
                 logging.warning(f"{name} already added. Can only be added once")
 
+        t1 = time.perf_counter()
+        logging.debug(f"Adding constraint block {name} took {t1 - t0:0.4f} seconds")
+
     def add_constraint_rule(self, model: lp.Model, name, index_sets, rule, doc="", disjunction_var=None):
         """ initialization of a variable
         :param model: The linopy model
@@ -467,6 +474,7 @@ class Constraint(Component):
         :param disjunction_var: An optional binary variable. The constraints will only be enforced if this variable is
                                 True
         :param doc: docstring of variable"""
+
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
@@ -479,8 +487,13 @@ class Constraint(Component):
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
 
             # eval the rule
+            t0 = time.perf_counter()
             xr_lhs, xr_sign, xr_rhs = self.rule_to_cons(model=model, rule=rule, index_values=index_values, index_list=index_list)
+            t1 = time.perf_counter()
+            logging.debug(f"Evaluating constraint rule {name} took {t1 - t0:0.4f} seconds")
             self._add_con(model, name, xr_lhs, xr_sign, xr_rhs, disjunction_var=disjunction_var)
+            t2 = time.perf_counter()
+            logging.debug(f"Adding constraint rule {name} took {t2 - t1:0.4f} seconds")
 
         else:
             logging.warning(f"{name} already added. Can only be added once")
@@ -651,3 +664,46 @@ class Constraint(Component):
         for cname in list(self.docs.keys()):
             if cname.startswith(name):
                 del self.docs[cname]
+
+    @staticmethod
+    def combine_constraints(constraints, stack_dim, model):
+        """
+        Combines a list of constraints into a single constraint
+        :param constraints: A list of constraints
+        :param stack_dim: The name of the stack dimension
+        :param model: The model to add the constraints to
+        :return: A single constraint
+        """
+
+        # catch empty constraints
+        if len(constraints) == 0:
+            return constraints
+
+        # get the shape of the constraints
+        max_terms = max([c.lhs.shape[-1] for c in constraints])
+        c = constraints[0]
+        lhs_shape = c.lhs.shape[:-1] + (max_terms, )
+        coords = [xr.DataArray(np.arange(len(constraints)), dims=[stack_dim]), ] + [c.lhs.coords[d] for d in c.lhs.dims][:-1] + [xr.DataArray(np.arange(max_terms), dims=["_term"])]
+        coeffs = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=np.nan), coords=coords,
+                              dims=(stack_dim, *constraints[0].lhs.dims.keys()))
+        variables = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=-1), coords=coords,
+                                 dims=(stack_dim, *constraints[0].lhs.dims.keys()))
+        sign = xr.DataArray("=", coords=coords[:-1])
+        rhs = xr.DataArray(np.nan, coords=coords[:-1])
+
+        for num, con in enumerate(constraints):
+            terms = con.lhs.dims["_term"]
+            coeffs[num, ..., :terms] = con.lhs.coeffs.data
+            variables[num, ..., :terms] = con.lhs.vars.data
+            sign[num, ...] = con.sign
+            rhs[num, ...] = con.rhs
+
+        xr_ds = xr.Dataset({"coeffs": coeffs, "vars": variables})
+        lhs = lp.LinearExpression(xr_ds, model)
+
+        return lp.constraints.AnonymousConstraint(lhs, sign, rhs)
+
+
+
+
+

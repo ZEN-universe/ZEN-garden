@@ -290,7 +290,7 @@ class CarrierRules:
             else:
                 constraints.append((model.variables["shed_demand_carrier"].loc[carrier]
                                     == 0))
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_cost_shed_demand", model)
 
     def get_constraint_limit_shed_demand(self):
         """ limit demand shedding at low price """
@@ -335,7 +335,7 @@ class CarrierRules:
                                - fac * (model.variables["import_carrier_flow"].loc[carrier, node] - model.variables["export_carrier_flow"].loc[carrier, node])
                                == 0)
 
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_carbon_emissions_carrier", model)
 
     def constraint_carbon_emissions_carrier_total_rule(self, year):
         """ total carbon emissions of importing and exporting carrier"""
@@ -403,4 +403,4 @@ class CarrierRules:
             # add the cons (drop every level besides the timesteps
             constraints.append(lhs == rhs)
 
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_nodal_energy_balance", model)

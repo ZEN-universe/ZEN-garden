@@ -603,7 +603,7 @@ class TechnologyRules:
                 if np.any(~mask):
                     constraints.append(model.variables["built_capacity"].loc[tech, capacity_type, loc, times[~mask]]
                                        == 0)
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_technology_capacity_limit", model)
 
     def get_constraint_technology_min_capacity(self, index_values, index_names):
         """ min capacity expansion of technology."""
@@ -619,7 +619,7 @@ class TechnologyRules:
                 constraints.append(params.min_built_capacity.loc[tech, capacity_type].item() * model.variables["install_technology"].loc[tech, capacity_type]
                                    - model.variables["built_capacity"].loc[tech, capacity_type]
                                    <= 0)
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_technology_min_capacity", model)
 
     def get_constraint_technology_max_capacity(self, index_values, index_names):
         """max capacity expansion of technology"""
@@ -635,7 +635,7 @@ class TechnologyRules:
                 constraints.append(params.max_built_capacity.loc[tech, capacity_type].item() * model.variables["install_technology"].loc[tech, capacity_type]
                                    - model.variables["built_capacity"].loc[tech, capacity_type]
                                    >= 0)
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_technology_max_capacity", model)
 
     def constraint_technology_construction_time_rule(self, tech, capacity_type, loc, time):
         """ construction time of technology, i.e., time that passes between investment and availability"""
@@ -770,7 +770,7 @@ class TechnologyRules:
             constraints.append(model.variables["opex"].loc[tech, loc]
                                - params.opex_specific.loc[tech, loc] * reference_flow
                                == 0)
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_opex_technology", model)
 
     def constraint_opex_yearly_rule(self, tech, loc, year):
         """ yearly opex for a technology at a location in each year """
@@ -812,7 +812,7 @@ class TechnologyRules:
                                - params.carbon_intensity_technology.loc[tech, loc].item() * reference_flow
                                == 0)
 
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_carbon_emissions_technology", model)
 
     def constraint_carbon_emissions_technology_total_rule(self, year):
         """ calculate total carbon emissions of each technology"""
@@ -893,4 +893,4 @@ class TechnologyRules:
                 else:
                     continue
 
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_capacity_factor", model)
