@@ -11,9 +11,11 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 import logging
 
+import xarray as xr
 import numpy as np
 import pandas as pd
 import time
+from linopy.constraints import AnonymousConstraint
 
 from zen_garden.utils import ZenIndex, linexpr_from_tuple_np, lp_sum
 from ..element import Element
@@ -651,8 +653,11 @@ class TechnologyRules:
                                                               self.optimization_setup)
 
         # get all the constraints
-        constraints = []
         index = ZenIndex(index_values, index_names)
+        capacity_fac = xr.DataArray(np.nan, coords=model.variables["capacity"].coords)
+        built_capacity_fac = xr.DataArray(np.nan, coords=model.variables["built_capacity"].coords)
+        sign = xr.DataArray("==", coords=model.variables["capacity"].coords)
+        rhs = xr.DataArray(np.nan, coords=model.variables["capacity"].coords)
         for tech, capacity_type, loc in index.get_unique([0, 1, 2]):
             times = np.array(index.get_values([tech, capacity_type, loc], 3, dtype=list))
             if params.capacity_limit_technology.loc[tech, capacity_type, loc] != np.inf:
@@ -660,12 +665,18 @@ class TechnologyRules:
                                                 for time in times])
                 mask = existing_capacities < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
                 if np.any(mask):
-                    constraints.append(model.variables["capacity"].loc[tech, capacity_type, loc, times[mask]]
-                                       <= params.capacity_limit_technology.loc[tech, capacity_type, loc].item())
+                    capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 1
+                    rhs.loc[tech, capacity_type, loc, times[mask]] = params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
+                    sign.loc[tech, capacity_type, loc, times[mask]] = "<="
                 if np.any(~mask):
-                    constraints.append(model.variables["built_capacity"].loc[tech, capacity_type, loc, times[~mask]]
-                                       == 0)
-        return constraints
+                    built_capacity_fac.loc[tech, capacity_type, loc, times[~mask]] = 1
+                    rhs.loc[tech, capacity_type, loc, times[~mask]] = 0
+                    sign.loc[tech, capacity_type, loc, times[~mask]] = "=="
+
+        # create the lhs and mask
+        lhs = built_capacity_fac*model.variables["built_capacity"] + capacity_fac*model.variables["capacity"]
+        mask = capacity_fac.notnull() | built_capacity_fac.notnull()
+        return AnonymousConstraint(lhs, sign, rhs), mask
 
     def get_constraint_technology_min_capacity(self, index_values, index_names):
         """ min capacity expansion of technology."""

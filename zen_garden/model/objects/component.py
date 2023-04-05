@@ -455,10 +455,16 @@ class Constraint(Component):
         for num, cons in enumerate(constraint):
             current_name = f"{name}_{num}"
             if current_name not in self.docs.keys():
+                # if the cons is a tuple we have a mask
+                if isinstance(cons, tuple):
+                    cons, mask = cons
+                else:
+                    mask = None
+
                 # drop all unnecessary dimensions
                 lhs = cons.lhs.drop(list(set(cons.lhs.coords) - set(cons.lhs.dims)))
                 # add constraint
-                self._add_con(model, current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var)
+                self._add_con(model, current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var, mask=mask)
                 # save constraint doc
                 index_list = list(cons.coords.dims)
                 self.docs[name] = self.compile_doc_string(doc, index_list, current_name)
@@ -501,7 +507,7 @@ class Constraint(Component):
         else:
             logging.warning(f"{name} already added. Can only be added once")
 
-    def _add_con(self, model, name, lhs, sign, rhs, disjunction_var=None):
+    def _add_con(self, model, name, lhs, sign, rhs, disjunction_var=None, mask=None):
         """ Adds a constraint to the model
         :param model: The linopy model
         :param name: name of the constraint
@@ -510,10 +516,14 @@ class Constraint(Component):
         :param rhs: right hand side of the constraint
         :param disjunction_var: An optional binary variable. The constraints will only be enforced if this variable is
                                 True
+        :param mask: An optional mask to only add the constraint for certain indices
         """
 
         # get the mask, where rhs is not nan and rhs is finite
-        mask = ~np.isnan(rhs) & np.isfinite(rhs)
+        if mask is not None:
+            mask &= ~np.isnan(rhs) & np.isfinite(rhs)
+        else:
+            mask = ~np.isnan(rhs) & np.isfinite(rhs)
 
         if disjunction_var is not None:
             # if we have any equal cons, we need to transform them into <= and >=
