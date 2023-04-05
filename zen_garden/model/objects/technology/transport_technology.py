@@ -10,6 +10,7 @@ Description:    Class defining the parameters, variables and constraints that ho
                 constraints that hold for the transport technologies.
 ==========================================================================================================================================================================="""
 import logging
+import time
 
 import numpy as np
 import xarray as xr
@@ -172,18 +173,25 @@ class TransportTechnology(Technology):
         model = optimization_setup.model
         constraints = optimization_setup.constraints
         rules = TransportTechnologyRules(optimization_setup)
-        # Carrier Flow Losses 
+        # Carrier Flow Losses
+        t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_transport_technology_losses_flow",
                                          constraint=rules.get_constraint_transport_technology_losses_flow(*cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup)),
                                          doc='Carrier loss due to transport with through transport technology')
+        t1 = time.perf_counter()
+        logging.debug(f"Transport Technology: constraint_carbon_emissions_technology took {t1 - t0:.4f} seconds")
         # capex of transport technologies
         constraints.add_constraint_block(model, name="constraint_transport_technology_capex",
                                          constraint=rules.get_constraint_transport_technology_capex(*cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup)),
                                          doc='Capital expenditures for installing transport technology')
+        t2 = time.perf_counter()
+        logging.debug(f"Transport Technology: constraint_transport_technology_capex took {t2 - t1:.4f} seconds")
         # bidirectional transport technologies: capacity on edge must be equal in both directions
         constraints.add_constraint_block(model, name="constraint_transport_technology_bidirectional",
                                          constraint=rules.constraint_transport_technology_bidirectional_rule(*cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], optimization_setup)),
                                          doc='Forces that transport technology capacity must be equal in both directions')
+        t3 = time.perf_counter()
+        logging.debug(f"Transport Technology: constraint_transport_technology_bidirectional took {t3 - t2:.4f} seconds")
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -247,7 +255,7 @@ class TransportTechnologyRules:
                 constraints.append(model.variables["carrier_loss"].loc[tech, edge]
                                    - params.distance.loc[tech, edge].item() * params.loss_flow.loc[tech].item() * model.variables["carrier_flow"].loc[tech, edge]
                                    == 0)
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_transport_technology_losses_flow", model)
 
     def get_constraint_transport_technology_capex(self, index_values, index_list):
         """ definition of the capital expenditures for the transport technology"""
@@ -266,7 +274,7 @@ class TransportTechnologyRules:
                                    - model.variables["built_capacity"].loc[tech, "power", edge] * params.capex_specific_transport.loc[tech, edge]
                                    - model.variables["install_technology"].loc[tech, "power", edge] * (params.distance.loc[tech, edge].item() * params.capex_per_distance.loc[tech, edge])
                                    == 0)
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_transport_technology_capex", model)
 
     def constraint_transport_technology_bidirectional_rule(self, index_values, index_list):
         """ Forces that transport technology capacity must be equal in both direction"""
@@ -283,4 +291,4 @@ class TransportTechnologyRules:
                                    - model.variables["built_capacity"].loc[tech, "power", _reversed_edge]
                                    == 0)
 
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_transport_technology_bidirectional", model)

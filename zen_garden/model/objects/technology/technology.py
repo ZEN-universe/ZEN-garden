@@ -13,6 +13,7 @@ import logging
 
 import numpy as np
 import pandas as pd
+import time
 
 from zen_garden.utils import ZenIndex, linexpr_from_tuple_np, lp_sum
 from ..element import Element
@@ -472,54 +473,83 @@ class Technology(Element):
         # construct pe.Constraints of the class <Technology>
         rules = TechnologyRules(optimization_setup)
         #  technology capacity_limit
+        t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_technology_capacity_limit",
                                          constraint=rules.get_constraint_technology_capacity_limit(*cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)),
                                          doc='limited capacity of  technology depending on loc and time')
+        t1 = time.perf_counter()
+        logging.debug(f"Technology: constraint_technology_capacity_limit took {t1 - t0:.4f} seconds")
         # minimum capacity
         constraints.add_constraint_block(model, name="constraint_technology_min_capacity",
                                          constraint=rules.get_constraint_technology_min_capacity(*cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)),
                                          doc='min capacity of technology that can be installed')
+        t2 = time.perf_counter()
+        logging.debug(f"Technology: constraint_technology_min_capacity took {t2 - t1:.4f} seconds")
         # maximum capacity
         constraints.add_constraint_block(model, name="constraint_technology_max_capacity",
                                          constraint=rules.get_constraint_technology_max_capacity(*cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)),
                                          doc='max capacity of technology that can be installed')
+        t3 = time.perf_counter()
+        logging.debug(f"Technology: constraint_technology_max_capacity took {t3 - t2:.4f} seconds")
         # construction period
         constraints.add_constraint_rule(model, name="constraint_technology_construction_time",
             index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), rule=rules.constraint_technology_construction_time_rule,
             doc='lead time in which invested technology is constructed')
+        t4 = time.perf_counter()
+        logging.debug(f"Technology: constraint_technology_construction_time took {t4 - t3:.4f} seconds")
         # lifetime
         constraints.add_constraint_rule(model, name="constraint_technology_lifetime", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_technology_lifetime_rule, doc='max capacity of  technology that can be installed')
+        t5 = time.perf_counter()
+        logging.debug(f"Technology: constraint_technology_lifetime took {t5 - t4:.4f} seconds")
         # limit diffusion rate
         constraints.add_constraint_rule(model, name="constraint_technology_diffusion_limit",
             index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), rule=rules.constraint_technology_diffusion_limit_rule,
             doc="Limits the newly built capacity by the existing knowledge stock")
+        t6 = time.perf_counter()
+        logging.debug(f"Technology: constraint_technology_diffusion_limit took {t6 - t5:.4f} seconds")
         # limit max load by installed capacity
         constraints.add_constraint_block(model, name="constraint_capacity_factor",
                                          constraint=rules.get_constraint_capacity_factor(*cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup)),
                                          doc='limit max load by installed capacity')
+        t7 = time.perf_counter()
+        logging.debug(f"Technology: constraint_capacity_factor took {t7 - t6:.4f} seconds")
         # annual capex of having capacity
         constraints.add_constraint_rule(model, name="constraint_capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_capex_yearly_rule, doc='annual capex of having capacity of technology.')
+        t8 = time.perf_counter()
+        logging.debug(f"Technology: constraint_capex_yearly took {t8 - t7:.4f} seconds")
         # total capex of all technologies
         constraints.add_constraint_rule(model, name="constraint_capex_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_capex_total_rule,
             doc='total capex of all technology that can be installed.')
+        t9 = time.perf_counter()
+        logging.debug(f"Technology: constraint_capex_total took {t9 - t8:.4f} seconds")
         # calculate opex
         constraints.add_constraint_block(model, name="constraint_opex_technology",
                                          constraint=rules.get_constraint_opex_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
                                          doc="opex for each technology at each location and time step")
+        t10 = time.perf_counter()
+        logging.debug(f"Technology: constraint_opex_technology took {t10 - t9:.4f} seconds")
         # yearly opex
         constraints.add_constraint_rule(model, name="constraint_opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"],optimization_setup),
                                         rule=rules.constraint_opex_yearly_rule, doc='total opex of all technology that are operated.')
+        t11 = time.perf_counter()
+        logging.debug(f"Technology: constraint_opex_yearly took {t11 - t10:.4f} seconds")
         # total opex of all technologies
         constraints.add_constraint_rule(model, name="constraint_opex_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_opex_total_rule, doc='total opex of all technology that are operated.')
+        t12 = time.perf_counter()
+        logging.debug(f"Technology: constraint_opex_total took {t12 - t11:.4f} seconds")
         # carbon emissions of technologies
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology",
                                          constraint=rules.get_constraint_carbon_emissions_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
                                          doc="carbon emissions for each technology at each location and time step")
+        t13 = time.perf_counter()
+        logging.debug(f"Technology: constraint_carbon_emissions_technology took {t13 - t12:.4f} seconds")
         # total carbon emissions of technologies
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_technology_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_carbon_emissions_technology_total_rule,
             doc="total carbon emissions for each technology at each location and time step")
+        t14 = time.perf_counter()
+        logging.debug(f"Technology: constraint_carbon_emissions_technology_total took {t14 - t13:.4f} seconds")
 
         # disjunct if technology is on
         # the disjunction variables
@@ -531,10 +561,14 @@ class Technology(Element):
         constraints.add_constraint_rule(model, name="disjunct_on_technology",
             index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_on_technology_rule,
             doc="disjunct to indicate that technology is on")
+        t15 = time.perf_counter()
+        logging.debug(f"Technology: disjunct_on_technology took {t15 - t14:.4f} seconds")
         # disjunct if technology is off
         constraints.add_constraint_rule(model, name="disjunct_off_technology",
             index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_off_technology_rule,
             doc="disjunct to indicate that technology is off")
+        t16 = time.perf_counter()
+        logging.debug(f"Technology: disjunct_off_technology took {t16 - t15:.4f} seconds")
 
         # if nothing was added we can remove the tech vars again
         if model.constraints.ncons == n_cons:

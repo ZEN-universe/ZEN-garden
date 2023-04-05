@@ -11,6 +11,7 @@ Description:    Class defining the parameters, variables and constraints that ho
 ==========================================================================================================================================================================="""
 
 import logging
+import time
 
 import numpy as np
 import xarray as xr
@@ -196,17 +197,24 @@ class StorageTechnology(Technology):
         constraints = optimization_setup.constraints
         rules = StorageTechnologyRules(optimization_setup)
         # Limit storage level
+        t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_storage_level_max",
                                          constraint=rules.get_constraint_storage_level_max(*cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup)),
                                          doc='limit maximum storage level to capacity')
+        t1 = time.perf_counter()
+        logging.debug(f"Storage Technology: constraint_storage_level_max took {t1 - t0:.4f} seconds")
         # couple storage levels
         constraints.add_constraint_block(model, name="constraint_couple_storage_level",
                                          constraint=rules.get_constraint_couple_storage_level(*cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup)),
                                          doc='couple subsequent storage levels (time coupling constraints)')
+        t2 = time.perf_counter()
+        logging.debug(f"Storage Technology: constraint_couple_storage_level took {t2 - t1:.4f} seconds")
         # Linear Capex
         constraints.add_constraint_block(model, name="constraint_storage_technology_capex",
                                          constraint=rules.get_constraint_storage_technology_capex(*cls.create_custom_set(["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], optimization_setup)),
                                          doc='Capital expenditures for installing storage technology')
+        t3 = time.perf_counter()
+        logging.debug(f"Storage Technology: constraint_storage_technology_capex took {t3 - t2:.4f} seconds")
 
         # defines disjuncts if technology on/off
 
@@ -285,7 +293,7 @@ class StorageTechnologyRules:
                       (-1.0, model.variables["capacity"].loc[tech, "energy", node, time_step_year])]
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                <= 0)
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_storage_level_max", model)
 
     def get_constraint_couple_storage_level(self, index_values, index_names):
         """couple subsequent storage levels (time coupling constraints)"""
@@ -327,7 +335,7 @@ class StorageTechnologyRules:
                                == 0)
 
 
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_couple_storage_level", model)
 
     def get_constraint_storage_technology_capex(self, index_values, index_names):
         """ definition of the capital expenditures for the storage technology"""
@@ -346,4 +354,4 @@ class StorageTechnologyRules:
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                == 0)
 
-        return constraints
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_storage_technology_capex", model)

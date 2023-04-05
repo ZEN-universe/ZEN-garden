@@ -13,6 +13,7 @@ import logging
 
 import numpy as np
 import xarray as xr
+import time
 
 from zen_garden.utils import ZenIndex
 from .carrier import Carrier
@@ -57,14 +58,19 @@ class ConditioningCarrier(Carrier):
         constraints = optimization_setup.constraints
         rules = ConditioningCarrierRules(optimization_setup)
         # limit import flow by availability
+        t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_carrier_demand_coupling",
                                          constraint=rules.get_constraint_carrier_demand_coupling(*cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], optimization_setup)),
                                          doc='coupling model endogenous and exogenous carrier demand', )
+        t1 = time.perf_counter()
+        logging.debug(f"Conditioningn Carrier: constraint_carrier_demand_coupling took {t1 - t0:.4f} seconds")
         # overwrite energy balance when conditioning carriers are included
         constraints.remove_constraint(model, "constraint_nodal_energy_balance")
         constraints.add_constraint_block(model, name="constraint_nodal_energy_balance_conditioning",
                                          constraint=rules.get_constraint_nodal_energy_balance_conditioning(*cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)),
                                          doc='node- and time-dependent energy balance for each carrier', )
+        t2 = time.perf_counter()
+        logging.debug(f"Conditioningn Carrier: constraint_nodal_energy_balance_conditioning took {t2 - t1:.4f} seconds")
 
 
 class ConditioningCarrierRules:
