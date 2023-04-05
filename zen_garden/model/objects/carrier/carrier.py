@@ -240,8 +240,9 @@ class CarrierRules:
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        operational_time_steps = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
+
         if params.availability_carrier_import_yearly.loc[carrier, node, year] != np.inf:
+            operational_time_steps = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
             return ((model.variables["import_carrier_flow"][carrier, node, operational_time_steps] * params.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum()
                     <= params.availability_carrier_import_yearly.loc[carrier, node, year].item())
         else:

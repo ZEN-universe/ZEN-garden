@@ -675,6 +675,7 @@ class Constraint(Component):
         :return: A single constraint
         """
 
+        t0 = time.perf_counter()
         # catch empty constraints
         if len(constraints) == 0:
             return constraints
@@ -700,6 +701,9 @@ class Constraint(Component):
 
         xr_ds = xr.Dataset({"coeffs": coeffs, "vars": variables})
         lhs = lp.LinearExpression(xr_ds, model)
+
+        t1 = time.perf_counter()
+        logging.debug(f"Combining constraints took {t1 - t0} seconds.")
 
         return lp.constraints.AnonymousConstraint(lhs, sign, rhs)
 

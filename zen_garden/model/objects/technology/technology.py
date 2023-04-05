@@ -603,7 +603,7 @@ class TechnologyRules:
                 if np.any(~mask):
                     constraints.append(model.variables["built_capacity"].loc[tech, capacity_type, loc, times[~mask]]
                                        == 0)
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_technology_capacity_limit", model)
+        return constraints
 
     def get_constraint_technology_min_capacity(self, index_values, index_names):
         """ min capacity expansion of technology."""
