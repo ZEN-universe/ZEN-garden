@@ -329,12 +329,13 @@ class CarrierRules:
         """ total cost of importing and exporting carrier"""
         # get parameter object
         params = self.optimization_setup.parameters
+        sets = self.optimization_setup.sets
         model = self.optimization_setup.model
 
         terms = []
-        for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)[0]:
+        for carrier in sets["set_carriers"]:
             times = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
-            expr = (model.variables["cost_carrier"].loc[carrier, node, times] + model.variables["cost_shed_demand_carrier"].loc[carrier, node, times]) * params.time_steps_operation_duration.loc[carrier, times]
+            expr = (model.variables["cost_carrier"].loc[carrier, :, times] + model.variables["cost_shed_demand_carrier"].loc[carrier, :, times]) * params.time_steps_operation_duration.loc[carrier, times]
             terms.append(expr.sum())
         return (model.variables["cost_carrier_total"].loc[year]
                 - lp_sum(terms)
@@ -349,14 +350,14 @@ class CarrierRules:
         # get all the constraints
         constraints = []
         index = ZenIndex(index_values, index_names)
-        for carrier, node in index.get_unique([0, 1]):
-            times = index.get_values([carrier, node], 2, dtype=list)
+        times = index.get_unique([2])
+        for carrier in index.get_unique([0]):
             yearly_time_steps = self.energy_system.time_steps.convert_time_step_operation2year(carrier, times).values
-            mask = (params.availability_carrier_import.loc[carrier, node, times] != 0) | (params.availability_carrier_export.loc[carrier, node, times] != 0)
-            fac = np.where(mask, params.carbon_intensity_carrier.loc[carrier, node, yearly_time_steps].data, 0.0)
-            fac = xr.DataArray(fac, coords=[model.variables.coords["set_time_steps_operation"]])
-            constraints.append(model.variables["carbon_emissions_carrier"].loc[carrier, node]
-                               - fac * (model.variables["import_carrier_flow"].loc[carrier, node] - model.variables["export_carrier_flow"].loc[carrier, node])
+            mask = (params.availability_carrier_import.loc[carrier, :, times] != 0) | (params.availability_carrier_export.loc[carrier, :, times] != 0)
+            fac = np.where(mask, params.carbon_intensity_carrier.loc[carrier, :, yearly_time_steps].data, 0.0)
+            fac = xr.DataArray(fac, coords=[model.variables.coords["set_nodes"], model.variables.coords["set_time_steps_operation"]])
+            constraints.append(model.variables["carbon_emissions_carrier"].loc[carrier, :]
+                               - fac * (model.variables["import_carrier_flow"].loc[carrier, :] - model.variables["export_carrier_flow"].loc[carrier, :])
                                == 0)
 
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_carbon_emissions_carrier", model)
@@ -365,14 +366,15 @@ class CarrierRules:
         """ total carbon emissions of importing and exporting carrier"""
         # get parameter object
         params = self.optimization_setup.parameters
+        sets = self.optimization_setup.sets
         model = self.optimization_setup.model
 
         # calculate the sums via loop
         terms = []
-        for carrier, node in Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)[0]:
+        for carrier in sets["set_carriers"]:
             time_arr = xr.DataArray(self.energy_system.time_steps.get_time_steps_year2operation(carrier, year),
                                     dims=["set_time_steps_operation"])
-            expr = model.variables["carbon_emissions_carrier"].loc[carrier, node, time_arr] * params.time_steps_operation_duration.loc[carrier, time_arr]
+            expr = model.variables["carbon_emissions_carrier"].loc[carrier, :, time_arr] * params.time_steps_operation_duration.loc[carrier, time_arr]
             terms.append(expr.sum())
 
         return (model.variables["carbon_emissions_carrier_total"].loc[year]
