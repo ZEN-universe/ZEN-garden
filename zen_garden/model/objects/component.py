@@ -542,13 +542,14 @@ class Constraint(Component):
         else:
             model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
 
-    def rule_to_cons(self, model, rule, index_values, index_list):
+    def rule_to_cons(self, model, rule, index_values, index_list, cons=None):
         """
         Evaluates the rule on the index_values
         :param model: The linopy model
         :param rule: The rule to call
         :param index_values: A list of index_values to evaluate the rule
         :param index_list: a list of index names
+        :param cons: A list of constraints, if the rule was already evaluated, if provided, the rule will not be called
         :return: xarrays of the lhs, sign and the rhs
         """
 
@@ -563,10 +564,11 @@ class Constraint(Component):
         shape = tuple(map(len, coords.values()))
 
         # if we only have a single index, there is no need to unpack
-        if len(index_list) == 1:
-            cons = [rule(arg) for arg in index_values]
-        else:
-            cons = [rule(*arg) for arg in index_values]
+        if cons is None:
+            if len(index_list) == 1:
+                cons = [rule(arg) for arg in index_values]
+            else:
+                cons = [rule(*arg) for arg in index_values]
 
         # catch Nones
         placeholder_lhs = lp.expressions.ScalarLinearExpression((np.nan,), (-1,), model)
@@ -719,6 +721,42 @@ class Constraint(Component):
         logging.debug(f"Combining constraints took {t1 - t0} seconds.")
 
         return lp.constraints.AnonymousConstraint(lhs, sign, rhs)
+
+    def reorder_group(self, lhs, sign, rhs, index_values, index_names, model, drop=None):
+        """
+        Reorders the constraints in a group to have full shape according to index values and names
+        :param lhs: The lhs of the constraints
+        :param sign: The sign of the constraints
+        :param rhs: The rhs of the constraints
+        :param index_values: The index values corresponding to the group numbers
+        :param index_names: The index names of the indices
+        :param model: The model
+        :param drop: Which group to drop (the dummy group
+        :return: An anonymous constraint
+        """
+
+        # drop if necessary
+        lhs = lhs.to_dataset()
+        if drop is not None:
+            lhs = lhs.drop_sel(group=drop, errors="ignore")
+            rhs = rhs.drop_sel(group=drop, errors="ignore")
+            sign = sign.drop_sel(group=drop, errors="ignore")
+
+        # get the constraints
+        cons = []
+        for group in lhs.coords["group"].values:
+            group_lhs = lp.expressions.LinearExpression(lhs.sel(group=group), model)
+            group_sign = sign.sel(group=group)
+            group_rhs = rhs.sel(group=group)
+            cons.append(lp.constraints.AnonymousConstraint(group_lhs, group_sign, group_rhs))
+
+        # to full arrays
+        xr_lhs, xr_sign, xr_rhs = self.rule_to_cons(model, None, index_values, index_names, cons)
+        return lp.constraints.AnonymousConstraint(xr_lhs, xr_sign, xr_rhs)
+
+
+
+
 
 
 
