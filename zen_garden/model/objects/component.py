@@ -742,16 +742,31 @@ class Constraint(Component):
             rhs = rhs.drop_sel(group=drop, errors="ignore")
             sign = sign.drop_sel(group=drop, errors="ignore")
 
-        # get the constraints
-        cons = []
-        for group in lhs.coords["group"].values:
-            group_lhs = lp.expressions.LinearExpression(lhs.sel(group=group), model)
-            group_sign = sign.sel(group=group)
-            group_rhs = rhs.sel(group=group)
-            cons.append(lp.constraints.AnonymousConstraint(group_lhs, group_sign, group_rhs))
+        # get the coordinates
+        index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
+        coords = {name: np.unique(arr.data) for name, arr in zip(index_names, index_arrs)}
+        coords.update({cname: lhs.coords[cname] for cname in lhs.coords if cname != "group"})
+        coords_shape = tuple(len(c) for c in coords.values())
+        dims = index_names + list(lhs.dims)
+        dims.remove("group")
+
+        # create the full arrays, note that the lhs needs a _term dimension
+        xr_coeffs = xr.DataArray(np.full(shape=coords_shape + (lhs.coeffs.shape[-1], ), fill_value=np.nan), dims=dims, coords=coords)
+        xr_vars = xr.DataArray(np.full(shape=coords_shape + (lhs.vars.shape[-1], ), fill_value=-1), dims=dims, coords=coords)
+
+        # rhs and sign do not have a _term dimension
+        xr_rhs = xr.DataArray(np.full(shape=coords_shape, fill_value=np.nan), dims=dims[:-1], coords=coords)
+        xr_sign = xr.DataArray(np.full(shape=coords_shape, fill_value="=="), dims=dims[:-1], coords=coords)
+
+        # Assign everything
+        for num, index_val in enumerate(index_values):
+            xr_coeffs.loc[index_val] = lhs.coeffs.sel(group=num).data
+            xr_vars.loc[index_val] = lhs.vars.sel(group=num).data
+            xr_rhs.loc[index_val] = rhs.sel(group=num).data
+            xr_sign.loc[index_val] = sign.sel(group=num).data
 
         # to full arrays
-        xr_lhs, xr_sign, xr_rhs = self.rule_to_cons(model, None, index_values, index_names, cons)
+        xr_lhs = lp.LinearExpression(xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}), model)
         return lp.constraints.AnonymousConstraint(xr_lhs, xr_sign, xr_rhs)
 
 

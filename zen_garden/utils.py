@@ -210,6 +210,27 @@ def linexpr_from_tuple_np(tuples, coords, model):
     return lp.LinearExpression(xr_ds, model)
 
 
+def xr_like(fill_value, dtype, other, dims):
+    """
+    Creates an xarray with fill value and dtype like the other object but only containing the given dimensions
+    :param fill_value: The value to fill the data with
+    :param dtype: dtype of the data
+    :param other: The other object to use as base
+    :param dims: The dimensions to use
+    :return: An object like the other object but only containing the given dimensions
+    """
+
+    # get the coords
+    coords = {}
+    for dim in dims:
+        coords[dim] = other.coords[dim]
+
+    # create the data array
+    da = xr.DataArray(np.full([len(other.coords[dim]) for dim in dims], fill_value, dtype=dtype), coords=coords, dims=dims)
+
+    # return
+    return da
+
 
 # This is to lazy load h5 file most of it is taken from the hdfdict package
 ###########################################################################

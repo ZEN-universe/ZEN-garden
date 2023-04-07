@@ -16,7 +16,7 @@ import linopy as lp
 import numpy as np
 import xarray as xr
 
-from zen_garden.utils import ZenIndex, lp_sum
+from zen_garden.utils import ZenIndex, lp_sum, xr_like
 from ..element import Element
 
 
@@ -394,45 +394,46 @@ class CarrierRules:
         # get the index
         index_values, index_names = Carrier.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
 
-        # define the groups that are summed up (-1 is a dummy value)
-        carrier_conversion_in_group = xr.DataArray(-1, coords=model.variables["input_flow"].coords)
-        carrier_conversion_out_group = xr.DataArray(-1, coords=model.variables["output_flow"].coords)
-        carrier_flow_in_group = xr.DataArray(-1, coords=model.variables["carrier_flow"].coords)
-        carrier_flow_out_group = xr.DataArray(-1, coords=model.variables["carrier_flow"].coords)
-        carrier_flow_discharge_group = xr.DataArray(-1, coords=model.variables["carrier_flow_discharge"].coords)
-        carrier_flow_charge_group = xr.DataArray(-1, coords=model.variables["carrier_flow_charge"].coords)
-        carrier_import_group = xr.DataArray(-1, coords=model.variables["import_carrier_flow"].coords)
-        carrier_export_group = xr.DataArray(-1, coords=model.variables["export_carrier_flow"].coords)
-        carrier_demand_group = xr.DataArray(-1, coords=params.demand_carrier.coords)
+        # define the groups that are summed up (-1 is a dummy value) we vectorize over time
+        carrier_conversion_in_group = xr_like(-1, int, model.variables["input_flow"], model.variables["input_flow"].dims[:-1])
+        carrier_conversion_out_group = xr_like(-1, int, model.variables["output_flow"], model.variables["output_flow"].dims[:-1])
+        carrier_flow_in_group = xr_like(-1, int, model.variables["carrier_flow"], model.variables["carrier_flow"].dims[:-1])
+        carrier_flow_out_group = xr_like(-1, int, model.variables["carrier_flow"], model.variables["carrier_flow"].dims[:-1])
+        carrier_flow_discharge_group = xr_like(-1, int, model.variables["carrier_flow_discharge"], model.variables["carrier_flow_discharge"].dims[:-1])
+        carrier_flow_charge_group = xr_like(-1, int, model.variables["carrier_flow_charge"], model.variables["carrier_flow_charge"].dims[:-1])
+        carrier_import_group = xr_like(-1, int, model.variables["import_carrier_flow"], model.variables["import_carrier_flow"].dims[:-1])
+        carrier_export_group = xr_like(-1, int, model.variables["export_carrier_flow"], model.variables["export_carrier_flow"].dims[:-1])
+        carrier_demand_group = xr_like(-1, int, params.demand_carrier, params.demand_carrier.dims[:-1])
 
         # loop over all index values
-        for num, (carrier, node, time) in enumerate(index_values):
+        index = ZenIndex(index_values, index_names)
+        for num, (carrier, node) in enumerate(index.get_unique([0, 1])):
 
             # carrier input and output conversion technologies
             for tech in sets["set_conversion_technologies"]:
                 if carrier in sets["set_input_carriers"][tech]:
-                    carrier_conversion_in_group.loc[tech, carrier, node, time] = num
+                    carrier_conversion_in_group.loc[tech, carrier, node] = num
                 if carrier in sets["set_output_carriers"][tech]:
-                    carrier_conversion_out_group.loc[tech, carrier, node, time] = num
+                    carrier_conversion_out_group.loc[tech, carrier, node] = num
 
             # carrier flow transport technologies
             set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
             set_edges_out = self.energy_system.calculate_connected_edges(node, "out")
             for tech in sets["set_transport_technologies"]:
                 if carrier in sets["set_reference_carriers"][tech]:
-                    carrier_flow_in_group.loc[tech, set_edges_in, time] = num
-                    carrier_flow_out_group.loc[tech, set_edges_out, time] = num
+                    carrier_flow_in_group.loc[tech, set_edges_in] = num
+                    carrier_flow_out_group.loc[tech, set_edges_out] = num
 
             # carrier flow storage technologies
             for tech in sets["set_storage_technologies"]:
                 if carrier in sets["set_reference_carriers"][tech]:
-                    carrier_flow_discharge_group.loc[tech, node, time] = num
-                    carrier_flow_charge_group.loc[tech, node, time] = num
+                    carrier_flow_discharge_group.loc[tech, node] = num
+                    carrier_flow_charge_group.loc[tech, node] = num
 
             # carrier import, demand and export
-            carrier_import_group.loc[carrier, node, time] = num
-            carrier_export_group.loc[carrier, node, time] = num
-            carrier_demand_group.loc[carrier, node, time] = num
+            carrier_import_group.loc[carrier, node] = num
+            carrier_export_group.loc[carrier, node] = num
+            carrier_demand_group.loc[carrier, node] = num
 
         # some of the expressions might be emtpy
         exprs = []
@@ -459,7 +460,8 @@ class CarrierRules:
 
         # sum over all groups, with merge and broadcast to handle missing dims correctly
         lhs = lp.expressions.merge(*exprs, compat="broadcast_equals")
-        rhs = params.demand_carrier.groupby(carrier_demand_group).map(lambda x: x.sum())
+        rhs = params.demand_carrier.groupby(carrier_demand_group).map(lambda x: x.sum("stacked_set_carriers_set_nodes"))
         sign = xr.DataArray("==", coords=rhs.coords)
         # to a nice constraint proper dims
-        return self.optimization_setup.constraints.reorder_group(lhs, sign, rhs, index_values, index_names, model, drop=-1)
+        # TODO: make it such that the regroup keeps the time dim
+        return self.optimization_setup.constraints.reorder_group(lhs, sign, rhs, index.get_unique([0, 1]), index_names[:-1], model, drop=-1)
