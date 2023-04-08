@@ -17,7 +17,8 @@ import pandas as pd
 import time
 from linopy.constraints import AnonymousConstraint
 
-from zen_garden.utils import ZenIndex, linexpr_from_tuple_np, lp_sum
+from zen_garden.utils import linexpr_from_tuple_np, lp_sum
+from ..component import ZenIndex
 from ..element import Element
 
 
@@ -489,7 +490,7 @@ class Technology(Element):
         logging.debug(f"Technology: constraint_technology_capacity_limit took {t1 - t0:.4f} seconds")
         # minimum capacity
         constraints.add_constraint_block(model, name="constraint_technology_min_capacity",
-                                         constraint=rules.get_constraint_technology_min_capacity(*cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)),
+                                         constraint=rules.get_constraint_technology_min_capacity(),
                                          doc='min capacity of technology that can be installed')
         t2 = time.perf_counter()
         logging.debug(f"Technology: constraint_technology_min_capacity took {t2 - t1:.4f} seconds")
@@ -678,21 +679,29 @@ class TechnologyRules:
         mask = capacity_fac.notnull() | built_capacity_fac.notnull()
         return AnonymousConstraint(lhs, sign, rhs), mask
 
-    def get_constraint_technology_min_capacity(self, index_values, index_names):
+    def get_constraint_technology_min_capacity(self):
         """ min capacity expansion of technology."""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
 
-        # get all the constraints
-        constraints = []
+        # index
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
-        for tech, capacity_type in index.get_unique([0, 1]):
-            if params.min_built_capacity.loc[tech, capacity_type] != 0:
-                constraints.append(params.min_built_capacity.loc[tech, capacity_type].item() * model.variables["install_technology"].loc[tech, capacity_type]
-                                   - model.variables["built_capacity"].loc[tech, capacity_type]
-                                   <= 0)
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_technology_min_capacity", model)
+        tech_arr, capacity_type_arr = index.get_unique(["set_technologies", "set_capacity_types"], as_array=True)
+
+        # get the mask, set it to true only where we want
+        mask = xr.zeros_like(params.min_built_capacity, dtype=bool)
+        mask.loc[tech_arr, capacity_type_arr] = True
+        mask &= params.min_built_capacity != 0
+
+        # because install_technology is binary, it might not exists if it's not used
+        if np.all(~mask):
+            return []
+        else:
+            lhs = mask*(params.min_built_capacity * model.variables["install_technology"]
+                        - model.variables["built_capacity"])
+            return lhs <= 0, mask
 
     def get_constraint_technology_max_capacity(self, index_values, index_names):
         """max capacity expansion of technology"""

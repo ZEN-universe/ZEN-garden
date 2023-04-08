@@ -16,7 +16,7 @@ import linopy as lp
 import numpy as np
 import xarray as xr
 
-from zen_garden.utils import ZenIndex
+from ..component import ZenIndex
 from .carrier import Carrier
 
 
@@ -113,6 +113,8 @@ class ConditioningCarrierRules:
         """
         nodal energy balance for each time step.
         """
+
+        # TODO: adapt like carrier routine
         params = self.optimization_setup.parameters
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model

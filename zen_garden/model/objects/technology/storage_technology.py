@@ -16,7 +16,8 @@ import time
 import numpy as np
 import xarray as xr
 
-from zen_garden.utils import ZenIndex, linexpr_from_tuple_np
+from zen_garden.utils import linexpr_from_tuple_np
+from ..component import ZenIndex
 from .technology import Technology
 
 

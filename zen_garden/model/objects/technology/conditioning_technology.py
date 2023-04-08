@@ -9,9 +9,9 @@ Description:    Class defining the parameters, variables and constraints of the 
                 constraints of the conversion technologies.
 ==========================================================================================================================================================================="""
 import logging
-import pyomo.environ as pe
+
 import pandas as pd
-from ..energy_system import EnergySystem
+
 from .conversion_technology import ConversionTechnology
 
 

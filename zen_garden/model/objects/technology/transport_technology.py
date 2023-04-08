@@ -15,7 +15,7 @@ import time
 import numpy as np
 import xarray as xr
 
-from zen_garden.utils import ZenIndex
+from ..component import ZenIndex
 from .technology import Technology
 
 
