@@ -820,8 +820,8 @@ class Constraint(Component):
         """
         Reorders the constraints in a group to have full shape according to index values and names
         :param lhs: The lhs of the constraints
-        :param sign: The sign of the constraints
-        :param rhs: The rhs of the constraints
+        :param sign: The sign of the constraints, can be None if only lhs should be restructured
+        :param rhs: The rhs of the constraints, can be None if only lhs should be restructured
         :param index_values: The index values corresponding to the group numbers
         :param index_names: The index names of the indices
         :param model: The model
@@ -839,7 +839,7 @@ class Constraint(Component):
         # get the coordinates
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
         coords = {name: np.unique(arr.data) for name, arr in zip(index_names, index_arrs)}
-        coords.update({cname: lhs.coords[cname] for cname in lhs.coords if cname != "group"})
+        coords.update({cname: lhs.coords[cname] for cname in lhs.coords if cname != "group" and cname != "_term"})
         coords_shape = tuple(len(c) for c in coords.values())
         dims = index_names + list(lhs.dims)
         dims.remove("group")
@@ -854,13 +854,20 @@ class Constraint(Component):
 
         # Assign everything
         for num, index_val in enumerate(index_values):
-            xr_coeffs.loc[index_val] = lhs.coeffs.sel(group=num).data
-            xr_vars.loc[index_val] = lhs.vars.sel(group=num).data
-            xr_rhs.loc[index_val] = rhs.sel(group=num).data
-            xr_sign.loc[index_val] = sign.sel(group=num).data
+            if num in lhs.coords["group"]:
+                xr_coeffs.loc[index_val] = lhs.coeffs.sel(group=num).data
+                xr_vars.loc[index_val] = lhs.vars.sel(group=num).data
+                if rhs is not None:
+                    xr_rhs.loc[index_val] = rhs.sel(group=num).data
+                if sign is not None:
+                    xr_sign.loc[index_val] = sign.sel(group=num).data
 
         # to full arrays
         xr_lhs = lp.LinearExpression(xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}), model)
+
+        if rhs is None and sign is None:
+            return xr_lhs
+
         return lp.constraints.AnonymousConstraint(xr_lhs, xr_sign, xr_rhs)
 
 

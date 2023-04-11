@@ -288,7 +288,6 @@ class Technology(Element):
         :param optimization_setup: The OptimizationSetup the element is part of """
         # construct the pe.Sets of the class <Technology>
         energy_system = optimization_setup.energy_system
-        model = optimization_setup.model
 
         # conversion technologies
         optimization_setup.sets.add_set(name="set_conversion_technologies", data=energy_system.set_conversion_technologies,
@@ -385,7 +384,6 @@ class Technology(Element):
 
         model = optimization_setup.model
         variables = optimization_setup.variables
-        params = optimization_setup.parameters
         sets = optimization_setup.sets
 
         def capacity_bounds(tech, capacity_type, loc, time):
@@ -508,7 +506,7 @@ class Technology(Element):
         logging.debug(f"Technology: constraint_technology_construction_time took {t4 - t3:.4f} seconds")
         # lifetime
         constraints.add_constraint_rule(model, name="constraint_technology_lifetime", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            rule=rules.constraint_technology_lifetime_rule, doc='max capacity of  technology that can be installed')
+                                        rule=rules.constraint_technology_lifetime_rule, doc='max capacity of  technology that can be installed')
         t5 = time.perf_counter()
         logging.debug(f"Technology: constraint_technology_lifetime took {t5 - t4:.4f} seconds")
         # limit diffusion rate
@@ -550,13 +548,13 @@ class Technology(Element):
         logging.debug(f"Technology: constraint_opex_total took {t12 - t11:.4f} seconds")
         # carbon emissions of technologies
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology",
-                                         constraint=rules.get_constraint_carbon_emissions_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.get_constraint_carbon_emissions_technology(),
                                          doc="carbon emissions for each technology at each location and time step")
         t13 = time.perf_counter()
         logging.debug(f"Technology: constraint_carbon_emissions_technology took {t13 - t12:.4f} seconds")
         # total carbon emissions of technologies
-        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_technology_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_carbon_emissions_technology_total_rule,
-            doc="total carbon emissions for each technology at each location and time step")
+        constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology_total", constraint=rules.get_constraint_carbon_emissions_technology_total(),
+                                        doc="total carbon emissions for each technology at each location and time step")
         t14 = time.perf_counter()
         logging.debug(f"Technology: constraint_carbon_emissions_technology_total took {t14 - t13:.4f} seconds")
 
@@ -622,6 +620,26 @@ class TechnologyRules:
         """
 
         self.optimization_setup = optimization_setup
+        t0 = time.perf_counter()
+        self.exiting_capacities = self.get_existing_capacities()
+        t1 = time.perf_counter()
+        logging.debug(f"TechnologyRules: get_existing_capacities took {t1 - t0:.4f} seconds")
+
+    def get_existing_capacities(self):
+        """
+        get existing capacities of all technologies
+        :return: The existing capacities
+        """
+
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"],
+                                                              self.optimization_setup)
+
+        # get all the constraints
+        existing_capacities = xr.DataArray(np.nan, coords=[self.optimization_setup.model.variables.coords[i_name] for i_name in index_names], dims=index_names)
+        for tech, capacity_type, loc, time in index_values:
+            existing_capacities.loc[tech, capacity_type, loc, time] = Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, time, type_existing_quantity="capacity")
+
+        return existing_capacities
 
     def disjunct_on_technology_rule(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
@@ -661,11 +679,10 @@ class TechnologyRules:
         sign = xr.DataArray("==", coords=model.variables["capacity"].coords)
         rhs = xr.DataArray(np.nan, coords=model.variables["capacity"].coords)
         times = np.array(list(sets["set_time_steps_yearly"]))
+        t0 = time.perf_counter()
         for tech, capacity_type, loc in index.get_unique([0, 1, 2]):
             if params.capacity_limit_technology.loc[tech, capacity_type, loc] != np.inf:
-                existing_capacities = np.array([Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, time, type_existing_quantity="capacity")
-                                                for time in times])
-                mask = existing_capacities < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
+                mask = self.exiting_capacities.loc[tech, capacity_type, loc, times] < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
                 if np.any(mask):
                     capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 1
                     rhs.loc[tech, capacity_type, loc, times[mask]] = params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
@@ -674,6 +691,8 @@ class TechnologyRules:
                     built_capacity_fac.loc[tech, capacity_type, loc, times[~mask]] = 1
                     rhs.loc[tech, capacity_type, loc, times[~mask]] = 0
                     sign.loc[tech, capacity_type, loc, times[~mask]] = "=="
+        t1 = time.perf_counter()
+        logging.debug(f"Technology: get_constraint_technology_capacity_limit took {t1 - t0:.4f} seconds")
 
         # create the lhs and mask
         lhs = built_capacity_fac*model.variables["built_capacity"] + capacity_fac*model.variables["capacity"]
@@ -703,7 +722,6 @@ class TechnologyRules:
             return lhs <= 0, mask
         else:
             return []
-
 
     def get_constraint_technology_max_capacity(self, index_values, index_names):
         """max capacity expansion of technology"""
@@ -742,13 +760,13 @@ class TechnologyRules:
                     == 0)
 
     def constraint_technology_lifetime_rule(self, tech, capacity_type, loc, time):
-        """limited lifetime of the technologies"""
-        # determine existing capacities
         model = self.optimization_setup.model
-        existing_capacities = Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, time, type_existing_quantity="capacity")
+        existing_capacities = Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type,
+                                                                         loc, time, type_existing_quantity="capacity")
         return (model.variables["capacity"][tech, capacity_type, loc, time].to_linexpr()
-                - lp_sum([1.0*model.variables["built_capacity"].loc[tech, capacity_type, loc, previous_time] for previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, time)])
-                == existing_capacities)
+                - lp_sum([1.0 * model.variables["built_capacity"].loc[tech, capacity_type, loc, previous_time] for
+                          previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, time)])
+                == self.exiting_capacities.loc[tech, capacity_type, loc, time])
 
     def constraint_technology_diffusion_limit_rule(self, tech, capacity_type, loc, time):
         """limited technology diffusion based on the existing capacity in the previous year """
@@ -873,7 +891,7 @@ class TechnologyRules:
                           for capacity_type in system["set_capacity_types"] if tech in sets["set_storage_technologies"] or capacity_type == system["set_capacity_types"][0]])
                 == 0)
 
-    def get_constraint_carbon_emissions_technology(self, index_values, index_names):
+    def get_constraint_carbon_emissions_technology(self):
         """ calculate carbon emissions of each technology"""
         # get parameter object
         params = self.optimization_setup.parameters
@@ -882,6 +900,7 @@ class TechnologyRules:
 
         # get all constraints
         constraints = []
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         for tech, loc in index.get_unique(["set_technologies", "set_location"]):
             reference_carrier = sets["set_reference_carriers"][tech][0]
@@ -900,19 +919,38 @@ class TechnologyRules:
 
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_carbon_emissions_technology", model)
 
-    def constraint_carbon_emissions_technology_total_rule(self, year):
+    def get_constraint_carbon_emissions_technology_total(self):
         """ calculate total carbon emissions of each technology"""
         # get parameter object
         params = self.optimization_setup.parameters
+        sets = self.optimization_setup.sets
         model = self.optimization_setup.model
 
-        # get all the terms
-        terms = []
-        for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]:
-            terms.append((model.variables["carbon_emissions_technology"].loc[tech, loc] * params.time_steps_operation_duration.loc[tech]).sum())
+        # index
+        years = sets["set_time_steps_yearly"]
+        coeff = xr.DataArray(np.nan, coords=model.variables["carbon_emissions_technology"].coords, dims=model.variables["carbon_emissions_technology"].dims)
+        # we give the group a name to have the right coord name for the sum
+        group = xr.DataArray(np.nan, coords=model.variables["carbon_emissions_technology"].coords, dims=model.variables["carbon_emissions_technology"].dims, name="set_time_steps_yearly")
 
-        return (model.variables["carbon_emissions_technology_total"].loc[year]
-                - lp_sum(terms)
+        # the index for the sums
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)
+        index = ZenIndex(index_values,index_names)
+
+        # get all the terms
+        for year in years:
+            for tech in index.get_unique(levels=[0]):
+                # multiply the lp with the param
+                coeff.loc[tech] = params.time_steps_operation_duration.loc[tech]
+                # set the groups
+                for loc in index.get_values(locs=[tech], levels=1, dtype=list):
+                    times = self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)
+                    group.loc[tech, loc, times] = year
+
+        # group and reorganize
+        total = (coeff*model.variables["carbon_emissions_technology"]).groupby(group).sum()
+
+        return (model.variables["carbon_emissions_technology_total"]
+                - total
                 == 0)
 
     def constraint_opex_total_rule(self, year):
