@@ -395,16 +395,16 @@ class CarrierRules:
         # get the index
         index_values, index_names = Carrier.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
 
-        # define the groups that are summed up (-1 is a dummy value) we vectorize over time
-        carrier_conversion_in_group = xr_like(-1, int, model.variables["input_flow"], model.variables["input_flow"].dims[:-1])
-        carrier_conversion_out_group = xr_like(-1, int, model.variables["output_flow"], model.variables["output_flow"].dims[:-1])
-        carrier_flow_in_group = xr_like(-1, int, model.variables["carrier_flow"], model.variables["carrier_flow"].dims[:-1])
-        carrier_flow_out_group = xr_like(-1, int, model.variables["carrier_flow"], model.variables["carrier_flow"].dims[:-1])
-        carrier_flow_discharge_group = xr_like(-1, int, model.variables["carrier_flow_discharge"], model.variables["carrier_flow_discharge"].dims[:-1])
-        carrier_flow_charge_group = xr_like(-1, int, model.variables["carrier_flow_charge"], model.variables["carrier_flow_charge"].dims[:-1])
-        carrier_import_group = xr_like(-1, int, model.variables["import_carrier_flow"], model.variables["import_carrier_flow"].dims[:-1])
-        carrier_export_group = xr_like(-1, int, model.variables["export_carrier_flow"], model.variables["export_carrier_flow"].dims[:-1])
-        carrier_demand_group = xr_like(-1, int, params.demand_carrier, params.demand_carrier.dims[:-1])
+        # define the groups that are summed up (np.nan is a dummy value to skip) we vectorize over time
+        carrier_conversion_in_group = xr_like(np.nan, float, model.variables["input_flow"], model.variables["input_flow"].dims[:-1])
+        carrier_conversion_out_group = xr_like(np.nan, float, model.variables["output_flow"], model.variables["output_flow"].dims[:-1])
+        carrier_flow_in_group = xr_like(np.nan, float, model.variables["carrier_flow"], model.variables["carrier_flow"].dims[:-1])
+        carrier_flow_out_group = xr_like(np.nan, float, model.variables["carrier_flow"], model.variables["carrier_flow"].dims[:-1])
+        carrier_flow_discharge_group = xr_like(np.nan, float, model.variables["carrier_flow_discharge"], model.variables["carrier_flow_discharge"].dims[:-1])
+        carrier_flow_charge_group = xr_like(np.nan, float, model.variables["carrier_flow_charge"], model.variables["carrier_flow_charge"].dims[:-1])
+        carrier_import_group = xr_like(np.nan, float, model.variables["import_carrier_flow"], model.variables["import_carrier_flow"].dims[:-1])
+        carrier_export_group = xr_like(np.nan, float, model.variables["export_carrier_flow"], model.variables["export_carrier_flow"].dims[:-1])
+        carrier_demand_group = xr_like(np.nan, float, params.demand_carrier, params.demand_carrier.dims[:-1])
 
         # loop over all index values
         index = ZenIndex(index_values, index_names)
@@ -465,4 +465,4 @@ class CarrierRules:
         rhs = params.demand_carrier.groupby(carrier_demand_group).map(lambda x: x.sum("stacked_set_carriers_set_nodes"))
         sign = xr.DataArray("==", coords=rhs.coords)
         # to a nice constraint proper dims
-        return self.optimization_setup.constraints.reorder_group(lhs, sign, rhs, index.get_unique([0, 1]), index_names[:-1], model, drop=-1)
+        return self.optimization_setup.constraints.reorder_group(lhs, sign, rhs, index.get_unique([0, 1]), index_names[:-1], model)

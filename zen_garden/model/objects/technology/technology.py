@@ -647,6 +647,7 @@ class TechnologyRules:
         """limited capacity_limit of technology"""
         # get parameter object
         params = self.optimization_setup.parameters
+        sets = self.optimization_setup.sets
         model = self.optimization_setup.model
 
         # get the indices
@@ -659,8 +660,8 @@ class TechnologyRules:
         built_capacity_fac = xr.DataArray(np.nan, coords=model.variables["built_capacity"].coords)
         sign = xr.DataArray("==", coords=model.variables["capacity"].coords)
         rhs = xr.DataArray(np.nan, coords=model.variables["capacity"].coords)
+        times = np.array(list(sets["set_time_steps_yearly"]))
         for tech, capacity_type, loc in index.get_unique([0, 1, 2]):
-            times = np.array(index.get_values([tech, capacity_type, loc], 3, dtype=list))
             if params.capacity_limit_technology.loc[tech, capacity_type, loc] != np.inf:
                 existing_capacities = np.array([Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, time, type_existing_quantity="capacity")
                                                 for time in times])
