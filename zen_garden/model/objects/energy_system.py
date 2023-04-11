@@ -13,7 +13,6 @@ import logging
 
 import linopy as lp
 import numpy as np
-import pyomo.environ as pe
 
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 from zen_garden.preprocess.functions.unit_handling import UnitHandling
@@ -407,4 +406,4 @@ class EnergySystemRules:
     def objective_risk_rule(self, model):
         """objective function to minimize total risk"""
         # TODO implement objective functions for risk
-        return pe.Constraint.Skip
+        return None

@@ -436,33 +436,33 @@ class CarrierRules:
             carrier_export_group.loc[carrier, node] = num
             carrier_demand_group.loc[carrier, node] = num
 
-        # some of the expressions might be emtpy
-        exprs = []
-        # carrier_conversion_out - carrier_conversion_in
-        if carrier_conversion_out_group.size > 0:
-            exprs.append((model.variables["output_flow"]).groupby_sum(carrier_conversion_out_group))
-        if carrier_conversion_in_group.size > 0:
-            exprs.append(-(model.variables["input_flow"]).groupby_sum(carrier_conversion_in_group))
-        # carrier_flow_out - carrier_flow_in
-        if carrier_flow_out_group.size > 0:
-            exprs.append((model.variables["carrier_flow"] - model.variables["carrier_loss"]).groupby_sum(carrier_flow_out_group))
-        if carrier_flow_in_group.size > 0:
-            exprs.append(-(model.variables["carrier_flow"]).groupby_sum(carrier_flow_in_group))
-        # carrier_flow_discharge - carrier_flow_charge
-        if carrier_flow_discharge_group.size > 0:
-            exprs.append((model.variables["carrier_flow_discharge"]).groupby_sum(carrier_flow_discharge_group))
-        if carrier_flow_charge_group.size > 0:
-            exprs.append(-(model.variables["carrier_flow_charge"]).groupby_sum(carrier_flow_charge_group))
-        # carrier_demand - carrier_import + carrier_export
-        if carrier_import_group.size > 0:
-            exprs.append((model.variables["import_carrier_flow"]).groupby_sum(carrier_import_group))
-        if carrier_export_group.size > 0:
-            exprs.append(-(model.variables["export_carrier_flow"]).groupby_sum(carrier_export_group))
+        def grouped_sum(var, group):
+            """
+            Helper function for group and summation
+            :param var: The variable to be summed
+            :param group: The group for the summation
+            :return: The summed groups or None if the group is empty
+            """
+            # some of the expressions might be emtpy
+            if group.size > 0:
+                return (var.groupby(group).sum())
+            else:
+                return None
+
+        args = [(model.variables["output_flow"], carrier_conversion_out_group),
+                (-model.variables["input_flow"], carrier_conversion_in_group),
+                (model.variables["carrier_flow"] - model.variables["carrier_loss"], carrier_flow_out_group),
+                (-model.variables["carrier_flow"], carrier_flow_in_group),
+                (model.variables["carrier_flow_discharge"], carrier_flow_discharge_group),
+                (-model.variables["carrier_flow_charge"], carrier_flow_charge_group),
+                (model.variables["import_carrier_flow"], carrier_import_group),
+                (-model.variables["export_carrier_flow"], carrier_export_group)]
+        exprs = [grouped_sum(*arg) for arg in args]
+        exprs = [expr for expr in exprs if expr is not None]
 
         # sum over all groups, with merge and broadcast to handle missing dims correctly
         lhs = lp.expressions.merge(*exprs, compat="broadcast_equals")
         rhs = params.demand_carrier.groupby(carrier_demand_group).map(lambda x: x.sum("stacked_set_carriers_set_nodes"))
         sign = xr.DataArray("==", coords=rhs.coords)
         # to a nice constraint proper dims
-        # TODO: make it such that the regroup keeps the time dim
         return self.optimization_setup.constraints.reorder_group(lhs, sign, rhs, index.get_unique([0, 1]), index_names[:-1], model, drop=-1)
