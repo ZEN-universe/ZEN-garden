@@ -696,12 +696,13 @@ class TechnologyRules:
         mask &= params.min_built_capacity != 0
 
         # because install_technology is binary, it might not exists if it's not used
-        if np.all(~mask):
-            return []
-        else:
-            lhs = mask*(params.min_built_capacity * model.variables["install_technology"]
-                        - model.variables["built_capacity"])
+        if np.any(mask):
+            lhs = mask * (params.min_built_capacity * model.variables["install_technology"]
+                          - model.variables["built_capacity"])
             return lhs <= 0, mask
+        else:
+            return []
+
 
     def get_constraint_technology_max_capacity(self, index_values, index_names):
         """max capacity expansion of technology"""
