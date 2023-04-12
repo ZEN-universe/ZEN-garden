@@ -339,6 +339,7 @@ class CarrierRules:
             times = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
             expr = (model.variables["cost_carrier"].loc[carrier, :, times] + model.variables["cost_shed_demand_carrier"].loc[carrier, :, times]) * params.time_steps_operation_duration.loc[carrier, times]
             terms.append(expr.sum())
+
         return (model.variables["cost_carrier_total"].loc[year]
                 - lp_sum(terms)
                 == 0)

@@ -761,8 +761,6 @@ class TechnologyRules:
 
     def constraint_technology_lifetime_rule(self, tech, capacity_type, loc, time):
         model = self.optimization_setup.model
-        existing_capacities = Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type,
-                                                                         loc, time, type_existing_quantity="capacity")
         return (model.variables["capacity"][tech, capacity_type, loc, time].to_linexpr()
                 - lp_sum([1.0 * model.variables["built_capacity"].loc[tech, capacity_type, loc, previous_time] for
                           previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, time)])
@@ -962,7 +960,7 @@ class TechnologyRules:
         # get all the terms
         terms = []
         for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]:
-            terms.append((model.variables["opex_yearly"].loc[tech, loc] * params.time_steps_operation_duration.loc[tech]).sum())
+            terms.append((model.variables["opex_yearly"].loc[tech, loc, year]).sum())
 
         return (model.variables["opex_total"].loc[year]
                 - lp_sum(terms)

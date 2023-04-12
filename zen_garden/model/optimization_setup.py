@@ -392,15 +392,20 @@ class OptimizationSetup(object):
 
                 # smallest and largest rhs
                 rhs = cons.rhs.data.ravel()
-                argmin = rhs.argmin()
-                argmax = rhs.argmax()
+                # get first argument for non nan non zero element
+                rhs_sorted = np.sort(rhs)
+                rhs_sorted = rhs_sorted[np.isfinite(rhs_sorted) & (rhs_sorted > 0)]
+                if rhs_sorted.size == 0:
+                    continue
+                rhs_min = rhs_sorted[0]
+                rhs_max = rhs_sorted[-1]
 
-                if 0.0 < rhs[argmin] < smallest_rhs[1]:
+                if 0.0 < rhs_min < smallest_rhs[1]:
                     smallest_rhs[0] = cons.name
-                    smallest_rhs[1] = rhs[argmin]
-                if np.inf > rhs[argmax] > largest_rhs[1]:
+                    smallest_rhs[1] = rhs_min
+                if np.inf > rhs_max > largest_rhs[1]:
                     largest_rhs[0] = cons.name
-                    largest_rhs[1] = rhs[argmax]
+                    largest_rhs[1] = rhs_max
 
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
