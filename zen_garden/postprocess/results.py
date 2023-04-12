@@ -25,14 +25,16 @@ from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
 
 # SETUP LOGGER
-log_format = '%(asctime)s %(filename)s: %(message)s'
-log_path = os.path.join('outputs', 'logs')
-os.makedirs(log_path, exist_ok=True)
-logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
-logging.captureWarnings(True)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
-logging.getLogger().addHandler(handler)
+if logging.getLogger().hasHandlers():  # check for existing logger from elsewhere
+    log_format = '%(asctime)s %(filename)s: %(message)s'
+    log_path = os.path.join('outputs', 'logs')
+    os.makedirs(log_path, exist_ok=True)
+    logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
+    logging.captureWarnings(True)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.INFO)
+    logging.getLogger().addHandler(handler)
+
 
 class Results(object):
     """
