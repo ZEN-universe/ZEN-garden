@@ -938,10 +938,10 @@ class TechnologyRules:
         for year in years:
             for tech in index.get_unique(levels=[0]):
                 # multiply the lp with the param
-                coeff.loc[tech] = params.time_steps_operation_duration.loc[tech]
+                times = self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)
+                coeff.loc[tech, :, times] = params.time_steps_operation_duration.loc[tech, times]
                 # set the groups
                 for loc in index.get_values(locs=[tech], levels=1, dtype=list):
-                    times = self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)
                     group.loc[tech, loc, times] = year
 
         # group and reorganize
@@ -954,7 +954,6 @@ class TechnologyRules:
     def constraint_opex_total_rule(self, year):
         """ sums over all technologies to calculate total opex """
         # get parameter object
-        params = self.optimization_setup.parameters
         model = self.optimization_setup.model
 
         # get all the terms
