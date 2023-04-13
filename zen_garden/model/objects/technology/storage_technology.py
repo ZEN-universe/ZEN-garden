@@ -313,21 +313,29 @@ class StorageTechnologyRules:
             time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, element_time_step).values
             # get corresponding start time step at beginning of the year, if time is last time step in year
             time_step_end = [self.energy_system.time_steps.get_time_steps_storage_startend(tech, t) for t in times]
-            # filter Nones
-            times = [t for t, te in zip(times, time_step_end) if te is not None]
-            element_time_step = [t for t, te in zip(element_time_step, time_step_end) if te is not None]
-            time_step_year = [t for t, te in zip(time_step_year, time_step_end) if te is not None]
-            time_step_end = [t for t in time_step_end if t is not None]
-            if len(time_step_end) == 0:
-                continue
-            previous_level_time_step = time_step_end
+
+            # filter end time step and all others
+            previous_level_time_step = []
+            for t, te in zip(times, time_step_end):
+                if te is not None:
+                    if system["storage_periodicity"]:
+                        previous_level_time_step.append(te)
+                    else:
+                        previous_level_time_step.append(None)
+                else:
+                    previous_level_time_step.append(t - 1)
+            times = [t for t, tp in zip(times, previous_level_time_step) if tp is not None]
+            element_time_step = [t for t, tp in zip(element_time_step, previous_level_time_step) if tp is not None]
+            time_step_year = [t for t, tp in zip(time_step_year, previous_level_time_step) if tp is not None]
+            previous_level_time_step = [t for t in previous_level_time_step if t is not None]
+
             # self discharge, reformulate as partial geometric series
             if params.self_discharge.loc[tech, node] != 0:
                 after_self_discharge = (1-(1 - params.self_discharge.loc[tech, node])**params.time_steps_storage_level_duration.loc[tech, times])/(1-(1 - params.self_discharge.loc[tech, node]))
             else:
                 after_self_discharge = params.time_steps_storage_level_duration.loc[tech, times]
 
-            coords = [xr.DataArray(time_step_end, dims=[f"{tech}_{node}_set_time_steps_storage_level_end "])]
+            coords = [xr.DataArray(previous_level_time_step, dims=[f"{tech}_{node}_set_time_steps_storage_level_end "])]
             tuples = [(1.0, model.variables["level_charge"].loc[tech, node, times]),
                       (-(1.0 - params.self_discharge.loc[tech, node].item()) ** params.time_steps_storage_level_duration.loc[tech, times], model.variables["level_charge"].loc[tech, node, previous_level_time_step]),
                       (-after_self_discharge.data*params.efficiency_charge.loc[tech, node, time_step_year], model.variables["carrier_flow_charge"].loc[tech, node, element_time_step]),

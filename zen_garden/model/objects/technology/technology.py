@@ -621,7 +621,7 @@ class TechnologyRules:
 
         self.optimization_setup = optimization_setup
         t0 = time.perf_counter()
-        self.exiting_capacities = self.get_existing_capacities()
+        self.existing_capacities = self.get_existing_capacities()
         t1 = time.perf_counter()
         logging.debug(f"TechnologyRules: get_existing_capacities took {t1 - t0:.4f} seconds")
 
@@ -682,7 +682,7 @@ class TechnologyRules:
         t0 = time.perf_counter()
         for tech, capacity_type, loc in index.get_unique([0, 1, 2]):
             if params.capacity_limit_technology.loc[tech, capacity_type, loc] != np.inf:
-                mask = self.exiting_capacities.loc[tech, capacity_type, loc, times] < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
+                mask = self.existing_capacities.loc[tech, capacity_type, loc, times] < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
                 if np.any(mask):
                     capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 1
                     built_capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 0
@@ -766,7 +766,7 @@ class TechnologyRules:
         return (model.variables["capacity"][tech, capacity_type, loc, time].to_linexpr()
                 - lp_sum([1.0 * model.variables["built_capacity"].loc[tech, capacity_type, loc, previous_time] for
                           previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, time)])
-                == self.exiting_capacities.loc[tech, capacity_type, loc, time])
+                == self.existing_capacities.loc[tech, capacity_type, loc, time])
 
     def constraint_technology_diffusion_limit_rule(self, tech, capacity_type, loc, time):
         """limited technology diffusion based on the existing capacity in the previous year """
