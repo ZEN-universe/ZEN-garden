@@ -330,11 +330,10 @@ class StorageTechnologyRules:
             coords = [xr.DataArray(time_step_end, dims=[f"{tech}_{node}_set_time_steps_storage_level_end "])]
             tuples = [(1.0, model.variables["level_charge"].loc[tech, node, times]),
                       (-(1.0 - params.self_discharge.loc[tech, node].item()) ** params.time_steps_storage_level_duration.loc[tech, times], model.variables["level_charge"].loc[tech, node, previous_level_time_step]),
-                      (-params.efficiency_charge.loc[tech, node, time_step_year], model.variables["carrier_flow_charge"].loc[tech, node, element_time_step]),
-                      (-1.0/params.efficiency_discharge.loc[tech, node, time_step_year] * after_self_discharge.data, model.variables["carrier_flow_discharge"].loc[tech, node, element_time_step])]
+                      (-after_self_discharge.data*params.efficiency_charge.loc[tech, node, time_step_year], model.variables["carrier_flow_charge"].loc[tech, node, element_time_step]),
+                      (after_self_discharge.data/params.efficiency_discharge.loc[tech, node, time_step_year], model.variables["carrier_flow_discharge"].loc[tech, node, element_time_step])]
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                == 0)
-
 
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_couple_storage_level", model)
 
