@@ -379,16 +379,34 @@ class OptimizationSetup(object):
                 cons = self.model.constraints[cname]
                 # get smallest coeff and corresponding variable
                 coeffs = np.abs(cons.lhs.coeffs.data).ravel()
-                variables = cons.lhs.vars.data.ravel()
-                argmin = coeffs.argmin()
-                argmax = coeffs.argmax()
 
-                if 0.0 < coeffs[argmin] < smallest_coeff[1]:
-                    smallest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeffs[argmin]], [variables[argmin]], self.model))
-                    smallest_coeff[1] = coeffs[argmin]
-                if coeffs[argmax] > largest_coeff[1]:
-                    largest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeffs[argmax]], [variables[argmax]], self.model))
-                    largest_coeff[1] = coeffs[argmax]
+                # filter
+                sorted_args = np.argsort(coeffs)
+                coeffs_sorted = coeffs[sorted_args]
+                mask = np.isfinite(coeffs_sorted) & (coeffs_sorted != 0.0)
+                coeffs_sorted = coeffs_sorted[mask]
+
+                # check if there is something left
+                if coeffs_sorted.size == 0:
+                    continue
+
+                # get min max
+                coeff_min = coeffs_sorted[0]
+                coeff_max = coeffs_sorted[-1]
+
+                # same for variables
+                variables = cons.lhs.vars.data.ravel()
+                variables_sorted = variables[sorted_args]
+                variables_sorted = variables_sorted[mask]
+                var_min = variables_sorted[0]
+                var_max = variables_sorted[-1]
+
+                if 0.0 < coeff_min < smallest_coeff[1]:
+                    smallest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
+                    smallest_coeff[1] = coeff_min
+                if coeff_max > largest_coeff[1]:
+                    largest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeff_max], [var_max], self.model))
+                    largest_coeff[1] = coeff_max
 
                 # smallest and largest rhs
                 rhs = cons.rhs.data.ravel()
