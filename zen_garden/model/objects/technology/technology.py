@@ -685,10 +685,12 @@ class TechnologyRules:
                 mask = self.exiting_capacities.loc[tech, capacity_type, loc, times] < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
                 if np.any(mask):
                     capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 1
+                    built_capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 0
                     rhs.loc[tech, capacity_type, loc, times[mask]] = params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
                     sign.loc[tech, capacity_type, loc, times[mask]] = "<="
                 if np.any(~mask):
                     built_capacity_fac.loc[tech, capacity_type, loc, times[~mask]] = 1
+                    capacity_fac.loc[tech, capacity_type, loc, times[~mask]] = 0
                     rhs.loc[tech, capacity_type, loc, times[~mask]] = 0
                     sign.loc[tech, capacity_type, loc, times[~mask]] = "=="
         t1 = time.perf_counter()

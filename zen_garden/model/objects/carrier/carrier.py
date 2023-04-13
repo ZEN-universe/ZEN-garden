@@ -405,6 +405,7 @@ class CarrierRules:
         carrier_flow_charge_group = xr_like(np.nan, float, model.variables["carrier_flow_charge"], model.variables["carrier_flow_charge"].dims[:-1])
         carrier_import_group = xr_like(np.nan, float, model.variables["import_carrier_flow"], model.variables["import_carrier_flow"].dims[:-1])
         carrier_export_group = xr_like(np.nan, float, model.variables["export_carrier_flow"], model.variables["export_carrier_flow"].dims[:-1])
+        carrier_shed_demand_group = xr_like(np.nan, float, model.variables["shed_demand_carrier"], model.variables["shed_demand_carrier"].dims[:-1])
         carrier_demand_group = xr_like(np.nan, float, params.demand_carrier, params.demand_carrier.dims[:-1])
 
         # loop over all index values
@@ -435,6 +436,7 @@ class CarrierRules:
             # carrier import, demand and export
             carrier_import_group.loc[carrier, node] = num
             carrier_export_group.loc[carrier, node] = num
+            carrier_shed_demand_group.loc[carrier, node] = num
             carrier_demand_group.loc[carrier, node] = num
 
         def grouped_sum(var, group):
@@ -452,12 +454,13 @@ class CarrierRules:
 
         args = [(model.variables["output_flow"], carrier_conversion_out_group),
                 (-model.variables["input_flow"], carrier_conversion_in_group),
-                (model.variables["carrier_flow"] - model.variables["carrier_loss"], carrier_flow_out_group),
-                (-model.variables["carrier_flow"], carrier_flow_in_group),
+                (model.variables["carrier_flow"] - model.variables["carrier_loss"], carrier_flow_in_group),
+                (-model.variables["carrier_flow"], carrier_flow_out_group),
                 (model.variables["carrier_flow_discharge"], carrier_flow_discharge_group),
                 (-model.variables["carrier_flow_charge"], carrier_flow_charge_group),
                 (model.variables["import_carrier_flow"], carrier_import_group),
-                (-model.variables["export_carrier_flow"], carrier_export_group)]
+                (-model.variables["export_carrier_flow"], carrier_export_group),
+                (model.variables["shed_demand_carrier"], carrier_shed_demand_group)]
         exprs = [grouped_sum(*arg) for arg in args]
         exprs = [expr for expr in exprs if expr is not None]
 
