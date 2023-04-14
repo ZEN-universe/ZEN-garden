@@ -18,7 +18,7 @@ import time
 from linopy.constraints import AnonymousConstraint
 
 from zen_garden.utils import linexpr_from_tuple_np, lp_sum
-from ..component import ZenIndex
+from ..component import ZenIndex, IndexSet
 from ..element import Element
 
 
@@ -373,6 +373,14 @@ class Technology(Element):
         # carbon intensity
         optimization_setup.parameters.add_parameter(name="carbon_intensity_technology", data=optimization_setup.initialize_component(cls, "carbon_intensity_technology", index_names=["set_technologies", "set_location"]),
             doc='Parameter which specifies the carbon intensity of each technology')
+
+        # Helper params
+        t0 = time.perf_counter()
+        optimization_setup.parameters.add_helper_parameter(name="existing_capacities", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="capacity"))
+        optimization_setup.parameters.add_helper_parameter(name="existing_capex", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="capex", time_step_type="yearly"))
+        t1 = time.perf_counter()
+        logging.debug(f"Helper Params took {t1 - t0:.4f} seconds")
+
         # add pe.Param of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_params(optimization_setup)
@@ -607,6 +615,26 @@ class Technology(Element):
 
         return False
 
+    @classmethod
+    def get_existing_quantity(cls, optimization_setup, type_existing_quantity, time_step_type=None):
+        """
+        get existing capacities of all technologies
+        :return: The existing capacities
+        """
+
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"],
+                                                               optimization_setup)
+        # get all the capacities
+        index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
+        coords = [np.unique(t.data) for t in index_arrs]
+        existing_quantities = xr.DataArray(np.nan, coords=coords, dims=index_names)
+        for tech, capacity_type, loc, time in index_values:
+            existing_quantities.loc[tech, capacity_type, loc, time] = Technology.get_available_existing_quantity(optimization_setup, tech, capacity_type, loc, time,
+                                                                                                                 type_existing_quantity=type_existing_quantity,
+                                                                                                                 time_step_type=time_step_type)
+
+        return existing_quantities
+
 
 class TechnologyRules:
     """
@@ -618,28 +646,7 @@ class TechnologyRules:
         Inits the rules
         :param optimization_setup: OptimizationSetup of the element
         """
-
         self.optimization_setup = optimization_setup
-        t0 = time.perf_counter()
-        self.existing_capacities = self.get_existing_capacities()
-        t1 = time.perf_counter()
-        logging.debug(f"TechnologyRules: get_existing_capacities took {t1 - t0:.4f} seconds")
-
-    def get_existing_capacities(self):
-        """
-        get existing capacities of all technologies
-        :return: The existing capacities
-        """
-
-        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"],
-                                                              self.optimization_setup)
-
-        # get all the constraints
-        existing_capacities = xr.DataArray(np.nan, coords=[self.optimization_setup.model.variables.coords[i_name] for i_name in index_names], dims=index_names)
-        for tech, capacity_type, loc, time in index_values:
-            existing_capacities.loc[tech, capacity_type, loc, time] = Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, time, type_existing_quantity="capacity")
-
-        return existing_capacities
 
     def disjunct_on_technology_rule(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
@@ -682,7 +689,7 @@ class TechnologyRules:
         t0 = time.perf_counter()
         for tech, capacity_type, loc in index.get_unique([0, 1, 2]):
             if params.capacity_limit_technology.loc[tech, capacity_type, loc] != np.inf:
-                mask = self.existing_capacities.loc[tech, capacity_type, loc, times] < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
+                mask = params.existing_capacities.loc[tech, capacity_type, loc, times] < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
                 if np.any(mask):
                     capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 1
                     built_capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 0
@@ -763,10 +770,11 @@ class TechnologyRules:
 
     def constraint_technology_lifetime_rule(self, tech, capacity_type, loc, time):
         model = self.optimization_setup.model
+        params = self.optimization_setup.parameters
         return (model.variables["capacity"][tech, capacity_type, loc, time].to_linexpr()
                 - lp_sum([1.0 * model.variables["built_capacity"].loc[tech, capacity_type, loc, previous_time] for
                           previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, time)])
-                == self.existing_capacities.loc[tech, capacity_type, loc, time])
+                == params.existing_capacities.loc[tech, capacity_type, loc, time])
 
     def constraint_technology_diffusion_limit_rule(self, tech, capacity_type, loc, time):
         """limited technology diffusion based on the existing capacity in the previous year """
@@ -841,7 +849,7 @@ class TechnologyRules:
         annuity = ((1+discount_rate)**lifetime * discount_rate)/((1+discount_rate)**lifetime - 1)
         return (model.variables["capex_yearly"].loc[tech, capacity_type, loc, year]
                 - annuity * lp_sum([1.0*model.variables["capex"].loc[tech, capacity_type, loc, previous_year] for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly")])
-                == annuity * Technology.get_available_existing_quantity(self.optimization_setup, tech, capacity_type, loc, year, type_existing_quantity="capex",time_step_type="yearly"))
+                == annuity * params.existing_capex.loc[tech, capacity_type, loc, year].item())
 
     def constraint_capex_total_rule(self, year):
         """ sums over all technologies to calculate total capex """

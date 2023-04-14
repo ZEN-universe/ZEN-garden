@@ -377,12 +377,70 @@ class IndexSet(Component):
         return iter(self.sets.values())
 
 
+class XRItem(object):
+    """
+    This is a helper class for the fast pre-computation of helper params, it is consistent with xarray access way
+    """
+
+    def __init__(self, value):
+        """
+        Inits the item
+        :param value: The value to store
+        """
+
+        self.value = value
+
+    def item(self):
+        """
+        Returns the value of the item
+        :return: The value
+        """
+        return self.value
+
+    def __repr__(self):
+        """
+        :return: The representation of the item
+        """
+        return f"XRItem({self.value})"
+
+
+class XRItemDict(object):
+    """
+    Another helper class that is essentially a dict that returns XR items
+    """
+
+    def __init__(self, dictionary):
+        """
+        Inits the XRdict
+        :param dictionary: A dictionary to unfold
+        """
+
+        self.loc = self._unfold(dictionary)
+
+    def _unfold(self, dictionary):
+        """
+        Unfolds the dictionary to a XRItemDict
+        :param dictionary: The dictionary to unfold
+        :return: The unfolded dict
+        """
+
+        d = dict()
+        for k, v in dictionary.items():
+            if isinstance(v, dict):
+                d[k] = self._unfold(v)
+            else:
+                d[k] = XRItem(v)
+
+        return d
+
+
 class Parameter(Component):
     def __init__(self):
         """ initialization of the parameter object """
         super().__init__()
         self.min_parameter_value = {"name": None, "value": None}
         self.max_parameter_value = {"name": None, "value": None}
+        self.xr_arrays = {}
 
     def add_parameter(self, name, data, doc):
         """ initialization of a parameter
@@ -394,8 +452,9 @@ class Parameter(Component):
             data, index_list = self.get_index_names_data(data)
             # save if highest or lowest value
             self.save_min_max(data, name)
-            # convert to arr
-            data = self.convert_to_xarr(data, index_list)
+            # convert to arr and dict
+            self.xr_arrays[name] = self.convert_to_xarr(copy.copy(data), index_list)
+            data = self.convert_to_dict(data)
             # set parameter
             setattr(self, name, data)
 
@@ -403,6 +462,26 @@ class Parameter(Component):
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")
+
+    def add_helper_parameter(self, name, data):
+        """Adds a helper param. Note that this param won't be added to the docs and therefore not saved in the results.
+        Also, the data is taken as is and is not transformed
+        :param name: The name of the param
+        :param data: The data
+        """
+
+        # set parameter
+        setattr(self, name, data)
+
+    def remove_dicts(self):
+        """
+        Replaces the dicts with xarrays
+        """
+
+        for param in self.docs:
+            delattr(self, param)
+            setattr(self, param, self.xr_arrays[param])
+        del self.xr_arrays
 
     def save_min_max(self, data, name):
         """ stores min and max parameter """
@@ -440,6 +519,16 @@ class Parameter(Component):
                 self.min_parameter_value["value"] = _valmin
 
     @staticmethod
+    def convert_to_dict(data):
+        """ converts the data to a dict if pd.Series"""
+        if isinstance(data, pd.Series):
+            # if single entry in index
+            if len(data.index[0]) == 1:
+                data.index = pd.Index(sum(data.index.values, ()))
+            data = XRItemDict(data.to_dict())
+        return data
+
+    @staticmethod
     def convert_to_xarr(data, index_list):
         """ converts the data to a dict if pd.Series"""
         if isinstance(data, pd.Series):
@@ -461,29 +550,6 @@ class Parameter(Component):
         if isinstance(data, dict) and len(data) == 0:
             data = xr.DataArray([])
         return data
-
-    def as_xarray(self, pname, indices):
-        """
-        Returns a xarray of the param
-        :param pname: The name of the param
-        :param indices: A list of indices to extract
-        :return: An xarray of the param
-        """
-
-        p = getattr(self, pname)
-        if isinstance(indices[0], tuple):
-            return xr.DataArray([p[*args] for args in indices])
-        else:
-            return xr.DataArray([p[i] for i in indices])
-
-    def __getitem__(self, item):
-        """
-        The get item method to directly access the underlying dataset
-        :param item: The item to retireve
-        :return: The xarray paramter
-        """
-
-        return self.data_set[item]
 
 
 class Variable(Component):

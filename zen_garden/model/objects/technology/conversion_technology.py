@@ -423,8 +423,8 @@ class ConversionTechnologyRules:
             coords = [model.variables.coords["set_time_steps_operation"]]
             times = index.get_values([tech, dependent_carrier, node], 3, dtype=list)
             time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, times).values
-            tuples = [(1.0, model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier, node]),
-                      (-params.conver_efficiency_specific.loc[tech, dependent_carrier, node, time_step_year], model.variables["reference_flow_approximation"].loc[tech, dependent_carrier, node])]
+            tuples = [(1.0, model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier, node, times]),
+                      (-params.conver_efficiency_specific.loc[tech, dependent_carrier, node, time_step_year], model.variables["reference_flow_approximation"].loc[tech, dependent_carrier, node, times])]
             constraints.append(linexpr_from_tuple_np(tuples, coords=coords, model=model)
                                == 0)
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_linear_conver_efficiency", model)
@@ -458,6 +458,7 @@ class ConversionTechnologyRules:
         for tech, dependent_carrier in index.get_unique([0, 1]):
             reference_carrier = sets["set_reference_carriers"][tech][0]
             if reference_carrier in sets["set_input_carriers"][tech]:
+                # TODO: check masks here (over node and time)
                 constraints.append(model.variables["input_flow"].loc[tech, reference_carrier]
                                    - model.variables["reference_flow_approximation"].loc[tech, dependent_carrier]
                                    == 0)
@@ -481,6 +482,7 @@ class ConversionTechnologyRules:
         index = ZenIndex(index_values, index_names)
         for tech, dependent_carrier in index.get_unique([0, 1]):
             if dependent_carrier in sets["set_input_carriers"][tech]:
+                # TODO: check masks here (over node and time)
                 constraints.append(model.variables["input_flow"].loc[tech, dependent_carrier]
                                    - model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier]
                                    == 0)
