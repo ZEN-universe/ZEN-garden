@@ -1053,4 +1053,4 @@ class TechnologyRules:
                 else:
                     continue
 
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_capacity_factor", model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1, 2]), index_names[:3], model)

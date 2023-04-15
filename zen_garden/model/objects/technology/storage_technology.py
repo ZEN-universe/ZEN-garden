@@ -17,8 +17,9 @@ import numpy as np
 import xarray as xr
 
 from zen_garden.utils import linexpr_from_tuple_np
-from ..component import ZenIndex
 from .technology import Technology
+from ..component import ZenIndex
+from ..element import Element
 
 
 class StorageTechnology(Technology):
@@ -200,19 +201,19 @@ class StorageTechnology(Technology):
         # Limit storage level
         t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_storage_level_max",
-                                         constraint=rules.get_constraint_storage_level_max(*cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup)),
+                                         constraint=rules.get_constraint_storage_level_max(),
                                          doc='limit maximum storage level to capacity')
         t1 = time.perf_counter()
         logging.debug(f"Storage Technology: constraint_storage_level_max took {t1 - t0:.4f} seconds")
         # couple storage levels
         constraints.add_constraint_block(model, name="constraint_couple_storage_level",
-                                         constraint=rules.get_constraint_couple_storage_level(*cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup)),
+                                         constraint=rules.get_constraint_couple_storage_level(),
                                          doc='couple subsequent storage levels (time coupling constraints)')
         t2 = time.perf_counter()
         logging.debug(f"Storage Technology: constraint_couple_storage_level took {t2 - t1:.4f} seconds")
         # Linear Capex
         constraints.add_constraint_block(model, name="constraint_storage_technology_capex",
-                                         constraint=rules.get_constraint_storage_technology_capex(*cls.create_custom_set(["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], optimization_setup)),
+                                         constraint=rules.get_constraint_storage_technology_capex(),
                                          doc='Capital expenditures for installing storage technology')
         t3 = time.perf_counter()
         logging.debug(f"Storage Technology: constraint_storage_technology_capex took {t3 - t2:.4f} seconds")
@@ -277,13 +278,14 @@ class StorageTechnologyRules:
         self.energy_system = optimization_setup.energy_system
 
     ### --- functions with constraint rules --- ###
-    def get_constraint_storage_level_max(self, index_values, index_names):
+    def get_constraint_storage_level_max(self):
         """limit maximum storage level to capacity"""
         # get invest time step
         model = self.optimization_setup.model
 
         # get all the constraints
         constraints = []
+        index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         for tech, node in index.get_unique([0, 1]):
             coords = [model.variables.coords["set_time_steps_storage_level"]]
@@ -294,9 +296,10 @@ class StorageTechnologyRules:
                       (-1.0, model.variables["capacity"].loc[tech, "energy", node, time_step_year])]
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                <= 0)
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_storage_level_max", model)
 
-    def get_constraint_couple_storage_level(self, index_values, index_names):
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
+
+    def get_constraint_couple_storage_level(self):
         """couple subsequent storage levels (time coupling constraints)"""
         # get parameter object
         params = self.optimization_setup.parameters
@@ -305,6 +308,7 @@ class StorageTechnologyRules:
 
         # get all the constraints
         constraints = []
+        index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         for tech, node in index.get_unique([0, 1]):
             times = index.get_values(locs=[tech, node], levels=2, dtype=list)
@@ -343,9 +347,9 @@ class StorageTechnologyRules:
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                == 0)
 
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_couple_storage_level", model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
 
-    def get_constraint_storage_technology_capex(self, index_values, index_names):
+    def get_constraint_storage_technology_capex(self):
         """ definition of the capital expenditures for the storage technology"""
         # get parameter object
         params = self.optimization_setup.parameters
@@ -353,6 +357,7 @@ class StorageTechnologyRules:
 
         # get all the constraints
         constraints = []
+        index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         for tech, capacity_type, node in index.get_unique([0, 1, 2]):
             times = index.get_values(locs=[tech, capacity_type, node], levels=3, dtype=list)
@@ -362,4 +367,4 @@ class StorageTechnologyRules:
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                == 0)
 
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_storage_technology_capex", model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1, 2]), index_names[:3], model)

@@ -175,20 +175,20 @@ class ConditioningCarrierRules:
         # sum over all groups, with merge and broadcast to handle missing dims correctly
         lhs = lp.expressions.merge(
             # carrier_conversion_out - carrier_conversion_in
-            (model.variables["output_flow"]).groupby_sum(carrier_conversion_out_group),
-            - (model.variables["input_flow"]).groupby_sum(carrier_conversion_in_group),
+            (model.variables["output_flow"]).groupby(carrier_conversion_out_group).sum(),
+            - (model.variables["input_flow"]).groupby(carrier_conversion_in_group).sum(),
             # carrier_flow_out - carrier_flow_in
-            (model.variables["carrier_flow"] - model.variables["carrier_loss"]).groupby_sum(carrier_flow_in_group),
-            - (model.variables["carrier_flow"]).groupby_sum(carrier_flow_out_group),
+            (model.variables["carrier_flow"] - model.variables["carrier_loss"]).groupby(carrier_flow_in_group).sum(),
+            - (model.variables["carrier_flow"]).groupby(carrier_flow_out_group).sum(),
             # carrier_flow_discharge - carrier_flow_charge
-            (model.variables["carrier_flow_discharge"]).groupby_sum(carrier_flow_discharge_group),
-            - (model.variables["carrier_flow_charge"]).groupby_sum(carrier_flow_charge_group),
+            (model.variables["carrier_flow_discharge"]).groupby(carrier_flow_discharge_group).sum(),
+            - (model.variables["carrier_flow_charge"]).groupby(carrier_flow_charge_group).sum(),
             # carrier_import - carrier_export
-            (model.variables["import_carrier_flow"]).groupby_sum(carrier_import_group),
-            - (model.variables["export_carrier_flow"]).groupby_sum(carrier_export_group),
+            (model.variables["import_carrier_flow"]).groupby(carrier_import_group).sum(),
+            - (model.variables["export_carrier_flow"]).groupby(carrier_export_group).sum(),
             # endogenous_carrier_demand
-            (model.variables["endogenous_carrier_demand"]).groupby_sum(endogenous_carrier_demand_group_pos),
-            - (model.variables["endogenous_carrier_demand"]).groupby_sum(endogenous_carrier_demand_group_neg),
+            (model.variables["endogenous_carrier_demand"]).groupby(endogenous_carrier_demand_group_pos).sum(),
+            - (model.variables["endogenous_carrier_demand"]).groupby(endogenous_carrier_demand_group_neg).sum(),
             compat="broadcast_equals")
         rhs = params.demand_carrier.groupby(carrier_demand_group).map(lambda x: x.sum())
         sign = xr.DataArray("==", coords=rhs.coords)

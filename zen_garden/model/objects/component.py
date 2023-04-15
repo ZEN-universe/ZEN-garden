@@ -612,8 +612,7 @@ class Constraint(Component):
         use_suffix = True
         if not isinstance(constraint, list):
             constraint = [constraint]
-            # TODO: set this to False once all the cons combinations are correct
-            use_suffix = True
+            use_suffix = False
 
         for num, cons in enumerate(constraint):
             current_name = f"{name}"
@@ -950,6 +949,10 @@ class Constraint(Component):
         :param model: The model
         :return: A single constraint with the correct dimenstions
         """
+
+        # catch empty constraints
+        if len(constraints) == 0:
+            return []
 
         # combine constraints to a group
         combined_constraints = self.combine_constraints(constraints, "group", model)

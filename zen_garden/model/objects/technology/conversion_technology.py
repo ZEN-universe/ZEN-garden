@@ -10,15 +10,15 @@ Description:    Class defining the parameters, variables and constraints of the 
                 constraints of the conversion technologies.
 ==========================================================================================================================================================================="""
 import logging
+import time
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-import time
 
 from zen_garden.utils import linexpr_from_tuple_np
-from ..component import ZenIndex
 from .technology import Technology
+from ..component import ZenIndex
 
 
 class ConversionTechnology(Technology):
@@ -279,7 +279,7 @@ class ConversionTechnology(Technology):
         if set_linear_conver_efficiency[0]:
             # if set_linear_conver_efficiency contains technologies:
             constraints.add_constraint_block(model, name="constraint_linear_conver_efficiency",
-                                             constraint=rules.constraint_linear_conver_efficiency_rule(*set_linear_conver_efficiency),
+                                             constraint=rules.get_constraint_linear_conver_efficiency(*set_linear_conver_efficiency),
                                              doc="Linear relationship in conver_efficiency")  # Coupling constraints
         # couple the real variables with the auxiliary variables
         t0 = time.perf_counter()
@@ -409,7 +409,7 @@ class ConversionTechnologyRules:
                 - params.capex_specific_conversion.loc[tech, node, time].item() * model.variables["capacity_approximation"][tech, node, time]
                 == 0)
 
-    def constraint_linear_conver_efficiency_rule(self, index_values, index_names):
+    def get_constraint_linear_conver_efficiency(self, index_values, index_names):
         """ if reference carrier and dependent carrier have a linear relationship"""
         # get parameter object
         params = self.optimization_setup.parameters
@@ -427,7 +427,7 @@ class ConversionTechnologyRules:
                       (-params.conver_efficiency_specific.loc[tech, dependent_carrier, node, time_step_year], model.variables["reference_flow_approximation"].loc[tech, dependent_carrier, node, times])]
             constraints.append(linexpr_from_tuple_np(tuples, coords=coords, model=model)
                                == 0)
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_linear_conver_efficiency", model)
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_linear_conver_efficiency_dim", model)
 
     def constraint_capex_coupling_rule(self, tech, node, time):
         """ couples capex variables based on modeling technique"""
@@ -466,7 +466,7 @@ class ConversionTechnologyRules:
                 constraints.append(model.variables["output_flow"].loc[tech, reference_carrier]
                                    - model.variables["reference_flow_approximation"].loc[tech, dependent_carrier]
                                    == 0)
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_reference_flow_coupling", model)
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_reference_flow_coupling_dim", model)
 
     def get_constraint_dependent_flow_coupling(self, index_values, index_names):
         """ couples dependent flow variables based on modeling technique"""
@@ -491,4 +491,4 @@ class ConversionTechnologyRules:
                                    - model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier]
                                    == 0)
 
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_dependent_flow_coupling", model)
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_dependent_flow_coupling_dim", model)
