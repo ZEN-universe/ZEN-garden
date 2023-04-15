@@ -531,8 +531,9 @@ class Technology(Element):
         t7 = time.perf_counter()
         logging.debug(f"Technology: constraint_capacity_factor took {t7 - t6:.4f} seconds")
         # annual capex of having capacity
-        constraints.add_constraint_rule(model, name="constraint_capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            rule=rules.constraint_capex_yearly_rule, doc='annual capex of having capacity of technology.')
+        constraints.add_constraint_block(model, name="constraint_capex_yearly",
+                                         constraint=rules.get_constraint_capex_yearly_rule(),
+                                         doc='annual capex of having capacity of technology.')
         t8 = time.perf_counter()
         logging.debug(f"Technology: constraint_capex_yearly took {t8 - t7:.4f} seconds")
         # total capex of all technologies
@@ -542,13 +543,14 @@ class Technology(Element):
         logging.debug(f"Technology: constraint_capex_total took {t9 - t8:.4f} seconds")
         # calculate opex
         constraints.add_constraint_block(model, name="constraint_opex_technology",
-                                         constraint=rules.get_constraint_opex_technology(*cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.get_constraint_opex_technology(),
                                          doc="opex for each technology at each location and time step")
         t10 = time.perf_counter()
         logging.debug(f"Technology: constraint_opex_technology took {t10 - t9:.4f} seconds")
         # yearly opex
-        constraints.add_constraint_rule(model, name="constraint_opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"],optimization_setup),
-                                        rule=rules.constraint_opex_yearly_rule, doc='total opex of all technology that are operated.')
+        constraints.add_constraint_block(model, name="constraint_opex_yearly",
+                                         constraint=rules.get_constraint_opex_yearly(),
+                                         doc='total opex of all technology that are operated.')
         t11 = time.perf_counter()
         logging.debug(f"Technology: constraint_opex_yearly took {t11 - t10:.4f} seconds")
         # total opex of all technologies
@@ -853,27 +855,36 @@ class TechnologyRules:
         else:
             return None
 
-    def constraint_capex_yearly_rule(self, tech, capacity_type, loc, year):
+    def get_constraint_capex_yearly_rule(self):
         """ aggregates the capex of built capacity and of existing capacity """
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
         discount_rate = self.optimization_setup.analysis["discount_rate"]
 
-        lifetime = params.lifetime_technology.loc[tech].item()
-        annuity = ((1+discount_rate)**lifetime * discount_rate)/((1+discount_rate)**lifetime - 1)
-        return (model.variables["capex_yearly"].loc[tech, capacity_type, loc, year]
-                - annuity * lp_sum([1.0*model.variables["capex"].loc[tech, capacity_type, loc, previous_year] for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly")])
-                == annuity * params.existing_capex.loc[tech, capacity_type, loc, year].item())
+        # get all the constraints
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+        constraints = []
+        # this vectorizes over capacities and locations
+        for tech, year in index.get_unique([0, 3]):
+            lifetime = params.lifetime_technology.loc[tech].item()
+            annuity = ((1+discount_rate)**lifetime * discount_rate)/((1+discount_rate)**lifetime - 1)
+            terms = [1.0*model.variables["capex_yearly"].loc[tech, :, :, year]]
+            for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly"):
+                terms.append(-annuity * model.variables["capex"].loc[tech, :, :, previous_year])
+            constraints.append(lp_sum(terms) == annuity * params.existing_capex.loc[tech, :, :, year])
+
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 3]), [index_names[0], index_names[3]], model), model.variables["capex_yearly"].mask
 
     def constraint_capex_total_rule(self, year):
         """ sums over all technologies to calculate total capex """
         model = self.optimization_setup.model
         return (model.variables["capex_total"].loc[year]
-                - lp_sum([1.0*model.variables["capex_yearly"].loc[tech, capacity_type, loc, year] for tech, capacity_type, loc in Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location"], self.optimization_setup)[0]])
+                - model.variables["capex_yearly"].loc[..., year].sum()
                 == 0)
 
-    def get_constraint_opex_technology(self, index_values, index_names):
+    def get_constraint_opex_technology(self):
         """ calculate opex of each technology"""
         # get parameter object
         params = self.optimization_setup.parameters
@@ -881,8 +892,9 @@ class TechnologyRules:
         sets = self.optimization_setup.sets
 
         # get all the constraints
-        constraints = []
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
+        constraints = []
         for tech, loc in index.get_unique(["set_technologies", "set_location"]):
             reference_carrier = sets["set_reference_carriers"][tech][0]
             if tech in sets["set_conversion_technologies"]:
@@ -897,9 +909,9 @@ class TechnologyRules:
             constraints.append(model.variables["opex"].loc[tech, loc]
                                - params.opex_specific.loc[tech, loc] * reference_flow
                                == 0)
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_opex_technology", model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
 
-    def constraint_opex_yearly_rule(self, tech, loc, year):
+    def get_constraint_opex_yearly(self):
         """ yearly opex for a technology at a location in each year """
         # get parameter object
         params = self.optimization_setup.parameters
@@ -907,12 +919,18 @@ class TechnologyRules:
         system = self.optimization_setup.system
         model = self.optimization_setup.model
 
-        times = self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)
-        return (model.variables["opex_yearly"].loc[tech, loc, year]
-                - (model.variables["opex"].loc[tech, loc, times] * params.time_steps_operation_duration.loc[tech, times]).sum()
-                - lp_sum([params.fixed_opex_specific.loc[tech,capacity_type,loc,year].item()*model.variables["capacity"].loc[tech,capacity_type,loc,year]
-                          for capacity_type in system["set_capacity_types"] if tech in sets["set_storage_technologies"] or capacity_type == system["set_capacity_types"][0]])
-                == 0)
+        # get all the constraints
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+        constraints = []
+        for tech, year in index.get_unique([0, 2]):
+            times = self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)
+            constraints.append(model.variables["opex_yearly"].loc[tech, :, year]
+                               - (model.variables["opex"].loc[tech, :, times] * params.time_steps_operation_duration.loc[tech, times]).sum(["set_time_steps_operation"])
+                               - lp_sum([params.fixed_opex_specific.loc[tech, capacity_type, :, year]*model.variables["capacity"].loc[tech, capacity_type, :, year]
+                                         for capacity_type in system["set_capacity_types"] if tech in sets["set_storage_technologies"] or capacity_type == system["set_capacity_types"][0]])
+                               == 0)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 2]), [index_names[0], index_names[2]], model), model.variables["opex_yearly"].mask
 
     def get_constraint_carbon_emissions_technology(self):
         """ calculate carbon emissions of each technology"""
@@ -940,7 +958,7 @@ class TechnologyRules:
                                - params.carbon_intensity_technology.loc[tech, loc].item() * reference_flow
                                == 0)
 
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_carbon_emissions_technology", model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
 
     def get_constraint_carbon_emissions_technology_total(self):
         """ calculate total carbon emissions of each technology"""
@@ -959,7 +977,7 @@ class TechnologyRules:
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)
         index = ZenIndex(index_values,index_names)
 
-        # get all the terms
+        # set the groups
         for year in years:
             for tech in index.get_unique(levels=[0]):
                 # multiply the lp with the param
@@ -981,13 +999,8 @@ class TechnologyRules:
         # get parameter object
         model = self.optimization_setup.model
 
-        # get all the terms
-        terms = []
-        for tech, loc in Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)[0]:
-            terms.append((model.variables["opex_yearly"].loc[tech, loc, year]).sum())
-
         return (model.variables["opex_total"].loc[year]
-                - lp_sum(terms)
+                - model.variables["opex_yearly"].loc[..., year].sum()
                 == 0)
 
     def get_constraint_capacity_factor(self):
