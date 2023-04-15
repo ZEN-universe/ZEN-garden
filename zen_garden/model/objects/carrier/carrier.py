@@ -185,7 +185,7 @@ class Carrier(Element):
         logging.debug(f"Carrier: constraint_cost_carrier took {t5 - t4:.4f} seconds")
         # cost for shed demand
         constraints.add_constraint_block(model, name="constraint_cost_shed_demand",
-                                         constraint=rules.get_constraint_cost_shed_demand(*cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.get_constraint_cost_shed_demand(),
                                          doc="cost of shedding carrier demand")
         t6 = time.perf_counter()
         logging.debug(f"Carrier: constraint_cost_shed_demand took {t6 - t5:.4f} seconds")
@@ -196,16 +196,14 @@ class Carrier(Element):
         t7 = time.perf_counter()
         logging.debug(f"Carrier: constraint_limit_shed_demand took {t7 - t6:.4f} seconds")
         # total cost for carriers
-        # TODO: optimize
         constraints.add_constraint_rule(model, name="constraint_cost_carrier_total",
                                         index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_cost_carrier_total_rule,
                                         doc="total cost of importing and exporting carriers")
         t8 = time.perf_counter()
         logging.debug(f"Carrier: constraint_cost_carrier_total took {t8 - t7:.4f} seconds")
         # carbon emissions
-        # TODO: optimize
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_carrier",
-                                         constraint=rules.get_constraint_carbon_emissions_carrier(*cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.get_constraint_carbon_emissions_carrier(),
                                          doc="carbon emissions of importing and exporting carrier")
         t9 = time.perf_counter()
         logging.debug(f"Carrier: constraint_carbon_emissions_carrier took {t9 - t8:.4f} seconds")
@@ -299,7 +297,7 @@ class CarrierRules:
                   (params.export_price_carrier.where(mask), model.variables["export_carrier_flow"].where(mask))]
         return model.linexpr(*tuples) == 0
 
-    def get_constraint_cost_shed_demand(self, index_values, index_names):
+    def get_constraint_cost_shed_demand(self):
         """ cost of shedding demand of carrier """
         # get parameter object
         params = self.optimization_setup.parameters
@@ -307,6 +305,7 @@ class CarrierRules:
 
         # get all the constraints
         constraints = []
+        index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         for carrier in index.get_unique([0]):
             if params.shed_demand_price.loc[carrier] != np.inf:
@@ -316,7 +315,7 @@ class CarrierRules:
             else:
                 constraints.append((model.variables["shed_demand_carrier"].loc[carrier]
                                     == 0))
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_cost_shed_demand", model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
 
     def get_constraint_limit_shed_demand(self):
         """ limit demand shedding at low price """
@@ -335,6 +334,7 @@ class CarrierRules:
         model = self.optimization_setup.model
 
         terms = []
+        # This vectorizes over times and locations
         for carrier in sets["set_carriers"]:
             times = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
             expr = (model.variables["cost_carrier"].loc[carrier, :, times] + model.variables["cost_shed_demand_carrier"].loc[carrier, :, times]) * params.time_steps_operation_duration.loc[carrier, times]
@@ -344,7 +344,7 @@ class CarrierRules:
                 - lp_sum(terms)
                 == 0)
 
-    def get_constraint_carbon_emissions_carrier(self, index_values, index_names):
+    def get_constraint_carbon_emissions_carrier(self):
         """ carbon emissions of importing and exporting carrier"""
         # get parameter object
         params = self.optimization_setup.parameters
@@ -352,10 +352,13 @@ class CarrierRules:
 
         # get all the constraints
         constraints = []
+        index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         times = index.get_unique([2])
         for carrier in index.get_unique([0]):
             yearly_time_steps = self.energy_system.time_steps.convert_time_step_operation2year(carrier, times).values
+
+            # get the time-dependent factor
             mask = (params.availability_carrier_import.loc[carrier, :, times] != 0) | (params.availability_carrier_export.loc[carrier, :, times] != 0)
             fac = np.where(mask, params.carbon_intensity_carrier.loc[carrier, :, yearly_time_steps].data, 0.0)
             fac = xr.DataArray(fac, coords=[model.variables.coords["set_nodes"], model.variables.coords["set_time_steps_operation"]])
@@ -363,7 +366,7 @@ class CarrierRules:
                                - fac * (model.variables["import_carrier_flow"].loc[carrier, :] - model.variables["export_carrier_flow"].loc[carrier, :])
                                == 0)
 
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_carbon_emissions_carrier", model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
 
     def constraint_carbon_emissions_carrier_total_rule(self, year):
         """ total carbon emissions of importing and exporting carrier"""
@@ -439,6 +442,7 @@ class CarrierRules:
             carrier_shed_demand_group.loc[carrier, node] = num
             carrier_demand_group.loc[carrier, node] = num
 
+        # now we sum all variabeles according to the groups and then sum all the groups
         def grouped_sum(var, group):
             """
             Helper function for group and summation

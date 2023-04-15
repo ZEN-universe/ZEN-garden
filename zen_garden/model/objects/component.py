@@ -609,11 +609,16 @@ class Constraint(Component):
         t0 = time.perf_counter()
 
         # convert to list
+        use_suffix = True
         if not isinstance(constraint, list):
             constraint = [constraint]
+            # TODO: set this to False once all the cons combinations are correct
+            use_suffix = True
 
         for num, cons in enumerate(constraint):
-            current_name = f"{name}_{num}"
+            current_name = f"{name}"
+            if use_suffix:
+                current_name += f"_{num}"
             if current_name not in self.docs.keys():
                 # if the cons is a tuple we have a mask
                 if isinstance(cons, tuple):
@@ -936,11 +941,19 @@ class Constraint(Component):
 
         return lp.constraints.AnonymousConstraint(xr_lhs, xr_sign, xr_rhs)
 
+    def reorder_list(self, constraints, index_values, index_names, model):
+        """
+        Reorders a list of constraints to full shape according to index values and names
+        :param constraints: A list of constraints to reorder
+        :param index_values: List of index values corresponding to the group numbers
+        :param index_names: List of index names of the indices
+        :param model: The model
+        :return: A single constraint with the correct dimenstions
+        """
 
+        # combine constraints to a group
+        combined_constraints = self.combine_constraints(constraints, "group", model)
 
-
-
-
-
-
-
+        # reorder the group
+        reordered = self.reorder_group(combined_constraints.lhs, combined_constraints.sign, combined_constraints.rhs, index_values, index_names, model)
+        return reordered

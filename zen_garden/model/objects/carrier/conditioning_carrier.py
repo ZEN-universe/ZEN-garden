@@ -17,8 +17,9 @@ import numpy as np
 import xarray as xr
 
 from zen_garden.utils import xr_like
-from ..component import ZenIndex
 from .carrier import Carrier
+from ..component import ZenIndex
+from ..element import Element
 
 
 class ConditioningCarrier(Carrier):
@@ -64,9 +65,7 @@ class ConditioningCarrier(Carrier):
         # limit import flow by availability
         t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_carrier_demand_coupling",
-                                         constraint=rules.get_constraint_carrier_demand_coupling(*cls.create_custom_set(
-                                             ["set_conditioning_carrier_parents", "set_nodes",
-                                              "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.get_constraint_carrier_demand_coupling(),
                                          doc='coupling model endogenous and exogenous carrier demand', )
         t1 = time.perf_counter()
         logging.debug(f"Conditioningn Carrier: constraint_carrier_demand_coupling took {t1 - t0:.4f} seconds")
@@ -93,7 +92,7 @@ class ConditioningCarrierRules:
         self.optimization_setup = optimization_setup
         self.energy_system = optimization_setup.energy_system
 
-    def get_constraint_carrier_demand_coupling(self, index_values, index_names):
+    def get_constraint_carrier_demand_coupling(self):
         """ sum conditioning Carriers"""
 
         model = self.optimization_setup.model
@@ -101,6 +100,7 @@ class ConditioningCarrierRules:
 
         # get all the constraints
         constraints = []
+        index_values, index_names = Element.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         for parent_carrier in index.get_unique([0]):
             constraints.append(model.variables["endogenous_carrier_demand"].loc[parent_carrier]
@@ -108,14 +108,13 @@ class ConditioningCarrierRules:
                                    np.array(sets["set_conditioning_carrier_children"][parent_carrier])].sum(
                 "set_conditioning_carriers")
                                == 0)
-        return constraints
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
 
     def get_constraint_nodal_energy_balance_conditioning(self):
         """
         nodal energy balance for each time step.
         """
 
-        # TODO: adapt like carrier routine
         params = self.optimization_setup.parameters
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model

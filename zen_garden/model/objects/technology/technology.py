@@ -502,19 +502,20 @@ class Technology(Element):
         logging.debug(f"Technology: constraint_technology_min_capacity took {t2 - t1:.4f} seconds")
         # maximum capacity
         constraints.add_constraint_block(model, name="constraint_technology_max_capacity",
-                                         constraint=rules.get_constraint_technology_max_capacity(*cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)),
+                                         constraint=rules.get_constraint_technology_max_capacity(),
                                          doc='max capacity of technology that can be installed')
         t3 = time.perf_counter()
         logging.debug(f"Technology: constraint_technology_max_capacity took {t3 - t2:.4f} seconds")
         # construction period
-        constraints.add_constraint_rule(model, name="constraint_technology_construction_time",
-            index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), rule=rules.constraint_technology_construction_time_rule,
-            doc='lead time in which invested technology is constructed')
+        constraints.add_constraint_block(model, name="constraint_technology_construction_time",
+                                         constraint=rules.get_constraint_technology_construction_time(),
+                                         doc='lead time in which invested technology is constructed')
         t4 = time.perf_counter()
         logging.debug(f"Technology: constraint_technology_construction_time took {t4 - t3:.4f} seconds")
         # lifetime
-        constraints.add_constraint_rule(model, name="constraint_technology_lifetime", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-                                        rule=rules.constraint_technology_lifetime_rule, doc='max capacity of  technology that can be installed')
+        constraints.add_constraint_block(model, name="constraint_technology_lifetime",
+                                         constraint=rules.get_constraint_technology_lifetime(),
+                                         doc='max capacity of  technology that can be installed')
         t5 = time.perf_counter()
         logging.debug(f"Technology: constraint_technology_lifetime took {t5 - t4:.4f} seconds")
         # limit diffusion rate
@@ -525,7 +526,7 @@ class Technology(Element):
         logging.debug(f"Technology: constraint_technology_diffusion_limit took {t6 - t5:.4f} seconds")
         # limit max load by installed capacity
         constraints.add_constraint_block(model, name="constraint_capacity_factor",
-                                         constraint=rules.get_constraint_capacity_factor(*cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.get_constraint_capacity_factor(),
                                          doc='limit max load by installed capacity')
         t7 = time.perf_counter()
         logging.debug(f"Technology: constraint_capacity_factor took {t7 - t6:.4f} seconds")
@@ -622,8 +623,7 @@ class Technology(Element):
         :return: The existing capacities
         """
 
-        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"],
-                                                               optimization_setup)
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)
         # get all the capacities
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
         coords = [np.unique(t.data) for t in index_arrs]
@@ -632,7 +632,6 @@ class Technology(Element):
             existing_quantities.loc[tech, capacity_type, loc, time] = Technology.get_available_existing_quantity(optimization_setup, tech, capacity_type, loc, time,
                                                                                                                  type_existing_quantity=type_existing_quantity,
                                                                                                                  time_step_type=time_step_type)
-
         return existing_quantities
 
 
@@ -675,33 +674,28 @@ class TechnologyRules:
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model
 
-        # get the indices
-        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"],
-                                                              self.optimization_setup)
-
         # get all the constraints
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
+
+        # we create the factors for the variables because this is quite fast
         capacity_fac = xr.DataArray(np.nan, coords=model.variables["capacity"].coords)
         built_capacity_fac = xr.DataArray(np.nan, coords=model.variables["built_capacity"].coords)
         sign = xr.DataArray("==", coords=model.variables["capacity"].coords)
         rhs = xr.DataArray(np.nan, coords=model.variables["capacity"].coords)
         times = np.array(list(sets["set_time_steps_yearly"]))
-        t0 = time.perf_counter()
+
         for tech, capacity_type, loc in index.get_unique([0, 1, 2]):
             if params.capacity_limit_technology.loc[tech, capacity_type, loc] != np.inf:
                 mask = params.existing_capacities.loc[tech, capacity_type, loc, times] < params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
                 if np.any(mask):
                     capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 1
-                    built_capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 0
                     rhs.loc[tech, capacity_type, loc, times[mask]] = params.capacity_limit_technology.loc[tech, capacity_type, loc].item()
                     sign.loc[tech, capacity_type, loc, times[mask]] = "<="
                 if np.any(~mask):
                     built_capacity_fac.loc[tech, capacity_type, loc, times[~mask]] = 1
-                    capacity_fac.loc[tech, capacity_type, loc, times[~mask]] = 0
                     rhs.loc[tech, capacity_type, loc, times[~mask]] = 0
                     sign.loc[tech, capacity_type, loc, times[~mask]] = "=="
-        t1 = time.perf_counter()
-        logging.debug(f"Technology: get_constraint_technology_capacity_limit took {t1 - t0:.4f} seconds")
 
         # create the lhs and mask
         lhs = built_capacity_fac*model.variables["built_capacity"] + capacity_fac*model.variables["capacity"]
@@ -732,7 +726,7 @@ class TechnologyRules:
         else:
             return []
 
-    def get_constraint_technology_max_capacity(self, index_values, index_names):
+    def get_constraint_technology_max_capacity(self):
         """max capacity expansion of technology"""
         # get parameter object
         params = self.optimization_setup.parameters
@@ -740,6 +734,7 @@ class TechnologyRules:
 
         # get all the constraints
         constraints = []
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         for tech, capacity_type in index.get_unique([0, 1]):
             if params.max_built_capacity.loc[tech, capacity_type] != np.inf:
@@ -748,33 +743,54 @@ class TechnologyRules:
                 if np.any(params.max_built_capacity.loc[tech, capacity_type].notnull() & (params.max_built_capacity.loc[tech, capacity_type] != 0)):
                     lhs += params.max_built_capacity.loc[tech, capacity_type].item() * model.variables["install_technology"].loc[tech, capacity_type]
                 constraints.append(lhs >= 0)
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_technology_max_capacity", model)
+            else:
+                # we need to add an empty constraint with the right shape
+                constraints.append(np.nan*model.variables["built_capacity"].loc[tech, capacity_type] == np.nan)
 
-    def constraint_technology_construction_time_rule(self, tech, capacity_type, loc, time):
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
+
+    def get_constraint_technology_construction_time(self):
         """ construction time of technology, i.e., time that passes between investment and availability"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
         sets = self.optimization_setup.sets
-        start_time_step, _ = Technology.get_start_end_time_of_period(self.optimization_setup, tech, time, period_type="construction_time", clip_to_first_time_step=False)
-        if start_time_step in sets["set_time_steps_yearly"]:
-            return (model.variables["built_capacity"][tech, capacity_type, loc, time]
-                    - model.variables["invested_capacity"][tech, capacity_type, loc, start_time_step]
-                    == 0)
-        elif start_time_step in sets["set_time_steps_yearly_entire_horizon"]:
-            return (model.variables["built_capacity"][tech, capacity_type, loc, time]
-                    == params.existing_invested_capacity.loc[tech, capacity_type, loc, start_time_step].item())
-        else:
-            return (model.variables["built_capacity"][tech, capacity_type, loc, time]
-                    == 0)
 
-    def constraint_technology_lifetime_rule(self, tech, capacity_type, loc, time):
+        # get all the constraints
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+        constraints = []
+        for tech, time in index.get_unique([0, 3]):
+            start_time_step, _ = Technology.get_start_end_time_of_period(self.optimization_setup, tech, time, period_type="construction_time", clip_to_first_time_step=False)
+            if start_time_step in sets["set_time_steps_yearly"]:
+                constraints.append(model.variables["built_capacity"].loc[tech, :, :, time]
+                                   - model.variables["invested_capacity"].loc[tech, :, :, start_time_step]
+                                   == 0)
+            elif start_time_step in sets["set_time_steps_yearly_entire_horizon"]:
+                constraints.append(model.variables["built_capacity"].loc[tech, :, :, time]
+                                   == params.existing_invested_capacity.loc[tech, :, :, start_time_step])
+            else:
+                constraints.append(model.variables["built_capacity"].loc[tech, :, :, time]
+                                   == 0)
+
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 3]), [index_names[0], index_names[3]], model), model.variables["built_capacity"].mask
+
+    def get_constraint_technology_lifetime(self):
         model = self.optimization_setup.model
         params = self.optimization_setup.parameters
-        return (model.variables["capacity"][tech, capacity_type, loc, time].to_linexpr()
-                - lp_sum([1.0 * model.variables["built_capacity"].loc[tech, capacity_type, loc, previous_time] for
-                          previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, time)])
-                == params.existing_capacities.loc[tech, capacity_type, loc, time])
+
+        # get all the constraints
+        constraints = []
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+        for tech, time in index.get_unique([0, 3]):
+            terms = [1.0*model.variables["capacity"].loc[tech, :, :, time]]
+            for previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, time):
+                terms.append(-model.variables["built_capacity"].loc[tech, :, :, previous_time])
+            constraints.append(lp_sum(terms)
+                               == params.existing_capacities.loc[tech, :, :, time])
+
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 3]), [index_names[0], index_names[3]], model), model.variables["capacity"].mask
 
     def constraint_technology_diffusion_limit_rule(self, tech, capacity_type, loc, time):
         """limited technology diffusion based on the existing capacity in the previous year """
@@ -808,13 +824,12 @@ class TechnologyRules:
             range_time = range(sets["set_time_steps_yearly"][0], end_time + 1)
             # actual years between first invest time step and end_time
             delta_time = interval_between_years * (end_time - sets["set_time_steps_yearly"][0])
-            # sum up all existing capacities that ever existed and convert to knowledge stock
+            # sum up all existing capacities that ever existed and convert to knowledge stock, note we need to split params and vars because they go to diffrent sides of the constraint
             total_capacity_knowledge_param = sum((params.existing_capacity.loc[tech, capacity_type, loc, existing_time].item() # add spillover from other regions
                                                   + (knowledge_spillover_rate*params.existing_capacity).loc[tech, capacity_type, [other_loc for other_loc in set_locations if other_loc != loc], existing_time].sum().item())
                                                  * (1 - knowledge_depreciation_rate) ** (delta_time + params.lifetime_technology.loc[tech].item() - params.lifetime_existing_technology.loc[tech, loc, existing_time].item())
                                                   for existing_time in sets["set_existing_technologies"][tech])
             total_capacity_knowledge_var = lp_sum([(model.variables["built_capacity"].loc[tech, capacity_type, loc, horizon_time] # add spillover from other regions
-                                                   # add spillover from other regions
                                                    + lp_sum([model.variables["built_capacity"].loc[tech, capacity_type, loc, horizon_time] * knowledge_spillover_rate for other_loc in set_locations if other_loc != loc]))
                                                      * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time))
                                                 for horizon_time in range_time])
@@ -975,7 +990,7 @@ class TechnologyRules:
                 - lp_sum(terms)
                 == 0)
 
-    def get_constraint_capacity_factor(self, index_values, index_names):
+    def get_constraint_capacity_factor(self):
         """
         Load is limited by the installed capacity and the maximum load factor"""
         # get parameter object
@@ -985,6 +1000,7 @@ class TechnologyRules:
 
         # get all contraints
         constraints = []
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         for tech, capacity_type, loc in index.get_unique(["set_technologies", "set_capacity_types", "set_location"]):
             times = index.get_values(locs=[tech, capacity_type, loc], levels='set_time_steps_operation', dtype=list)
