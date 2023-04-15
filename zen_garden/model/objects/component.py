@@ -278,7 +278,7 @@ class IndexSet(Component):
 
         # if the list is empty
         if len(index_values) == 0:
-            return [xr.DataArray([]) for _ in index_list]
+            return tuple(xr.DataArray([]) for _ in index_list)
 
         # multiple indices
         if isinstance(index_values[0], tuple):
@@ -292,7 +292,7 @@ class IndexSet(Component):
         else:
             index_arrs = [xr.DataArray(index_values)]
 
-        return index_arrs
+        return tuple(index_arrs)
 
     @staticmethod
     def indices_to_mask(index_values, index_list, bounds, model=None):
@@ -322,7 +322,7 @@ class IndexSet(Component):
             index_list = index_names
 
         mask = xr.DataArray(False, coords=coords, dims=index_list)
-        mask.loc[*index_arrs] = True
+        mask.loc[index_arrs] = True
 
         # get the bounds
         lower = xr.DataArray(-np.inf, coords=coords, dims=index_list)
@@ -331,8 +331,8 @@ class IndexSet(Component):
             lower[...] = bounds[0]
             upper[...] = bounds[1]
         elif isinstance(bounds, np.ndarray):
-            lower.loc[*index_arrs] = bounds[:,0]
-            upper.loc[*index_arrs] = bounds[:,1]
+            lower.loc[index_arrs] = bounds[:,0]
+            upper.loc[index_arrs] = bounds[:,1]
         elif callable(bounds):
             tmp_low = []
             tmp_up = []
@@ -340,8 +340,8 @@ class IndexSet(Component):
                 b = bounds(*t)
                 tmp_low.append(b[0])
                 tmp_up.append(b[1])
-            lower.loc[*index_arrs] = tmp_low
-            upper.loc[*index_arrs] = tmp_up
+            lower.loc[index_arrs] = tmp_low
+            upper.loc[index_arrs] = tmp_up
         elif bounds is None:
             lower = -np.inf
             upper = np.inf
@@ -750,17 +750,17 @@ class Constraint(Component):
         vars = vars.reshape((nterm, -1))
 
         xr_coeffs = xr.DataArray(np.full(shape=(nterm,) + shape, fill_value=np.nan), coords, dims=("_term", *coords))
-        xr_coeffs.loc[:, *index_arrs] = coeffs
+        xr_coeffs.loc[(slice(None), ) + index_arrs] = coeffs
         xr_vars = xr.DataArray(np.full(shape=(nterm,) + shape, fill_value=-1), coords, dims=("_term", *coords))
-        xr_vars.loc[:, *index_arrs] = vars
+        xr_vars.loc[(slice(None), ) + index_arrs] = vars
         xr_ds = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}).transpose(..., "_term")
         xr_lhs = lp.LinearExpression(xr_ds, model)
         xr_sign = xr.DataArray("==", coords, dims=index_list)
-        xr_sign.loc[*index_arrs] = [c.sign.data if isinstance(c.sign, xr.DataArray) else c.sign for c in cons]
+        xr_sign.loc[index_arrs] = [c.sign.data if isinstance(c.sign, xr.DataArray) else c.sign for c in cons]
         xr_rhs = xr.DataArray(0.0, coords, dims=index_list)
         # Here we catch infinities in the constraints (gurobi does not care but glpk does)
         rhs_vals = np.array([c.rhs.data if isinstance(c.rhs, xr.DataArray) else c.rhs for c in cons])
-        xr_rhs.loc[*index_arrs] = rhs_vals
+        xr_rhs.loc[index_arrs] = rhs_vals
 
         return xr_lhs, xr_sign, xr_rhs
 
@@ -790,8 +790,8 @@ class Constraint(Component):
         # cycle through all indices
         for index_val in index_values:
             # extract everyting
-            x = xvar[*index_val]
-            y = yvar[*index_val]
+            x = xvar[index_val]
+            y = yvar[index_val]
             br = xr.DataArray(break_points[index_val])
             fv = xr.DataArray(f_vals[index_val])
 
