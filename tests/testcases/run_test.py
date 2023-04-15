@@ -124,6 +124,9 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
 ###############
 
 def test_1a(config, folder_path):
+    # add duals for this test
+    config.solver["add_duals"] = True
+
     # run the test
     data_set_name = "test_1a"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
