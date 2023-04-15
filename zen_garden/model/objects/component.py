@@ -538,7 +538,7 @@ class Parameter(Component):
             if len(data.index.names) == len(index_list):
                 data.index.names = index_list
             # transform the type of the coords to str if necessary
-            data = data.to_xarray()
+            data = data.to_xarray().astype(float)
             coords_dict = {}
             for k, v in data.coords.dtypes.items():
                 if v.hasobject:
