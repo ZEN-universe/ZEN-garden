@@ -297,6 +297,6 @@ class TransportTechnologyRules:
                                    == 0)
             else:
                 # we need to add an empty con
-                constraints.append(np.nan*model.variables["built_capacity"].loc[tech, "power", edge] == np.nan)
+                constraints.append(np.nan*model.variables["built_capacity"].loc[tech, "power", edge].where(False) == np.nan)
 
         return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_list[:2], model)

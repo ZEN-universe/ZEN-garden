@@ -747,7 +747,7 @@ class TechnologyRules:
                 constraints.append(lhs >= 0)
             else:
                 # we need to add an empty constraint with the right shape
-                constraints.append(np.nan*model.variables["built_capacity"].loc[tech, capacity_type] == np.nan)
+                constraints.append(np.nan*model.variables["built_capacity"].loc[tech, capacity_type].where(False) == np.nan)
 
         return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
 
