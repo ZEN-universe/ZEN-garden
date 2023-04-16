@@ -10,11 +10,12 @@ Description:    Class defining the parameters, variables and constraints that ho
                 constraints that hold for all technologies.
 ==========================================================================================================================================================================="""
 import logging
+import time
 
-import xarray as xr
+import linopy as lp
 import numpy as np
 import pandas as pd
-import time
+import xarray as xr
 from linopy.constraints import AnonymousConstraint
 
 from zen_garden.utils import linexpr_from_tuple_np, lp_sum
@@ -895,21 +896,29 @@ class TechnologyRules:
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         constraints = []
-        for tech, loc in index.get_unique(["set_technologies", "set_location"]):
+        for tech in index.get_unique(["set_technologies"]):
+            locs = index.get_values([tech], 1, unique=True)
             reference_carrier = sets["set_reference_carriers"][tech][0]
             if tech in sets["set_conversion_technologies"]:
                 if reference_carrier in sets["set_input_carriers"][tech]:
-                    reference_flow = model.variables["input_flow"].loc[tech, reference_carrier, loc]
+                    reference_flow = model.variables["input_flow"].loc[tech, reference_carrier, locs].to_linexpr()
+                    reference_flow = reference_flow.rename({"set_nodes": "set_location"})
                 else:
-                    reference_flow = model.variables["output_flow"].loc[tech, reference_carrier, loc]
+                    reference_flow = model.variables["output_flow"].loc[tech, reference_carrier, locs].to_linexpr()
+                    reference_flow = reference_flow.rename({"set_nodes": "set_location"})
             elif tech in sets["set_transport_technologies"]:
-                reference_flow = model.variables["carrier_flow"].loc[tech, loc]
+                reference_flow = model.variables["carrier_flow"].loc[tech, locs].to_linexpr()
+                reference_flow = reference_flow.rename({"set_edges": "set_location"})
             else:
-                reference_flow = model.variables["carrier_flow_charge"].loc[tech, loc] + model.variables["carrier_flow_discharge"].loc[tech, loc]
-            constraints.append(model.variables["opex"].loc[tech, loc]
-                               - params.opex_specific.loc[tech, loc] * reference_flow
+                reference_flow = model.variables["carrier_flow_charge"].loc[tech, locs] + model.variables["carrier_flow_discharge"].loc[tech, locs]
+                reference_flow = reference_flow.rename({"set_nodes": "set_location"})
+            # merge everything, the first is just to ensure full shape
+            constraints.append(lp.merge(model.variables["opex"].loc[tech].where(False).to_linexpr(),
+                                        model.variables["opex"].loc[tech, locs].to_linexpr(),
+                                        - params.opex_specific.loc[tech, locs] * reference_flow,
+                                        compat="broadcast_equals")
                                == 0)
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
 
     def get_constraint_opex_yearly(self):
         """ yearly opex for a technology at a location in each year """
@@ -943,22 +952,30 @@ class TechnologyRules:
         constraints = []
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
-        for tech, loc in index.get_unique(["set_technologies", "set_location"]):
+        for tech in index.get_unique(["set_technologies"]):
+            locs = index.get_values([tech], 1, unique=True)
             reference_carrier = sets["set_reference_carriers"][tech][0]
             if tech in sets["set_conversion_technologies"]:
                 if reference_carrier in sets["set_input_carriers"][tech]:
-                    reference_flow = model.variables["input_flow"].loc[tech, reference_carrier, loc]
+                    reference_flow = model.variables["input_flow"].loc[tech, reference_carrier, locs].to_linexpr()
+                    reference_flow = reference_flow.rename({"set_nodes": "set_location"})
                 else:
-                    reference_flow = model.variables["output_flow"].loc[tech, reference_carrier, loc]
+                    reference_flow = model.variables["output_flow"].loc[tech, reference_carrier, locs].to_linexpr()
+                    reference_flow = reference_flow.rename({"set_nodes": "set_location"})
             elif tech in sets["set_transport_technologies"]:
-                reference_flow = model.variables["carrier_flow"].loc[tech, loc]
+                reference_flow = model.variables["carrier_flow"].loc[tech, locs].to_linexpr()
+                reference_flow = reference_flow.rename({"set_edges": "set_location"})
             else:
-                reference_flow = model.variables["carrier_flow_charge"].loc[tech, loc] + model.variables["carrier_flow_discharge"].loc[tech, loc]
-            constraints.append(model.variables["carbon_emissions_technology"].loc[tech, loc]
-                               - params.carbon_intensity_technology.loc[tech, loc].item() * reference_flow
+                reference_flow = model.variables["carrier_flow_charge"].loc[tech, locs] + model.variables["carrier_flow_discharge"].loc[tech, locs]
+                reference_flow = reference_flow.rename({"set_nodes": "set_location"})
+            # merge everything, the first is just to ensure full shape
+            constraints.append(lp.merge(model.variables["carbon_emissions_technology"].loc[tech].where(False).to_linexpr(),
+                                        model.variables["carbon_emissions_technology"].loc[tech, locs].to_linexpr(),
+                                        - params.carbon_intensity_technology.loc[tech, locs] * reference_flow,
+                                        compat="broadcast_equals")
                                == 0)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
 
     def get_constraint_carbon_emissions_technology_total(self):
         """ calculate total carbon emissions of each technology"""
@@ -1015,42 +1032,51 @@ class TechnologyRules:
         constraints = []
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
-        for tech, capacity_type, loc in index.get_unique(["set_technologies", "set_capacity_types", "set_location"]):
-            times = index.get_values(locs=[tech, capacity_type, loc], levels='set_time_steps_operation', dtype=list)
+        for tech in index.get_unique(["set_technologies"]):
+            capacity_types, locs, times = index.get_values([tech], [1, 2, 3], unique=True)
             reference_carrier = sets["set_reference_carriers"][tech][0]
-            coords = [model.variables.coords["set_time_steps_operation"]]
             # get invest time step
             time_step_year = self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, times).values
+            # we create the capacity term (the dimenstion reassignment does not change the viables, just the broadcasting)
+            capacity_term = model.variables["capacity"].loc[tech, capacity_types, locs, time_step_year].to_linexpr()
+            capacity_term = capacity_term.rename({"set_time_steps_yearly": "set_time_steps_operation"})
+            capacity_term = capacity_term.assign_coords({"set_time_steps_operation": params.max_load.coords["set_time_steps_operation"]})
+            capacity_term = params.max_load.loc[tech, capacity_types, locs, times] * capacity_term
+
+            # this term is just to ensure full shape
+            full_shape_term = model.variables["capacity"].loc[tech, ..., time_step_year].where(False).to_linexpr()
+            full_shape_term = full_shape_term.rename({"set_time_steps_yearly": "set_time_steps_operation"})
+            full_shape_term = full_shape_term.assign_coords({"set_time_steps_operation": params.max_load.coords["set_time_steps_operation"]})
+
             # conversion technology
             if tech in sets["set_conversion_technologies"]:
                 if reference_carrier in sets["set_input_carriers"][tech]:
-                    tuples = [(params.max_load.loc[tech, capacity_type, loc, times], model.variables["capacity"].loc[tech, capacity_type, loc, time_step_year]),
-                              (-1.0, model.variables["input_flow"].loc[tech, reference_carrier, loc, times])]
-                    constraints.append(linexpr_from_tuple_np(tuples, coords, model)
+                    flow_term = -1.0 * model.variables["input_flow"].loc[tech, reference_carrier, locs, times]
+                    flow_term = flow_term.rename({"set_nodes": "set_location", "set_input_carriers": "set_capacity_types"})
+                    constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
                                        >= 0)
                 else:
-                    tuples = [(params.max_load.loc[tech, capacity_type, loc, times], model.variables["capacity"].loc[tech, capacity_type, loc, time_step_year]),
-                              (-1.0, model.variables["output_flow"].loc[tech, reference_carrier, loc, times])]
-                    constraints.append(linexpr_from_tuple_np(tuples, coords, model)
-                                       >= 0)
+                    flow_term = -1.0 * model.variables["output_flow"].loc[tech, reference_carrier, locs, times]
+                    flow_term = flow_term.rename({"set_nodes": "set_location", "set_output_carriers": "set_capacity_types"})
+                    constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
+                                        >= 0)
             # transport technology
             elif tech in sets["set_transport_technologies"]:
-                tuples = [(params.max_load.loc[tech, capacity_type, loc, times], model.variables["capacity"].loc[tech, capacity_type, loc, time_step_year]),
-                          (-1.0, model.variables["carrier_flow"].loc[tech, loc, times])]
-                constraints.append(linexpr_from_tuple_np(tuples, coords, model)
+                flow_term = -1.0 * model.variables["carrier_flow"].loc[tech, locs, times]
+                flow_term = flow_term.rename({"set_edges": "set_location"})
+                constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
                                    >= 0)
             # storage technology
             elif tech in sets["set_storage_technologies"]:
                 system = self.optimization_setup.system
                 # if limit power
-                if capacity_type == system["set_capacity_types"][0]:
-                    tuples = [(params.max_load.loc[tech, capacity_type, loc, times], model.variables["capacity"].loc[tech, capacity_type, loc, time_step_year]),
-                              (-1.0, model.variables["carrier_flow_charge"].loc[tech, loc, times]),
-                              (-1.0, model.variables["carrier_flow_discharge"].loc[tech, loc, times])]
-                    constraints.append(linexpr_from_tuple_np(tuples, coords, model)
-                                       >= 0)
+                if capacity_types == system["set_capacity_types"][0]:
+                    flow_term = -1.0 * model.variables["carrier_flow_charge"].loc[tech, locs, times] - 1.0 * model.variables["carrier_flow_discharge"].loc[tech, locs, times]
+                    flow_term = flow_term.rename({"set_nodes": "set_location"})
+                    constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
+                                        >= 0)
                 # TODO integrate level storage here as well
                 else:
                     continue
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1, 2]), index_names[:3], model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)

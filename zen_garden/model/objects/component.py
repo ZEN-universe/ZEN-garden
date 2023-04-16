@@ -67,12 +67,13 @@ class ZenIndex(object):
 
         return vals
 
-    def get_values(self, locs, levels, dtype=list):
+    def get_values(self, locs, levels, dtype=list, unique=False):
         """
         Get all values of the levels over a given set of locations
         :param locs: A list of locs used for the "get_locs" method of the index
         :param levels: A single level or a list of levels to get the values for
         :param dtype: The dtype of the return value, either list or xr.DataArray
+        :param unique: If True, only unique values are returned
         :return: A single list or xr.DataArray if only one level is given, otherwise a list of lists or xr.DataArrays
         """
 
@@ -92,6 +93,8 @@ class ZenIndex(object):
         for level in levels:
             indices = self.index.get_locs(locs)
             val = self.index[indices].get_level_values(level)
+            if unique:
+                val = val.unique()
             if dtype is list:
                 vals.append(val.to_list())
             elif dtype is xr.DataArray:
