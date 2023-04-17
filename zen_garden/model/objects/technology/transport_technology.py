@@ -15,8 +15,9 @@ import time
 import numpy as np
 import xarray as xr
 
+from zen_garden.utils import linexpr_from_tuple_np
 from .technology import Technology
-from ..component import ZenIndex
+from ..component import ZenIndex, IndexSet
 from ..element import Element
 
 
@@ -180,7 +181,7 @@ class TransportTechnology(Technology):
                                          constraint=rules.get_constraint_transport_technology_losses_flow(),
                                          doc='Carrier loss due to transport with through transport technology')
         t1 = time.perf_counter()
-        logging.debug(f"Transport Technology: constraint_carbon_emissions_technology took {t1 - t0:.4f} seconds")
+        logging.debug(f"Transport Technology: constraint_transport_technology_losses_flow took {t1 - t0:.4f} seconds")
         # capex of transport technologies
         constraints.add_constraint_block(model, name="constraint_transport_technology_capex",
                                          constraint=rules.get_constraint_transport_technology_capex(),
@@ -246,18 +247,11 @@ class TransportTechnologyRules:
         model = self.optimization_setup.model
 
         # get all constraints
-        constraints = []
-        index_values, index_list = Element.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], self.optimization_setup)
-        index = ZenIndex(index_values, index_list)
-        for tech, edge in index.get_unique([0 , 1]):
-            if np.isinf(params.distance.loc[tech, edge]):
-                constraints.append(model.variables["carrier_loss"][tech, edge]
-                                   == 0)
-            else:
-                constraints.append(model.variables["carrier_loss"].loc[tech, edge]
-                                   - params.distance.loc[tech, edge].item() * params.loss_flow.loc[tech].item() * model.variables["carrier_flow"].loc[tech, edge]
-                                   == 0)
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_list[:2], model)
+        mask = np.isinf(params.distance).astype(float)
+        lp_where_inf = mask * model.variables["carrier_loss"]
+        lp_where_not_inf = (1 - mask) * (model.variables["carrier_loss"] - params.loss_flow * params.distance * model.variables["carrier_flow"])
+
+        return lp_where_inf + lp_where_not_inf == 0, model.variables["carrier_loss"].mask
 
     def get_constraint_transport_technology_capex(self):
         """ definition of the capital expenditures for the transport technology"""
@@ -266,19 +260,30 @@ class TransportTechnologyRules:
         model = self.optimization_setup.model
 
         # get all constraints
-        constraints = []
+        coords = [model.variables.coords["set_transport_technologies"], model.variables.coords["set_edges"], model.variables.coords["set_time_steps_yearly"]]
+
+        # get the global mask, only constraints where this mask is true are considered
         index_values, index_list = Element.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], self.optimization_setup)
-        index = ZenIndex(index_values, index_list)
-        for tech, edge in index.get_unique([0, 1]):
-            if np.isinf(params.distance.loc[tech, edge]):
-                constraints.append(model.variables["built_capacity"].loc[tech, "power", edge] == 0)
-            else:
-                lhs = model.variables["capex"].loc[tech, "power", edge] - model.variables["built_capacity"].loc[tech, "power", edge] * params.capex_specific_transport.loc[tech, edge]
-                # Note: we only want to add the binary variable (install_technology) if really necessary
-                if np.any(params.distance.loc[tech, edge].item() * params.capex_per_distance.loc[tech, edge] != 0):
-                    lhs -= model.variables["install_technology"].loc[tech, "power", edge] * (params.distance.loc[tech, edge].item() * params.capex_per_distance.loc[tech, edge])
-                constraints.append(lhs == 0)
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_list[:2], model)
+        if len(index_values) == 0:
+            return []
+
+        index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
+        global_mask = xr.DataArray(False, coords=coords)
+        global_mask.loc[index_arrs] = True
+
+        # the mask for the if condition
+        mask = np.isinf(params.distance).astype(float)
+
+        # expression if true
+        lp_where_inf = mask*model.variables["built_capacity"].loc[coords[0], "power", coords[1], coords[2]]
+
+        # expression if false
+        lp_where_not_inf = (1 - mask) * (model.variables["capex"].loc[coords[0], "power", coords[1], coords[2]]
+                                         - model.variables["built_capacity"].loc[coords[0], "power", coords[1], coords[2]] * params.capex_specific_transport.loc[coords[0], coords[1]])
+        if np.any(params.distance.loc[coords[0], coords[1]] * params.capex_per_distance.loc[coords[0], coords[1]] != 0):
+            lp_where_not_inf -= (1 - mask) * model.variables["install_technology"].loc[coords[0], "power", coords[1], coords[2]] * (params.distance.loc[coords[0], coords[1]] * params.capex_per_distance.loc[coords[0], coords[1]])
+
+        return lp_where_inf + lp_where_not_inf == 0, global_mask
 
     def constraint_transport_technology_bidirectional_rule(self):
         """ Forces that transport technology capacity must be equal in both direction"""
@@ -289,14 +294,15 @@ class TransportTechnologyRules:
         constraints = []
         index_values, index_list = Element.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_list)
-        for tech, edge in index.get_unique([0, 1]):
+        edge_coords = model.variables.coords["set_edges"]
+        for tech in index.get_unique([0]):
             if tech in system["set_bidirectional_transport_technologies"]:
-                _reversed_edge = self.get_reversed_edge(edge)
-                constraints.append(model.variables["built_capacity"].loc[tech, "power", edge]
+                _reversed_edge = xr.DataArray([self.get_reversed_edge(edge) for edge in edge_coords], coords=edge_coords.coords)
+                constraints.append(model.variables["built_capacity"].loc[tech, "power", edge_coords]
                                    - model.variables["built_capacity"].loc[tech, "power", _reversed_edge]
                                    == 0)
             else:
                 # we need to add an empty con
-                constraints.append(np.nan*model.variables["built_capacity"].loc[tech, "power", edge].where(False) == np.nan)
+                constraints.append(np.nan*model.variables["built_capacity"].loc[tech, "power", edge_coords].where(False) == np.nan)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_list[:2], model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_list[:1], model)

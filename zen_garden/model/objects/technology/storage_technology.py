@@ -356,6 +356,9 @@ class StorageTechnologyRules:
 
         # get all the constraints
         index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], self.optimization_setup)
+        if len(index_values) == 0:
+            return []
+
         techs, capacity_types, nodes, times = IndexSet.tuple_to_arr(index_values, index_names, unique=True)
         coords = [model.variables.coords["set_storage_technologies"], model.variables.coords["set_capacity_types"], model.variables.coords["set_nodes"], model.variables.coords["set_time_steps_yearly"]]
         tuples = [(1.0, model.variables["capex"].loc[techs, capacity_types, nodes, times]),
