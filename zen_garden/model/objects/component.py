@@ -271,11 +271,12 @@ class IndexSet(Component):
         return self.index_sets[name]
 
     @staticmethod
-    def tuple_to_arr(index_values, index_list):
+    def tuple_to_arr(index_values, index_list, unique=False):
         """
         Transforms a list of tuples into a list of xarrays containing all elements from the corresponding tuple entry
         :param index_values: The list of tuples with the index values
         :param index_list: The names of the indices, used in case of emtpy values
+        :param unique: If True, the values are unique
         :return: A list of arrays
         """
 
@@ -294,6 +295,10 @@ class IndexSet(Component):
             index_arrs = [xr.DataArray(t) for t in tmp_vals]
         else:
             index_arrs = [xr.DataArray(index_values)]
+
+        # make unique
+        if unique:
+            index_arrs = [np.unique(t.data) for t in index_arrs]
 
         return tuple(index_arrs)
 

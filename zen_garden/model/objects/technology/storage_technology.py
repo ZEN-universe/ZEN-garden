@@ -18,7 +18,7 @@ import xarray as xr
 
 from zen_garden.utils import linexpr_from_tuple_np
 from .technology import Technology
-from ..component import ZenIndex
+from ..component import ZenIndex, IndexSet
 from ..element import Element
 
 
@@ -287,17 +287,17 @@ class StorageTechnologyRules:
         constraints = []
         index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
-        for tech, node in index.get_unique([0, 1]):
-            coords = [model.variables.coords["set_time_steps_storage_level"]]
-            times = index.get_values(locs=[tech, node], levels=2, dtype=list)
+        for tech in index.get_unique([0]):
+            coords = [model.variables.coords["set_nodes"], model.variables.coords["set_time_steps_storage_level"]]
+            nodes, times = index.get_values(locs=[tech], levels=[1, 2], dtype=list, unique=True)
             element_time_step = self.energy_system.time_steps.convert_time_step_energy2power(tech, times).values
             time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, element_time_step).values
-            tuples = [(1.0, model.variables["level_charge"].loc[tech, node, times]),
-                      (-1.0, model.variables["capacity"].loc[tech, "energy", node, time_step_year])]
+            tuples = [(1.0, model.variables["level_charge"].loc[tech, nodes, times]),
+                      (-1.0, model.variables["capacity"].loc[tech, "energy", nodes, time_step_year])]
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                <= 0)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
 
     def get_constraint_couple_storage_level(self):
         """couple subsequent storage levels (time coupling constraints)"""
@@ -310,8 +310,8 @@ class StorageTechnologyRules:
         constraints = []
         index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
-        for tech, node in index.get_unique([0, 1]):
-            times = index.get_values(locs=[tech, node], levels=2, dtype=list)
+        for tech in index.get_unique([0]):
+            nodes, times = index.get_values(locs=[tech], levels=[1, 2], dtype=list, unique=True)
             element_time_step = self.energy_system.time_steps.convert_time_step_energy2power(tech, times).values
             # get invest time step
             time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, element_time_step).values
@@ -334,20 +334,19 @@ class StorageTechnologyRules:
             previous_level_time_step = [t for t in previous_level_time_step if t is not None]
 
             # self discharge, reformulate as partial geometric series
-            if params.self_discharge.loc[tech, node] != 0:
-                after_self_discharge = (1-(1 - params.self_discharge.loc[tech, node])**params.time_steps_storage_level_duration.loc[tech, times])/(1-(1 - params.self_discharge.loc[tech, node]))
-            else:
-                after_self_discharge = params.time_steps_storage_level_duration.loc[tech, times]
+            after_self_discharge = xr.where(params.self_discharge.loc[tech, nodes] != 0,
+                                            (1-(1 - params.self_discharge.loc[tech, nodes])**params.time_steps_storage_level_duration.loc[tech, times])/(1-(1 - params.self_discharge.loc[tech, nodes])),
+                                            params.time_steps_storage_level_duration.loc[tech, times])
 
-            coords = [xr.DataArray(previous_level_time_step, dims=[f"{tech}_{node}_set_time_steps_storage_level_end "])]
-            tuples = [(1.0, model.variables["level_charge"].loc[tech, node, times]),
-                      (-(1.0 - params.self_discharge.loc[tech, node].item()) ** params.time_steps_storage_level_duration.loc[tech, times], model.variables["level_charge"].loc[tech, node, previous_level_time_step]),
-                      (-after_self_discharge.data*params.efficiency_charge.loc[tech, node, time_step_year], model.variables["carrier_flow_charge"].loc[tech, node, element_time_step]),
-                      (after_self_discharge.data/params.efficiency_discharge.loc[tech, node, time_step_year], model.variables["carrier_flow_discharge"].loc[tech, node, element_time_step])]
+            coords = [model.variables.coords["set_nodes"], xr.DataArray(previous_level_time_step, dims=[f"{tech}_{nodes}_set_time_steps_storage_level_end"])]
+            tuples = [(1.0, model.variables["level_charge"].loc[tech, nodes, times]),
+                      (-(1.0 - params.self_discharge.loc[tech, nodes]) ** params.time_steps_storage_level_duration.loc[tech, times], model.variables["level_charge"].loc[tech, nodes, previous_level_time_step]),
+                      (-after_self_discharge.data*params.efficiency_charge.loc[tech, nodes, time_step_year], model.variables["carrier_flow_charge"].loc[tech, nodes, element_time_step]),
+                      (after_self_discharge.data/params.efficiency_discharge.loc[tech, nodes, time_step_year], model.variables["carrier_flow_discharge"].loc[tech, nodes, element_time_step])]
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                == 0)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
 
     def get_constraint_storage_technology_capex(self):
         """ definition of the capital expenditures for the storage technology"""
@@ -356,15 +355,10 @@ class StorageTechnologyRules:
         model = self.optimization_setup.model
 
         # get all the constraints
-        constraints = []
         index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
-        for tech, capacity_type, node in index.get_unique([0, 1, 2]):
-            times = index.get_values(locs=[tech, capacity_type, node], levels=3, dtype=list)
-            coords = [model.variables.coords["set_time_steps_yearly"]]
-            tuples = [(1.0, model.variables["capex"].loc[tech, capacity_type, node, times]),
-                      (-params.capex_specific_storage.loc[tech, capacity_type, node, times], model.variables["built_capacity"].loc[tech, capacity_type, node, times])]
-            constraints.append(linexpr_from_tuple_np(tuples, coords, model)
-                               == 0)
+        techs, capacity_types, nodes, times = IndexSet.tuple_to_arr(index_values, index_names, unique=True)
+        coords = [model.variables.coords["set_storage_technologies"], model.variables.coords["set_capacity_types"], model.variables.coords["set_nodes"], model.variables.coords["set_time_steps_yearly"]]
+        tuples = [(1.0, model.variables["capex"].loc[techs, capacity_types, nodes, times]),
+                  (-params.capex_specific_storage.loc[techs, capacity_types, nodes, times], model.variables["built_capacity"].loc[techs, capacity_types, nodes, times])]
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1, 2]), index_names[:3], model)
+        return linexpr_from_tuple_np(tuples, coords, model) == 0
