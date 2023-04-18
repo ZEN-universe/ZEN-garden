@@ -1031,6 +1031,13 @@ class Results(object):
         _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True, element_name=element_name, year=year,discount_years=discount_years)
         return _duals
 
+    def get_doc(self, component, scenario=None):
+        """extracts the doc string of a component"""
+        strings = self.results[scenario][None]["pars_and_vars"][component]["docstring"]
+        string_list = strings.split(";")
+        doc = [doc for doc in string_list if "doc" in doc]
+        return doc[0]
+
     def _get_annuity(self,discount_years):
         """ discounts the duals """
         system = self.results["system"]
