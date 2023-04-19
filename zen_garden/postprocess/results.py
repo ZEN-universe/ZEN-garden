@@ -164,6 +164,8 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
+        self.get_doc("input_flow")
+
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
@@ -1031,11 +1033,16 @@ class Results(object):
         _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True, element_name=element_name, year=year,discount_years=discount_years)
         return _duals
 
-    def get_doc(self, component, scenario=None):
+    def get_doc(self, component, index_set=False):
         """extracts the doc string of a component"""
+        if self.scenarios is not None:
+            scenario = "scenario_"
         strings = self.results[scenario][None]["pars_and_vars"][component]["docstring"]
         string_list = strings.split(";")
         doc = [doc for doc in string_list if "doc" in doc]
+        if index_set:
+            index_set = [ind_set for ind_set in string_list if "dims" in ind_set]
+            return doc, index_set
         return doc[0]
 
     def _get_annuity(self,discount_years):
