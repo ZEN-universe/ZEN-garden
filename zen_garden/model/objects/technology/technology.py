@@ -837,7 +837,7 @@ class TechnologyRules:
                                                      * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time))
                                                 for horizon_time in range_time])
 
-            total_capacity_all_techs_param = sum(Technology.get_available_existing_quantity(self.optimization_setup, other_tech, capacity_type, loc, time, type_existing_quantity="capacity")
+            total_capacity_all_techs_param = sum(params.existing_capacity.loc[other_tech, capacity_type, loc, time].item()
                                                  for other_tech in set_technology if sets["set_reference_carriers"][other_tech][0] == reference_carrier)
             total_capacity_all_techs_var = lp_sum([lp_sum([1.0*model.variables["built_capacity"].loc[other_tech, capacity_type, loc, previous_time]
                                                            for previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, end_time)])
