@@ -863,6 +863,9 @@ class Constraint(Component):
             rhs = rhs.drop_sel(group=drop, errors="ignore")
             sign = sign.drop_sel(group=drop, errors="ignore")
 
+        # drop the unncessessary dimensions
+        lhs = lhs.drop(list(set(lhs.coords) - set(lhs.dims)))
+
         # get the coordinates
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
         coords = {name: np.unique(arr.data) for name, arr in zip(index_names, index_arrs)}

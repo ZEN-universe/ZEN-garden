@@ -16,7 +16,7 @@ import linopy as lp
 import numpy as np
 import xarray as xr
 
-from zen_garden.utils import lp_sum, xr_like
+from zen_garden.utils import lp_sum
 from ..component import ZenIndex
 from ..element import Element
 
