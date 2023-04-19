@@ -104,9 +104,7 @@ class ConditioningCarrierRules:
         index = ZenIndex(index_values, index_names)
         for parent_carrier in index.get_unique([0]):
             constraints.append(model.variables["endogenous_carrier_demand"].loc[parent_carrier]
-                               - model.variables["endogenous_carrier_demand"].loc[
-                                   np.array(sets["set_conditioning_carrier_children"][parent_carrier])].sum(
-                "set_conditioning_carriers")
+                               - model.variables["endogenous_carrier_demand"].loc[list(sets["set_conditioning_carrier_children"][parent_carrier])].sum("set_conditioning_carriers")
                                == 0)
         return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
 

@@ -385,61 +385,19 @@ class IndexSet(Component):
         return iter(self.sets.values())
 
 
-class XRItem(object):
+class DictParameter(object):
     """
-    This is a helper class for the fast pre-computation of helper params, it is consistent with xarray access way
-    """
-
-    def __init__(self, value):
-        """
-        Inits the item
-        :param value: The value to store
-        """
-
-        self.value = value
-
-    def item(self):
-        """
-        Returns the value of the item
-        :return: The value
-        """
-        return self.value
-
-    def __repr__(self):
-        """
-        :return: The representation of the item
-        """
-        return f"XRItem({self.value})"
-
-
-class XRItemDict(object):
-    """
-    Another helper class that is essentially a dict that returns XR items
+    This is a helper class to store the dictionary parameters
     """
 
-    def __init__(self, dictionary):
+    def add_param(self, name, data):
         """
-        Inits the XRdict
-        :param dictionary: A dictionary to unfold
-        """
-
-        self.loc = self._unfold(dictionary)
-
-    def _unfold(self, dictionary):
-        """
-        Unfolds the dictionary to a XRItemDict
-        :param dictionary: The dictionary to unfold
-        :return: The unfolded dict
+        Add a parameter
+        :param name: The name of the param
+        :param data: The data of the param
         """
 
-        d = dict()
-        for k, v in dictionary.items():
-            if isinstance(v, dict):
-                d[k] = self._unfold(v)
-            else:
-                d[k] = XRItem(v)
-
-        return d
+        setattr(self, name, data)
 
 
 class Parameter(Component):
@@ -448,7 +406,7 @@ class Parameter(Component):
         super().__init__()
         self.min_parameter_value = {"name": None, "value": None}
         self.max_parameter_value = {"name": None, "value": None}
-        self.xr_arrays = {}
+        self.dict_parameters = DictParameter()
 
     def add_parameter(self, name, data, doc):
         """ initialization of a parameter
@@ -461,10 +419,11 @@ class Parameter(Component):
             # save if highest or lowest value
             self.save_min_max(data, name)
             # convert to arr and dict
-            self.xr_arrays[name] = self.convert_to_xarr(copy.copy(data), index_list)
-            data = self.convert_to_dict(data)
+            xr_data = self.convert_to_xarr(copy.copy(data), index_list)
+            dict_data = self.convert_to_dict(data)
             # set parameter
-            setattr(self, name, data)
+            setattr(self, name, xr_data)
+            self.dict_parameters.add_param(name, dict_data)
 
             # save additional parameters
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
@@ -480,16 +439,6 @@ class Parameter(Component):
 
         # set parameter
         setattr(self, name, data)
-
-    def remove_dicts(self):
-        """
-        Replaces the dicts with xarrays
-        """
-
-        for param in self.docs:
-            delattr(self, param)
-            setattr(self, param, self.xr_arrays[param])
-        del self.xr_arrays
 
     def save_min_max(self, data, name):
         """ stores min and max parameter """
@@ -533,7 +482,7 @@ class Parameter(Component):
             # if single entry in index
             if len(data.index[0]) == 1:
                 data.index = pd.Index(sum(data.index.values, ()))
-            data = XRItemDict(data.to_dict())
+            data = data.to_dict()
         return data
 
     @staticmethod

@@ -404,15 +404,17 @@ class CarrierRules:
         if model.variables["carrier_flow"].size > 0:
             carrier_flow_in = []
             carrier_flow_out = []
+            # precalculate the edges
+            edges_in = {node: self.energy_system.calculate_connected_edges(node, "in") for node in index.get_unique([1])}
+            edges_out = {node: self.energy_system.calculate_connected_edges(node, "out") for node in index.get_unique([1])}
+            # loop over all nodes and carriers
             for carrier, node in index.get_unique([0, 1]):
-                set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
-                set_edges_out = self.energy_system.calculate_connected_edges(node, "out")
                 techs = []
                 for tech in sets["set_transport_technologies"]:
                     if carrier in sets["set_reference_carriers"][tech]:
                         techs.append(tech)
-                carrier_flow_in.append((model.variables["carrier_flow"].loc[techs, set_edges_in] - model.variables["carrier_loss"].loc[techs, set_edges_in]).sum(["set_transport_technologies", "set_edges"]))
-                carrier_flow_out.append(model.variables["carrier_flow"].loc[techs, set_edges_out].sum(["set_transport_technologies", "set_edges"]))
+                carrier_flow_in.append((model.variables["carrier_flow"].loc[techs, edges_in[node]] - model.variables["carrier_loss"].loc[techs, edges_in[node]]).sum(["set_transport_technologies", "set_edges"]))
+                carrier_flow_out.append(model.variables["carrier_flow"].loc[techs, edges_out[node]].sum(["set_transport_technologies", "set_edges"]))
             # merge and regroup
             carrier_flow_in = lp.merge(*carrier_flow_in, dim="group")
             carrier_flow_in = self.optimization_setup.constraints.reorder_group(carrier_flow_in, None, None, index.get_unique([0, 1]), index_names[:-1], model)

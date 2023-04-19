@@ -80,7 +80,6 @@ class Element:
         # construct pe.Params
         t0 = time.perf_counter()
         cls.construct_params(optimization_setup)
-        optimization_setup.parameters.remove_dicts()
         t1 = time.perf_counter()
         logging.info(f"Time to construct pe.Params: {t1 - t0:0.4f} seconds")
         logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
