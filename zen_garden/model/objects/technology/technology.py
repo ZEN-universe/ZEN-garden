@@ -1034,49 +1034,44 @@ class TechnologyRules:
         index = ZenIndex(index_values, index_names)
         for tech in index.get_unique(["set_technologies"]):
             capacity_types, locs, times = index.get_values([tech], [1, 2, 3], unique=True)
+            # to actual coords to avoid renaming
+            capacity_types = model.variables.coords["set_capacity_types"].loc[capacity_types]
+            locs = model.variables.coords["set_location"].loc[locs]
+            times = model.variables.coords["set_time_steps_operation"].loc[times]
+            # the reference carrier
             reference_carrier = sets["set_reference_carriers"][tech][0]
             # get invest time step
-            time_step_year = self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, times).values
+            time_step_year = xr.DataArray(self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, times.data).values, coords=[times])
             # we create the capacity term (the dimenstion reassignment does not change the viables, just the broadcasting)
-            capacity_term = model.variables["capacity"].loc[tech, capacity_types, locs, time_step_year].to_linexpr()
-            capacity_term = capacity_term.rename({"set_time_steps_yearly": "set_time_steps_operation"})
-            capacity_term = capacity_term.assign_coords({"set_time_steps_operation": params.max_load.coords["set_time_steps_operation"]})
-            capacity_term = params.max_load.loc[tech, capacity_types, locs, times] * capacity_term
+            capacity_term = params.max_load.loc[tech, capacity_types, locs, times] * model.variables["capacity"].loc[tech, capacity_types, locs, time_step_year].to_linexpr()
 
             # this term is just to ensure full shape
             full_shape_term = model.variables["capacity"].loc[tech, ..., time_step_year].where(False).to_linexpr()
-            full_shape_term = full_shape_term.rename({"set_time_steps_yearly": "set_time_steps_operation"})
-            full_shape_term = full_shape_term.assign_coords({"set_time_steps_operation": params.max_load.coords["set_time_steps_operation"]})
 
             # conversion technology
             if tech in sets["set_conversion_technologies"]:
                 if reference_carrier in sets["set_input_carriers"][tech]:
                     flow_term = -1.0 * model.variables["input_flow"].loc[tech, reference_carrier, locs, times]
-                    flow_term = flow_term.rename({"set_nodes": "set_location", "set_input_carriers": "set_capacity_types"})
                     constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
                                        >= 0)
                 else:
                     flow_term = -1.0 * model.variables["output_flow"].loc[tech, reference_carrier, locs, times]
-                    flow_term = flow_term.rename({"set_nodes": "set_location", "set_output_carriers": "set_capacity_types"})
                     constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
                                         >= 0)
             # transport technology
             elif tech in sets["set_transport_technologies"]:
                 flow_term = -1.0 * model.variables["carrier_flow"].loc[tech, locs, times]
-                flow_term = flow_term.rename({"set_edges": "set_location"})
                 constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
                                    >= 0)
             # storage technology
             elif tech in sets["set_storage_technologies"]:
                 system = self.optimization_setup.system
                 # if limit power
-                if capacity_types == system["set_capacity_types"][0]:
-                    flow_term = -1.0 * model.variables["carrier_flow_charge"].loc[tech, locs, times] - 1.0 * model.variables["carrier_flow_discharge"].loc[tech, locs, times]
-                    flow_term = flow_term.rename({"set_nodes": "set_location"})
-                    constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
-                                        >= 0)
+                mask = (capacity_types == system["set_capacity_types"][0]).astype(float)
+                # where true
+                flow_term = mask*(-1.0 * model.variables["carrier_flow_charge"].loc[tech, locs, times] - 1.0 * model.variables["carrier_flow_discharge"].loc[tech, locs, times])
+                constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
+                                    >= 0)
                 # TODO integrate level storage here as well
-                else:
-                    continue
 
         return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
