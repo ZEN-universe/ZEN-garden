@@ -458,7 +458,6 @@ class ConversionTechnologyRules:
         for tech, dependent_carrier in index.get_unique([0, 1]):
             reference_carrier = sets["set_reference_carriers"][tech][0]
             if reference_carrier in sets["set_input_carriers"][tech]:
-                # TODO: check masks here (over node and time)
                 constraints.append(model.variables["input_flow"].loc[tech, reference_carrier]
                                    - model.variables["reference_flow_approximation"].loc[tech, dependent_carrier]
                                    == 0)
@@ -482,7 +481,6 @@ class ConversionTechnologyRules:
         index = ZenIndex(index_values, index_names)
         for tech, dependent_carrier in index.get_unique([0, 1]):
             if dependent_carrier in sets["set_input_carriers"][tech]:
-                # TODO: check masks here (over node and time)
                 constraints.append(model.variables["input_flow"].loc[tech, dependent_carrier]
                                    - model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier]
                                    == 0)
