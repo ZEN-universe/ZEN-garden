@@ -72,10 +72,10 @@ class Element:
         logging.info("\n--- Construct model components ---\n")
         pid = os.getpid()
         # construct pe.Sets
-        t0 = time.perf_counter()
+        t_start = time.perf_counter()
         cls.construct_sets(optimization_setup)
         t1 = time.perf_counter()
-        logging.info(f"Time to construct pe.Sets: {t1 - t0:0.4f} seconds")
+        logging.info(f"Time to construct pe.Sets: {t1 - t_start:0.4f} seconds")
         logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
         # construct pe.Params
         t0 = time.perf_counter()
@@ -98,6 +98,8 @@ class Element:
         logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
         # construct pe.Objective
         optimization_setup.energy_system.construct_objective()
+        t_end = time.perf_counter()
+        logging.info(f"Total time to construct model components: {t_end - t_start:0.4f} seconds")
 
     @classmethod
     def construct_sets(cls, optimization_setup):
