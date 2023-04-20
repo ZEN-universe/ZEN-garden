@@ -208,7 +208,7 @@ class ConversionTechnology(Technology):
                             lower.loc[tech, carrier, ...] = bounds[0]
                         upper.loc[tech, carrier, ...] = bounds[1]
                     else:
-                        time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, timestep_set[tech]).values
+                        time_step_year = [energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in timestep_set[tech]]
                         if carrier == sets["set_reference_carriers"][tech][0]:
                             _conver_efficiency = 1
                         else:
@@ -422,7 +422,7 @@ class ConversionTechnologyRules:
             # get invest time step
             coords = [model.variables.coords["set_time_steps_operation"]]
             times = index.get_values([tech, dependent_carrier, node], 3, dtype=list)
-            time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, times).values
+            time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times]
             tuples = [(1.0, model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier, node, times]),
                       (-params.conver_efficiency_specific.loc[tech, dependent_carrier, node, time_step_year], model.variables["reference_flow_approximation"].loc[tech, dependent_carrier, node, times])]
             constraints.append(linexpr_from_tuple_np(tuples, coords=coords, model=model)

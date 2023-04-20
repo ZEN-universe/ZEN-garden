@@ -356,7 +356,7 @@ class CarrierRules:
         index = ZenIndex(index_values, index_names)
         times = index.get_unique([2])
         for carrier in index.get_unique([0]):
-            yearly_time_steps = self.energy_system.time_steps.convert_time_step_operation2year(carrier, times).values
+            yearly_time_steps = [self.energy_system.time_steps.convert_time_step_operation2year(carrier, t) for t in times]
 
             # get the time-dependent factor
             mask = (params.availability_carrier_import.loc[carrier, :, times] != 0) | (params.availability_carrier_export.loc[carrier, :, times] != 0)

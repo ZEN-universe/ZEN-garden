@@ -39,7 +39,8 @@ class TimeStepsDicts(object):
 
         # set the params if provided
         if dict_all_sequence_time_steps is not None:
-            self.reset_dicts(dict_all_sequence_time_steps)
+            self.dict_sequence_time_steps_operation = dict_all_sequence_time_steps["operation"]
+            self.dict_sequence_time_steps_yearly = dict_all_sequence_time_steps["yearly"]
         else:
             self.dict_sequence_time_steps_operation = dict()
             self.dict_sequence_time_steps_yearly = dict()
@@ -55,9 +56,9 @@ class TimeStepsDicts(object):
         if not time_step_type:
             time_step_type = "operation"
         if time_step_type == "operation":
-            self.dict_sequence_time_steps_operation[element] = pd.Series(sequence_time_steps)
+            self.dict_sequence_time_steps_operation[element] = sequence_time_steps
         elif time_step_type == "yearly":
-            self.dict_sequence_time_steps_yearly[element] = pd.Series(sequence_time_steps)
+            self.dict_sequence_time_steps_yearly[element] = sequence_time_steps
         else:
             raise KeyError(f"Time step type {time_step_type} is incorrect")
 
@@ -67,10 +68,8 @@ class TimeStepsDicts(object):
         :param dict_all_sequence_time_steps: dict of all dict_sequence_time_steps
         """
 
-        for k, v in dict_all_sequence_time_steps["operation"].items():
-            self.set_sequence_time_steps(k, v, time_step_type="operation")
-        for k, v in dict_all_sequence_time_steps["yearly"].items():
-            self.set_sequence_time_steps(k, v, time_step_type="yearly")
+        self.dict_sequence_time_steps_operation = dict_all_sequence_time_steps["operation"]
+        self.dict_sequence_time_steps_yearly = dict_all_sequence_time_steps["yearly"]
 
     def get_sequence_time_steps(self, element, time_step_type=None):
         """
@@ -110,7 +109,7 @@ class TimeStepsDicts(object):
         """
         sequence_time_steps = self.get_sequence_time_steps(element, time_step_type)
         # get time step duration
-        if np.all(np.asarray(base_time_steps) >= 0):
+        if np.all(base_time_steps >= 0):
             element_time_step = np.unique(sequence_time_steps[base_time_steps])
         else:
             element_time_step = [-1]
@@ -132,7 +131,7 @@ class TimeStepsDicts(object):
         """
         sequence_time_steps = self.get_sequence_time_steps(element, time_step_type)
         # find where element_time_step in sequence of element time steps
-        base_time_steps = sequence_time_steps[sequence_time_steps == element_time_step].index.tolist()
+        base_time_steps = np.argwhere(sequence_time_steps == element_time_step)
         return base_time_steps
 
     def calculate_time_step_duration(self, input_time_steps, base_time_steps):
@@ -151,7 +150,7 @@ class TimeStepsDicts(object):
 
     def set_time_steps_energy2power(self, element, time_steps_energy2power):
         """ sets the dict of converting the energy time steps to the power time steps of storage technologies """
-        self.dict_time_steps_energy2power[element] = pd.Series(time_steps_energy2power)
+        self.dict_time_steps_energy2power[element] = time_steps_energy2power
 
     def set_time_steps_operation2year_both_dir(self,element_name,sequence_operation,sequence_yearly):
         """ calculates the conversion of operational time steps to invest/yearly time steps """
@@ -167,11 +166,11 @@ class TimeStepsDicts(object):
 
     def set_time_steps_operation2year(self, element, time_steps_operation2year):
         """ sets the dict of converting the operational time steps to the invest time steps of all elements """
-        self.dict_time_steps_operation2year[element] = pd.Series(time_steps_operation2year)
+        self.dict_time_steps_operation2year[element] = time_steps_operation2year
 
     def set_time_steps_year2operation(self, element, time_steps_year2operation):
         """ sets the dict of converting the operational time steps to the invest time steps of all elements """
-        self.dict_time_steps_year2operation[element] = pd.Series(time_steps_year2operation)
+        self.dict_time_steps_year2operation[element] = time_steps_year2operation
 
     def set_time_steps_storage_startend(self, element, system):
         """ sets the dict of matching the last time step of the year in the storage level domain to the first """
@@ -184,7 +183,7 @@ class TimeStepsDicts(object):
             _time_steps_start.append(_sequence_time_steps[_counter])
             _counter += _unaggregated_time_steps
             _time_steps_end.append(_sequence_time_steps[_counter - 1])
-        self.dict_time_steps_storage_level_startend_year[element] = pd.Series({_start: _end for _start, _end in zip(_time_steps_start, _time_steps_end)})
+        self.dict_time_steps_storage_level_startend_year[element] = {_start: _end for _start, _end in zip(_time_steps_start, _time_steps_end)}
 
     def set_sequence_time_steps_dict(self, dict_all_sequence_time_steps):
         """ sets all dicts of sequences of time steps.

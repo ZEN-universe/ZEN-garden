@@ -290,8 +290,8 @@ class StorageTechnologyRules:
         for tech in index.get_unique([0]):
             coords = [model.variables.coords["set_nodes"], model.variables.coords["set_time_steps_storage_level"]]
             nodes, times = index.get_values(locs=[tech], levels=[1, 2], dtype=list, unique=True)
-            element_time_step = self.energy_system.time_steps.convert_time_step_energy2power(tech, times).values
-            time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, element_time_step).values
+            element_time_step = [self.energy_system.time_steps.convert_time_step_energy2power(tech, t) for t in times]
+            time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in element_time_step]
             tuples = [(1.0, model.variables["level_charge"].loc[tech, nodes, times]),
                       (-1.0, model.variables["capacity"].loc[tech, "energy", nodes, time_step_year])]
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
@@ -312,9 +312,9 @@ class StorageTechnologyRules:
         index = ZenIndex(index_values, index_names)
         for tech in index.get_unique([0]):
             nodes, times = index.get_values(locs=[tech], levels=[1, 2], dtype=list, unique=True)
-            element_time_step = self.energy_system.time_steps.convert_time_step_energy2power(tech, times).values
+            element_time_step = [self.energy_system.time_steps.convert_time_step_energy2power(tech, t) for t in times]
             # get invest time step
-            time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, element_time_step).values
+            time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in element_time_step]
             # get corresponding start time step at beginning of the year, if time is last time step in year
             time_step_end = [self.energy_system.time_steps.get_time_steps_storage_startend(tech, t) for t in times]
 
