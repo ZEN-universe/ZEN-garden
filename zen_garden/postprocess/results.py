@@ -164,7 +164,7 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.get_doc("input_flow")
+        self.plot_energy_balance("CH", "heat", 0, demand_area=True)
 
     @classmethod
     def _read_file(cls, name, lazy=True):
@@ -1035,7 +1035,8 @@ class Results(object):
 
     def get_doc(self, component, index_set=False):
         """extracts the doc string of a component"""
-        if self.scenarios is not None:
+        scenario = None
+        if None not in self.scenarios:
             scenario = "scenario_"
         strings = self.results[scenario][None]["pars_and_vars"][component]["docstring"]
         string_list = strings.split(";")
@@ -1182,7 +1183,7 @@ class Results(object):
         :param scenario: Choose scenario of interest (only for multi-scenario simulations, per default scenario_ is plotted)
         """
         plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
-        components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier", "carrier_flow_in", "carrier_flow_out"]
+        components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier", "carrier_flow_in", "carrier_flow_out", "shed_demand_carrier"]
         lowers = ["input_flow", "export_carrier_flow", "carrier_flow_charge", "carrier_flow_out"]
         data_plot = pd.DataFrame()
         if None not in self.scenarios:
@@ -1231,13 +1232,47 @@ class Results(object):
         data_plot = data_plot.loc[:, (data_plot != 0).any(axis=0)]
         #set colors and plot data frame
         colors = plt.cm.tab20(range(data_plot.shape[1]))
+        #check if demand should be plotted as a line or as an area
         if demand_area is False:
-            data_plot_wo_demand = data_plot.drop(columns=[demand_carrier for demand_carrier in data_plot.columns if "demand_carrier" in demand_carrier])
+            data_plot_wo_demand = data_plot.drop(columns=[demand_carrier for demand_carrier in data_plot.columns if "demand_carrier" in demand_carrier or "shed_demand_carrier" in demand_carrier])
             ax = data_plot_wo_demand.plot(kind="area", stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
-            data_plot[[col for col in data_plot.columns if 'demand_carrier' in col][0]].plot(kind="line", ax=ax, label='demand', color="black")
+            data_plot = data_plot[[col for col in data_plot.columns if 'demand_carrier' in col or "shed_demand_carrier" in col]]
+            #check if there is demand for the chosen carrier at all
+            if not data_plot.empty:
+                #plot demand (without shed demand)
+                data_plot[data_plot.columns[0]].plot(kind="line", ax=ax, label='demand', color="black")
+                #check if there is shed demand
+                if data_plot.shape[1] == 2:
+                    #compute served demand as demand minus shed demand
+                    data_demand_minus_shed_demand = pd.DataFrame({"served_demand": data_plot[data_plot.columns[0]] - data_plot[data_plot.columns[1]]})
+                    data_demand_minus_shed_demand.plot(kind="line", ax=ax, label="served_demand", color="magenta")
+
+                    #as the demand line can "leave" the pyplot figure when there is demand shedding, the figure's y-limits need to be adjusted manually
+                    #define a custom function to sum positive and negative values of data frame columns along rows separately (such that needed max and min y-limits can be computed)
+                    def sum_pos_neg(row):
+                        pos_sum = row[row > 0].sum()
+                        neg_sum = row[row < 0].sum()
+                        return pd.Series({'positive': pos_sum, 'negative': neg_sum})
+
+                    # apply the custom function to each row
+                    pos_neg_sums_wo_demand = data_plot_wo_demand.apply(sum_pos_neg, axis=1)
+                    #find the overall minimal and maximal values of either the stacked areas or the demand curve
+                    min_value = min(pos_neg_sums_wo_demand.values.min(), data_plot.values.min())
+                    max_value = max(pos_neg_sums_wo_demand.values.max(), data_plot.values.max())
+                    #adjust the figure's y-limits accordingly
+                    plt.ylim(min_value*1.05,max_value*1.05)
         else:
-            data_plot["demand_carrier"] = data_plot["demand_carrier"].multiply(-1)
-            data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
+            if "demand_carrier" in data_plot.columns and "shed_demand_carrier" not in data_plot.columns:
+                data_plot["demand_carrier"] = data_plot["demand_carrier"].multiply(-1)
+                data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
+            elif "demand_carrier" in data_plot.columns and "shed_demand_carrier" in data_plot.columns:
+                data_plot["served_demand"] = data_plot["demand_carrier"] - data_plot["shed_demand_carrier"]
+                data_plot = data_plot.drop(columns=["demand_carrier"])
+                data_plot["served_demand"] = data_plot["served_demand"].multiply(-1)
+                data_plot["shed_demand_carrier"] = data_plot["shed_demand_carrier"].multiply(-1)
+                data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
+            else:
+                data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
         plt.legend()
         if save_fig:
             path = os.path.join(os.getcwd(), "outputs")
@@ -1519,9 +1554,6 @@ class Results(object):
         Extracts data of all technologies with the specified reference carrier
         """
         reference_carriers = self.get_df("set_reference_carriers", is_set=True, scenario=scenario)
-        if carrier not in reference_carriers.values:
-            warnings.warn(f"Chosen reference carrier '{carrier}' doesn't exist")
-            return
         if "carrier" not in data.index.dtypes:
             data_extracted = pd.DataFrame()
             for tech in data.index.get_level_values("technology"):
