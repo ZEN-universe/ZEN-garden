@@ -164,8 +164,6 @@ class Results(object):
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
 
-        self.plot_energy_balance("CH", "heat", 0, demand_area=True)
-
     @classmethod
     def _read_file(cls, name, lazy=True):
         """
