@@ -9,6 +9,6 @@ setup(
     python_requires='>=3.8, <4',
     keywords='key1, key2',
     packages=['zen_garden'],
-    package_dir={'zen_garden': 'zen_garden/'},
+    package_dir={'zen_garden': 'zen_garden'},
     project_urls={'ZEN-Garden': 'https://github.com/RRE-ETH/ZEN-garden'},
 )
