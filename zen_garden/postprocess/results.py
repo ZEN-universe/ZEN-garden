@@ -1268,6 +1268,10 @@ class Results(object):
                 data_plot = data_plot.drop(columns=["demand_carrier"])
                 data_plot["served_demand"] = data_plot["served_demand"].multiply(-1)
                 data_plot["shed_demand_carrier"] = data_plot["shed_demand_carrier"].multiply(-1)
+                #extract all column names as a list
+                all_columns = data_plot.columns.tolist()
+                #change the order of the served_demand and the shed_demand such that the plot shows an improved appearance
+                data_plot = data_plot.reindex(columns=all_columns[0:-2] + [all_columns[-1], all_columns[-2]])
                 data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
             else:
                 data_plot.plot(kind="area", stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time")
