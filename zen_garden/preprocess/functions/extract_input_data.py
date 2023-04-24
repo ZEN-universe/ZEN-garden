@@ -85,7 +85,6 @@ class DataInput:
         :param default_value: default for dataframe
         :param time_steps: specific time_steps of element
         :return df_output: filled output dataframe """
-
         df_input = self.convert_real_to_generic_time_indices(df_input,time_steps,file_name, index_name_list)
 
         assert df_input.columns is not None, f"Input file '{file_name}' has no columns"
@@ -604,7 +603,7 @@ class DataInput:
                         index_list.append(df_input.index.get_level_values(index_name).unique().union(self.energy_system.set_time_steps_years))
                     else:
                         index_list.append(df_input.index.get_level_values(index_name).unique())
-                combined_index = pd.MultiIndex.from_product(index_list,names=index_name_list).sort_values()
+                combined_index = pd.MultiIndex.from_product(index_list,names=index_names_column).sort_values()
                 is_single_index = False
             df_input_temp = pd.DataFrame(index = combined_index,columns=df_input.columns)
             common_index = df_input.index.intersection(combined_index)
