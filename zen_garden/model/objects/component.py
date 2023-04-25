@@ -12,7 +12,6 @@ import logging
 import uuid
 from itertools import combinations
 from itertools import zip_longest
-import time
 
 import linopy as lp
 import numpy as np
@@ -563,8 +562,6 @@ class Constraint(Component):
                                 True
         """
 
-        t0 = time.perf_counter()
-
         # convert to list
         use_suffix = True
         if not isinstance(constraint, list):
@@ -592,9 +589,6 @@ class Constraint(Component):
             else:
                 logging.warning(f"{name} already added. Can only be added once")
 
-        t1 = time.perf_counter()
-        logging.debug(f"Adding constraint block {name} took {t1 - t0:0.4f} seconds")
-
     def add_constraint_rule(self, model: lp.Model, name, index_sets, rule, doc="", disjunction_var=None):
         """ initialization of a variable
         :param model: The linopy model
@@ -617,14 +611,8 @@ class Constraint(Component):
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
 
             # eval the rule
-            t0 = time.perf_counter()
             xr_lhs, xr_sign, xr_rhs = self.rule_to_cons(model=model, rule=rule, index_values=index_values, index_list=index_list)
-            t1 = time.perf_counter()
-            logging.debug(f"Evaluating constraint rule {name} took {t1 - t0:0.4f} seconds")
             self._add_con(model, name, xr_lhs, xr_sign, xr_rhs, disjunction_var=disjunction_var)
-            t2 = time.perf_counter()
-            logging.debug(f"Adding constraint rule {name} took {t2 - t1:0.4f} seconds")
-
         else:
             logging.warning(f"{name} already added. Can only be added once")
 
@@ -811,7 +799,6 @@ class Constraint(Component):
         :return: A single constraint
         """
 
-        t0 = time.perf_counter()
         # catch empty constraints
         if len(constraints) == 0:
             return constraints
@@ -837,9 +824,6 @@ class Constraint(Component):
 
         xr_ds = xr.Dataset({"coeffs": coeffs, "vars": variables})
         lhs = lp.LinearExpression(xr_ds, model)
-
-        t1 = time.perf_counter()
-        logging.debug(f"Combining constraints took {t1 - t0} seconds.")
 
         return lp.constraints.AnonymousConstraint(lhs, sign, rhs)
 
