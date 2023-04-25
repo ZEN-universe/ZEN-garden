@@ -10,7 +10,6 @@ Description:    Class defining a generic energy carrier.
                 constraints of a generic carrier and returns the abstract optimization model.
 ==========================================================================================================================================================================="""
 import logging
-import time
 
 import linopy as lp
 import numpy as np
@@ -151,74 +150,51 @@ class Carrier(Element):
         sets = optimization_setup.sets
         rules = CarrierRules(optimization_setup)
         # limit import flow by availability
-        t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_availability_carrier_import",
                                          constraint=rules.get_constraint_availability_carrier_import(),
                                          doc='node- and time-dependent carrier availability to import from outside the system boundaries', )
-        t1 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_availability_carrier_import took {t1 - t0:.4f} seconds")
         # limit export flow by availability
         constraints.add_constraint_block(model, name="constraint_availability_carrier_export",
                                          constraint=rules.get_constraint_availability_carrier_export(),
                                          doc='node- and time-dependent carrier availability to export to outside the system boundaries')
-        t2 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_availability_carrier_export took {t2 - t1:.4f} seconds")
         # limit import flow by availability for each year
         constraints.add_constraint_rule(model, name="constraint_availability_carrier_import_yearly",
                                         index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"], optimization_setup),
                                         rule=rules.constraint_availability_carrier_import_yearly_rule,
                                         doc='node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year', )
-        t3 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_availability_carrier_import_yearly took {t3 - t2:.4f} seconds")
         # limit export flow by availability for each year
         constraints.add_constraint_rule(model, name="constraint_availability_carrier_export_yearly",
                                         index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"], optimization_setup),
                                         rule=rules.constraint_availability_carrier_export_yearly_rule,
                                         doc='node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year', )
-        t4 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_availability_carrier_export_yearly took {t4 - t3:.4f} seconds")
         # cost for carrier
         constraints.add_constraint_block(model, name="constraint_cost_carrier",
                                          constraint=rules.get_constraint_cost_carrier(),
                                          doc="cost of importing and exporting carrier")
-        t5 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_cost_carrier took {t5 - t4:.4f} seconds")
         # cost for shed demand
         constraints.add_constraint_block(model, name="constraint_cost_shed_demand",
                                          constraint=rules.get_constraint_cost_shed_demand(),
                                          doc="cost of shedding carrier demand")
-        t6 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_cost_shed_demand took {t6 - t5:.4f} seconds")
         # limit of shed demand
         constraints.add_constraint_block(model, name="constraint_limit_shed_demand",
                                          constraint=rules.get_constraint_limit_shed_demand(),
                                          doc="limit of shedding carrier demand")
-        t7 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_limit_shed_demand took {t7 - t6:.4f} seconds")
         # total cost for carriers
         constraints.add_constraint_rule(model, name="constraint_cost_carrier_total",
                                         index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_cost_carrier_total_rule,
                                         doc="total cost of importing and exporting carriers")
-        t8 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_cost_carrier_total took {t8 - t7:.4f} seconds")
         # carbon emissions
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_carrier",
                                          constraint=rules.get_constraint_carbon_emissions_carrier(),
                                          doc="carbon emissions of importing and exporting carrier")
-        t9 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_carbon_emissions_carrier took {t9 - t8:.4f} seconds")
         # carbon emissions carrier
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_carrier_total",
                                         index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_carbon_emissions_carrier_total_rule,
             doc="total carbon emissions of importing and exporting carriers")
-        t10 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_carbon_emissions_carrier_total took {t10 - t9:.4f} seconds")
         # energy balance
         constraints.add_constraint_block(model, name="constraint_nodal_energy_balance",
                                          constraint=rules.get_constraint_nodal_energy_balance(),
                                          doc='node- and time-dependent energy balance for each carrier', )
-        t11 = time.perf_counter()
-        logging.debug(f"Carrier: constraint_nodal_energy_balance took {t11 - t10:.4f} seconds")
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
             if len(optimization_setup.system[subclass.label]) > 0:

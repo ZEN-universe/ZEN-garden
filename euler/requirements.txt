@@ -5,7 +5,6 @@ gurobipy
 hdfdict
 pandas
 pip
-pyomo>=6.0
 ordered-set
 linopy
 coverage

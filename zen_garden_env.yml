@@ -1,4 +1,4 @@
-name: zen-garden
+name: zen-garden-test
 channels:
   - conda-forge
   - gurobi
@@ -15,13 +15,14 @@ dependencies:
   - pint
   - matplotlib
   - entsoe-py
-  - pyomo=6
   - gurobi
   - pip:
       - tsam
       - hdfdict
       - ordered-set
       - pyogrio
+      - psutil
+      - linopy
       - -e .
 
 # conda env create -f zen_garden_env.yml

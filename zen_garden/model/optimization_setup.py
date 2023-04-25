@@ -46,7 +46,7 @@ class OptimizationSetup(object):
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
         # pe.ConcreteModel
-        self.pyomo_model = None
+        self.model = None
         # the components
         self.variables = None
         self.parameters = None

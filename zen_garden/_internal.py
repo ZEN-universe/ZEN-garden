@@ -8,15 +8,19 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
-import os
-import sys
-import logging
 import importlib.util
+import logging
+import os
+
 import pkg_resources
 
-from .preprocess.prepare import Prepare
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
+from .preprocess.prepare import Prepare
+from .utils import setup_logger
+
+# we setup the logger here
+setup_logger()
 
 
 def main(config, dataset_path=None):
@@ -26,15 +30,6 @@ def main(config, dataset_path=None):
     :param config: A config instance used for the run
     :param dataset_path: If not None, used to overwrite the config.analysis["dataset"]
     """
-    # SETUP LOGGER
-    log_format = '%(asctime)s %(filename)s: %(message)s'
-    log_path = os.path.join('outputs', 'logs')
-    os.makedirs(log_path, exist_ok=True)
-    logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
-    logging.captureWarnings(True)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.INFO)
-    logging.getLogger().addHandler(handler)
 
     # print the version
     version = pkg_resources.require("zen_garden")[0].version

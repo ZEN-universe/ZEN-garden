@@ -7,6 +7,8 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 Description:  Class is defining to read in the results of an Optimization problem.
 ==========================================================================================================================================================================="""
 
+import logging
+import os
 import sys
 from collections import UserDict
 from contextlib import contextmanager
@@ -18,6 +20,24 @@ import numpy as np
 import xarray as xr
 import yaml
 from numpy import string_
+
+
+def setup_logger(log_path=None, level=logging.INFO):
+    # SETUP LOGGER
+    log_format = '%(asctime)s %(filename)s: %(message)s'
+
+    if log_path is None:
+        log_path = os.path.join('outputs', 'logs')
+        os.makedirs(log_path, exist_ok=True)
+    logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=level, format=log_format,
+                        datefmt='%Y-%m-%d %H:%M:%S')
+    logging.captureWarnings(True)
+    # we don't want to add this multiple times
+    if not any([handle.name == "STDOUT" for handle in logging.getLogger().handlers]):
+        handler = logging.StreamHandler(sys.stdout)
+        handler.set_name("STDOUT")
+        handler.setLevel(level)
+        logging.getLogger().addHandler(handler)
 
 
 def get_inheritors(klass):

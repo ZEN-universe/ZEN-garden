@@ -10,7 +10,6 @@ Description:    Class defining the parameters, variables and constraints that ho
                 constraints that hold for the transport technologies.
 ==========================================================================================================================================================================="""
 import logging
-import time
 
 import numpy as np
 import xarray as xr
@@ -175,24 +174,17 @@ class TransportTechnology(Technology):
         constraints = optimization_setup.constraints
         rules = TransportTechnologyRules(optimization_setup)
         # Carrier Flow Losses
-        t0 = time.perf_counter()
         constraints.add_constraint_block(model, name="constraint_transport_technology_losses_flow",
                                          constraint=rules.get_constraint_transport_technology_losses_flow(),
                                          doc='Carrier loss due to transport with through transport technology')
-        t1 = time.perf_counter()
-        logging.debug(f"Transport Technology: constraint_transport_technology_losses_flow took {t1 - t0:.4f} seconds")
         # capex of transport technologies
         constraints.add_constraint_block(model, name="constraint_transport_technology_capex",
                                          constraint=rules.get_constraint_transport_technology_capex(),
                                          doc='Capital expenditures for installing transport technology')
-        t2 = time.perf_counter()
-        logging.debug(f"Transport Technology: constraint_transport_technology_capex took {t2 - t1:.4f} seconds")
         # bidirectional transport technologies: capacity on edge must be equal in both directions
         constraints.add_constraint_block(model, name="constraint_transport_technology_bidirectional",
                                          constraint=rules.constraint_transport_technology_bidirectional_rule(),
                                          doc='Forces that transport technology capacity must be equal in both directions')
-        t3 = time.perf_counter()
-        logging.debug(f"Transport Technology: constraint_transport_technology_bidirectional took {t3 - t2:.4f} seconds")
 
     # defines disjuncts if technology on/off
     @classmethod

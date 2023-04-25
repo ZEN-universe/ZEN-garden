@@ -160,7 +160,6 @@ class EnergySystem:
     def construct_sets(self):
         """ constructs the pe.Sets of the class <EnergySystem> """
         # construct pe.Sets of the class <EnergySystem>
-        pyomo_model = self.optimization_setup.model
         # nodes
         self.optimization_setup.sets.add_set(name="set_nodes", data=self.set_nodes, doc="Set of nodes")
         # edges
