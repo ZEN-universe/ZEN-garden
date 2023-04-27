@@ -67,7 +67,7 @@ class OptimizationSetup(object):
         # Init the energy system
         self.energy_system = EnergySystem(optimization_setup=self)
 
-        # The time serier aggregation
+        # The time series aggregation
         self.time_series_aggregation = None
 
         # set base scenario
