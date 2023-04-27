@@ -1147,19 +1147,19 @@ class Results(object):
         for carrier in demand_carrier.index.levels[0].values:
             if carrier in demand_carrier:
                 self.plot("capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
-                self.plot("built_capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Built Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
+                self.plot("capacity_addition", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Built Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
                 self.plot("input_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Input Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Input Flow"}, save_fig=save_fig, file_type=file_type)
                 self.plot("output_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Output Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Output Flow"}, save_fig=save_fig, file_type=file_type)
-        self.plot("capex_total",yearly=True, plot_strings={"title": "Total Capex", "ylabel": "Capex"}, save_fig=save_fig, file_type=file_type)
-        self.plot("opex_total", yearly=True, plot_strings={"title": "Total Opex", "ylabel": "Opex"}, save_fig=save_fig, file_type=file_type)
+        self.plot("cost_capex_total",yearly=True, plot_strings={"title": "Total Capex", "ylabel": "Capex"}, save_fig=save_fig, file_type=file_type)
+        self.plot("cost_opex_total", yearly=True, plot_strings={"title": "Total Opex", "ylabel": "Opex"}, save_fig=save_fig, file_type=file_type)
         self.plot("cost_carrier", yearly=True, plot_strings={"title": "Carrier Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
         self.plot("cost_carbon_emissions_total", yearly=True, plot_strings={"title": "Total Carbon Emissions Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
         #plot total costs as stacked bar plot of individual costs
-        costs = ["capex_total", "opex_total", "cost_carbon_emissions_total", "cost_carrier_total", "cost_shed_demand_carrier"]
+        costs = ["cost_capex_total", "cost_opex_total", "cost_carbon_emissions_total", "cost_carrier_total", "cost_shed_demand"]
         total_cost = pd.DataFrame()
         for cost in costs:
             test = self.get_total(cost, scenario=scenario)
-            if cost == "cost_shed_demand_carrier":
+            if cost == "cost_shed_demand":
                 cost_df = self.get_total(cost, scenario=scenario).sum(axis=0)
                 cost_df.name = "cost_shed_demand_total"
                 total_cost = pd.concat([total_cost, cost_df], axis=1)
