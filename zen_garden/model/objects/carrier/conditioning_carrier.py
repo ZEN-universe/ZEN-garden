@@ -91,30 +91,31 @@ class ConditioningCarrierRules:
         carrier_conversion_in, carrier_conversion_out = 0, 0
         for tech in model.set_conversion_technologies:
             if carrier in model.set_input_carriers[tech]:
-                carrier_conversion_in += model.input_flow[tech, carrier, node, time]
+                carrier_conversion_in += model.flow_conversion_input[tech, carrier, node, time]
             if carrier in model.set_output_carriers[tech]:
-                carrier_conversion_out += model.output_flow[tech, carrier, node, time]
+                carrier_conversion_out += model.flow_conversion_output[tech, carrier, node, time]
         # carrier flow transport technologies
-        carrier_flow_in, carrier_flow_out = 0, 0
+        flow_transport_in, flow_transport_out = 0, 0
         set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
         set_edges_out = self.energy_system.calculate_connected_edges(node, "out")
         for tech in model.set_transport_technologies:
             if carrier in model.set_reference_carriers[tech]:
-                carrier_flow_in += sum(model.carrier_flow[tech, edge, time] - model.carrier_loss[tech, edge, time] for edge in set_edges_in)
-                carrier_flow_out += sum(model.carrier_flow[tech, edge, time] for edge in set_edges_out)
+                flow_transport_in += sum(model.flow_transport[tech, edge, time] - model.flow_transport_loss[tech, edge, time] for edge in set_edges_in)
+                flow_transport_out += sum(model.flow_transport[tech, edge, time] for edge in set_edges_out)
         # carrier flow storage technologies
-        carrier_flow_discharge, carrier_flow_charge = 0, 0
+        flow_storage_discharge, flow_storage_charge = 0, 0
         for tech in model.set_storage_technologies:
             if carrier in model.set_reference_carriers[tech]:
-                carrier_flow_discharge += model.carrier_flow_discharge[tech, node, time]
-                carrier_flow_charge += model.carrier_flow_charge[tech, node, time]
+                flow_storage_discharge += model.flow_storage_discharge[tech, node, time]
+                flow_storage_charge += model.flow_storage_charge[tech, node, time]
         # carrier import, demand and export
         carrier_import, carrier_export, carrier_demand = 0, 0, 0
-        carrier_import = model.import_carrier_flow[carrier, node, time]
-        carrier_export = model.export_carrier_flow[carrier, node, time]
-        carrier_demand = params.demand_carrier[carrier, node, time]
+        carrier_import = model.flow_import[carrier, node, time]
+        carrier_export = model.flow_export[carrier, node, time]
+        carrier_demand = params.demand[carrier, node, time]
         endogenous_carrier_demand = 0
-
+        # shed demand
+        carrier_shed_demand = model.shed_demand[carrier, node, time]
         # check if carrier is conditioning carrier:
         if carrier in model.set_conditioning_carriers:
             # check if carrier is parent_carrier of a conditioning_carrier
@@ -122,10 +123,13 @@ class ConditioningCarrierRules:
                 endogenous_carrier_demand = - model.endogenous_carrier_demand[carrier, node, time]
             else:
                 endogenous_carrier_demand = model.endogenous_carrier_demand[carrier, node, time]
-
         return (# conversion technologies
-                carrier_conversion_out - carrier_conversion_in # transport technologies
-                + carrier_flow_in - carrier_flow_out # storage technologies
-                + carrier_flow_discharge - carrier_flow_charge # import and export
-                + carrier_import - carrier_export # demand
-                - endogenous_carrier_demand - carrier_demand == 0)
+                carrier_conversion_out - carrier_conversion_in
+                # transport technologies
+                + flow_transport_in - flow_transport_out
+                # storage technologies
+                + flow_storage_discharge - flow_storage_charge
+                # import and export
+                + carrier_import - carrier_export
+                # demand
+                - endogenous_carrier_demand - carrier_demand + carrier_shed_demand == 0)

@@ -58,7 +58,7 @@ class DataInput:
             self.extract_yearly_variation(file_name, index_sets, scenario)
 
         # if existing capacities and existing capacities not used
-        if (file_name == "existing_capacity" or file_name == "existing_capacity_energy") and not self.analysis["use_existing_capacities"]:
+        if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
             df_output, *_ = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=0, scenario=scenario)
             return df_output
         else:
@@ -99,8 +99,8 @@ class DataInput:
         else:
             missing_index = missing_index[0]
             # check if special case of existing Technology
-            if "existing_technology" in missing_index:
-                df_output = DataInput.extract_from_input_for_existing_capacities(df_input, df_output, index_name_list, file_name, missing_index)
+            if "technology_existing" in missing_index:
+                df_output = DataInput.extract_from_input_for_capacities_existing(df_input, df_output, index_name_list, file_name, missing_index)
                 if isinstance(default_value, dict):
                     df_output = df_output * default_value["multiplier"]
                 return df_output
@@ -253,19 +253,19 @@ class DataInput:
             carrier_dict[_carrier_type] = _carrier_list
         return carrier_dict
 
-    def extract_set_existing_technologies(self, storage_energy=False, scenario=""):
+    def extract_set_technologies_existing(self, storage_energy=False, scenario=""):
         """ reads input data and creates setExistingCapacity for each technology
         :param storage_energy: boolean if existing energy capacity of storage technology (instead of power)
-        :return set_existing_technologies: return set existing technologies"""
+        :return set_technologies_existing: return set existing technologies"""
         #TODO merge changes in extract input data and optimization setup
-        set_existing_technologies = np.array([0])
-        if self.analysis["use_existing_capacities"]:
+        set_technologies_existing = np.array([0])
+        if self.analysis["use_capacities_existing"]:
             if storage_energy:
                 _energy_string = "_energy"
             else:
                 _energy_string = ""
 
-            df_input = self.read_input_data(f"existing_capacity{_energy_string}")
+            df_input = self.read_input_data(f"capacity_existing{_energy_string}")
             if df_input is None:
                 return [0]
             if self.element.name in self.system["set_transport_technologies"]:
@@ -274,11 +274,11 @@ class DataInput:
                 location = "node"
             _max_node_count = df_input[location].value_counts().max()
             if _max_node_count is not np.nan:
-                set_existing_technologies = np.arange(0, _max_node_count)
+                set_technologies_existing = np.arange(0, _max_node_count)
 
-        return set_existing_technologies
+        return set_technologies_existing
 
-    def extract_lifetime_existing_technology(self, file_name, index_sets, scenario=""):
+    def extract_lifetime_existing(self, file_name, index_sets, scenario=""):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param file_name:  name of selected file
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
@@ -287,7 +287,7 @@ class DataInput:
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multiidx, data=0)
         # if no existing capacities
-        if not self.analysis["use_existing_capacities"]:
+        if not self.analysis["use_capacities_existing"]:
             return df_output
 
         if f"{file_name}{scenario}.csv" in os.listdir(self.folder_path):
@@ -309,9 +309,9 @@ class DataInput:
             _attribute_name = "capex_specific"
             _index_sets = ["set_nodes", "set_time_steps_yearly"]
             _time_steps = self.energy_system.set_time_steps_yearly
-        elif variable_type == "conver_efficiency":
+        elif variable_type == "conversion_factor":
             # TODO decide if yearly or hourly
-            _attribute_name = "conver_efficiency"
+            _attribute_name = "conversion_factor"
             _index_sets = ["set_nodes", "set_time_steps_yearly"]
             _index_name = self.index_names[_index_sets[-1]]
             _time_steps = self.energy_system.set_time_steps_yearly
@@ -320,7 +320,7 @@ class DataInput:
         # import all input data
         df_input_nonlinear = self.read_pwa_files(variable_type, fileType="nonlinear_")
         df_input_breakpoints = self.read_pwa_files(variable_type, fileType="breakpoints_pwa_")
-        df_input_linear = self.read_pwa_files(variable_type, fileType="linear_")
+        df_input_linear = self.read_pwa_files(variable_type)
         df_linear_exist = self.exists_attribute(_attribute_name)
         assert (df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
         # check if capex_specific exists
@@ -361,9 +361,8 @@ class DataInput:
                     else:
                         _relative_intercept = np.abs(linear_regress_object.intercept)
                     # check if to a reasonable degree linear
-                    if _relative_intercept <= self.solver["linear_regression_check"][
-                        "eps_intercept"] and linear_regress_object.rvalue >= self.solver["linear_regression_check"][
-                        "epsRvalue"]:
+                    if _relative_intercept <= self.solver["linear_regression_check"]["eps_intercept"] \
+                            and linear_regress_object.rvalue >= self.solver["linear_regression_check"]["epsRvalue"]:
                         # model as linear function
                         slope_lin_reg = linear_regress_object.slope
                         linear_dict[value_variable] = \
@@ -391,8 +390,8 @@ class DataInput:
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
-                _conver_efficiency_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
-                linear_dict = linear_dict.reorder_levels(_conver_efficiency_levels)
+                _conversion_factor_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
+                linear_dict = linear_dict.reorder_levels(_conversion_factor_levels)
                 return linear_dict, is_pwa
             # no dependent carrier
             elif len(nonlinear_values) == 1:
@@ -421,20 +420,20 @@ class DataInput:
                                                                                  time_steps=_time_steps)
                 else:
                     df_output, default_value, index_name_list = self.create_default_output(_index_sets, None, time_steps=_time_steps, manual_default_value=1)
-                    assert (df_input_linear is not None), f"input file for linear_conver_efficiency could not be imported."
+                    assert (df_input_linear is not None), f"input file for linear_conversion_factor could not be imported."
                     # df_input_linear = df_input_linear.rename(columns={'year': 'time'})
                     for carrier in _dependent_carrier:
                         df_input_carrier = df_input_linear[[_index_name,carrier]]
-                        linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "linear_conver_efficiency", index_name_list, default_value, time_steps=_time_steps).copy(deep=True)
+                        linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "linear_conversion_factor", index_name_list, default_value, time_steps=_time_steps).copy(deep=True)
 
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
-                _conver_efficiency_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
-                linear_dict = linear_dict.reorder_levels(_conver_efficiency_levels)
+                _conversion_factor_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
+                linear_dict = linear_dict.reorder_levels(_conversion_factor_levels)
                 return linear_dict, is_pwa
 
-    def read_pwa_files(self, variable_type, fileType):
+    def read_pwa_files(self, variable_type, fileType=str()):
         """ reads pwa Files
         :param variable_type: technology approximation type
         :param fileType: either breakpointsPWA, linear, or nonlinear
@@ -521,8 +520,8 @@ class DataInput:
             index_name_list.append(self.index_names[index])
             if "set_time_steps" in index and time_steps:
                 index_list.append(time_steps)
-            elif index == "set_existing_technologies":
-                index_list.append(self.element.set_existing_technologies)
+            elif index == "set_technologies_existing":
+                index_list.append(self.element.set_technologies_existing)
             elif index in self.system:
                 index_list.append(self.system[index])
             elif hasattr(self.energy_system, index):
@@ -698,7 +697,7 @@ class DataInput:
         return df_input
 
     @staticmethod
-    def extract_from_input_for_existing_capacities(df_input, df_output, index_name_list, column, missing_index):
+    def extract_from_input_for_capacities_existing(df_input, df_output, index_name_list, column, missing_index):
         """ extracts the demanded values from input dataframe if extracting existing capacities
         :param df_input: raw input dataframe
         :param df_output: default output dataframe

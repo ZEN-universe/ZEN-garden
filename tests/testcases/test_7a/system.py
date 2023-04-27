@@ -17,7 +17,6 @@ system['set_transport_technologies']      = ["natural_gas_pipeline"]
 
 system['set_nodes']                      = ["DE","CH"]
 system["social_discount_rate"]            = 0     # similar to discount factor, but for discounted utility model
-system["knowledge_spillover_rate"]        = 0.025
 # time steps
 system["reference_year"]                 = 2022
 system["unaggregated_time_steps_per_year"]  = 1

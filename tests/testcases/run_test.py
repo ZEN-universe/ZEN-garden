@@ -63,17 +63,17 @@ def compare_variables(test_model, optimization_setup,folder_path):
                     # check if relative error exceeds limit of 10^-3, i.e. value differs from test value
                     if abs(variable_attribute.extract_values()[variable_index] - data_row[3]) / variable_attribute.extract_values()[variable_index] > 10**(-3):
                         if data_row[1] in failed_variables:
-                            failed_variables[data_row[1]][data_row[2]] = {"computedValue" : variable_attribute.extract_values()[variable_index]}
+                            failed_variables[data_row[1]][data_row[2]] = {"computed_values" : variable_attribute.extract_values()[variable_index]}
                         else:
-                            failed_variables[data_row[1]] = {data_row[2] : {"computedValue" : variable_attribute.extract_values()[variable_index]}}
+                            failed_variables[data_row[1]] = {data_row[2] : {"computed_values" : variable_attribute.extract_values()[variable_index]}}
                         failed_variables[data_row[1]][data_row[2]]["test_value"] = data_row[3]
                 else:
                     # check if absolute error exceeds specified limit
                     if abs(variable_attribute.extract_values()[variable_index] - data_row[3]) > 10**(-3):
                         if data_row[1] in failed_variables:
-                            failed_variables[data_row[1]][data_row[2]] = {"computedValue" : variable_attribute.extract_values()[variable_index]}
+                            failed_variables[data_row[1]][data_row[2]] = {"computed_values" : variable_attribute.extract_values()[variable_index]}
                         else:
-                            failed_variables[data_row[1]] = {data_row[2] : {"computedValue" : variable_attribute.extract_values()[variable_index]}}
+                            failed_variables[data_row[1]] = {data_row[2] : {"computed_values" : variable_attribute.extract_values()[variable_index]}}
                         failed_variables[data_row[1]][data_row[2]]["test_value"] = data_row[3]
     assertion_string = str()
     for failed_var in failed_variables:
@@ -103,7 +103,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
             if str(variable_index) == data_row[2]:
                 # check if close
                 if not np.isclose(variable_value, data_row[3], rtol=1e-3):
-                    failed_variables[data_row[1]][data_row[2]] = {"computedValue": variable_value,
+                    failed_variables[data_row[1]][data_row[2]] = {"computed_values": variable_value,
                                                                   "test_value": data_row[3]}
     # create the string of all failed variables
     assertion_string = ""
