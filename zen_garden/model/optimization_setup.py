@@ -305,10 +305,6 @@ class OptimizationSetup(object):
             for param in params:
                 assert "pwa" not in param, "Scenarios are not implemented for piece-wise affine parameters."
                 file_name = param
-                column = None
-                if type(param) is tuple:
-                    file_name, column = param
-                    param = param[1]
                 if "yearly_variation" in param:
                     param = param.replace("_yearly_variation", "")
                     file_name = param
@@ -317,12 +313,12 @@ class OptimizationSetup(object):
                 _index_names = _old_param.index.names
                 _index_sets = [index_set for index_set, index_name in element.data_input.index_names.items() if index_name in _index_names]
                 _time_steps = None
-                # if existing capacity is changed, setExistingTechnologies, existing lifetime, and capexExistingCapacity have to be updated as well
+                # if existing capacity is changed, set_technologies_existing, existing lifetime, and capexExistingCapacity have to be updated as well
                 if "set_technologies_existing" in _index_sets:
-                    # update setExistingTechnologies and existingLifetime
+                    # update set_technologies_existing and lifetime_existing
                     _technologies_existing = element.data_input.extract_set_technologies_existing(scenario=scenario)
-                    _lifetime_existing = element.data_input.extract_lifetime_existing(param, index_sets=_index_sets, scenario=scenario)
                     setattr(element, "set_technologies_existing", _technologies_existing)
+                    _lifetime_existing = element.data_input.extract_lifetime_existing(param, index_sets=_index_sets, scenario=scenario)
                     setattr(element, "lifetime_existing", _lifetime_existing)
                 # set new parameter value
                 if hasattr(element, "raw_time_series") and param in element.raw_time_series.keys():
@@ -332,13 +328,12 @@ class OptimizationSetup(object):
                 else:
                     assert isinstance(_old_param, pd.Series) or isinstance(_old_param, pd.DataFrame), f"Param values of '{param}' have to be a pd.DataFrame or pd.Series."
                     if "time" in _index_names:
-                        # _time_steps = list(_old_param.index.unique("time"))
                         _time_steps = self.energy_system.set_base_time_steps_yearly
                     elif "year" in _index_names:
                         _time_steps = self.energy_system.set_time_steps_yearly_entire_horizon
                     _new_param = element.data_input.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
                     setattr(element, param, _new_param)
-                    # if existing capacity is changed, capexExistingCapacity also has to be updated
+                    # if existing capacity is changed, capex_capacity_existing also has to be updated
                     if "capacity_existing" in param:
                         storage_energy = False
                         if element in self.energy_system.system["set_storage_technologies"]:
