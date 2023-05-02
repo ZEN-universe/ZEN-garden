@@ -47,19 +47,19 @@ class StorageTechnology(Technology):
         self.efficiency_discharge = self.data_input.extract_input_data("efficiency_discharge", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.self_discharge = self.data_input.extract_input_data("self_discharge", index_sets=["set_nodes"])
         # extract existing energy capacity
-        self.min_built_capacity_energy = self.data_input.extract_attribute("min_built_capacity_energy")["value"]
-        self.max_built_capacity_energy = self.data_input.extract_attribute("max_built_capacity_energy")["value"]
+        self.capacity_addition_min_energy = self.data_input.extract_attribute("capacity_addition_min_energy")["value"]
+        self.capacity_addition_max_energy = self.data_input.extract_attribute("capacity_addition_max_energy")["value"]
         self.capacity_limit_energy = self.data_input.extract_input_data("capacity_limit_energy", index_sets=["set_nodes"])
-        self.existing_capacity_energy = self.data_input.extract_input_data("existing_capacity_energy", index_sets=["set_nodes", "set_existing_technologies"])
-        self.existing_invested_capacity_energy = self.data_input.extract_input_data("existing_invested_capacity_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        self.capacity_existing_energy = self.data_input.extract_input_data("capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"])
+        self.capacity_investment_existing_energy = self.data_input.extract_input_data("capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.capex_specific_energy = self.data_input.extract_input_data("capex_specific_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.fixed_opex_specific_energy = self.data_input.extract_input_data("fixed_opex_specific_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
+        self.opex_specific_fixed_energy = self.data_input.extract_input_data("opex_specific_fixed_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
                                                                             time_steps=set_time_steps_yearly)
         self.convert_to_fraction_of_capex()
         # calculate capex of existing capacity
-        self.capex_existing_capacity = self.calculate_capex_of_existing_capacities()
-        self.capex_existing_capacity_energy = self.calculate_capex_of_existing_capacities(storage_energy=True)
+        self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
+        self.capex_capacity_existing_energy = self.calculate_capex_of_capacities_existing(storage_energy=True)
         # add min load max load time series for energy
         self.raw_time_series["min_load_energy"] = self.data_input.extract_input_data("min_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
         self.raw_time_series["max_load_energy"] = self.data_input.extract_input_data("max_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
@@ -67,8 +67,8 @@ class StorageTechnology(Technology):
     def convert_to_fraction_of_capex(self):
         """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
         fraction_year = self.calculate_fraction_of_year()
-        self.fixed_opex_specific = self.fixed_opex_specific * fraction_year
-        self.fixed_opex_specific_energy = self.fixed_opex_specific_energy * fraction_year
+        self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
+        self.opex_specific_fixed_energy = self.opex_specific_fixed_energy * fraction_year
         self.capex_specific = self.capex_specific * fraction_year
         self.capex_specific_energy = self.capex_specific_energy * fraction_year
 
@@ -164,7 +164,7 @@ class StorageTechnology(Technology):
         variables = optimization_setup.variables
         sets = optimization_setup.sets
 
-        def get_carrier_flow_bounds(index_values, index_list):
+        def flow_storage_bounds(index_values, index_list):
             """ return bounds of carrier_flow for bigM expression
             :param index_values: list of tuples with the index values
             :param index_list: The names of the indices
@@ -180,14 +180,14 @@ class StorageTechnology(Technology):
 
         # flow of carrier on node into storage
         index_values, index_names = cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)
-        bounds = get_carrier_flow_bounds(index_values, index_names)
-        variables.add_variable(model, name="carrier_flow_charge", index_sets=(index_values, index_names),
+        bounds = flow_storage_bounds(index_values, index_names)
+        variables.add_variable(model, name="flow_storage_charge", index_sets=(index_values, index_names),
             bounds=bounds, doc='carrier flow into storage technology on node i and time t')
         # flow of carrier on node out of storage
-        variables.add_variable(model, name="carrier_flow_discharge", index_sets=(index_values, index_names),
+        variables.add_variable(model, name="flow_storage_discharge", index_sets=(index_values, index_names),
             bounds=bounds, doc='carrier flow out of storage technology on node i and time t')
         # loss of carrier on node
-        variables.add_variable(model, name="level_charge", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup), bounds=(0, np.inf),
+        variables.add_variable(model, name="storage_level", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup), bounds=(0, np.inf),
             doc='storage level of storage technology ón node in each storage time step')
 
     @classmethod
@@ -222,12 +222,12 @@ class StorageTechnology(Technology):
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech,time)
         # disjunct constraints min load charge
-        model.add_constraints(model.variables["carrier_flow_charge"][tech, node, time].to_expr()
+        model.add_constraints(model.variables["flow_storage_charge"][tech, node, time].to_expr()
                               - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
                               - model.variables["tech_on_var"] * constraints.M
                               >= -constraints.M)
         # disjunct constraints min load discharge
-        model.add_constraints(model.variables["carrier_flow_discharge"][tech, node, time].to_expr()
+        model.add_constraints(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
                               - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
                               - model.variables["tech_on_var"] * constraints.M
                               >= -constraints.M)
@@ -240,20 +240,21 @@ class StorageTechnology(Technology):
 
         # for equality constraints we need to add upper and lower bounds
         # off charging
-        model.add_constraints(model.variables["carrier_flow_charge"][tech, node, time].to_linexpr()
+        model.add_constraints(model.variables["flow_storage_charge"][tech, node, time].to_linexpr()
                               + model.variables["tech_off_var"] * constraints.M
                               <= constraints.M)
-        model.add_constraints(model.variables["carrier_flow_charge"][tech, node, time].to_linexpr()
+        model.add_constraints(model.variables["flow_storage_charge"][tech, node, time].to_linexpr()
                               - model.variables["tech_off_var"] * constraints.M
                               >= -constraints.M)
 
         # off discharging
-        model.add_constraints(model.variables["carrier_flow_discharge"][tech, node, time]
+        model.add_constraints(model.variables["flow_storage_discharge"][tech, node, time]
                               + model.variables["tech_off_var"] * constraints.M
                               <= constraints.M)
-        model.add_constraints(model.variables["carrier_flow_discharge"][tech, node, time]
+        model.add_constraints(model.variables["flow_storage_discharge"][tech, node, time]
                               - model.variables["tech_off_var"] * constraints.M
                               >= -constraints.M)
+
 
 class StorageTechnologyRules:
     """
@@ -284,7 +285,7 @@ class StorageTechnologyRules:
             nodes, times = index.get_values(locs=[tech], levels=[1, 2], dtype=list, unique=True)
             element_time_step = [self.energy_system.time_steps.convert_time_step_energy2power(tech, t) for t in times]
             time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in element_time_step]
-            tuples = [(1.0, model.variables["level_charge"].loc[tech, nodes, times]),
+            tuples = [(1.0, model.variables["storage_level"].loc[tech, nodes, times]),
                       (-1.0, model.variables["capacity"].loc[tech, "energy", nodes, time_step_year])]
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                <= 0)
@@ -331,10 +332,10 @@ class StorageTechnologyRules:
                                             params.time_steps_storage_level_duration.loc[tech, times])
 
             coords = [model.variables.coords["set_nodes"], xr.DataArray(previous_level_time_step, dims=[f"{tech}_{nodes}_set_time_steps_storage_level_end"])]
-            tuples = [(1.0, model.variables["level_charge"].loc[tech, nodes, times]),
-                      (-(1.0 - params.self_discharge.loc[tech, nodes]) ** params.time_steps_storage_level_duration.loc[tech, times], model.variables["level_charge"].loc[tech, nodes, previous_level_time_step]),
-                      (-after_self_discharge.data*params.efficiency_charge.loc[tech, nodes, time_step_year], model.variables["carrier_flow_charge"].loc[tech, nodes, element_time_step]),
-                      (after_self_discharge.data/params.efficiency_discharge.loc[tech, nodes, time_step_year], model.variables["carrier_flow_discharge"].loc[tech, nodes, element_time_step])]
+            tuples = [(1.0, model.variables["storage_level"].loc[tech, nodes, times]),
+                      (-(1.0 - params.self_discharge.loc[tech, nodes]) ** params.time_steps_storage_level_duration.loc[tech, times], model.variables["storage_level"].loc[tech, nodes, previous_level_time_step]),
+                      (-after_self_discharge.data*params.efficiency_charge.loc[tech, nodes, time_step_year], model.variables["flow_storage_charge"].loc[tech, nodes, element_time_step]),
+                      (after_self_discharge.data/params.efficiency_discharge.loc[tech, nodes, time_step_year], model.variables["flow_storage_discharge"].loc[tech, nodes, element_time_step])]
             constraints.append(linexpr_from_tuple_np(tuples, coords, model)
                                == 0)
 
@@ -353,7 +354,7 @@ class StorageTechnologyRules:
 
         techs, capacity_types, nodes, times = IndexSet.tuple_to_arr(index_values, index_names, unique=True)
         coords = [model.variables.coords["set_storage_technologies"], model.variables.coords["set_capacity_types"], model.variables.coords["set_nodes"], model.variables.coords["set_time_steps_yearly"]]
-        tuples = [(1.0, model.variables["capex"].loc[techs, capacity_types, nodes, times]),
-                  (-params.capex_specific_storage.loc[techs, capacity_types, nodes, times], model.variables["built_capacity"].loc[techs, capacity_types, nodes, times])]
+        tuples = [(1.0, model.variables["cost_capex"].loc[techs, capacity_types, nodes, times]),
+                  (-params.capex_specific_storage.loc[techs, capacity_types, nodes, times], model.variables["capacity_addition"].loc[techs, capacity_types, nodes, times])]
 
         return linexpr_from_tuple_np(tuples, coords, model) == 0

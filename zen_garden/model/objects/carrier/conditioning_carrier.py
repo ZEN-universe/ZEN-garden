@@ -115,9 +115,9 @@ class ConditioningCarrierRules:
         index = ZenIndex(index_values, index_names)
 
         # carrier flow transport technologies
-        if model.variables["carrier_flow"].size > 0:
-            carrier_flow_in = []
-            carrier_flow_out = []
+        if model.variables["flow_transport"].size > 0:
+            flow_transport_in = []
+            flow_transport_out = []
             # precalculate the edges
             edges_in = {node: self.energy_system.calculate_connected_edges(node, "in") for node in index.get_unique([1])}
             edges_out = {node: self.energy_system.calculate_connected_edges(node, "out") for node in index.get_unique([1])}
@@ -127,17 +127,17 @@ class ConditioningCarrierRules:
                 for tech in sets["set_transport_technologies"]:
                     if carrier in sets["set_reference_carriers"][tech]:
                         techs.append(tech)
-                carrier_flow_in.append((model.variables["carrier_flow"].loc[techs, edges_in[node]] - model.variables["carrier_loss"].loc[techs, edges_in[node]]).sum(["set_transport_technologies", "set_edges"]))
-                carrier_flow_out.append(model.variables["carrier_flow"].loc[techs, edges_out[node]].sum(["set_transport_technologies", "set_edges"]))
+                flow_transport_in.append((model.variables["flow_transport"].loc[techs, edges_in[node]] - model.variables["flow_transport_loss"].loc[techs, edges_in[node]]).sum(["set_transport_technologies", "set_edges"]))
+                flow_transport_out.append(model.variables["flow_transport"].loc[techs, edges_out[node]].sum(["set_transport_technologies", "set_edges"]))
             # merge and regroup
-            carrier_flow_in = lp.merge(*carrier_flow_in, dim="group")
-            carrier_flow_in = self.optimization_setup.constraints.reorder_group(carrier_flow_in, None, None, index.get_unique([0, 1]), index_names[:-1], model)
-            carrier_flow_out = lp.merge(*carrier_flow_out, dim="group")
-            carrier_flow_out = self.optimization_setup.constraints.reorder_group(carrier_flow_out, None, None, index.get_unique([0, 1]), index_names[:-1], model)
+            flow_transport_in = lp.merge(*flow_transport_in, dim="group")
+            flow_transport_in = self.optimization_setup.constraints.reorder_group(flow_transport_in, None, None, index.get_unique([0, 1]), index_names[:-1], model)
+            flow_transport_out = lp.merge(*flow_transport_out, dim="group")
+            flow_transport_out = self.optimization_setup.constraints.reorder_group(flow_transport_out, None, None, index.get_unique([0, 1]), index_names[:-1], model)
         else:
             # if there is no carrier flow we just create empty arrays
-            carrier_flow_in = model.variables["import_carrier_flow"].where(False).to_linexpr()
-            carrier_flow_out = model.variables["import_carrier_flow"].where(False).to_linexpr()
+            flow_transport_in = model.variables["flow_import"].where(False).to_linexpr()
+            flow_transport_out = model.variables["flow_import"].where(False).to_linexpr()
 
         # carrier flow transport technologies
         carrier_conversion_in = []
@@ -156,8 +156,8 @@ class ConditioningCarrierRules:
                 carrier_out = []
             else:
                 carrier_out = [carrier]
-            carrier_conversion_in.append(model.variables["input_flow"].loc[techs_in, carrier_in, nodes].sum(model.variables["input_flow"].dims[:2]))
-            carrier_conversion_out.append(model.variables["output_flow"].loc[techs_out, carrier_out, nodes].sum(model.variables["output_flow"].dims[:2]))
+            carrier_conversion_in.append(model.variables["flow_conversion_input"].loc[techs_in, carrier_in, nodes].sum(model.variables["flow_conversion_input"].dims[:2]))
+            carrier_conversion_out.append(model.variables["flow_conversion_output"].loc[techs_out, carrier_out, nodes].sum(model.variables["flow_conversion_output"].dims[:2]))
         # merge and regroup
         carrier_conversion_in = lp.merge(*carrier_conversion_in, dim="group")
         carrier_conversion_in = self.optimization_setup.constraints.reorder_group(carrier_conversion_in, None, None, index.get_unique([0]), index_names[:1], model)
@@ -165,27 +165,27 @@ class ConditioningCarrierRules:
         carrier_conversion_out = self.optimization_setup.constraints.reorder_group(carrier_conversion_out, None, None, index.get_unique([0]), index_names[:1], model)
 
         # carrier flow storage technologies
-        if model.variables["carrier_flow_charge"].size > 0:
-            carrier_flow_charge = []
-            carrier_flow_discharge = []
+        if model.variables["flow_storage_discharge"].size > 0:
+            flow_storage_discharge = []
+            flow_storage_charge = []
             for carrier in index.get_unique([0]):
                 storage_techs = [tech for tech in sets["set_storage_technologies"] if carrier in sets["set_reference_carriers"][tech]]
-                carrier_flow_charge.append(model.variables["carrier_flow_charge"].loc[storage_techs].sum("set_storage_technologies"))
-                carrier_flow_discharge.append(model.variables["carrier_flow_discharge"].loc[storage_techs].sum("set_storage_technologies"))
+                flow_storage_discharge.append(model.variables["flow_storage_discharge"].loc[storage_techs].sum("set_storage_technologies"))
+                flow_storage_charge.append(model.variables["flow_storage_charge"].loc[storage_techs].sum("set_storage_technologies"))
             # merge and regroup
-            carrier_flow_charge = lp.merge(*carrier_flow_charge, dim="group")
-            carrier_flow_charge = self.optimization_setup.constraints.reorder_group(carrier_flow_charge, None, None, index.get_unique([0]), index_names[:1], model)
-            carrier_flow_discharge = lp.merge(*carrier_flow_discharge, dim="group")
-            carrier_flow_discharge = self.optimization_setup.constraints.reorder_group(carrier_flow_discharge, None, None, index.get_unique([0]), index_names[:1], model)
+            flow_storage_discharge = lp.merge(*flow_storage_discharge, dim="group")
+            flow_storage_discharge = self.optimization_setup.constraints.reorder_group(flow_storage_discharge, None, None, index.get_unique([0]), index_names[:1], model)
+            flow_storage_charge = lp.merge(*flow_storage_charge, dim="group")
+            flow_storage_charge = self.optimization_setup.constraints.reorder_group(flow_storage_charge, None, None, index.get_unique([0]), index_names[:1], model)
         else:
             # if there is no carrier flow we just create empty arrays
-            carrier_flow_charge = model.variables["import_carrier_flow"].where(False).to_linexpr()
-            carrier_flow_discharge = model.variables["import_carrier_flow"].where(False).to_linexpr()
+            flow_storage_discharge = model.variables["flow_import"].where(False).to_linexpr()
+            flow_storage_charge = model.variables["flow_import"].where(False).to_linexpr()
 
         # carrier import, demand and export
-        carrier_import = model.variables["import_carrier_flow"].to_linexpr()
-        carrier_export = model.variables["export_carrier_flow"].to_linexpr()
-        carrier_demand = params.demand_carrier
+        carrier_import = model.variables["flow_import"].to_linexpr()
+        carrier_export = model.variables["flow_export"].to_linexpr()
+        carrier_demand = params.demand
 
         # check if carrier is conditioning carrier:
         endogenous_carrier_demand = []
@@ -203,16 +203,19 @@ class ConditioningCarrierRules:
         # merge and regroup
         endogenous_carrier_demand = lp.merge(*endogenous_carrier_demand, dim="group")
         endogenous_carrier_demand = self.optimization_setup.constraints.reorder_group(endogenous_carrier_demand, None, None, index.get_unique([0]), index_names[:1], model)
+        # shed demand
+        carrier_shed_demand = model.variables["shed_demand"].to_linexpr()
 
         # Add everything
         lhs = lp.merge(carrier_conversion_out,
                        -carrier_conversion_in,
-                       carrier_flow_in,
-                       -carrier_flow_out,
-                       carrier_flow_discharge,
-                       -carrier_flow_charge,
+                       flow_transport_in,
+                       -flow_transport_out,
+                       flow_storage_charge,
+                       -flow_storage_discharge,
                        carrier_import,
                        -carrier_export,
-                       -endogenous_carrier_demand)
+                       -endogenous_carrier_demand,
+                       carrier_shed_demand)
 
         return lhs == carrier_demand

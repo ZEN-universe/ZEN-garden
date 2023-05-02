@@ -42,13 +42,13 @@ class TransportTechnology(Technology):
         super().store_input_data()
         # set attributes for parameters of child class <TransportTechnology>
         self.distance = self.data_input.extract_input_data("distance", index_sets=["set_edges"])
-        self.loss_flow = self.data_input.extract_attribute("loss_flow")["value"]
+        self.transport_loss_factor = self.data_input.extract_attribute("transport_loss_factor")["value"]
         # get capex of transport technology
         self.get_capex_transport()
         # annualize capex
         self.convert_to_fraction_of_capex()
         # calculate capex of existing capacity
-        self.capex_existing_capacity = self.calculate_capex_of_existing_capacities()
+        self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
         # check that existing capacities are equal in both directions if technology is bidirectional
         if self.name in self.optimization_setup.system["set_bidirectional_transport_technologies"]:
             self.check_if_bidirectional()
@@ -60,24 +60,24 @@ class TransportTechnology(Technology):
         if self.optimization_setup.system['double_capex_transport']:
             # both capex terms must be specified
             self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-            self.capex_per_distance = self.data_input.extract_input_data("capex_per_distance", index_sets=["set_edges", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        else:  # Here only capex_specific is used, and capex_per_distance is set to Zero.
-            if self.data_input.exists_attribute("capex_per_distance"):
-                self.capex_per_distance = self.data_input.extract_input_data("capex_per_distance", index_sets=["set_edges", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-                self.capex_specific = self.capex_per_distance * self.distance
-                self.fixed_opex_specific = self.fixed_opex_specific * self.distance
+            self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        else:  # Here only capex_specific is used, and capex_per_distance_transport is set to Zero.
+            if self.data_input.exists_attribute("capex_per_distance_transport"):
+                self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+                self.capex_specific = self.capex_per_distance_transport * self.distance
+                self.opex_specific_fixed = self.opex_specific_fixed * self.distance
             elif self.data_input.exists_attribute("capex_specific"):
                 self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
             else:
-                raise AttributeError(f"The transport technology {self.name} has neither capex_per_distance nor capex_specific attribute.")
-            self.capex_per_distance = self.capex_specific * 0.0
+                raise AttributeError(f"The transport technology {self.name} has neither capex_per_distance_transport nor capex_specific attribute.")
+            self.capex_per_distance_transport = self.capex_specific * 0.0
 
     def convert_to_fraction_of_capex(self):
         """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
         fraction_year = self.calculate_fraction_of_year()
-        self.fixed_opex_specific = self.fixed_opex_specific * fraction_year
+        self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         self.capex_specific = self.capex_specific * fraction_year
-        self.capex_per_distance = self.capex_per_distance * fraction_year
+        self.capex_per_distance_transport = self.capex_per_distance_transport * fraction_year
 
     def calculate_capex_of_single_capacity(self, capacity, index):
         """ this method calculates the annualized capex of a single existing capacity. """
@@ -92,10 +92,10 @@ class TransportTechnology(Technology):
         for edge in self.energy_system.set_edges:
             _reversed_edge = self.energy_system.calculate_reversed_edge(edge)
             self.set_reversed_edge(edge=edge, _reversed_edge=_reversed_edge)
-            _existing_capacity_edge = self.existing_capacity[edge]
-            _existing_capacity_reversed_edge = self.existing_capacity[_reversed_edge]
+            _capacity_existing_edge = self.capacity_existing[edge]
+            _capacity_existing_reversed_edge = self.capacity_existing[_reversed_edge]
             assert (
-                        _existing_capacity_edge == _existing_capacity_reversed_edge).all(), f"The existing capacities of the bidirectional transport technology {self.name} are not equal on the edge pair {edge} and {_reversed_edge} ({_existing_capacity_edge.to_dict()} and {_existing_capacity_reversed_edge.to_dict()})"
+                        _capacity_existing_edge == _capacity_existing_reversed_edge).all(), f"The existing capacities of the bidirectional transport technology {self.name} are not equal on the edge pair {edge} and {_reversed_edge} ({_capacity_existing_edge.to_dict()} and {_capacity_existing_reversed_edge.to_dict()})"
 
     ### --- getter/setter classmethods
     def set_reversed_edge(self, edge, _reversed_edge):
@@ -126,11 +126,11 @@ class TransportTechnology(Technology):
             data=optimization_setup.initialize_component(cls, "capex_specific", index_names=["set_transport_technologies", "set_edges", "set_time_steps_yearly"]),
             doc='capex per unit for transport technologies')
         # capital cost per distance
-        optimization_setup.parameters.add_parameter(name="capex_per_distance",
-            data=optimization_setup.initialize_component(cls, 'capex_per_distance', index_names=['set_transport_technologies', "set_edges", "set_time_steps_yearly"]),
+        optimization_setup.parameters.add_parameter(name="capex_per_distance_transport",
+            data=optimization_setup.initialize_component(cls, 'capex_per_distance_transport', index_names=['set_transport_technologies', "set_edges", "set_time_steps_yearly"]),
             doc='capex per distance for transport technologies')
         # carrier losses
-        optimization_setup.parameters.add_parameter(name="loss_flow", data=optimization_setup.initialize_component(cls, "loss_flow", index_names=["set_transport_technologies"]),
+        optimization_setup.parameters.add_parameter(name="transport_loss_factor", data=optimization_setup.initialize_component(cls, "transport_loss_factor", index_names=["set_transport_technologies"]),
             doc='carrier losses due to transport with transport technologies')
 
     @classmethod
@@ -142,7 +142,7 @@ class TransportTechnology(Technology):
         variables = optimization_setup.variables
         sets = optimization_setup.sets
 
-        def get_carrier_flow_bounds(index_values, index_list):
+        def flow_transport_bounds(index_values, index_list):
             """ return bounds of carrier_flow for bigM expression
             :param index_values: list of tuples with the index values
             :param index_list: The names of the indices
@@ -159,11 +159,11 @@ class TransportTechnology(Technology):
 
         # flow of carrier on edge
         index_values, index_names = cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup)
-        bounds = get_carrier_flow_bounds(index_values, index_names)
-        variables.add_variable(model, name="carrier_flow", index_sets=(index_values, index_names),
+        bounds = flow_transport_bounds(index_values, index_names)
+        variables.add_variable(model, name="flow_transport", index_sets=(index_values, index_names),
             bounds=bounds, doc='carrier flow through transport technology on edge i and time t')
         # loss of carrier on edge
-        variables.add_variable(model, name="carrier_loss", index_sets=(index_values, index_names), bounds=(0,np.inf),
+        variables.add_variable(model, name="flow_transport_loss", index_sets=(index_values, index_names), bounds=(0,np.inf),
             doc='carrier flow through transport technology on edge i and time t')
 
     @classmethod
@@ -198,7 +198,7 @@ class TransportTechnology(Technology):
         time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
 
         # disjunct constraints min load
-        model.add_constraints(model.variables["carrier_flow"][tech, edge, time].to_linexpr()
+        model.add_constraints(model.variables["flow_transport"][tech, edge, time].to_linexpr()
                               - params.min_load.loc[tech, capacity_type, edge, time].item() * model.variables["capacity"][tech, capacity_type, edge, time_step_year]
                               - model.variables["tech_on_var"] * constraints.M
                               >= -constraints.M)
@@ -210,13 +210,12 @@ class TransportTechnology(Technology):
         constraints = optimization_setup.constraints
 
         # since it is an equality con we add lower and upper bounds
-        model.add_constraints(model.variables["carrier_flow"][tech, edge, time].to_linexpr()
+        model.add_constraints(model.variables["flow_transport"][tech, edge, time].to_linexpr()
                               + model.variables["tech_off_var"] * constraints.M
                               <= constraints.M)
-        model.add_constraints(model.variables["carrier_flow"][tech, edge, time].to_linexpr()
+        model.add_constraints(model.variables["flow_transport"][tech, edge, time].to_linexpr()
                               - model.variables["tech_off_var"] * constraints.M
                               >= -constraints.M)
-
 
 class TransportTechnologyRules:
     """
@@ -239,10 +238,10 @@ class TransportTechnologyRules:
 
         # get all constraints
         mask = np.isinf(params.distance).astype(float)
-        lp_where_inf = mask * model.variables["carrier_loss"]
-        lp_where_not_inf = (1 - mask) * (model.variables["carrier_loss"] - params.loss_flow * params.distance * model.variables["carrier_flow"])
+        lp_where_inf = mask * model.variables["flow_transport_loss"]
+        lp_where_not_inf = (1 - mask) * (model.variables["flow_transport_loss"] - params.transport_loss_factor * params.distance * model.variables["flow_transport"])
 
-        return lp_where_inf + lp_where_not_inf == 0, model.variables["carrier_loss"].mask
+        return lp_where_inf + lp_where_not_inf == 0, model.variables["flow_transport_loss"].mask
 
     def get_constraint_transport_technology_capex(self):
         """ definition of the capital expenditures for the transport technology"""
@@ -266,13 +265,13 @@ class TransportTechnologyRules:
         mask = np.isinf(params.distance).astype(float)
 
         # expression if true
-        lp_where_inf = mask*model.variables["built_capacity"].loc[coords[0], "power", coords[1], coords[2]]
+        lp_where_inf = mask*model.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
 
         # expression if false
-        lp_where_not_inf = (1 - mask) * (model.variables["capex"].loc[coords[0], "power", coords[1], coords[2]]
-                                         - model.variables["built_capacity"].loc[coords[0], "power", coords[1], coords[2]] * params.capex_specific_transport.loc[coords[0], coords[1]])
-        if np.any(params.distance.loc[coords[0], coords[1]] * params.capex_per_distance.loc[coords[0], coords[1]] != 0):
-            lp_where_not_inf -= (1 - mask) * model.variables["install_technology"].loc[coords[0], "power", coords[1], coords[2]] * (params.distance.loc[coords[0], coords[1]] * params.capex_per_distance.loc[coords[0], coords[1]])
+        lp_where_not_inf = (1 - mask) * (model.variables["cost_capex"].loc[coords[0], "power", coords[1], coords[2]]
+                                         - model.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]] * params.capex_specific_transport.loc[coords[0], coords[1]])
+        if np.any(params.distance.loc[coords[0], coords[1]] * params.capex_specific_transport.loc[coords[0], coords[1]] != 0):
+            lp_where_not_inf -= (1 - mask) * model.variables["technology_installation"].loc[coords[0], "power", coords[1], coords[2]] * (params.distance.loc[coords[0], coords[1]] * params.capex_specific_transport.loc[coords[0], coords[1]])
 
         return lp_where_inf + lp_where_not_inf == 0, global_mask
 
@@ -289,11 +288,11 @@ class TransportTechnologyRules:
         for tech in index.get_unique([0]):
             if tech in system["set_bidirectional_transport_technologies"]:
                 _reversed_edge = xr.DataArray([self.get_reversed_edge(edge) for edge in edge_coords], coords=edge_coords.coords)
-                constraints.append(model.variables["built_capacity"].loc[tech, "power", edge_coords]
-                                   - model.variables["built_capacity"].loc[tech, "power", _reversed_edge]
+                constraints.append(model.variables["capacity_addition"].loc[tech, "power", edge_coords]
+                                   - model.variables["capacity_addition"].loc[tech, "power", _reversed_edge]
                                    == 0)
             else:
                 # we need to add an empty con
-                constraints.append(np.nan*model.variables["built_capacity"].loc[tech, "power", edge_coords].where(False) == np.nan)
+                constraints.append(np.nan*model.variables["capacity_addition"].loc[tech, "power", edge_coords].where(False) == np.nan)
 
         return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_list[:1], model)

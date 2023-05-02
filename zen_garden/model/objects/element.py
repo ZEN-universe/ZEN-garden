@@ -228,16 +228,16 @@ class Element:
                                 append_element = False
                                 break
                         # if set is built for pwa conver_efficiency:
-                        elif "set_conver_efficiency" in index:
+                        elif "set_conversion_factor" in index:
                             if element in sets["set_conversion_technologies"]:  # or element in model.set_storage_technologies:
-                                _conver_efficiency_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "conver_efficiency_is_pwa")
+                                _conversion_factor_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "conversion_factor_is_pwa")
                                 dependent_carrier = list(sets["set_dependent_carriers"][element])
                                 # TODO for more than one carrier
-                                # _pwa_conver_efficiency = cls.get_attribute_of_specific_element(element,"pwa_conver_efficiency")
-                                # dependent_carrier_pwa     = _pwa_conver_efficiency["pwa_variables"]
-                                if "linear" in index and not _conver_efficiency_is_pwa:
+                                # _pwa_conversion_factor = cls.get_attribute_of_specific_element(element,"pwa_conversion_factor")
+                                # dependent_carrier_pwa     = _pwa_conversion_factor["pwa_variables"]
+                                if "linear" in index and not _conversion_factor_is_pwa:
                                     list_sets.append(dependent_carrier)
-                                elif "pwa" in index and _conver_efficiency_is_pwa:
+                                elif "pwa" in index and _conversion_factor_is_pwa:
                                     list_sets.append(dependent_carrier)
                                 else:
                                     list_sets.append([])
@@ -301,12 +301,12 @@ class Element:
             # if a conversion technology, check if all dependentCarrierFlow at reference_carrierFlow = 0 equal to 0
             else:
                 # if technology is approximated (by either pwa or linear)
-                _isPWA = optimization_setup.get_attribute_of_specific_element(cls, tech, "conver_efficiency_is_pwa")
+                _isPWA = optimization_setup.get_attribute_of_specific_element(cls, tech, "conversion_factor_is_pwa")
                 # if not modeled as pwa
                 if not _isPWA:
                     model_on_off = False
                 else:
-                    _pwa_parameter = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conver_efficiency")
+                    _pwa_parameter = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conversion_factor")
                     # iterate through all dependent carriers and check if all lower bounds are equal to 0
                     _only_zero_dependent_bound = True
                     for PWAVariable in _pwa_parameter["pwa_variables"]:

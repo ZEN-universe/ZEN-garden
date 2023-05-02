@@ -47,25 +47,25 @@ class ConversionTechnology(Technology):
         assert self.reference_carrier[0] in (self.input_carrier + self.output_carrier), \
             f"reference carrier {self.reference_carrier} of technology {self.name} not in input and output carriers {self.input_carrier + self.output_carrier}"
         # get conversion efficiency and capex
-        self.get_conver_efficiency()
+        self.get_conversion_factor()
         self.convert_to_fraction_of_capex()
 
-    def get_conver_efficiency(self):
-        """retrieves and stores conver_efficiency for <ConversionTechnology>.
-        Each Child class overwrites method to store different conver_efficiency """
+    def get_conversion_factor(self):
+        """retrieves and stores conversion_factor for <ConversionTechnology>.
+        Each Child class overwrites method to store different conversion_factor """
         # TODO read pwa Dict and set Params
-        _pwa_conver_efficiency, self.conver_efficiency_is_pwa = self.data_input.extract_pwa_data("conver_efficiency")
-        if self.conver_efficiency_is_pwa:
-            self.pwa_conver_efficiency = _pwa_conver_efficiency
+        _pwa_conversion_factor, self.conversion_factor_is_pwa = self.data_input.extract_pwa_data("conversion_factor")
+        if self.conversion_factor_is_pwa:
+            self.pwa_conversion_factor = _pwa_conversion_factor
         else:
-            self.conver_efficiency_linear = _pwa_conver_efficiency
+            self.conversion_factor_linear = _pwa_conversion_factor
 
     def convert_to_fraction_of_capex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
         _pwa_capex, self.capex_is_pwa = self.data_input.extract_pwa_data("capex")
-        # annualize capex
+        # annualize cost_capex
         fraction_year = self.calculate_fraction_of_year()
-        self.fixed_opex_specific = self.fixed_opex_specific * fraction_year
+        self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         if not self.capex_is_pwa:
             self.capex_specific = _pwa_capex["capex"] * fraction_year
         else:
@@ -74,7 +74,7 @@ class ConversionTechnology(Technology):
             # set bounds
             self.pwa_capex["bounds"]["capex"] = tuple([(bound * fraction_year) for bound in self.pwa_capex["bounds"]["capex"]])
         # calculate capex of existing capacity
-        self.capex_existing_capacity = self.calculate_capex_of_existing_capacities()
+        self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
 
     def calculate_capex_of_single_capacity(self, capacity, index):
         """ this method calculates the annualized capex of a single existing capacity. """
@@ -89,11 +89,11 @@ class ConversionTechnology(Technology):
 
     ### --- getter/setter classmethods
     @classmethod
-    def get_capex_conver_efficiency_all_elements(cls, optimization_setup, variable_type, selectPWA, index_names=None):
-        """ similar to Element.get_attribute_of_all_elements but only for capex and conver_efficiency.
+    def get_capex_conversion_factor_all_elements(cls, optimization_setup, variable_type, selectPWA, index_names=None):
+        """ similar to Element.get_attribute_of_all_elements but only for capex and conversion_factor.
         If selectPWA, extract pwa attributes, otherwise linear.
         :param optimization_setup: The OptimizationSetup the element is part of
-        :param variable_type: either capex or conver_efficiency
+        :param variable_type: either capex or conversion_factor
         :param selectPWA: boolean if get attributes for pwa
         :return dict_of_attributes: returns dict of attribute values """
         _class_elements = optimization_setup.get_all_elements(cls)
@@ -102,12 +102,12 @@ class ConversionTechnology(Technology):
             _is_pwa_attribute = "capex_is_pwa"
             _attribute_name_pwa = "pwa_capex"
             _attribute_name_linear = "capex_specific"
-        elif variable_type == "conver_efficiency":
-            _is_pwa_attribute = "conver_efficiency_is_pwa"
-            _attribute_name_pwa = "pwa_conver_efficiency"
-            _attribute_name_linear = "conver_efficiency_linear"
+        elif variable_type == "conversion_factor":
+            _is_pwa_attribute = "conversion_factor_is_pwa"
+            _attribute_name_pwa = "pwa_conversion_factor"
+            _attribute_name_linear = "conversion_factor_linear"
         else:
-            raise KeyError("Select either 'capex' or 'conver_efficiency'")
+            raise KeyError("Select either 'capex' or 'conversion_factor'")
         for _element in _class_elements:
             # extract for pwa
             if getattr(_element, _is_pwa_attribute) and selectPWA:
@@ -165,11 +165,11 @@ class ConversionTechnology(Technology):
         :param optimization_setup: The OptimizationSetup the element is part of """
         # slope of linearly modeled capex
         optimization_setup.parameters.add_parameter(name="capex_specific_conversion",
-            data=cls.get_capex_conver_efficiency_all_elements(optimization_setup, "capex", False, index_names=["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"]),
+            data=cls.get_capex_conversion_factor_all_elements(optimization_setup, "capex", False, index_names=["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"]),
             doc="Parameter which specifies the slope of the capex if approximated linearly")
         # slope of linearly modeled conversion efficiencies
-        optimization_setup.parameters.add_parameter(name="conver_efficiency_specific", data=cls.get_capex_conver_efficiency_all_elements(optimization_setup, "conver_efficiency", False,
-                                                                                                                     index_names=["set_conversion_technologies", "set_conver_efficiency_linear",
+        optimization_setup.parameters.add_parameter(name="conversion_factor", data=cls.get_capex_conversion_factor_all_elements(optimization_setup, "conversion_factor", False,
+                                                                                                                     index_names=["set_conversion_technologies", "set_conversion_factor_linear",
                                                                                                                                   "set_nodes", "set_time_steps_yearly"]),
             doc="Parameter which specifies the slope of the conversion efficiency if approximated linearly")
 
@@ -181,7 +181,7 @@ class ConversionTechnology(Technology):
         model = optimization_setup.model
         variables = optimization_setup.variables
 
-        def get_carrier_flow_bounds(index_values, index_names):
+        def flow_conversion_bounds(index_values, index_names):
             """ return bounds of carrier_flow for bigM expression
             :param index_values: list of index values
             :return bounds: bounds of carrier_flow"""
@@ -200,8 +200,8 @@ class ConversionTechnology(Technology):
 
             for tech in technology_set:
                 for carrier in carrier_set[tech]:
-                    if optimization_setup.get_attribute_of_specific_element(cls, tech, "conver_efficiency_is_pwa"):
-                        bounds = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conver_efficiency")["bounds"][carrier]
+                    if optimization_setup.get_attribute_of_specific_element(cls, tech, "conversion_factor_is_pwa"):
+                        bounds = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conversion_factor")["bounds"][carrier]
                         # make sure lower bound is above 0
                         if bounds[0] is not None and bounds[0] > 0:
                             lower.loc[tech, carrier, ...] = bounds[0]
@@ -209,11 +209,11 @@ class ConversionTechnology(Technology):
                     else:
                         time_step_year = [energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in timestep_set[tech]]
                         if carrier == sets["set_reference_carriers"][tech][0]:
-                            _conver_efficiency = 1
+                            _conversion_factor = 1
                         else:
-                            _conver_efficiency = params.conver_efficiency_specific.loc[tech, carrier, node_set, time_step_year]
-                        lower.loc[tech, carrier, ...] = model.variables["capacity"].lower.loc[tech, "power", node_set, time_step_year].data
-                        upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data
+                            _conversion_factor = params.conversion_factor.loc[tech, carrier, node_set, time_step_year]
+                        lower.loc[tech, carrier, ...] = model.variables["capacity"].lower.loc[tech, "power", node_set, time_step_year].data * _conversion_factor
+                        upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data * _conversion_factor
 
             # make sure lower is never below 0
             return (lower, upper)
@@ -221,13 +221,12 @@ class ConversionTechnology(Technology):
         ## Flow variables
         # input flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_input_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
-        variables.add_variable(model, name="input_flow", index_sets=(index_values, index_names),
-            bounds=get_carrier_flow_bounds(index_values, index_names), doc='Carrier input of conversion technologies')
+        variables.add_variable(model, name="flow_conversion_input", index_sets=(index_values, index_names),
+            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier input of conversion technologies')
         # output flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_output_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
-        variables.add_variable(model, name="output_flow", index_sets=(index_values, index_names),
-            bounds=get_carrier_flow_bounds(index_values, index_names), doc='Carrier output of conversion technologies')
-
+        variables.add_variable(model, name="flow_conversion_output", index_sets=(index_values, index_names),
+            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier output of conversion technologies')
         ## pwa Variables - Capex
         # pwa capacity
         variables.add_variable(model, name="capacity_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
@@ -239,14 +238,14 @@ class ConversionTechnology(Technology):
         ## pwa Variables - Conversion Efficiency
         # pwa reference flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
-        variables.add_variable(model, name="reference_flow_approximation",
+        variables.add_variable(model, name="flow_approximation_reference",
             index_sets=(index_values, index_names),
-            bounds=get_carrier_flow_bounds(index_values, index_names), doc='pwa of flow of reference carrier of conversion technologies')
+            bounds=flow_conversion_bounds(index_values, index_names), doc='pwa of flow of reference carrier of conversion technologies')
         # pwa dependent flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
-        variables.add_variable(model, name="dependent_flow_approximation",
+        variables.add_variable(model, name="flow_approximation_dependent",
             index_sets=(index_values, index_names),
-            bounds=get_carrier_flow_bounds(index_values, index_names), doc='pwa of flow of dependent carriers of conversion technologies')
+            bounds=flow_conversion_bounds(index_values, index_names), doc='pwa of flow of dependent carriers of conversion technologies')
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
@@ -268,18 +267,18 @@ class ConversionTechnology(Technology):
             # if set_linear_capex contains technologies:
             constraints.add_constraint_rule(model, name="constraint_linear_capex", index_sets=set_linear_capex, rule=rules.constraint_linear_capex_rule, doc="Linear relationship in capex")
         # Conversion Efficiency
-        set_pwa_conver_efficiency = cls.create_custom_set(["set_conversion_technologies", "set_conver_efficiency_pwa", "set_nodes", "set_time_steps_operation"], optimization_setup)
-        set_linear_conver_efficiency = cls.create_custom_set(["set_conversion_technologies", "set_conver_efficiency_linear", "set_nodes", "set_time_steps_operation"], optimization_setup)
-        if len(set_pwa_conver_efficiency[0]) > 0:
+        set_pwa_conversion_factor = cls.create_custom_set(["set_conversion_technologies", "set_conversion_factor_pwa", "set_nodes", "set_time_steps_operation"], optimization_setup)
+        set_linear_conversion_factor = cls.create_custom_set(["set_conversion_technologies", "set_conversion_factor_linear", "set_nodes", "set_time_steps_operation"], optimization_setup)
+        if len(set_pwa_conversion_factor[0]) > 0:
             # if set_pwa_conver_efficiency contains technologies:
-            pwa_breakpoints, pwa_values = cls.calculate_pwa_breakpoints_values(optimization_setup, set_pwa_conver_efficiency[0], "conver_efficiency")
-            constraints.add_pw_constraint(model, index_values=set_pwa_conver_efficiency[0], yvar="dependent_flow_approximation", xvar="reference_flow_approximation",
+            pwa_breakpoints, pwa_values = cls.calculate_pwa_breakpoints_values(optimization_setup, set_pwa_conversion_factor[0], "conversion_factor")
+            constraints.add_pw_constraint(model, index_values=set_pwa_conversion_factor[0], yvar="flow_approximation_dependent", xvar="flow_approximation_reference",
                                           break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ")
-        if set_linear_conver_efficiency[0]:
+        if set_linear_conversion_factor[0]:
             # if set_linear_conver_efficiency contains technologies:
-            constraints.add_constraint_block(model, name="constraint_linear_conver_efficiency",
-                                             constraint=rules.get_constraint_linear_conver_efficiency(*set_linear_conver_efficiency),
-                                             doc="Linear relationship in conver_efficiency")  # Coupling constraints
+            constraints.add_constraint_block(model, name="constraint_linear_conversion_factor",
+                                             constraint=rules.get_constraint_linear_conver_efficiency(*set_linear_conversion_factor),
+                                             doc="Linear relationship in conversion_factor")  # Coupling constraints
         # couple the real variables with the auxiliary variables
         constraints.add_constraint_rule(model, name="constraint_capex_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup),
             rule=rules.constraint_capex_coupling_rule, doc="couples the real capex variables with the approximated variables")
@@ -309,9 +308,9 @@ class ConversionTechnology(Technology):
         energy_system = optimization_setup.energy_system
         reference_carrier = sets["set_reference_carriers"][tech][0]
         if reference_carrier in sets["set_input_carriers"][tech]:
-            reference_flow = model.variables["input_flow"][tech, reference_carrier, node, time]
+            reference_flow = model.variables["flow_conversion_input"][tech, reference_carrier, node, time]
         else:
-            reference_flow = model.variables["output_flow"][tech, reference_carrier, node, time]
+            reference_flow = model.variables["flow_conversion_output"][tech, reference_carrier, node, time]
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, time)
         # disjunct constraints min load
@@ -335,9 +334,8 @@ class ConversionTechnology(Technology):
         sets = optimization_setup.sets
         model = optimization_setup.model
         constraints = optimization_setup.constraints
-        lhs = sum(model.variables["input_flow"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
-              + sum(model.variables["input_flow"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
-              + sum(model.variables["output_flow"][tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
+        lhs = sum(model.variables["flow_conversion_input"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
+              + sum(model.variables["flow_conversion_output"][tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
         # equal cons -> to cons
         model.add_constraints(lhs.to_linexpr() + model.variables["tech_off_var"] * constraints.M <= constraints.M)
         model.add_constraints(lhs.to_linexpr() - model.variables["tech_off_var"] * constraints.M >= -constraints.M)
@@ -366,7 +364,7 @@ class ConversionTechnology(Technology):
                 pwa_parameter = optimization_setup.get_attribute_of_specific_element(cls, tech, f"pwa_{type_pwa}")
                 pwa_breakpoints[index] = pwa_parameter["capacity"]
                 pwa_values[index] = pwa_parameter["capex"]
-            elif type_pwa == "conver_efficiency":
+            elif type_pwa == "conversion_factor":
                 # retrieve pwa variables
                 pwa_parameter = optimization_setup.get_attribute_of_specific_element(cls, tech, f"pwa_{type_pwa}")
                 pwa_breakpoints[index] = pwa_parameter[optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier")[tech][0]]
@@ -413,8 +411,8 @@ class ConversionTechnologyRules:
             coords = [model.variables.coords["set_time_steps_operation"]]
             times = index.get_values([tech, dependent_carrier, node], 3, dtype=list)
             time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times]
-            tuples = [(1.0, model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier, node, times]),
-                      (-params.conver_efficiency_specific.loc[tech, dependent_carrier, node, time_step_year], model.variables["reference_flow_approximation"].loc[tech, dependent_carrier, node, times])]
+            tuples = [(1.0, model.variables["flow_approximation_dependent"].loc[tech, dependent_carrier, node, times]),
+                      (-params.conversion_factor.loc[tech, dependent_carrier, node, time_step_year], model.variables["flow_approximation_reference"].loc[tech, dependent_carrier, node, times])]
             constraints.append(linexpr_from_tuple_np(tuples, coords=coords, model=model)
                                == 0)
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_linear_conver_efficiency_dim", model)
@@ -422,14 +420,14 @@ class ConversionTechnologyRules:
     def constraint_capex_coupling_rule(self, tech, node, time):
         """ couples capex variables based on modeling technique"""
         model = self.optimization_setup.model
-        return (model.variables["capex"][tech, "power", node, time]
+        return (model.variables["cost_capex"][tech, "power", node, time]
                 - model.variables["capex_approximation"][tech, node, time]
                 == 0)
 
     def constraint_capacity_coupling_rule(self, tech, node, time):
         """ couples capacity variables based on modeling technique"""
         model = self.optimization_setup.model
-        return (model.variables["built_capacity"][tech, "power", node, time]
+        return (model.variables["capacity_addition"][tech, "power", node, time]
                 - model.variables["capacity_approximation"][tech, node, time]
                 == 0)
 
@@ -448,12 +446,12 @@ class ConversionTechnologyRules:
         for tech, dependent_carrier in index.get_unique([0, 1]):
             reference_carrier = sets["set_reference_carriers"][tech][0]
             if reference_carrier in sets["set_input_carriers"][tech]:
-                constraints.append(model.variables["input_flow"].loc[tech, reference_carrier]
-                                   - model.variables["reference_flow_approximation"].loc[tech, dependent_carrier]
+                constraints.append(model.variables["flow_conversion_input"].loc[tech, reference_carrier]
+                                   - model.variables["flow_approximation_reference"].loc[tech, dependent_carrier]
                                    == 0)
             else:
-                constraints.append(model.variables["output_flow"].loc[tech, reference_carrier]
-                                   - model.variables["reference_flow_approximation"].loc[tech, dependent_carrier]
+                constraints.append(model.variables["flow_conversion_output"].loc[tech, reference_carrier]
+                                   - model.variables["flow_approximation_reference"].loc[tech, dependent_carrier]
                                    == 0)
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_reference_flow_coupling_dim", model)
 
@@ -471,12 +469,12 @@ class ConversionTechnologyRules:
         index = ZenIndex(index_values, index_names)
         for tech, dependent_carrier in index.get_unique([0, 1]):
             if dependent_carrier in sets["set_input_carriers"][tech]:
-                constraints.append(model.variables["input_flow"].loc[tech, dependent_carrier]
-                                   - model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier]
+                constraints.append(model.variables["flow_conversion_input"].loc[tech, dependent_carrier]
+                                   - model.variables["flow_approximation_dependent"].loc[tech, dependent_carrier]
                                    == 0)
             else:
-                constraints.append(model.variables["output_flow"].loc[tech, dependent_carrier]
-                                   - model.variables["dependent_flow_approximation"].loc[tech, dependent_carrier]
+                constraints.append(model.variables["flow_conversion_output"].loc[tech, dependent_carrier]
+                                   - model.variables["flow_approximation_dependent"].loc[tech, dependent_carrier]
                                    == 0)
 
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_dependent_flow_coupling_dim", model)

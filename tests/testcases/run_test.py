@@ -32,6 +32,7 @@ def config():
     """
     from config import config
     config.solver["keep_files"] = False
+    config.solver["name"] = "gurobi"
     return deepcopy(config)
 
 @pytest.fixture
@@ -68,20 +69,17 @@ def compare_variables(test_model, optimization_setup,folder_path):
     # dictionary to store variable names, indices, values and test values of variables which don't match the test values
     failed_variables = defaultdict(dict)
     # iterate through dataframe rows
-    for data_row in test_variables.values:
-        # skip row if data doesn't correspond to selected test model
-        if data_row[0] == test_model:
-            # get variable attribute of optimization_setup object by using string of the variable's name (e.g. optimization_setup.model.variables["importCarrierFLow"])
-            variable_attribute = optimization_setup.model.solution[data_row[1]]
+    for data_row in test_variables[test_variables["test"] == test_model].values:
+        # get variable attribute of optimization_setup object by using string of the variable's name (e.g. optimization_setup.model.variables["importCarrierFLow"])
+        variable_attribute = optimization_setup.model.solution[data_row[1]]
 
-            # extract the values
-            index = str2tuple(data_row[2])
-            variable_value = variable_attribute.loc[*index].item()
+        # extract the values
+        index = str2tuple(data_row[2])
+        variable_value = variable_attribute.loc[*index].item()
 
-            if not np.isclose(variable_value, data_row[3], rtol=1e-3):
-                failed_variables[data_row[1]][data_row[2]] = {"computedValue": variable_value,
-                                                              "test_value": data_row[3]}
-
+        if not np.isclose(variable_value, data_row[3], rtol=1e-3):
+            failed_variables[data_row[1]][data_row[2]] = {"computedValue": variable_value,
+                                                          "test_value": data_row[3]}
     assertion_string = str()
     for failed_var in failed_variables:
         assertion_string += f"\n{failed_var}{failed_variables[failed_var]}"
@@ -110,7 +108,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
             if str(variable_index) == data_row[2]:
                 # check if close
                 if not np.isclose(variable_value, data_row[3], rtol=1e-3):
-                    failed_variables[data_row[1]][data_row[2]] = {"computedValue": variable_value,
+                    failed_variables[data_row[1]][data_row[2]] = {"computed_values": variable_value,
                                                                   "test_value": data_row[3]}
     # create the string of all failed variables
     assertion_string = ""
@@ -357,6 +355,28 @@ def test_6a(config, folder_path):
 def test_7a(config, folder_path):
     # run the test
     data_set_name = "test_7a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+def test_7b(config, folder_path):
+    # run the test
+    data_set_name = "test_7b"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+def test_7c(config, folder_path):
+    # run the test
+    data_set_name = "test_7c"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
     # compare the variables of the optimization setup
