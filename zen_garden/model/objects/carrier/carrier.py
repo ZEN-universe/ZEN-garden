@@ -313,7 +313,8 @@ class CarrierRules:
         # This vectorizes over times and locations
         for carrier in sets["set_carriers"]:
             times = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
-            expr = (model.variables["cost_carrier"].loc[carrier, :, times] + model.variables["cost_shed_demand"].loc[carrier, :, times]) * params.time_steps_operation_duration.loc[carrier, times]
+            expr = (model.variables["cost_carrier"].loc[carrier, :, times]
+                    + model.variables["cost_shed_demand"].loc[carrier, :, times]) * params.time_steps_operation_duration.loc[carrier, times]
             terms.append(expr.sum())
 
         return (model.variables["cost_carrier_total"].loc[year]
@@ -456,8 +457,8 @@ class CarrierRules:
                        -carrier_conversion_in,
                        flow_transport_in,
                        -flow_transport_out,
-                       flow_storage_charge,
-                       -flow_storage_discharge,
+                       -flow_storage_charge,
+                       flow_storage_discharge,
                        carrier_import,
                        -carrier_export,
                        carrier_shed_demand)
