@@ -1,6 +1,8 @@
 index,value,unit
 carbon_emissions_limit_default,inf,gigatons
 carbon_emissions_budget_default,4.2749370139006455,gigatons
-previous_carbon_emissions_default,0.0,gigatons
-carbon_price_default,0.0,Euro/tons
-carbon_price_overshoot_default,400.0,Euro/tons
+carbon_emissions_cumulative_existing_default,0.0,gigatons
+price_carbon_emissions_default,0.0,Euro/tons
+price_carbon_emissions_overshoot_default,400.0,Euro/tons
+knowledge_spillover_rate_default,0.025,
+market_share_unbounded_default,0.1,
