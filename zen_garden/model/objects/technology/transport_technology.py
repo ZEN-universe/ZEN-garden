@@ -270,8 +270,8 @@ class TransportTechnologyRules:
         # expression if false
         lp_where_not_inf = (1 - mask) * (model.variables["cost_capex"].loc[coords[0], "power", coords[1], coords[2]]
                                          - model.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]] * params.capex_specific_transport.loc[coords[0], coords[1]])
-        if np.any(params.distance.loc[coords[0], coords[1]] * params.capex_specific_transport.loc[coords[0], coords[1]] != 0):
-            lp_where_not_inf -= (1 - mask) * model.variables["technology_installation"].loc[coords[0], "power", coords[1], coords[2]] * (params.distance.loc[coords[0], coords[1]] * params.capex_specific_transport.loc[coords[0], coords[1]])
+        if np.any(params.distance.loc[coords[0], coords[1]] * params.capex_per_distance_transport.loc[coords[0], coords[1]] != 0):
+            lp_where_not_inf -= (1 - mask) * model.variables["technology_installation"].loc[coords[0], "power", coords[1], coords[2]] * (params.distance.loc[coords[0], coords[1]] * params.capex_per_distance_transport.loc[coords[0], coords[1]])
 
         return lp_where_inf + lp_where_not_inf == 0, global_mask
 

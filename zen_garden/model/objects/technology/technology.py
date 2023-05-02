@@ -576,7 +576,7 @@ class Technology(Element):
         params = optimization_setup.parameters
 
         # used in transport technology
-        if np.any(params.distance * params.capex_specific_transport != 0):
+        if np.any(params.distance * params.capex_per_distance_transport != 0):
             return True
 
         # used in constraint_technology_min_capacity
