@@ -265,7 +265,7 @@ class DataInput:
             else:
                 _energy_string = ""
 
-            df_input = self.read_input_data(f"capacity_existing{_energy_string}")
+            df_input = self.read_input_data(f"capacity_existing{_energy_string}{scenario}")
             if df_input is None:
                 return [0]
             if self.element.name in self.system["set_transport_technologies"]:
