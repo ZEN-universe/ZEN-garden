@@ -239,8 +239,9 @@ class CarrierRules:
         # get parameter object
         params = self.optimization_setup.parameters
         if params.availability_import[carrier, node, time] != 0 or params.availability_export[carrier, node, time] != 0:
-            return (model.cost_carrier[carrier, node, time] == params.price_import[carrier, node, time] * model.flow_import[carrier, node, time] - params.price_export[
-            carrier, node, time] * model.flow_export[carrier, node, time])
+            return (model.cost_carrier[carrier, node, time] ==
+                    params.price_import[carrier, node, time] * model.flow_import[carrier, node, time]
+                    - params.price_export[carrier, node, time] * model.flow_export[carrier, node, time])
         else:
             return (model.cost_carrier[carrier, node, time] == 0)
 
