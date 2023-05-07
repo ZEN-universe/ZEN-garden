@@ -560,10 +560,11 @@ class DataInput:
         """
         # check if input data is time-dependent and has yearly time steps
         idx_name_year = self.index_names["set_time_steps_yearly"]
-        if time_steps is self.energy_system.set_time_steps_yearly:
+        if time_steps is self.energy_system.set_time_steps_yearly or time_steps is self.energy_system.set_time_steps_yearly_entire_horizon:
             # check if temporal header of input data is still given as 'time' instead of 'year'
             if "time" in df_input.axes[1]:
-                logging.warning(f"DeprecationWarning: The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead")
+                logging.warning(
+                    f"DeprecationWarning: The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead")
                 df_input = df_input.rename(
                     {self.index_names["set_time_steps"]: self.index_names["set_time_steps_yearly"]}, axis=1)
             # does not contain annual index
@@ -574,7 +575,7 @@ class DataInput:
                     return df_input
                 df_input = df_input.set_index(idx_name_list)
                 df_input = df_input.rename(columns={col: int(col) for col in df_input.columns if col.isnumeric()})
-                requested_index_values = set(self.energy_system.set_time_steps_years)
+                requested_index_values = set(time_steps)
                 _requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
                 if not _requested_index_values_in_columns:
                     return df_input.reset_index()
@@ -585,8 +586,9 @@ class DataInput:
                     df_input = df_input.reset_index()
             # check if input data is still given with generic time indices
             temporal_header = self.index_names["set_time_steps_yearly"]
-            if max(df_input.loc[:,temporal_header]) < self.analysis["earliest_year_of_data"]:
-                logging.warning(f"DeprecationWarning: Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
+            if max(df_input.loc[:, temporal_header]) < self.analysis["earliest_year_of_data"]:
+                logging.warning(
+                    f"DeprecationWarning: Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
                 return df_input
             # assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
             assert temporal_header in index_name_list, f"Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"
@@ -600,12 +602,13 @@ class DataInput:
                 index_list = []
                 for index_name in index_names_column:
                     if index_name == temporal_header:
-                        index_list.append(df_input.index.get_level_values(index_name).unique().union(self.energy_system.set_time_steps_years))
+                        index_list.append(df_input.index.get_level_values(index_name).unique().union(
+                            self.energy_system.set_time_steps_years))
                     else:
                         index_list.append(df_input.index.get_level_values(index_name).unique())
-                combined_index = pd.MultiIndex.from_product(index_list,names=index_name_list).sort_values()
+                combined_index = pd.MultiIndex.from_product(index_list, names=index_name_list).sort_values()
                 is_single_index = False
-            df_input_temp = pd.DataFrame(index = combined_index,columns=df_input.columns)
+            df_input_temp = pd.DataFrame(index=combined_index, columns=df_input.columns)
             common_index = df_input.index.intersection(combined_index)
             df_input_temp.loc[common_index] = df_input.loc[common_index]
             # df_input_temp.loc[df_input.index] = df_input
@@ -622,14 +625,15 @@ class DataInput:
                             df_input[param] = df_input[param].astype(float).interpolate(method="index")
                         else:
                             df_input_temp = df_input[param].unstack(df_input.index.names.difference([temporal_header]))
-                            df_input[param] = df_input_temp.interpolate(method="index",axis=0).stack().reorder_levels(df_input.index.names)
+                            df_input[param] = df_input_temp.interpolate(method="index", axis=0).stack().reorder_levels(
+                                df_input.index.names)
             else:
                 logging.info(f"Parameter {file_name} data won't be interpolated to cover years without given values")
             df_input = df_input.reset_index()
             # remove data of years that won't be simulated
             df_input = df_input[df_input[temporal_header].isin(self.energy_system.set_time_steps_years)]
             # convert yearly time indices to generic ones
-            year2step = {year:step for year,step in zip(self.energy_system.set_time_steps_years,self.energy_system.set_time_steps_yearly)}
+            year2step = {year: step for year, step in zip(self.energy_system.set_time_steps_years, time_steps)}
             df_input[temporal_header] = df_input[temporal_header].apply(lambda year: year2step[year])
         return df_input
 
