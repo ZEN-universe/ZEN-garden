@@ -158,15 +158,13 @@ class Carrier(Element):
                                          constraint=rules.get_constraint_availability_export(),
                                          doc='node- and time-dependent carrier availability to export to outside the system boundaries')
         # limit import flow by availability for each year
-        constraints.add_constraint_rule(model, name="constraint_availability_import_yearly",
-                                        index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"], optimization_setup),
-                                        rule=rules.constraint_availability_import_yearly_rule,
-                                        doc='node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year', )
+        constraints.add_constraint_block(model, name="constraint_availability_import_yearly",
+                                         constraint=rules.get_constraint_availability_import_yearly(),
+                                         doc='node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year', )
         # limit export flow by availability for each year
-        constraints.add_constraint_rule(model, name="constraint_availability_export_yearly",
-                                        index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"], optimization_setup),
-                                        rule=rules.constraint_availability_export_yearly_rule,
-                                        doc='node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year', )
+        constraints.add_constraint_block(model, name="constraint_availability_export_yearly",
+                                         constraint=rules.get_constraint_availability_export_yearly(),
+                                         doc='node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year', )
         # cost for carrier
         constraints.add_constraint_block(model, name="constraint_cost_carrier",
                                          constraint=rules.get_constraint_cost_carrier(),
@@ -234,30 +232,46 @@ class CarrierRules:
         return (model.variables["flow_export"]
                 <= params.availability_export)
 
-    def constraint_availability_import_yearly_rule(self, carrier, node, year):
+    def get_constraint_availability_import_yearly(self):
         """node- and year-dependent carrier availability to import from outside the system boundaries"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
 
-        if params.availability_import_yearly.loc[carrier, node, year] != np.inf:
-            operational_time_steps = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
-            return ((model.variables["flow_import"][carrier, node, operational_time_steps] * params.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum()
-                    <= params.availability_import_yearly.loc[carrier, node, year].item())
+        if (params.availability_import_yearly != np.inf).any():
+            index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"], self.optimization_setup)
+            index = ZenIndex(index_values, index_names)
+            constraints = []
+            for carrier, year in index.get_unique(levels=[0, 2]):
+                operational_time_steps = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
+                constraints.append(((model.variables["flow_import"].loc[carrier, :, operational_time_steps] * params.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum("set_time_steps_operation")
+                                     <= params.availability_import_yearly.loc[carrier, :, year]))
+            constraints = self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 2]), [index_names[0], index_names[2]], model)
+            return constraints, params.availability_import_yearly != np.inf
         else:
-            return None
+            # a dummy constraint
+            return model.variables["flow_import"].where(False) == np.nan
 
-    def constraint_availability_export_yearly_rule(self, carrier, node, year):
+    def get_constraint_availability_export_yearly(self):
         """node- and year-dependent carrier availability to export to outside the system boundaries"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        operational_time_steps = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
-        if params.availability_export_yearly.loc[carrier, node, year] != np.inf:
-            return ((model.variables["flow_export"][carrier, node, operational_time_steps] * params.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum()
-                    <= params.availability_export_yearly.loc[carrier, node, year].item())
+
+        if (params.availability_export_yearly != np.inf).any():
+            index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"], self.optimization_setup)
+            index = ZenIndex(index_values, index_names)
+            constraints = []
+            for carrier, year in index.get_unique(levels=[0, 2]):
+                operational_time_steps = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
+                constraints.append(((model.variables["flow_export"].loc[carrier, :, operational_time_steps] * params.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum("set_time_steps_operation")
+                                     <= params.availability_export_yearly.loc[carrier, :, year]))
+            constraints = self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 2]), [index_names[0], index_names[2]], model)
+            return constraints, params.availability_export_yearly != np.inf
         else:
-            return None
+            # a dummy constraint
+            return model.variables["flow_export"].where(False) == np.nan
+
 
     def get_constraint_cost_carrier(self):
         """ cost of importing and exporting carrier"""
