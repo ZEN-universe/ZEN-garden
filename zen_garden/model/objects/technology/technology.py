@@ -660,36 +660,17 @@ class TechnologyRules:
         """limited capacity_limit of technology"""
         # get parameter object
         params = self.optimization_setup.parameters
-        sets = self.optimization_setup.sets
         model = self.optimization_setup.model
 
-        # get all the constraints
-        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
+        # create the masks for the two cases
+        m1 = (params.capacity_limit != np.inf) & (params.existing_capacities < params.capacity_limit)
+        m2 = (params.capacity_limit != np.inf) & ~(params.existing_capacities < params.capacity_limit)
 
-        # we create the factors for the variables because this is quite fast
-        capacity_fac = xr.DataArray(np.nan, coords=model.variables["capacity"].coords)
-        built_capacity_fac = xr.DataArray(np.nan, coords=model.variables["capacity_addition"].coords)
-        sign = xr.DataArray("==", coords=model.variables["capacity"].coords)
-        rhs = xr.DataArray(np.nan, coords=model.variables["capacity"].coords)
-        times = np.array(list(sets["set_time_steps_yearly"]))
-
-        for tech, capacity_type, loc in index.get_unique([0, 1, 2]):
-            if params.capacity_limit.loc[tech, capacity_type, loc] != np.inf:
-                mask = params.existing_capacities.loc[tech, capacity_type, loc, times] < params.capacity_limit.loc[tech, capacity_type, loc].item()
-                if np.any(mask):
-                    capacity_fac.loc[tech, capacity_type, loc, times[mask]] = 1
-                    rhs.loc[tech, capacity_type, loc, times[mask]] = params.capacity_limit.loc[tech, capacity_type, loc].item()
-                    sign.loc[tech, capacity_type, loc, times[mask]] = "<="
-                if np.any(~mask):
-                    built_capacity_fac.loc[tech, capacity_type, loc, times[~mask]] = 1
-                    rhs.loc[tech, capacity_type, loc, times[~mask]] = 0
-                    sign.loc[tech, capacity_type, loc, times[~mask]] = "=="
-
-        # create the lhs and mask
-        lhs = built_capacity_fac*model.variables["capacity_addition"] + capacity_fac*model.variables["capacity"]
-        mask = capacity_fac.notnull() | built_capacity_fac.notnull()
-        return AnonymousConstraint(lhs, sign, rhs), mask
+        # the lhs, rhs and sign depend on the case
+        lhs = model.variables["capacity"].where(m1) + model.variables["capacity_addition"].where(m2)
+        rhs = params.capacity_limit.where(m1, 0.0)
+        sign = xr.DataArray("<=", coords=model.variables["capacity"].coords).where(m1, "==")
+        return AnonymousConstraint(lhs, sign, rhs)
 
     def get_constraint_technology_min_capacity(self):
         """ min capacity expansion of technology."""
