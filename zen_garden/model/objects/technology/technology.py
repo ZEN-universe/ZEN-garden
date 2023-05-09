@@ -738,7 +738,7 @@ class TechnologyRules:
 
         return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
 
-    def get_constraint_technology_construction_time(self):''
+    def get_constraint_technology_construction_time(self):
         """ construction time of technology, i.e., time that passes between investment and availability"""
         # get parameter object
         params = self.optimization_setup.parameters
