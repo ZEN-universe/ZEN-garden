@@ -265,7 +265,7 @@ class ConversionTechnology(Technology):
                                           break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ")
         if set_linear_capex[0]:
             # if set_linear_capex contains technologies:
-            constraints.add_constraint_rule(model, name="constraint_linear_capex", index_sets=set_linear_capex, rule=rules.constraint_linear_capex_rule, doc="Linear relationship in capex")
+            constraints.add_constraint_block(model, name="constraint_linear_capex", constraint=rules.get_constraint_linear_capex(*set_linear_capex), doc="Linear relationship in capex")
         # Conversion Efficiency
         set_pwa_conversion_factor = cls.create_custom_set(["set_conversion_technologies", "set_conversion_factor_pwa", "set_nodes", "set_time_steps_operation"], optimization_setup)
         set_linear_conversion_factor = cls.create_custom_set(["set_conversion_technologies", "set_conversion_factor_linear", "set_nodes", "set_time_steps_operation"], optimization_setup)
@@ -388,14 +388,18 @@ class ConversionTechnologyRules:
         self.energy_system = optimization_setup.energy_system
 
     ### --- functions with constraint rules --- ###
-    def constraint_linear_capex_rule(self, tech, node, time):
+    def get_constraint_linear_capex(self, index_values, index_names):
         """ if capacity and capex have a linear relationship"""
         # get parameter object
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
-        return (model.variables["capex_approximation"][tech, node, time]
-                - params.capex_specific_conversion.loc[tech, node, time].item() * model.variables["capacity_approximation"][tech, node, time]
-                == 0)
+
+        if len(index_values) > 0:
+            return (model.variables["capex_approximation"]
+                    - params.capex_specific_conversion * model.variables["capacity_approximation"]
+                    == 0)
+        else:
+            return []
 
     def get_constraint_linear_conver_efficiency(self, index_values, index_names):
         """ if reference carrier and dependent carrier have a linear relationship"""
@@ -406,15 +410,17 @@ class ConversionTechnologyRules:
         # get all the constraints
         constraints = []
         index = ZenIndex(index_values, index_names)
-        for tech, dependent_carrier, node in index.get_unique([0, 1, 2]):
+        for tech, dependent_carrier in index.get_unique([0, 1]):
             # get invest time step
-            coords = [model.variables.coords["set_time_steps_operation"]]
-            times = index.get_values([tech, dependent_carrier, node], 3, dtype=list)
+            coords = [model.variables.coords["set_nodes"], model.variables.coords["set_time_steps_operation"]]
+            nodes = index.get_values([tech, dependent_carrier], 2, dtype=list, unique=True)
+            times = index.get_values([tech, dependent_carrier], 3, dtype=list, unique=True)
             time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times]
-            tuples = [(1.0, model.variables["flow_approximation_dependent"].loc[tech, dependent_carrier, node, times]),
-                      (-params.conversion_factor.loc[tech, dependent_carrier, node, time_step_year], model.variables["flow_approximation_reference"].loc[tech, dependent_carrier, node, times])]
+            tuples = [(1.0, model.variables["flow_approximation_dependent"].loc[tech, dependent_carrier, nodes, times]),
+                      (-params.conversion_factor.loc[tech, dependent_carrier, nodes, time_step_year], model.variables["flow_approximation_reference"].loc[tech, dependent_carrier, nodes, times])]
             constraints.append(linexpr_from_tuple_np(tuples, coords=coords, model=model)
                                == 0)
+
         return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_linear_conver_efficiency_dim", model)
 
     def constraint_capex_coupling_rule(self, tech, node, time):
