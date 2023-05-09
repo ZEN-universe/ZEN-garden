@@ -393,24 +393,18 @@ class CarrierRules:
 
         # carrier flow transport technologies
         if model.variables["flow_transport"].size > 0:
-            flow_transport_in = []
-            flow_transport_out = []
-            # precalculate the edges
-            edges_in = {node: self.energy_system.calculate_connected_edges(node, "in") for node in index.get_unique([1])}
-            edges_out = {node: self.energy_system.calculate_connected_edges(node, "out") for node in index.get_unique([1])}
-            # loop over all nodes and carriers
+            group_in = xr.DataArray(0.0, coords=[model.variables.coords["set_carriers"], model.variables.coords["set_nodes"],
+                                                 model.variables.coords["set_transport_technologies"], model.variables.coords["set_edges"]])
+            group_out = xr.DataArray(0.0, coords=[model.variables.coords["set_carriers"], model.variables.coords["set_nodes"],
+                                                  model.variables.coords["set_transport_technologies"], model.variables.coords["set_edges"]])
             for carrier, node in index.get_unique([0, 1]):
-                techs = []
-                for tech in sets["set_transport_technologies"]:
-                    if carrier in sets["set_reference_carriers"][tech]:
-                        techs.append(tech)
-                flow_transport_in.append((model.variables["flow_transport"].loc[techs, edges_in[node]] - model.variables["flow_transport_loss"].loc[techs, edges_in[node]]).sum(["set_transport_technologies", "set_edges"]))
-                flow_transport_out.append(model.variables["flow_transport"].loc[techs, edges_out[node]].sum(["set_transport_technologies", "set_edges"]))
-            # merge and regroup
-            flow_transport_in = lp.merge(*flow_transport_in, dim="group")
-            flow_transport_in = self.optimization_setup.constraints.reorder_group(flow_transport_in, None, None, index.get_unique([0, 1]), index_names[:-1], model)
-            flow_transport_out = lp.merge(*flow_transport_out, dim="group")
-            flow_transport_out = self.optimization_setup.constraints.reorder_group(flow_transport_out, None, None, index.get_unique([0, 1]), index_names[:-1], model)
+                techs = [tech for tech in sets["set_transport_technologies"] if carrier in sets["set_reference_carriers"][tech]]
+                edges_in = self.energy_system.calculate_connected_edges(node, "in")
+                edges_out = self.energy_system.calculate_connected_edges(node, "out")
+                group_in.loc[carrier, node, techs, edges_in] = 1
+                group_out.loc[carrier, node, techs, edges_out] = 1
+            flow_transport_in = (model.variables["flow_transport"] * group_in - model.variables["flow_transport_loss"] * group_in).sum(["set_transport_technologies", "set_edges"])
+            flow_transport_out = (model.variables["flow_transport"] * group_out).sum(["set_transport_technologies", "set_edges"])
         else:
             # if there is no carrier flow we just create empty arrays
             flow_transport_in = model.variables["flow_import"].where(False).to_linexpr()
@@ -423,16 +417,10 @@ class CarrierRules:
         for carrier in index.get_unique([0]):
             techs_in = [tech for tech in sets["set_conversion_technologies"] if carrier in sets["set_input_carriers"][tech]]
             # we need to catch emtpy lookups
-            if len(techs_in) == 0:
-                carrier_in = []
-            else:
-                carrier_in = [carrier]
+            carrier_in = [carrier] if len(techs_in) > 0 else []
             techs_out = [tech for tech in sets["set_conversion_technologies"] if carrier in sets["set_output_carriers"][tech]]
             # we need to catch emtpy lookups
-            if len(techs_out) == 0:
-                carrier_out = []
-            else:
-                carrier_out = [carrier]
+            carrier_out = [carrier] if len(techs_out) > 0 else []
             carrier_conversion_in.append(model.variables["flow_conversion_input"].loc[techs_in, carrier_in, nodes].sum(model.variables["flow_conversion_input"].dims[:2]))
             carrier_conversion_out.append(model.variables["flow_conversion_output"].loc[techs_out, carrier_out, nodes].sum(model.variables["flow_conversion_output"].dims[:2]))
         # merge and regroup
