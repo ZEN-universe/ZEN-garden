@@ -1141,15 +1141,15 @@ class Results(object):
         scenario = None
         if None not in self.scenarios:
             scenario = "scenario_"
-        demand_carrier = self.get_df("demand_carrier", scenario=scenario)
+        demand = self.get_df("demand", scenario=scenario)
         #remove carriers without demand
-        demand_carrier = demand_carrier.loc[(demand_carrier != 0),:]
-        for carrier in demand_carrier.index.levels[0].values:
-            if carrier in demand_carrier:
+        demand = demand.loc[(demand != 0), :]
+        for carrier in demand.index.levels[0].values:
+            if carrier in demand:
                 self.plot("capacity", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
-                self.plot("capacity_addition", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Built Capacities of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
-                self.plot("input_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Input Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Input Flow"}, save_fig=save_fig, file_type=file_type)
-                self.plot("output_flow", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Output Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Output Flow"}, save_fig=save_fig, file_type=file_type)
+                self.plot("capacity_addition", yearly=True, tech_type="conversion", reference_carrier=carrier, plot_strings={"title": f"Capacity Addition of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Capacity"}, save_fig=save_fig, file_type=file_type)
+                self.plot("flow_conversion_input", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Input Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Input Flow"}, save_fig=save_fig, file_type=file_type)
+                self.plot("flow_conversion_output", yearly=True, reference_carrier=carrier, plot_strings={"title": f"Output Flows of {carrier.capitalize()} Generating Conversion Technologies", "ylabel": "Output Flow"}, save_fig=save_fig, file_type=file_type)
         self.plot("cost_capex_total",yearly=True, plot_strings={"title": "Total Capex", "ylabel": "Capex"}, save_fig=save_fig, file_type=file_type)
         self.plot("cost_opex_total", yearly=True, plot_strings={"title": "Total Opex", "ylabel": "Opex"}, save_fig=save_fig, file_type=file_type)
         self.plot("cost_carrier", yearly=True, plot_strings={"title": "Carrier Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
@@ -1182,16 +1182,16 @@ class Results(object):
         """
         # plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
         fig,ax = plt.subplots(figsize=(30,6.5),layout = "constrained")
-        components = ["output_flow", "input_flow", "export_carrier_flow", "import_carrier_flow", "carrier_flow_charge", "carrier_flow_discharge", "demand_carrier", "carrier_flow_in", "carrier_flow_out", "shed_demand_carrier"]
-        lowers = ["input_flow", "export_carrier_flow", "carrier_flow_charge", "carrier_flow_out"]
+        components = ["flow_conversion_output", "flow_conversion_input", "flow_export", "flow_import", "flow_storage_charge", "flow_storage_discharge", "demand", "flow_transport_in", "flow_transport_out", "shed_demand"]
+        lowers = ["flow_conversion_input", "flow_export", "flow_storage_charge", "flow_transport_out"]
         data_plot = pd.DataFrame()
         if scenario not in self.scenarios:
             scenario = "scenario_"
         for component in components:
-            if component == "carrier_flow_in":
-                data_full_ts = self.edit_carrier_flows(self.get_full_ts("carrier_flow", scenario=scenario), node, carrier, "in", scenario)
-            elif component == "carrier_flow_out":
-                data_full_ts = self.edit_carrier_flows(self.get_full_ts("carrier_flow", scenario=scenario), node, carrier, "out", scenario)
+            if component == "flow_transport_in":
+                data_full_ts = self.edit_carrier_flows(self.get_full_ts("flow_transport", scenario=scenario), node, carrier, "in", scenario)
+            elif component == "flow_transport_out":
+                data_full_ts = self.edit_carrier_flows(self.get_full_ts("flow_transport", scenario=scenario), node, carrier, "out", scenario)
             else:
                 # get full timeseries of component and extract rows of relevant node
                 data_full_ts = self.edit_nodes_v2(self.get_full_ts(component, scenario=scenario), node)
@@ -1211,7 +1211,7 @@ class Results(object):
                     data_full_ts = data_full_ts.droplevel([2])
                 elif data_full_ts.index.nlevels == 4:
                     data_full_ts = data_full_ts.droplevel([2,3])
-                # t ranspose data frame as pandas plot function plots column-wise
+                # transpose data frame as pandas plot function plots column-wise
                 data_full_ts = data_full_ts.transpose()
             elif isinstance(data_full_ts, pd.Series):
                 data_full_ts.name = component
@@ -1220,7 +1220,7 @@ class Results(object):
 
         # extract the rows of the desired year
         if year not in list(range(self.results["system"]["optimized_years"])):
-            warnings.warn(f"Chosen year '{year}' hasn't been simulated")
+            warnings.warn(f"Chosen year '{year}' hasn't been optimized")
         else:
             ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
             data_plot = data_plot.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
@@ -1233,18 +1233,18 @@ class Results(object):
         colors = plt.cm.tab20(range(data_plot.shape[1]))
         # check if demand should be plotted as a line or as an area
         if demand_area is False:
-            data_plot_wo_demand = data_plot.drop(columns=[demand_carrier for demand_carrier in data_plot.columns if "demand_carrier" in demand_carrier or "shed_demand_carrier" in demand_carrier])
-            data_plot_wo_demand.plot(kind="area",ax=ax, stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time",legend=False)
-            data_plot = data_plot[[col for col in data_plot.columns if 'demand_carrier' in col or "shed_demand_carrier" in col]]
+            data_plot_wo_demand = data_plot.drop(columns=[demand for demand in data_plot.columns if "demand" in demand or "shed_demand" in demand])
+            data_plot_wo_demand.plot(kind="area",ax=ax, stacked=True, alpha=1, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time", legend=False)
+            data_plot = data_plot[[col for col in data_plot.columns if 'demand' in col or "shed_demand" in col]]
             # check if there is demand for the chosen carrier at all
             if not data_plot.empty:
                 # plot demand (without shed demand)
-                data_plot[data_plot.columns[0]].plot(kind="line", ax=ax, label='demand', color="black",legend=False)
+                data_plot[data_plot.columns[0]].plot(kind="line", ax=ax, label='demand', color="black", legend=False)
                 # check if there is shed demand
                 if data_plot.shape[1] == 2:
                     # compute served demand as demand minus shed demand
                     data_demand_minus_shed_demand = pd.DataFrame({"served_demand": data_plot[data_plot.columns[0]] - data_plot[data_plot.columns[1]]})
-                    data_demand_minus_shed_demand.plot(kind="line", ax=ax, label="served_demand", color="k",linestyle="--",legend=False)
+                    data_demand_minus_shed_demand.plot(kind="line", ax=ax, label="served_demand", color="k", linestyle="--", legend=False)
 
                     # as the demand line can "leave" the pyplot figure when there is demand shedding, the figure's y-limits need to be adjusted manually
                     max_value_wo_demand = data_plot_wo_demand.clip(lower=0).sum(axis=1).max()
@@ -1253,28 +1253,31 @@ class Results(object):
                     min_value = min(min_value_wo_demand, data_plot.values.min())
                     max_value = max(max_value_wo_demand, data_plot.values.max())
                     # adjust the figure's y-limits accordingly
-                    plt.ylim(min_value*1.05,max_value*1.05)
+                    plt.ylim(min_value*1.05, max_value*1.05)
         else:
-            if "demand_carrier" in data_plot.columns and "shed_demand_carrier" not in data_plot.columns:
-                data_plot["demand_carrier"] = data_plot["demand_carrier"].multiply(-1)
-                data_plot.plot(kind="area",ax=ax, stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time",legend=False)
-            elif "demand_carrier" in data_plot.columns and "shed_demand_carrier" in data_plot.columns:
-                data_plot["served_demand"] = data_plot["demand_carrier"] - data_plot["shed_demand_carrier"]
-                data_plot = data_plot.drop(columns=["demand_carrier"])
+            if "demand" in data_plot.columns and "shed_demand" not in data_plot.columns:
+                data_plot["demand"] = data_plot["demand"].multiply(-1)
+                data_plot.plot(kind="area", ax=ax, stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time", legend=False)
+            elif "demand" in data_plot.columns and "shed_demand" in data_plot.columns:
+                data_plot["served_demand"] = data_plot["demand"] - data_plot["shed_demand"]
+                data_plot = data_plot.drop(columns=["demand"])
                 data_plot["served_demand"] = data_plot["served_demand"].multiply(-1)
-                data_plot["shed_demand_carrier"] = data_plot["shed_demand_carrier"].multiply(-1)
+                data_plot["shed_demand"] = data_plot["shed_demand"].multiply(-1)
                 # extract all column names as a list
                 all_columns = data_plot.columns.tolist()
                 # change the order of the served_demand and the shed_demand such that the plot shows an improved appearance
                 data_plot = data_plot.reindex(columns=all_columns[0:-2] + [all_columns[-1], all_columns[-2]])
-                data_plot.plot(kind="area",ax=ax, stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time",legend=False)
+                data_plot.plot(kind="area", ax=ax, stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time", legend=False)
             else:
-                data_plot.plot(kind="area",ax=ax, stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time",legend=False)
+                data_plot.plot(kind="area", ax=ax, stacked=True, color=colors, title="Energy Balance " + carrier + " " + node + " " + str(year), ylabel="Power", xlabel="Time", legend=False)
         # xlim
-        ax.set_xlim([start_hour,start_hour+duration-1])
+        if start_hour is None and duration is None:
+            ax.set_xlim([0, data_plot.shape[0]-1])
+        else:
+            ax.set_xlim([start_hour, start_hour+duration-1])
         # legend
         handles, labels = ax.get_legend_handles_labels()
-        fig.legend(handles, labels,loc='outside right')
+        fig.legend(handles, labels, loc='outside right')
         if save_fig:
             path = os.path.join(os.getcwd(), "outputs")
             path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
