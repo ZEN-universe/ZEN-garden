@@ -432,7 +432,7 @@ class OptimizationSetup(object):
 
         logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily
-        #logging.disable(logging.WARNING)
+        logging.disable(logging.WARNING)
 
         if solver_name == "gurobi":
             self.model.solve(solver_name=solver_name, keep_files=self.solver["keep_files"], sanitize_zeros=True,

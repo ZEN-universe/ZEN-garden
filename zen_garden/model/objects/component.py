@@ -512,7 +512,7 @@ class Variable(Component):
     def __init__(self):
         super().__init__()
 
-    def add_variable(self, model: lp.Model, name, index_sets, integer=False, binary=False, bounds=None, doc=""):
+    def add_variable(self, model: lp.Model, name, index_sets, integer=False, binary=False, bounds=None, doc="", mask=None):
         """ initialization of a variable
         :param model: parent block component of variable, must be linopy model
         :param name: name of variable
@@ -520,12 +520,15 @@ class Variable(Component):
         :param integer: If it is an integer variable
         :param binary: If it is a binary variable
         :param bounds:  bounds of variable
-        :param doc: docstring of variable """
+        :param doc: docstring of variable
+        :param mask: mask of variable"""
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
-            mask, lower, upper = IndexSet.indices_to_mask(index_values, index_list, bounds, model)
-            model.add_variables(lower=lower, upper=upper, integer=integer, binary=binary, name=name, mask=mask, coords=mask.coords)
+            mask_index, lower, upper = IndexSet.indices_to_mask(index_values, index_list, bounds, model)
+            if mask is not None:
+                mask_index = mask_index & mask
+            model.add_variables(lower=lower, upper=upper, integer=integer, binary=binary, name=name, mask=mask_index, coords=mask_index.coords)
 
             # save variable doc
             if integer:

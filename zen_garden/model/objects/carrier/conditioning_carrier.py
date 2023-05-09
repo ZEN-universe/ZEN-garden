@@ -139,7 +139,7 @@ class ConditioningCarrierRules:
             flow_transport_in = model.variables["flow_import"].where(False).to_linexpr()
             flow_transport_out = model.variables["flow_import"].where(False).to_linexpr()
 
-        # carrier flow transport technologies
+        # carrier input and output conversion technologies
         carrier_conversion_in = []
         carrier_conversion_out = []
         nodes = list(sets["set_nodes"])

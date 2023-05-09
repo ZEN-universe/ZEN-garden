@@ -436,14 +436,6 @@ class Technology(Element):
         # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
         techs_on_off = cls.create_custom_set(["set_technologies", "set_on_off"], optimization_setup)[0]
         # construct pe.Vars of the class <Technology>
-        # install technology
-        # Note: binary variables are written into the lp file by linopy even if they are not relevant for the optimization,
-        # which makes all problems MIPs. Therefore, we only add binary variables, if really necessary. Gurobi can handle this
-        # by noting that the binary variables are not part of the model, however, only if there are no binary variables at all,
-        # it is possible to get the dual values of the constraints.
-        if cls._check_technology_installation(optimization_setup):
-            variables.add_variable(model, name="technology_installation", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), binary=True,
-                doc='installment of a technology at location l and time t')
         # capacity technology
         variables.add_variable(model, name="capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=capacity_bounds, doc='size of installed technology at location l and time t')
@@ -477,6 +469,16 @@ class Technology(Element):
         # total carbon emissions technology
         variables.add_variable(model, name="carbon_emissions_technology_total", index_sets=sets["set_time_steps_yearly"],
             doc="total carbon emissions for operating technology at location l and time t")
+
+        # install technology
+        # Note: binary variables are written into the lp file by linopy even if they are not relevant for the optimization,
+        # which makes all problems MIPs. Therefore, we only add binary variables, if really necessary. Gurobi can handle this
+        # by noting that the binary variables are not part of the model, however, only if there are no binary variables at all,
+        # it is possible to get the dual values of the constraints.
+        mask = cls._technology_installation_mask(optimization_setup)
+        if mask.any():
+            variables.add_variable(model, name="technology_installation", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
+                                   binary=True, doc='installment of a technology at location l and time t', mask=mask)
 
         # add pe.Vars of the child classes
         for subclass in cls.__subclasses__():
@@ -571,23 +573,37 @@ class Technology(Element):
             subclass.construct_constraints(optimization_setup)
 
     @classmethod
-    def _check_technology_installation(cls, optimization_setup):
+    def _technology_installation_mask(cls, optimization_setup):
         """check if the binary variable is necessary"""
         params = optimization_setup.parameters
+        model = optimization_setup.model
+        sets = optimization_setup.sets
+
+        mask = xr.DataArray(False, coords=[model.variables.coords["set_time_steps_yearly"],
+                                           model.variables.coords["set_technologies"],
+                                           model.variables.coords["set_capacity_types"],
+                                           model.variables.coords["set_location"], ])
 
         # used in transport technology
-        if np.any(params.distance * params.capex_per_distance_transport != 0):
-            return True
+        techs = list(sets["set_transport_technologies"])
+        if len(techs) > 0:
+            edges = list(sets["set_edges"])
+            sub_mask = (params.distance.loc[techs, edges] * params.capex_per_distance_transport.loc[techs, edges] != 0)
+            sub_mask = sub_mask.rename({"set_transport_technologies": "set_technologies", "set_edges": "set_location"})
+            mask.loc[:, techs, :, edges] |= sub_mask
 
         # used in constraint_technology_min_capacity
-        if np.any(params.capacity_addition_min.notnull() & (params.capacity_addition_min != 0)):
-            return True
+        mask |= (params.capacity_addition_min.notnull() & (params.capacity_addition_min != 0))
 
         # used in constraint_technology_max_capacity
-        if np.any(params.capacity_addition_max.notnull() & (params.capacity_addition_max != np.inf) & (params.capacity_addition_max != 0)):
-            return True
+        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)
+        index = ZenIndex(index_values, index_names)
+        sub_mask = (params.capacity_addition_max.notnull() & (params.capacity_addition_max != np.inf) & (params.capacity_addition_max != 0))
+        for tech, capacity_type in index.get_unique([0, 1]):
+            locs = index.get_values(locs=[tech, capacity_type], levels=2, unique=True)
+            mask.loc[:, tech, capacity_type, locs] |= sub_mask.loc[tech, capacity_type]
 
-        return False
+        return mask
 
     @classmethod
     def get_existing_quantity(cls, optimization_setup, type_existing_quantity, time_step_type=None):
@@ -722,7 +738,7 @@ class TechnologyRules:
 
         return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
 
-    def get_constraint_technology_construction_time(self):
+    def get_constraint_technology_construction_time(self):''
         """ construction time of technology, i.e., time that passes between investment and availability"""
         # get parameter object
         params = self.optimization_setup.parameters
