@@ -658,7 +658,7 @@ class TechnologyRules:
             total_capacity_knowledge_addition = sum(
                 (model.capacity_addition[tech, capacity_type, loc, horizon_time]
                  # add spillover from other regions
-                 + sum(model.capacity_addition[tech, capacity_type, loc, horizon_time] * knowledge_spillover_rate for other_loc in set_locations if other_loc != loc)) \
+                 + sum(model.capacity_addition[tech, capacity_type, other_loc, horizon_time] * knowledge_spillover_rate for other_loc in set_locations if other_loc != loc)) \
                    * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time)) for horizon_time in range_time)
 
             total_capacity_knowledge = total_capacity_knowledge_existing + total_capacity_knowledge_addition
