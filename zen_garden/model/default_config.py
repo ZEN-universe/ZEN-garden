@@ -160,7 +160,8 @@ class Config(object):
         }
         # Directory for solver output
         self.solver["solver_dir"] = ".//outputs//solver_files"
-        self.solver["keep_files"] = True
+        self.solver["keep_files"] = False
+        self.solver["io_api"] = "direct"
         # This is not yet supported in linopy
         self.solver["add_duals"] = False
         # analyze numerics

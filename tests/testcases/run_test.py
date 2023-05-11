@@ -32,7 +32,6 @@ def config():
     """
     from config import config
     config.solver["keep_files"] = False
-    config.solver["name"] = "gurobi"
     return deepcopy(config)
 
 @pytest.fixture

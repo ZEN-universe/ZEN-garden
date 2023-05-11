@@ -435,14 +435,16 @@ class OptimizationSetup(object):
         logging.disable(logging.WARNING)
 
         if solver_name == "gurobi":
-            self.model.solve(solver_name=solver_name, keep_files=self.solver["keep_files"], sanitize_zeros=True,
+            self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
+                             keep_files=self.solver["keep_files"], sanitize_zeros=True,
                              # write an ILP file to print the IIS if infeasible
                              # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
                              ResultFile=f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp",
                              # remaining kwargs are passed to the solver
                              **solver_options)
         else:
-            self.model.solve(solver_name=solver_name, keep_files=self.solver["keep_files"], sanitize_zeros=True)
+            self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
+                             keep_files=self.solver["keep_files"], sanitize_zeros=True)
         # enable logger
         logging.disable(logging.NOTSET)
         # write IIS
