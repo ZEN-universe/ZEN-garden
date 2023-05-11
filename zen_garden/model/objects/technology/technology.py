@@ -617,10 +617,12 @@ class Technology(Element):
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
         coords = [np.unique(t.data) for t in index_arrs]
         existing_quantities = xr.DataArray(np.nan, coords=coords, dims=index_names)
-        for tech, capacity_type, loc, time in index_values:
-            existing_quantities.loc[tech, capacity_type, loc, time] = Technology.get_available_existing_quantity(optimization_setup, tech, capacity_type, loc, time,
-                                                                                                                 type_existing_quantity=type_existing_quantity,
-                                                                                                                 time_step_type=time_step_type)
+        values = np.zeros(len(index_values))
+        for i, (tech, capacity_type, loc, time) in enumerate(index_values):
+            values[i] = Technology.get_available_existing_quantity(optimization_setup, tech, capacity_type, loc, time,
+                                                                   type_existing_quantity=type_existing_quantity,
+                                                                   time_step_type=time_step_type)
+        existing_quantities.loc[index_arrs] = values
         return existing_quantities
 
 
