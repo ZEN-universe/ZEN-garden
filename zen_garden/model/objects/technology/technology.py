@@ -833,11 +833,9 @@ class TechnologyRules:
 
                 constraints.append(lhs
                                    <= rhs)
-            else:
-                # dummpy
-                constraints.append(model.variables["capacity_investment"].loc[tech, :, :, time].where(False) == np.nan)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 3]), [index_names[0], index_names[3]], model)
+        # reording takes to much memory!
+        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_reference_flow_coupling_dim", model)
 
     def get_constraint_capex_yearly_rule(self):
         """ aggregates the capex of built capacity and of existing capacity """

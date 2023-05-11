@@ -393,18 +393,52 @@ class CarrierRules:
 
         # carrier flow transport technologies
         if model.variables["flow_transport"].size > 0:
-            group_in = xr.DataArray(0.0, coords=[model.variables.coords["set_carriers"], model.variables.coords["set_nodes"],
-                                                 model.variables.coords["set_transport_technologies"], model.variables.coords["set_edges"]])
-            group_out = xr.DataArray(0.0, coords=[model.variables.coords["set_carriers"], model.variables.coords["set_nodes"],
-                                                  model.variables.coords["set_transport_technologies"], model.variables.coords["set_edges"]])
+            # recalculate all the edges
+            edges_in = {node: self.energy_system.calculate_connected_edges(node, "in") for node in sets["set_nodes"]}
+            edges_out = {node: self.energy_system.calculate_connected_edges(node, "out") for node in sets["set_nodes"]}
+            max_edges = max([len(edges_in[node]) for node in sets["set_nodes"]] + [len(edges_out[node]) for node in
+                                                                                   sets["set_nodes"]])
+
+            # create the variables
+            flow_transport_in_vars = xr.DataArray(-1, coords=[model.variables.coords["set_carriers"],
+                                                              model.variables.coords["set_nodes"],
+                                                              model.variables.coords["set_time_steps_operation"],
+                                                              xr.DataArray(np.arange(
+                                                                  len(sets["set_transport_technologies"]) * (
+                                                                              2 * max_edges + 1)), dims=["_term"])])
+            flow_transport_in_coeffs = xr.full_like(flow_transport_in_vars, np.nan, dtype=float)
+            flow_transport_out_vars = flow_transport_in_vars.copy()
+            flow_transport_out_coeffs = xr.full_like(flow_transport_in_vars, np.nan, dtype=float)
             for carrier, node in index.get_unique([0, 1]):
-                techs = [tech for tech in sets["set_transport_technologies"] if carrier in sets["set_reference_carriers"][tech]]
+                techs = [tech for tech in sets["set_transport_technologies"] if
+                         carrier in sets["set_reference_carriers"][tech]]
                 edges_in = self.energy_system.calculate_connected_edges(node, "in")
                 edges_out = self.energy_system.calculate_connected_edges(node, "out")
-                group_in.loc[carrier, node, techs, edges_in] = 1
-                group_out.loc[carrier, node, techs, edges_out] = 1
-            flow_transport_in = (model.variables["flow_transport"] * group_in - model.variables["flow_transport_loss"] * group_in).sum(["set_transport_technologies", "set_edges"])
-            flow_transport_out = (model.variables["flow_transport"] * group_out).sum(["set_transport_technologies", "set_edges"])
+
+                # get the variables for the in flow
+                in_vars_plus = model.variables["flow_transport"].labels.loc[techs, edges_in, :].data
+                in_vars_plus = in_vars_plus.reshape((-1, in_vars_plus.shape[-1])).T
+                in_coefs_plus = np.ones_like(in_vars_plus)
+                in_vars_minus = model.variables["flow_transport_loss"].labels.loc[techs, edges_out, :].data
+                in_vars_minus = in_vars_minus.reshape((-1, in_vars_minus.shape[-1])).T
+                in_coefs_minus = np.ones_like(in_vars_minus)
+                in_vars = np.concatenate([in_vars_plus, in_vars_minus], axis=1)
+                in_coefs = np.concatenate([in_coefs_plus, -in_coefs_minus], axis=1)
+                flow_transport_in_vars.loc[carrier, node, :, :in_vars.shape[-1] - 1] = in_vars
+                flow_transport_in_coeffs.loc[carrier, node, :, :in_coefs.shape[-1] - 1] = in_coefs
+
+                # get the variables for the out flow
+                out_vars_plus = model.variables["flow_transport"].labels.loc[techs, edges_out, :].data
+                out_vars_plus = out_vars_plus.reshape((-1, out_vars_plus.shape[-1])).T
+                out_coefs_plus = np.ones_like(out_vars_plus)
+                flow_transport_out_vars.loc[carrier, node, :, :out_vars_plus.shape[-1] - 1] = out_vars_plus
+                flow_transport_out_coeffs.loc[carrier, node, :, :out_coefs_plus.shape[-1] - 1] = out_coefs_plus
+
+            # craete the linear expression
+            flow_transport_in = lp.LinearExpression(xr.Dataset({"coeffs": flow_transport_in_coeffs,
+                                                                "vars": flow_transport_in_vars}), model)
+            flow_transport_out = lp.LinearExpression(xr.Dataset({"coeffs": flow_transport_out_coeffs,
+                                                                 "vars": flow_transport_out_vars}), model)
         else:
             # if there is no carrier flow we just create empty arrays
             flow_transport_in = model.variables["flow_import"].where(False).to_linexpr()
