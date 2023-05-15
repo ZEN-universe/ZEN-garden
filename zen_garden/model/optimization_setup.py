@@ -305,10 +305,6 @@ class OptimizationSetup(object):
             for param in params:
                 assert "pwa" not in param, "Scenarios are not implemented for piece-wise affine parameters."
                 file_name = param
-                column = None
-                if type(param) is tuple:
-                    file_name, column = param
-                    param = param[1]
                 if "yearly_variation" in param:
                     param = param.replace("_yearly_variation", "")
                     file_name = param
@@ -317,13 +313,13 @@ class OptimizationSetup(object):
                 _index_names = _old_param.index.names
                 _index_sets = [index_set for index_set, index_name in element.data_input.index_names.items() if index_name in _index_names]
                 _time_steps = None
-                # if existing capacity is changed, setExistingTechnologies, existing lifetime, and capexExistingCapacity have to be updated as well
-                if "set_existing_technologies" in _index_sets:
-                    # update setExistingTechnologies and existingLifetime
-                    _existing_technologies = element.data_input.extract_set_existing_technologies(scenario=scenario)
-                    _lifetime_existing_technologies = element.data_input.extract_lifetime_existing_technology(param, index_sets=_index_sets, scenario=scenario)
-                    setattr(element, "set_existing_technologies", _existing_technologies)
-                    setattr(element, "lifetime_existing_technology", _lifetime_existing_technologies)
+                # if existing capacity is changed, set_technologies_existing, existing lifetime, and capexExistingCapacity have to be updated as well
+                if "set_technologies_existing" in _index_sets:
+                    # update set_technologies_existing and lifetime_existing
+                    _technologies_existing = element.data_input.extract_set_technologies_existing(scenario=scenario)
+                    setattr(element, "set_technologies_existing", _technologies_existing)
+                    _lifetime_existing = element.data_input.extract_lifetime_existing(param, index_sets=_index_sets, scenario=scenario)
+                    setattr(element, "lifetime_existing", _lifetime_existing)
                 # set new parameter value
                 if hasattr(element, "raw_time_series") and param in element.raw_time_series.keys():
                     conduct_tsa = True
@@ -332,19 +328,18 @@ class OptimizationSetup(object):
                 else:
                     assert isinstance(_old_param, pd.Series) or isinstance(_old_param, pd.DataFrame), f"Param values of '{param}' have to be a pd.DataFrame or pd.Series."
                     if "time" in _index_names:
-                        # _time_steps = list(_old_param.index.unique("time"))
                         _time_steps = self.energy_system.set_base_time_steps_yearly
                     elif "year" in _index_names:
                         _time_steps = self.energy_system.set_time_steps_yearly_entire_horizon
                     _new_param = element.data_input.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
                     setattr(element, param, _new_param)
-                    # if existing capacity is changed, capexExistingCapacity also has to be updated
-                    if "existing_capacity" in param:
+                    # if existing capacity is changed, capex_capacity_existing also has to be updated
+                    if "capacity_existing" in param:
                         storage_energy = False
                         if element in self.energy_system.system["set_storage_technologies"]:
                             storage_energy = True
-                        _capex_existing_capacities = element.calculate_capex_of_existing_capacities(storage_energy=storage_energy)
-                        setattr(element, "capex_existing_capacity", _capex_existing_capacities)
+                        _capex_capacities_existing = element.calculate_capex_of_capacities_existing(storage_energy=storage_energy)
+                        setattr(element, "capex_capacity_existing", _capex_capacities_existing)
         # if scenario contains timeSeries dependent params conduct tsa
         if conduct_tsa:
             # we need to reset the Aggregation because the energy system might have changed
@@ -452,26 +447,26 @@ class OptimizationSetup(object):
         # store the solution into the results
         # self.model.solutions.store_to(self.results, skip_stale_vars=True)
 
-    def add_newly_built_capacity(self, step_horizon):
+    def add_new_capacity_addition(self, step_horizon):
         """ adds the newly built capacity to the existing capacity
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
-                _built_capacity = pd.Series(self.model.built_capacity.extract_values())
-                _invest_capacity = pd.Series(self.model.invested_capacity.extract_values())
-                _capex = pd.Series(self.model.capex.extract_values())
+                _capacity_addition = pd.Series(self.model.capacity_addition.extract_values())
+                _invest_capacity = pd.Series(self.model.capacity_investment.extract_values())
+                _cost_capex = pd.Series(self.model.cost_capex.extract_values())
                 _rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
-                _built_capacity[_built_capacity <= _rounding_value] = 0
+                _capacity_addition[_capacity_addition <= _rounding_value] = 0
                 _invest_capacity[_invest_capacity <= _rounding_value] = 0
-                _capex[_capex <= _rounding_value] = 0
+                _cost_capex[_cost_capex <= _rounding_value] = 0
                 _base_time_steps = self.energy_system.time_steps.decode_yearly_time_steps([step_horizon])
                 for tech in self.get_all_elements(Technology):
                     # new capacity
-                    _built_capacity_tech = _built_capacity.loc[tech.name].unstack()
-                    _invested_capacity_tech = _invest_capacity.loc[tech.name].unstack()
-                    _capex_tech = _capex.loc[tech.name].unstack()
-                    tech.add_newly_built_capacity_tech(_built_capacity_tech, _capex_tech, _base_time_steps)
-                    tech.add_newly_invested_capacity_tech(_invested_capacity_tech, step_horizon)
+                    _capacity_addition_tech = _capacity_addition.loc[tech.name].unstack()
+                    _capacity_investment = _invest_capacity.loc[tech.name].unstack()
+                    _cost_capex_tech = _cost_capex.loc[tech.name].unstack()
+                    tech.add_new_capacity_addition_tech(_capacity_addition_tech, _cost_capex_tech, _base_time_steps)
+                    tech.add_new_capacity_investment(_capacity_investment, step_horizon)
             else:
                 # TODO clean up
                 # reset to initial values
@@ -479,22 +474,22 @@ class OptimizationSetup(object):
                     # extract existing capacity
                     _set_location = tech.location_type
                     set_time_steps_yearly = self.energy_system.set_time_steps_yearly_entire_horizon
-                    tech.set_existing_technologies = tech.data_input.extract_set_existing_technologies()
-                    tech.existing_capacity = tech.data_input.extract_input_data(
-                        "existing_capacity",index_sets=[_set_location,"set_existing_technologies"])
-                    tech.existing_invested_capacity = tech.data_input.extract_input_data(
-                        "existing_invested_capacity",index_sets=[_set_location,"set_time_steps_yearly"],time_steps=set_time_steps_yearly)
-                    tech.lifetime_existing_technology = tech.data_input.extract_lifetime_existing_technology(
-                        "existing_capacity", index_sets=[_set_location, "set_existing_technologies"])
+                    tech.set_technologies_existing = tech.data_input.extract_set_technologies_existing()
+                    tech.capacity_existing = tech.data_input.extract_input_data(
+                        "capacity_existing",index_sets=[_set_location,"set_technologies_existing"])
+                    tech.capacity_investment_existing = tech.data_input.extract_input_data(
+                        "capacity_investment_existing",index_sets=[_set_location,"set_time_steps_yearly"],time_steps=set_time_steps_yearly)
+                    tech.lifetime_existing = tech.data_input.extract_lifetime_existing(
+                        "capacity_existing", index_sets=[_set_location, "set_technologies_existing"])
                     # calculate capex of existing capacity
-                    tech.capex_existing_capacity = tech.calculate_capex_of_existing_capacities()
+                    tech.capex_capacity_existing = tech.calculate_capex_of_capacities_existing()
                     if tech.__class__.__name__ == "StorageTechnology":
-                        tech.existing_capacity_energy = tech.data_input.extract_input_data(
-                            "existing_capacity_energy",index_sets=["set_nodes","set_existing_technologies"])
-                        tech.existing_invested_capacity_energy = tech.data_input.extract_input_data(
-                            "existing_invested_capacity_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
+                        tech.capacity_existing_energy = tech.data_input.extract_input_data(
+                            "capacity_existing_energy",index_sets=["set_nodes","set_technologies_existing"])
+                        tech.capacity_investment_existing_energy = tech.data_input.extract_input_data(
+                            "capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
                             time_steps=set_time_steps_yearly)
-                        tech.capex_existing_capacity_energy = tech.calculate_capex_of_existing_capacities(storage_energy=True)
+                        tech.capex_capacity_existing_energy = tech.calculate_capex_of_capacities_existing(storage_energy=True)
 
     def add_carbon_emission_cumulative(self, step_horizon):
         """ overwrite previous carbon emissions with cumulative carbon emissions
@@ -505,10 +500,10 @@ class OptimizationSetup(object):
                 _carbon_emissions_cumulative = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
                 carbon_emissions = self.model.carbon_emissions_total.extract_values()[step_horizon]
                 carbon_emissions_overshoot = self.model.carbon_emissions_overshoot.extract_values()[step_horizon]
-                self.energy_system.previous_carbon_emissions = _carbon_emissions_cumulative + (carbon_emissions - carbon_emissions_overshoot) * (interval_between_years - 1)
+                self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + (carbon_emissions - carbon_emissions_overshoot) * (interval_between_years - 1)
             else:
-                self.energy_system.previous_carbon_emissions = self.energy_system.data_input.extract_input_data(
-                    "previous_carbon_emissions",index_sets=[])
+                self.energy_system.carbon_emissions_cumulative_existing = self.energy_system.data_input.extract_input_data(
+                    "carbon_emissions_cumulative_existing",index_sets=[])
 
     def initialize_component(self, calling_class, component_name, index_names=None, set_time_steps=None, capacity_types=False):
         """ this method initializes a modeling component by extracting the stored input data.

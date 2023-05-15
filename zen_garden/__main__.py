@@ -13,6 +13,7 @@ from ._internal import main
 import importlib.util
 import argparse
 import sys
+import os
 
 
 def run_module(args=None):
@@ -30,14 +31,18 @@ def run_module(args=None):
                   "dataset specified in the config file."
     parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET]")
 
-    parser.add_argument("--config", required=False, type=str, default="config.py", help="The config file used to run the pipeline, "
+    parser.add_argument("--config", required=False, type=str, default="./config.py", help="The config file used to run the pipeline, "
                                                                                         "defaults to config.py in the current directory.")
     parser.add_argument("--dataset", required=False, type=str, default=None, help="Path to the dataset used for the run. IMPORTANT: This will overwrite the "
                                                                                   "config.analysis['dataset'] attribute of the config file!")
     args = parser.parse_args(args)
 
+    # change working directory to the directory of the config file
+    config_path, config_file = os.path.split(args.config)
+    os.chdir(config_path)
+
     ### import the config
-    spec = importlib.util.spec_from_file_location("module", args.config)
+    spec = importlib.util.spec_from_file_location("module", config_file)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     config = module.config

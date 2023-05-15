@@ -49,9 +49,9 @@ class ConditioningTechnology(ConversionTechnology):
         if self.output_carrier[0] not in system[subset]:
             system[subset] += self.output_carrier
 
-    def get_conver_efficiency(self):
-        """retrieves and stores conver_efficiency for <ConditioningTechnology>.
-        Create dictionary with input parameters with the same format as pwa_conver_efficiency"""
+    def get_conversion_factor(self):
+        """retrieves and stores conversion_factor for <ConditioningTechnology>.
+        Create dictionary with input parameters with the same format as pwa_conversion_factor"""
         set_time_steps_yearly = self.energy_system.set_time_steps_yearly
         specific_heat = self.data_input.extract_attribute("specific_heat")["value"]
         specific_heat_ratio = self.data_input.extract_attribute("specific_heat_ratio")["value"]
@@ -75,19 +75,19 @@ class ConditioningTechnology(ConversionTechnology):
         assert len(_input_carriers) == 1, f"{self.name} can only have 1 input carrier besides the reference carrier."
         assert len(self.output_carrier) == 1, f"{self.name} can only have 1 output carrier."
         # create dictionary
-        self.conver_efficiency_is_pwa = False
-        self.conver_efficiency_linear = dict()
-        self.conver_efficiency_linear[self.output_carrier[0]] = \
+        self.conversion_factor_is_pwa = False
+        self.conversion_factor_linear = dict()
+        self.conversion_factor_linear[self.output_carrier[0]] = \
         self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=1)[
             0]  # TODO losses are not yet accounted for
-        self.conver_efficiency_linear[_input_carriers[0]] = \
+        self.conversion_factor_linear[_input_carriers[0]] = \
         self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
         # dict to dataframe
-        self.conver_efficiency_linear = pd.DataFrame.from_dict(self.conver_efficiency_linear)
-        self.conver_efficiency_linear.columns.name = "carrier"
-        self.conver_efficiency_linear = self.conver_efficiency_linear.stack()
-        _conver_efficiency_levels = [self.conver_efficiency_linear.index.names[-1]] + self.conver_efficiency_linear.index.names[:-1]
-        self.conver_efficiency_linear = self.conver_efficiency_linear.reorder_levels(_conver_efficiency_levels)
+        self.conversion_factor_linear = pd.DataFrame.from_dict(self.conversion_factor_linear)
+        self.conversion_factor_linear.columns.name = "carrier"
+        self.conversion_factor_linear = self.conversion_factor_linear.stack()
+        _conversion_factor_levels = [self.conversion_factor_linear.index.names[-1]] + self.conversion_factor_linear.index.names[:-1]
+        self.conversion_factor_linear = self.conversion_factor_linear.reorder_levels(_conversion_factor_levels)
 
     @classmethod
     def construct_sets(cls, optimization_setup):
