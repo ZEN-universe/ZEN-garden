@@ -744,7 +744,7 @@ class Constraint(Component):
         xr_vars.loc[(slice(None), ) + index_arrs] = vars
         xr_ds = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}).transpose(..., "_term")
         xr_lhs = lp.LinearExpression(xr_ds, model)
-        xr_sign = xr.DataArray("==", coords, dims=index_list)
+        xr_sign = xr.DataArray("=", coords, dims=index_list).astype("U2")
         xr_sign.loc[index_arrs] = [c.sign.data if isinstance(c.sign, xr.DataArray) else c.sign for c in cons]
         xr_rhs = xr.DataArray(0.0, coords, dims=index_list)
         # Here we catch infinities in the constraints (gurobi does not care but glpk does)
@@ -856,7 +856,7 @@ class Constraint(Component):
                               dims=(stack_dim, *constraints[0].lhs.dims.keys()))
         variables = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=-1), coords=coords,
                                  dims=(stack_dim, *constraints[0].lhs.dims.keys()))
-        sign = xr.DataArray("=", coords=coords[:-1])
+        sign = xr.DataArray("=", coords=coords[:-1]).astype("U2")
         rhs = xr.DataArray(np.nan, coords=coords[:-1])
 
         for num, con in enumerate(constraints):
@@ -908,7 +908,7 @@ class Constraint(Component):
 
         # rhs and sign do not have a _term dimension
         xr_rhs = xr.DataArray(np.full(shape=coords_shape, fill_value=np.nan), dims=dims[:-1], coords=coords)
-        xr_sign = xr.DataArray(np.full(shape=coords_shape, fill_value="=="), dims=dims[:-1], coords=coords)
+        xr_sign = xr.DataArray(np.full(shape=coords_shape, fill_value="="), dims=dims[:-1], coords=coords).astype("U2")
 
         # Assign everything
         for num, index_val in enumerate(index_values):

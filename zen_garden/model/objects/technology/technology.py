@@ -680,7 +680,7 @@ class TechnologyRules:
         # the lhs, rhs and sign depend on the case
         lhs = model.variables["capacity"].where(m1) + model.variables["capacity_addition"].where(m2)
         rhs = params.capacity_limit.where(m1, 0.0)
-        sign = xr.DataArray("<=", coords=model.variables["capacity"].coords).where(m1, "==")
+        sign = xr.DataArray("<=", coords=model.variables["capacity"].coords).where(m1, "=")
         return AnonymousConstraint(lhs, sign, rhs)
 
     def get_constraint_technology_min_capacity(self):
@@ -846,7 +846,7 @@ class TechnologyRules:
                                    <= rhs)
 
         # reording takes to much memory!
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_reference_flow_coupling_dim", model)
+        return self.optimization_setup.constraints.combine_constraints(constraints, "technology_diffusion_limit_dim", model)
 
     def get_constraint_capex_yearly_rule(self):
         """ aggregates the capex of built capacity and of existing capacity """
