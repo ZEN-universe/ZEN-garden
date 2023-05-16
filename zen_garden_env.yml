@@ -1,4 +1,4 @@
-name: zen-garden-test
+name: zen-garden
 channels:
   - conda-forge
   - gurobi
@@ -22,7 +22,7 @@ dependencies:
       - ordered-set
       - pyogrio
       - psutil
-      - linopy
+      - linopy==0.1.4
       - -e .
 
 # conda env create -f zen_garden_env.yml
