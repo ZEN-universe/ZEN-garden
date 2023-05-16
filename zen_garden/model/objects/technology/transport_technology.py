@@ -198,10 +198,11 @@ class TransportTechnology(Technology):
         time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
 
         # disjunct constraints min load
-        model.add_constraints(model.variables["flow_transport"][tech, edge, time].to_linexpr()
-                              - params.min_load.loc[tech, capacity_type, edge, time].item() * model.variables["capacity"][tech, capacity_type, edge, time_step_year]
-                              - binary_var * constraints.M
-                              >= -constraints.M)
+        constraints.add_constraint_block(model, name=f"disjunct_transport_technology_min_load_{tech}_{capacity_type}_{edge}_{time}",
+                                         constraint=(model.variables["flow_transport"][tech, edge, time].to_linexpr()
+                                                     - params.min_load.loc[tech, capacity_type, edge, time].item() * model.variables["capacity"][tech, capacity_type, edge, time_step_year]
+                                                     >= 0),
+                                         disjunction_var=binary_var)
 
     @classmethod
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
@@ -210,12 +211,11 @@ class TransportTechnology(Technology):
         constraints = optimization_setup.constraints
 
         # since it is an equality con we add lower and upper bounds
-        model.add_constraints(model.variables["flow_transport"][tech, edge, time].to_linexpr()
-                              + binary_var * constraints.M
-                              <= constraints.M)
-        model.add_constraints(model.variables["flow_transport"][tech, edge, time].to_linexpr()
-                              - binary_var * constraints.M
-                              >= -constraints.M)
+        constraints.add_constraint_block(model, name=f"disjunct_transport_technology_off_{tech}_{capacity_type}_{edge}_{time}_lower",
+                                         constraint=(model.variables["flow_transport"][tech, edge, time].to_linexpr()
+                                                     == 0),
+                                         disjunction_var=binary_var)
+
 
 class TransportTechnologyRules:
     """

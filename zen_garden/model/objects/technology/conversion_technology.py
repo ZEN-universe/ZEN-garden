@@ -314,10 +314,11 @@ class ConversionTechnology(Technology):
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, time)
         # disjunct constraints min load
-        model.add_constraints(reference_flow.to_linexpr()
-                              - model.variables["capacity"][tech, capacity_type, node, time_step_year].to_linexpr(params.min_load.loc[tech, capacity_type, node, time].item())
-                              - constraints.M*binary_var
-                              >= -constraints.M)
+        constraints.add_constraint_block(model, name=f"constraint_min_load_{'_'.join([str(tech), str(node), str(time)])}",
+                                         constraint=(reference_flow.to_linexpr()
+                                                     - model.variables["capacity"][tech, capacity_type, node, time_step_year].to_linexpr(params.min_load.loc[tech, capacity_type, node, time].item())
+                                                     >= 0), disjunction_var=binary_var)
+
         # couple reference flows
         rules = ConversionTechnologyRules(optimization_setup)
         constraints.add_constraint_block(model, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
@@ -336,9 +337,9 @@ class ConversionTechnology(Technology):
         constraints = optimization_setup.constraints
         lhs = sum(model.variables["flow_conversion_input"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
               + sum(model.variables["flow_conversion_output"][tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
-        # equal cons -> to cons
-        model.add_constraints(lhs.to_linexpr() + binary_var * constraints.M <= constraints.M)
-        model.add_constraints(lhs.to_linexpr() - binary_var * constraints.M >= -constraints.M)
+        # add the constraints
+        constraints.add_constraint_block(model, name=f"constraint_off_technology_{'_'.join([str(tech), str(node), str(time)])}",
+                                         constraint=lhs.to_linexpr() == 0, disjunction_var=binary_var)
 
     @classmethod
     def calculate_pwa_breakpoints_values(cls, optimization_setup, setPWA, type_pwa):

@@ -552,7 +552,7 @@ class Variable(Component):
 class Constraint(Component):
     def __init__(self):
         super().__init__()
-        # This is the big-M for the constraints
+        # This is the big-M for the constraints if the variables inside an expression are not bounded
         self.M = np.iinfo(np.int32).max
 
     def add_constraint_block(self, model: lp.Model, name, constraint, doc="", disjunction_var=None):
@@ -619,6 +619,41 @@ class Constraint(Component):
         else:
             logging.warning(f"{name} already added. Can only be added once")
 
+    def _get_M(self, model, lin_expr):
+        """
+        Calculates a conservative bound (max abs value) of the given linear expression
+        :param model: The model of the linear expression
+        :param lin_expr: The linear expression
+        :return: An array with the same shape as vars containing the bounds
+        """
+
+        # extract
+        vars = lin_expr.vars.data
+        coeffs = lin_expr.coeffs.data
+
+        # get the shape of the vars
+        shape = vars.shape
+
+        # get all the coords
+        bounds = []
+        for coeff, var in zip(coeffs.ravel(), vars.ravel()):
+            # if dummy, continue
+            if var == -1:
+                bounds.append(0)
+                continue
+
+            # get the name and coord
+            var_name, var_coord = model.variables.get_label_position(var)
+            lower = model.variables[var_name].lower.loc[var_coord].item()
+            upper = model.variables[var_name].upper.loc[var_coord].item()
+
+            # conservative bound
+            bounds.append(np.abs(coeff) * np.maximum(np.abs(lower), np.abs(upper)))
+
+        # sum over the _term dim and set coords
+        return xr.DataArray(np.sum(np.array(bounds).reshape(shape) + 1, axis=-1),
+                            coords=[lin_expr.vars.coords[d] for d in lin_expr.vars.dims[:-1]])
+
     def _add_con(self, model, name, lhs, sign, rhs, disjunction_var=None, mask=None):
         """ Adds a constraint to the model
         :param model: The linopy model
@@ -638,18 +673,24 @@ class Constraint(Component):
             mask = ~np.isnan(rhs) & np.isfinite(rhs)
 
         if disjunction_var is not None:
+            # get the bounds
+            bounds = self._get_M(model, lhs)
+            if not np.isfinite(bounds).all():
+                logging.warning(f"Constraint {name} has infinite bounds. Can not extract big-M resorting to default")
+                bounds = self.M
+
             # if we have any equal cons, we need to transform them into <= and >=
             if (sign == "=").any():
                 # the "<=" cons
                 sign_c = sign.where(sign != "=", "<=")
-                m_arr = xr.zeros_like(rhs).where(sign_c != "<=", self.M).where(sign_c != ">=", -self.M)
+                m_arr = xr.zeros_like(rhs).where(sign_c != "<=", bounds).where(sign_c != ">=", -bounds)
                 model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + "<=", mask=mask)
                 sign_c = sign.where(sign != "=", ">=")
-                m_arr = xr.zeros_like(rhs).where(sign_c != "<=", self.M).where(sign_c != ">=", -self.M)
+                m_arr = xr.zeros_like(rhs).where(sign_c != "<=", bounds).where(sign_c != ">=", -bounds)
                 model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + ">=", mask=mask)
             # create the arr
             else:
-                m_arr = xr.zeros_like(rhs).where(sign != "<=", self.M).where(sign != ">=", -self.M)
+                m_arr = xr.zeros_like(rhs).where(sign != "<=", bounds).where(sign != ">=", -bounds)
                 model.add_constraints(lhs + m_arr * disjunction_var, sign, rhs + m_arr, name=name + ">=", mask=mask)
         else:
             model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
