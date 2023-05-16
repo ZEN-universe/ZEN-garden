@@ -53,7 +53,6 @@ class Config(object):
         if scenarios is not None:
             self.scenarios.update(scenarios)
 
-
     def _set_defaults(self):
         """
         Initializes all the default parameters
@@ -94,7 +93,8 @@ class Config(object):
                 "set_storage_technologies":"technology",
                 "set_technologies":"technology",
                 "set_technologies_existing": "technology_existing",
-                "set_capacity_types":"capacity_type"}
+                "set_capacity_types":"capacity_type",
+                "set_lca_impact_categories":"impact_category"}
         # time series aggregation
         self.analysis["time_series_aggregation"] = {
             "clusterMethod"         : "k_means",
@@ -117,6 +117,7 @@ class Config(object):
         self.analysis["folder_name_system_specification"] = "system_specification"
         # earliest possible year of in input data, needed to differentiate between yearly and generic time indices
         self.analysis["earliest_year_of_data"] = 1900
+        self.analysis['use_capacities_existing'] = False
         ## System - Items assignment
         # set of energy carriers
         self.system["set_carriers"] = []
@@ -147,6 +148,9 @@ class Config(object):
         self.system["knowledge_depreciation_rate"] = 0.1
         # enforce selfish behavior
         self.system["enforce_selfish_behavior"] = False
+        # LCA flag and set of impact categories
+        self.system['load_lca_factors'] = False
+        self.system['set_lca_impact_categories'] = []
 
         ## Solver - Items assignment
         # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)

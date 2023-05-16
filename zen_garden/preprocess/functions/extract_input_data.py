@@ -318,8 +318,8 @@ class DataInput:
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
         # import all input data
-        df_input_nonlinear = self.read_pwa_files(variable_type, fileType="nonlinear_")
-        df_input_breakpoints = self.read_pwa_files(variable_type, fileType="breakpoints_pwa_")
+        df_input_nonlinear = self.read_pwa_files(variable_type, file_type="nonlinear_")
+        df_input_breakpoints = self.read_pwa_files(variable_type, file_type="breakpoints_pwa_")
         df_input_linear = self.read_pwa_files(variable_type)
         df_linear_exist = self.exists_attribute(_attribute_name)
         assert (df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
