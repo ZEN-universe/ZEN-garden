@@ -298,7 +298,7 @@ class ConversionTechnology(Technology):
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
+    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is On"""
         # get parameter object
         model = optimization_setup.model
@@ -316,20 +316,20 @@ class ConversionTechnology(Technology):
         # disjunct constraints min load
         model.add_constraints(reference_flow.to_linexpr()
                               - model.variables["capacity"][tech, capacity_type, node, time_step_year].to_linexpr(params.min_load.loc[tech, capacity_type, node, time].item())
-                              - constraints.M*model.variables["tech_on_var"]
+                              - constraints.M*binary_var
                               >= -constraints.M)
         # couple reference flows
         rules = ConversionTechnologyRules(optimization_setup)
         constraints.add_constraint_block(model, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
                                          constraint=rules.get_constraint_reference_flow_coupling([(tech, dependent_carrier, node, time) for dependent_carrier in sets["set_dependent_carriers"][tech]], ["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
-                                         doc="couples the real reference flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
+                                         doc="couples the real reference flow variables with the approximated variables", disjunction_var=binary_var)
         # couple dependent flows
         constraints.add_constraint_block(model, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
                                          constraint=rules.get_constraint_dependent_flow_coupling([(tech, dependent_carrier, node, time) for dependent_carrier in sets["set_dependent_carriers"][tech]], ["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
-                                         doc="couples the real dependent flow variables with the approximated variables", disjunction_var=model.variables["tech_on_var"])
+                                         doc="couples the real dependent flow variables with the approximated variables", disjunction_var=binary_var)
 
     @classmethod
-    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
+    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is off"""
         sets = optimization_setup.sets
         model = optimization_setup.model
@@ -337,8 +337,8 @@ class ConversionTechnology(Technology):
         lhs = sum(model.variables["flow_conversion_input"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
               + sum(model.variables["flow_conversion_output"][tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
         # equal cons -> to cons
-        model.add_constraints(lhs.to_linexpr() + model.variables["tech_off_var"] * constraints.M <= constraints.M)
-        model.add_constraints(lhs.to_linexpr() - model.variables["tech_off_var"] * constraints.M >= -constraints.M)
+        model.add_constraints(lhs.to_linexpr() + binary_var * constraints.M <= constraints.M)
+        model.add_constraints(lhs.to_linexpr() - binary_var * constraints.M >= -constraints.M)
 
     @classmethod
     def calculate_pwa_breakpoints_values(cls, optimization_setup, setPWA, type_pwa):

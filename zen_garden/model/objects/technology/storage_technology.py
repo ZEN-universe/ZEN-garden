@@ -213,7 +213,7 @@ class StorageTechnology(Technology):
         # defines disjuncts if technology on/off
 
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
+    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is on"""
         params = optimization_setup.parameters
         constraints = optimization_setup.constraints
@@ -224,16 +224,16 @@ class StorageTechnology(Technology):
         # disjunct constraints min load charge
         model.add_constraints(model.variables["flow_storage_charge"][tech, node, time].to_expr()
                               - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
-                              - model.variables["tech_on_var"] * constraints.M
+                              - binary_var * constraints.M
                               >= -constraints.M)
         # disjunct constraints min load discharge
         model.add_constraints(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
                               - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
-                              - model.variables["tech_on_var"] * constraints.M
+                              - binary_var * constraints.M
                               >= -constraints.M)
 
     @classmethod
-    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time):
+    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is off"""
         model = optimization_setup.model
         constraints = optimization_setup.constraints
@@ -241,18 +241,18 @@ class StorageTechnology(Technology):
         # for equality constraints we need to add upper and lower bounds
         # off charging
         model.add_constraints(model.variables["flow_storage_charge"][tech, node, time].to_linexpr()
-                              + model.variables["tech_off_var"] * constraints.M
+                              + binary_var * constraints.M
                               <= constraints.M)
         model.add_constraints(model.variables["flow_storage_charge"][tech, node, time].to_linexpr()
-                              - model.variables["tech_off_var"] * constraints.M
+                              - binary_var * constraints.M
                               >= -constraints.M)
 
         # off discharging
         model.add_constraints(model.variables["flow_storage_discharge"][tech, node, time]
-                              + model.variables["tech_off_var"] * constraints.M
+                              + binary_var * constraints.M
                               <= constraints.M)
         model.add_constraints(model.variables["flow_storage_discharge"][tech, node, time]
-                              - model.variables["tech_off_var"] * constraints.M
+                              - binary_var * constraints.M
                               >= -constraints.M)
 
 

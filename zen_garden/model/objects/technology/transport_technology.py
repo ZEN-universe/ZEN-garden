@@ -188,7 +188,7 @@ class TransportTechnology(Technology):
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time):
+    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
         """definition of disjunct constraints if technology is on"""
         model = optimization_setup.model
         # get parameter object
@@ -200,21 +200,21 @@ class TransportTechnology(Technology):
         # disjunct constraints min load
         model.add_constraints(model.variables["flow_transport"][tech, edge, time].to_linexpr()
                               - params.min_load.loc[tech, capacity_type, edge, time].item() * model.variables["capacity"][tech, capacity_type, edge, time_step_year]
-                              - model.variables["tech_on_var"] * constraints.M
+                              - binary_var * constraints.M
                               >= -constraints.M)
 
     @classmethod
-    def disjunct_off_technology_rule(cls, optimization_setup, disjunct, tech, capacity_type, edge, time):
+    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
         """definition of disjunct constraints if technology is off"""
         model = optimization_setup.model
         constraints = optimization_setup.constraints
 
         # since it is an equality con we add lower and upper bounds
         model.add_constraints(model.variables["flow_transport"][tech, edge, time].to_linexpr()
-                              + model.variables["tech_off_var"] * constraints.M
+                              + binary_var * constraints.M
                               <= constraints.M)
         model.add_constraints(model.variables["flow_transport"][tech, edge, time].to_linexpr()
-                              - model.variables["tech_off_var"] * constraints.M
+                              - binary_var * constraints.M
                               >= -constraints.M)
 
 class TransportTechnologyRules:

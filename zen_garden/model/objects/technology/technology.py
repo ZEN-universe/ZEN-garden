@@ -548,9 +548,16 @@ class Technology(Element):
 
         # disjunct if technology is on
         # the disjunction variables
-        tech_on_var = model.add_variables(name="tech_on_var", binary=True)
-        tech_off_var = model.add_variables(name="tech_off_var", binary=True)
-        model.add_constraints(tech_on_var + tech_off_var == 1, name="tech_on_off_cons")
+        variables = optimization_setup.variables
+        index_vals, _ = cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup)
+        index_names = ["on_off_technologies", "on_off_capacity_types", "on_off_locations", "on_off_time_steps_operation"]
+        variables.add_variable(model, name="tech_on_var",
+                               index_sets=(index_vals, index_names),
+                               doc="The tech on var", binary=True)
+        variables.add_variable(model, name="tech_off_var",
+                               index_sets=(index_vals, index_names),
+                               doc="The tech off var", binary=True)
+        model.add_constraints(model.variables["tech_on_var"] + model.variables["tech_off_var"] == 1, name="tech_on_off_cons")
         n_cons = model.constraints.ncons
 
         constraints.add_constraint_rule(model, name="disjunct_on_technology",
@@ -643,8 +650,9 @@ class TechnologyRules:
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
         for subclass in Technology.__subclasses__():
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
-                # disjunct is defined in corresponding subclass
-                subclass.disjunct_on_technology_rule(self.optimization_setup, tech, capacity_type, loc, time)
+                # extract the relevant binary variable (not scalar, .loc is necessary)
+                binary_var = self.optimization_setup.model.variables["tech_on_var"].loc[tech, capacity_type, loc, time]
+                subclass.disjunct_on_technology_rule(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
                 return None
 
     def disjunct_off_technology_rule(self, tech, capacity_type, loc, time):
@@ -652,8 +660,9 @@ class TechnologyRules:
         iterate through all subclasses to find corresponding implementation of disjunct constraints """
         for subclass in Technology.__subclasses__():
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
-                # disjunct is defined in corresponding subclass
-                subclass.disjunct_off_technology_rule(self.optimization_setup, tech, capacity_type, loc, time)
+                # extract the relevant binary variable (not scalar, .loc is necessary)
+                binary_var = self.optimization_setup.model.variables["tech_off_var"].loc[tech, capacity_type, loc, time]
+                subclass.disjunct_off_technology_rule(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
                 return None
 
     ### --- constraint rules --- ###
