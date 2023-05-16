@@ -262,10 +262,12 @@ class ConversionTechnology(Technology):
             # if set_pwa_capex contains technologies:
             pwa_breakpoints, pwa_values = cls.calculate_pwa_breakpoints_values(optimization_setup, set_pwa_capex[0], "capex")
             constraints.add_pw_constraint(model, index_values=set_pwa_capex[0], yvar="capex_approximation", xvar="capacity_approximation",
-                                          break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ")
+                                          break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ", name="constraint_capex_pwa",)
         if set_linear_capex[0]:
-            # if set_linear_capex contains technologies:
-            constraints.add_constraint_rule(model, name="constraint_linear_capex", index_sets=set_linear_capex, rule=rules.constraint_linear_capex_rule, doc="Linear relationship in capex")
+            # if set_linear_capex contains technologies: (note we give the coordinates nice names)
+            constraints.add_constraint_rule(model, name="constraint_linear_capex",
+                                            index_sets=(set_linear_capex[0], ["lin_capex_tech", "lin_capex_node", "lin_capex_time_step"]),
+                                            rule=rules.constraint_linear_capex_rule, doc="Linear relationship in capex")
         # Conversion Efficiency
         set_pwa_conversion_factor = cls.create_custom_set(["set_conversion_technologies", "set_conversion_factor_pwa", "set_nodes", "set_time_steps_operation"], optimization_setup)
         set_linear_conversion_factor = cls.create_custom_set(["set_conversion_technologies", "set_conversion_factor_linear", "set_nodes", "set_time_steps_operation"], optimization_setup)
@@ -273,7 +275,7 @@ class ConversionTechnology(Technology):
             # if set_pwa_conver_efficiency contains technologies:
             pwa_breakpoints, pwa_values = cls.calculate_pwa_breakpoints_values(optimization_setup, set_pwa_conversion_factor[0], "conversion_factor")
             constraints.add_pw_constraint(model, index_values=set_pwa_conversion_factor[0], yvar="flow_approximation_dependent", xvar="flow_approximation_reference",
-                                          break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ")
+                                          break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ", name="pwa_conversion_factor")
         if set_linear_conversion_factor[0]:
             # if set_linear_conver_efficiency contains technologies:
             constraints.add_constraint_block(model, name="constraint_linear_conversion_factor",
