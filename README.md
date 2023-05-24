@@ -82,12 +82,12 @@ We follow the [PEP-8](https://peps.python.org/pep-0008/)
 
 ### Variables name
 * the variable name should always be lower case
-* the name can be composed by multiple words, seprated by underscores
+* the name can be composed by multiple words, separated by underscores
 
 ### Files name
 * the files name should always be lower case
-* the name can be composed by multiple words, seprated by underscores
+* the name can be composed by multiple words, separated by underscores
 
 ### Folders name
 * the name of the folders should always be lower case
-* the name can be composed by multiple words, seprated by underscores
+* the name can be composed by multiple words, separated by underscores
