@@ -9,16 +9,16 @@ test_1a,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_1a,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_1a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_1a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_1a,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_1a,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
+test_1a,flow_import,"('natural_gas', 'CH', 0)",11.0
+test_1a,flow_import,"('natural_gas', 'DE', 0)",110.0
 test_1a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_1a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_1a,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_1a,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.0
 test_1a,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_1a,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_1a,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_1a,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_1a,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_1a,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_1a,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_1a,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_1b,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -31,16 +31,16 @@ test_1b,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_1b,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_1b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_1b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_1b,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_1b,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
+test_1b,flow_import,"('natural_gas', 'CH', 0)",11.0
+test_1b,flow_import,"('natural_gas', 'DE', 0)",110.0
 test_1b,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_1b,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_1b,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_1b,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.0
 test_1b,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_1b,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_1b,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_1b,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_1b,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_1b,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_1b,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_1b,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_2a,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -53,16 +53,14 @@ test_2a,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_2a,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_2a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_2a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_2a,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_2a,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",108.5
 test_2a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_2a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_2a,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_2a,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.0
 test_2a,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_2a,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_2a,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_2a,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_2a,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_2a,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_2a,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_2a,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_2b,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -75,16 +73,14 @@ test_2b,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_2b,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_2b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_2b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_2b,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_2b,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
 test_2b,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_2b,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_2b,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_2b,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.6
 test_2b,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_2b,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_2b,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_2b,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_2b,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_2b,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_2b,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_2b,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_2c,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -97,16 +93,14 @@ test_2c,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_2c,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_2c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_2c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_2c,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_2c,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
 test_2c,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_2c,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_2c,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_2c,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.0
 test_2c,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_2c,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_2c,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_2c,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_2c,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_2c,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_2c,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_2c,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_2d,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -119,16 +113,14 @@ test_2d,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_2d,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_2d,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_2d,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_2d,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_2d,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
 test_2d,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",20.0
 test_2d,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_2d,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",2.0
 test_2d,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.0
 test_2d,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_2d,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_2d,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_2d,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_2d,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_2d,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_2d,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_2d,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_3a,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -145,16 +137,14 @@ test_3a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_3a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
 test_3a,flow_conversion_output,"('natural_gas_boiler', 'carbon', 'CH', 0)",0.0001
 test_3a,flow_conversion_output,"('natural_gas_boiler', 'carbon', 'DE', 0)",0.001
-test_3a,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_3a,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
 test_3a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_3a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_3a,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_3a,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.0
 test_3a,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_3a,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_3a,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_3a,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_3a,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_3a,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_3a,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_3a,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_3b,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -169,18 +159,14 @@ test_3b,flow_import,"('oxygen', 'CH', 0)",8.0
 test_3b,flow_import,"('oxygen', 'DE', 0)",80.0
 test_3b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_3b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_3b,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_3b,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
-test_3b,flow_export,"('natural_gas_boiler', 'oxygen', 'CH', 0)",8.0
-test_3b,flow_export,"('natural_gas_boiler', 'oxygen', 'DE', 0)",80.0
 test_3b,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_3b,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_3b,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_3b,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.0
 test_3b,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_3b,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_3b,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_3b,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_3b,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_3b,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_3b,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_3b,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_4c,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -201,12 +187,6 @@ test_4c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 1)",10.0
 test_4c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 1)",100.0
 test_4c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 2)",10.0
 test_4c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 2)",100.0
-test_4c,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_4c,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
-test_4c,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 1)",11.0
-test_4c,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 1)",110.0
-test_4c,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 2)",11.0
-test_4c,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 2)",110.0
 test_4c,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_4c,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_4c,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
@@ -217,8 +197,8 @@ test_4c,cost_capex,"('natural_gas_boiler', 'power', 'CH', 2)",0.0
 test_4c,cost_capex,"('natural_gas_boiler', 'power', 'DE', 2)",0.0
 test_4c,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_4c,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_4c,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_4c,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_4c,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_4c,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_4c,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_4c,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_5a,flow_import,"('natural_gas', 'CH', 0)",121.0
@@ -231,20 +211,16 @@ test_5a,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_5a,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_5a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_5a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_5a,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_5a,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
 test_5a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_5a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_5a,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_5a,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.0
 test_5a,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_5a,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_5a,flow_export,"('natural_gas_compressor', 'natural_gas', 'CH', 0)",110.0
-test_5a,flow_export,"('natural_gas_compressor', 'natural_gas', 'DE', 0)",0.0
 test_5a,flow_conversion_output,"('natural_gas_compressor', 'natural_gas_high', 'CH', 0)",110.0
 test_5a,flow_conversion_output,"('natural_gas_compressor', 'natural_gas_high', 'DE', 0)",0.0
-test_5a,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_5a,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_5a,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_5a,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_5a,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",110.0
 test_5a,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_5a,flow_transport,"('natural_gas_pipeline', 'CH-DE', 0)",110.0
@@ -259,16 +235,14 @@ test_6a1,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_6a1,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_6a1,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_6a1,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_6a1,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_6a1,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
 test_6a1,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_6a1,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_6a1,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_6a1,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10.0
 test_6a1,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_6a1,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_6a1,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_6a1,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_6a1,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_6a1,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_6a1,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_6a1,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_6a2,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -281,16 +255,14 @@ test_6a2,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_6a2,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_6a2,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_6a2,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_6a2,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_6a2,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
 test_6a2,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_6a2,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_6a2,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.0
 test_6a2,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",0.0
 test_6a2,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_6a2,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_6a2,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_6a2,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_6a2,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_6a2,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_6a2,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_6a2,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_6a3,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -303,16 +275,14 @@ test_6a3,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_6a3,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_6a3,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_6a3,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_6a3,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_6a3,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
 test_6a3,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_6a3,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100.0
 test_6a3,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.0
 test_6a3,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",0.0
 test_6a3,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_6a3,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_6a3,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_6a3,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_6a3,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_6a3,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_6a3,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0.0
 test_6a3,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0.0
 test_7a,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -325,16 +295,14 @@ test_7a,carbon_emissions_carrier,"('heat', 'CH', 0)",0.0
 test_7a,carbon_emissions_carrier,"('heat', 'DE', 0)",0.0
 test_7a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10.0
 test_7a,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
-test_7a,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11.0
-test_7a,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110.0
 test_7a,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10.0
 test_7a,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",131.8
 test_7a,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1.0
 test_7a,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",0.0
 test_7a,cost_opex,"('natural_gas_boiler', 'CH', 0)",0.0
 test_7a,cost_opex,"('natural_gas_boiler', 'DE', 0)",0.0
-test_7a,flow_export,"('natural_gas_storage', 'CH', 0)",0.0
-test_7a,flow_export,"('natural_gas_storage', 'DE', 0)",0.0
+test_7a,flow_export,"('natural_gas', 'CH', 0)",0.0
+test_7a,flow_export,"('natural_gas', 'DE', 0)",0.0
 test_7a,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",7.2
 test_7a,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",14.0
 test_7b,flow_import,"('natural_gas', 'CH', 0)",11.0
@@ -367,12 +335,6 @@ test_7b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 2)",11.0
 test_7b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
 test_7b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 1)",100.0
 test_7b,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 2)",110.0
-test_7b,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",0
-test_7b,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 1)",0
-test_7b,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 2)",0
-test_7b,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",0
-test_7b,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 1)",0
-test_7b,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 2)",0
 test_7b,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",15.0
 test_7b,capacity,"('natural_gas_boiler', 'power', 'CH', 1)",15.0
 test_7b,capacity,"('natural_gas_boiler', 'power', 'CH', 2)",15.0
@@ -427,12 +389,6 @@ test_7c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 2)",11.0
 test_7c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100.0
 test_7c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 1)",100.0
 test_7c,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 2)",110.0
-test_7c,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",0
-test_7c,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 1)",0
-test_7c,flow_export,"('natural_gas_boiler', 'natural_gas', 'CH', 2)",0
-test_7c,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",0
-test_7c,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 1)",0
-test_7c,flow_export,"('natural_gas_boiler', 'natural_gas', 'DE', 2)",0
 test_7c,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_7c,capacity,"('natural_gas_boiler', 'power', 'CH', 1)",10
 test_7c,capacity,"('natural_gas_boiler', 'power', 'CH', 2)",11

@@ -6,33 +6,25 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
 Description:  Class is defining to read in the results of an Optimization problem.
 ==========================================================================================================================================================================="""
-import logging
-import warnings
 
-import h5py
-import sys
-import numpy as np
-import pandas as pd
 import importlib
 import json
-import zlib
+import logging
 import os
-import matplotlib.pyplot as plt
-from tqdm import tqdm
+import warnings
+import zlib
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
 
 # SETUP LOGGER
-log_format = '%(asctime)s %(filename)s: %(message)s'
-log_path = os.path.join('outputs', 'logs')
-os.makedirs(log_path, exist_ok=True)
-logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=logging.INFO, format=log_format, datefmt='%Y-%m-%d %H:%M:%S')
-logging.captureWarnings(True)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
-logging.getLogger().addHandler(handler)
+utils.setup_logger()
 
 class Results(object):
     """

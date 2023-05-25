@@ -11,9 +11,13 @@ Description:    Class defining compressable energy carriers.
 ==========================================================================================================================================================================="""
 import logging
 
-import pyomo.environ as pe
+import linopy as lp
+import numpy as np
+import xarray as xr
 
 from .carrier import Carrier
+from ..component import ZenIndex
+from ..element import Element
 
 
 class ConditioningCarrier(Carrier):
@@ -41,24 +45,30 @@ class ConditioningCarrier(Carrier):
         """ constructs the pe.Vars of the class <Carrier>
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
+        variables = optimization_setup.variables
 
         # flow of imported carrier
-        optimization_setup.variables.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            domain=pe.NonNegativeReals, doc='node- and time-dependent model endogenous carrier demand')
+        variables.add_variable(model, name="endogenous_carrier_demand", index_sets=cls.create_custom_set(
+            ["set_conditioning_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
+                               bounds=(0, np.inf),
+                               doc="node- and time-dependent model endogenous carrier demand")
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <Carrier>
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
+        constraints = optimization_setup.constraints
         rules = ConditioningCarrierRules(optimization_setup)
         # limit import flow by availability
-        optimization_setup.constraints.add_constraint(model, name="constraint_carrier_demand_coupling", index_sets=cls.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_carrier_demand_coupling_rule, doc='coupling model endogenous and exogenous carrier demand', )
+        constraints.add_constraint_block(model, name="constraint_carrier_demand_coupling",
+                                         constraint=rules.get_constraint_carrier_demand_coupling(),
+                                         doc='coupling model endogenous and exogenous carrier demand', )
         # overwrite energy balance when conditioning carriers are included
-        model.constraint_nodal_energy_balance.deactivate()
-        optimization_setup.constraints.add_constraint(model, name="constraint_nodal_energy_balance_conditioning", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-            rule=rules.constraint_nodal_energy_balance_conditioning_rule, doc='node- and time-dependent energy balance for each carrier', )
+        constraints.remove_constraint(model, "constraint_nodal_energy_balance")
+        constraints.add_constraint_block(model, name="constraint_nodal_energy_balance_conditioning",
+                                         constraint=rules.get_constraint_nodal_energy_balance_conditioning(),
+                                         doc='node- and time-dependent energy balance for each carrier', )
 
 
 class ConditioningCarrierRules:
@@ -75,61 +85,160 @@ class ConditioningCarrierRules:
         self.optimization_setup = optimization_setup
         self.energy_system = optimization_setup.energy_system
 
-    def constraint_carrier_demand_coupling_rule(self, model, parent_carrier, node, time):
+    def get_constraint_carrier_demand_coupling(self):
         """ sum conditioning Carriers"""
 
-        return (model.endogenous_carrier_demand[parent_carrier, node, time] == sum(
-            model.endogenous_carrier_demand[conditioning_carrier, node, time] for conditioning_carrier in model.set_conditioning_carrier_children[parent_carrier]))
+        model = self.optimization_setup.model
+        sets = self.optimization_setup.sets
 
-    def constraint_nodal_energy_balance_conditioning_rule(self, model, carrier, node, time):
+        # get all the constraints
+        constraints = []
+        index_values, index_names = Element.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+        for parent_carrier in index.get_unique([0]):
+            constraints.append(model.variables["endogenous_carrier_demand"].loc[parent_carrier]
+                               - model.variables["endogenous_carrier_demand"].loc[list(sets["set_conditioning_carrier_children"][parent_carrier])].sum("set_conditioning_carriers")
+                               == 0)
+        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
+
+    def get_constraint_nodal_energy_balance_conditioning(self):
         """
         nodal energy balance for each time step.
         """
+
+        # get parameter object
         params = self.optimization_setup.parameters
+        sets = self.optimization_setup.sets
+        model = self.optimization_setup.model
+
+        # get the index
+        index_values, index_names = Carrier.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+
+        # carrier flow transport technologies
+        if model.variables["flow_transport"].size > 0:
+            # recalculate all the edges
+            edges_in = {node: self.energy_system.calculate_connected_edges(node, "in") for node in sets["set_nodes"]}
+            edges_out = {node: self.energy_system.calculate_connected_edges(node, "out") for node in sets["set_nodes"]}
+            max_edges = max([len(edges_in[node]) for node in sets["set_nodes"]] + [len(edges_out[node]) for node in
+                                                                                   sets["set_nodes"]])
+
+            # create the variables
+            flow_transport_in_vars = xr.DataArray(-1, coords=[model.variables.coords["set_carriers"],
+                                                              model.variables.coords["set_nodes"],
+                                                              model.variables.coords["set_time_steps_operation"],
+                                                              xr.DataArray(np.arange(
+                                                                  len(sets["set_transport_technologies"]) * (
+                                                                              2 * max_edges + 1)), dims=["_term"])])
+            flow_transport_in_coeffs = xr.full_like(flow_transport_in_vars, np.nan, dtype=float)
+            flow_transport_out_vars = flow_transport_in_vars.copy()
+            flow_transport_out_coeffs = xr.full_like(flow_transport_in_vars, np.nan, dtype=float)
+            for carrier, node in index.get_unique([0, 1]):
+                techs = [tech for tech in sets["set_transport_technologies"] if
+                         carrier in sets["set_reference_carriers"][tech]]
+                edges_in = self.energy_system.calculate_connected_edges(node, "in")
+                edges_out = self.energy_system.calculate_connected_edges(node, "out")
+
+                # get the variables for the in flow
+                in_vars_plus = model.variables["flow_transport"].labels.loc[techs, edges_in, :].data
+                in_vars_plus = in_vars_plus.reshape((-1, in_vars_plus.shape[-1])).T
+                in_coefs_plus = np.ones_like(in_vars_plus)
+                in_vars_minus = model.variables["flow_transport_loss"].labels.loc[techs, edges_out, :].data
+                in_vars_minus = in_vars_minus.reshape((-1, in_vars_minus.shape[-1])).T
+                in_coefs_minus = np.ones_like(in_vars_minus)
+                in_vars = np.concatenate([in_vars_plus, in_vars_minus], axis=1)
+                in_coefs = np.concatenate([in_coefs_plus, -in_coefs_minus], axis=1)
+                flow_transport_in_vars.loc[carrier, node, :, :in_vars.shape[-1] - 1] = in_vars
+                flow_transport_in_coeffs.loc[carrier, node, :, :in_coefs.shape[-1] - 1] = in_coefs
+
+                # get the variables for the out flow
+                out_vars_plus = model.variables["flow_transport"].labels.loc[techs, edges_out, :].data
+                out_vars_plus = out_vars_plus.reshape((-1, out_vars_plus.shape[-1])).T
+                out_coefs_plus = np.ones_like(out_vars_plus)
+                flow_transport_out_vars.loc[carrier, node, :, :out_vars_plus.shape[-1] - 1] = out_vars_plus
+                flow_transport_out_coeffs.loc[carrier, node, :, :out_coefs_plus.shape[-1] - 1] = out_coefs_plus
+
+            # craete the linear expression
+            flow_transport_in = lp.LinearExpression(xr.Dataset({"coeffs": flow_transport_in_coeffs,
+                                                                "vars": flow_transport_in_vars}), model)
+            flow_transport_out = lp.LinearExpression(xr.Dataset({"coeffs": flow_transport_out_coeffs,
+                                                                 "vars": flow_transport_out_vars}), model)
+        else:
+            # if there is no carrier flow we just create empty arrays
+            flow_transport_in = model.variables["flow_import"].where(False).to_linexpr()
+            flow_transport_out = model.variables["flow_import"].where(False).to_linexpr()
 
         # carrier input and output conversion technologies
-        carrier_conversion_in, carrier_conversion_out = 0, 0
-        for tech in model.set_conversion_technologies:
-            if carrier in model.set_input_carriers[tech]:
-                carrier_conversion_in += model.flow_conversion_input[tech, carrier, node, time]
-            if carrier in model.set_output_carriers[tech]:
-                carrier_conversion_out += model.flow_conversion_output[tech, carrier, node, time]
-        # carrier flow transport technologies
-        flow_transport_in, flow_transport_out = 0, 0
-        set_edges_in = self.energy_system.calculate_connected_edges(node, "in")
-        set_edges_out = self.energy_system.calculate_connected_edges(node, "out")
-        for tech in model.set_transport_technologies:
-            if carrier in model.set_reference_carriers[tech]:
-                flow_transport_in += sum(model.flow_transport[tech, edge, time] - model.flow_transport_loss[tech, edge, time] for edge in set_edges_in)
-                flow_transport_out += sum(model.flow_transport[tech, edge, time] for edge in set_edges_out)
+        carrier_conversion_in = []
+        carrier_conversion_out = []
+        nodes = list(sets["set_nodes"])
+        for carrier in index.get_unique([0]):
+            techs_in = [tech for tech in sets["set_conversion_technologies"] if carrier in sets["set_input_carriers"][tech]]
+            # we need to catch emtpy lookups
+            carrier_in = [carrier] if len(techs_in) > 0 else []
+            techs_out = [tech for tech in sets["set_conversion_technologies"] if carrier in sets["set_output_carriers"][tech]]
+            # we need to catch emtpy lookups
+            carrier_out = [carrier] if len(techs_out) > 0 else []
+            carrier_conversion_in.append(model.variables["flow_conversion_input"].loc[techs_in, carrier_in, nodes].sum(model.variables["flow_conversion_input"].dims[:2]))
+            carrier_conversion_out.append(model.variables["flow_conversion_output"].loc[techs_out, carrier_out, nodes].sum(model.variables["flow_conversion_output"].dims[:2]))
+        # merge and regroup
+        carrier_conversion_in = lp.merge(*carrier_conversion_in, dim="group")
+        carrier_conversion_in = self.optimization_setup.constraints.reorder_group(carrier_conversion_in, None, None, index.get_unique([0]), index_names[:1], model)
+        carrier_conversion_out = lp.merge(*carrier_conversion_out, dim="group")
+        carrier_conversion_out = self.optimization_setup.constraints.reorder_group(carrier_conversion_out, None, None, index.get_unique([0]), index_names[:1], model)
+
         # carrier flow storage technologies
-        flow_storage_discharge, flow_storage_charge = 0, 0
-        for tech in model.set_storage_technologies:
-            if carrier in model.set_reference_carriers[tech]:
-                flow_storage_discharge += model.flow_storage_discharge[tech, node, time]
-                flow_storage_charge += model.flow_storage_charge[tech, node, time]
+        if model.variables["flow_storage_discharge"].size > 0:
+            flow_storage_discharge = []
+            flow_storage_charge = []
+            for carrier in index.get_unique([0]):
+                storage_techs = [tech for tech in sets["set_storage_technologies"] if carrier in sets["set_reference_carriers"][tech]]
+                flow_storage_discharge.append(model.variables["flow_storage_discharge"].loc[storage_techs].sum("set_storage_technologies"))
+                flow_storage_charge.append(model.variables["flow_storage_charge"].loc[storage_techs].sum("set_storage_technologies"))
+            # merge and regroup
+            flow_storage_discharge = lp.merge(*flow_storage_discharge, dim="group")
+            flow_storage_discharge = self.optimization_setup.constraints.reorder_group(flow_storage_discharge, None, None, index.get_unique([0]), index_names[:1], model)
+            flow_storage_charge = lp.merge(*flow_storage_charge, dim="group")
+            flow_storage_charge = self.optimization_setup.constraints.reorder_group(flow_storage_charge, None, None, index.get_unique([0]), index_names[:1], model)
+        else:
+            # if there is no carrier flow we just create empty arrays
+            flow_storage_discharge = model.variables["flow_import"].where(False).to_linexpr()
+            flow_storage_charge = model.variables["flow_import"].where(False).to_linexpr()
+
         # carrier import, demand and export
-        carrier_import, carrier_export, carrier_demand = 0, 0, 0
-        carrier_import = model.flow_import[carrier, node, time]
-        carrier_export = model.flow_export[carrier, node, time]
-        carrier_demand = params.demand[carrier, node, time]
-        endogenous_carrier_demand = 0
-        # shed demand
-        carrier_shed_demand = model.shed_demand[carrier, node, time]
+        carrier_import = model.variables["flow_import"].to_linexpr()
+        carrier_export = model.variables["flow_export"].to_linexpr()
+        carrier_demand = params.demand
+
         # check if carrier is conditioning carrier:
-        if carrier in model.set_conditioning_carriers:
-            # check if carrier is parent_carrier of a conditioning_carrier
-            if carrier in model.set_conditioning_carrier_parents:
-                endogenous_carrier_demand = - model.endogenous_carrier_demand[carrier, node, time]
+        endogenous_carrier_demand = []
+        for carrier in index.get_unique([0]):
+            # check if carrier is conditioning carrier
+            if carrier in sets["set_conditioning_carriers"]:
+                # check if carrier is parent_carrier of a conditioning_carrier
+                if carrier in sets["set_conditioning_carrier_parents"]:
+                    endogenous_carrier_demand.append(-1.0*model.variables["endogenous_carrier_demand"].loc[carrier])
+                else:
+                    endogenous_carrier_demand.append(1.0 * model.variables["endogenous_carrier_demand"].loc[carrier])
             else:
-                endogenous_carrier_demand = model.endogenous_carrier_demand[carrier, node, time]
-        return (# conversion technologies
-                carrier_conversion_out - carrier_conversion_in
-                # transport technologies
-                + flow_transport_in - flow_transport_out
-                # storage technologies
-                + flow_storage_discharge - flow_storage_charge
-                # import and export
-                + carrier_import - carrier_export
-                # demand
-                - endogenous_carrier_demand - carrier_demand + carrier_shed_demand == 0)
+                # something empty with the right shape
+                endogenous_carrier_demand.append(lp.LinearExpression(data=None, model=model))
+        # merge and regroup
+        endogenous_carrier_demand = lp.merge(*endogenous_carrier_demand, dim="group")
+        endogenous_carrier_demand = self.optimization_setup.constraints.reorder_group(endogenous_carrier_demand, None, None, index.get_unique([0]), index_names[:1], model)
+        # shed demand
+        carrier_shed_demand = model.variables["shed_demand"].to_linexpr()
+
+        # Add everything
+        lhs = lp.merge(carrier_conversion_out,
+                       -carrier_conversion_in,
+                       flow_transport_in,
+                       -flow_transport_out,
+                       -flow_storage_charge,
+                       flow_storage_discharge,
+                       carrier_import,
+                       -carrier_export,
+                       -endogenous_carrier_demand,
+                       carrier_shed_demand)
+
+        return lhs == carrier_demand

@@ -11,20 +11,17 @@ Description:  Class defining the Concrete optimization model.
               class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
               The class also includes a method to solve the optimization problem.
 ==========================================================================================================================================================================="""
-import cProfile
 import logging
 import os
 from collections import defaultdict
 
+import linopy as lp
 import numpy as np
 import pandas as pd
-import pyomo.environ as pe
-from pyomo.opt import TerminationCondition
-from pyomo.core.expr.current import decompose_term
 
+from .objects.component import Parameter, Variable, Constraint, IndexSet
 from .objects.element import Element
 from .objects.energy_system import EnergySystem
-from .objects.component import Parameter, Variable, Constraint
 from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 from ..preprocess.prepare import Prepare
@@ -49,11 +46,12 @@ class OptimizationSetup(object):
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
         # pe.ConcreteModel
-        self.pyomo_model = None
+        self.model = None
         # the components
         self.variables = None
         self.parameters = None
         self.constraints = None
+        self.sets = None
 
         # sorted list of class names
         element_classes = self.dict_element_classes.keys()
@@ -236,18 +234,19 @@ class OptimizationSetup(object):
     def construct_optimization_problem(self):
         """ constructs the optimization problem """
         # create empty ConcreteModel
-        self.model = pe.ConcreteModel()
+        if self.solver["solver_dir"] is not None and not os.path.exists(self.solver["solver_dir"]):
+            os.makedirs(self.solver["solver_dir"])
+        self.model = lp.Model(solver_dir=self.solver["solver_dir"])
         # we need to reset the components to not carry them over
+        self.sets = IndexSet()
         self.variables = Variable()
         self.parameters = Parameter()
         self.constraints = Constraint()
+        # FIXME: Not with linopy yet
         # add duals
-        self.add_duals()
+        # self.add_duals()
         # define and construct components of self.model
         Element.construct_model_components(self)
-        logging.info("Apply Big-M GDP ")
-        # add transformation factory so that disjuncts are solved
-        pe.TransformationFactory("gdp.bigm").apply_to(self.model)
         # find smallest and largest coefficient and RHS
         self.analyze_numerics()
 
@@ -371,44 +370,58 @@ class OptimizationSetup(object):
             largest_coeff = [None, 0]
             smallest_coeff = [None, np.inf]
 
-            for cons in self.model.component_objects(pe.Constraint):
-                for idx in cons:
-                    deco_lhs = decompose_term(cons[idx].expr.args[0])
-                    deco_rhs = decompose_term(cons[idx].expr.args[1])
-                    deco_comb = []
-                    if deco_lhs[0]:
-                        deco_comb += deco_lhs[1]
-                    if deco_rhs[0]:
-                        deco_comb += deco_rhs[1]
-                    _RHS = 0
-                    for item in deco_comb:
-                        _abs = abs(item[0])
-                        if _abs != 0:
-                            if item[1] is not None:
-                                if _abs > largest_coeff[1]:
-                                    largest_coeff[0] = (cons[idx].name, item[1].name)
-                                    largest_coeff[1] = _abs
-                                if _abs < smallest_coeff[1]:
-                                    smallest_coeff[0] = (cons[idx].name, item[1].name)
-                                    smallest_coeff[1] = _abs
-                            else:
-                                _RHS += item[0]
-                    _RHS = abs(_RHS)
-                    if _RHS != 0:
-                        if _RHS > largest_rhs[1]:
-                            largest_rhs[0] = cons[idx].name
-                            largest_rhs[1] = _RHS
-                        if _RHS < smallest_rhs[1]:
-                            smallest_rhs[0] = cons[idx].name
-                            smallest_rhs[1] = _RHS
+            for cname in self.model.constraints:
+                cons = self.model.constraints[cname]
+                # get smallest coeff and corresponding variable
+                coeffs = np.abs(cons.lhs.coeffs.data).ravel()
+
+                # filter
+                sorted_args = np.argsort(coeffs)
+                coeffs_sorted = coeffs[sorted_args]
+                mask = np.isfinite(coeffs_sorted) & (coeffs_sorted != 0.0)
+                coeffs_sorted = coeffs_sorted[mask]
+
+                # check if there is something left
+                if coeffs_sorted.size == 0:
+                    continue
+
+                # get min max
+                coeff_min = coeffs_sorted[0]
+                coeff_max = coeffs_sorted[-1]
+
+                # same for variables
+                variables = cons.lhs.vars.data.ravel()
+                variables_sorted = variables[sorted_args]
+                variables_sorted = variables_sorted[mask]
+                var_min = variables_sorted[0]
+                var_max = variables_sorted[-1]
+
+                if 0.0 < coeff_min < smallest_coeff[1]:
+                    smallest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
+                    smallest_coeff[1] = coeff_min
+                if coeff_max > largest_coeff[1]:
+                    largest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeff_max], [var_max], self.model))
+                    largest_coeff[1] = coeff_max
+
+                # smallest and largest rhs
+                rhs = cons.rhs.data.ravel()
+                # get first argument for non nan non zero element
+                rhs_sorted = np.sort(rhs)
+                rhs_sorted = rhs_sorted[np.isfinite(rhs_sorted) & (rhs_sorted > 0)]
+                if rhs_sorted.size == 0:
+                    continue
+                rhs_min = rhs_sorted[0]
+                rhs_max = rhs_sorted[-1]
+
+                if 0.0 < rhs_min < smallest_rhs[1]:
+                    smallest_rhs[0] = cons.name
+                    smallest_rhs[1] = rhs_min
+                if np.inf > rhs_max > largest_rhs[1]:
+                    largest_rhs[0] = cons.name
+                    largest_rhs[1] = rhs_max
+
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
-
-    def add_duals(self):
-        """ adds duals of constraints """
-        if self.solver["add_duals"]:
-            logging.info("Add dual variables")
-            self.model.dual = pe.Suffix(direction=pe.Suffix.IMPORT_EXPORT)
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
@@ -420,25 +433,22 @@ class OptimizationSetup(object):
         logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily
         logging.disable(logging.WARNING)
-        # write an ILP file to print the IIS if infeasible
-        # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
-        solver_parameters = f"ResultFile={os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
 
-        if solver_name == "gurobi_persistent":
-            self.opt = pe.SolverFactory(solver_name, options=solver_options)
-            self.opt.set_instance(self.model, symbolic_solver_labels=solver["use_symbolic_labels"])
-            self.results = self.opt.solve(tee=solver["verbosity"], logfile=solver["solver_options"]["logfile"], options_string=solver_parameters,save_results=False, load_solutions=False)
-            self.opt.load_vars()
-        elif solver_name == "gurobi":
-            self.opt = pe.SolverFactory(solver_name, options=solver_options)
-            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True,logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"], options_string=solver_parameters)
+        if solver_name == "gurobi":
+            self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
+                             keep_files=self.solver["keep_files"], sanitize_zeros=True,
+                             # write an ILP file to print the IIS if infeasible
+                             # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
+                             ResultFile=f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp",
+                             # remaining kwargs are passed to the solver
+                             **solver_options)
         else:
-            self.opt = pe.SolverFactory(solver_name)
-            self.results = self.opt.solve(self.model, tee=solver["verbosity"], keepfiles=True, logfile=solver["solver_options"]["logfile"], symbolic_solver_labels=solver["use_symbolic_labels"])
+            self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
+                             keep_files=self.solver["keep_files"], sanitize_zeros=True)
         # enable logger
         logging.disable(logging.NOTSET)
         # write IIS
-        if self.results.solver.termination_condition != TerminationCondition.optimal:
+        if self.model.termination_condition != 'optimal':
             logging.info("The optimization is infeasible or unbounded")
             self.optimality = False
         else:
@@ -452,9 +462,9 @@ class OptimizationSetup(object):
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
-                _capacity_addition = pd.Series(self.model.capacity_addition.extract_values())
-                _invest_capacity = pd.Series(self.model.capacity_investment.extract_values())
-                _cost_capex = pd.Series(self.model.cost_capex.extract_values())
+                _capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
+                _invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
+                _cost_capex = self.model.solution["cost_capex"].to_series().dropna()
                 _rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
                 _capacity_addition[_capacity_addition <= _rounding_value] = 0
                 _invest_capacity[_invest_capacity <= _rounding_value] = 0
@@ -497,9 +507,9 @@ class OptimizationSetup(object):
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 interval_between_years = self.energy_system.system["interval_between_years"]
-                _carbon_emissions_cumulative = self.model.carbon_emissions_cumulative.extract_values()[step_horizon]
-                carbon_emissions = self.model.carbon_emissions_total.extract_values()[step_horizon]
-                carbon_emissions_overshoot = self.model.carbon_emissions_overshoot.extract_values()[step_horizon]
+                _carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[step_horizon].item()
+                carbon_emissions = self.model.solution["carbon_emissions_total"].loc[step_horizon].item()
+                carbon_emissions_overshoot = self.model.solution["carbon_emissions_overshoot"].loc[step_horizon].item()
                 self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + (carbon_emissions - carbon_emissions_overshoot) * (interval_between_years - 1)
             else:
                 self.energy_system.carbon_emissions_cumulative_existing = self.energy_system.data_input.extract_input_data(
@@ -510,7 +520,7 @@ class OptimizationSetup(object):
         :param calling_class: class from where the method is called
         :param component_name: name of modeling component
         :param index_names: names of index sets, only if calling_class is not EnergySystem
-        :param set_time_steps: time steps, only if calling_class is EnergySystem
+        :param set_time_steps: name time steps set, only if calling_class is EnergySystem
         :param capacity_types: boolean if extracted for capacities
         :return component_data: data to initialize the component """
         # if calling class is EnergySystem
@@ -519,11 +529,11 @@ class OptimizationSetup(object):
             if index_names is not None:
                 index_list = index_names
             elif set_time_steps is not None:
-                index_list = [set_time_steps.name]
+                index_list = [set_time_steps]
             else:
                 index_list = []
             if set_time_steps:
-                component_data = component[set_time_steps]
+                component_data = component[self.sets[set_time_steps]]
             elif type(component) == float:
                 component_data = component
             else:

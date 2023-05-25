@@ -7,15 +7,37 @@ Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 Description:  Class is defining to read in the results of an Optimization problem.
 ==========================================================================================================================================================================="""
 
+import logging
 import os
 import sys
-import h5py
-import yaml
 from collections import UserDict
-from datetime import datetime
-import numpy as np
-from numpy import string_
 from contextlib import contextmanager
+from datetime import datetime
+
+import h5py
+import linopy as lp
+import numpy as np
+import xarray as xr
+import yaml
+from numpy import string_
+
+
+def setup_logger(log_path=None, level=logging.INFO):
+    # SETUP LOGGER
+    log_format = '%(asctime)s %(filename)s: %(message)s'
+
+    if log_path is None:
+        log_path = os.path.join('outputs', 'logs')
+        os.makedirs(log_path, exist_ok=True)
+    logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=level, format=log_format,
+                        datefmt='%Y-%m-%d %H:%M:%S')
+    logging.captureWarnings(True)
+    # we don't want to add this multiple times
+    if not any([handle.name == "STDOUT" for handle in logging.getLogger().handlers]):
+        handler = logging.StreamHandler(sys.stdout)
+        handler.set_name("STDOUT")
+        handler.setLevel(level)
+        logging.getLogger().addHandler(handler)
 
 
 def get_inheritors(klass):
@@ -53,7 +75,7 @@ class RedirectStdStreams(object):
 
     def __enter__(self):
         self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
-        self.old_stdout.flush();
+        self.old_stdout.flush()
         self.old_stderr.flush()
         sys.stdout, sys.stderr = self._stdout, self._stderr
 
@@ -64,10 +86,81 @@ class RedirectStdStreams(object):
         :param exc_value: Value of the exit
         :param traceback:  traceback of the error
         """
-        self._stdout.flush();
+        self._stdout.flush()
         self._stderr.flush()
         sys.stdout = self.old_stdout
         sys.stderr = self.old_stderr
+
+
+def lp_sum(exprs, dim='_term'):
+    """
+    Sum of linear expressions with lp.expressions.merge, returns 0 if list is emtpy
+    :param exprs: The expressions to sum
+    :param dim: Along which dimension to merge
+    :return: The sum of the expressions
+    """
+
+    # emtpy sum
+    if len(exprs) == 0:
+        return 0
+    # no sum
+    if len(exprs) == 1:
+        return exprs[0]
+    # normal sum
+    return lp.expressions.merge(exprs, dim=dim)
+
+
+def linexpr_from_tuple_np(tuples, coords, model):
+    """
+    Transforms tuples of (coeff, var) into a linopy linear expression, but uses numpy broadcasting
+    :param tuples: Tuple of (coeff, var)
+    :param coords: The coordinates of the final linear expression
+    :param model: The model to which the linear expression belongs
+    :return: A linear expression
+    """
+
+    # get actual coords
+    if not isinstance(coords, xr.core.dataarray.DataArrayCoordinates):
+        coords = xr.DataArray(coords=coords).coords
+
+    # numpy stack everything
+    coefficients = []
+    variables = []
+    for coeff, var in tuples:
+        var = var.labels.data
+        if isinstance(coeff, (float, int)):
+            coeff = np.full(var.shape, 1.0 * coeff)
+        coefficients.append(coeff)
+        variables.append(var)
+
+    # to linear expression
+    variables = xr.DataArray(np.stack(variables, axis=0), coords=coords, dims=["_term", *coords])
+    coefficients = xr.DataArray(np.stack(coefficients, axis=0), coords=coords, dims=["_term", *coords])
+    xr_ds = xr.Dataset({"coeffs": coefficients, "vars": variables}).transpose(..., "_term")
+
+    return lp.LinearExpression(xr_ds, model)
+
+
+def xr_like(fill_value, dtype, other, dims):
+    """
+    Creates an xarray with fill value and dtype like the other object but only containing the given dimensions
+    :param fill_value: The value to fill the data with
+    :param dtype: dtype of the data
+    :param other: The other object to use as base
+    :param dims: The dimensions to use
+    :return: An object like the other object but only containing the given dimensions
+    """
+
+    # get the coords
+    coords = {}
+    for dim in dims:
+        coords[dim] = other.coords[dim]
+
+    # create the data array
+    da = xr.DataArray(np.full([len(other.coords[dim]) for dim in dims], fill_value, dtype=dtype), coords=coords, dims=dims)
+
+    # return
+    return da
 
 
 # This is to lazy load h5 file most of it is taken from the hdfdict package

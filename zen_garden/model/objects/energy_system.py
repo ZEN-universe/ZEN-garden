@@ -11,8 +11,8 @@ Description:    Class defining a standard EnergySystem. Contains methods to add 
 import copy
 import logging
 
+import linopy as lp
 import numpy as np
-import pyomo.environ as pe
 
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 from zen_garden.preprocess.functions.unit_handling import UnitHandling
@@ -164,35 +164,35 @@ class EnergySystem:
     def construct_sets(self):
         """ constructs the pe.Sets of the class <EnergySystem> """
         # construct pe.Sets of the class <EnergySystem>
-        pyomo_model = self.optimization_setup.model
         # nodes
-        pyomo_model.set_nodes = pe.Set(initialize=self.set_nodes, doc='Set of nodes')
+        self.optimization_setup.sets.add_set(name="set_nodes", data=self.set_nodes, doc="Set of nodes")
         # edges
-        pyomo_model.set_edges = pe.Set(initialize=self.set_edges, doc='Set of edges')
+        self.optimization_setup.sets.add_set(name="set_edges", data=self.set_edges, doc="Set of edges")
         # nodes on edges
-        pyomo_model.set_nodes_on_edges = pe.Set(pyomo_model.set_edges, initialize=self.set_nodes_on_edges, doc='Set of nodes that constitute an edge. Edge connects first node with second node.')
+        self.optimization_setup.sets.add_set(name="set_nodes_on_edges", data=self.set_nodes_on_edges, doc="Set of nodes that constitute an edge. Edge connects first node with second node.",
+                                             index_set="set_edges")
         # carriers
-        pyomo_model.set_carriers = pe.Set(initialize=self.set_carriers, doc='Set of carriers')
+        self.optimization_setup.sets.add_set(name="set_carriers", data=self.set_carriers, doc="Set of carriers")
         # technologies
-        pyomo_model.set_technologies = pe.Set(initialize=self.set_technologies, doc='Set of technologies')
+        self.optimization_setup.sets.add_set(name="set_technologies", data=self.set_technologies, doc="set_technologies")
         # all elements
-        pyomo_model.set_elements = pe.Set(initialize=pyomo_model.set_technologies | pyomo_model.set_carriers, doc='Set of elements')
+        data = list(set(self.optimization_setup.sets["set_technologies"]) | set(self.optimization_setup.sets["set_carriers"]))
+        self.optimization_setup.sets.add_set(name="set_elements", data=data, doc="Set of elements")
         # set set_elements to indexing_sets
         self.indexing_sets.append("set_elements")
         # time-steps
-        pyomo_model.set_base_time_steps = pe.Set(initialize=self.set_base_time_steps, doc='Set of base time-steps')
+        self.optimization_setup.sets.add_set(name="set_base_time_steps", data=self.set_base_time_steps, doc="Set of base time-steps")
         # yearly time steps
-        pyomo_model.set_time_steps_yearly = pe.Set(initialize=self.set_time_steps_yearly, doc='Set of yearly time-steps')
+        self.optimization_setup.sets.add_set(name="set_time_steps_yearly", data=self.set_time_steps_yearly, doc="Set of yearly time-steps")
         # yearly time steps of entire optimization horizon
-        pyomo_model.set_time_steps_yearly_entire_horizon = pe.Set(initialize=self.set_time_steps_yearly_entire_horizon, doc='Set of yearly time-steps of entire optimization horizon')
+        self.optimization_setup.sets.add_set(name="set_time_steps_yearly_entire_horizon", data=self.set_time_steps_yearly_entire_horizon, doc="Set of yearly time-steps of entire optimization horizon")
 
     def construct_params(self):
         """ constructs the pe.Params of the class <EnergySystem> """
         # carbon emissions limit
         cls = self.__class__
         parameters = self.optimization_setup.parameters
-        pyomo_model = self.optimization_setup.model
-        parameters.add_parameter(name="carbon_emissions_limit", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_limit", set_time_steps=pyomo_model.set_time_steps_yearly),
+        parameters.add_parameter(name="carbon_emissions_limit", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_limit", set_time_steps="set_time_steps_yearly"),
             doc='Parameter which specifies the total limit on carbon emissions')
         # carbon emissions budget
         parameters.add_parameter(name="carbon_emissions_budget", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_budget"),
@@ -200,7 +200,7 @@ class EnergySystem:
         # carbon emissions budget
         parameters.add_parameter(name="carbon_emissions_cumulative_existing", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_cumulative_existing"), doc='Parameter which specifies the total previous carbon emissions')
         # carbon price
-        parameters.add_parameter(name="price_carbon_emissions", data=self.optimization_setup.initialize_component(cls, "price_carbon_emissions", set_time_steps=pyomo_model.set_time_steps_yearly),
+        parameters.add_parameter(name="price_carbon_emissions", data=self.optimization_setup.initialize_component(cls, "price_carbon_emissions", set_time_steps="set_time_steps_yearly"),
             doc='Parameter which specifies the yearly carbon price')
         # carbon price of overshoot
         parameters.add_parameter(name="price_carbon_emissions_overshoot", data=self.optimization_setup.initialize_component(cls, "price_carbon_emissions_overshoot"), doc='Parameter which specifies the carbon price for budget overshoot')
@@ -214,47 +214,53 @@ class EnergySystem:
     def construct_vars(self):
         """ constructs the pe.Vars of the class <EnergySystem> """
         variables = self.optimization_setup.variables
-        pyomo_model = self.optimization_setup.model
+        sets = self.optimization_setup.sets
+        model = self.optimization_setup.model
         # carbon emissions
-        variables.add_variable(pyomo_model, name="carbon_emissions_total", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="total carbon emissions of energy system")
+        variables.add_variable(model, name="carbon_emissions_total", index_sets=sets["set_time_steps_yearly"], doc="total carbon emissions of energy system")
         # cumulative carbon emissions
-        variables.add_variable(pyomo_model, name="carbon_emissions_cumulative", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals,
-            doc="cumulative carbon emissions of energy system over time for each year")
+        variables.add_variable(model, name="carbon_emissions_cumulative", index_sets=sets["set_time_steps_yearly"],
+                               doc="cumulative carbon emissions of energy system over time for each year")
         # carbon emission overshoot
-        variables.add_variable(pyomo_model, name="carbon_emissions_overshoot", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.NonNegativeReals,
-            doc="overshoot carbon emissions of energy system at the end of the time horizon")
+        variables.add_variable(model, name="carbon_emissions_overshoot", index_sets=sets["set_time_steps_yearly"], bounds=(0, np.inf),
+                               doc="overshoot carbon emissions of energy system at the end of the time horizon")
         # cost of carbon emissions
-        variables.add_variable(pyomo_model, name="cost_carbon_emissions_total", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of carbon emissions of energy system")
+        variables.add_variable(model, name="cost_carbon_emissions_total", index_sets=sets["set_time_steps_yearly"],
+                               doc="total cost of carbon emissions of energy system")
         # costs
-        variables.add_variable(pyomo_model, name="cost_total", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="total cost of energy system")
+        variables.add_variable(model, name="cost_total", index_sets=sets["set_time_steps_yearly"],
+                               doc="total cost of energy system")
         # net_present_cost
-        variables.add_variable(pyomo_model, name="net_present_cost", index_sets=pyomo_model.set_time_steps_yearly, domain=pe.Reals, doc="net_present_cost of energy system")
+        variables.add_variable(model, name="net_present_cost", index_sets=sets["set_time_steps_yearly"],
+                               doc="net_present_cost of energy system")
 
     def construct_constraints(self):
         """ constructs the pe.Constraints of the class <EnergySystem> """
         constraints = self.optimization_setup.constraints
-        pyomo_model = self.optimization_setup.model
+        sets = self.optimization_setup.sets
+        model = self.optimization_setup.model
         # carbon emissions
-        constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_total", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_total_rule,
-            doc="total carbon emissions of energy system")
+        constraints.add_constraint_block(model, name="constraint_carbon_emissions_total", constraint=self.rules.get_constraint_carbon_emissions_total(),
+                                         doc="total carbon emissions of energy system")
         # carbon emissions
-        constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_cumulative", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_cumulative_rule,
-            doc="cumulative carbon emissions of energy system over time")
+        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_cumulative", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_cumulative_rule,
+                                        doc="cumulative carbon emissions of energy system over time")
         # cost of carbon emissions
-        constraints.add_constraint(pyomo_model, name="constraint_carbon_cost_total", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_cost_total_rule, doc="total carbon cost of energy system")
+        constraints.add_constraint_block(model, name="constraint_carbon_cost_total", constraint=self.rules.get_constraint_carbon_cost_total(), doc="total carbon cost of energy system")
         # carbon emissions
-        constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_limit", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_limit_rule,
-            doc="limit of total carbon emissions of energy system")
+        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_limit", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_limit_rule,
+                                   doc="limit of total carbon emissions of energy system")
         # carbon emission budget
-        constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_budget", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_budget_rule,
-            doc="Budget of total carbon emissions of energy system")
+        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_budget", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_budget_rule,
+                                   doc="Budget of total carbon emissions of energy system")
         # limit carbon emission overshoot
-        constraints.add_constraint(pyomo_model, name="constraint_carbon_emissions_overshoot_limit", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_carbon_emissions_overshoot_limit_rule,
-            doc="Limit of overshot carbon emissions of energy system")
+        constraints.add_constraint_block(model, name="constraint_carbon_emissions_overshoot_limit", constraint=self.rules.get_constraint_carbon_emissions_overshoot_limit(),
+                                   doc="Limit of overshot carbon emissions of energy system")
         # costs
-        constraints.add_constraint(pyomo_model, name="constraint_cost_total", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_cost_total_rule, doc="total cost of energy system")
+        constraints.add_constraint_block(model, name="constraint_cost_total", constraint=self.rules.get_constraint_cost_total(), doc="total cost of energy system")
         # net_present_cost
-        constraints.add_constraint(pyomo_model, name="constraint_net_present_cost", index_sets=pyomo_model.set_time_steps_yearly, rule=self.rules.constraint_net_present_cost_rule, doc="net_present_cost of energy system")
+        constraints.add_constraint_rule(model, name="constraint_net_present_cost", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_net_present_cost_rule, doc="net_present_cost of energy system")
+
 
     def construct_objective(self):
         """ constructs the pe.Objective of the class <EnergySystem> """
@@ -262,25 +268,25 @@ class EnergySystem:
 
         # get selected objective rule
         if self.optimization_setup.analysis["objective"] == "total_cost":
-            objective_rule = self.rules.objective_total_cost_rule
+            objective_rule = self.rules.objective_total_cost_rule(self.optimization_setup.model)
         elif self.optimization_setup.analysis["objective"] == "total_carbon_emissions":
-            objective_rule = self.rules.objective_total_carbon_emissions_rule
+            objective_rule = self.rules.objective_total_carbon_emissions_rule(self.optimization_setup.model)
         elif self.optimization_setup.analysis["objective"] == "risk":
             logging.info("Objective of minimizing risk not yet implemented")
-            objective_rule = self.rules.objective_risk_rule
+            objective_rule = self.rules.objective_risk_rule(self.optimization_setup.model)
         else:
             raise KeyError(f"Objective type {self.optimization_setup.analysis['objective']} not known")
 
         # get selected objective sense
         if self.optimization_setup.analysis["sense"] == "minimize":
-            objective_sense = pe.minimize
+            logging.info("Using sense 'minimize'")
         elif self.optimization_setup.analysis["sense"] == "maximize":
-            objective_sense = pe.maximize
+            raise NotImplementedError("Currently only minimization supported")
         else:
             raise KeyError(f"Objective sense {self.optimization_setup.analysis['sense']} not known")
 
         # construct objective
-        self.optimization_setup.model.objective = pe.Objective(rule=objective_rule, sense=objective_sense)
+        self.optimization_setup.model.add_objective(objective_rule.to_linexpr())
 
 
 class EnergySystemRules:
@@ -296,97 +302,125 @@ class EnergySystemRules:
 
         self.optimization_setup = optimization_setup
 
-    def constraint_carbon_emissions_total_rule(self, model, year):
+    def get_constraint_carbon_emissions_total(self):
         """ add up all carbon emissions from technologies and carriers """
-        return (model.carbon_emissions_total[year] ==
-                # technologies
-                model.carbon_emissions_technology_total[year] +
-                # carriers
-                model.carbon_emissions_carrier_total[year])
+        model = self.optimization_setup.model
 
-    def constraint_carbon_emissions_cumulative_rule(self, model, year):
+        return (model.variables["carbon_emissions_total"]
+                - model.variables["carbon_emissions_technology_total"]
+                - model.variables["carbon_emissions_carrier_total"]
+                == 0)
+
+    def constraint_carbon_emissions_cumulative_rule(self, year):
         """ cumulative carbon emissions over time """
         # get parameter object
+        model = self.optimization_setup.model
         params = self.optimization_setup.parameters
         interval_between_years = self.optimization_setup.system["interval_between_years"]
-        if year == model.set_time_steps_yearly.at(1):
-            return (model.carbon_emissions_cumulative[year] == (model.carbon_emissions_total[year] - model.carbon_emissions_overshoot[year]) + params.carbon_emissions_cumulative_existing)
+        if year == self.optimization_setup.sets["set_time_steps_yearly"][0]:
+            return (model.variables["carbon_emissions_cumulative"][year]
+                    - model.variables["carbon_emissions_total"][year]
+                    + model.variables["carbon_emissions_overshoot"][year]
+                    == params.carbon_emissions_cumulative_existing)
         else:
-            return (model.carbon_emissions_cumulative[year] == model.carbon_emissions_cumulative[year - 1] + (model.carbon_emissions_total[year - 1] - model.carbon_emissions_overshoot[year - 1]) * (interval_between_years - 1) +
-                    (model.carbon_emissions_total[year]-model.carbon_emissions_overshoot[year]))
+            return (model.variables["carbon_emissions_cumulative"][year]
+                    - model.variables["carbon_emissions_cumulative"][year - 1]
+                    - (model.variables["carbon_emissions_total"][year - 1] - model.variables["carbon_emissions_overshoot"][year - 1]) * (interval_between_years - 1)
+                    - (model.variables["carbon_emissions_total"][year] - model.variables["carbon_emissions_overshoot"][year])
+                    == 0)
 
-    def constraint_carbon_cost_total_rule(self, model, year):
+    def get_constraint_carbon_cost_total(self):
         """ carbon cost associated with the carbon emissions of the system in each year """
         # get parameter object
         params = self.optimization_setup.parameters
-        return (model.cost_carbon_emissions_total[year] == params.price_carbon_emissions[year] * model.carbon_emissions_total[year] # add overshoot price
-                + model.carbon_emissions_overshoot[year] * params.price_carbon_emissions_overshoot)
+        model = self.optimization_setup.model
 
-    def constraint_carbon_emissions_limit_rule(self, model, year):
+        return (model.variables["cost_carbon_emissions_total"]
+                - params.price_carbon_emissions * model.variables["carbon_emissions_total"]  # add overshoot price
+                - model.variables["carbon_emissions_overshoot"] * params.price_carbon_emissions_overshoot
+                == 0)
+
+    def constraint_carbon_emissions_limit_rule(self, year):
         """ time dependent carbon emissions limit from technologies and carriers"""
         # get parameter object
+        model = self.optimization_setup.model
         params = self.optimization_setup.parameters
-        if params.carbon_emissions_limit[year] != np.inf:
-            return (params.carbon_emissions_limit[year] >= model.carbon_emissions_total[year])
+        if params.carbon_emissions_limit.loc[year] != np.inf:
+            return (model.variables["carbon_emissions_total"][year]
+                    <= params.carbon_emissions_limit.loc[year].item())
         else:
-            return pe.Constraint.Skip
+            return None
 
-    def constraint_carbon_emissions_budget_rule(self, model, year):
+    def constraint_carbon_emissions_budget_rule(self, year):
         """ carbon emissions budget of entire time horizon from technologies and carriers.
         The prediction extends until the end of the horizon, i.e.,
         last optimization time step plus the current carbon emissions until the end of the horizon """
         # get parameter object
+        model = self.optimization_setup.model
         params = self.optimization_setup.parameters
         interval_between_years = self.optimization_setup.system["interval_between_years"]
         if params.carbon_emissions_budget != np.inf:
             max_budget = max(params.carbon_emissions_budget, params.carbon_emissions_cumulative_existing)
-            if year == model.set_time_steps_yearly_entire_horizon.at(-1):
-                return (max_budget >= model.carbon_emissions_cumulative[year])
+            if year == self.optimization_setup.sets["set_time_steps_yearly_entire_horizon"][-1]:
+                return (model.variables["carbon_emissions_cumulative"][year]
+                        <= max_budget)
             else:
-                return (max_budget >= model.carbon_emissions_cumulative[year] + (model.carbon_emissions_total[year] - model.carbon_emissions_overshoot[year]) * (interval_between_years - 1))
+                return (model.variables["carbon_emissions_cumulative"][year]
+                        + (model.variables["carbon_emissions_total"][year] - model.variables["carbon_emissions_overshoot"][year]) * (interval_between_years - 1)
+                        <= max_budget)
         else:
-            return pe.Constraint.Skip
+            return None
 
-    def constraint_carbon_emissions_overshoot_limit_rule(self, model, year):
+    def get_constraint_carbon_emissions_overshoot_limit(self):
         """ ensure that overshoot is lower or equal to total carbon emissions -> overshoot cannot be banked """
-        return (model.carbon_emissions_total[year] >= model.carbon_emissions_overshoot[year])
+        model = self.optimization_setup.model
 
-    def constraint_cost_total_rule(self, model, year):
+        return (model.variables["carbon_emissions_total"] - model.variables["carbon_emissions_overshoot"] >= 0)
+
+    def get_constraint_cost_total(self):
         """ add up all costs from technologies and carriers"""
-        return (model.cost_total[year] ==
-                # capex
-                model.cost_capex_total[year] + # capex
-                model.cost_opex_total[year] + # opex
-                model.cost_carrier_total[year] + # carrier costs
-                model.cost_carbon_emissions_total[year] # carbon costs
-                )
+        model = self.optimization_setup.model
 
-    def constraint_net_present_cost_rule(self, model, year):
+        return (model.variables["cost_total"] # capex
+                - model.variables["cost_capex_total"]  # capex
+                - model.variables["cost_opex_total"]  # opex
+                - model.variables["cost_carrier_total"]  # carrier costs
+                - model.variables["cost_carbon_emissions_total"] # carbon costs
+                == 0)
+
+    def constraint_net_present_cost_rule(self, year):
         """ discounts the annual capital flows to calculate the net_present_cost """
+        model = self.optimization_setup.model
         system = self.optimization_setup.system
         discount_rate = self.optimization_setup.analysis["discount_rate"]
-        if year == model.set_time_steps_yearly_entire_horizon.at(-1):
+        if year == self.optimization_setup.sets["set_time_steps_yearly_entire_horizon"][-1]:
             interval_between_years = 1
         else:
             interval_between_years = system["interval_between_years"]
+        # economic discount
+        factor = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.optimization_setup.sets["set_time_steps_yearly"][0]) + _intermediate_time_step))
+                     for _intermediate_time_step in range(0, interval_between_years))
 
-        return (model.net_present_cost[year] == model.cost_total[year] * sum(# economic discount
-            ((1 / (1 + discount_rate)) ** (interval_between_years * (year - model.set_time_steps_yearly.at(1)) + _intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years)))
+        return (model.variables["net_present_cost"][year] - model.variables["cost_total"][year] * factor == 0)
 
     # objective rules
     def objective_total_cost_rule(self, model):
         """objective function to minimize the total net present cost"""
-        return (sum(model.net_present_cost[year] for year in model.set_time_steps_yearly))
+        sets = self.optimization_setup.sets
+        return sum(model.variables["net_present_cost"][year] for year in sets["set_time_steps_yearly"])
 
     def objective_net_present_cost_rule(self, model):
         """ objective function to minimize NPV """
-        return (sum(model.net_present_cost[year] for year in model.set_time_steps_yearly))
+        sets = self.optimization_setup.sets
+        return sum(model.variables["net_present_cost"][year] for year in sets["set_time_steps_yearly"])
+
 
     def objective_total_carbon_emissions_rule(self, model):
         """objective function to minimize total emissions"""
-        return (sum(model.carbon_emissions_total[year] for year in model.set_time_steps_yearly))
+        sets = self.optimization_setup.sets
+        return sum(model.variables["carbon_emissions_total"][year] for year in sets["set_time_steps_yearly"])
 
     def objective_risk_rule(self, model):
         """objective function to minimize total risk"""
         # TODO implement objective functions for risk
-        return pe.Constraint.Skip
+        return None
