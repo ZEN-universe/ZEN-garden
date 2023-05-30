@@ -12,6 +12,7 @@ import copy
 import logging
 
 import linopy as lp
+import xarray as xr
 import numpy as np
 
 from zen_garden.preprocess.functions.extract_input_data import DataInput
@@ -254,8 +255,8 @@ class EnergySystem:
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_budget", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_budget_rule,
                                    doc="Budget of total carbon emissions of energy system")
         # limit carbon emission overshoot
-        constraints.add_constraint_block(model, name="constraint_carbon_emissions_overshoot_limit", constraint=self.rules.get_constraint_carbon_emissions_overshoot_limit(),
-                                   doc="Limit of overshot carbon emissions of energy system")
+        # constraints.add_constraint_block(model, name="constraint_carbon_emissions_overshoot_limit", constraint=self.rules.get_constraint_carbon_emissions_overshoot_limit(),
+        #                            doc="Limit of overshot carbon emissions of energy system")
         # costs
         constraints.add_constraint_block(model, name="constraint_cost_total", constraint=self.rules.get_constraint_cost_total(), doc="total cost of energy system")
         # net_present_cost
@@ -320,13 +321,15 @@ class EnergySystemRules:
         if year == self.optimization_setup.sets["set_time_steps_yearly"][0]:
             return (model.variables["carbon_emissions_cumulative"][year]
                     - model.variables["carbon_emissions_total"][year]
-                    + model.variables["carbon_emissions_overshoot"][year]
+                    # + model.variables["carbon_emissions_overshoot"][year]
                     == params.carbon_emissions_cumulative_existing)
         else:
             return (model.variables["carbon_emissions_cumulative"][year]
                     - model.variables["carbon_emissions_cumulative"][year - 1]
-                    - (model.variables["carbon_emissions_total"][year - 1] - model.variables["carbon_emissions_overshoot"][year - 1]) * (interval_between_years - 1)
-                    - (model.variables["carbon_emissions_total"][year] - model.variables["carbon_emissions_overshoot"][year])
+                    # - (model.variables["carbon_emissions_total"][year - 1] - model.variables["carbon_emissions_overshoot"][year - 1]) * (interval_between_years - 1)
+                    # - (model.variables["carbon_emissions_total"][year] - model.variables["carbon_emissions_overshoot"][year])
+                    - (model.variables["carbon_emissions_total"][year - 1]) * (interval_between_years - 1)
+                    - (model.variables["carbon_emissions_total"][year])
                     == 0)
 
     def get_constraint_carbon_cost_total(self):
@@ -335,9 +338,13 @@ class EnergySystemRules:
         params = self.optimization_setup.parameters
         model = self.optimization_setup.model
 
+        mask_last_year = [year == self.optimization_setup.sets["set_time_steps_yearly"][-1] for year in self.optimization_setup.sets["set_time_steps_yearly"]]
+        cost_carbon_emissions_overshoot = model.variables["carbon_emissions_overshoot"].where(mask_last_year) * params.price_carbon_emissions_overshoot
+        # add overshoot cost in last time step
         return (model.variables["cost_carbon_emissions_total"]
-                - params.price_carbon_emissions * model.variables["carbon_emissions_total"]  # add overshoot price
-                - model.variables["carbon_emissions_overshoot"] * params.price_carbon_emissions_overshoot
+                - model.variables["carbon_emissions_total"] * params.price_carbon_emissions
+                # add overshoot price
+                - cost_carbon_emissions_overshoot
                 == 0)
 
     def constraint_carbon_emissions_limit_rule(self, year):
@@ -360,22 +367,21 @@ class EnergySystemRules:
         params = self.optimization_setup.parameters
         interval_between_years = self.optimization_setup.system["interval_between_years"]
         if params.carbon_emissions_budget != np.inf:
-            max_budget = max(params.carbon_emissions_budget, params.carbon_emissions_cumulative_existing)
             if year == self.optimization_setup.sets["set_time_steps_yearly_entire_horizon"][-1]:
-                return (model.variables["carbon_emissions_cumulative"][year]
-                        <= max_budget)
+                return (model.variables["carbon_emissions_cumulative"][year] - model.variables["carbon_emissions_overshoot"][year]
+                        <= params.carbon_emissions_budget)
             else:
-                return (model.variables["carbon_emissions_cumulative"][year]
+                return (model.variables["carbon_emissions_cumulative"][year] - model.variables["carbon_emissions_overshoot"][year]
                         + (model.variables["carbon_emissions_total"][year] - model.variables["carbon_emissions_overshoot"][year]) * (interval_between_years - 1)
-                        <= max_budget)
+                        <= params.carbon_emissions_budget)
         else:
             return None
 
-    def get_constraint_carbon_emissions_overshoot_limit(self):
-        """ ensure that overshoot is lower or equal to total carbon emissions -> overshoot cannot be banked """
-        model = self.optimization_setup.model
-
-        return (model.variables["carbon_emissions_total"] - model.variables["carbon_emissions_overshoot"] >= 0)
+    # def get_constraint_carbon_emissions_overshoot_limit(self):
+    #     """ ensure that overshoot is lower or equal to total carbon emissions -> overshoot cannot be banked """
+    #     model = self.optimization_setup.model
+    #
+    #     return (model.variables["carbon_emissions_total"] - model.variables["carbon_emissions_overshoot"] >= 0)
 
     def get_constraint_cost_total(self):
         """ add up all costs from technologies and carriers"""
