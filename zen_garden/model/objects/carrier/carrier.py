@@ -50,6 +50,9 @@ class Carrier(Element):
         self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.price_shed_demand = self.data_input.extract_input_data("price_shed_demand", index_sets=[])
+        # LCA factors
+        if self.energy_system.system['load_lca_factors']:
+            self.carrier_lca_factors = self.data_input.extract_input_data('carrier_lca_factors', index_sets=['set_nodes', 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps=set_time_steps_yearly)
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites set_time_steps_operation"""
@@ -99,6 +102,11 @@ class Carrier(Element):
         optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier",
             data=optimization_setup.initialize_component(cls, "carbon_intensity_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
             doc='Parameter which specifies the carbon intensity of carrier')
+        # lca parameters
+        if optimization_setup.system['load_lca_factors']:
+            optimization_setup.parameters.add_parameter(name='carrier_lca_factors',
+                data=optimization_setup.initialize_component(cls, 'carrier_lca_factors', index_names=['set_carriers', 'set_nodes', 'set_lca_impact_categories', 'set_time_steps_yearly']),
+                doc='Parameters for the environmental impacts of each carrier')
 
     @classmethod
     def construct_vars(cls, optimization_setup):
@@ -128,6 +136,15 @@ class Carrier(Element):
         # cost of shed demand
         optimization_setup.variables.add_variable(model, name="cost_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
             doc="shed demand of carrier")
+        if optimization_setup.system['load_lca_factors']:
+            # lca impacts of carrier for node and year
+            optimization_setup.variables.add_variable(model, name='carrier_lca_impacts',
+                index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_lca_impact_categories", "set_time_steps_operation"], optimization_setup),
+                domain=pe.Reals, doc="LCA impacts of importing and exporting carrier")
+            # Total LCA impacts of carrier
+            optimization_setup.variables.add_variable(model, name="carrier_lca_impacts_total",
+                index_sets=cls.create_custom_set(['set_lca_impact_categories', 'set_time_steps_yearly'], optimization_setup),
+                domain=pe.Reals, doc="total LCA impacts of importing and exporting carrier")
 
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
@@ -173,6 +190,17 @@ class Carrier(Element):
         # energy balance
         optimization_setup.constraints.add_constraint(model, name="constraint_nodal_energy_balance", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
             rule=rules.constraint_nodal_energy_balance_rule, doc='node- and time-dependent energy balance for each carrier', )
+        # LCA
+        if optimization_setup.system['load_lca_factors']:
+            # lca impacts
+            optimization_setup.constraints.add_constraint(model, name='constraint_carrier_lca_impacts',
+                index_sets=cls.create_custom_set(['set_carriers', 'set_nodes', 'set_lca_impact_categories', 'set_time_steps_operation'], optimization_setup),
+                rule=rules.constraint_carrier_lca_impacts_rule, doc='lca impacts of importing and exporting carrier')
+            # total LCA impacts
+            optimization_setup.constraints.add_constraint(model, name='constraint_carrier_lca_impacts_total',
+                index_sets=cls.create_custom_set(['set_lca_impact_categories', 'set_time_steps_yearly'], optimization_setup),
+                rule=rules.constraint_carrier_lca_impacts_total_rule,
+                doc='total yearly lca impacts of importing and exporting carriers')
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
             if len(optimization_setup.system[subclass.label]) > 0:
@@ -330,3 +358,21 @@ class CarrierRules:
                 + carrier_import - carrier_export
                 # demand and shed_demand
                 - carrier_demand + carrier_shed_demand == 0)
+
+    def constraint_carrier_lca_impacts_rule(self, model, carrier, node, lca_category, time):
+        """ lca impacts of importing and exporting carriers per node and year """
+        params = self.optimization_setup.parameters
+        yearly_time_step = self.energy_system.time_steps.convert_time_step_operation2year(carrier, time)
+        if params.availability_import[carrier, node, time] != 0 or params.availability_export[carrier, node, time] != 0:
+            return (model.carrier_lca_impacts[carrier, node, lca_category, time] == params.carrier_lca_factors[carrier, node, lca_category, yearly_time_step] * (
+                    model.flow_import[carrier, node, time] - model.flow_export[carrier, node, time]))
+        else:
+            return model.carrier_lca_impacts[carrier, node, lca_category, time] == 0
+
+    def constraint_carrier_lca_impacts_total_rule(self, model, lca_category, year):
+        """ total lca impacts of all carriers """
+        params = self.optimization_setup.parameters
+        return model.carrier_lca_impacts_total[lca_category, year] == sum(
+            sum(model.carrier_lca_impacts[carrier, node, lca_category, time] * params.time_steps_operation_duration[
+                carrier, time] for time in self.energy_system.time_steps.get_time_steps_year2operation(carrier, year))
+            for carrier, node in Element.create_custom_set(['set_carriers', 'set_nodes'], self.optimization_setup)[0])

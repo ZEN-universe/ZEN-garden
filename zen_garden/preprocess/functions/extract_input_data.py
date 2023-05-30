@@ -318,8 +318,8 @@ class DataInput:
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
         # import all input data
-        df_input_nonlinear = self.read_pwa_files(variable_type, fileType="nonlinear_")
-        df_input_breakpoints = self.read_pwa_files(variable_type, fileType="breakpoints_pwa_")
+        df_input_nonlinear = self.read_pwa_files(variable_type, file_type="nonlinear_")
+        df_input_breakpoints = self.read_pwa_files(variable_type, file_type="breakpoints_pwa_")
         df_input_linear = self.read_pwa_files(variable_type)
         df_linear_exist = self.exists_attribute(_attribute_name)
         assert (df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
@@ -433,12 +433,12 @@ class DataInput:
                 linear_dict = linear_dict.reorder_levels(_conversion_factor_levels)
                 return linear_dict, is_pwa
 
-    def read_pwa_files(self, variable_type, fileType=str()):
+    def read_pwa_files(self, variable_type, file_type=str()):
         """ reads pwa Files
         :param variable_type: technology approximation type
-        :param fileType: either breakpointsPWA, linear, or nonlinear
+        :param file_type: either breakpointsPWA, linear, or nonlinear
         :return df_input: raw input file"""
-        df_input = self.read_input_data(fileType + variable_type)
+        df_input = self.read_input_data(file_type + variable_type)
         if df_input is not None:
             if "unit" in df_input.values:
                 columns = df_input.iloc[-1][df_input.iloc[-1] != "unit"].dropna().index
@@ -606,7 +606,7 @@ class DataInput:
                             self.energy_system.set_time_steps_years))
                     else:
                         index_list.append(df_input.index.get_level_values(index_name).unique())
-                combined_index = pd.MultiIndex.from_product(index_list, names=index_name_list).sort_values()
+                combined_index = pd.MultiIndex.from_product(index_list, names=index_names_column).sort_values()
                 is_single_index = False
             df_input_temp = pd.DataFrame(index=combined_index, columns=df_input.columns)
             common_index = df_input.index.intersection(combined_index)
