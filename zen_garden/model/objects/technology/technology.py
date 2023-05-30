@@ -57,6 +57,9 @@ class Technology(Element):
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[_set_location])
         self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[_set_location])
+        # extract the factors of all lcia categories
+        if self.energy_system.system['load_lca_factors']:
+            self.technology_lca_factors = self.data_input.extract_input_data('technology_lca_factors', index_sets=[_set_location, 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps=set_time_steps_yearly)
         # extract existing capacity
         self.set_technologies_existing = self.data_input.extract_set_technologies_existing()
         self.capacity_existing = self.data_input.extract_input_data("capacity_existing", index_sets=[_set_location, "set_technologies_existing"])
@@ -368,6 +371,11 @@ class Technology(Element):
         # carbon intensity
         optimization_setup.parameters.add_parameter(name="carbon_intensity_technology", data=optimization_setup.initialize_component(cls, "carbon_intensity_technology", index_names=["set_technologies", "set_location"]),
             doc='Parameter which specifies the carbon intensity of each technology')
+        # lca parameters
+        if optimization_setup.system['load_lca_factors']:
+            optimization_setup.parameters.add_parameter(name='technology_lca_factors',
+                data=optimization_setup.initialize_component(cls, 'technology_lca_factors', index_names=['set_technologies', 'set_location', 'set_lca_impact_categories', 'set_time_steps_yearly']),
+                doc='Parameters for the environmental impacts of each technology')
         # add pe.Param of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_params(optimization_setup)
@@ -451,6 +459,14 @@ class Technology(Element):
         # total carbon emissions technology
         optimization_setup.variables.add_variable(model, name="carbon_emissions_technology_total", index_sets=model.set_time_steps_yearly, domain=pe.Reals,
             doc="total carbon emissions for operating technology at location l and time t")
+        # LCA impacts of each technology
+        if optimization_setup.system['load_lca_factors']:
+            optimization_setup.variables.add_variable(model, name="technology_lca_impacts",
+                index_sets=cls.create_custom_set(['set_technologies', 'set_location', 'set_lca_impact_categories', 'set_time_steps_operation'], optimization_setup),
+                domain=pe.Reals, doc='LCA impacts for operating technology at location l and time t')
+            optimization_setup.variables.add_variable(model, name='technology_lca_impacts_total',
+                index_sets=cls.create_custom_set(['set_lca_impact_categories', 'set_time_steps_yearly'], optimization_setup),
+                domain=pe.Reals, doc='Total LCA impacts in year y')
 
         # add pe.Vars of the child classes
         for subclass in cls.__subclasses__():
@@ -522,6 +538,17 @@ class Technology(Element):
         optimization_setup.constraints.add_constraint(model, name="disjunction_decision_on_off_technology",
             index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.expression_link_disjuncts_rule,
             doc="disjunction to link the on off disjuncts", constraint_class=pgdp.Disjunction)
+        # LCA
+        if optimization_setup.system['load_lca_factors']:
+            # lca impacts
+            optimization_setup.constraints.add_constraint(model, name='constraint_technology_lca_impacts',
+                index_sets=cls.create_custom_set(['set_technologies', 'set_location', 'set_lca_impact_categories', 'set_time_steps_operation'], optimization_setup),
+                rule=rules.constraint_technology_lca_impacts_rule, doc='lca impacts of each technology at each location and time step')
+            # total LCA impacts
+            optimization_setup.constraints.add_constraint(model, name='constraint_technology_lca_impacts_total',
+                index_sets=cls.create_custom_set(['set_lca_impact_categories', 'set_time_steps_yearly'], optimization_setup),
+                rule=rules.constraint_technology_lca_impacts_total_rule,
+                doc='total lca impacts of all technologies per year')
 
         # add pe.Constraints of the child classes
         for subclass in cls.__subclasses__():
@@ -541,6 +568,7 @@ class TechnologyRules:
         """
 
         self.optimization_setup = optimization_setup
+        self.energy_system = optimization_setup.energy_system
 
     def disjunct_on_technology_rule(self, disjunct, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
@@ -787,3 +815,27 @@ class TechnologyRules:
             # TODO integrate level storage here as well
             else:
                 return pe.Constraint.Skip  # if limit energy  # else:  #     return (model.capacity[tech,capacity_type, loc, time_step_year] * model.max_load[tech,capacity_type, loc, time] >= model.levelStorage[tech,loc,time])
+
+    def constraint_technology_lca_impacts_rule(self, model, tech, loc, lca_category, time):
+        """ lca impacts of all technologies per location and year"""
+        params = self.optimization_setup.parameters
+        yearly_time_step = self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
+        reference_carrier = model.set_reference_carriers[tech].at(1)
+        if tech in model.set_conversion_technologies:
+            if reference_carrier in model.set_input_carriers[tech]:
+                reference_flow = model.flow_conversion_input[tech, reference_carrier, loc, time]
+            else:
+                reference_flow = model.flow_conversion_output[tech, reference_carrier, loc, time]
+        elif tech in model.set_transport_technologies:
+            reference_flow = model.flow_transport[tech, loc, time]
+        else:
+            reference_flow = model.flow_storage_charge[tech, loc, time] + model.flow_storage_discharge[tech, loc, time]
+        return model.technology_lca_impacts[tech, loc, lca_category, time] == params.technology_lca_factors[tech, loc, lca_category, yearly_time_step] * reference_flow
+
+    def constraint_technology_lca_impacts_total_rule(self, model, lca_category, year):
+        """ total lca impacts of all carriers """
+        params = self.optimization_setup.parameters
+        return model.technology_lca_impacts_total[lca_category, year] == sum(
+            sum(model.technology_lca_impacts[tech, loc, lca_category, time] * params.time_steps_operation_duration[tech, time]
+                for time in self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year))
+            for tech, loc in Element.create_custom_set(['set_technologies', 'set_location'], self.optimization_setup)[0])
