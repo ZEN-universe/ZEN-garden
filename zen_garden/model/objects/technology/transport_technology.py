@@ -59,6 +59,7 @@ class TransportTechnology(Technology):
             # both capex terms must be specified
             self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
             self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+            self.opex_specific_fixed = self.opex_specific_fixed * self.distance
         else:  # Here only capex_specific is used, and capex_per_distance_transport is set to Zero.
             if self.data_input.exists_attribute("capex_per_distance_transport"):
                 self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
