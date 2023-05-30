@@ -509,8 +509,8 @@ class OptimizationSetup(object):
                 interval_between_years = self.energy_system.system["interval_between_years"]
                 _carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[step_horizon].item()
                 carbon_emissions = self.model.solution["carbon_emissions_total"].loc[step_horizon].item()
-                carbon_emissions_overshoot = self.model.solution["carbon_emissions_overshoot"].loc[step_horizon].item()
-                self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + (carbon_emissions - carbon_emissions_overshoot) * (interval_between_years - 1)
+                # carbon_emissions_overshoot = self.model.solution["carbon_emissions_overshoot"].loc[step_horizon].item()
+                self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + carbon_emissions * (interval_between_years - 1)
             else:
                 self.energy_system.carbon_emissions_cumulative_existing = self.energy_system.data_input.extract_input_data(
                     "carbon_emissions_cumulative_existing",index_sets=[])

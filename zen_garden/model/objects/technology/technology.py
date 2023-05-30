@@ -335,8 +335,9 @@ class Technology(Element):
             data=optimization_setup.initialize_component(cls, "capacity_addition_max", index_names=["set_technologies", "set_capacity_types"], capacity_types=True),
             doc='Parameter which specifies the maximum capacity addition that can be installed')
         # unbounded capacity addition
-        optimization_setup.parameters.add_parameter(name="capacity_addition_unbounded", data=optimization_setup.initialize_component(cls, "capacity_addition_unbounded", index_names=["set_technologies"]),
-                                                    doc='Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment)')
+        optimization_setup.parameters.add_parameter(name="capacity_addition_unbounded",
+            data=optimization_setup.initialize_component(cls, "capacity_addition_unbounded", index_names=["set_technologies"]),
+            doc='Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment)')
         # lifetime existing technologies
         optimization_setup.parameters.add_parameter(name="lifetime_existing",
             data=optimization_setup.initialize_component(cls, "lifetime_existing", index_names=["set_technologies", "set_location", "set_technologies_existing"]),
@@ -517,7 +518,7 @@ class Technology(Element):
         constraints.add_constraint_block(model, name="constraint_technology_diffusion_limit",
                                          constraint=rules.get_constraint_technology_diffusion_limit(),
                                          doc="Limits the newly built capacity by the existing knowledge stock")
-         # limit diffusion rate total
+        # limit diffusion rate total
         constraints.add_constraint_block(model, name="constraint_technology_diffusion_limit_total",
                                          constraint=rules.get_constraint_technology_diffusion_limit_total(),
                                          doc="Limits the newly built capacity by the existing knowledge stock for the entire energy system")
@@ -828,7 +829,7 @@ class TechnologyRules:
                     total_capacity_knowledge_addition = model.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time].where(False)
 
 
-                total_capacity_all_techs_param = sum(params.existing_capacities.loc[other_tech, capacity_type, set_locations, time] # add spillover from other regions
+                total_capacity_all_techs_param = sum(params.existing_capacities.loc[other_tech, capacity_type, set_locations, time]
                                                      for other_tech in set_technology if sets["set_reference_carriers"][other_tech][0] == reference_carrier)
                 lifetime_range = Technology.get_lifetime_range(self.optimization_setup, tech, end_time)
                 if len(lifetime_range) > 0:
@@ -848,7 +849,7 @@ class TechnologyRules:
                 # build the rhs
                 rhs = xr.zeros_like(params.existing_capacities).loc[tech, capacity_type,:, time]
                 rhs.loc[set_locations] += ((1 + params.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_existing # add initial market share until which the diffusion rate is unbounded
-                rhs.loc[set_locations] += params.market_share_unbounded * total_capacity_all_techs_param
+                rhs.loc[set_locations] += params.market_share_unbounded * total_capacity_all_techs_param + params.capacity_addition_unbounded.loc[tech]
 
                 constraints.append(lhs <= rhs)
 
@@ -917,8 +918,9 @@ class TechnologyRules:
                     lhs = lhs - params.market_share_unbounded * total_capacity_all_techs_var
 
                 # build the rhs
-                rhs = ((1 + params.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_existing # add initial market share until which the diffusion rate is unbounded
-                rhs += params.market_share_unbounded * total_capacity_all_techs_param
+                rhs = ((1 + params.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_existing
+                # add initial market share until which the diffusion rate is unbounded
+                rhs += params.market_share_unbounded * total_capacity_all_techs_param + params.capacity_addition_unbounded.loc[tech]*len(set_locations)
 
                 constraints.append(lhs <= rhs)
 

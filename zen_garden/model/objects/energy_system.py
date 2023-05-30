@@ -372,7 +372,7 @@ class EnergySystemRules:
                         <= params.carbon_emissions_budget)
             else:
                 return (model.variables["carbon_emissions_cumulative"][year] - model.variables["carbon_emissions_overshoot"][year]
-                        + (model.variables["carbon_emissions_total"][year] - model.variables["carbon_emissions_overshoot"][year]) * (interval_between_years - 1)
+                        + model.variables["carbon_emissions_total"][year] * (interval_between_years - 1)
                         <= params.carbon_emissions_budget)
         else:
             return None

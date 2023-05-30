@@ -165,15 +165,15 @@ class Config(object):
         # This is not yet supported in linopy
         self.solver["add_duals"] = False
         # analyze numerics
-        self.solver["analyze_numerics"]   = False
-        self.solver["immutable_unit"]     = []
+        self.solver["analyze_numerics"] = False
+        self.solver["immutable_unit"] = []
         self.solver["range_unit_exponents"]    = {"min":-1,"max":1,"step_width":1}
         # assumes "ton" to be metric ton, not imperial ton
         self.solver["define_ton_as_metric_ton"] = True
         # round down to number of decimal points, for new capacity and unit multipliers
-        self.solver["rounding_decimal_points"]     = 5
+        self.solver["rounding_decimal_points"] = 5
         # round down to number of decimal points, for time series after TSA
-        self.solver["rounding_decimal_points_ts"]   = 3
+        self.solver["rounding_decimal_points_ts"] = 5
         # settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly:
         # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
         self.solver["linear_regression_check"] = {"eps_intercept":0.1,"epsRvalue":1-(1E-5)}
