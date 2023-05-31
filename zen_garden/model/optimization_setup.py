@@ -300,6 +300,9 @@ class OptimizationSetup(object):
                 element = self.energy_system
             else:
                 element = self.get_element(Element, element_name)
+            if element is None:
+                logging.warning(f"Cannot update params {params} of element {element_name} because element does not exist. Skipped.")
+                continue
             # overwrite scenario dependent parameters
             for param in params:
                 assert "pwa" not in param, "Scenarios are not implemented for piece-wise affine parameters."
