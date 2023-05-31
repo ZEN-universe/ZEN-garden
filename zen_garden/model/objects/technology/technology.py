@@ -704,7 +704,7 @@ class TechnologyRules:
         mask.loc[tech_arr, capacity_type_arr] = True
         mask &= params.capacity_addition_min != 0
 
-        # because technology_installation is binary, it might not exists if it's not used
+        # because technology_installation is binary, it might not exist if it's not used
         if np.any(mask):
             lhs = mask * (params.capacity_addition_min * model.variables["technology_installation"]
                           - model.variables["capacity_addition"])
@@ -967,6 +967,7 @@ class TechnologyRules:
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         constraints = []
+        # loop over index
         for tech in index.get_unique(["set_technologies"]):
             locs = index.get_values([tech], 1, unique=True)
             reference_carrier = sets["set_reference_carriers"][tech][0]
