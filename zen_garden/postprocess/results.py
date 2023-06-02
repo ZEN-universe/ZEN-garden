@@ -1043,17 +1043,18 @@ class Results(object):
         discount_rate = self.results["analysis"]["discount_rate"]
         annuity = pd.Series(index=self.years,dtype=float)
         for year in self.years:
+            interval_between_years = system["interval_between_years"]
             if year == self.years[-1]:
-                interval_between_years = 1
+                interval_between_years_this_year = 1
             else:
-                interval_between_years = system["interval_between_years"]
+                interval_between_years_this_year = system["interval_between_years"]
             if self.has_MF:
-                annuity[year] = sum(((1 / (1 + discount_rate)) ** (_intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years))
+                annuity[year] = sum(((1 / (1 + discount_rate)) ** (_intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years_this_year))
             else:
                 annuity[year] = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.years[0]) + _intermediate_time_step))
-                        for _intermediate_time_step in range(0, interval_between_years))
+                        for _intermediate_time_step in range(0, interval_between_years_this_year))
             if not discount_years:
-                annuity[year] /= interval_between_years
+                annuity[year] /= interval_between_years_this_year
         return annuity
 
     def _get_ts_duration(self, scenario=None, is_storage=False):

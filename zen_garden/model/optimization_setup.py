@@ -242,7 +242,7 @@ class OptimizationSetup(object):
         self.variables = Variable()
         self.parameters = Parameter()
         self.constraints = Constraint()
-        # FIXME: Not with linopy yet
+        # FIXME: Not with linopy yet TODO
         # add duals
         # self.add_duals()
         # define and construct components of self.model

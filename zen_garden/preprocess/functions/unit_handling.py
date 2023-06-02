@@ -211,9 +211,13 @@ class UnitHandling:
                 dict_units[item] = _df_units_temp
         df_values = pd.concat(dict_values, ignore_index=True).abs()
         df_units = pd.concat(dict_units, ignore_index=True)
-        df_dupl = pd.concat([df_values, df_units], axis=1).drop_duplicates()
-        df_values = df_values.loc[df_dupl.index]
-        df_units = df_units.loc[df_dupl.index, :]
+        # df_dupl = pd.concat([df_values, df_units], axis=1).drop_duplicates()
+        # df_dupl = pd.concat([df_values, df_units], axis=1).duplicated()
+        # # df_values = df_values.loc[df_dupl.index].values
+        # # df_units = df_units.loc[df_dupl.index, :]
+        # df_values = df_values.loc[~df_dupl].values
+        # df_units = df_units.loc[~df_dupl, :]
+        # df_values = df_values.values
         # original var and range
         smallest_range["originalVal"] = np.log10(df_values.max()) - np.log10(df_values.min())
         smallest_range["val"] = copy.copy(smallest_range["originalVal"])
@@ -223,11 +227,11 @@ class UnitHandling:
         step_width = unit_exps["step_width"]
         range_exp = range(min_exp, max_exp + 1, step_width)
         mutable_unit = self.dim_matrix.columns[self.dim_matrix.columns.isin(base_units.difference(immutable_unit))]
-        df_units = df_units.loc[:, mutable_unit]
+        df_units = df_units.loc[:, mutable_unit].values
         comb_mult = itertools.product(range_exp, repeat=len(mutable_unit))
         for comb in comb_mult:
-            df_scaled = df_units.multiply(comb, axis=1) * (-1)
-            df_scaled = 10 ** df_scaled.sum(axis=1).astype(float)
+            df_scaled = np.multiply(df_units,comb) * (-1)
+            df_scaled = 10 ** df_scaled.sum(axis=1)
             scaled_vals = df_values * df_scaled
             val_range = np.log10(scaled_vals.max()) - np.log10(scaled_vals.min())
             if val_range < smallest_range["val"]:
