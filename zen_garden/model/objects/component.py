@@ -583,7 +583,9 @@ class Constraint(Component):
                     mask = None
 
                 # drop all unnecessary dimensions
-                lhs = cons.lhs.drop(list(set(cons.lhs.coords) - set(cons.lhs.dims)))
+                # FIXME: we do this via data to avoid the drop deprecation warning, update once lp implements drop_vars
+                # lhs = cons.lhs.drop(list(set(cons.lhs.coords) - set(cons.lhs.dims)))
+                lhs = lp.LinearExpression(cons.lhs.data.drop_vars(list(set(cons.lhs.coords) - set(cons.lhs.dims))), model)
                 # add constraint
                 self._add_con(model, current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var, mask=mask)
                 # save constraint doc
@@ -888,14 +890,14 @@ class Constraint(Component):
         """
 
         # drop if necessary
-        lhs = lhs.to_dataset()
+        lhs = lhs.data
         if drop is not None:
             lhs = lhs.drop_sel(group=drop, errors="ignore")
             rhs = rhs.drop_sel(group=drop, errors="ignore")
             sign = sign.drop_sel(group=drop, errors="ignore")
 
         # drop the unncessessary dimensions
-        lhs = lhs.drop(list(set(lhs.coords) - set(lhs.dims)))
+        lhs = lhs.drop_vars(list(set(lhs.coords) - set(lhs.dims)))
 
         # get the coordinates
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
