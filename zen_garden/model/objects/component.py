@@ -979,6 +979,8 @@ class Constraint(Component):
         # if there are no constraints, return an empty list
         if len(constraints) == 0:
             return []
+        elif model is None:
+            raise ValueError("If constraints is a list, model must be provided!")
 
         # normal reordering
         if index_names is not None and index_values is not None:
