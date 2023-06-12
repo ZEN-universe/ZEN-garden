@@ -191,7 +191,7 @@ class Carrier(Element):
             doc="total carbon emissions of importing and exporting carriers")
         # energy balance
         constraints.add_constraint_block(model, name="constraint_nodal_energy_balance",
-                                         constraint=rules.get_constraint_nodal_energy_balance(),
+                                         constraint=rules.constraint_nodal_energy_balance_block(),
                                          doc='node- and time-dependent energy balance for each carrier', )
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
@@ -510,7 +510,7 @@ class CarrierRules(GenericRule):
                                                   index_names=["set_carriers"])
 
 
-    def get_constraint_nodal_energy_balance(self):
+    def constraint_nodal_energy_balance_block(self):
         """
         nodal energy balance for each time step.
         """

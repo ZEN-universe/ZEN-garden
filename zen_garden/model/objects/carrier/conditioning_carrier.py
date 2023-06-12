@@ -67,7 +67,7 @@ class ConditioningCarrier(Carrier):
         # overwrite energy balance when conditioning carriers are included
         constraints.remove_constraint(model, "constraint_nodal_energy_balance")
         constraints.add_constraint_block(model, name="constraint_nodal_energy_balance_conditioning",
-                                         constraint=rules.get_constraint_nodal_energy_balance_conditioning(),
+                                         constraint=rules.constraint_nodal_energy_balance_conditioning_block(),
                                          doc='node- and time-dependent energy balance for each carrier', )
 
 
@@ -118,7 +118,7 @@ class ConditioningCarrierRules(GenericRule):
                                                   index_values=index.get_unique(["set_conditioning_carrier_parents"]),
                                                   index_names=["set_conditioning_carrier_parents"])
 
-    def get_constraint_nodal_energy_balance_conditioning(self):
+    def constraint_nodal_energy_balance_conditioning_block(self):
         """
         nodal energy balance for each time step.
         """

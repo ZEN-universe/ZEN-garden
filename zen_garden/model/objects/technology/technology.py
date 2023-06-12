@@ -20,7 +20,7 @@ from linopy.constraints import AnonymousConstraint
 
 from zen_garden.utils import lp_sum
 from ..component import ZenIndex, IndexSet
-from ..element import Element
+from ..element import Element, GenericRule
 
 
 class Technology(Element):
@@ -496,15 +496,15 @@ class Technology(Element):
         rules = TechnologyRules(optimization_setup)
         #  technology capacity_limit
         constraints.add_constraint_block(model, name="constraint_technology_capacity_limit",
-                                         constraint=rules.get_constraint_technology_capacity_limit(),
+                                         constraint=rules.constraint_technology_capacity_limit_block(),
                                          doc='limited capacity of  technology depending on loc and time')
         # minimum capacity
         constraints.add_constraint_block(model, name="constraint_technology_min_capacity",
-                                         constraint=rules.get_constraint_technology_min_capacity(),
+                                         constraint=rules.constraint_technology_min_capacity_block(),
                                          doc='min capacity of technology that can be installed')
         # maximum capacity
         constraints.add_constraint_block(model, name="constraint_technology_max_capacity",
-                                         constraint=rules.get_constraint_technology_max_capacity(),
+                                         constraint=rules.constraint_technology_max_capacity_block(),
                                          doc='max capacity of technology that can be installed')
         # construction period
         constraints.add_constraint_block(model, name="constraint_technology_construction_time",
@@ -638,7 +638,7 @@ class Technology(Element):
         return existing_quantities
 
 
-class TechnologyRules:
+class TechnologyRules(GenericRule):
     """
     Rules for the Technology class
     """
@@ -648,7 +648,11 @@ class TechnologyRules:
         Inits the rules
         :param optimization_setup: OptimizationSetup of the element
         """
-        self.optimization_setup = optimization_setup
+
+        super().__init__(optimization_setup)
+
+    # Disjunctive Constraints
+    # -----------------------
 
     def disjunct_on_technology_rule(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
@@ -670,70 +674,159 @@ class TechnologyRules:
                 subclass.disjunct_off_technology_rule(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
                 return None
 
-    ### --- constraint rules --- ###
-    # %% Constraint rules pre-defined in Technology class
-    def get_constraint_technology_capacity_limit(self):
+    # Rule-based constraints
+    # -----------------------
+
+    def constraint_cost_capex_total_rule(self, year):
+        """ sums over all technologies to calculate total capex """
+
+        ### index sets
+        # skipped because rule-based constraint
+
+        ### masks
+        # skipped because rule-based constraint
+
+        ### index loop
+        # skipped because rule-based constraint
+
+        ### auxiliary calculations
+        term_sum_yearly = self.variables["capex_yearly"].loc[..., year].sum()
+
+        ### formulate constraint
+        lhs = (self.variables["cost_capex_total"].loc[year]
+               - term_sum_yearly)
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
+
+    def constraint_cost_opex_total_rule(self, year):
+        """ sums over all technologies to calculate total opex """
+
+        ### index sets
+        # skipped because rule-based constraint
+
+        ### masks
+        # skipped because rule-based constraint
+
+        ### index loop
+        # skipped because rule-based constraint
+
+        ### auxiliary calculations
+        term_sum_yearly = self.variables["opex_yearly"].loc[..., year].sum()
+
+        ### formulate constraint
+        lhs = (self.variables["cost_opex_total"].loc[year]
+               - term_sum_yearly)
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
+
+    # Block-based constraints
+    # -----------------------
+
+    def constraint_technology_capacity_limit_block(self):
         """limited capacity_limit of technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
 
-        # create the masks for the two cases
-        m1 = (params.capacity_limit != np.inf) & (params.existing_capacities < params.capacity_limit)
-        m2 = (params.capacity_limit != np.inf) & ~(params.existing_capacities < params.capacity_limit)
+        ### index sets
+        # not necessary
 
-        # the lhs, rhs and sign depend on the case
-        lhs = model.variables["capacity"].where(m1) + model.variables["capacity_addition"].where(m2)
-        rhs = params.capacity_limit.where(m1, 0.0)
-        sign = xr.DataArray("<=", coords=model.variables["capacity"].coords).where(m1, "=")
-        return AnonymousConstraint(lhs, sign, rhs)
+        ### masks
+        # create the masks for the two cases, m1 for capacity_limit not reached, m2 for capacity_limit reached
+        m1 = (self.parameters.capacity_limit != np.inf) & (self.parameters.existing_capacities < self.parameters.capacity_limit)
+        m2 = (self.parameters.capacity_limit != np.inf) & ~(self.parameters.existing_capacities < self.parameters.capacity_limit)
 
-    def get_constraint_technology_min_capacity(self):
+        ### index loop
+        # not necessary
+
+        ### auxiliary calculations
+        # not necessary
+
+        ### formulate constraint
+        # Note that this constraint has a different sign for the two cases
+        lhs = self.variables["capacity"].where(m1) + self.variables["capacity_addition"].where(m2)
+        rhs = self.parameters.capacity_limit.where(m1, 0.0)
+        sign = xr.DataArray("<=", coords=self.variables["capacity"].coords).where(m1, "=")
+        constraints = AnonymousConstraint(lhs, sign, rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints)
+
+    def constraint_technology_min_capacity_block(self):
         """ min capacity expansion of technology."""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
 
-        # index
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         tech_arr, capacity_type_arr = index.get_unique(["set_technologies", "set_capacity_types"], as_array=True)
 
-        # get the mask, set it to true only where we want
-        mask = xr.zeros_like(params.capacity_addition_min, dtype=bool)
+        ### masks
+        # we create a mask here only to avoid having constraints with binary variables when it's not necessary
+        # passing constraints with binary variables to gurobi, even of the type 0 * binray_var, means that no
+        # dual variables are returned
+        mask = xr.zeros_like(self.parameters.capacity_addition_min, dtype=bool)
         mask.loc[tech_arr, capacity_type_arr] = True
-        mask &= params.capacity_addition_min != 0
+        mask &= self.parameters.capacity_addition_min != 0
 
-        # because technology_installation is binary, it might not exist if it's not used
-        if np.any(mask):
-            lhs = mask * (params.capacity_addition_min * model.variables["technology_installation"]
-                          - model.variables["capacity_addition"])
-            return lhs <= 0, mask
-        else:
+        ### index loop
+        # not necessary
+
+        ### auxiliary calculations
+        # if the mask is empty, we don't need to do anything and abort here
+        if not mask.any():
             return []
 
-    def get_constraint_technology_max_capacity(self):
-        """max capacity expansion of technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
+        ### formulate constraint
+        lhs = mask * (self.parameters.capacity_addition_min * self.variables["technology_installation"]
+                      - self.variables["capacity_addition"])
+        rhs = 0
+        constraints = lhs <= rhs
 
-        # get all the constraints
-        constraints = []
+        ### return
+        return self.constraints.return_contraints(constraints, mask=mask)
+
+    def constraint_technology_max_capacity_block(self):
+        """max capacity expansion of technology"""
+
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
-        for tech, capacity_type in index.get_unique([0, 1]):
-            if params.capacity_addition_max.loc[tech, capacity_type] != np.inf:
-                lhs = - model.variables["capacity_addition"].loc[tech, capacity_type]
-                # we only want a constraints with a binary variable if the corresponding max_built_capacity is not zero
-                if np.any(params.capacity_addition_max.loc[tech, capacity_type].notnull() & (params.capacity_addition_max.loc[tech, capacity_type] != 0)):
-                    lhs += params.capacity_addition_max.loc[tech, capacity_type].item() * model.variables["technology_installation"].loc[tech, capacity_type]
-                constraints.append(lhs >= 0)
-            else:
-                # we need to add an empty constraint with the right shape
-                constraints.append(np.nan*model.variables["capacity_addition"].loc[tech, capacity_type].where(False) == np.nan)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
+        ### masks
+        # not necessary
+
+        ### index loop
+        constraints = []
+        for tech, capacity_type in index.get_unique(["set_technologies", "set_capacity_types"]):
+            # not that the else here is just a dummy
+            if self.parameters.capacity_addition_max.loc[tech, capacity_type] != np.inf:
+
+                ### auxiliary calculations
+                # we only want a constraints with a binary variable if the corresponding max_built_capacity is not zero
+                if np.any(self.parameters.capacity_addition_max.loc[tech, capacity_type].notnull() & (self.parameters.capacity_addition_max.loc[tech, capacity_type] != 0)):
+                    term_installation = self.parameters.capacity_addition_max.loc[tech, capacity_type].item() * self.variables["technology_installation"].loc[tech, capacity_type]
+                else:
+                    # dummy
+                    term_installation = self.variables["capacity_addition"].loc[tech, capacity_type].where(False)
+
+                ### formulate constraint
+                lhs = (- self.variables["capacity_addition"].loc[tech, capacity_type]
+                       + term_installation)
+                rhs = 0
+                constraints.append(lhs >= rhs)
+
+            else:
+                # a dummy
+                constraints.append(np.nan*self.variables["capacity_addition"].loc[tech, capacity_type].where(False) == np.nan)
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_technologies", "set_capacity_types"]),
+                                                  index_names=["set_technologies", "set_capacity_types"])
 
     def get_constraint_technology_construction_time(self):
         """ construction time of technology, i.e., time that passes between investment and availability"""
@@ -950,13 +1043,6 @@ class TechnologyRules:
 
         return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 3]), [index_names[0], index_names[3]], model), model.variables["capex_yearly"].mask
 
-    def constraint_cost_capex_total_rule(self, year):
-        """ sums over all technologies to calculate total capex """
-        model = self.optimization_setup.model
-        return (model.variables["cost_capex_total"].loc[year]
-                - model.variables["capex_yearly"].loc[..., year].sum()
-                == 0)
-
     def get_constraint_opex_technology(self):
         """ calculate opex of each technology"""
         # get parameter object
@@ -1077,15 +1163,6 @@ class TechnologyRules:
             constraints.append(model.variables["carbon_emissions_technology_total"].loc[year] - total == 0)
 
         return self.optimization_setup.constraints.reorder_list(constraints, years, ["set_time_steps_yearly"], model)
-
-    def constraint_cost_opex_total_rule(self, year):
-        """ sums over all technologies to calculate total opex """
-        # get parameter object
-        model = self.optimization_setup.model
-
-        return (model.variables["cost_opex_total"].loc[year]
-                - model.variables["opex_yearly"].loc[..., year].sum()
-                == 0)
 
     def get_constraint_capacity_factor(self):
         """
