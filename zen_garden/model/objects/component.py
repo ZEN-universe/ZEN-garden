@@ -953,3 +953,31 @@ class Constraint(Component):
         # reorder the group
         reordered = self.reorder_group(combined_constraints.lhs, combined_constraints.sign, combined_constraints.rhs, index_values, index_names, model)
         return reordered
+
+    def return_contraints(self, constraints, model=None, mask=None, index_values=None, index_names=None,
+                          stack_dim_name=None):
+        """
+        This is a high-level function that returns the constraints in the correct format, i.e. with reordering, masks,
+        etc.
+        :param constraints: A single constraints or a potentially empty list of constraints.
+        :param model: The model to which the constraints belong
+        :param mask: A mask with the same shape as the constraints
+        :param index_values: The index values corresponding to the group numbers, if reorder is necessary
+        :param index_names: The names of the indices, if reorder is necessary
+        :param stack_dim_name: If a list of constraints is provided along with index_values and index_names, the
+                               constraints are reordered with the provided indices, if a stack_dim_name is provided, the
+                               constraints are stacked along a single dimension with the provided name.
+        :return: Constraints with can be added
+        """
+
+        # no need to do anything special
+        if not isinstance(constraints, list):
+            if mask is None:
+                return constraints
+            return constraints, mask
+
+        # if there are no constraints, return an empty list
+        if len(constraints) == 0:
+            return []
+
+
