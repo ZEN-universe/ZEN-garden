@@ -855,6 +855,7 @@ class TechnologyRules:
 
         # reording takes too much memory!
         return self.optimization_setup.constraints.combine_constraints(constraints, "technology_diffusion_limit_dim", model)
+
     def get_constraint_technology_diffusion_limit_total(self):
         """limited technology diffusion based on the existing capacity in the previous year for the entire energy system"""
         # get parameter object

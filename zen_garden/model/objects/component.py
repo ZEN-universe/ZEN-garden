@@ -670,7 +670,7 @@ class Constraint(Component):
 
         # get the mask, where rhs is not nan and rhs is finite
         if mask is not None:
-            mask &= ~np.isnan(rhs) & np.isfinite(rhs)
+            mask = ~np.isnan(rhs) & np.isfinite(rhs) & mask
         else:
             mask = ~np.isnan(rhs) & np.isfinite(rhs)
 
@@ -980,4 +980,19 @@ class Constraint(Component):
         if len(constraints) == 0:
             return []
 
+        # normal reordering
+        if index_names is not None and index_values is not None:
+            constraints = self.reorder_list(constraints, index_values, index_names, model)
+            if mask is not None:
+                return constraints, mask
+            return constraints
 
+        # stack along a dimension
+        if stack_dim_name is not None:
+            constraints = self.combine_constraints(constraints, stack_dim_name, model)
+            if mask is not None:
+                return constraints, mask
+            return constraints
+
+        # Error
+        raise ValueError("Either single constraint or a list with index_values and index_names or stack_dim_name must be provided!")

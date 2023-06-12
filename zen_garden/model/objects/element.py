@@ -338,3 +338,5 @@ class GenericRule(object):
         self.parameters = self.optimization_setup.parameters
         self.variables = self.model.variables
         self.constraints = self.optimization_setup.constraints
+        self.energy_system = self.optimization_setup.energy_system
+        self.time_steps = self.energy_system.time_steps
