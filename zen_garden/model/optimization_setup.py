@@ -377,11 +377,12 @@ class OptimizationSetup(object):
             for cname in self.model.constraints:
                 cons = self.model.constraints[cname]
                 # get smallest coeff and corresponding variable
-                coeffs = np.abs(cons.lhs.coeffs.data).ravel()
-
+                coeffs = np.abs(cons.lhs.coeffs.data)
+                coeffs_flat = coeffs.ravel()
+                coeffs_reshaped = coeffs.reshape(-1, coeffs.shape[-1])
                 # filter
-                sorted_args = np.argsort(coeffs)
-                coeffs_sorted = coeffs[sorted_args]
+                sorted_args = np.argsort(coeffs_flat)
+                coeffs_sorted = coeffs_flat[sorted_args]
                 mask = np.isfinite(coeffs_sorted) & (coeffs_sorted != 0.0)
                 coeffs_sorted = coeffs_sorted[mask]
 
@@ -394,17 +395,21 @@ class OptimizationSetup(object):
                 coeff_max = coeffs_sorted[-1]
 
                 # same for variables
-                variables = cons.lhs.vars.data.ravel()
-                variables_sorted = variables[sorted_args]
+                variables = cons.lhs.vars.data
+                variables_flat = variables.ravel()
+                variables_reshaped = variables.reshape(-1, variables.shape[-1])
+                variables_sorted = variables_flat[sorted_args]
                 variables_sorted = variables_sorted[mask]
                 var_min = variables_sorted[0]
                 var_max = variables_sorted[-1]
-
+                coords = cons.coords.to_index()
+                coords_min = coords[np.where((variables_reshaped==var_min) & (coeffs_reshaped==coeff_min))[0]].values
+                coords_max = coords[np.where((variables_reshaped==var_max) & (coeffs_reshaped==coeff_max))[0]].values
                 if 0.0 < coeff_min < smallest_coeff[1]:
-                    smallest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
+                    smallest_coeff[0] = (f"{cons.name}{coords_min}", lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
                     smallest_coeff[1] = coeff_min
                 if coeff_max > largest_coeff[1]:
-                    largest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeff_max], [var_max], self.model))
+                    largest_coeff[0] = (f"{cons.name}{coords_max}", lp.constraints.print_single_expression([coeff_max], [var_max], self.model))
                     largest_coeff[1] = coeff_max
 
                 # smallest and largest rhs
@@ -416,17 +421,17 @@ class OptimizationSetup(object):
                     continue
                 rhs_min = rhs_sorted[0]
                 rhs_max = rhs_sorted[-1]
-
+                coords_min = coords[np.where(rhs == rhs_min)[0]].values
+                coords_max = coords[np.where(rhs == rhs_max)[0]].values
                 if 0.0 < rhs_min < smallest_rhs[1]:
-                    smallest_rhs[0] = cons.name
+                    smallest_rhs[0] = f"{cons.name}{coords_min}"
                     smallest_rhs[1] = rhs_min
                 if np.inf > rhs_max > largest_rhs[1]:
-                    largest_rhs[0] = cons.name
+                    largest_rhs[0] = f"{cons.name}{coords_max}"
                     largest_rhs[1] = rhs_max
 
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
-            a=1
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
