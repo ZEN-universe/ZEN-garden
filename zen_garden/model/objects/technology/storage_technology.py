@@ -397,7 +397,7 @@ class StorageTechnologyRules(GenericRule):
 
         ### formulate constraint
         lhs = linexpr_from_tuple_np([(1.0, self.variables["cost_capex"].loc[techs, capacity_types, nodes, times]),
-                                     (-self.parameters.capex_specific_storage.loc[techs, capacity_types, nodes, times], self.variables["capacity"].loc[techs, capacity_types, nodes, times])],
+                                     (-self.parameters.capex_specific_storage.loc[techs, capacity_types, nodes, times], self.variables["capacity_addition"].loc[techs, capacity_types, nodes, times])],
                                      coords, self.model)
         rhs = 0
         constraints = lhs == rhs
