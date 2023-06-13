@@ -1256,7 +1256,7 @@ class TechnologyRules(GenericRule):
             for tech in index.get_unique(["set_technologies"]):
                 locs = index.get_values([tech], "set_location", unique=True)
                 times = self.time_steps.get_time_steps_year2operation(tech, year)
-                term_summed_carbon_emissions_technology.append(self.variables["carbon_emissions_technology"].loc[tech, locs, times] * self.parameters.time_steps_operation_duration.loc[tech, times])
+                term_summed_carbon_emissions_technology.append((self.variables["carbon_emissions_technology"].loc[tech, locs, times] * self.parameters.time_steps_operation_duration.loc[tech, times]).sum())
             term_summed_carbon_emissions_technology = lp_sum(term_summed_carbon_emissions_technology)
 
             ### formulate constraint
