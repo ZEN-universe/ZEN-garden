@@ -29,6 +29,7 @@ class Element:
         :param optimization_setup: The OptimizationSetup the element is part of """
         # set attributes
         self.name = element
+        self._name = element
         # optimization setup
         self.optimization_setup = optimization_setup
         # energy system

@@ -98,10 +98,11 @@ class OptimizationSetup(object):
                     element_subset += [item for item in self.system[subset]]
                 element_set = list(set(element_set) - set(element_subset))
 
+            element_set.sort()
             # add element class
             for item in element_set:
                 self.add_element(element_class, item)
-        if self.solver["analyze_numerics"]:
+        if self.solver["recommend_base_units"]:
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
                                                                   unit_exps=self.solver["range_unit_exponents"])
         # conduct  time series aggregation
@@ -425,6 +426,7 @@ class OptimizationSetup(object):
 
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
+            a=1
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
@@ -451,14 +453,14 @@ class OptimizationSetup(object):
         # enable logger
         logging.disable(logging.NOTSET)
         # write IIS
-        if self.model.termination_condition != 'optimal':
-            logging.info("The optimization is infeasible or unbounded")
-            self.optimality = False
-        else:
+        if self.model.termination_condition == 'optimal':
             self.optimality = True
-
-        # store the solution into the results
-        # self.model.solutions.store_to(self.results, skip_stale_vars=True)
+        elif self.model.termination_condition == "suboptimal":
+            logging.info("The optimization is suboptimal")
+            self.optimality = True
+        else:
+            logging.info("The optimization is infeasible or unbounded, or finished with an error")
+            self.optimality = False
 
     def add_new_capacity_addition(self, step_horizon):
         """ adds the newly built capacity to the existing capacity
