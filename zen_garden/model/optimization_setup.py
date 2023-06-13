@@ -403,8 +403,8 @@ class OptimizationSetup(object):
                 var_min = variables_sorted[0]
                 var_max = variables_sorted[-1]
                 coords = cons.coords.to_index()
-                coords_min = coords[np.where((variables_reshaped==var_min) & (coeffs_reshaped==coeff_min))[0]].values
-                coords_max = coords[np.where((variables_reshaped==var_max) & (coeffs_reshaped==coeff_max))[0]].values
+                coords_min = coords[np.argmax(np.any((variables_reshaped==var_min) & (coeffs_reshaped==coeff_min),axis=1))]
+                coords_max = coords[np.argmax(np.any((variables_reshaped==var_max) & (coeffs_reshaped==coeff_max),axis=1))]
                 if 0.0 < coeff_min < smallest_coeff[1]:
                     smallest_coeff[0] = (f"{cons.name}{coords_min}", lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
                     smallest_coeff[1] = coeff_min
@@ -421,8 +421,8 @@ class OptimizationSetup(object):
                     continue
                 rhs_min = rhs_sorted[0]
                 rhs_max = rhs_sorted[-1]
-                coords_min = coords[np.where(rhs == rhs_min)[0]].values
-                coords_max = coords[np.where(rhs == rhs_max)[0]].values
+                coords_min = coords[np.argmax(rhs == rhs_min)]
+                coords_max = coords[np.argmax(rhs == rhs_max)]
                 if 0.0 < rhs_min < smallest_rhs[1]:
                     smallest_rhs[0] = f"{cons.name}{coords_min}"
                     smallest_rhs[1] = rhs_min
