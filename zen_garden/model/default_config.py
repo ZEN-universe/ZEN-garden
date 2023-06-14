@@ -166,6 +166,7 @@ class Config(object):
         self.solver["add_duals"] = False
         # analyze numerics
         self.solver["analyze_numerics"] = False
+        self.solver["recommend_base_units"] = False
         self.solver["immutable_unit"] = []
         self.solver["range_unit_exponents"]    = {"min":-1,"max":1,"step_width":1}
         # assumes "ton" to be metric ton, not imperial ton

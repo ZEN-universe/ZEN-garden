@@ -708,7 +708,8 @@ class Results(object):
                         else:
                             _var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
                     else:
-                        _data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
+                        # _data[scenario] = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
+                        _var = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
                     # # single element that is not a year
                     # if len(_var) == 1 and _var.index.nlevels == 1 and not np.isfinite(_var.index[0]):
                     #     _data[scenario] = _var
@@ -1218,6 +1219,7 @@ class Results(object):
             ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
             data_plot = data_plot.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
         # extract specific hours of year
+        data_plot = data_plot.reset_index(drop=True)
         if start_hour is not None and duration is not None:
             data_plot = data_plot.iloc[start_hour:start_hour+duration]
         # remove columns(technologies/variables) with constant zero value

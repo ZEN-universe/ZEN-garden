@@ -98,10 +98,11 @@ class OptimizationSetup(object):
                     element_subset += [item for item in self.system[subset]]
                 element_set = list(set(element_set) - set(element_subset))
 
+            element_set.sort()
             # add element class
             for item in element_set:
                 self.add_element(element_class, item)
-        if self.solver["analyze_numerics"]:
+        if self.solver["recommend_base_units"]:
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
                                                                   unit_exps=self.solver["range_unit_exponents"])
         # conduct  time series aggregation
@@ -376,11 +377,12 @@ class OptimizationSetup(object):
             for cname in self.model.constraints:
                 cons = self.model.constraints[cname]
                 # get smallest coeff and corresponding variable
-                coeffs = np.abs(cons.lhs.coeffs.data).ravel()
-
+                coeffs = np.abs(cons.lhs.coeffs.data)
+                coeffs_flat = coeffs.ravel()
+                coeffs_reshaped = coeffs.reshape(-1, coeffs.shape[-1])
                 # filter
-                sorted_args = np.argsort(coeffs)
-                coeffs_sorted = coeffs[sorted_args]
+                sorted_args = np.argsort(coeffs_flat)
+                coeffs_sorted = coeffs_flat[sorted_args]
                 mask = np.isfinite(coeffs_sorted) & (coeffs_sorted != 0.0)
                 coeffs_sorted = coeffs_sorted[mask]
 
@@ -393,17 +395,21 @@ class OptimizationSetup(object):
                 coeff_max = coeffs_sorted[-1]
 
                 # same for variables
-                variables = cons.lhs.vars.data.ravel()
-                variables_sorted = variables[sorted_args]
+                variables = cons.lhs.vars.data
+                variables_flat = variables.ravel()
+                variables_reshaped = variables.reshape(-1, variables.shape[-1])
+                variables_sorted = variables_flat[sorted_args]
                 variables_sorted = variables_sorted[mask]
                 var_min = variables_sorted[0]
                 var_max = variables_sorted[-1]
-
+                coords = cons.coords.to_index()
+                coords_min = coords[np.argmax(np.any((variables_reshaped==var_min) & (coeffs_reshaped==coeff_min),axis=1))]
+                coords_max = coords[np.argmax(np.any((variables_reshaped==var_max) & (coeffs_reshaped==coeff_max),axis=1))]
                 if 0.0 < coeff_min < smallest_coeff[1]:
-                    smallest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
+                    smallest_coeff[0] = (f"{cons.name}{coords_min}", lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
                     smallest_coeff[1] = coeff_min
                 if coeff_max > largest_coeff[1]:
-                    largest_coeff[0] = (cons.name, lp.constraints.print_single_expression([coeff_max], [var_max], self.model))
+                    largest_coeff[0] = (f"{cons.name}{coords_max}", lp.constraints.print_single_expression([coeff_max], [var_max], self.model))
                     largest_coeff[1] = coeff_max
 
                 # smallest and largest rhs
@@ -415,12 +421,13 @@ class OptimizationSetup(object):
                     continue
                 rhs_min = rhs_sorted[0]
                 rhs_max = rhs_sorted[-1]
-
+                coords_min = coords[np.argmax(rhs == rhs_min)]
+                coords_max = coords[np.argmax(rhs == rhs_max)]
                 if 0.0 < rhs_min < smallest_rhs[1]:
-                    smallest_rhs[0] = cons.name
+                    smallest_rhs[0] = f"{cons.name}{coords_min}"
                     smallest_rhs[1] = rhs_min
                 if np.inf > rhs_max > largest_rhs[1]:
-                    largest_rhs[0] = cons.name
+                    largest_rhs[0] = f"{cons.name}{coords_max}"
                     largest_rhs[1] = rhs_max
 
             logging.info(
@@ -451,14 +458,14 @@ class OptimizationSetup(object):
         # enable logger
         logging.disable(logging.NOTSET)
         # write IIS
-        if self.model.termination_condition != 'optimal':
-            logging.info("The optimization is infeasible or unbounded")
-            self.optimality = False
-        else:
+        if self.model.termination_condition == 'optimal':
             self.optimality = True
-
-        # store the solution into the results
-        # self.model.solutions.store_to(self.results, skip_stale_vars=True)
+        elif self.model.termination_condition == "suboptimal":
+            logging.info("The optimization is suboptimal")
+            self.optimality = True
+        else:
+            logging.info("The optimization is infeasible or unbounded, or finished with an error")
+            self.optimality = False
 
     def add_new_capacity_addition(self, step_horizon):
         """ adds the newly built capacity to the existing capacity
