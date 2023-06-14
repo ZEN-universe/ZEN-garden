@@ -915,9 +915,14 @@ class TechnologyRules(GenericRule):
         # we loop over technologies, capacity types and time steps, to accurately capture the conditions in the constraint
         # we vectorize over locations
         constraints = []
-        for tech, capacity_type, time in index.get_unique(["set_technologies", "set_capacity_types", "set_time_steps_yearly"]):
+        for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
 
             ### auxiliary calculations
+            # mask for the capacity types that are not considered
+            capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
+            mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
+            mask.loc[capacity_types] = 1
+
             interval_between_years = self.system["interval_between_years"]
             knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
             reference_carrier = self.sets["set_reference_carriers"][tech][0]
@@ -941,42 +946,46 @@ class TechnologyRules(GenericRule):
                 delta_time = interval_between_years * (end_time - self.sets["set_time_steps_yearly"][0])
                 existing_time = self.sets["set_technologies_existing"][tech]
                 # Note: instead of summing over all but one location, we sum over all and then subtract one
-                total_capacity_knowledge_existing = ((self.parameters.capacity_existing.loc[tech, capacity_type, set_locations, existing_time]  # add spillover from other regions
-                                                      + knowledge_spillover_rate * (self.parameters.capacity_existing.loc[tech, capacity_type, set_locations, existing_time].sum("set_location") - self.parameters.capacity_existing.loc[tech, capacity_type, set_locations, existing_time]))
+                total_capacity_knowledge_existing = ((self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]  # add spillover from other regions
+                                                      + knowledge_spillover_rate * (self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time].sum("set_location") - self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]))
                                                      * (1 - knowledge_depreciation_rate) ** (delta_time + self.parameters.lifetime.loc[tech].item() - self.parameters.lifetime_existing.loc[tech, set_locations, existing_time])).sum("set_technologies_existing")
                 _rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points"])
                 total_capacity_knowledge_existing = total_capacity_knowledge_existing.where(total_capacity_knowledge_existing > _rounding_value, 0)
 
                 horizon_time = self.variables.coords["set_time_steps_yearly"][self.sets["set_time_steps_yearly"][0]: end_time + 1]
                 if len(horizon_time) > 1:
-                    term_total_capacity_knowledge_addition = ((self.variables["capacity_addition"].loc[tech, capacity_type, set_locations, horizon_time]  # add spillover from other regions
-                                                          + knowledge_spillover_rate * (self.variables["capacity_addition"].loc[tech, capacity_type, set_locations, horizon_time].sum("set_location") - self.variables["capacity_addition"].loc[tech, capacity_type, set_locations, horizon_time]))
+                    term_total_capacity_knowledge_addition = ((self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time]  # add spillover from other regions
+                                                          + knowledge_spillover_rate * (self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time].sum("set_location") - self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time]))
                                                          * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time))).sum("set_time_steps_yearly")
                 else:
                     # dummy term
-                    term_total_capacity_knowledge_addition = self.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time].where(False)
+                    term_total_capacity_knowledge_addition = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False)
 
-                total_capacity_all_techs_param = sum(self.parameters.existing_capacities.loc[other_tech, capacity_type, set_locations, time]
+                total_capacity_all_techs_param = sum(self.parameters.existing_capacities.loc[other_tech, :, set_locations, time]
                                                      for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier)
                 lifetime_range = Technology.get_lifetime_range(self.optimization_setup, tech, end_time)
                 if len(lifetime_range) > 0:
-                    term_total_capacity_all_techs_var = lp_sum([lp_sum([1.0 * self.variables["capacity_addition"].loc[other_tech, capacity_type, set_locations, previous_time]
-                                                                   for previous_time in lifetime_range]) for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier])
+                    previous_times = [previous_time for previous_time in lifetime_range]
+                    other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
+                    term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[:, :, set_locations, previous_times].sum("set_time_steps_yearly")
+                    term_total_capacity_all_techs_var = term_total_capacity_all_techs_var[other_techs, :, :].sum("set_technologies")
                 else:
                     # dummy term
-                    term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time].where(False)
+                    term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False)
 
                 ### formulate constraint
                 # build the lhs
-                lhs = (self.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time]
-                       + self.variables["capacity_investment"].loc[tech, capacity_type, :, time].where(False)
+                lhs = (self.variables["capacity_investment"].loc[tech, :, set_locations, time]
+                       + self.variables["capacity_investment"].loc[tech, :, :, time].where(False)
                        - ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_addition
                        - self.parameters.market_share_unbounded * term_total_capacity_all_techs_var)
+                lhs *= mask
 
                 # build the rhs
-                rhs = xr.zeros_like(self.parameters.existing_capacities).loc[tech, capacity_type,:, time]
-                rhs.loc[set_locations] += ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_existing # add initial market share until which the diffusion rate is unbounded
-                rhs.loc[set_locations] += self.parameters.market_share_unbounded * total_capacity_all_techs_param + self.parameters.capacity_addition_unbounded.loc[tech]
+                rhs = xr.zeros_like(self.parameters.existing_capacities).loc[tech, :,:, time]
+                rhs.loc[:, set_locations] += ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_existing # add initial market share until which the diffusion rate is unbounded
+                rhs.loc[:, set_locations] += self.parameters.market_share_unbounded * total_capacity_all_techs_param + self.parameters.capacity_addition_unbounded.loc[tech]
+                rhs *= mask
 
                 # combine
                 constraints.append(lhs <= rhs)
@@ -998,9 +1007,14 @@ class TechnologyRules(GenericRule):
         # we loop over technologies, capacity types and time steps, to accurately capture the conditions in the constraint
         # we vectorize over locations
         constraints = []
-        for tech, capacity_type, time in index.get_unique(["set_technologies", "set_capacity_types", "set_time_steps_yearly"]):
+        for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
 
             ### auxiliary calculations
+            # mask for the capacity types that are not considered
+            capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
+            mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
+            mask.loc[capacity_types] = 1
+
             interval_between_years = self.system["interval_between_years"]
             knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
 
@@ -1022,41 +1036,44 @@ class TechnologyRules(GenericRule):
                 # actual years between first invest time step and end_time
                 delta_time = interval_between_years * (end_time - self.sets["set_time_steps_yearly"][0])
                 existing_time = self.sets["set_technologies_existing"][tech]
-                term_total_capacity_knowledge_existing = (self.parameters.capacity_existing.loc[tech, capacity_type, set_locations, existing_time]
+                term_total_capacity_knowledge_existing = (self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]
                                                      * (1 - knowledge_depreciation_rate) ** (delta_time + self.parameters.lifetime.loc[tech].item() - self.parameters.lifetime_existing.loc[tech, set_locations, existing_time])).sum(["set_technologies_existing","set_location"])
                 _rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points"])
                 term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > _rounding_value, 0)
 
                 horizon_time = self.variables.coords["set_time_steps_yearly"][self.sets["set_time_steps_yearly"][0]: end_time + 1]
                 if len(horizon_time) > 1:
-                    term_total_capacity_knowledge_addition = (self.variables["capacity_addition"].loc[tech, capacity_type, set_locations, horizon_time]
+                    term_total_capacity_knowledge_addition = (self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time]
                         * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time))).sum(["set_time_steps_yearly","set_location"])
                 else:
                     # dummy term
-                    term_total_capacity_knowledge_addition = self.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time].where(False).sum("set_location")
+                    term_total_capacity_knowledge_addition = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False).sum("set_location")
 
 
-                total_capacity_all_techs_param = sum(self.parameters.existing_capacities.loc[other_tech, capacity_type, set_locations, time]
+                total_capacity_all_techs_param = sum(self.parameters.existing_capacities.loc[other_tech, :, set_locations, time]
                                                      for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier).sum("set_location")
                 lifetime_range = Technology.get_lifetime_range(self.optimization_setup, tech, end_time)
                 if len(lifetime_range) > 0:
-                    term_total_capacity_all_techs_var = lp_sum([lp_sum([1.0*self.variables["capacity_addition"].loc[other_tech, capacity_type, set_locations, previous_time]
-                        for previous_time in lifetime_range])
-                    for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]).sum("set_location")
+                    previous_times = [previous_time for previous_time in lifetime_range]
+                    other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
+                    term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[:, :, set_locations, previous_times].sum("set_time_steps_yearly")
+                    term_total_capacity_all_techs_var = term_total_capacity_all_techs_var.loc[other_techs].sum(["set_technologies", "set_location"])
                 else:
                     # dummy term
-                    term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time].where(False).sum("set_location")
+                    term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False).sum("set_location")
 
                 ### formulate constraint
                 # build the lhs
-                lhs = (self.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time].sum("set_location")
+                lhs = (self.variables["capacity_investment"].loc[tech, :, set_locations, time].sum("set_location")
                        - ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_addition
                        - self.parameters.market_share_unbounded * term_total_capacity_all_techs_var)
+                lhs *= mask
 
                 # build the rhs
                 rhs = (((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_existing
                        # add initial market share until which the diffusion rate is unbounded
                        + self.parameters.market_share_unbounded * total_capacity_all_techs_param + self.parameters.capacity_addition_unbounded.loc[tech]*len(set_locations))
+                rhs *= mask
 
                 constraints.append(lhs <= rhs)
 
