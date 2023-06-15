@@ -297,7 +297,7 @@ class EnergySystemRules:
 
     def __init__(self, optimization_setup):
         """
-        Inits the constraints for a given energy syste,
+        Inits the constraints for a given energy system,
         optimization_setup
         """
 
@@ -414,12 +414,6 @@ class EnergySystemRules:
         """objective function to minimize the total net present cost"""
         sets = self.optimization_setup.sets
         return sum(model.variables["net_present_cost"][year] for year in sets["set_time_steps_yearly"])
-
-    def objective_net_present_cost_rule(self, model):
-        """ objective function to minimize NPV """
-        sets = self.optimization_setup.sets
-        return sum(model.variables["net_present_cost"][year] for year in sets["set_time_steps_yearly"])
-
 
     def objective_total_carbon_emissions_rule(self, model):
         """objective function to minimize total emissions"""
