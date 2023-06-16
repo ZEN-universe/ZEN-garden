@@ -558,19 +558,19 @@ class Results(object):
         """
         if len(results) != 2:
             logging.warning("You must select exactly two results to compare. Skip.")
-            return None,None
+            return None, None
         if type(results) != list:
             logging.warning("You must pass the results as list. Skip")
-            return None,None
+            return None, None
         for el in results:
             if type(el) != cls:
                 logging.warning(f"You must pass a list of ZEN-garden results, not type {type(el)}. Skip")
-                return None,None
-        scenarios = cls.check_scenario_results(results,scenarios)
-        return results,scenarios
+                return None, None
+        scenarios = cls.check_scenario_results(results, scenarios)
+        return results, scenarios
 
     @classmethod
-    def check_scenario_results(cls,results:list,scenarios=None):
+    def check_scenario_results(cls, results: list, scenarios=None):
         """
         Checks if results have scenarios and if yes, if the provided scenarios match
         :param results: list of results
@@ -672,7 +672,7 @@ class Results(object):
             logging.info(f"Components {only_in_0} are missing from {result_names[1]}")
         return common_component
 
-    def get_df(self, name, scenario=None, to_csv=None, csv_kwargs=None,is_dual=False, is_set=False):
+    def get_df(self, name, scenario=None, to_csv=None, csv_kwargs=None, is_dual=False, is_set=False):
         """
         Extracts the dataframe from the results
         :param name: The name of the dataframe to extract
@@ -718,7 +718,7 @@ class Results(object):
                         else:
                             _var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
                     else:
-                        _data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
+                        _var = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
                     # # single element that is not a year
                     # if len(_var) == 1 and _var.index.nlevels == 1 and not np.isfinite(_var.index[0]):
                     #     _data[scenario] = _var
@@ -1322,7 +1322,11 @@ class Results(object):
         """
         if isinstance(component, str):
             if None in self.scenarios:
-                if component not in self.results[None][None]["pars_and_vars"]:
+                if "MF_0" in self.results[None]:
+                    if component not in self.results[None]["MF_0"]["pars_and_vars"]:
+                        warnings.warn(f"Chosen component '{component}' doesn't exist")
+                        return
+                elif component not in self.results[None][None]["pars_and_vars"]:
                     warnings.warn(f"Chosen component '{component}' doesn't exist")
                     return
             else:

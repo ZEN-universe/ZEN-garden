@@ -13,7 +13,7 @@ construction_time_default,0,
 capacity_investment_existing_default,0,GW
 opex_specific_fixed_default,0,Euro/km/MW
 max_diffusion_rate_default,inf,
-transport_loss_factor_default,0,1/km
+transport_loss_factor_default,5.00E-05,1/km
 capex_per_distance_transport_default,265,Euro/km/MW
 distance_default,inf,km
 capacity_addition_unbounded_default,0,GW
