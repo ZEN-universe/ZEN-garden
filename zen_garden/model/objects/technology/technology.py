@@ -1108,7 +1108,7 @@ class TechnologyRules:
             reference_carrier = sets["set_reference_carriers"][tech][0]
             # get invest time step
             time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times.data], coords=[times])
-            # we create the capacity term (the dimenstion reassignment does not change the viables, just the broadcasting)
+            # we create the capacity term (the dimension reassignment does not change the variables, just the broadcasting)
             capacity_term = params.max_load.loc[tech, capacity_types, locs, times] * model.variables["capacity"].loc[tech, capacity_types, locs, time_step_year].to_linexpr()
 
             # this term is just to ensure full shape
