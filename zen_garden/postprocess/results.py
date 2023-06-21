@@ -1636,4 +1636,3 @@ if __name__ == "__main__":
         r = Results(out_folder)
     else:
         logging.critical("No results folder found!")
-    r.plot_energy_balance(node="DE", carrier="heat", year=0, start_hour=0, duration=240)
