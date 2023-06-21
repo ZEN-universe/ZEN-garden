@@ -967,8 +967,7 @@ class TechnologyRules(GenericRule):
                 if len(lifetime_range) > 0:
                     previous_times = [previous_time for previous_time in lifetime_range]
                     other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
-                    term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[:, :, set_locations, previous_times].sum("set_time_steps_yearly")
-                    term_total_capacity_all_techs_var = term_total_capacity_all_techs_var[other_techs, :, :].sum("set_technologies")
+                    term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[other_techs, :, set_locations, previous_times].sum(["set_time_steps_yearly", "set_technologies"])
                 else:
                     # dummy term
                     term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False)
@@ -1056,8 +1055,7 @@ class TechnologyRules(GenericRule):
                 if len(lifetime_range) > 0:
                     previous_times = [previous_time for previous_time in lifetime_range]
                     other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
-                    term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[:, :, set_locations, previous_times].sum("set_time_steps_yearly")
-                    term_total_capacity_all_techs_var = term_total_capacity_all_techs_var.loc[other_techs].sum(["set_technologies", "set_location"])
+                    term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[other_techs, :, set_locations, previous_times].sum(["set_time_steps_yearly", "set_technologies", "set_location"])
                 else:
                     # dummy term
                     term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False).sum("set_location")
