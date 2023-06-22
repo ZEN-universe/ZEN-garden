@@ -576,14 +576,18 @@ class DataInput:
                 df_input = df_input.set_index(idx_name_list)
                 df_input = df_input.rename(columns={col: int(col) for col in df_input.columns if col.isnumeric()})
                 requested_index_values = set(time_steps)
+                requested_index_values_years = set(self.energy_system.set_time_steps_years)
                 _requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
-                if not _requested_index_values_in_columns:
+                _requested_index_values_years_in_columns = requested_index_values_years.intersection(df_input.columns)
+                if not _requested_index_values_in_columns and not _requested_index_values_years_in_columns:
                     return df_input.reset_index()
-                else:
+                elif _requested_index_values_in_columns:
                     requested_index_values = _requested_index_values_in_columns
-                    df_input.columns = df_input.columns.set_names(idx_name_year)
-                    df_input = df_input[list(requested_index_values)].stack()
-                    df_input = df_input.reset_index()
+                else:
+                    requested_index_values = _requested_index_values_years_in_columns
+                df_input.columns = df_input.columns.set_names(idx_name_year)
+                df_input = df_input[list(requested_index_values)].stack()
+                df_input = df_input.reset_index()
             # check if input data is still given with generic time indices
             temporal_header = self.index_names["set_time_steps_yearly"]
             if max(df_input.loc[:, temporal_header]) < self.analysis["earliest_year_of_data"]:

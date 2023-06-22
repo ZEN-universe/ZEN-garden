@@ -194,7 +194,9 @@ class OptimizationSetup(object):
         _attribute = getattr(_element, attribute_name)
         assert not isinstance(_attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {_element.name}"
         # add attribute to dict_of_attributes
-        if isinstance(_attribute, dict):
+        if _attribute is None:
+            return dict_of_attributes, False
+        elif isinstance(_attribute, dict):
             dict_of_attributes.update({(_element.name,) + (key,): val for key, val in _attribute.items()})
         elif isinstance(_attribute, pd.Series) and "pwa" not in attribute_name:
             if capacity_type:

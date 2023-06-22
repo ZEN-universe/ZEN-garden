@@ -113,9 +113,9 @@ class ConversionTechnology(Technology):
             # extract for linear
             elif not getattr(_element, _is_pwa_attribute) and not selectPWA:
                 dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(_element, _attribute_name_linear, dict_of_attributes)
-            if not dict_of_attributes:
-                _, index_names = cls.create_custom_set(index_names, optimization_setup)
-                return (dict_of_attributes, index_names)
+        if not dict_of_attributes:
+            _, index_names = cls.create_custom_set(index_names, optimization_setup)
+            return (dict_of_attributes, index_names)
         dict_of_attributes = pd.concat(dict_of_attributes, keys=dict_of_attributes.keys())
         if not index_names:
             logging.warning(f"Initializing a parameter ({variable_type}) without the specifying the index names will be deprecated!")
@@ -164,8 +164,8 @@ class ConversionTechnology(Technology):
             doc="Parameter which specifies the slope of the capex if approximated linearly")
         # slope of linearly modeled conversion efficiencies
         optimization_setup.parameters.add_parameter(name="conversion_factor", data=cls.get_capex_conversion_factor_all_elements(optimization_setup, "conversion_factor", False,
-                                                                                                                     index_names=["set_conversion_technologies", "set_conversion_factor_linear",
-                                                                                                                                  "set_nodes", "set_time_steps_yearly"]),
+             index_names=["set_conversion_technologies", "set_conversion_factor_linear",
+                          "set_nodes", "set_time_steps_yearly"]),
             doc="Parameter which specifies the slope of the conversion efficiency if approximated linearly")
 
     @classmethod
