@@ -1175,6 +1175,7 @@ class Results(object):
                 cost_df = self.get_total(cost, scenario=scenario).sum(axis=0)
                 cost_df.name = "cost_shed_demand_total"
                 total_cost = pd.concat([total_cost, cost_df], axis=1)
+                total_cost = pd.concat([total_cost, cost_df], axis=1)
             else:
                 total_cost = pd.concat([total_cost, self.get_total(cost, scenario=scenario)], axis=1)
         self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
