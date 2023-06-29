@@ -204,15 +204,9 @@ class Technology(Element):
 
         for id_capacity_existing in sets["set_technologies_existing"][tech]:
             t_start = cls.get_start_end_time_of_period(optimization_setup, tech, time_step_year, id_capacity_existing=id_capacity_existing, loc=loc)
-            # discount existing capex
-            if type_existing_quantity == "cost_capex":
-                year_construction = max(0, time * system["interval_between_years"] - params.lifetime[tech] + params.lifetime_existing[tech, loc, id_capacity_existing])
-                discount_factor = (1 + discount_rate) ** (time * system["interval_between_years"] - year_construction)
-            else:
-                discount_factor = 1
             # if still available at first base time step, add to list
             if t_start == sets["set_base_time_steps"][0] or t_start == time_step_year:
-                existing_quantity += existing_variable[tech, capacity_type, loc, id_capacity_existing] * discount_factor
+                existing_quantity += existing_variable[tech, capacity_type, loc, id_capacity_existing]
         return existing_quantity
 
     @classmethod

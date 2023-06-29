@@ -1648,3 +1648,4 @@ if __name__ == "__main__":
         r = Results(out_folder)
     else:
         logging.critical("No results folder found!")
+    a=1

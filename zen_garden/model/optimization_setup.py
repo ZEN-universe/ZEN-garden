@@ -472,35 +472,35 @@ class OptimizationSetup(object):
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
-                _capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
-                _invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
-                _cost_capex = self.model.solution["cost_capex"].to_series().dropna()
-                _rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
-                _capacity_addition[_capacity_addition <= _rounding_value] = 0
-                _invest_capacity[_invest_capacity <= _rounding_value] = 0
-                _cost_capex[_cost_capex <= _rounding_value] = 0
-                _base_time_steps = self.energy_system.time_steps.decode_yearly_time_steps([step_horizon])
+                capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
+                invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
+                cost_capex = self.model.solution["cost_capex"].to_series().dropna()
+                rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
+                capacity_addition[capacity_addition <= rounding_value] = 0
+                invest_capacity[invest_capacity <= rounding_value] = 0
+                cost_capex[cost_capex <= rounding_value] = 0
+                base_time_steps = self.energy_system.time_steps.decode_yearly_time_steps([step_horizon])
                 for tech in self.get_all_elements(Technology):
                     # new capacity
-                    _capacity_addition_tech = _capacity_addition.loc[tech.name].unstack()
-                    _capacity_investment = _invest_capacity.loc[tech.name].unstack()
-                    _cost_capex_tech = _cost_capex.loc[tech.name].unstack()
-                    tech.add_new_capacity_addition_tech(_capacity_addition_tech, _cost_capex_tech, _base_time_steps)
-                    tech.add_new_capacity_investment(_capacity_investment, step_horizon)
+                    capacity_addition_tech = capacity_addition.loc[tech.name].unstack()
+                    capacity_investment = invest_capacity.loc[tech.name].unstack()
+                    cost_capex_tech = cost_capex.loc[tech.name].unstack()
+                    tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, base_time_steps)
+                    tech.add_new_capacity_investment(capacity_investment, step_horizon)
             else:
                 # TODO clean up
                 # reset to initial values
                 for tech in self.get_all_elements(Technology):
                     # extract existing capacity
-                    _set_location = tech.location_type
+                    set_location = tech.location_type
                     set_time_steps_yearly = self.energy_system.set_time_steps_yearly_entire_horizon
                     tech.set_technologies_existing = tech.data_input.extract_set_technologies_existing()
                     tech.capacity_existing = tech.data_input.extract_input_data(
-                        "capacity_existing",index_sets=[_set_location,"set_technologies_existing"])
+                        "capacity_existing",index_sets=[set_location,"set_technologies_existing"])
                     tech.capacity_investment_existing = tech.data_input.extract_input_data(
-                        "capacity_investment_existing",index_sets=[_set_location,"set_time_steps_yearly"],time_steps=set_time_steps_yearly)
+                        "capacity_investment_existing",index_sets=[set_location,"set_time_steps_yearly"],time_steps=set_time_steps_yearly)
                     tech.lifetime_existing = tech.data_input.extract_lifetime_existing(
-                        "capacity_existing", index_sets=[_set_location, "set_technologies_existing"])
+                        "capacity_existing", index_sets=[set_location, "set_technologies_existing"])
                     # calculate capex of existing capacity
                     tech.capex_capacity_existing = tech.calculate_capex_of_capacities_existing()
                     if tech.__class__.__name__ == "StorageTechnology":
