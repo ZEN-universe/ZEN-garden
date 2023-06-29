@@ -17,6 +17,7 @@ from datetime import datetime
 import h5py
 import linopy as lp
 import numpy as np
+import pandas as pd
 import xarray as xr
 import yaml
 from numpy import string_
@@ -163,214 +164,168 @@ def xr_like(fill_value, dtype, other, dims):
     return da
 
 
-# This is to lazy load h5 file most of it is taken from the hdfdict package
-###########################################################################
+# This is to lazy load h5 file most
+###################################
 
-TYPEID = '_type_'
-
-
-@contextmanager
-def hdf_file(hdf, lazy=True, *args, **kwargs):
+class LazyEntry(object):
     """
-    Context manager yields h5 file if hdf is str,
-    otherwise just yield hdf as is.
+    This is a lazy entry from a store that is loaded only when it is requested.
     """
-    if isinstance(hdf, str):
-        if not lazy:
-            with h5py.File(hdf, *args, **kwargs) as hdf:
-                yield hdf
+
+    def __init__(self, path, dtype, store):
+        """
+        Initializes the class.
+        :param path: The path to the leave of the store
+        :param dtype: The type of the leave
+        :param store: The store to load the data from
+        """
+        self.path = path
+        self.dtype = dtype
+        self.store = store
+
+    def desarialize(self):
+        """
+        Deserializes the data from the store.
+        :return: The deserialized data
+        """
+        # get the data
+        df = self.store.get(self.path)
+
+        # go through the different types
+        if self.dtype == "pandas":
+            return df
+        elif self.dtype == "scalar":
+            return df.values[0]
+        elif self.dtype == "vector" or self.dtype == "matrix":
+            return df.values
         else:
-            yield h5py.File(hdf, *args, **kwargs)
-    else:
-        yield hdf
+            raise TypeError(f"Unkon type {self.dtype}")
 
 
-def unpack_dataset(item):
+class LazyDict(dict):
     """
-    Reconstruct a hdfdict dataset.
-    Only some special unpacking for yaml and datetime types.
-    :param item: h5py.Dataset
-    :return: Unpacked Data
+    This class is a dictionary that loads the values lazily.
     """
 
-    value = item[()]
-    if TYPEID in item.attrs:
-        if item.attrs[TYPEID].astype(str) == 'datetime':
-            if hasattr(value, '__iter__'):
-                value = [datetime.fromtimestamp(
-                    ts) for ts in value]
-            else:
-                value = datetime.fromtimestamp(value)
-
-        if item.attrs[TYPEID].astype(str) == 'yaml':
-            value = yaml.safe_load(value.decode())
-
-    # bytes to strings
-    if isinstance(value, bytes):
-        value = value.decode("utf-8")
-
-    return value
-
-
-class LazyHdfDict(UserDict):
-    """
-    Helps loading data only if values from the dict are requested.
-    This is done by reimplementing the __getitem__ method.
-    """
-
-    def __init__(self, _h5file=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._h5file = _h5file  # used to close the file on deletion.
-
-    def __getitem__(self, key):
-        """Returns item and loads dataset if needed."""
-        item = super().__getitem__(key)
-        if isinstance(item, h5py.Dataset):
-            item = unpack_dataset(item)
-            self.__setitem__(key, item)
-        return item
-
-    def unlazy(self, return_dict=False):
+    def __getitem__(self, item):
         """
-        Unpacks all datasets.
-        You can call dict(this_instance) then to get a real dict.
+        Returns the item from the dictionary.
+        :param item: The item to return
+        :return: The item
         """
-        load(self, lazy=False)
 
-        # Load loads all the data but we need to transform the lazydict into normal dicts
-        def _recursive(lazy_dict):
-            for k in list(lazy_dict.keys()):
-                if isinstance(lazy_dict[k], LazyHdfDict):
-                    _recursive(lazy_dict[k])
-                    lazy_dict[k] = dict(lazy_dict[k])
+        value = super().__getitem__(item)
 
-        _recursive(self)
+        if isinstance(value, LazyEntry):
+            value = value.desarialize()
+            super().__setitem__(item, value)
 
-        if return_dict:
-            return dict(self)
+        return value
+
+
+class HDFPandasSerializer(LazyDict):
+    """
+    This class saves dictionaries with a pandas store as a hdf file.
+    """
+
+    def __init__(self, file_name, lazy=True):
+        """
+        Initializes the class to read a hdf file, potentially lazily. For writing files, use the classmethod
+        "serialize_dict".
+        :param file_name: The file name of the hdf file.
+        """
+
+        # super init
+        super().__init__()
+
+        # attributes
+        self.file_name = file_name
+        self.store = pd.HDFStore(file_name, mode="r")
+        self._lazy = lazy
+
+        # load all keys
+        self._load()
+
+    def _load(self):
+        """
+        Loads the hdf file into the dictionary.
+        """
+
+        for path, groups, leaves in self.store.walk():
+            # get the right dict
+            previous_keys = path.split("/")[1:]
+            current_dict = self
+            for key in previous_keys:
+                current_dict = current_dict[key]
+
+            # create the groups
+            for group_key in groups:
+                current_dict[group_key] = LazyDict()
+
+            # load the leaves
+            for leave_key in leaves:
+                leave_path = f"{path}/{leave_key}"
+                dtype = self.store.get_storer(f"{path}/{leave_key}").attrs.type
+                entry = LazyEntry(leave_path, dtype, self.store)
+
+                if self._lazy:
+                    current_dict[leave_key] = entry
+                else:
+                    current_dict[leave_key] = entry.desarialize()
+
+        # no need to keep the file open
+        if not self._lazy:
+            self.close()
 
     def close(self):
         """
-        Closes the h5file if provided at initialization.
+        Closes the hdf file.
         """
-        if self._h5file and hasattr(self._h5file, 'close'):
-            self._h5file.close()
 
-    def __del__(self):
-        self.close()
+        self.store.close()
 
-    def _ipython_key_completions_(self):
+    @classmethod
+    def _recurse(cls, store, dictionary, previous_key=""):
         """
-        Returns a tuple of keys.
-        Special Method for ipython to get key completion
+        Recursively saves the dictionary into the store.
+        :param store: The store to save the dictionary into.
+        :param dictionary: The dictionary to save.
+        :param previous_key: The key of the dictionary.
         """
-        return tuple(self.keys())
 
+        for key, value in dictionary.items():
+            if not isinstance(key, str):
+                raise TypeError("All dictionary keys must be strings!")
 
-def fill_dict(hdfobject, datadict, lazy=True, unpacker=unpack_dataset):
-    """
-    Recursivley unpacks a hdf object into a dict
-    :param hdfobject: Object to recursively unpack
-    :param datadict: A dict option to add the unpacked values to
-    :param lazy: If True, the datasets are lazy loaded at the moment an item is requested.
-    :param unpacker: Unpack function gets `value` of type h5py.Dataset. Must return the data you would like to
-                     have it in the returned dict.
-    :return: a dict
-    """
-
-    for key, value in hdfobject.items():
-        if type(value) == h5py.Group or isinstance(value, LazyHdfDict):
-            if lazy:
-                datadict[key] = LazyHdfDict()
+            key = f"{previous_key}/{key}"
+            if isinstance(value, dict):
+                cls._recurse(store, value, key)
+            elif isinstance(value, (pd.DataFrame, pd.Series)):
+                store.put(key, value)
+                store.get_storer(key).attrs.type = "pandas"
+            elif isinstance(value, (float, str, int)):
+                store.put(key, pd.Series(value))
+                store.get_storer(key).attrs.type = "scalar"
+            elif isinstance(value, (list, tuple)) or isinstance(value, np.ndarray) and value.ndim == 1:
+                store.put(key, pd.Series(value))
+                store.get_storer(key).attrs.type = "vector"
+            elif isinstance(value, np.ndarray) and value.ndim == 2:
+                store.put(key, pd.DataFrame(value))
+                store.get_storer(key).attrs.type = "matrix"
             else:
-                datadict[key] = {}
-            datadict[key] = fill_dict(value, datadict[key], lazy, unpacker)
-        elif isinstance(value, h5py.Dataset):
-            if not lazy:
-                value = unpacker(value)
-            datadict[key] = value
+                raise TypeError(f"Type {type(value)} is not supported.")
 
-    return datadict
+    @classmethod
+    def serialize_dict(cls, file_name, dictionary, overwrite=True):
+        """
+        Serialized a dictionary of dataframes and other objects into a hdf file.
+        :param file_name: The file name of the hdf file.
+        :param dictionary: The dictionary to serialize
+        :param overwrite: If True, the file will be overwritten.
+        """
 
-def load(hdf, lazy=True, unpacker=unpack_dataset, *args, **kwargs):
-    """
-    Returns a dictionary containing the groups as keys and the datasets as values from given hdf file.
-    :param hdf: string (path to file) or `h5py.File()` or `h5py.Group()`
-    :param lazy: If True, the datasets are lazy loaded at the moment an item is requested.
-    :param unpacker: Unpack function gets `value` of type h5py.Dataset. Must return the data you would like to
-                     have it in the returned dict.
-    :param args: Additional arguments for the hdf_file handler
-    :param kwargs: Additional keyword arguments for the hdf_file handler
-    :return: The dictionary containing all groupnames as keys and datasets as values.
-    """
+        if not overwrite and os.path.exists(file_name):
+            raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
 
-    with hdf_file(hdf, lazy=lazy, *args, **kwargs) as hdf:
-        if lazy:
-            data = LazyHdfDict(_h5file=hdf)
-        else:
-            data = {}
-        return fill_dict(hdf, data, lazy=lazy, unpacker=unpacker)
-
-
-def pack_dataset(hdfobject, key, value):
-    """
-    Packs a given key value pair into a dataset in the given hdfobject.
-    """
-
-    isdt = None
-    if isinstance(value, datetime):
-        value = value.timestamp()
-        isdt = True
-
-    if hasattr(value, '__iter__'):
-        if all(isinstance(i, datetime) for i in value):
-            value = [item.timestamp() for item in value]
-            isdt = True
-
-    try:
-        ds = hdfobject.create_dataset(name=key, data=value)
-        if isdt:
-            ds.attrs.create(
-                name=TYPEID,
-                data=string_("datetime"))
-    except TypeError:
-        # Obviously the data was not serializable. To give it
-        # a last try; serialize it to yaml
-        # and save it to the hdf file:
-        ds = hdfobject.create_dataset(
-            name=key,
-            data=string_(yaml.safe_dump(value))
-        )
-        ds.attrs.create(
-            name=TYPEID,
-            data=string_("yaml"))
-        # if this fails again, restructure your data!
-
-
-def dump(data, hdf, packer=pack_dataset, *args, **kwargs):
-    """
-    Adds keys of given dict as groups and values as datasets to the given hdf-file (by string or object) or group object.
-    :param data: The dictionary containing only string keys and data values or dicts again.
-    :param hdf: string (path to file) or `h5py.File()` or `h5py.Group()`
-    :param packer: Callable gets `hdfobject, key, value` as input.
-                   `hdfobject` is considered to be either a h5py.File or a h5py.Group.
-                   `key` is the name of the dataset.
-                   `value` is the dataset to be packed and accepted by h5py.
-    :param args: Additional arguments for the hdf_file handler
-    :param kwargs: Additional keyword arguments for the hdf_file handler
-    :return: `h5py.Group()` or `h5py.File()` instance
-    """
-
-    def _recurse(datadict, hdfobject):
-        for key, value in datadict.items():
-            if isinstance(key, tuple):
-                key = '_'.join((str(i) for i in key))
-            if isinstance(value, (dict, LazyHdfDict)):
-                hdfgroup = hdfobject.create_group(key)
-                _recurse(value, hdfgroup)
-            else:
-                packer(hdfobject, key, value)
-
-    with hdf_file(hdf, *args, **kwargs) as hdf:
-        _recurse(data, hdf)
-        return hdf
+        with pd.HDFStore(file_name, mode='w') as store:
+            cls._recurse(store, dictionary)

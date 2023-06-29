@@ -18,10 +18,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from tables import NaturalNameWarning
 from tqdm import tqdm
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
+
+# Warnings
+warnings.filterwarnings('ignore', category=NaturalNameWarning)
 
 # SETUP LOGGER
 utils.setup_logger()
@@ -124,27 +128,28 @@ class Results(object):
                 #create dict containing sets
                 self.results[scenario][mf]["sets"] = {}
                 sets = self.load_sets(current_path, lazy=True)
+                self._lazydicts.append(sets)
                 if not self.component_names["sets"]:
                     self.component_names["sets"] = list(sets.keys())
-                self._lazydicts.append([sets])
                 self.results[scenario][mf]["sets"].update(sets)
 
                 # create dict containing params and vars
                 self.results[scenario][mf]["pars_and_vars"] = {}
                 pars = self.load_params(current_path, lazy=True)
+                self._lazydicts.append(pars)
                 if not self.component_names["pars"]:
                     self.component_names["pars"] = list(pars.keys())
-                self._lazydicts.append([pars])
                 self.results[scenario][mf]["pars_and_vars"].update(pars)
                 vars = self.load_vars(current_path, lazy=True)
+                self._lazydicts.append(vars)
                 if not self.component_names["vars"]:
                     self.component_names["vars"] = list(vars.keys())
-                self._lazydicts.append([vars])
                 self.results[scenario][mf]["pars_and_vars"].update(vars)
 
                 # load duals
                 if self.results["solver"]["add_duals"]:
-                    duals = self.load_duals(current_path, lazy = True)
+                    duals = self.load_duals(current_path, lazy=True)
+                    self._lazydicts.append(duals)
                     if not self.component_names["duals"]:
                         self.component_names["duals"] = list(duals.keys())
                     self.results[scenario][mf]["duals"] = duals
@@ -155,6 +160,14 @@ class Results(object):
         # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
+
+    def close(self):
+        """
+        Close all open handles
+        """
+
+        for lazydict in self._lazydicts:
+            lazydict.close()
 
     @classmethod
     def _read_file(cls, name, lazy=True):
@@ -167,10 +180,7 @@ class Results(object):
 
         # h5 version
         if os.path.exists(f"{name}.h5"):
-            content = utils.load(f"{name}.h5")
-            if not lazy:
-                content = content.unlazy(return_dict=True)
-
+            content = utils.HDFPandasSerializer(file_name=f"{name}.h5", lazy=lazy)
             return content
 
         # compressed version
@@ -196,6 +206,10 @@ class Results(object):
         :param dict_raw: The raw dict to parse
         :return: A dict containing actual dataframes in the dataframe keys
         """
+
+        # nothing to do
+        if isinstance(dict_raw, utils.HDFPandasSerializer):
+            return dict_raw
 
         # transform back to dataframes
         dict_df = dict()
@@ -224,6 +238,10 @@ class Results(object):
         :param string: The string to decode
         :return: The corresponding dataframe
         """
+
+        # nothing to do
+        if isinstance(string, (pd.DataFrame, pd.Series)):
+            return string
 
         # transform back to dataframes
         if isinstance(string, np.ndarray):
@@ -402,7 +420,7 @@ class Results(object):
                 k = None
 
             # recursive call
-            if isinstance(v, (dict, utils.LazyHdfDict)):
+            if isinstance(v, dict):
                 out_dict[k] = cls.expand_dict(v)  # flatten the array to list
             elif isinstance(v, list):
                 # Note: list(v) creates a list of np objects v.tolist() not

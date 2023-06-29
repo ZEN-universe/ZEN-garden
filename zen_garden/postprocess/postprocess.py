@@ -15,13 +15,10 @@ import pathlib
 import sys
 import zlib
 
-import h5py
-import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .. import utils
-from ..utils import RedirectStdStreams
+from ..utils import RedirectStdStreams, HDFPandasSerializer
 
 
 class Postprocess:
@@ -127,9 +124,7 @@ class Postprocess:
 
         elif format == "h5":
             f_name = f"{name}.h5"
-            if self.overwrite or not os.path.exists(f_name):
-                with h5py.File(f_name, "w") as outfile:
-                    utils.dump(data=dictionary, hdf=outfile)
+            HDFPandasSerializer.serialize_dict(file_name=f_name, dictionary=dictionary, overwrite=self.overwrite)
 
 
     def save_sets(self):
@@ -336,9 +331,8 @@ class Postprocess:
         we transform the dataframe to a json string and load it into the dictionary as dict
         """
         if self.output_format == "h5":
-            # need an array wrap because null bytes cause errors
-            compressed_df = np.array([zlib.compress(df.to_json(orient="table", indent=2).encode())])
-            dataframe = {"dataframe": compressed_df, "docstring": doc}
+            # No need to transform the dataframe to json
+            dataframe = {"dataframe": df, "docstring": doc}
         else:
             dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
                                             "docstring": doc}
