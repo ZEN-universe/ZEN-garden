@@ -16,7 +16,7 @@ import xarray as xr
 
 from .technology import Technology
 from ..component import ZenIndex, IndexSet
-from ..element import Element
+from ..element import Element, GenericRule
 
 
 class TransportTechnology(Technology):
@@ -175,15 +175,15 @@ class TransportTechnology(Technology):
         rules = TransportTechnologyRules(optimization_setup)
         # Carrier Flow Losses
         constraints.add_constraint_block(model, name="constraint_transport_technology_losses_flow",
-                                         constraint=rules.get_constraint_transport_technology_losses_flow(),
+                                         constraint=rules.constraint_transport_technology_losses_flow_block(),
                                          doc='Carrier loss due to transport with through transport technology')
         # capex of transport technologies
         constraints.add_constraint_block(model, name="constraint_transport_technology_capex",
-                                         constraint=rules.get_constraint_transport_technology_capex(),
+                                         constraint=rules.constraint_transport_technology_capex_block(),
                                          doc='Capital expenditures for installing transport technology')
         # bidirectional transport technologies: capacity on edge must be equal in both directions
         constraints.add_constraint_block(model, name="constraint_transport_technology_bidirectional",
-                                         constraint=rules.constraint_transport_technology_bidirectional_rule(),
+                                         constraint=rules.constraint_transport_technology_bidirectional_block(),
                                          doc='Forces that transport technology capacity must be equal in both directions')
 
     # defines disjuncts if technology on/off
@@ -217,7 +217,7 @@ class TransportTechnology(Technology):
                                          disjunction_var=binary_var)
 
 
-class TransportTechnologyRules:
+class TransportTechnologyRules(GenericRule):
     """
     Rules for the TransportTechnology class
     """
@@ -227,72 +227,112 @@ class TransportTechnologyRules:
         Inits the rules for a given EnergySystem
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        self.optimization_setup = optimization_setup
 
-    ### --- functions with constraint rules --- ###
-    def get_constraint_transport_technology_losses_flow(self):
+        super().__init__(optimization_setup)
+
+    # Rule-based constraints
+    # ----------------------
+
+    # Block-based constraints
+    # -----------------------
+
+    def constraint_transport_technology_losses_flow_block(self):
         """compute the flow losses for a carrier through a transport technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
 
-        # get all constraints
-        mask = np.isinf(params.distance).astype(float)
-        lp_where_inf = mask * model.variables["flow_transport_loss"]
-        lp_where_not_inf = (1 - mask) * (model.variables["flow_transport_loss"] - params.transport_loss_factor * params.distance * model.variables["flow_transport"])
+        ### index sets
+        # not necessary
 
-        return lp_where_inf + lp_where_not_inf == 0, model.variables["flow_transport_loss"].mask
+        ### masks
+        # This mask checks the distance between nodes
+        mask = np.isinf(self.parameters.distance).astype(float)
+        # This mask ensure we only get constraints where we want them
+        cons_mask = self.variables["flow_transport_loss"].mask
 
-    def get_constraint_transport_technology_capex(self):
+        ### index loop
+        # not necessary
+
+        ### auxiliary calculations
+        term_distance_inf = mask * self.variables["flow_transport_loss"]
+        term_distance_not_inf = (1 - mask) * (self.variables["flow_transport_loss"] - self.parameters.transport_loss_factor * self.parameters.distance * self.variables["flow_transport"])
+
+        ### formulate constraint
+        lhs = term_distance_inf + term_distance_not_inf
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints, mask=cons_mask)
+
+    def constraint_transport_technology_capex_block(self):
         """ definition of the capital expenditures for the transport technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
 
-        # get all constraints
-        coords = [model.variables.coords["set_transport_technologies"], model.variables.coords["set_edges"], model.variables.coords["set_time_steps_yearly"]]
-
-        # get the global mask, only constraints where this mask is true are considered
+        ### index sets
         index_values, index_list = Element.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], self.optimization_setup)
+        # check if we even need to continue
         if len(index_values) == 0:
             return []
+        # get the coords
+        coords = [self.variables.coords["set_transport_technologies"], self.variables.coords["set_edges"], self.variables.coords["set_time_steps_yearly"]]
 
+        ### masks
+        # This mask checks the distance between nodes for the condition
+        mask = np.isinf(self.parameters.distance).astype(float)
+
+        # This mask ensure we only get constraints where we want them
         index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
         global_mask = xr.DataArray(False, coords=coords)
         global_mask.loc[index_arrs] = True
 
-        # the mask for the if condition
-        mask = np.isinf(params.distance).astype(float)
+        ### index loop
+        # not necessary
 
-        # expression if true
-        lp_where_inf = mask*model.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
+        ### auxiliary calculations
+        term_distance_inf = mask * self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
+        term_distance_not_inf = (1 - mask) * (self.variables["cost_capex"].loc[coords[0], "power", coords[1], coords[2]]
+                                              - self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]] * self.parameters.capex_specific_transport.loc[coords[0], coords[1]])
+        # we have an additional check here to avoid binary variables when their coefficient is 0
+        if np.any(self.parameters.distance.loc[coords[0], coords[1]] * self.parameters.capex_per_distance_transport.loc[coords[0], coords[1]] != 0):
+            term_distance_not_inf -= (1 - mask) * self.variables["technology_installation"].loc[coords[0], "power", coords[1], coords[2]] * (self.parameters.distance.loc[coords[0], coords[1]] * self.parameters.capex_per_distance_transport.loc[coords[0], coords[1]])
 
-        # expression if false
-        lp_where_not_inf = (1 - mask) * (model.variables["cost_capex"].loc[coords[0], "power", coords[1], coords[2]]
-                                         - model.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]] * params.capex_specific_transport.loc[coords[0], coords[1]])
-        if np.any(params.distance.loc[coords[0], coords[1]] * params.capex_per_distance_transport.loc[coords[0], coords[1]] != 0):
-            lp_where_not_inf -= (1 - mask) * model.variables["technology_installation"].loc[coords[0], "power", coords[1], coords[2]] * (params.distance.loc[coords[0], coords[1]] * params.capex_per_distance_transport.loc[coords[0], coords[1]])
+        ### formulate constraint
+        lhs = term_distance_inf + term_distance_not_inf
+        rhs = 0
+        constraints = lhs == rhs
 
-        return lp_where_inf + lp_where_not_inf == 0, global_mask
+        ### return
+        return self.constraints.return_contraints(constraints, mask=global_mask)
 
-    def constraint_transport_technology_bidirectional_rule(self):
+    def constraint_transport_technology_bidirectional_block(self):
         """ Forces that transport technology capacity must be equal in both direction"""
-        system = self.optimization_setup.system
-        model = self.optimization_setup.model
 
-        # get all constraints
-        constraints = []
+        ### index sets
         index_values, index_list = Element.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_list)
-        edge_coords = model.variables.coords["set_edges"]
-        for tech in index.get_unique([0]):
-            if tech in system["set_bidirectional_transport_technologies"]:
-                _reversed_edge = xr.DataArray([self.get_reversed_edge(edge) for edge in edge_coords], coords=edge_coords.coords)
-                constraints.append(model.variables["capacity_addition"].loc[tech, "power", edge_coords]
-                                   - model.variables["capacity_addition"].loc[tech, "power", _reversed_edge]
-                                   == 0)
-            else:
-                # we need to add an empty con
-                constraints.append(np.nan*model.variables["capacity_addition"].loc[tech, "power", edge_coords].where(False) == np.nan)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_list[:1], model)
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over the technologies to check if they are bidirectional
+        constraints = []
+        for tech in index.get_unique(["set_transport_technologies"]):
+
+            ### auxiliary calculations
+            edge_coords = self.variables.coords["set_edges"]
+            if tech in self.system["set_bidirectional_transport_technologies"]:
+                _reversed_edge = xr.DataArray([self.get_reversed_edge(edge) for edge in edge_coords], coords=edge_coords.coords)
+
+                ### formulate constraint
+                lhs = (self.variables["capacity_addition"].loc[tech, "power", edge_coords]
+                       - self.variables["capacity_addition"].loc[tech, "power", _reversed_edge])
+                rhs = 0
+                constraints.append(lhs == rhs)
+            else:
+                # dummy constraint
+                constraints.append(np.nan*self.variables["capacity_addition"].loc[tech, "power", edge_coords].where(False) == np.nan)
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_transport_technologies"]),
+                                                  index_names=["set_transport_technologies"])

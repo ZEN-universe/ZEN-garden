@@ -583,7 +583,9 @@ class Constraint(Component):
                     mask = None
 
                 # drop all unnecessary dimensions
-                lhs = cons.lhs.drop(list(set(cons.lhs.coords) - set(cons.lhs.dims)))
+                # FIXME: we do this via data to avoid the drop deprecation warning, update once lp implements drop_vars
+                # lhs = cons.lhs.drop(list(set(cons.lhs.coords) - set(cons.lhs.dims)))
+                lhs = lp.LinearExpression(cons.lhs.data.drop_vars(list(set(cons.lhs.coords) - set(cons.lhs.dims))), model)
                 # add constraint
                 self._add_con(model, current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var, mask=mask)
                 # save constraint doc
@@ -668,7 +670,7 @@ class Constraint(Component):
 
         # get the mask, where rhs is not nan and rhs is finite
         if mask is not None:
-            mask &= ~np.isnan(rhs) & np.isfinite(rhs)
+            mask = ~np.isnan(rhs) & np.isfinite(rhs) & mask
         else:
             mask = ~np.isnan(rhs) & np.isfinite(rhs)
 
@@ -888,14 +890,14 @@ class Constraint(Component):
         """
 
         # drop if necessary
-        lhs = lhs.to_dataset()
+        lhs = lhs.data
         if drop is not None:
             lhs = lhs.drop_sel(group=drop, errors="ignore")
             rhs = rhs.drop_sel(group=drop, errors="ignore")
             sign = sign.drop_sel(group=drop, errors="ignore")
 
         # drop the unncessessary dimensions
-        lhs = lhs.drop(list(set(lhs.coords) - set(lhs.dims)))
+        lhs = lhs.drop_vars(list(set(lhs.coords) - set(lhs.dims)))
 
         # get the coordinates
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
@@ -951,3 +953,48 @@ class Constraint(Component):
         # reorder the group
         reordered = self.reorder_group(combined_constraints.lhs, combined_constraints.sign, combined_constraints.rhs, index_values, index_names, model)
         return reordered
+
+    def return_contraints(self, constraints, model=None, mask=None, index_values=None, index_names=None,
+                          stack_dim_name=None):
+        """
+        This is a high-level function that returns the constraints in the correct format, i.e. with reordering, masks,
+        etc.
+        :param constraints: A single constraints or a potentially empty list of constraints.
+        :param model: The model to which the constraints belong
+        :param mask: A mask with the same shape as the constraints
+        :param index_values: The index values corresponding to the group numbers, if reorder is necessary
+        :param index_names: The names of the indices, if reorder is necessary
+        :param stack_dim_name: If a list of constraints is provided along with index_values and index_names, the
+                               constraints are reordered with the provided indices, if a stack_dim_name is provided, the
+                               constraints are stacked along a single dimension with the provided name.
+        :return: Constraints with can be added
+        """
+
+        # no need to do anything special
+        if not isinstance(constraints, list):
+            if mask is None:
+                return constraints
+            return constraints, mask
+
+        # if there are no constraints, return an empty list
+        if len(constraints) == 0:
+            return []
+        elif model is None:
+            raise ValueError("If constraints is a list, model must be provided!")
+
+        # normal reordering
+        if index_names is not None and index_values is not None:
+            constraints = self.reorder_list(constraints, index_values, index_names, model)
+            if mask is not None:
+                return constraints, mask
+            return constraints
+
+        # stack along a dimension
+        if stack_dim_name is not None:
+            constraints = self.combine_constraints(constraints, stack_dim_name, model)
+            if mask is not None:
+                return constraints, mask
+            return constraints
+
+        # Error
+        raise ValueError("Either single constraint or a list with index_values and index_names or stack_dim_name must be provided!")

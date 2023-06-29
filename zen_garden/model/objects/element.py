@@ -317,3 +317,27 @@ class Element:
                         model_on_off = False
         # return
         return model_on_off
+
+
+class GenericRule(object):
+    """
+    This class implements a generic rule for the model, which can be used to init the other rules of the technologies
+    and carriers
+    """
+
+    def __init__(self, optimization_setup):
+        """
+        Constructor for generic rule
+        :param optimization_setup: The optimization setup to use for the setup
+        """
+
+        self.optimization_setup = optimization_setup
+        self.system = self.optimization_setup.system
+        self.analysis = self.optimization_setup.analysis
+        self.sets = self.optimization_setup.sets
+        self.model = self.optimization_setup.model
+        self.parameters = self.optimization_setup.parameters
+        self.variables = self.model.variables
+        self.constraints = self.optimization_setup.constraints
+        self.energy_system = self.optimization_setup.energy_system
+        self.time_steps = self.energy_system.time_steps

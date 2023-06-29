@@ -20,7 +20,7 @@ from linopy.constraints import AnonymousConstraint
 
 from zen_garden.utils import lp_sum
 from ..component import ZenIndex, IndexSet
-from ..element import Element
+from ..element import Element, GenericRule
 
 
 class Technology(Element):
@@ -490,60 +490,60 @@ class Technology(Element):
         rules = TechnologyRules(optimization_setup)
         #  technology capacity_limit
         constraints.add_constraint_block(model, name="constraint_technology_capacity_limit",
-                                         constraint=rules.get_constraint_technology_capacity_limit(),
+                                         constraint=rules.constraint_technology_capacity_limit_block(),
                                          doc='limited capacity of  technology depending on loc and time')
         # minimum capacity
         constraints.add_constraint_block(model, name="constraint_technology_min_capacity",
-                                         constraint=rules.get_constraint_technology_min_capacity(),
+                                         constraint=rules.constraint_technology_min_capacity_block(),
                                          doc='min capacity of technology that can be installed')
         # maximum capacity
         constraints.add_constraint_block(model, name="constraint_technology_max_capacity",
-                                         constraint=rules.get_constraint_technology_max_capacity(),
+                                         constraint=rules.constraint_technology_max_capacity_block(),
                                          doc='max capacity of technology that can be installed')
         # construction period
         constraints.add_constraint_block(model, name="constraint_technology_construction_time",
-                                         constraint=rules.get_constraint_technology_construction_time(),
+                                         constraint=rules.constraint_technology_construction_time_block(),
                                          doc='lead time in which invested technology is constructed')
         # lifetime
         constraints.add_constraint_block(model, name="constraint_technology_lifetime",
-                                         constraint=rules.get_constraint_technology_lifetime(),
+                                         constraint=rules.constraint_technology_lifetime_block(),
                                          doc='max capacity of  technology that can be installed')
         # limit diffusion rate
         constraints.add_constraint_block(model, name="constraint_technology_diffusion_limit",
-                                         constraint=rules.get_constraint_technology_diffusion_limit(),
+                                         constraint=rules.constraint_technology_diffusion_limit_block(),
                                          doc="Limits the newly built capacity by the existing knowledge stock")
         # limit diffusion rate total
         constraints.add_constraint_block(model, name="constraint_technology_diffusion_limit_total",
-                                         constraint=rules.get_constraint_technology_diffusion_limit_total(),
+                                         constraint=rules.constraint_technology_diffusion_limit_total_block(),
                                          doc="Limits the newly built capacity by the existing knowledge stock for the entire energy system")
         # limit max load by installed capacity
         constraints.add_constraint_block(model, name="constraint_capacity_factor",
-                                         constraint=rules.get_constraint_capacity_factor(),
+                                         constraint=rules.constraint_capacity_factor_block(),
                                          doc='limit max load by installed capacity')
         # annual capex of having capacity
         constraints.add_constraint_block(model, name="constraint_capex_yearly",
-                                         constraint=rules.get_constraint_capex_yearly_rule(),
+                                         constraint=rules.constraint_capex_yearly_block(),
                                          doc='annual capex of having capacity of technology.')
         # total capex of all technologies
         constraints.add_constraint_rule(model, name="constraint_cost_capex_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_cost_capex_total_rule,
             doc='total capex of all technology that can be installed.')
         # calculate opex
         constraints.add_constraint_block(model, name="constraint_opex_technology",
-                                         constraint=rules.get_constraint_opex_technology(),
+                                         constraint=rules.constraint_opex_technology_block(),
                                          doc="opex for each technology at each location and time step")
         # yearly opex
         constraints.add_constraint_block(model, name="constraint_opex_yearly",
-                                         constraint=rules.get_constraint_opex_yearly(),
+                                         constraint=rules.constraint_opex_yearly_block(),
                                          doc='total opex of all technology that are operated.')
         # total opex of all technologies
         constraints.add_constraint_rule(model, name="constraint_cost_opex_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_cost_opex_total_rule, doc='total opex of all technology that are operated.')
         # carbon emissions of technologies
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology",
-                                         constraint=rules.get_constraint_carbon_emissions_technology(),
+                                         constraint=rules.constraint_carbon_emissions_technology_block(),
                                          doc="carbon emissions for each technology at each location and time step")
         # total carbon emissions of technologies
-        constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology_total", constraint=rules.get_constraint_carbon_emissions_technology_total(),
-                                        doc="total carbon emissions for each technology at each location and time step")
+        constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology_total", constraint=rules.constraint_carbon_emissions_technology_total_block(),
+                                         doc="total carbon emissions for each technology at each location and time step")
 
         # disjunct if technology is on
         # the disjunction variables
@@ -632,7 +632,7 @@ class Technology(Element):
         return existing_quantities
 
 
-class TechnologyRules:
+class TechnologyRules(GenericRule):
     """
     Rules for the Technology class
     """
@@ -642,7 +642,11 @@ class TechnologyRules:
         Inits the rules
         :param optimization_setup: OptimizationSetup of the element
         """
-        self.optimization_setup = optimization_setup
+
+        super().__init__(optimization_setup)
+
+    # Disjunctive Constraints
+    # -----------------------
 
     def disjunct_on_technology_rule(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
@@ -664,474 +668,676 @@ class TechnologyRules:
                 subclass.disjunct_off_technology_rule(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
                 return None
 
-    ### --- constraint rules --- ###
-    # %% Constraint rules pre-defined in Technology class
-    def get_constraint_technology_capacity_limit(self):
+    # Rule-based constraints
+    # -----------------------
+
+    def constraint_cost_capex_total_rule(self, year):
+        """ sums over all technologies to calculate total capex """
+
+        ### index sets
+        # skipped because rule-based constraint
+
+        ### masks
+        # skipped because rule-based constraint
+
+        ### index loop
+        # skipped because rule-based constraint
+
+        ### auxiliary calculations
+        term_sum_yearly = self.variables["capex_yearly"].loc[..., year].sum()
+
+        ### formulate constraint
+        lhs = (self.variables["cost_capex_total"].loc[year]
+               - term_sum_yearly)
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
+
+    def constraint_cost_opex_total_rule(self, year):
+        """ sums over all technologies to calculate total opex """
+
+        ### index sets
+        # skipped because rule-based constraint
+
+        ### masks
+        # skipped because rule-based constraint
+
+        ### index loop
+        # skipped because rule-based constraint
+
+        ### auxiliary calculations
+        term_sum_yearly = self.variables["opex_yearly"].loc[..., year].sum()
+
+        ### formulate constraint
+        lhs = (self.variables["cost_opex_total"].loc[year]
+               - term_sum_yearly)
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
+
+    # Block-based constraints
+    # -----------------------
+
+    def constraint_technology_capacity_limit_block(self):
         """limited capacity_limit of technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
 
-        # create the masks for the two cases
-        m1 = (params.capacity_limit != np.inf) & (params.existing_capacities < params.capacity_limit)
-        m2 = (params.capacity_limit != np.inf) & ~(params.existing_capacities < params.capacity_limit)
+        ### index sets
+        # not necessary
 
-        # the lhs, rhs and sign depend on the case
-        lhs = model.variables["capacity"].where(m1) + model.variables["capacity_addition"].where(m2)
-        rhs = params.capacity_limit.where(m1, 0.0)
-        sign = xr.DataArray("<=", coords=model.variables["capacity"].coords).where(m1, "=")
-        return AnonymousConstraint(lhs, sign, rhs)
+        ### masks
+        # create the masks for the two cases, m1 for capacity_limit not reached, m2 for capacity_limit reached
+        m1 = (self.parameters.capacity_limit != np.inf) & (self.parameters.existing_capacities < self.parameters.capacity_limit)
+        m2 = (self.parameters.capacity_limit != np.inf) & ~(self.parameters.existing_capacities < self.parameters.capacity_limit)
 
-    def get_constraint_technology_min_capacity(self):
+        ### index loop
+        # not necessary
+
+        ### auxiliary calculations
+        # not necessary
+
+        ### formulate constraint
+        # Note that this constraint has a different sign for the two cases
+        lhs = self.variables["capacity"].where(m1) + self.variables["capacity_addition"].where(m2)
+        rhs = self.parameters.capacity_limit.where(m1, 0.0)
+        sign = xr.DataArray("<=", coords=self.variables["capacity"].coords).where(m1, "=")
+        constraints = AnonymousConstraint(lhs, sign, rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints)
+
+    def constraint_technology_min_capacity_block(self):
         """ min capacity expansion of technology."""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
 
-        # index
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
         tech_arr, capacity_type_arr = index.get_unique(["set_technologies", "set_capacity_types"], as_array=True)
 
-        # get the mask, set it to true only where we want
-        mask = xr.zeros_like(params.capacity_addition_min, dtype=bool)
+        ### masks
+        # we create a mask here only to avoid having constraints with binary variables when it's not necessary
+        # passing constraints with binary variables to gurobi, even of the type 0 * binray_var, means that no
+        # dual variables are returned
+        mask = xr.zeros_like(self.parameters.capacity_addition_min, dtype=bool)
         mask.loc[tech_arr, capacity_type_arr] = True
-        mask &= params.capacity_addition_min != 0
+        mask &= self.parameters.capacity_addition_min != 0
 
-        # because technology_installation is binary, it might not exist if it's not used
-        if np.any(mask):
-            lhs = mask * (params.capacity_addition_min * model.variables["technology_installation"]
-                          - model.variables["capacity_addition"])
-            return lhs <= 0, mask
-        else:
+        ### index loop
+        # not necessary
+
+        ### auxiliary calculations
+        # if the mask is empty, we don't need to do anything and abort here
+        if not mask.any():
             return []
 
-    def get_constraint_technology_max_capacity(self):
+        ### formulate constraint
+        lhs = mask * (self.parameters.capacity_addition_min * self.variables["technology_installation"]
+                      - self.variables["capacity_addition"])
+        rhs = 0
+        constraints = lhs <= rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints, mask=mask)
+
+    def constraint_technology_max_capacity_block(self):
         """max capacity expansion of technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
 
-        # get all the constraints
-        constraints = []
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
-        for tech, capacity_type in index.get_unique([0, 1]):
-            if params.capacity_addition_max.loc[tech, capacity_type] != np.inf:
-                lhs = - model.variables["capacity_addition"].loc[tech, capacity_type]
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        constraints = []
+        for tech, capacity_type in index.get_unique(["set_technologies", "set_capacity_types"]):
+            # not that the else here is just a dummy
+            if self.parameters.capacity_addition_max.loc[tech, capacity_type] != np.inf:
+
+                ### auxiliary calculations
                 # we only want a constraints with a binary variable if the corresponding max_built_capacity is not zero
-                if np.any(params.capacity_addition_max.loc[tech, capacity_type].notnull() & (params.capacity_addition_max.loc[tech, capacity_type] != 0)):
-                    lhs += params.capacity_addition_max.loc[tech, capacity_type].item() * model.variables["technology_installation"].loc[tech, capacity_type]
-                constraints.append(lhs >= 0)
+                if np.any(self.parameters.capacity_addition_max.loc[tech, capacity_type].notnull() & (self.parameters.capacity_addition_max.loc[tech, capacity_type] != 0)):
+                    term_installation = self.parameters.capacity_addition_max.loc[tech, capacity_type].item() * self.variables["technology_installation"].loc[tech, capacity_type]
+                else:
+                    # dummy
+                    term_installation = self.variables["capacity_addition"].loc[tech, capacity_type].where(False)
+
+                ### formulate constraint
+                lhs = (- self.variables["capacity_addition"].loc[tech, capacity_type]
+                       + term_installation)
+                rhs = 0
+                constraints.append(lhs >= rhs)
+
             else:
-                # we need to add an empty constraint with the right shape
-                constraints.append(np.nan*model.variables["capacity_addition"].loc[tech, capacity_type].where(False) == np.nan)
+                # a dummy
+                constraints.append(np.nan*self.variables["capacity_addition"].loc[tech, capacity_type].where(False) == np.nan)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 1]), index_names[:2], model)
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_technologies", "set_capacity_types"]),
+                                                  index_names=["set_technologies", "set_capacity_types"])
 
-    def get_constraint_technology_construction_time(self):
+    def constraint_technology_construction_time_block(self):
         """ construction time of technology, i.e., time that passes between investment and availability"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
 
-        # get all the constraints
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over technologies and time steps, because the conditions depend on the time and the technology
+        # we vectorize over capacity types and locations
         constraints = []
-        for tech, time in index.get_unique([0, 3]):
+        for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
+
+            ### auxiliary calculations
             start_time_step, _ = Technology.get_start_end_time_of_period(self.optimization_setup, tech, time, period_type="construction_time", clip_to_first_time_step=False)
-            if start_time_step in sets["set_time_steps_yearly"]:
-                constraints.append(model.variables["capacity_addition"].loc[tech, :, :, time]
-                                   - model.variables["capacity_investment"].loc[tech, :, :, start_time_step]
-                                   == 0)
-            elif start_time_step in sets["set_time_steps_yearly_entire_horizon"]:
-                constraints.append(model.variables["capacity_addition"].loc[tech, :, :, time]
-                                   == params.existing_invested_capacity.loc[tech, :, :, start_time_step])
+
+            ### formulate constraint
+            if start_time_step in self.sets["set_time_steps_yearly"]:
+                lhs = (self.variables["capacity_addition"].loc[tech, :, :, time]
+                       - self.variables["capacity_investment"].loc[tech, :, :, start_time_step])
+                rhs = 0
+            elif start_time_step in self.sets["set_time_steps_yearly_entire_horizon"]:
+                lhs = self.variables["capacity_addition"].loc[tech, :, :, time]
+                rhs = self.parameters.existing_invested_capacity.loc[tech, :, :, start_time_step]
             else:
-                constraints.append(model.variables["capacity_addition"].loc[tech, :, :, time]
-                                   == 0)
+                lhs = self.variables["capacity_addition"].loc[tech, :, :, time]
+                rhs = 0
+            constraints.append(lhs == rhs)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 3]), [index_names[0], index_names[3]], model), model.variables["capacity_addition"].mask
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_technologies", "set_time_steps_yearly"]),
+                                                  index_names=["set_technologies", "set_time_steps_yearly"])
 
-    def get_constraint_technology_lifetime(self):
-        model = self.optimization_setup.model
-        params = self.optimization_setup.parameters
+    def constraint_technology_lifetime_block(self):
+        """ lifetime of technology constraint"""
 
-        # get all the constraints
-        constraints = []
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
-        for tech, time in index.get_unique([0, 3]):
-            terms = [1.0*model.variables["capacity"].loc[tech, :, :, time]]
+
+        ### masks
+        # this mask is just to make sure we only get constraints where we want them, no if-condition
+        mask = self.variables["capacity"].mask
+
+        ### index loop
+        # we loop over technologies and time steps, because we need to cycle over the lifetime range of the technology
+        # which requires the technology and the year, we vectorize over capacity types and locations
+        constraints = []
+        for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
+
+            ### auxiliary calculations
+            term_neg_previous_capacity_additions = []
             for previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, time):
-                terms.append(-model.variables["capacity_addition"].loc[tech, :, :, previous_time])
-            constraints.append(lp_sum(terms)
-                               == params.existing_capacities.loc[tech, :, :, time])
+                term_neg_previous_capacity_additions.append(-1.0 * self.variables["capacity_addition"].loc[tech, :, :, previous_time])
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 3]), [index_names[0], index_names[3]], model), model.variables["capacity"].mask
+            ### formulate constraint
+            lhs = lp_sum([1.0 * self.variables["capacity"].loc[tech, :, :, time],
+                          *term_neg_previous_capacity_additions])
+            rhs = self.parameters.existing_capacities.loc[tech, :, :, time]
+            constraints.append(lhs == rhs)
 
-    def get_constraint_technology_diffusion_limit(self):
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  mask=mask,
+                                                  index_values=index.get_unique(["set_technologies", "set_time_steps_yearly"]),
+                                                  index_names=["set_technologies", "set_time_steps_yearly"])
+
+    def constraint_technology_diffusion_limit_block(self):
         """limited technology diffusion based on the existing capacity in the previous year """
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
-        interval_between_years = self.optimization_setup.system["interval_between_years"]
-        knowledge_depreciation_rate = self.optimization_setup.system["knowledge_depreciation_rate"]
 
-        # get all the constraints
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over technologies, capacity types and time steps, to accurately capture the conditions in the constraint
+        # we vectorize over locations
         constraints = []
-        for tech,capacity_type, time in index.get_unique([0,1, 3]):
-            reference_carrier = sets["set_reference_carriers"][tech][0]
-            if params.max_diffusion_rate.loc[tech, time] != np.inf:
-                if tech in sets["set_transport_technologies"]:
-                    set_locations = sets["set_edges"]
-                    set_technology = sets["set_transport_technologies"]
+        for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
+
+            ### auxiliary calculations
+            # mask for the capacity types that are not considered
+            capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
+            mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
+            mask.loc[capacity_types] = 1
+
+            interval_between_years = self.system["interval_between_years"]
+            knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
+            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            if self.parameters.max_diffusion_rate.loc[tech, time] != np.inf:
+                if tech in self.sets["set_transport_technologies"]:
+                    set_locations = self.sets["set_edges"]
+                    set_technology = self.sets["set_transport_technologies"]
                     knowledge_spillover_rate = 0
                 else:
-                    set_locations = sets["set_nodes"]
-                    knowledge_spillover_rate = params.knowledge_spillover_rate
-                    if tech in sets["set_conversion_technologies"]:
-                        set_technology = sets["set_conversion_technologies"]
+                    set_locations = self.sets["set_nodes"]
+                    knowledge_spillover_rate = self.parameters.knowledge_spillover_rate
+                    if tech in self.sets["set_conversion_technologies"]:
+                        set_technology = self.sets["set_conversion_technologies"]
                     else:
-                        set_technology = sets["set_storage_technologies"]
+                        set_technology = self.sets["set_storage_technologies"]
 
-                # add capacity addition of entire previous horizon
+                    # add capacity addition of entire previous horizon
                 end_time = time - 1
 
                 # actual years between first invest time step and end_time
-                delta_time = interval_between_years * (end_time - sets["set_time_steps_yearly"][0])
-                existing_time = sets["set_technologies_existing"][tech]
+                delta_time = interval_between_years * (end_time - self.sets["set_time_steps_yearly"][0])
+                existing_time = self.sets["set_technologies_existing"][tech]
                 # Note: instead of summing over all but one location, we sum over all and then subtract one
-                total_capacity_knowledge_existing = ((params.capacity_existing.loc[tech, capacity_type, set_locations, existing_time] # add spillover from other regions
-                                                      + knowledge_spillover_rate*(params.capacity_existing.loc[tech, capacity_type, set_locations, existing_time].sum("set_location") - params.capacity_existing.loc[tech, capacity_type, set_locations, existing_time]))
-                                                     * (1 - knowledge_depreciation_rate) ** (delta_time + params.lifetime.loc[tech].item() - params.lifetime_existing.loc[tech, set_locations, existing_time])).sum("set_technologies_existing")
+                total_capacity_knowledge_existing = ((self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]  # add spillover from other regions
+                                                      + knowledge_spillover_rate * (self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time].sum("set_location") - self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]))
+                                                     * (1 - knowledge_depreciation_rate) ** (delta_time + self.parameters.lifetime.loc[tech].item() - self.parameters.lifetime_existing.loc[tech, set_locations, existing_time])).sum("set_technologies_existing")
                 _rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points"])
                 total_capacity_knowledge_existing = total_capacity_knowledge_existing.where(total_capacity_knowledge_existing > _rounding_value, 0)
 
-                horizon_time = model.variables.coords["set_time_steps_yearly"][sets["set_time_steps_yearly"][0]: end_time + 1]
+                horizon_time = self.variables.coords["set_time_steps_yearly"][self.sets["set_time_steps_yearly"][0]: end_time + 1]
                 if len(horizon_time) > 1:
-                    total_capacity_knowledge_addition = ((model.variables["capacity_addition"].loc[tech, capacity_type, set_locations, horizon_time] # add spillover from other regions
-                                                               + knowledge_spillover_rate*(model.variables["capacity_addition"].loc[tech, capacity_type, set_locations, horizon_time].sum("set_location") - model.variables["capacity_addition"].loc[tech, capacity_type, set_locations, horizon_time]))
-                                                                 * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time))).sum("set_time_steps_yearly")
+                    term_total_capacity_knowledge_addition = ((self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time]  # add spillover from other regions
+                                                          + knowledge_spillover_rate * (self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time].sum("set_location") - self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time]))
+                                                         * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time))).sum("set_time_steps_yearly")
                 else:
                     # dummy term
-                    total_capacity_knowledge_addition = model.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time].where(False)
+                    term_total_capacity_knowledge_addition = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False)
 
-
-                total_capacity_all_techs_param = sum(params.existing_capacities.loc[other_tech, capacity_type, set_locations, time]
-                                                     for other_tech in set_technology if sets["set_reference_carriers"][other_tech][0] == reference_carrier)
+                total_capacity_all_techs_param = sum(self.parameters.existing_capacities.loc[other_tech, :, set_locations, time]
+                                                     for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier)
                 lifetime_range = Technology.get_lifetime_range(self.optimization_setup, tech, end_time)
                 if len(lifetime_range) > 0:
-                    total_capacity_all_techs_var = lp_sum([lp_sum([1.0*model.variables["capacity_addition"].loc[other_tech, capacity_type, set_locations, previous_time]
-                        for previous_time in lifetime_range])
-                    for other_tech in set_technology if sets["set_reference_carriers"][other_tech][0] == reference_carrier])
+                    previous_times = [previous_time for previous_time in lifetime_range]
+                    other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
+                    term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[:, :, set_locations, previous_times].sum("set_time_steps_yearly")
+                    term_total_capacity_all_techs_var = term_total_capacity_all_techs_var[other_techs, :, :].sum("set_technologies")
                 else:
-                    total_capacity_all_techs_var = 0
+                    # dummy term
+                    term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False)
 
-                # build the lhs (some terms might be 0), we add something to get the full shape (all locations)
-                lhs = model.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time] + model.variables["capacity_investment"].loc[tech, capacity_type, :, time].where(False)
-                if not isinstance(total_capacity_knowledge_addition, (int, float)):
-                    lhs = lhs - ((1 + params.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_addition
-                if not isinstance(total_capacity_all_techs_var, (float, int)):
-                    lhs = lhs - params.market_share_unbounded * total_capacity_all_techs_var
+                ### formulate constraint
+                # build the lhs
+                lhs = (self.variables["capacity_investment"].loc[tech, :, set_locations, time]
+                       + self.variables["capacity_investment"].loc[tech, :, :, time].where(False)
+                       - ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_addition
+                       - self.parameters.market_share_unbounded * term_total_capacity_all_techs_var)
+                lhs *= mask
 
                 # build the rhs
-                rhs = xr.zeros_like(params.existing_capacities).loc[tech, capacity_type,:, time]
-                rhs.loc[set_locations] += ((1 + params.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_existing # add initial market share until which the diffusion rate is unbounded
-                rhs.loc[set_locations] += params.market_share_unbounded * total_capacity_all_techs_param + params.capacity_addition_unbounded.loc[tech]
+                rhs = xr.zeros_like(self.parameters.existing_capacities).loc[tech, :,:, time]
+                rhs.loc[:, set_locations] += ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_existing # add initial market share until which the diffusion rate is unbounded
+                rhs.loc[:, set_locations] += self.parameters.market_share_unbounded * total_capacity_all_techs_param + self.parameters.capacity_addition_unbounded.loc[tech]
+                rhs *= mask
 
+                # combine
                 constraints.append(lhs <= rhs)
 
-        # reording takes too much memory!
-        return self.optimization_setup.constraints.combine_constraints(constraints, "technology_diffusion_limit_dim", model)
-    def get_constraint_technology_diffusion_limit_total(self):
-        """limited technology diffusion based on the existing capacity in the previous year for the entire energy system"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
-        interval_between_years = self.optimization_setup.system["interval_between_years"]
-        knowledge_depreciation_rate = self.optimization_setup.system["knowledge_depreciation_rate"]
+        ### return
+        return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="diffusion_limit_dim")
 
-        # get all the constraints
+    def constraint_technology_diffusion_limit_total_block(self):
+        """limited technology diffusion based on the existing capacity in the previous year for the entire energy system"""
+
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over technologies, capacity types and time steps, to accurately capture the conditions in the constraint
+        # we vectorize over locations
         constraints = []
-        for tech,capacity_type, time in index.get_unique([0,1, 3]):
-            reference_carrier = sets["set_reference_carriers"][tech][0]
-            if params.max_diffusion_rate.loc[tech, time] != np.inf:
-                if tech in sets["set_transport_technologies"]:
-                    set_locations = sets["set_edges"]
-                    set_technology = sets["set_transport_technologies"]
+        for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
+
+            ### auxiliary calculations
+            # mask for the capacity types that are not considered
+            capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
+            mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
+            mask.loc[capacity_types] = 1
+
+            interval_between_years = self.system["interval_between_years"]
+            knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
+
+            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            if self.parameters.max_diffusion_rate.loc[tech, time] != np.inf:
+                if tech in self.sets["set_transport_technologies"]:
+                    set_locations = self.sets["set_edges"]
+                    set_technology = self.sets["set_transport_technologies"]
                 else:
-                    set_locations = sets["set_nodes"]
-                    if tech in sets["set_conversion_technologies"]:
-                        set_technology = sets["set_conversion_technologies"]
+                    set_locations = self.sets["set_nodes"]
+                    if tech in self.sets["set_conversion_technologies"]:
+                        set_technology = self.sets["set_conversion_technologies"]
                     else:
-                        set_technology = sets["set_storage_technologies"]
+                        set_technology = self.sets["set_storage_technologies"]
 
                 # add capacity addition of entire previous horizon
                 end_time = time - 1
 
                 # actual years between first invest time step and end_time
-                delta_time = interval_between_years * (end_time - sets["set_time_steps_yearly"][0])
-                existing_time = sets["set_technologies_existing"][tech]
-                total_capacity_knowledge_existing = (params.capacity_existing.loc[tech, capacity_type, set_locations, existing_time]
-                                                     * (1 - knowledge_depreciation_rate) ** (delta_time + params.lifetime.loc[tech].item() - params.lifetime_existing.loc[tech, set_locations, existing_time])).sum(["set_technologies_existing","set_location"])
+                delta_time = interval_between_years * (end_time - self.sets["set_time_steps_yearly"][0])
+                existing_time = self.sets["set_technologies_existing"][tech]
+                term_total_capacity_knowledge_existing = (self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]
+                                                     * (1 - knowledge_depreciation_rate) ** (delta_time + self.parameters.lifetime.loc[tech].item() - self.parameters.lifetime_existing.loc[tech, set_locations, existing_time])).sum(["set_technologies_existing","set_location"])
                 _rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points"])
-                total_capacity_knowledge_existing = total_capacity_knowledge_existing.where(total_capacity_knowledge_existing > _rounding_value, 0)
+                term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > _rounding_value, 0)
 
-                horizon_time = model.variables.coords["set_time_steps_yearly"][sets["set_time_steps_yearly"][0]: end_time + 1]
+                horizon_time = self.variables.coords["set_time_steps_yearly"][self.sets["set_time_steps_yearly"][0]: end_time + 1]
                 if len(horizon_time) > 1:
-                    total_capacity_knowledge_addition = (model.variables["capacity_addition"].loc[tech, capacity_type, set_locations, horizon_time]
+                    term_total_capacity_knowledge_addition = (self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time]
                         * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time))).sum(["set_time_steps_yearly","set_location"])
                 else:
                     # dummy term
-                    total_capacity_knowledge_addition = model.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time].where(False).sum("set_location")
+                    term_total_capacity_knowledge_addition = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False).sum("set_location")
 
 
-                total_capacity_all_techs_param = sum(params.existing_capacities.loc[other_tech, capacity_type, set_locations, time]
-                                                     for other_tech in set_technology if sets["set_reference_carriers"][other_tech][0] == reference_carrier).sum("set_location")
+                total_capacity_all_techs_param = sum(self.parameters.existing_capacities.loc[other_tech, :, set_locations, time]
+                                                     for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier).sum("set_location")
                 lifetime_range = Technology.get_lifetime_range(self.optimization_setup, tech, end_time)
                 if len(lifetime_range) > 0:
-                    total_capacity_all_techs_var = lp_sum([lp_sum([1.0*model.variables["capacity_addition"].loc[other_tech, capacity_type, set_locations, previous_time]
-                        for previous_time in lifetime_range])
-                    for other_tech in set_technology if sets["set_reference_carriers"][other_tech][0] == reference_carrier]).sum("set_location")
+                    previous_times = [previous_time for previous_time in lifetime_range]
+                    other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
+                    term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[:, :, set_locations, previous_times].sum("set_time_steps_yearly")
+                    term_total_capacity_all_techs_var = term_total_capacity_all_techs_var.loc[other_techs].sum(["set_technologies", "set_location"])
                 else:
-                    total_capacity_all_techs_var = 0
+                    # dummy term
+                    term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False).sum("set_location")
 
-                lhs = model.variables["capacity_investment"].loc[tech, capacity_type, set_locations, time].sum("set_location")
-                if not isinstance(total_capacity_knowledge_addition, (int, float)):
-                    lhs = lhs - ((1 + params.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_addition
-                if not isinstance(total_capacity_all_techs_var, (float, int)):
-                    lhs = lhs - params.market_share_unbounded * total_capacity_all_techs_var
+                ### formulate constraint
+                # build the lhs
+                lhs = (self.variables["capacity_investment"].loc[tech, :, set_locations, time].sum("set_location")
+                       - ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_addition
+                       - self.parameters.market_share_unbounded * term_total_capacity_all_techs_var)
+                lhs *= mask
 
                 # build the rhs
-                rhs = ((1 + params.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_existing
-                # add initial market share until which the diffusion rate is unbounded
-                rhs += params.market_share_unbounded * total_capacity_all_techs_param + params.capacity_addition_unbounded.loc[tech]*len(set_locations)
+                rhs = (((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_existing
+                       # add initial market share until which the diffusion rate is unbounded
+                       + self.parameters.market_share_unbounded * total_capacity_all_techs_param + self.parameters.capacity_addition_unbounded.loc[tech]*len(set_locations))
+                rhs *= mask
 
                 constraints.append(lhs <= rhs)
 
+        ### return
         # reording takes too much memory!
-        return self.optimization_setup.constraints.combine_constraints(constraints, "technology_diffusion_limit_total_dim", model)
+        return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="diffusion_limit_total_dim")
 
-    def get_constraint_capex_yearly_rule(self):
+    def constraint_capex_yearly_block(self):
         """ aggregates the capex of built capacity and of existing capacity """
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
-        discount_rate = self.optimization_setup.analysis["discount_rate"]
 
-        # get all the constraints
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over all technologies and yearly time steps because we need to calculate the lifetime range
+        # we vectorize over capacities and locations
         constraints = []
-        # this vectorizes over capacities and locations
-        for tech, year in index.get_unique([0, 3]):
-            lifetime = params.lifetime.loc[tech].item()
+        for tech, year in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
+
+            ### auxiliary calculations
+            discount_rate = self.analysis["discount_rate"]
+            lifetime = self.parameters.lifetime.loc[tech].item()
             annuity = ((1+discount_rate)**lifetime * discount_rate)/((1+discount_rate)**lifetime - 1)
-            terms = [1.0*model.variables["capex_yearly"].loc[tech, :, :, year]]
+            term_neg_annuity_cost_capex_previous = []
             for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly"):
-                terms.append(-annuity * model.variables["cost_capex"].loc[tech, :, :, previous_year])
-            constraints.append(lp_sum(terms) == annuity * params.existing_capex.loc[tech, :, :, year])
+                term_neg_annuity_cost_capex_previous.append(-annuity * self.variables["cost_capex"].loc[tech, :, :, previous_year])
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 3]), [index_names[0], index_names[3]], model), model.variables["capex_yearly"].mask
+            ### formulate constraint
+            lhs = lp_sum([1.0 * self.variables["capex_yearly"].loc[tech, :, :, year],
+                          *term_neg_annuity_cost_capex_previous])
+            rhs = annuity * self.parameters.existing_capex.loc[tech, :, :, year]
+            constraints.append(lhs == rhs)
 
-    def constraint_cost_capex_total_rule(self, year):
-        """ sums over all technologies to calculate total capex """
-        model = self.optimization_setup.model
-        return (model.variables["cost_capex_total"].loc[year]
-                - model.variables["capex_yearly"].loc[..., year].sum()
-                == 0)
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_technologies", "set_time_steps_yearly"]),
+                                                  index_names=["set_technologies", "set_time_steps_yearly"])
 
-    def get_constraint_opex_technology(self):
+    def constraint_opex_technology_block(self):
         """ calculate opex of each technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
 
-        # get all the constraints
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over all technologies because of the reference carrier and flow which depend on the technology
+        # we vectorize over locations and time steps
         constraints = []
-        # loop over index
         for tech in index.get_unique(["set_technologies"]):
-            locs = index.get_values([tech], 1, unique=True)
-            reference_carrier = sets["set_reference_carriers"][tech][0]
-            if tech in sets["set_conversion_technologies"]:
-                if reference_carrier in sets["set_input_carriers"][tech]:
-                    reference_flow = model.variables["flow_conversion_input"].loc[tech, reference_carrier, locs].to_linexpr()
+            locs = index.get_values([tech], "set_location", unique=True)
+            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            if tech in self.sets["set_conversion_technologies"]:
+                if reference_carrier in self.sets["set_input_carriers"][tech]:
+                    reference_flow = self.variables["flow_conversion_input"].loc[tech, reference_carrier, locs].to_linexpr()
                     reference_flow = reference_flow.rename({"set_nodes": "set_location"})
                 else:
-                    reference_flow = model.variables["flow_conversion_output"].loc[tech, reference_carrier, locs].to_linexpr()
+                    reference_flow = self.variables["flow_conversion_output"].loc[tech, reference_carrier, locs].to_linexpr()
                     reference_flow = reference_flow.rename({"set_nodes": "set_location"})
-            elif tech in sets["set_transport_technologies"]:
-                reference_flow = model.variables["flow_transport"].loc[tech, locs].to_linexpr()
+            elif tech in self.sets["set_transport_technologies"]:
+                reference_flow = self.variables["flow_transport"].loc[tech, locs].to_linexpr()
                 reference_flow = reference_flow.rename({"set_edges": "set_location"})
             else:
-                reference_flow = model.variables["flow_storage_charge"].loc[tech, locs] + model.variables["flow_storage_discharge"].loc[tech, locs]
+                reference_flow = self.variables["flow_storage_charge"].loc[tech, locs] + self.variables["flow_storage_discharge"].loc[tech, locs]
                 reference_flow = reference_flow.rename({"set_nodes": "set_location"})
-            # merge everything, the first is just to ensure full shape
-            constraints.append(lp.merge(model.variables["cost_opex"].loc[tech].where(False).to_linexpr(),
-                                        model.variables["cost_opex"].loc[tech, locs].to_linexpr(),
-                                        - params.opex_specific_variable.loc[tech, locs] * reference_flow,
-                                        compat="broadcast_equals")
-                               == 0)
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
 
-    def get_constraint_opex_yearly(self):
+            term_reference_flow = - self.parameters.opex_specific_variable.loc[tech, locs] * reference_flow
+
+            ### formulate constraint
+            # the first term is just to ensure full shape
+            lhs = lp.merge(self.variables["cost_opex"].loc[tech].where(False).to_linexpr(),
+                           self.variables["cost_opex"].loc[tech, locs].to_linexpr(),
+                           term_reference_flow,
+                           compat="broadcast_equals")
+            rhs = 0
+            constraints.append(lhs == rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_technologies"]),
+                                                  index_names=["set_technologies"])
+
+    def constraint_opex_yearly_block(self):
         """ yearly opex for a technology at a location in each year """
-        # get parameter object
-        params = self.optimization_setup.parameters
-        sets = self.optimization_setup.sets
-        system = self.optimization_setup.system
-        model = self.optimization_setup.model
 
-        # get all the constraints
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
-        constraints = []
-        for tech, year in index.get_unique([0, 2]):
-            times = self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)
-            constraints.append(model.variables["opex_yearly"].loc[tech, :, year]
-                               - (model.variables["cost_opex"].loc[tech, :, times] * params.time_steps_operation_duration.loc[tech, times]).sum(["set_time_steps_operation"])
-                               - lp_sum([params.opex_specific_fixed.loc[tech, capacity_type, :, year]*model.variables["capacity"].loc[tech, capacity_type, :, year]
-                                         for capacity_type in system["set_capacity_types"] if tech in sets["set_storage_technologies"] or capacity_type == system["set_capacity_types"][0]])
-                               == 0)
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0, 2]), [index_names[0], index_names[2]], model), model.variables["opex_yearly"].mask
 
-    def get_constraint_carbon_emissions_technology(self):
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over all technologies and yearly time steps because some auxillary calculations depend on the technology
+        # we vectorize over locations
+        constraints = []
+        for tech, year in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
+
+            ### auxiliary calculations
+            times = self.time_steps.get_time_steps_year2operation(tech, year)
+
+            term_neg_summed_cost_opex = - (self.variables["cost_opex"].loc[tech, :, times] * self.parameters.time_steps_operation_duration.loc[tech, times]).sum(["set_time_steps_operation"])
+            term_neg_summed_capacities = - lp_sum([self.parameters.opex_specific_fixed.loc[tech, capacity_type, :, year]*self.variables["capacity"].loc[tech, capacity_type, :, year]
+                                                   for capacity_type in self.system["set_capacity_types"] if tech in self.sets["set_storage_technologies"] or capacity_type == self.system["set_capacity_types"][0]])
+
+            ### formulate constraint
+            lhs = lp_sum([1.0 * self.variables["opex_yearly"].loc[tech, :, year],
+                          term_neg_summed_cost_opex,
+                          term_neg_summed_capacities])
+            rhs = 0
+            constraints.append(lhs == rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_technologies", "set_time_steps_yearly"]),
+                                                  index_names=["set_technologies", "set_time_steps_yearly"])
+
+    def constraint_carbon_emissions_technology_block(self):
         """ calculate carbon emissions of each technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
 
-        # get all constraints
-        constraints = []
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over all technologies because of the reference carrier and flow which depend on the technology
+        # we vectorize over locations and time steps
+        constraints = []
         for tech in index.get_unique(["set_technologies"]):
+
+            ### auxiliary calculations
             locs = index.get_values([tech], 1, unique=True)
-            reference_carrier = sets["set_reference_carriers"][tech][0]
-            if tech in sets["set_conversion_technologies"]:
-                if reference_carrier in sets["set_input_carriers"][tech]:
-                    reference_flow = model.variables["flow_conversion_input"].loc[tech, reference_carrier, locs].to_linexpr()
+            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            if tech in self.sets["set_conversion_technologies"]:
+                if reference_carrier in self.sets["set_input_carriers"][tech]:
+                    reference_flow = self.variables["flow_conversion_input"].loc[tech, reference_carrier, locs].to_linexpr()
                     reference_flow = reference_flow.rename({"set_nodes": "set_location"})
                 else:
-                    reference_flow = model.variables["flow_conversion_output"].loc[tech, reference_carrier, locs].to_linexpr()
+                    reference_flow = self.variables["flow_conversion_output"].loc[tech, reference_carrier, locs].to_linexpr()
                     reference_flow = reference_flow.rename({"set_nodes": "set_location"})
-            elif tech in sets["set_transport_technologies"]:
-                reference_flow = model.variables["flow_transport"].loc[tech, locs].to_linexpr()
+            elif tech in self.sets["set_transport_technologies"]:
+                reference_flow = self.variables["flow_transport"].loc[tech, locs].to_linexpr()
                 reference_flow = reference_flow.rename({"set_edges": "set_location"})
             else:
-                reference_flow = model.variables["flow_storage_charge"].loc[tech, locs] + model.variables["flow_storage_discharge"].loc[tech, locs]
+                reference_flow = self.variables["flow_storage_charge"].loc[tech, locs] + self.variables["flow_storage_discharge"].loc[tech, locs]
                 reference_flow = reference_flow.rename({"set_nodes": "set_location"})
-            # merge everything, the first is just to ensure full shape
-            constraints.append(lp.merge(model.variables["carbon_emissions_technology"].loc[tech].where(False).to_linexpr(),
-                                        model.variables["carbon_emissions_technology"].loc[tech, locs].to_linexpr(),
-                                        - params.carbon_intensity_technology.loc[tech, locs] * reference_flow,
-                                        compat="broadcast_equals")
-                               == 0)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
+            term_reference_flow = - self.parameters.carbon_intensity_technology.loc[tech, locs] * reference_flow
 
-    def get_constraint_carbon_emissions_technology_total(self):
+            ### formulate constraint
+            # the first term is just to ensure full shape
+            lhs = lp.merge(self.variables["carbon_emissions_technology"].loc[tech].where(False).to_linexpr(),
+                           self.variables["carbon_emissions_technology"].loc[tech, locs].to_linexpr(),
+                           term_reference_flow,
+                           compat="broadcast_equals")
+            rhs = 0
+            constraints.append(lhs == rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_technologies"]),
+                                                  index_names=["set_technologies"])
+
+    def constraint_carbon_emissions_technology_total_block(self):
         """ calculate total carbon emissions of each technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        sets = self.optimization_setup.sets
-        model = self.optimization_setup.model
 
-        # index
-        years = sets["set_time_steps_yearly"]
-
-        # the index for the sums
+        ### index sets
+        years = self.sets["set_time_steps_yearly"]
+        # this index is just for the sums in the auxiliary calculations
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)
-        index = ZenIndex(index_values,index_names)
+        index = ZenIndex(index_values, index_names)
 
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we cycle over the years, because the sum of the operational time steps depends on the year
         constraints = []
         for year in years:
-            terms = []
-            for tech in index.get_unique(levels=[0]):
-                locs = index.get_values([tech], 1, unique=True)
-                times = self.optimization_setup.energy_system.time_steps.get_time_steps_year2operation(tech, year)
-                terms.append((params.time_steps_operation_duration.loc[tech, times] * model.variables["carbon_emissions_technology"].loc[tech, locs, times]).sum())
 
-            # get the cons
-            total = lp_sum(terms)
-            constraints.append(model.variables["carbon_emissions_technology_total"].loc[year] - total == 0)
+            ### auxiliary calculations
+            term_summed_carbon_emissions_technology = []
+            for tech in index.get_unique(["set_technologies"]):
+                locs = index.get_values([tech], "set_location", unique=True)
+                times = self.time_steps.get_time_steps_year2operation(tech, year)
+                term_summed_carbon_emissions_technology.append((self.variables["carbon_emissions_technology"].loc[tech, locs, times] * self.parameters.time_steps_operation_duration.loc[tech, times]).sum())
+            term_summed_carbon_emissions_technology = lp_sum(term_summed_carbon_emissions_technology)
 
-        return self.optimization_setup.constraints.reorder_list(constraints, years, ["set_time_steps_yearly"], model)
+            ### formulate constraint
+            lhs = self.variables["carbon_emissions_technology_total"].loc[year] - term_summed_carbon_emissions_technology
+            rhs = 0
+            constraints.append(lhs == rhs)
 
-    def constraint_cost_opex_total_rule(self, year):
-        """ sums over all technologies to calculate total opex """
-        # get parameter object
-        model = self.optimization_setup.model
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=years,
+                                                  index_names=["set_time_steps_yearly"])
 
-        return (model.variables["cost_opex_total"].loc[year]
-                - model.variables["opex_yearly"].loc[..., year].sum()
-                == 0)
+    def constraint_capacity_factor_block(self):
+        """ Load is limited by the installed capacity and the maximum load factor"""
 
-    def get_constraint_capacity_factor(self):
-        """
-        Load is limited by the installed capacity and the maximum load factor"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
-
-        # get all contraints
-        constraints = []
+        ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we oop over all technologies for the conditions and vectorize over the rest
+        constraints = []
         for tech in index.get_unique(["set_technologies"]):
+
+            ### auxiliary calculations
             capacity_types, locs, times = index.get_values([tech], [1, 2, 3], unique=True)
             # to actual coords to avoid renaming
-            capacity_types = model.variables.coords["set_capacity_types"].loc[capacity_types]
-            locs = model.variables.coords["set_location"].loc[locs]
-            times = model.variables.coords["set_time_steps_operation"].loc[times]
+            capacity_types = self.variables.coords["set_capacity_types"].loc[capacity_types]
+            locs = self.variables.coords["set_location"].loc[locs]
+            times = self.variables.coords["set_time_steps_operation"].loc[times]
             # the reference carrier
-            reference_carrier = sets["set_reference_carriers"][tech][0]
+            reference_carrier = self.sets["set_reference_carriers"][tech][0]
             # get invest time step
             time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times.data], coords=[times])
             # we create the capacity term (the dimension reassignment does not change the variables, just the broadcasting)
-            capacity_term = params.max_load.loc[tech, capacity_types, locs, times] * model.variables["capacity"].loc[tech, capacity_types, locs, time_step_year].to_linexpr()
+            term_capacity = self.parameters.max_load.loc[tech, capacity_types, locs, times] * self.variables["capacity"].loc[tech, capacity_types, locs, time_step_year].to_linexpr()
 
             # this term is just to ensure full shape
-            full_shape_term = model.variables["capacity"].loc[tech, ..., time_step_year].where(False).to_linexpr()
+            full_shape_term = self.variables["capacity"].loc[tech, ..., time_step_year].where(False).to_linexpr()
 
             # conversion technology
-            if tech in sets["set_conversion_technologies"]:
-                if reference_carrier in sets["set_input_carriers"][tech]:
-                    flow_term = -1.0 * model.variables["flow_conversion_input"].loc[tech, reference_carrier, locs, times]
-                    constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
-                                       >= 0)
+            if tech in self.sets["set_conversion_technologies"]:
+                if reference_carrier in self.sets["set_input_carriers"][tech]:
+                    term_flow = -1.0 * self.variables["flow_conversion_input"].loc[tech, reference_carrier, locs, times]
                 else:
-                    flow_term = -1.0 * model.variables["flow_conversion_output"].loc[tech, reference_carrier, locs, times]
-                    constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
-                                        >= 0)
+                    term_flow = -1.0 * self.variables["flow_conversion_output"].loc[tech, reference_carrier, locs, times]
             # transport technology
-            elif tech in sets["set_transport_technologies"]:
-                flow_term = -1.0 * model.variables["flow_transport"].loc[tech, locs, times]
-                constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
-                                   >= 0)
+            elif tech in self.sets["set_transport_technologies"]:
+                term_flow = -1.0 * self.variables["flow_transport"].loc[tech, locs, times]
             # storage technology
-            elif tech in sets["set_storage_technologies"]:
+            elif tech in self.sets["set_storage_technologies"]:
                 system = self.optimization_setup.system
                 # if limit power
                 mask = (capacity_types == system["set_capacity_types"][0]).astype(float)
                 # where true
-                flow_term = mask*(-1.0 * model.variables["flow_storage_charge"].loc[tech, locs, times] - 1.0 * model.variables["flow_storage_discharge"].loc[tech, locs, times])
-                constraints.append(lp.merge(lp.merge(capacity_term, flow_term), full_shape_term)
-                                    >= 0)
+                term_flow = mask*(-1.0 * self.variables["flow_storage_charge"].loc[tech, locs, times] - 1.0 * self.variables["flow_storage_discharge"].loc[tech, locs, times])
+
                 # TODO integrate level storage here as well
 
-        return self.optimization_setup.constraints.reorder_list(constraints, index.get_unique([0]), index_names[:1], model)
+            ### formulate constraint
+            lhs = lp.merge(lp.merge(term_capacity, term_flow), full_shape_term)
+            rhs = 0
+            constraints.append(lhs >= rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_technologies"]),
+                                                  index_names=["set_technologies"])

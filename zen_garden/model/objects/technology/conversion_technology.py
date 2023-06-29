@@ -18,6 +18,7 @@ import xarray as xr
 from zen_garden.utils import linexpr_from_tuple_np
 from .technology import Technology
 from ..component import ZenIndex
+from ..element import GenericRule
 
 
 class ConversionTechnology(Technology):
@@ -279,7 +280,7 @@ class ConversionTechnology(Technology):
         if set_linear_conversion_factor[0]:
             # if set_linear_conver_efficiency contains technologies:
             constraints.add_constraint_block(model, name="constraint_linear_conversion_factor",
-                                             constraint=rules.get_constraint_linear_conver_efficiency(*set_linear_conversion_factor),
+                                             constraint=rules.constraint_linear_conver_efficiency_block(*set_linear_conversion_factor),
                                              doc="Linear relationship in conversion_factor")  # Coupling constraints
         # couple the real variables with the auxiliary variables
         constraints.add_constraint_rule(model, name="constraint_capex_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup),
@@ -291,11 +292,11 @@ class ConversionTechnology(Technology):
         # flow coupling constraints for technologies, which are not modeled with an on-off-behavior
         # reference flow coupling
         constraints.add_constraint_block(model, name="constraint_reference_flow_coupling",
-                                         constraint=rules.get_constraint_reference_flow_coupling(*cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.constraint_reference_flow_coupling_block(*cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup)),
                                          doc="couples the real reference flow variables with the approximated variables")
         # dependent flow coupling
         constraints.add_constraint_block(model, name="constraint_dependent_flow_coupling",
-                                         constraint=rules.get_constraint_dependent_flow_coupling(*cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.constraint_dependent_flow_coupling_block(*cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup)),
                                          doc="couples the real dependent flow variables with the approximated variables")
 
     # defines disjuncts if technology on/off
@@ -324,11 +325,11 @@ class ConversionTechnology(Technology):
         # couple reference flows
         rules = ConversionTechnologyRules(optimization_setup)
         constraints.add_constraint_block(model, name=f"constraint_reference_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
-                                         constraint=rules.get_constraint_reference_flow_coupling([(tech, dependent_carrier, node, time) for dependent_carrier in sets["set_dependent_carriers"][tech]], ["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
+                                         constraint=rules.constraint_reference_flow_coupling_block([(tech, dependent_carrier, node, time) for dependent_carrier in sets["set_dependent_carriers"][tech]], ["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
                                          doc="couples the real reference flow variables with the approximated variables", disjunction_var=binary_var)
         # couple dependent flows
         constraints.add_constraint_block(model, name=f"constraint_dependent_flow_coupling_{'_'.join([str(tech), str(node), str(time)])}",
-                                         constraint=rules.get_constraint_dependent_flow_coupling([(tech, dependent_carrier, node, time) for dependent_carrier in sets["set_dependent_carriers"][tech]], ["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
+                                         constraint=rules.constraint_dependent_flow_coupling_block([(tech, dependent_carrier, node, time) for dependent_carrier in sets["set_dependent_carriers"][tech]], ["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
                                          doc="couples the real dependent flow variables with the approximated variables", disjunction_var=binary_var)
 
     @classmethod
@@ -376,7 +377,7 @@ class ConversionTechnology(Technology):
         return pwa_breakpoints, pwa_values
 
 
-class ConversionTechnologyRules:
+class ConversionTechnologyRules(GenericRule):
     """
     Rules for the ConversionTechnology class
     """
@@ -387,99 +388,177 @@ class ConversionTechnologyRules:
         :param optimization_setup: The OptimizationSetup the element is part of
         """
 
-        self.optimization_setup = optimization_setup
-        self.energy_system = optimization_setup.energy_system
+        super().__init__(optimization_setup)
 
-    ### --- functions with constraint rules --- ###
+
+    # Rule-based constraints
+    # -----------------------
+
     def constraint_linear_capex_rule(self, tech, node, time):
         """ if capacity and capex have a linear relationship"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
-        return (model.variables["capex_approximation"][tech, node, time]
-                - params.capex_specific_conversion.loc[tech, node, time].item() * model.variables["capacity_approximation"][tech, node, time]
-                == 0)
 
-    def get_constraint_linear_conver_efficiency(self, index_values, index_names):
-        """ if reference carrier and dependent carrier have a linear relationship"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        model = self.optimization_setup.model
+        ### index sets
+        # skipped because rule-based constraint
 
-        # get all the constraints
-        constraints = []
-        index = ZenIndex(index_values, index_names)
-        for tech, dependent_carrier in index.get_unique([0, 1]):
-            # get invest time step
-            coords = [model.variables.coords["set_nodes"], model.variables.coords["set_time_steps_operation"]]
-            nodes = index.get_values([tech, dependent_carrier], 2, dtype=list, unique=True)
-            times = index.get_values([tech, dependent_carrier], 3, dtype=list, unique=True)
-            time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times]
-            tuples = [(1.0, model.variables["flow_approximation_dependent"].loc[tech, dependent_carrier, nodes, times]),
-                      (-params.conversion_factor.loc[tech, dependent_carrier, nodes, time_step_year], model.variables["flow_approximation_reference"].loc[tech, dependent_carrier, nodes, times])]
-            constraints.append(linexpr_from_tuple_np(tuples, coords=coords, model=model)
-                               == 0)
+        ### masks
+        # skipped because rule-based constraint
 
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_linear_conver_efficiency_dim", model)
+        ### index loop
+        # skipped because rule-based constraint
+
+        ### auxiliary calculations
+        # not necessary
+
+        ### formulate constraint
+        lhs = (self.variables["capex_approximation"][tech, node, time]
+               - self.parameters.capex_specific_conversion.loc[tech, node, time].item() * self.variables["capacity_approximation"][tech, node, time])
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
 
     def constraint_capex_coupling_rule(self, tech, node, time):
         """ couples capex variables based on modeling technique"""
-        model = self.optimization_setup.model
-        return (model.variables["cost_capex"][tech, "power", node, time]
-                - model.variables["capex_approximation"][tech, node, time]
-                == 0)
+
+        ### index sets
+        # skipped because rule-based constraint
+
+        ### masks
+        # skipped because rule-based constraint
+
+        ### index loop
+        # skipped because rule-based constraint
+
+        ### auxiliary calculations
+        # not necessary
+
+        ### formulate constraint
+        lhs = (self.variables["cost_capex"][tech, "power", node, time]
+               - self.variables["capex_approximation"][tech, node, time])
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
 
     def constraint_capacity_coupling_rule(self, tech, node, time):
         """ couples capacity variables based on modeling technique"""
-        model = self.optimization_setup.model
-        return (model.variables["capacity_addition"][tech, "power", node, time]
-                - model.variables["capacity_approximation"][tech, node, time]
-                == 0)
 
-    def get_constraint_reference_flow_coupling(self, index_values, index_names):
+        ### index sets
+        # skipped because rule-based constraint
+
+        ### masks
+        # skipped because rule-based constraint
+
+        ### index loop
+        # skipped because rule-based constraint
+
+        ### auxiliary calculations
+        # not necessary
+
+        ### formulate constraint
+        lhs = (self.variables["capacity_addition"][tech, "power", node, time]
+               - self.variables["capacity_approximation"][tech, node, time])
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
+
+    # Block-based constraints
+    # -----------------------
+
+    def constraint_linear_conver_efficiency_block(self, index_values, index_names):
+        """ if reference carrier and dependent carrier have a linear relationship"""
+
+        ### index sets
+        index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # note necessary
+
+        ### index loop
+        # we loop over all technologies and dependent carriers, mostly to avoid renaming of dimension
+        constraints = []
+        for tech, dependent_carrier in index.get_unique(["set_conversion_technologies", "set_carriers"]):
+
+            ### auxiliary calculations
+            # get all the indices
+            coords = [self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]]
+            nodes = index.get_values([tech, dependent_carrier], 2, dtype=list, unique=True)
+            times = index.get_values([tech, dependent_carrier], 3, dtype=list, unique=True)
+            time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times]
+
+            ### formulate constraint
+            lhs = linexpr_from_tuple_np([(1.0, self.variables["flow_approximation_dependent"].loc[tech, dependent_carrier, nodes, times]),
+                                         (-self.parameters.conversion_factor.loc[tech, dependent_carrier, nodes, time_step_year], self.variables["flow_approximation_reference"].loc[tech, dependent_carrier, nodes, times])],
+                                        coords=coords, model=self.model)
+            rhs = 0
+            constraints.append(lhs == rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="constraint_linear_conver_efficiency_dim")
+
+    def constraint_reference_flow_coupling_block(self, index_values, index_names):
         """ couples reference flow variables based on modeling technique"""
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
 
+        ### index sets
         # check if we even have something
         if len(index_values) == 0:
             return []
-
-        # get all the constraints
-        constraints = []
         index = ZenIndex(index_values, index_names)
-        for tech, dependent_carrier in index.get_unique([0, 1]):
-            reference_carrier = sets["set_reference_carriers"][tech][0]
-            if reference_carrier in sets["set_input_carriers"][tech]:
-                constraints.append(model.variables["flow_conversion_input"].loc[tech, reference_carrier]
-                                   - model.variables["flow_approximation_reference"].loc[tech, dependent_carrier]
-                                   == 0)
-            else:
-                constraints.append(model.variables["flow_conversion_output"].loc[tech, reference_carrier]
-                                   - model.variables["flow_approximation_reference"].loc[tech, dependent_carrier]
-                                   == 0)
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_reference_flow_coupling_dim", model)
 
-    def get_constraint_dependent_flow_coupling(self, index_values, index_names):
+        ### masks
+        # note necessary
+
+        ### index loop
+        # we loop over all technologies and dependent carriers, mostly to avoid renaming of dimension
+        constraints = []
+        for tech, dependent_carrier in index.get_unique([0, 1]):
+
+            ### auxiliary calculations
+            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            if reference_carrier in self.sets["set_input_carriers"][tech]:
+                term_flow = self.variables["flow_conversion_input"].loc[tech, reference_carrier]
+            else:
+                term_flow = self.variables["flow_conversion_output"].loc[tech, reference_carrier]
+
+            ### formulate constraint
+            lhs = term_flow - self.variables["flow_approximation_reference"].loc[tech, dependent_carrier]
+            rhs = 0
+            constraints.append(lhs == rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="constraint_reference_flow_coupling_dim")
+
+    def constraint_dependent_flow_coupling_block(self, index_values, index_names):
         """ couples dependent flow variables based on modeling technique"""
-        model = self.optimization_setup.model
-        sets = self.optimization_setup.sets
 
+        ### index sets
         # check if we even have something
         if len(index_values) == 0:
             return []
-
-        # get all the constraints
-        constraints = []
         index = ZenIndex(index_values, index_names)
-        for tech, dependent_carrier in index.get_unique([0, 1]):
-            if dependent_carrier in sets["set_input_carriers"][tech]:
-                constraints.append(model.variables["flow_conversion_input"].loc[tech, dependent_carrier]
-                                   - model.variables["flow_approximation_dependent"].loc[tech, dependent_carrier]
-                                   == 0)
-            else:
-                constraints.append(model.variables["flow_conversion_output"].loc[tech, dependent_carrier]
-                                   - model.variables["flow_approximation_dependent"].loc[tech, dependent_carrier]
-                                   == 0)
 
-        return self.optimization_setup.constraints.combine_constraints(constraints, "constraint_dependent_flow_coupling_dim", model)
+        ### masks
+        # note necessary
+
+        ### index loop
+        # we loop over all technologies and dependent carriers, mostly to avoid renaming of dimension
+        constraints = []
+        for tech, dependent_carrier in index.get_unique([0, 1]):
+
+            ### auxiliary calculations
+            if dependent_carrier in self.sets["set_input_carriers"][tech]:
+                term_flow = self.variables["flow_conversion_input"].loc[tech, dependent_carrier]
+            else:
+                term_flow = self.variables["flow_conversion_output"].loc[tech, dependent_carrier]
+
+            ### formulate constraint
+            lhs = term_flow - self.variables["flow_approximation_dependent"].loc[tech, dependent_carrier]
+            rhs = 0
+            constraints.append(lhs == rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="constraint_dependent_flow_coupling_dim")
