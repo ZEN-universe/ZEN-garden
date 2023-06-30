@@ -240,9 +240,9 @@ class OptimizationSetup(object):
         self.model = lp.Model(solver_dir=self.solver["solver_dir"])
         # we need to reset the components to not carry them over
         self.sets = IndexSet()
-        self.variables = Variable()
-        self.parameters = Parameter()
-        self.constraints = Constraint()
+        self.variables = Variable(self.sets)
+        self.parameters = Parameter(self.sets)
+        self.constraints = Constraint(self.sets)
         # FIXME: Not with linopy yet TODO
         # add duals
         # self.add_duals()

@@ -605,7 +605,7 @@ class Technology(Element):
             mask.loc[:, techs, :, edges] |= sub_mask
 
         # used in constraint_technology_min_capacity
-        mask |= (params.capacity_addition_min.notnull() & (params.capacity_addition_min != 0))
+        mask = mask | (params.capacity_addition_min.notnull() & (params.capacity_addition_min != 0))
 
         # used in constraint_technology_max_capacity
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)
