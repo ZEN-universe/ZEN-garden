@@ -1105,10 +1105,10 @@ class Results(object):
             else:
                 component_data = self.get_df(component,is_dual=is_dual)
             if isinstance(component_data.index,pd.MultiIndex):
-                component_data = component_data.unstack()
+                component_data = self._unstack_time_level(component_data,component_name)
         elif isinstance(component, pd.Series):
             component_name = component.name
-            component_data = component.unstack()
+            component_data = self._unstack_time_level(component,component_name)
         else:
             raise TypeError(f"Type {type(component).__name__} of input is not supported.")
 
@@ -1135,6 +1135,24 @@ class Results(object):
             else:
                 raise KeyError(f"Axis index name of '{component_name}' ({axis_name}) is unknown. Should be (operational, storage, yearly)")
 
+    def _unstack_time_level(self,component,component_name):
+        """ unstacks the time level of a dataframe
+        :param component: pd.Series of component
+        :param component_name: name of component
+        :returns unstacked_component: pd.Dataframe of unstacked component
+        """
+        headers = []
+        headers.append(self.results["analysis"]["header_data_inputs"]["set_time_steps_operation"])
+        headers.append(self.results["analysis"]["header_data_inputs"]["set_time_steps_storage_level"])
+        headers.append(self.results["analysis"]["header_data_inputs"]["set_time_steps_yearly"])
+        headers = set(headers)
+        sel_header = list(headers.intersection(component.index.names))
+        assert len(sel_header) <= 1, f"Index of component {component_name} has multiple time headers: {sel_header}"
+        if len(sel_header) == 1:
+            unstacked_component = component.unstack(sel_header)
+        else:
+            unstacked_component = component
+        return unstacked_component
     def _get_hours_of_year(self, year):
         """ get total hours of year """
         _total_hours_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
@@ -1174,6 +1192,7 @@ class Results(object):
             if cost == "cost_shed_demand":
                 cost_df = self.get_total(cost, scenario=scenario).sum(axis=0)
                 cost_df.name = "cost_shed_demand_total"
+                total_cost = pd.concat([total_cost, cost_df], axis=1)
                 total_cost = pd.concat([total_cost, cost_df], axis=1)
             else:
                 total_cost = pd.concat([total_cost, self.get_total(cost, scenario=scenario)], axis=1)
@@ -1647,3 +1666,4 @@ if __name__ == "__main__":
         r = Results(out_folder)
     else:
         logging.critical("No results folder found!")
+    a=1
