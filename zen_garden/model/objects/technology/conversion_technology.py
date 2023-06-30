@@ -192,7 +192,7 @@ class ConversionTechnology(Technology):
 
             # init the bounds
             index_arrs = sets.tuple_to_arr(index_values, index_names)
-            coords = [np.unique(t.data) for t in index_arrs]
+            coords = [optimization_setup.sets.get_coord(data, name) for data, name in zip(index_arrs, index_names)]
             lower = xr.DataArray(0.0, coords=coords)
             upper = xr.DataArray(np.inf, coords=coords)
 

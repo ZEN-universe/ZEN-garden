@@ -135,7 +135,7 @@ class ZenSet(OrderedSet):
         self.data = data
         self.name = name
         self.doc = doc
-        self.superset = set()
+        self.superset = OrderedSet()
 
         if isinstance(data, dict):
             # init the children
@@ -347,8 +347,12 @@ class IndexSet(Component):
         lower = xr.DataArray(-np.inf, coords=coords, dims=index_list)
         upper = xr.DataArray(np.inf, coords=coords, dims=index_list)
         if isinstance(bounds, tuple):
-            lower[...] = bounds[0]
-            upper[...] = bounds[1]
+            if isinstance(bounds[0], xr.DataArray):
+                lower.loc[index_arrs] = bounds[0].loc[index_arrs]
+                upper.loc[index_arrs] = bounds[1].loc[index_arrs]
+            else:
+                lower[...] = bounds[0]
+                upper[...] = bounds[1]
         elif isinstance(bounds, np.ndarray):
             lower.loc[index_arrs] = bounds[:,0]
             upper.loc[index_arrs] = bounds[:,1]
@@ -1037,6 +1041,10 @@ class Constraint(Component):
                                constraints are stacked along a single dimension with the provided name.
         :return: Constraints with can be added
         """
+
+        # nothing to do, this is the skip of a rule constraint
+        if constraints is None:
+            return constraints
 
         # no need to do anything special
         if not isinstance(constraints, list):

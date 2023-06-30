@@ -598,6 +598,7 @@ class Technology(Element):
 
         # used in transport technology
         techs = list(sets["set_transport_technologies"])
+        techs = list(sets["set_transport_technologies"])
         if len(techs) > 0:
             edges = list(sets["set_edges"])
             sub_mask = (params.distance.loc[techs, edges] * params.capex_per_distance_transport.loc[techs, edges] != 0)
@@ -627,7 +628,7 @@ class Technology(Element):
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)
         # get all the capacities
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
-        coords = [np.unique(t.data) for t in index_arrs]
+        coords = [optimization_setup.sets.get_coord(data, name) for data, name in zip(index_arrs, index_names)]
         existing_quantities = xr.DataArray(np.nan, coords=coords, dims=index_names)
         values = np.zeros(len(index_values))
         for i, (tech, capacity_type, loc, time) in enumerate(index_values):
