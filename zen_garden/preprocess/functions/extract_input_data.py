@@ -610,7 +610,7 @@ class DataInput:
                             self.energy_system.set_time_steps_years))
                     else:
                         index_list.append(df_input.index.get_level_values(index_name).unique())
-                combined_index = pd.MultiIndex.from_product(index_list, names=index_names_column).sort_values()
+                combined_index = pd.MultiIndex.from_product(index_list, names=index_name_list).sort_values()
                 is_single_index = False
             df_input_temp = pd.DataFrame(index=combined_index, columns=df_input.columns)
             common_index = df_input.index.intersection(combined_index)

@@ -42,9 +42,9 @@ def folder_path():
 # helper functions
 ##################
 
-def compare_variables(test_model, optimization_setup,folder_path):
+def compare_variables(test_model, optimization_setup, folder_path):
     # import csv file containing selected variable values of test model collection
-    test_variables = pd.read_csv(os.path.join(folder_path, 'test_variables_readable.csv'),header=0, index_col=None)
+    test_variables = pd.read_csv(os.path.join(folder_path, 'test_variables_readable.csv'), header=0, index_col=None)
     # dictionary to store variable names, indices, values and test values of variables which don't match the test values
     failed_variables = {}
     # iterate through dataframe rows
@@ -53,7 +53,7 @@ def compare_variables(test_model, optimization_setup,folder_path):
         if data_row[0] != test_model:
             continue
         # get variable attribute of optimization_setup object by using string of the variable's name (e.g. optimization_setup.model.importCarrierFLow)
-        variable_attribute = getattr(optimization_setup.model,data_row[1])
+        variable_attribute = getattr(optimization_setup.model, data_row[1])
         # iterate through indices of current variable
         for variable_index in variable_attribute.extract_values():
             # ensure equality of dataRow index and variable index
@@ -63,17 +63,17 @@ def compare_variables(test_model, optimization_setup,folder_path):
                     # check if relative error exceeds limit of 10^-3, i.e. value differs from test value
                     if abs(variable_attribute.extract_values()[variable_index] - data_row[3]) / variable_attribute.extract_values()[variable_index] > 10**(-3):
                         if data_row[1] in failed_variables:
-                            failed_variables[data_row[1]][data_row[2]] = {"computed_values" : variable_attribute.extract_values()[variable_index]}
+                            failed_variables[data_row[1]][data_row[2]] = {"computed_values": variable_attribute.extract_values()[variable_index]}
                         else:
-                            failed_variables[data_row[1]] = {data_row[2] : {"computed_values" : variable_attribute.extract_values()[variable_index]}}
+                            failed_variables[data_row[1]] = {data_row[2]: {"computed_values": variable_attribute.extract_values()[variable_index]}}
                         failed_variables[data_row[1]][data_row[2]]["test_value"] = data_row[3]
                 else:
                     # check if absolute error exceeds specified limit
                     if abs(variable_attribute.extract_values()[variable_index] - data_row[3]) > 10**(-3):
                         if data_row[1] in failed_variables:
-                            failed_variables[data_row[1]][data_row[2]] = {"computed_values" : variable_attribute.extract_values()[variable_index]}
+                            failed_variables[data_row[1]][data_row[2]] = {"computed_values": variable_attribute.extract_values()[variable_index]}
                         else:
-                            failed_variables[data_row[1]] = {data_row[2] : {"computed_values" : variable_attribute.extract_values()[variable_index]}}
+                            failed_variables[data_row[1]] = {data_row[2]: {"computed_values": variable_attribute.extract_values()[variable_index]}}
                         failed_variables[data_row[1]][data_row[2]]["test_value"] = data_row[3]
     assertion_string = str()
     for failed_var in failed_variables:
@@ -369,6 +369,30 @@ def test_7b(config, folder_path):
 def test_7c(config, folder_path):
     # run the test
     data_set_name = "test_7c"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+
+def test_8a(config, folder_path):
+    # run the test
+    data_set_name = "test_8a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+
+def test_8b(config, folder_path):
+    # run the test
+    data_set_name = "test_8b"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
     # compare the variables of the optimization setup
