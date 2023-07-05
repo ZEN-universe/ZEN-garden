@@ -344,7 +344,7 @@ class StorageTechnologyRules(GenericRule):
                     else:
                         previous_level_time_step.append(None)
                 else:
-                    previous_level_time_step.append(t - 1)
+                    previous_level_time_step.append(self.energy_system.time_steps.get_previous_storage_time_step(tech,t))
             times = [t for t, tp in zip(times, previous_level_time_step) if tp is not None]
             element_time_step = [t for t, tp in zip(element_time_step, previous_level_time_step) if tp is not None]
             time_step_year = [t for t, tp in zip(time_step_year, previous_level_time_step) if tp is not None]
