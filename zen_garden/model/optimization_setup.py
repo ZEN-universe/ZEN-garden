@@ -240,9 +240,9 @@ class OptimizationSetup(object):
         self.model = lp.Model(solver_dir=self.solver["solver_dir"])
         # we need to reset the components to not carry them over
         self.sets = IndexSet()
-        self.variables = Variable()
-        self.parameters = Parameter()
-        self.constraints = Constraint()
+        self.variables = Variable(self.sets)
+        self.parameters = Parameter(self.sets)
+        self.constraints = Constraint(self.sets)
         # FIXME: Not with linopy yet TODO
         # add duals
         # self.add_duals()
@@ -403,9 +403,12 @@ class OptimizationSetup(object):
                 variables_sorted = variables_sorted[mask]
                 var_min = variables_sorted[0]
                 var_max = variables_sorted[-1]
-                coords = cons.coords.to_index()
-                coords_min = coords[np.argmax(np.any((variables_reshaped==var_min) & (coeffs_reshaped==coeff_min),axis=1))]
-                coords_max = coords[np.argmax(np.any((variables_reshaped==var_max) & (coeffs_reshaped==coeff_max),axis=1))]
+
+                # extract the coords, note that the ordering of cons.coords and cons.lhs.coords can be different
+                coords_idx_min = np.where((variables == var_min) & (coeffs == coeff_min))
+                coords_min = [cons.lhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.lhs.coords.dims, coords_idx_min[:-1])]
+                coords_idx_max = np.where((variables == var_max) & (coeffs == coeff_max))
+                coords_max = [cons.lhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.lhs.coords.dims, coords_idx_max[:-1])]
                 if 0.0 < coeff_min < smallest_coeff[1]:
                     smallest_coeff[0] = (f"{cons.name}{coords_min}", lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
                     smallest_coeff[1] = coeff_min
@@ -422,8 +425,13 @@ class OptimizationSetup(object):
                     continue
                 rhs_min = rhs_sorted[0]
                 rhs_max = rhs_sorted[-1]
-                coords_min = coords[np.argmax(rhs == rhs_min)]
-                coords_max = coords[np.argmax(rhs == rhs_max)]
+
+                # get coords for rhs_min and rhs_max
+                coords_idx_min = np.where(cons.rhs.data == rhs_min)
+                coords_min = [cons.rhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.rhs.coords.dims, coords_idx_min)]
+                coords_idx_max = np.where(cons.rhs.data == rhs_max)
+                coords_max = [cons.rhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.rhs.coords.dims, coords_idx_max)]
+
                 if 0.0 < rhs_min < smallest_rhs[1]:
                     smallest_rhs[0] = f"{cons.name}{coords_min}"
                     smallest_rhs[1] = rhs_min

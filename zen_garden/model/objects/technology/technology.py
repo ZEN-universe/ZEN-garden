@@ -592,6 +592,7 @@ class Technology(Element):
 
         # used in transport technology
         techs = list(sets["set_transport_technologies"])
+        techs = list(sets["set_transport_technologies"])
         if len(techs) > 0:
             edges = list(sets["set_edges"])
             sub_mask = (params.distance.loc[techs, edges] * params.capex_per_distance_transport.loc[techs, edges] != 0)
@@ -599,7 +600,7 @@ class Technology(Element):
             mask.loc[:, techs, :, edges] |= sub_mask
 
         # used in constraint_technology_min_capacity
-        mask |= (params.capacity_addition_min.notnull() & (params.capacity_addition_min != 0))
+        mask = mask | (params.capacity_addition_min.notnull() & (params.capacity_addition_min != 0))
 
         # used in constraint_technology_max_capacity
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)
@@ -621,7 +622,7 @@ class Technology(Element):
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)
         # get all the capacities
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
-        coords = [np.unique(t.data) for t in index_arrs]
+        coords = [optimization_setup.sets.get_coord(data, name) for data, name in zip(index_arrs, index_names)]
         existing_quantities = xr.DataArray(np.nan, coords=coords, dims=index_names)
         values = np.zeros(len(index_values))
         for i, (tech, capacity_type, loc, time) in enumerate(index_values):
@@ -954,6 +955,7 @@ class TechnologyRules(GenericRule):
                 else:
                     # dummy term
                     term_total_capacity_knowledge_addition = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False)
+
                 # total capacity in previous year; if time is first time step of interval, use existing capacities of present year
                 other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
                 if time != self.optimization_setup.energy_system.set_time_steps_yearly[0]:

@@ -397,7 +397,7 @@ class CarrierRules(GenericRule):
         ### masks
         # we distinguish the cases where there is availability to import or export and where there is not
         mask = ((self.parameters.availability_import != 0) | (self.parameters.availability_export != 0))
-        mask = xr.align(self.variables.labels, mask)[1]
+        #mask = xr.align(self.variables.labels, mask)[1]
 
         ### index loop
         # not necessary
@@ -648,7 +648,8 @@ class CarrierRules(GenericRule):
                        term_flow_storage_discharge,
                        term_carrier_import,
                        -term_carrier_export,
-                       term_carrier_shed_demand)
+                       term_carrier_shed_demand,
+                       compat="broadcast_equals")
         rhs = term_carrier_demand
         constraints = lhs == rhs
 

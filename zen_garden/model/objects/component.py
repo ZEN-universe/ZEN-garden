@@ -135,10 +135,17 @@ class ZenSet(OrderedSet):
         self.data = data
         self.name = name
         self.doc = doc
+        self.superset = OrderedSet()
 
         if isinstance(data, dict):
             # init the children
             self.ordered_data = {k: ZenSet(v, name=f"{name}[{k}]") for k, v in data.items()}
+
+            # we set all the supersets
+            for child in self.ordered_data.values():
+                self.superset.update(child)
+            for child in self.ordered_data.values():
+                child.superset.update(self.superset)
 
             # for an indexed sets the init data are the keys
             data = data.keys()
@@ -149,6 +156,8 @@ class ZenSet(OrderedSet):
             self.indexed = False
             # index set it None
             self.index_set = None
+            # the superset is just the set itself
+            self.superset.update(data)
 
         # proper init
         super().__init__(data)
@@ -232,6 +241,9 @@ class IndexSet(Component):
         self.sets = {}
         self.index_sets = {}
 
+        # this is the Dataset with the coords
+        self.coords_dataset = xr.Dataset()
+
     def add_set(self, name, data, doc, index_set=None):
         """
         Adds a set to the IndexSets (this set it not indexed)
@@ -245,6 +257,7 @@ class IndexSet(Component):
 
         # added data and docs
         self.sets[name] = ZenSet(data=data, name=name, doc=doc, index_set=index_set)
+        self.coords_dataset = self.coords_dataset.assign_coords({name: np.array(list(self.sets[name].superset))})
         self.docs[name] = doc
         if index_set is not None:
             self.index_sets[name] = index_set
@@ -301,8 +314,7 @@ class IndexSet(Component):
 
         return tuple(index_arrs)
 
-    @staticmethod
-    def indices_to_mask(index_values, index_list, bounds, model=None):
+    def indices_to_mask(self, index_values, index_list, bounds, model=None):
         """
         Transforms a list of index values into a mask
         :param index_values: A list of index values (tuples)
@@ -315,14 +327,14 @@ class IndexSet(Component):
 
         # get the coords
         index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
-        coords = [np.unique(t.data) for t in index_arrs]
+        coords = [self.get_coord(data, name) for data, name in zip(index_arrs, index_list)]
 
         # init the mask
         if model is not None:
             index_names = []
             for index_name, coord in zip(index_list, coords):
                 # we check if there is already an index with the same name but a different size
-                if index_name in model.variables.coords and coord.size != model.variables.coords[index_name].data.size:
+                if index_name in model.variables.coords and coord.size == 0:
                     index_names.append(index_name + f"_{uuid.uuid4()}")
                 else:
                     index_names.append(index_name)
@@ -335,8 +347,12 @@ class IndexSet(Component):
         lower = xr.DataArray(-np.inf, coords=coords, dims=index_list)
         upper = xr.DataArray(np.inf, coords=coords, dims=index_list)
         if isinstance(bounds, tuple):
-            lower[...] = bounds[0]
-            upper[...] = bounds[1]
+            if isinstance(bounds[0], xr.DataArray):
+                lower.loc[index_arrs] = bounds[0].loc[index_arrs]
+                upper.loc[index_arrs] = bounds[1].loc[index_arrs]
+            else:
+                lower[...] = bounds[0]
+                upper[...] = bounds[1]
         elif isinstance(bounds, np.ndarray):
             lower.loc[index_arrs] = bounds[:,0]
             upper.loc[index_arrs] = bounds[:,1]
@@ -356,6 +372,21 @@ class IndexSet(Component):
             raise ValueError(f"bounds should be None, tuple, array or callable, is: {bounds}")
 
         return mask, lower, upper
+
+    def get_coord(self, data, name):
+        """
+        Transforms the data into a proper coordinate. If the name of the data is in a set, the sets superset is
+        returned otherwise all unique data values are returned, this is to avoid having sets with the same name
+        and different values
+        :param data: The data to transform
+        :param name: The name of the set
+        :return: The proper coordinate
+        """
+
+        if name in self and len(data) > 0:
+            return self.coords_dataset.coords[name]
+        else:
+            return np.unique(data)
 
     def __getitem__(self, name):
         """
@@ -400,8 +431,9 @@ class DictParameter(object):
 
 
 class Parameter(Component):
-    def __init__(self):
+    def __init__(self, index_sets):
         """ initialization of the parameter object """
+        self.index_sets = index_sets
         super().__init__()
         self.min_parameter_value = {"name": None, "value": None}
         self.max_parameter_value = {"name": None, "value": None}
@@ -484,8 +516,7 @@ class Parameter(Component):
             data = data.to_dict()
         return data
 
-    @staticmethod
-    def convert_to_xarr(data, index_list):
+    def convert_to_xarr(self, data, index_list):
         """ converts the data to a dict if pd.Series"""
         if isinstance(data, pd.Series):
             # if single entry in index
@@ -495,6 +526,8 @@ class Parameter(Component):
                 data.index.names = index_list
             # transform the type of the coords to str if necessary
             data = data.to_xarray().astype(float)
+
+            # objects to string
             coords_dict = {}
             for k, v in data.coords.dtypes.items():
                 if v.hasobject:
@@ -502,6 +535,10 @@ class Parameter(Component):
                 else:
                     coords_dict[k] = data.coords[k]
             data = data.assign_coords(coords_dict)
+
+            # now we need to align the coords
+            data, _ = xr.align(data, self.index_sets.coords_dataset, join="right")
+
         # sometimes we get emtpy parameters
         if isinstance(data, dict) and len(data) == 0:
             data = xr.DataArray([])
@@ -509,7 +546,12 @@ class Parameter(Component):
 
 
 class Variable(Component):
-    def __init__(self):
+    def __init__(self, index_sets):
+        """
+        Initialization of a variable
+        :param index_sets: A reference to the index sets of the model
+        """
+        self.index_sets = index_sets
         super().__init__()
 
     def add_variable(self, model: lp.Model, name, index_sets, integer=False, binary=False, bounds=None, doc="", mask=None):
@@ -525,7 +567,7 @@ class Variable(Component):
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
-            mask_index, lower, upper = IndexSet.indices_to_mask(index_values, index_list, bounds, model)
+            mask_index, lower, upper = self.index_sets.indices_to_mask(index_values, index_list, bounds, model)
             if mask is not None:
                 mask_index = mask_index & mask
             model.add_variables(lower=lower, upper=upper, integer=integer, binary=binary, name=name, mask=mask_index, coords=mask_index.coords)
@@ -550,7 +592,13 @@ class Variable(Component):
 
 
 class Constraint(Component):
-    def __init__(self):
+    def __init__(self, index_sets):
+        """
+        Initialization of a constraint
+        :param index_sets: A reference to the index sets of the model
+        """
+
+        self.index_sets = index_sets
         super().__init__()
         # This is the big-M for the constraints if the variables inside an expression are not bounded
         self.M = np.iinfo(np.int32).max
@@ -710,7 +758,7 @@ class Constraint(Component):
 
         # create the mask
         index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
-        coords = [np.unique(t.data) for t in index_arrs]
+        coords = [self.index_sets.get_coord(data, name) for data, name in zip(index_arrs, index_list)]
 
         # there might be an extra label
         if len(index_list) > 1 and len(index_list) != len(index_values[0]):
@@ -954,6 +1002,30 @@ class Constraint(Component):
         reordered = self.reorder_group(combined_constraints.lhs, combined_constraints.sign, combined_constraints.rhs, index_values, index_names, model)
         return reordered
 
+    def align_constraint(self, constraint, mask=None):
+        """
+        Aligns a single constraint the coordinats
+        :param constraint: The constraint to align
+        :return: The aligned constraint and mask
+        """
+
+        # we start with the lhs
+        vars, _ = xr.align(constraint.lhs.data.vars, self.index_sets.coords_dataset, join="right", fill_value=-1)
+        coeffs, _ = xr.align(constraint.lhs.data.coeffs, self.index_sets.coords_dataset, join="right", fill_value=np.nan)
+        lhs = lp.LinearExpression(xr.Dataset({"coeffs": coeffs, "vars": vars}), constraint.lhs.model)
+
+        # now the rhs
+        rhs, _ = xr.align(constraint.rhs, self.index_sets.coords_dataset, join="right", fill_value=np.nan)
+
+        # sign
+        sign, _ = xr.align(constraint.sign, self.index_sets.coords_dataset, join="right", fill_value="=")
+
+        # mask
+        if mask is not None:
+            mask, _ = xr.align(mask, self.index_sets.coords_dataset, join="right", fill_value=False)
+
+        return lp.constraints.AnonymousConstraint(lhs, sign, rhs), mask
+
     def return_contraints(self, constraints, model=None, mask=None, index_values=None, index_names=None,
                           stack_dim_name=None):
         """
@@ -970,8 +1042,18 @@ class Constraint(Component):
         :return: Constraints with can be added
         """
 
+        # nothing to do, this is the skip of a rule constraint
+        if constraints is None:
+            return constraints
+
         # no need to do anything special
         if not isinstance(constraints, list):
+            # rule based constraints
+            if isinstance(constraints, lp.constraints.AnonymousScalarConstraint):
+                return constraints
+
+            # align
+            constraints, mask = self.align_constraint(constraints, mask)
             if mask is None:
                 return constraints
             return constraints, mask
@@ -985,16 +1067,22 @@ class Constraint(Component):
         # normal reordering
         if index_names is not None and index_values is not None:
             constraints = self.reorder_list(constraints, index_values, index_names, model)
-            if mask is not None:
-                return constraints, mask
-            return constraints
+
+            # align
+            constraints, mask = self.align_constraint(constraints, mask)
+            if mask is None:
+                return constraints
+            return constraints, mask
 
         # stack along a dimension
         if stack_dim_name is not None:
             constraints = self.combine_constraints(constraints, stack_dim_name, model)
-            if mask is not None:
-                return constraints, mask
-            return constraints
+
+            # align
+            constraints, mask = self.align_constraint(constraints, mask)
+            if mask is None:
+                return constraints
+            return constraints, mask
 
         # Error
         raise ValueError("Either single constraint or a list with index_values and index_names or stack_dim_name must be provided!")

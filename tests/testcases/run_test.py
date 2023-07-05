@@ -58,7 +58,7 @@ def str2tuple(string):
             indices.append(re.search("'([^']+)'", s).group(1))
         # if it is not a sting it is a int
         else:
-            indices.append(int(re.search("\d+", s)[0]))
+            indices.append(int(re.search(r"\d+", s)[0]))
     return indices
 
 
@@ -120,6 +120,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
 # All the tests
 ###############
 
+@pytest.mark.filterwarnings("ignore:object name is not a valid Python identifier:")
 def test_1a(config, folder_path):
     # add duals for this test
     config.solver["add_duals"] = True
@@ -133,6 +134,7 @@ def test_1a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_1b(config, folder_path):
@@ -145,6 +147,7 @@ def test_1b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_1c(config, folder_path):
@@ -157,6 +160,7 @@ def test_1c(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_1d(config, folder_path):
@@ -169,6 +173,7 @@ def test_1d(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_2a(config, folder_path):
@@ -181,6 +186,7 @@ def test_2a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_2b(config, folder_path):
@@ -193,6 +199,7 @@ def test_2b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_2c(config, folder_path):
@@ -205,6 +212,7 @@ def test_2c(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_2d(config, folder_path):
@@ -217,6 +225,7 @@ def test_2d(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_3a(config, folder_path):
@@ -229,6 +238,7 @@ def test_3a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_3b(config, folder_path):
@@ -241,6 +251,7 @@ def test_3b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_4a(config, folder_path):
@@ -253,6 +264,7 @@ def test_4a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_4b(config, folder_path):
@@ -265,6 +277,7 @@ def test_4b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_4c(config, folder_path):
@@ -277,6 +290,7 @@ def test_4c(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_4d(config, folder_path):
@@ -289,6 +303,7 @@ def test_4d(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_4e(config, folder_path):
@@ -301,6 +316,7 @@ def test_4e(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_4f(config, folder_path):
@@ -313,6 +329,7 @@ def test_4f(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_4g(config, folder_path):
@@ -325,6 +342,7 @@ def test_4g(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_5a(config, folder_path):
@@ -337,6 +355,7 @@ def test_5a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_6a(config, folder_path):
@@ -349,6 +368,7 @@ def test_6a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 
 def test_7a(config, folder_path):
@@ -361,6 +381,7 @@ def test_7a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 def test_7b(config, folder_path):
     # run the test
@@ -372,6 +393,7 @@ def test_7b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
 
 def test_7c(config, folder_path):
     # run the test
@@ -383,3 +405,4 @@ def test_7c(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    res.close()
