@@ -212,6 +212,16 @@ class TimeStepsDicts(object):
         else:
             return None
 
+    def get_previous_storage_time_step(self, element, time_step):
+        """ gets the storage time step before in the sequence
+        :param element: element of optimization
+        :param time_step: current time step
+        :return previous_time_step: previous time step
+        """
+        sequence = self.dict_sequence_time_steps_operation[element + "_storage_level"]
+        previous_time_step = sequence[np.where(sequence == time_step)[0] - 1][0]
+        return previous_time_step
+
     def decode_yearly_time_steps(self, element_time_steps):
         """ decodes list of years to base time steps
         :param element_time_steps: time steps of year
