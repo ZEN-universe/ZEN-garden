@@ -1417,6 +1417,9 @@ class Results(object):
                             drop_levs.append(ind)
                 data_total = data_total.droplevel(level=drop_levs)
 
+            #drop rows with value zero (e.g. techs with zero capacity)
+            data_total = data_total[(data_total[data_total.columns] != 0).any(axis=1)]
+
             #create title containing argument values
             for ind, arg in enumerate(arguments):
                 if arg is not None and arg is not False:
@@ -1640,4 +1643,3 @@ if __name__ == "__main__":
         r = Results(out_folder)
     else:
         logging.critical("No results folder found!")
-    r.plot_energy_balance(node="DE", carrier="heat", year=0, start_hour=0, duration=240)
