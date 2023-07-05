@@ -261,7 +261,7 @@ class StorageTechnologyRules:
             if not system["storage_periodicity"]:
                 enforce_periodicity = False
         else:
-            previous_level_time_step = time - 1
+            previous_level_time_step = self.energy_system.time_steps.get_previous_storage_time_step(tech,time)
         # self discharge, reformulate as partial geometric series
         if params.self_discharge[tech, node] != 0:
             after_self_discharge = (1-(1 - params.self_discharge[tech, node])**params.time_steps_storage_level_duration[tech, time])/(1-(1 - params.self_discharge[tech, node]))
@@ -272,7 +272,6 @@ class StorageTechnologyRules:
                     model.storage_level[tech, node, previous_level_time_step] * (1 - params.self_discharge[tech, node]) ** params.time_steps_storage_level_duration[tech, time]
                     + (model.flow_storage_charge[tech, node, element_time_step] * params.efficiency_charge[tech, node, time_step_year]
                        - model.flow_storage_discharge[tech, node, element_time_step] / params.efficiency_discharge[tech, node, time_step_year]) * after_self_discharge)
-                    # sum((1 - params.self_discharge[tech, node]) ** interimTimeStep for interimTimeStep in range(0, params.time_steps_storage_level_duration[tech, time])))
         else:
             return pe.Constraint.Skip
 
