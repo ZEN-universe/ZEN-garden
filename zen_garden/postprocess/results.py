@@ -180,7 +180,13 @@ class Results(object):
 
         # h5 version
         if os.path.exists(f"{name}.h5"):
-            content = utils.HDFPandasSerializer(file_name=f"{name}.h5", lazy=lazy)
+            try:
+                content = utils.HDFPandasSerializer(file_name=f"{name}.h5", lazy=lazy)
+            except KeyError:
+                warnings.warn("The old h5 dict results are decrepated, please rerun the model to get the new results")
+                content = utils.load(f"{name}.h5")
+                if not lazy:
+                    content = content.unlazy(return_dict=True)
             return content
 
         # compressed version
@@ -420,7 +426,7 @@ class Results(object):
                 k = None
 
             # recursive call
-            if isinstance(v, dict):
+            if isinstance(v, (dict, utils.LazyHdfDict)):
                 out_dict[k] = cls.expand_dict(v)  # flatten the array to list
             elif isinstance(v, list):
                 # Note: list(v) creates a list of np objects v.tolist() not
