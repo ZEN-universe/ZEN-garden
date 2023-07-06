@@ -384,22 +384,31 @@ class LazyEntry(object):
     This is a lazy entry from a store that is loaded only when it is requested.
     """
 
-    def __init__(self, path, dtype, store):
+    def __init__(self, path, dtype, store, value=None):
         """
         Initializes the class.
+        :param value: The value to store
         :param path: The path to the leave of the store
         :param dtype: The type of the leave
         :param store: The store to load the data from
+        :param value: The value to store, can be None, if given, this is returned when deserialized and the store is not
+                      accessed.
         """
         self.path = path
         self.dtype = dtype
         self.store = store
+        self.value = value
 
     def desarialize(self):
         """
         Deserializes the data from the store.
         :return: The deserialized data
         """
+
+        # if we have a value, return it
+        if self.value is not None:
+            return self.value
+
         # get the data
         df = self.store.get(self.path)
 
@@ -482,8 +491,16 @@ class HDFPandasSerializer(LazyDict):
             # load the leaves
             for leave_key in leaves:
                 leave_path = f"{path}/{leave_key}"
-                dtype = self.store.get_storer(f"{path}/{leave_key}").attrs.type
-                entry = LazyEntry(leave_path, dtype, self.store)
+                attrs = self.store.get_storer(f"{path}/{leave_key}").attrs
+                dtype = attrs.type
+
+                # if its a scalar we read it out now
+                value = None
+                if dtype == "scalar":
+                    value = attrs.value
+
+                # create the entry
+                entry = LazyEntry(leave_path, dtype, self.store, value=value)
 
                 if self._lazy:
                     current_dict[leave_key] = entry
@@ -518,10 +535,12 @@ class HDFPandasSerializer(LazyDict):
             if isinstance(value, dict):
                 cls._recurse(store, value, key)
             elif isinstance(value, (pd.DataFrame, pd.Series)):
+                # make a proper multi index to save memory
                 store.put(key, value)
                 store.get_storer(key).attrs.type = "pandas"
             elif isinstance(value, (float, str, int)):
-                store.put(key, pd.Series(value))
+                store.put(key, pd.Series([], dtype=int))
+                store.get_storer(key).attrs.value = value
                 store.get_storer(key).attrs.type = "scalar"
             elif isinstance(value, (list, tuple)) or isinstance(value, np.ndarray) and value.ndim == 1:
                 store.put(key, pd.Series(value))
@@ -544,5 +563,5 @@ class HDFPandasSerializer(LazyDict):
         if not overwrite and os.path.exists(file_name):
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
 
-        with pd.HDFStore(file_name, mode='w') as store:
+        with pd.HDFStore(file_name, mode='w', complevel=4) as store:
             cls._recurse(store, dictionary)
