@@ -18,3 +18,4 @@ entsoe-py
 matplotlib
 mpmath
 tsam
+tables
