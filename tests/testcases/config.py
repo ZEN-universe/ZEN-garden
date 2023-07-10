@@ -24,7 +24,7 @@ analysis["objective"] = "total_cost"
 analysis["use_capacities_existing"] = True
 
 ## Solver - settings update compared to default values
-solver["name"] = "gurobi" # free solver
+solver["name"] = "glpk" # free solver
 solver["analyze_numerics"] = True
 solver["immutable_unit"] = ["hour","km"]
 
