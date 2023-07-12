@@ -1,14 +1,14 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        October-2021
-Authors:        Alissa Ganter (aganter@ethz.ch)
+"""
+:Title:          ZEN-GARDEN
+:Created:        October-2021
+:Authors:        Alissa Ganter (aganter@ethz.ch),
                 Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class defining a generic energy carrier.
-                The class takes as inputs the abstract optimization model. The class adds parameters, variables and
-                constraints of a generic carrier and returns the abstract optimization model.
-==========================================================================================================================================================================="""
+Class defining a generic energy carrier.
+The class takes as inputs the abstract optimization model. The class adds parameters, variables and
+constraints of a generic carrier and returns the abstract optimization model.
+"""
 import logging
 
 import linopy as lp
@@ -28,6 +28,7 @@ class Carrier(Element):
 
     def __init__(self, carrier: str, optimization_setup):
         """initialization of a generic carrier object
+
         :param carrier: carrier that is added to the model
         :param optimization_setup: The OptimizationSetup the element is part of """
 
@@ -55,7 +56,10 @@ class Carrier(Element):
         self.price_shed_demand = self.data_input.extract_input_data("price_shed_demand", index_sets=[])
 
     def overwrite_time_steps(self, base_time_steps):
-        """ overwrites set_time_steps_operation"""
+        """ overwrites set_time_steps_operation
+
+        :param base_time_steps: #TODO describe parameter/return
+        """
         set_time_steps_operation = self.energy_system.time_steps.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation", yearly=True)
         setattr(self, "set_time_steps_operation", set_time_steps_operation.squeeze().tolist())
 
@@ -63,12 +67,14 @@ class Carrier(Element):
     @classmethod
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <Carrier>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         pass
 
     @classmethod
     def construct_params(cls, optimization_setup):
         """ constructs the pe.Params of the class <Carrier>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         # demand of carrier
         optimization_setup.parameters.add_parameter(name="demand", data=optimization_setup.initialize_component(cls, "demand", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
@@ -106,6 +112,7 @@ class Carrier(Element):
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <Carrier>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         variables = optimization_setup.variables
@@ -144,6 +151,7 @@ class Carrier(Element):
     @classmethod
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <Carrier>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
@@ -207,6 +215,7 @@ class CarrierRules(GenericRule):
     def __init__(self, optimization_setup):
         """
         Inits the rules for a given EnergySystem
+
         :param optimization_setup: The OptimizationSetup the element is part of
         """
 
@@ -216,7 +225,14 @@ class CarrierRules(GenericRule):
     # ----------------------
 
     def constraint_cost_carrier_total_rule(self, year):
-        """ total cost of importing and exporting carrier"""
+        """ total cost of importing and exporting carrier
+
+        .. math::
+            C_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t (C_{c,n,t} + C_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}})
+
+        :param year: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # skipped because rule-based constraint
@@ -246,7 +262,14 @@ class CarrierRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_carbon_emissions_carrier_total_rule(self, year):
-        """ total carbon emissions of importing and exporting carrier"""
+        """ total carbon emissions of importing and exporting carrier
+
+        .. math::
+            E_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t E_{c,n,t}
+
+        :param model: #TODO describe parameter/return
+        :param year: #TODO describe parameter/return
+        """
 
         ### index sets
         # skipped because rule-based constraint
@@ -278,7 +301,13 @@ class CarrierRules(GenericRule):
     # -----------------------
 
     def constraint_availability_import_block(self):
-        """node- and time-dependent carrier availability to import from outside the system boundaries"""
+        """node- and time-dependent carrier availability to import from outside the system boundaries
+
+        .. math::
+            U_{c,n,t} \\leq a_{c,n,t}^\mathrm{import}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # not necessary
@@ -301,7 +330,13 @@ class CarrierRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_availability_export_block(self):
-        """node- and time-dependent carrier availability to export to outside the system boundaries"""
+        """node- and time-dependent carrier availability to export to outside the system boundaries
+
+        .. math::
+           V_{c,n,t} \\leq a_{c,n,t}^\mathrm{export}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # not necessary
@@ -324,7 +359,13 @@ class CarrierRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_availability_import_yearly_block(self):
-        """node- and year-dependent carrier availability to import from outside the system boundaries"""
+        """node- and year-dependent carrier availability to import from outside the system boundaries
+
+         .. math::
+            a_{c,n,y}^\mathrm{import} \geq \\sum_{t\\in\mathcal{T}}\\tau_t U_{c,n,t}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"],
@@ -357,7 +398,13 @@ class CarrierRules(GenericRule):
                                                   index_names=["set_carriers", "set_time_steps_yearly"])
 
     def constraint_availability_export_yearly_block(self):
-        """node- and year-dependent carrier availability to export to outside the system boundaries"""
+        """node- and year-dependent carrier availability to export to outside the system boundaries
+
+        .. math::
+           a_{c,n,y}^\mathrm{export} \geq \\sum_{t\\in\mathcal{T}}\\tau_t V_{c,n,t}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_yearly"], self.optimization_setup)
@@ -389,7 +436,13 @@ class CarrierRules(GenericRule):
                                                   index_names=["set_carriers", "set_time_steps_yearly"])
 
     def constraint_cost_carrier_block(self):
-        """ cost of importing and exporting carrier"""
+        """ cost of importing and exporting carrier
+
+        .. math::
+           C_{c,n,t} = u_{c,n,t} U_{c,n,t} - v_{c,n,t} V_{c,n,t}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # not necessary
@@ -417,7 +470,13 @@ class CarrierRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_cost_shed_demand_block(self):
-        """ cost of shedding demand of carrier """
+        """ cost of shedding demand of carrier
+
+        .. math::
+           C_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}} = D_{c,n,t} \\nu_c
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
@@ -451,7 +510,13 @@ class CarrierRules(GenericRule):
                                                   index_names=["set_carriers"])
 
     def constraint_limit_shed_demand_block(self):
-        """ limit demand shedding at low price """
+        """ limit demand shedding
+
+        .. math::
+           D_{c,n,t} \leq d_{c,n,t}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # not necessary
@@ -474,7 +539,13 @@ class CarrierRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_carbon_emissions_carrier_block(self):
-        """ carbon emissions of importing and exporting carrier"""
+        """ carbon emissions of importing and exporting carrier
+
+        .. math::
+           E_{c,n,t} = \\epsilon_c (U_{c,n,t} - V_{c,n,t})
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
@@ -512,7 +583,16 @@ class CarrierRules(GenericRule):
 
     def constraint_nodal_energy_balance_block(self):
         """
-        nodal energy balance for each time step.
+        nodal energy balance for each time step
+
+        .. math::
+            0 = -(d_{c,n,t}-D_{c,n,t})
+            + \\sum_{i\\in\mathcal{I}}(\\overline{G}_{c,i,n,t}-\\underline{G}_{c,i,n,t})
+            + \\sum_{j\\in\mathcal{J}}\\sum_{e\\in\\underline{\mathcal{E}}}F_{j,e,t}-F^\mathrm{l}_{j,e,t})-\\sum_{e'\\in\\overline{\mathcal{E}}}F_{j,e',t})
+            + \\sum_{k\\in\mathcal{K}}(\\overline{H}_{k,n,t}-\\underline{H}_{k,n,t})
+            + U_{c,n,t} - V_{c,n,t}
+
+        :return: #TODO describe parameter/return
         """
 
         ### index sets

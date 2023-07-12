@@ -1,15 +1,15 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        October-2021
-Authors:        Alissa Ganter (aganter@ethz.ch)
-                Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:          ZEN-GARDEN
+:Created:        October-2021
+:Authors:        Alissa Ganter (aganter@ethz.ch),
+                 Jacob Mannhardt (jmannhardt@ethz.ch)
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class defining the parameters, variables and constraints that hold for all storage technologies.
-                The class takes the abstract optimization model as an input, and returns the parameters, variables and
-                constraints that hold for the storage technologies.
-==========================================================================================================================================================================="""
-
+Class defining the parameters, variables and constraints that hold for all storage technologies.
+The class takes the abstract optimization model as an input, and returns the parameters, variables and
+constraints that hold for the storage technologies.
+"""
+import cProfile
 import logging
 
 import numpy as np
@@ -22,14 +22,20 @@ from ..element import Element, GenericRule
 
 
 class StorageTechnology(Technology):
+    """
+    Class defining storage technologies
+    """
     # set label
     label = "set_storage_technologies"
     location_type = "set_nodes"
 
     def __init__(self, tech, optimization_setup):
-        """init storage technology object
+        """
+        init storage technology object
+
         :param tech: name of added technology
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
 
         logging.info(f'Initialize storage technology {tech}')
         super().__init__(tech, optimization_setup)
@@ -73,7 +79,13 @@ class StorageTechnology(Technology):
         self.capex_specific_energy = self.capex_specific_energy * fraction_year
 
     def calculate_capex_of_single_capacity(self, capacity, index, storage_energy=False):
-        """ this method calculates the annualized capex of a single existing capacity. """
+        """ this method calculates the annualized capex of a single existing capacity.
+
+        :param capacity: #TODO describe parameter/return
+        :param index: #TODO describe parameter/return
+        :param storage_energy: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         if storage_energy:
             _absolute_capex = self.capex_specific_energy[index[0]].iloc[0] * capacity
         else:
@@ -82,7 +94,8 @@ class StorageTechnology(Technology):
 
     def calculate_time_steps_storage_level(self, conducted_tsa):
         """ this method calculates the number of time steps on the storage level, and the sequence in which the storage levels are connected
-        conducted_tsa: boolean if the time series were aggregated. If not, the storage level index is the same as the carrier flow indices """
+
+        :param conducted_tsa: boolean if the time series were aggregated. If not, the storage level index is the same as the carrier flow indices  """
         sequence_time_steps = self.sequence_time_steps
         # if time series aggregation was conducted
         if conducted_tsa:
@@ -114,7 +127,10 @@ class StorageTechnology(Technology):
         self.energy_system.time_steps.set_time_steps_storage_startend(self.name, self.optimization_setup.system)
 
     def overwrite_time_steps(self, base_time_steps):
-        """ overwrites set_time_steps_storage_level """
+        """ overwrites set_time_steps_storage_level
+
+        :param base_time_steps: #TODO describe parameter/return
+        """
         super().overwrite_time_steps(base_time_steps)
         set_time_steps_storage_level = self.energy_system.time_steps.encode_time_step(self.name + "_storage_level", base_time_steps=base_time_steps, time_step_type="operation", yearly=True)
         setattr(self, "set_time_steps_storage_level", set_time_steps_storage_level.squeeze().tolist())
@@ -123,6 +139,7 @@ class StorageTechnology(Technology):
     @classmethod
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <StorageTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         # time steps of storage levels
         optimization_setup.sets.add_set(name="set_time_steps_storage_level", data=optimization_setup.get_attribute_of_all_elements(cls, "set_time_steps_storage_level"),
@@ -132,6 +149,7 @@ class StorageTechnology(Technology):
     @classmethod
     def construct_params(cls, optimization_setup):
         """ constructs the pe.Params of the class <StorageTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
 
         # time step duration of storage level
@@ -158,6 +176,7 @@ class StorageTechnology(Technology):
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <StorageTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
 
         model = optimization_setup.model
@@ -193,6 +212,7 @@ class StorageTechnology(Technology):
     @classmethod
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <StorageTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
@@ -214,7 +234,15 @@ class StorageTechnology(Technology):
 
     @classmethod
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
-        """definition of disjunct constraints if technology is on"""
+        """definition of disjunct constraints if technology is on
+
+        :param optimization_setup: #TODO describe parameter/return
+        :param tech: #TODO describe parameter/return
+        :param capacity_type: #TODO describe parameter/return
+        :param node: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        :param binary_var: #TODO describe parameter/return
+        """
         params = optimization_setup.parameters
         constraints = optimization_setup.constraints
         model = optimization_setup.model
@@ -237,7 +265,15 @@ class StorageTechnology(Technology):
 
     @classmethod
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
-        """definition of disjunct constraints if technology is off"""
+        """definition of disjunct constraints if technology is off
+
+        :param optimization_setup: #TODO describe parameter/return
+        :param tech: #TODO describe parameter/return
+        :param capacity_type: #TODO describe parameter/return
+        :param node: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        :param binary_var: #TODO describe parameter/return
+        """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
 
@@ -263,6 +299,7 @@ class StorageTechnologyRules(GenericRule):
     def __init__(self, optimization_setup):
         """
         Inits the rules for a given EnergySystem
+
         :param optimization_setup: The OptimizationSetup the element is part of
         """
 
@@ -275,7 +312,13 @@ class StorageTechnologyRules(GenericRule):
     # -----------------------
 
     def get_constraint_storage_level_max(self):
-        """limit maximum storage level to capacity"""
+        """limit maximum storage level to capacity
+
+        .. math::
+            L_{k,n,t^\mathrm{k}} \le S^\mathrm{e}_{k,n,y}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], self.optimization_setup)
@@ -311,7 +354,13 @@ class StorageTechnologyRules(GenericRule):
                                                   index_names=["set_storage_technologies"])
 
     def constraint_couple_storage_level_block(self):
-        """couple subsequent storage levels (time coupling constraints)"""
+        """couple subsequent storage levels (time coupling constraints)
+
+        .. math::
+            L(t) = L_0\\kappa^t + \\Delta H\\frac{1-\\kappa^t}{1-\\kappa} = \\frac{\\Delta H}{1-\\kappa}+(L_0-\\frac{\\Delta H}{1-\\kappa})\\kappa^t
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], self.optimization_setup)
@@ -376,7 +425,13 @@ class StorageTechnologyRules(GenericRule):
                                                   index_names=["set_storage_technologies"])
 
     def constraint_storage_technology_capex_block(self):
-        """ definition of the capital expenditures for the storage technology"""
+        """ definition of the capital expenditures for the storage technology
+
+        .. math::
+            CAPEX_{y,n,i}^\mathrm{cost} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], self.optimization_setup)

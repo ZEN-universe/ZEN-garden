@@ -1,11 +1,11 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      October-2021
-Authors:      Janis Fluri (janis.fluri@id.ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:        ZEN-GARDEN
+:Created:      October-2021
+:Authors:      Janis Fluri (janis.fluri@id.ethz.ch)
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Class is defining to read in the results of an Optimization problem.
-==========================================================================================================================================================================="""
+Class is defining to read in the results of an Optimization problem.
+"""
 
 import logging
 import os
@@ -44,6 +44,7 @@ def setup_logger(log_path=None, level=logging.INFO):
 def get_inheritors(klass):
     """
     Get all child classes of a given class
+
     :param klass: The class to get all children
     :return: All children as a set
     """
@@ -68,6 +69,7 @@ class RedirectStdStreams(object):
     def __init__(self, stdout=None, stderr=None):
         """
         Initializes the context manager
+
         :param stdout: Stream for stdout
         :param stderr: Stream for stderr
         """
@@ -83,6 +85,7 @@ class RedirectStdStreams(object):
     def __exit__(self, exc_type, exc_value, traceback):
         """
         The exit function of the context manager
+
         :param exc_type: Type of the exit
         :param exc_value: Value of the exit
         :param traceback:  traceback of the error
@@ -174,6 +177,11 @@ def hdf_file(hdf, lazy=True, *args, **kwargs):
     """
     Context manager yields h5 file if hdf is str,
     otherwise just yield hdf as is.
+
+    :param hdf: #TODO describe parameter/return
+    :param lazy: #TODO describe parameter/return
+    :param args: #TODO describe parameter/return
+    :param kwargs: #TODO describe parameter/return
     """
     if isinstance(hdf, str):
         if not lazy:
@@ -189,6 +197,7 @@ def unpack_dataset(item):
     """
     Reconstruct a hdfdict dataset.
     Only some special unpacking for yaml and datetime types.
+
     :param item: h5py.Dataset
     :return: Unpacked Data
     """
@@ -219,11 +228,21 @@ class LazyHdfDict(UserDict):
     """
 
     def __init__(self, _h5file=None, *args, **kwargs):
+        """
+
+        :param _h5file: #TODO describe parameter/return
+        :param args: #TODO describe parameter/return
+        :param kwargs: #TODO describe parameter/return
+        """
         super().__init__(*args, **kwargs)
         self._h5file = _h5file  # used to close the file on deletion.
 
     def __getitem__(self, key):
-        """Returns item and loads dataset if needed."""
+        """Returns item and loads dataset if needed.
+
+        :param key: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         item = super().__getitem__(key)
         if isinstance(item, h5py.Dataset):
             item = unpack_dataset(item)
@@ -234,6 +253,9 @@ class LazyHdfDict(UserDict):
         """
         Unpacks all datasets.
         You can call dict(this_instance) then to get a real dict.
+
+        :param return_dict: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
         """
         load(self, lazy=False)
 
@@ -257,12 +279,17 @@ class LazyHdfDict(UserDict):
             self._h5file.close()
 
     def __del__(self):
+        """
+        delete
+        """
         self.close()
 
     def _ipython_key_completions_(self):
         """
         Returns a tuple of keys.
         Special Method for ipython to get key completion
+
+        :return: #TODO describe parameter/return
         """
         return tuple(self.keys())
 
@@ -270,6 +297,7 @@ class LazyHdfDict(UserDict):
 def fill_dict(hdfobject, datadict, lazy=True, unpacker=unpack_dataset):
     """
     Recursivley unpacks a hdf object into a dict
+
     :param hdfobject: Object to recursively unpack
     :param datadict: A dict option to add the unpacked values to
     :param lazy: If True, the datasets are lazy loaded at the moment an item is requested.
@@ -295,6 +323,7 @@ def fill_dict(hdfobject, datadict, lazy=True, unpacker=unpack_dataset):
 def load(hdf, lazy=True, unpacker=unpack_dataset, *args, **kwargs):
     """
     Returns a dictionary containing the groups as keys and the datasets as values from given hdf file.
+
     :param hdf: string (path to file) or `h5py.File()` or `h5py.Group()`
     :param lazy: If True, the datasets are lazy loaded at the moment an item is requested.
     :param unpacker: Unpack function gets `value` of type h5py.Dataset. Must return the data you would like to
@@ -315,6 +344,10 @@ def load(hdf, lazy=True, unpacker=unpack_dataset, *args, **kwargs):
 def pack_dataset(hdfobject, key, value):
     """
     Packs a given key value pair into a dataset in the given hdfobject.
+
+    :param hdfobject: #TODO describe parameter/return
+    :param key: #TODO describe parameter/return
+    :param value: #TODO describe parameter/return
     """
 
     isdt = None
@@ -350,6 +383,7 @@ def pack_dataset(hdfobject, key, value):
 def dump(data, hdf, packer=pack_dataset, *args, **kwargs):
     """
     Adds keys of given dict as groups and values as datasets to the given hdf-file (by string or object) or group object.
+
     :param data: The dictionary containing only string keys and data values or dicts again.
     :param hdf: string (path to file) or `h5py.File()` or `h5py.Group()`
     :param packer: Callable gets `hdfobject, key, value` as input.
@@ -387,6 +421,7 @@ class LazyEntry(object):
     def __init__(self, path, dtype, store, value=None):
         """
         Initializes the class.
+
         :param value: The value to store
         :param path: The path to the leave of the store
         :param dtype: The type of the leave
@@ -402,6 +437,7 @@ class LazyEntry(object):
     def desarialize(self):
         """
         Deserializes the data from the store.
+
         :return: The deserialized data
         """
 
@@ -431,6 +467,7 @@ class LazyDict(dict):
     def __getitem__(self, item):
         """
         Returns the item from the dictionary.
+
         :param item: The item to return
         :return: The item
         """
@@ -453,7 +490,9 @@ class HDFPandasSerializer(LazyDict):
         """
         Initializes the class to read a hdf file, potentially lazily. For writing files, use the classmethod
         "serialize_dict".
+
         :param file_name: The file name of the hdf file.
+        :param lazy: Boolean if lazy selection
         """
 
         # super init
@@ -522,6 +561,7 @@ class HDFPandasSerializer(LazyDict):
     def _recurse(cls, store, dictionary, previous_key=""):
         """
         Recursively saves the dictionary into the store.
+
         :param store: The store to save the dictionary into.
         :param dictionary: The dictionary to save.
         :param previous_key: The key of the dictionary.
@@ -555,6 +595,7 @@ class HDFPandasSerializer(LazyDict):
     def serialize_dict(cls, file_name, dictionary, overwrite=True):
         """
         Serialized a dictionary of dataframes and other objects into a hdf file.
+
         :param file_name: The file name of the hdf file.
         :param dictionary: The dictionary to serialize
         :param overwrite: If True, the file will be overwritten.

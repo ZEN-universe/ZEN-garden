@@ -13,8 +13,8 @@ construction_time_default,0,
 capacity_investment_existing_default,0,GW
 opex_specific_fixed_default,87.6,Euro/kW
 max_diffusion_rate_default,inf,
-input_carrier,natural_gas oxygen,
-output_carrier,heat,
+input_carrier,natural_gas oxygen,GW
+output_carrier,heat,GW
 conversion_factor_default,1.1,
 capex_specific_default,876,Euro/kW
 capacity_addition_unbounded_default,0,GW

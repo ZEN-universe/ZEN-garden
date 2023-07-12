@@ -1,16 +1,17 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      October-2021
-Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
-              Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:        ZEN-GARDEN
+:Created:      October-2021
+:Authors:      Jacob Mannhardt (jmannhardt@ethz.ch),
+            Alissa Ganter (aganter@ethz.ch)
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Class defining the Concrete optimization model.
-              The class takes as inputs the properties of the optimization problem. The properties are saved in the
-              dictionaries analysis and system which are passed to the class. After initializing the Concrete model, the
-              class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
-              The class also includes a method to solve the optimization problem.
-==========================================================================================================================================================================="""
+Class defining the Concrete optimization model.
+The class takes as inputs the properties of the optimization problem. The properties are saved in the
+dictionaries analysis and system which are passed to the class. After initializing the Concrete model, the
+class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
+The class also includes a method to solve the optimization problem.
+"""
+import cProfile
 import logging
 import os
 from collections import defaultdict
@@ -28,15 +29,17 @@ from ..preprocess.prepare import Prepare
 
 
 class OptimizationSetup(object):
-
+    """setup optimization setup """
     # dict of element classes, this dict is filled in the __init__ of the package
     dict_element_classes = {}
 
-    def __init__(self, analysis: dict, prepare: Prepare, energy_system_name="energy_system"):
-        """setup Pyomo Concrete Model
-        :param analysis: dictionary defining the analysis framework
-        :param prepare: A Prepare instance for the Optimization setup"""
+    def __init__(self, analysis: dict, prepare: Prepare):
+        """
+        instantiates an optimization setup object
 
+        :param analysis: dictionary defining the analysis framework
+        :param prepare: object of the Prepare class
+        """
         self.prepare = prepare
         self.analysis = analysis
         self.system = prepare.system
@@ -76,6 +79,7 @@ class OptimizationSetup(object):
 
     def add_elements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
+
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system"""
         logging.info("\n--- Add elements to model--- \n")
@@ -112,6 +116,7 @@ class OptimizationSetup(object):
     def add_element(self, element_class, name):
         """
         Adds an element to the element_dict with the class labels as key
+
         :param element_class: Class of the element
         :param name: Name of the element
         """
@@ -126,12 +131,14 @@ class OptimizationSetup(object):
 
     def get_all_elements(self, cls):
         """ get all elements of the class in the enrgysystem.
+
         :param cls: class of the elements to return
         :return list of elements in this class """
         return self.dict_elements[cls.__name__]
 
     def get_all_names_of_elements(self, cls):
         """ get all names of elements in class.
+
         :param cls: class of the elements to return
         :return names_of_elements: list of names of elements in this class """
         _elements_in_class = self.get_all_elements(cls=cls)
@@ -142,6 +149,7 @@ class OptimizationSetup(object):
 
     def get_element(self, cls, name: str):
         """ get single element in class by name. Inherited by child classes.
+
         :param name: name of element
         :param cls: class of the elements to return
         :return element: return element whose name is matched """
@@ -153,6 +161,7 @@ class OptimizationSetup(object):
     def get_attribute_of_all_elements(self, cls, attribute_name: str, capacity_types=False,
                                       return_attribute_is_series=False):
         """ get attribute values of all elements in a class
+
         :param cls: class of the elements to return
         :param attribute_name: str name of attribute
         :param capacity_types: boolean if attributes extracted for all capacity types
@@ -179,6 +188,7 @@ class OptimizationSetup(object):
 
     def append_attribute_of_element_to_dict(self, _element, attribute_name, dict_of_attributes, capacity_type=None):
         """ get attribute values of all elements in this class
+
         :param _element: element of class
         :param attribute_name: str name of attribute
         :param dict_of_attributes: dict of attribute values
@@ -193,7 +203,9 @@ class OptimizationSetup(object):
         _attribute = getattr(_element, attribute_name)
         assert not isinstance(_attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {_element.name}"
         # add attribute to dict_of_attributes
-        if isinstance(_attribute, dict):
+        if _attribute is None:
+            return dict_of_attributes, False
+        elif isinstance(_attribute, dict):
             dict_of_attributes.update({(_element.name,) + (key,): val for key, val in _attribute.items()})
         elif isinstance(_attribute, pd.Series) and "pwa" not in attribute_name:
             if capacity_type:
@@ -220,6 +232,7 @@ class OptimizationSetup(object):
 
     def get_attribute_of_specific_element(self, cls, element_name: str, attribute_name: str):
         """ get attribute of specific element in class
+
         :param cls: class of the elements to return
         :param element_name: str name of element
         :param attribute_name: str name of attribute
@@ -243,9 +256,6 @@ class OptimizationSetup(object):
         self.variables = Variable(self.sets)
         self.parameters = Parameter(self.sets)
         self.constraints = Constraint(self.sets)
-        # FIXME: Not with linopy yet TODO
-        # add duals
-        # self.add_duals()
         # define and construct components of self.model
         Element.construct_model_components(self)
         # find smallest and largest coefficient and RHS
@@ -266,6 +276,7 @@ class OptimizationSetup(object):
 
     def set_base_configuration(self, scenario="", elements={}):
         """set base configuration
+
         :param scenario: name of base scenario
         :param elements: elements in base configuration """
         self.base_scenario = scenario
@@ -273,6 +284,7 @@ class OptimizationSetup(object):
 
     def restore_base_configuration(self, scenario, elements):
         """restore default configuration
+
         :param scenario: scenario name
         :param elements: dictionary of scenario dependent elements and parameters"""
         if not scenario == self.base_scenario:
@@ -289,6 +301,7 @@ class OptimizationSetup(object):
 
     def overwrite_params(self, scenario, elements):
         """overwrite scenario dependent parameters
+
         :param scenario: scenario name
         :param elements: dictionary of scenario dependent elements and parameters"""
         if scenario != "":
@@ -351,6 +364,7 @@ class OptimizationSetup(object):
 
     def overwrite_time_indices(self, step_horizon):
         """ select subset of time indices, matching the step horizon
+
         :param step_horizon: step of the rolling horizon """
 
         if self.system["use_rolling_horizon"]:
@@ -444,6 +458,7 @@ class OptimizationSetup(object):
 
     def solve(self, solver):
         """Create model instance by assigning parameter values and instantiating the sets
+
         :param solver: dictionary containing the solver settings """
         solver_name = solver["name"]
         # remove options that are None
@@ -478,6 +493,7 @@ class OptimizationSetup(object):
 
     def add_new_capacity_addition(self, step_horizon):
         """ adds the newly built capacity to the existing capacity
+
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
@@ -522,6 +538,7 @@ class OptimizationSetup(object):
 
     def add_carbon_emission_cumulative(self, step_horizon):
         """ overwrite previous carbon emissions with cumulative carbon emissions
+
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
@@ -536,10 +553,11 @@ class OptimizationSetup(object):
 
     def initialize_component(self, calling_class, component_name, index_names=None, set_time_steps=None, capacity_types=False):
         """ this method initializes a modeling component by extracting the stored input data.
+
         :param calling_class: class from where the method is called
         :param component_name: name of modeling component
         :param index_names: names of index sets, only if calling_class is not EnergySystem
-        :param set_time_steps: name time steps set, only if calling_class is EnergySystem
+        :param set_time_steps: time steps, only if calling_class is EnergySystem
         :param capacity_types: boolean if extracted for capacities
         :return component_data: data to initialize the component """
         # if calling class is EnergySystem
@@ -577,6 +595,7 @@ class OptimizationSetup(object):
 
     def check_for_subindex(self, component_data, custom_set):
         """ this method checks if the custom_set can be a subindex of component_data and returns subindexed component_data
+
         :param component_data: extracted data as pd.Series
         :param custom_set: custom set as subindex of component_data
         :return component_data: extracted subindexed data as pd.Series """

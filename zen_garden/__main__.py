@@ -1,14 +1,14 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      September-2022
-Authors:      Janis Fluri (janis.fluri@id.ethz.ch)
-              Alissa Ganter (aganter@ethz.ch)
-              Davide Tonelli (davidetonelli@outlook.com)
+"""
+:Title:        ZEN-GARDEN
+:Created:      September-2022
+:Authors:      Janis Fluri (janis.fluri@id.ethz.ch),
+              Alissa Ganter (aganter@ethz.ch),
+              Davide Tonelli (davidetonelli@outlook.com),
               Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Compilation  of the optimization problem.
-==========================================================================================================================================================================="""
+Compilation  of the optimization problem.
+"""
 from ._internal import main
 import importlib.util
 import argparse
@@ -19,6 +19,7 @@ import os
 def run_module(args=None):
     """
     Runs the main function of ZEN-Garden
+
     :param args: Arguments to parse
     """
     if args is None:

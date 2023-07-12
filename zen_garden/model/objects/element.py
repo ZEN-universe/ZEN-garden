@@ -1,14 +1,14 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        October-2021
-Authors:        Alissa Ganter (aganter@ethz.ch)
+"""
+:Title:          ZEN-GARDEN
+:Created:        October-2021
+:Authors:        Alissa Ganter (aganter@ethz.ch),
                 Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class defining a standard Element. Contains methods to add parameters, variables and constraints to the
-                optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
-                optimization model as an input.
-==========================================================================================================================================================================="""
+Class defining a standard Element. Contains methods to add parameters, variables and constraints to the
+optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
+optimization model as an input.
+"""
 import copy
 import itertools
 import logging
@@ -18,13 +18,16 @@ import time
 
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 
-
 class Element:
+    """
+    Class defining a standard Element
+    """
     # set label
     label = "set_elements"
 
     def __init__(self, element: str, optimization_setup):
         """ initialization of an element
+
         :param element: element that is added to the model
         :param optimization_setup: The OptimizationSetup the element is part of """
         # set attributes
@@ -61,7 +64,10 @@ class Element:
         self.input_path = paths[class_label][self.name]["folder"]
 
     def overwrite_time_steps(self, base_time_steps):
-        """ overwrites time steps. Must be implemented in child classes """
+        """ overwrites time steps. Must be implemented in child classes
+
+        :param base_time_steps: #TODO describe parameter/return
+        """
         raise NotImplementedError("overwrite_time_steps must be implemented in child classes!")
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
@@ -69,6 +75,7 @@ class Element:
     @classmethod
     def construct_model_components(cls, optimization_setup):
         """ constructs the model components of the class <Element>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("\n--- Construct model components ---\n")
         pid = os.getpid()
@@ -104,6 +111,7 @@ class Element:
     @classmethod
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <Element>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
@@ -118,6 +126,7 @@ class Element:
     @classmethod
     def construct_params(cls, optimization_setup):
         """ constructs the pe.Params of the class <Element>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("Construct pe.Params")
         # construct pe.Params of energy system
@@ -135,6 +144,7 @@ class Element:
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <Element>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("Construct pe.Vars")
         # construct pe.Vars of energy system
@@ -146,6 +156,7 @@ class Element:
     @classmethod
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <Element>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("Construct pe.Constraints")
         # construct pe.Constraints of energy system
@@ -158,6 +169,7 @@ class Element:
     @classmethod
     def create_custom_set(cls, list_index, optimization_setup):
         """ creates custom set for model component 
+
         :param list_index: list of names of indices
         :param optimization_setup: The OptimizationSetup the element is part of
         :return list_index: list of names of indices """
@@ -286,8 +298,10 @@ class Element:
         If the technology has a minimum load of 0 for all nodes and time steps,
         and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as pwa),
         then on-off-behavior is not necessary to model
+
         :param tech: technology in model
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of
+        :return model_on_off: Bool indicating if on-off-behaviour (min load) needs to be modeled"""
 
         sets = optimization_setup.sets
 

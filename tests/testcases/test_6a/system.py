@@ -16,8 +16,8 @@ system['set_conversion_technologies']     = ["natural_gas_boiler"]
 system['set_storage_technologies']        = ["natural_gas_storage"]
 system['set_transport_technologies']      = ["natural_gas_pipeline"]
 
-system['set_nodes']                      = ["DE","CH"]
-system["social_discount_rate"]            = 0     # similar to discount factor, but for discounted utility model
+system['set_nodes']                      = ["DE", "CH"]
+
 # time steps
 system["reference_year"]                 = 2022
 system["unaggregated_time_steps_per_year"]  = 2

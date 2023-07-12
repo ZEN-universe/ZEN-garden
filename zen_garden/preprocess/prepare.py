@@ -1,25 +1,28 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      October-2021
-Authors:      Davide Tonelli (davidetonelli@outlook.com
+"""
+:Title:        ZEN-GARDEN
+:Created:      October-2021
+:Authors:      Davide Tonelli (davidetonelli@outlook.com,
               Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Class to read the data from input files, collect them into a dictionary and convert the dictionary into a Pyomo
-              compatible dictionary to be passed to the compile routine.
-==========================================================================================================================================================================="""
+Class to read the data from input files, collect them into a dictionary and convert the dictionary into a Pyomo
+compatible dictionary to be passed to the compile routine.
+"""
 
 import logging
 import os
 
 
 class Prepare:
+    """
 
+    """
     def __init__(self, config):
         """
         This class creates the dictionary containing all the input data
         organised per set according to the model formulation
-        :param system: dictionary defining the system framework
+
+        :param config: config instance used for the run
         :return: dictionary containing all the input data
         """
         # instantiate analysis object
@@ -38,6 +41,7 @@ class Prepare:
         """
         This method creates a dictionary with the paths of the data split
         by carriers, networks, technologies
+
         :return: dictionary all the paths for reading data
         """
 
@@ -89,6 +93,10 @@ class Prepare:
                     self.system["set_technologies"].extend(self.system[subset])
 
     def check_existing_carrier_data(self, system):
+        """checks the existing carrier data and only regards those carriers for which folders exist
+
+        :param system: dictionary defining the system
+        """
         # check if carriers exist
         self.system = system
         for carrier in self.system["set_carriers"]:

@@ -14,8 +14,7 @@ system = dict()
 system['set_conversion_technologies']     = ["natural_gas_boiler"]
 system['set_storage_technologies']        = ["natural_gas_storage"]
 
-
-system['set_nodes']                      = ["DE","CH"]
+system['set_nodes']                      = ["DE", "CH"]
 
 # time steps
 system["reference_year"]                 = 2022

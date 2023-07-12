@@ -1,11 +1,11 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      January-2022
-Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:        ZEN-GARDEN
+:Created:      January-2022
+:Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Functions to apply time series aggregation to time series
-==========================================================================================================================================================================="""
+Functions to apply time series aggregation to time series
+"""
 import pandas as pd
 import numpy as np
 import logging
@@ -17,9 +17,12 @@ from zen_garden.model.objects.technology.storage_technology import StorageTechno
 
 
 class TimeSeriesAggregation(object):
-
+    """
+    Class containing methods to apply time series aggregation
+    """
     def __init__(self, energy_system: EnergySystem):
         """ initializes the time series aggregation. The data is aggregated for a single year and then concatenated
+
         :param energy_system: The energy system to use"""
         self.energy_system = energy_system
         self.optimization_setup = energy_system.optimization_setup
@@ -61,7 +64,10 @@ class TimeSeriesAggregation(object):
             self.df_ts_raw = pd.Series()
 
     def substitute_column_names(self, direction="flatten"):
-        """ this method substitutes the column names to have flat columns names (otherwise sklearn warning) """
+        """ this method substitutes the column names to have flat columns names (otherwise sklearn warning)
+
+        :param direction: #TODO describe parameter/return
+        """
         if direction == "flatten":
             if not hasattr(self, "columnNamesOriginal"):
                 self.columnNamesOriginal = self.df_ts_raw.columns
@@ -127,9 +133,10 @@ class TimeSeriesAggregation(object):
 
     def extract_raw_ts(self, element, header_set_time_steps):
         """ extract the time series from an element and concatenates the non-constant time series to a pd.DataFrame
-        :param element: element of the optimization 
+
+        :param element: element of the optimization
         :param header_set_time_steps: name of set_time_steps
-        :return df_time_series_raw: pd.DataFrame with non-constant time series"""
+        :return df_ts_raw: pd.DataFrame with non-constant time series"""
         _dict_raw_ts = {}
         raw_ts = getattr(element, "raw_time_series")
         for ts in raw_ts:
@@ -146,6 +153,7 @@ class TimeSeriesAggregation(object):
     def link_time_steps(self, element):
         """ calculates the necessary overlapping time steps of the investment and operation of a technology for all years.
         It sets the union of the time steps for investment, operation and years.
+
         :param element: technology of the optimization """
         list_sequence_time_steps = [self.energy_system.time_steps.get_sequence_time_steps(element.name, "operation"),
                                     self.energy_system.time_steps.get_sequence_time_steps(None, "yearly")]
@@ -164,13 +172,17 @@ class TimeSeriesAggregation(object):
             self.yearly_variation_nonaggregated_ts(element)
 
     def convert_time_steps_operation2year(self, element):
-        """ calculates the conversion of operational time steps to invest/yearly time steps """
+        """ calculates the conversion of operational time steps to invest/yearly time steps
+
+        :param element: element of the optimization
+        """
         _sequence_time_steps_operation = getattr(element, "sequence_time_steps")
         _sequence_time_steps_yearly = getattr(self.energy_system, "sequence_time_steps_yearly")
         self.energy_system.time_steps.set_time_steps_operation2year_both_dir(element.name,_sequence_time_steps_operation,_sequence_time_steps_yearly)
 
     def overwrite_ts_with_expanded_timeindex(self, element, set_time_steps_operation, sequence_time_steps):
         """ this method expands the aggregated time series to match the extended operational time steps because of matching the investment and operational time sequences.
+
         :param element: element of the optimization
         :param set_time_steps_operation: new time steps operation
         :param sequence_time_steps: new order of operational time steps """
@@ -190,6 +202,7 @@ class TimeSeriesAggregation(object):
 
     def yearly_variation_nonaggregated_ts(self, element):
         """ multiply the time series with the yearly variation if the element's time series are not aggregated
+
         :param element: element of the optimization """
         for ts in element.raw_time_series:
             # multiply with yearly variation
@@ -200,6 +213,7 @@ class TimeSeriesAggregation(object):
     def multiply_yearly_variation(self, element, ts_name, ts):
         """ this method multiplies time series with the yearly variation of the time series
         The index of the variation is the same as the original time series, just time and year substituted
+
         :param element: technology of the optimization
         :param ts_name: name of time series
         :param ts: time series
@@ -242,13 +256,20 @@ class TimeSeriesAggregation(object):
             self.convert_time_steps_operation2year(element)
 
     def set_aggregation_indicators(self, element):
-        """ this method sets the indicators that element is aggregated """
+        """ this method sets the indicators that element is aggregated
+
+        :param element: element of the optimization
+        """
         # add order of time steps to Energy System
         self.energy_system.time_steps.set_sequence_time_steps(element.name, element.sequence_time_steps, time_step_type="operation")
         element.aggregated = True
 
     def unique_time_steps_multiple_indices(self, list_sequence_time_steps):
-        """ this method returns the unique time steps of multiple time grids """
+        """ this method returns the unique time steps of multiple time grids
+
+        :param list_sequence_time_steps: #TODO describe parameter/return
+        :return (set_time_steps, time_steps_duration, sequence_time_steps): time steps, duration and sequence
+        """
         sequence_time_steps = np.zeros(np.size(list_sequence_time_steps, axis=1)).astype(int)
         combined_sequence_time_steps = np.vstack(list_sequence_time_steps)
         unique_combined_time_steps, unique_indices, count_combined_time_steps = np.unique(combined_sequence_time_steps, axis=1, return_counts=True, return_index=True)
@@ -268,6 +289,7 @@ class TimeSeriesAggregation(object):
 
     def overwrite_raw_ts(self, element):
         """ this method overwrites the raw time series to the already once aggregated time series
+
         :param element: technology of the optimization """
         for ts in element.raw_time_series:
             element.raw_time_series[ts] = getattr(element, ts)
@@ -275,6 +297,7 @@ class TimeSeriesAggregation(object):
     @staticmethod
     def set_time_attributes(element, set_time_steps, time_steps_duration, sequence_time_steps):
         """ this method sets the operational time attributes of an element.
+
         :param element: element of the optimization
         :param set_time_steps: set_time_steps of operation
         :param time_steps_duration: time_steps_duration of operation

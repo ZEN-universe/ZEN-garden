@@ -1,11 +1,11 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        July-2022
-Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:          ZEN-GARDEN
+:Created:        July-2022
+:Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class containing parameters. This is a proxy for pyomo parameters, since the construction of parameters has a significant overhead.
-==========================================================================================================================================================================="""
+Class containing parameters. This is a proxy for pyomo parameters, since the construction of parameters has a significant overhead.
+"""
 import copy
 import itertools
 import logging
@@ -192,13 +192,25 @@ class ZenSet(OrderedSet):
             return super().__getitem__(item)
 
 class Component:
-
+    """
+    Class to prepare parameter, variable and constraint data such that it suits the pyomo prerequisites
+    """
     def __init__(self):
+        """
+        instantiate object of Component class
+        """
         self.docs = {}
 
     @staticmethod
     def compile_doc_string(doc, index_list, name, domain=None):
-        """ compile docstring from doc and index_list"""
+        """ compile docstring from doc and index_list
+
+        :param doc: docstring to be compiled
+        :param index_list: list of indices
+        :param name: name of parameter/variable/constraint
+        :param domain: domain of parameter/variable/constraint (e.g., reals, non negative reals, ...)
+        :return complete_doc: complete docstring composed of name, doc and dims
+        """
         assert type(doc) == str, f"Docstring {doc} has wrong format. Must be 'str' but is '{type(doc).__name__}'"
         # check for prohibited strings
         prohibited_strings = [",", ";", ":", "/", "name", "doc", "dims", "domain"]
@@ -217,7 +229,12 @@ class Component:
 
     @staticmethod
     def get_index_names_data(index_list):
-        """ splits index_list in data and index names """
+        """ splits index_list in data and index names
+
+        :param index_list: list of indices (names and values)
+        :return index_values: names of indices
+        :return index_names:  values of indices
+        """
         if isinstance(index_list, ZenSet):
             index_values = list(index_list)
             index_names = [index_list.name]
@@ -232,6 +249,9 @@ class Component:
 
 
 class IndexSet(Component):
+    """
+        Class to prepare parameter data for pyomo parameter prerequisites
+    """
     def __init__(self):
         """ initialization of the IndexSet object """
         # base class init
@@ -441,6 +461,7 @@ class Parameter(Component):
 
     def add_parameter(self, name, data, doc):
         """ initialization of a parameter
+
         :param name: name of parameter
         :param data: non default data of parameter and index_names
         :param doc: docstring of parameter """
@@ -472,7 +493,11 @@ class Parameter(Component):
         setattr(self, name, data)
 
     def save_min_max(self, data, name):
-        """ stores min and max parameter """
+        """ stores min and max parameter
+
+        :param data: non default data of parameter and index_names
+        :param name: name of parameter
+        """
         if isinstance(data, dict) and data:
             data = pd.Series(data)
         if isinstance(data, pd.Series):
@@ -508,7 +533,11 @@ class Parameter(Component):
 
     @staticmethod
     def convert_to_dict(data):
-        """ converts the data to a dict if pd.Series"""
+        """ converts the data to a dict if pd.Series
+
+        :param data: non default data of parameter and index_names
+        :return data: data as dict
+        """
         if isinstance(data, pd.Series):
             # if single entry in index
             if len(data.index[0]) == 1:
@@ -517,7 +546,12 @@ class Parameter(Component):
         return data
 
     def convert_to_xarr(self, data, index_list):
-        """ converts the data to a dict if pd.Series"""
+        """ converts the data to a dict if pd.Series
+
+        :param data: non default data of parameter and index_names
+        :param index_list: list of indices
+        :return data: data as xarray
+        """
         if isinstance(data, pd.Series):
             # if single entry in index
             if len(data.index[0]) == 1:
@@ -539,7 +573,7 @@ class Parameter(Component):
             # now we need to align the coords
             data, _ = xr.align(data, self.index_sets.coords_dataset, join="right")
 
-        # sometimes we get emtpy parameters
+        # sometimes we get empty parameters
         if isinstance(data, dict) and len(data) == 0:
             data = xr.DataArray([])
         return data
@@ -988,7 +1022,7 @@ class Constraint(Component):
         :param index_values: List of index values corresponding to the group numbers
         :param index_names: List of index names of the indices
         :param model: The model
-        :return: A single constraint with the correct dimenstions
+        :return: A single constraint with the correct dimensions
         """
 
         # catch empty constraints
@@ -1004,8 +1038,9 @@ class Constraint(Component):
 
     def align_constraint(self, constraint, mask=None):
         """
-        Aligns a single constraint the coordinats
+        Aligns a single constraint the coordinates
         :param constraint: The constraint to align
+        :param mask: mask of constraint
         :return: The aligned constraint and mask
         """
 

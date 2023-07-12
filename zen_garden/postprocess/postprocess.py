@@ -1,19 +1,19 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:        ZEN-GARDEN
+:Created:      October-2021
+:Authors:      Alissa Ganter (aganter@ethz.ch)
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Class is defining the postprocessing of the results.
-              The class takes as inputs the optimization problem (model) and the system configurations (system).
-              The class contains methods to read the results and save them in a result dictionary (resultDict).
-==========================================================================================================================================================================="""
-import json
+Class is defining the postprocessing of the results.
+The class takes as inputs the optimization problem (model) and the system configurations (system).
+The class contains methods to read the results and save them in a result dictionary (resultDict).
+"""
 import logging
 import os
 import pathlib
 import sys
 import zlib
+import json
 
 import pandas as pd
 import xarray as xr
@@ -22,13 +22,17 @@ from ..utils import RedirectStdStreams, HDFPandasSerializer
 
 
 class Postprocess:
-
-    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None):
+    """
+    Class is defining the postprocessing of the results
+    """
+    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None, save_opt=False):
         """postprocessing of the results of the optimization
+
         :param model: optimization model
         :param model_name: The name of the model used to name the output folder
         :param subfolder: The subfolder used for the results
         :param scenario_name: The name of the current scenario
+        :param save_opt: Save the dict of the opt as gszip
         """
         logging.info("Postprocess results")
         # get the necessary stuff from the model
@@ -84,9 +88,9 @@ class Postprocess:
             pass  # TODO: implement this...  # self.process()
 
     def write_file(self, name, dictionary, format=None):
-        """
-        Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
-        and saved as binary file
+        """Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
+            and saved as binary file
+
         :param name: Filename without extension
         :param dictionary: The dictionary to save
         :param format: Force the format to use, if None use output_format attribute of instance
@@ -125,7 +129,6 @@ class Postprocess:
         elif format == "h5":
             f_name = f"{name}.h5"
             HDFPandasSerializer.serialize_dict(file_name=f_name, dictionary=dictionary, overwrite=self.overwrite)
-
 
     def save_sets(self):
         """ Saves the Set values to a json file which can then be
@@ -307,8 +310,9 @@ class Postprocess:
         self.write_file(fname, self.solver, format="json")
 
     def save_sequence_time_steps(self, scenario=None):
-        """
-        Saves the dict_all_sequence_time_steps dict as json
+        """Saves the dict_all_sequence_time_steps dict as json
+
+        :param scenario: #TODO describe parameter/return
         """
         # add the scenario name
         if scenario is not None:
@@ -324,11 +328,12 @@ class Postprocess:
 
         self.write_file(fname, self.dict_sequence_time_steps)
 
+    def _transform_df(self, df, doc):
+        """we transform the dataframe to a json string and load it into the dictionary as dict
 
-
-    def _transform_df(self,df,doc):
-        """
-        we transform the dataframe to a json string and load it into the dictionary as dict
+        :param df: #TODO describe parameter/return
+        :param doc: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
         """
         if self.output_format == "h5":
             # No need to transform the dataframe to json
@@ -339,9 +344,9 @@ class Postprocess:
         return dataframe
 
     def flatten_dict(self, dictionary):
-        """
-        Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can
-        be saved as json file
+        """Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can
+            be saved as json file
+
         :param dictionary: The input dictionary
         :return: A copy of the dictionary containing lists instead of arrays
         """
@@ -367,7 +372,11 @@ class Postprocess:
         return out_dict
 
     def get_index_list(self, doc):
-        """ get index list from docstring """
+        """ get index list from docstring
+
+        :param doc: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         split_doc = doc.split(";")
         for string in split_doc:
             if "dims" in string:
