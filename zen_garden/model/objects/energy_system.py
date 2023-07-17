@@ -70,7 +70,7 @@ class EnergySystem:
 
         # in class <EnergySystem>, all sets are constructed
         self.set_nodes = self.data_input.extract_locations()
-        self.set_nodes_on_edges = self.calculate_edges_from_nodes()
+        self.set_nodes_on_edges = self.data_input.extract_locations(extract_nodes=False)
         self.set_edges = list(self.set_nodes_on_edges.keys())
         self.set_nodes_in_super_nodes =  self.data_input.extract_locations(super_locations=True)
         self.set_super_nodes = list(self.set_nodes_in_super_nodes.keys())
@@ -109,25 +109,6 @@ class EnergySystem:
         self.market_share_unbounded = self.data_input.extract_input_data("market_share_unbounded", index_sets=[])
         # knowledge_spillover_rate
         self.knowledge_spillover_rate = self.data_input.extract_input_data("knowledge_spillover_rate", index_sets=[])
-
-    def calculate_edges_from_nodes(self):
-        """ calculates set_nodes_on_edges from set_nodes
-
-        :return set_nodes_on_edges: dict with edges and corresponding nodes """
-
-        set_nodes_on_edges = {}
-        # read edge file
-        set_edges_input = self.data_input.extract_locations(extract_nodes=False)
-        if set_edges_input is not None:
-            for edge in set_edges_input.index:
-                set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
-        else:
-            logging.warning(f"DeprecationWarning: Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{self.system['''folder_name_system_specification''']}' instead!")
-            for node_from in self.set_nodes:
-                for node_to in self.set_nodes:
-                    if node_from != node_to:
-                        set_nodes_on_edges[node_from + "-" + node_to] = (node_from, node_to)
-        return set_nodes_on_edges
 
     def set_technology_of_carrier(self, technology, list_technology_of_carrier):
         """ appends technology to carrier in dict_technology_of_carrier
@@ -178,11 +159,13 @@ class EnergySystem:
         # super nodes
         self.optimization_setup.sets.add_set(name="set_super_nodes", data=self.set_super_nodes, doc="Set of super nodes")
         # set nodes in super nodes
-        self.optimization_setup.sets.add_set(name="set_nodes_in_super_nodes", data=self.set_nodes, doc="Set of nodes in super nodes", index_set="set_super_nodes")
+        self.optimization_setup.sets.add_set(name="set_nodes_in_super_nodes", data=self.set_nodes_in_super_nodes,
+                                             doc="Set of nodes in super nodes", index_set="set_super_nodes")
         # edges
         self.optimization_setup.sets.add_set(name="set_edges", data=self.set_edges, doc="Set of edges")
         # nodes on edges
-        self.optimization_setup.sets.add_set(name="set_nodes_on_edges", data=self.set_nodes_on_edges, doc="Set of nodes that constitute an edge. Edge connects first node with second node.",
+        self.optimization_setup.sets.add_set(name="set_nodes_on_edges", data=self.set_nodes_on_edges,
+                                             doc="Set of nodes that constitute an edge. Edge connects first node with second node.",
                                              index_set="set_edges")
         # super edges
         self.optimization_setup.sets.add_set(name="set_super_edges", data=self.set_super_edges, doc="Set of super edges")
@@ -190,9 +173,6 @@ class EnergySystem:
         self.optimization_setup.sets.add_set(name="set_edges_in_super_edges", data=self.set_edges_in_super_edges,
                                              doc="Set of edges in super edges.",
                                              index_set="set_super_edges")
-        # set super locations
-        self.optimization_setup.sets.add_set(name="set_super_location", data=self.set_super_nodes+self.set_super_edges,
-                                             doc="Set of super location")
         # carriers
         self.optimization_setup.sets.add_set(name="set_carriers", data=self.set_carriers, doc="Set of carriers")
         # technologies

@@ -854,16 +854,23 @@ class TechnologyRules(GenericRule):
             ## auxiliary calculations
             # determine the total capacity at each super location
             if super_loc in self.sets["set_super_nodes"]:
-                set_loc_in_super_loc = self.sets["set_nodes_in_super_nodes"]
+                set_loc_in_super_loc = self.sets["set_nodes_in_super_nodes"][super_loc]
             elif super_loc in self.sets["set_super_edges"]:
-                set_loc_in_super_loc = self.sets["set_edges_in_super_edges"]
+                set_loc_in_super_loc = self.sets["set_edges_in_super_edges"][super_loc]
+            if not set_loc_in_super_loc:
+                continue
             existing_capacities = sum(self.parameters.existing_capacities.loc[:, :, loc, :] for loc in set_loc_in_super_loc)
-            existing_capacities = existing_capacities.where(existing_capacities == np.nan, 0.0)
+            if not (isinstance(existing_capacities, float) or isinstance(existing_capacities, int)):
+                existing_capacities = existing_capacities.where(existing_capacities == np.nan, 0.0)
             # masks to formulate constraints
             m1 = (capacity_limit_super.loc[...,super_loc] != np.inf) & (existing_capacities < capacity_limit_super.loc[...,super_loc])
             m2 = (capacity_limit_super.loc[...,super_loc] != np.inf) & ~(existing_capacities < capacity_limit_super.loc[...,super_loc])
             ### formulate constraint
-            lhs = sum(self.variables["capacity"].where(m1).loc[:,:,loc,:] + self.variables["capacity_addition"].where(m2).loc[:,:,loc,:] for loc in set_loc_in_super_loc)
+            lhs = lp.merge(self.variables["capacity"].loc[:,:,set_loc_in_super_loc,:].where(m1).to_linexpr(),
+                           self.variables["capacity_addition"].loc[:,:,set_loc_in_super_loc,:].where(m2).to_linexpr(),
+                           compat="broadcast_equals")
+            #sum(self.variables["capacity"].loc[:,:,loc,:].where(m1) + self.variables["capacity_addition"].loc[:,:,loc,:].where(m2) for loc in set_loc_in_super_loc)
+            lhs = lhs.where(lhs==np.nan, 0)
             rhs = capacity_limit_super.loc[...,super_loc].where(m1, 0.0)
             constraints.append(lhs<=rhs)
 

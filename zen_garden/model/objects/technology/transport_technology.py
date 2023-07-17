@@ -23,7 +23,7 @@ class TransportTechnology(Technology):
     # set label
     label = "set_transport_technologies"
     location_type = "set_edges"
-    location_type_super = "set_super_nodes"
+    location_type_super = "set_super_edges"
 
     def __init__(self, tech: str, optimization_setup):
         """init transport technology object
