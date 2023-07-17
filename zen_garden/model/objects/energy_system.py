@@ -72,6 +72,10 @@ class EnergySystem:
         self.set_nodes = self.data_input.extract_locations()
         self.set_nodes_on_edges = self.calculate_edges_from_nodes()
         self.set_edges = list(self.set_nodes_on_edges.keys())
+        self.set_nodes_in_super_nodes =  self.data_input.extract_locations(super_locations=True)
+        self.set_super_nodes = list(self.set_nodes_in_super_nodes.keys())
+        self.set_edges_in_super_edges = self.data_input.extract_locations(extract_nodes=False, super_locations=True)
+        self.set_super_edges = list(self.set_edges_in_super_edges.keys())
         self.set_carriers = []
         self.set_technologies = self.system["set_technologies"]
         # base time steps
@@ -171,11 +175,24 @@ class EnergySystem:
         # construct pe.Sets of the class <EnergySystem>
         # nodes
         self.optimization_setup.sets.add_set(name="set_nodes", data=self.set_nodes, doc="Set of nodes")
+        # super nodes
+        self.optimization_setup.sets.add_set(name="set_super_nodes", data=self.set_super_nodes, doc="Set of super nodes")
+        # set nodes in super nodes
+        self.optimization_setup.sets.add_set(name="set_nodes_in_super_nodes", data=self.set_nodes, doc="Set of nodes in super nodes", index_set="set_super_nodes")
         # edges
         self.optimization_setup.sets.add_set(name="set_edges", data=self.set_edges, doc="Set of edges")
         # nodes on edges
         self.optimization_setup.sets.add_set(name="set_nodes_on_edges", data=self.set_nodes_on_edges, doc="Set of nodes that constitute an edge. Edge connects first node with second node.",
                                              index_set="set_edges")
+        # super edges
+        self.optimization_setup.sets.add_set(name="set_super_edges", data=self.set_super_edges, doc="Set of super edges")
+        # edges in super edges
+        self.optimization_setup.sets.add_set(name="set_edges_in_super_edges", data=self.set_edges_in_super_edges,
+                                             doc="Set of edges in super edges.",
+                                             index_set="set_super_edges")
+        # set super locations
+        self.optimization_setup.sets.add_set(name="set_super_location", data=self.set_super_nodes+self.set_super_edges,
+                                             doc="Set of super location")
         # carriers
         self.optimization_setup.sets.add_set(name="set_carriers", data=self.set_carriers, doc="Set of carriers")
         # technologies

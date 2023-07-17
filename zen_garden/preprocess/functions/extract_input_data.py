@@ -226,25 +226,47 @@ class DataInput:
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps=self.energy_system.set_time_steps_yearly)
             setattr(self, _name_yearly_variation, df_output)
 
-    def extract_locations(self, extract_nodes=True):
+    def extract_locations(self, extract_nodes=True, super_locations=False):
         """ reads input data to extract nodes or edges.
-
         :param extract_nodes: boolean to switch between nodes and edges """
-        if extract_nodes:
-            set_nodes_config = self.system["set_nodes"]
-            set_nodes_input = self.read_input_data("set_nodes")["node"].to_list()
-            # if no nodes specified in system, use all nodes
-            if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
-                self.system["set_nodes"] = set_nodes_input
-                set_nodes_config = set_nodes_input
+        if super_locations:
+            if extract_nodes:
+                set_locations = "set_super_nodes"
             else:
-                assert len(set_nodes_config) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
-                _missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
-                assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
-            if not isinstance(set_nodes_config, list):
-                set_nodes_config = set_nodes_config.to_list()
-            set_nodes_config.sort()
-            return set_nodes_config
+                set_locations = "set_super_edges"
+            location = self.analysis["header_data_inputs"][set_locations]
+            set_super_locations_config = set(self.system[set_locations])
+            if self.read_input_data(set_locations) is None:
+                assert  len(set_super_locations_config) == 0, f"File for {set_locations} is missing."
+                return dict()
+            set_super_locations_input = self.read_input_data(set_locations).set_index(location)
+            super_locations = set(set_super_locations_input.index.unique())
+            if len(set_super_locations_config) == 0:
+                self.system[set_locations] = list(super_locations)
+            elif len(set_super_locations_config) > 0:
+                super_locations = super_locations.intersection(set_super_locations_config)
+                assert len(super_locations) == len(set_super_locations_config), "Not all super sets are defined."
+            bool_set_locations = set_super_locations_input["node"].isin(self.system["set_nodes"])
+            if not bool_set_locations.all():
+                logging.warning(f"The following {location} are dropped from the super sets as they are not in the set of nodes: {set_super_locations_input[~bool_set_locations]}")
+            set_super_locations_input = set_super_locations_input[bool_set_locations]
+            super_locations_dict = {node: set_super_locations_input.loc[node, "node"].values for node in super_locations}
+            return super_locations_dict
+        elif extract_nodes:
+                set_nodes_config = self.system["set_nodes"]
+                set_nodes_input = self.read_input_data("set_nodes")["node"].to_list()
+                # if no nodes specified in system, use all nodes
+                if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
+                    self.system["set_nodes"] = set_nodes_input
+                    set_nodes_config = set_nodes_input
+                else:
+                    assert len(set_nodes_config) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
+                    _missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
+                    assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
+                if not isinstance(set_nodes_config, list):
+                    set_nodes_config = set_nodes_config.to_list()
+                set_nodes_config.sort()
+                return set_nodes_config
         else:
             set_edges_input = self.read_input_data("set_edges")
             if set_edges_input is not None:
