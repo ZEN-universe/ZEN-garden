@@ -870,7 +870,6 @@ class TechnologyRules(GenericRule):
                            self.variables["capacity_addition"].loc[:,:,set_loc_in_super_loc,:].where(m2).to_linexpr(),
                            compat="broadcast_equals")
             #sum(self.variables["capacity"].loc[:,:,loc,:].where(m1) + self.variables["capacity_addition"].loc[:,:,loc,:].where(m2) for loc in set_loc_in_super_loc)
-            lhs = lhs.where(lhs==np.nan, 0)
             rhs = capacity_limit_super.loc[...,super_loc].where(m1, 0.0)
             constraints.append(lhs<=rhs)
 
