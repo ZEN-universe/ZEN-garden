@@ -952,6 +952,9 @@ class Constraint(Component):
             variables[num, ..., :terms] = con.lhs.vars.data
             sign[num, ...] = con.sign
             rhs[num, ...] = con.rhs
+            # make sure all dims are in the right order
+            sign[num, ...] = con.sign.transpose(*con.lhs.vars.dims, ..., missing_dims="ignore")
+            rhs[num, ...] = con.rhs.transpose(*con.lhs.vars.dims, ..., missing_dims="ignore")
 
         xr_ds = xr.Dataset({"coeffs": coeffs, "vars": variables})
         lhs = lp.LinearExpression(xr_ds, model)
