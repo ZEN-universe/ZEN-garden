@@ -528,7 +528,7 @@ class Technology(Element):
                                          constraint=rules.constraint_technology_capacity_limit_block(),
                                          doc='limited capacity of  technology depending on loc and time')
         #  technology capacity_limit super
-        constraints.add_constraint_rule(model, name="constraint_technology_capacity_limit_super",
+        constraints.add_constraint_block(model, name="constraint_technology_capacity_limit_super",
                                          constraint=rules.constraint_technology_capacity_limit_super_block(),
                                          doc='limited capacity of technology depending on super loc and time')
 
@@ -868,9 +868,7 @@ class TechnologyRules(GenericRule):
             constraints.append(lhs<=rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints, model=self.model,
-                                                  index_values=index.get_unique(["set_technologies", "set_capacity_types", "set_super_location", "set_time_steps_yearly"]),
-                                                  index_names=["set_technologies", "set_capacity_types", "set_super_location", "set_time_steps_yearly"])
+        return self.constraints.return_contraints(constraints, model=self.model, index_values=index.get_unique(["set_super_location"]), index_names=["set_super_location"])
 
     def constraint_technology_min_capacity_block(self):
         """ min capacity expansion of technology
