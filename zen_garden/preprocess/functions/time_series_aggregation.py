@@ -192,7 +192,7 @@ class TimeSeriesAggregation(object):
                 agg_df.loc[time_step] = df_slice.median(axis=0)
             else:
                 raise NotImplementedError(f"Cluster method {self.analysis['time_series_aggregation']['clusterMethod']} not yet implemented for manually aggregating excluded time series")
-        return agg_df
+        return agg_df.astype(float)
 
     def extract_raw_ts(self, element, header_set_time_steps):
         """ extract the time series from an element and concatenates the non-constant time series to a pd.DataFrame
