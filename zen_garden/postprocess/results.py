@@ -1299,7 +1299,7 @@ class Results(object):
                 data_full_ts = self.edit_carrier_flows(self.get_full_ts("flow_transport", scenario=scenario), node, carrier, "out", scenario)
             else:
                 # get full timeseries of component and extract rows of relevant node
-                data_full_ts = self.edit_nodes_v2(self.get_full_ts(component, scenario=scenario), node)
+                data_full_ts = self.edit_nodes(self.get_full_ts(component, scenario=scenario), node)
                 # extract data of desired carrier
                 data_full_ts = self.extract_carrier(data_full_ts, carrier, scenario)
                 # check if return from extract_carrier() is still a data frame as it is possible that the desired carrier isn't contained --> None returned
