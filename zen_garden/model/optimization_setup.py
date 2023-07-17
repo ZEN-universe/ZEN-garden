@@ -26,13 +26,15 @@ from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 from ..preprocess.prepare import Prepare
 
+from ..utils import ScenarioDict
+
 
 class OptimizationSetup(object):
 
     # dict of element classes, this dict is filled in the __init__ of the package
     dict_element_classes = {}
 
-    def __init__(self, analysis: dict, prepare: Prepare, energy_system_name="energy_system"):
+    def __init__(self, analysis: dict, prepare: Prepare, scenario_dict: dict, energy_system_name="energy_system"):
         """setup Pyomo Concrete Model
         :param analysis: dictionary defining the analysis framework
         :param prepare: A Prepare instance for the Optimization setup"""
@@ -42,6 +44,9 @@ class OptimizationSetup(object):
         self.system = prepare.system
         self.paths = prepare.paths
         self.solver = prepare.solver
+
+        # dict to update elements according to scenario
+        self.scenario_dict = ScenarioDict(scenario_dict)
 
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)

@@ -26,7 +26,7 @@ class EnergySystem:
         :param optimization_setup: The OptimizationSetup of the EnergySystem class"""
 
         # the name
-        self.name = "energy_system"
+        self.name = "EnergySystem"
         # set attributes
         self.optimization_setup = optimization_setup
         # quick access

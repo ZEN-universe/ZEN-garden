@@ -58,7 +58,9 @@ def get_inheritors(klass):
                 work.append(child)
     return subclasses
 
+
 # This redirects output streams to files
+# --------------------------------------
 
 class RedirectStdStreams(object):
     """
@@ -92,6 +94,82 @@ class RedirectStdStreams(object):
         sys.stdout = self.old_stdout
         sys.stderr = self.old_stderr
 
+
+# This class is for the scenario analysis
+# ---------------------------------------
+
+class ScenarioDict(dict):
+    """
+    This is a dictionary for the scenario analysis that has some convenience functions
+    """
+
+    def __init__(self, init_dict):
+        """
+        Initializes the dictionary from a normal dictionary
+        :param init_dict: The dictionary to initialize from
+        """
+
+        # set the attributes and expand the dict
+        self.init_dict = init_dict
+        self.dict = self.expand_dict(init_dict)
+
+        # super init
+        super().__init__(self.dict)
+
+
+    @staticmethod
+    def expand_dict(init_dict):
+        """
+        Expands a dictionary, e.g. expands sets etc.
+        :param init_dict: The initial dict
+        :return: A new dict which can be used for the scenario analysis
+        """
+
+        return init_dict
+
+    def get_default(self, element, param):
+        """
+        Return the name where the default value should be read out
+        :param element: The element name
+        :param param: The parameter of the element
+        :return: If the entry is overwritten by the scenario analysis the entry and factor are returned, otherwise
+                 the default entry is returned with a factor of 1
+        """
+
+        # These are the default values
+        default_f_name = "attributes"
+        default_factor = 1.0
+
+        if element in self.dict and param in (element_dict := self.dict[element]):
+            param_dict = element_dict[param]
+            default_f_name = param_dict.get("default", default_f_name)
+            default_factor = param_dict.get("default_op", default_factor)
+
+        return default_f_name, default_factor
+
+    def get_param_file(self, element, param):
+        """
+        Return the file name where the parameter values should be read out
+        :param element: The element name
+        :param param: The parameter of the element
+        :return: If the entry is overwritten by the scenario analysis the entry and factor are returned, otherwise
+                 the default entry is returned with a factor of 1
+        """
+
+        # These are the default values
+        default_f_name = param
+        default_factor = 1.0
+
+        if element in self.dict and param in (element_dict := self.dict[element]):
+            param_dict = element_dict[param]
+            default_f_name = param_dict.get("file", default_f_name)
+            default_factor = param_dict.get("file_op", default_factor)
+
+        return default_f_name, default_factor
+
+
+# linopy helpers
+# --------------
 
 def lp_sum(exprs, dim='_term'):
     """

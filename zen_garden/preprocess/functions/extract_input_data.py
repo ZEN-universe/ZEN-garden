@@ -32,6 +32,7 @@ class DataInput:
         self.analysis = analysis
         self.solver = solver
         self.energy_system = energy_system
+        self.scenario_dict = self.energy_system.optimization_setup.scenario_dict
         self.unit_handling = unit_handling
         # extract folder path
         self.folder_path = getattr(self.element, "input_path")
@@ -64,7 +65,9 @@ class DataInput:
         else:
             df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, scenario=scenario)
         # read input file
-        df_input = self.read_input_data(file_name + scenario)
+        f_name, factor = self.scenario_dict.get_param_file(self.element.name, file_name)
+        df_input = self.read_input_data(f_name)
+        print("Read input data: ", self.element.name, f_name)
         if scenario and yearly_variation and df_input is None:
             logging.info(f"{file_name}{scenario} is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_data(file_name)
@@ -142,31 +145,25 @@ class DataInput:
         else:
             return None
 
-    def extract_attribute(self, attribute_name, skip_warning=False, scenario=""):
+    def extract_attribute(self, attribute_name, skip_warning=False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
         :param attribute_name: name of selected attribute
         :param skip_warning: boolean to indicate if "Default" warning is skipped
-        :param scenario: scenario name
         :return attribute_value: attribute value """
-        filename = "attributes"
-        df_input = self.read_input_data(filename + scenario)
+
+        filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
+        df_input = self.read_input_data(filename)
         if df_input is not None:
             df_input = df_input.set_index("index").squeeze(axis=1)
             attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning)
-        elif scenario != "":
-            df_input = self.read_input_data(filename)
-            df_input = df_input.set_index("index").squeeze(axis=1)
-            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning)
-        # if df_input is None or attribute_name is None:
-        #     df_input = self.read_input_data(filename)
-        #     if df_input is not None:
-        #         df_input = df_input.set_index("index").squeeze(axis=1)
-        #     else:
-        #         return None
-        #     attribute_name = self.adapt_attribute_name(attribute_name,df_input,skip_warning)
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
+            if isinstance(attribute_value, str) and factor != 1.0:
+                logging.warning(f"WARNING: Attribute {attribute_name} of {self.element.name} is a string but has "
+                                f"custom factor {factor}, factor will be ignored...")
+            if not isinstance(attribute_value, str):
+                attribute_value *= factor
             multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"])
             try:
                 attribute = {"value": float(attribute_value) * multiplier, "multiplier": multiplier}
@@ -470,7 +467,7 @@ class DataInput:
             default_name = None
         else:
             default_name = file_name
-            default_value = self.extract_attribute(default_name, scenario=scenario)
+            default_value = self.extract_attribute(default_name)
 
         # create output Series filled with default value
         if default_value is None:
@@ -478,16 +475,14 @@ class DataInput:
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit
-        self.save_unit_of_attribute(default_name, scenario)
+        self.save_unit_of_attribute(default_name)
         return df_output, default_value, index_name_list
 
-    def save_unit_of_attribute(self, file_name, scenario=""):
+    def save_unit_of_attribute(self, file_name):
         """ saves the unit of an attribute, converted to the base unit """
         # if numerics analyzed
         if self.solver["analyze_numerics"]:
-            attributes = "attributes"
-            if scenario and os.path.exists(os.path.join(self.folder_path, "attributes" + scenario + ".csv")):
-                attributes += scenario
+            attributes, _ = self.scenario_dict.get_default(self.element.name, file_name)
             df_input = self.read_input_data(attributes).set_index("index").squeeze(axis=1)
             # get attribute
             if file_name:
