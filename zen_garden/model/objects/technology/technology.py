@@ -634,7 +634,6 @@ class Technology(Element):
 
         # used in transport technology
         techs = list(sets["set_transport_technologies"])
-        techs = list(sets["set_transport_technologies"])
         if len(techs) > 0:
             edges = list(sets["set_edges"])
             sub_mask = (params.distance.loc[techs, edges] * params.capex_per_distance_transport.loc[techs, edges] != 0)
