@@ -69,17 +69,21 @@ def main(config, dataset_path=None, job_index=None):
         scenarios = module.scenarios
         config.scenarios.update(scenarios)
 
-    # deal with the job array
-    job_index = 1
-    if job_index is not None:
-        logging.info(f"Running scenario with job index: {job_index}")
+        # deal with the job array
+        if job_index is not None:
+            logging.info(f"Running scenario with job index: {job_index}")
 
-        # reduce the scenario and element to a single one
-        scenarios = [list(config.scenarios.keys())[job_index]]
-        elements = [list(config.scenarios.values())[job_index]]
+            # reduce the scenario and element to a single one
+            scenarios = [list(config.scenarios.keys())[job_index]]
+            elements = [list(config.scenarios.values())[job_index]]
+        else:
+            logging.info(f"Running all scenarios sequentially")
+            scenarios = config.scenarios.keys()
+            elements = config.scenarios.values()
+    # Nothing to do with the scenarios
     else:
-        scenarios = config.scenarios.keys()
-        elements = config.scenarios.values()
+        scenarios = [""]
+        elements = [{}]
 
     # get the name of the dataset
     model_name = os.path.basename(config.analysis["dataset"])
