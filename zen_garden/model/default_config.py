@@ -146,6 +146,8 @@ class Config(object):
         self.system["set_super_edges"] = []
         # toggle to use time_series_aggregation
         self.system["conduct_time_series_aggregation"] = False
+        # toggle to exclude parameters from TSA, specified in system_specification/exclude_parameter_from_TSA
+        self.system["exclude_parameters_from_TSA"] = True
         # toggle to perform analysis for multiple scenarios
         self.system["conduct_scenario_analysis"] = False
         # total hours per year

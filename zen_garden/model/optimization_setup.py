@@ -109,9 +109,8 @@ class OptimizationSetup(object):
         if self.solver["recommend_base_units"]:
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
                                                                   unit_exps=self.solver["range_unit_exponents"])
-        # conduct  time series aggregation
+        # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
-        self.time_series_aggregation.conduct_tsa()
 
     def add_element(self, element_class, name):
         """
@@ -148,15 +147,26 @@ class OptimizationSetup(object):
         return names_of_elements
 
     def get_element(self, cls, name: str):
-        """ get single element in class by name. Inherited by child classes.
+        """ get single element in class by name.
 
         :param name: name of element
         :param cls: class of the elements to return
         :return element: return element whose name is matched """
-        for _element in self.get_all_elements(cls=cls):
-            if _element.name == name:
-                return _element
+        for element in self.get_all_elements(cls=cls):
+            if element.name == name:
+                return element
         return None
+
+    def get_element_class(self, name: str):
+        """ get element class by name. If not an element class, return None
+
+        :param name: name of element class
+        :return element_class: return element whose name is matched """
+        element_classes = {self.dict_element_classes[class_name].label:self.dict_element_classes[class_name] for class_name in self.dict_element_classes}
+        if name in element_classes.keys():
+            return element_classes[name]
+        else:
+            return None
 
     def get_attribute_of_all_elements(self, cls, attribute_name: str, capacity_types=False,
                                       return_attribute_is_series=False):
