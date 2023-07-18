@@ -219,19 +219,14 @@ class Carrier(Element):
         # LCA
         if optimization_setup.system['load_lca_factors']:
             # lca impacts
-            constraints.add_constraint(model, name='constraint_carrier_lca_impacts',
-                                                          index_sets=cls.create_custom_set(
-                                                              ['set_carriers', 'set_nodes', 'set_lca_impact_categories',
-                                                               'set_time_steps_operation'], optimization_setup),
-                                                          rule=rules.constraint_carrier_lca_impacts_rule,
-                                                          doc='lca impacts of importing and exporting carrier')
+            constraints.add_constraint_block(model, name='constraint_carrier_lca_impacts',
+                                             constraint=rules.constraint_carrier_lca_impacts_block(),
+                                             doc='lca impacts of importing and exporting carrier')
             # total LCA impacts
-            constraints.add_constraint(model, name='constraint_carrier_lca_impacts_total',
-                                                          index_sets=cls.create_custom_set(
-                                                              ['set_lca_impact_categories', 'set_time_steps_yearly'],
-                                                              optimization_setup),
-                                                          rule=rules.constraint_carrier_lca_impacts_total_rule,
-                                                          doc='total yearly lca impacts of importing and exporting carriers')
+            constraints.add_constraint_rule(model, name='constraint_carrier_lca_impacts_total',
+                                            index_sets=sets["set_time_steps_yearly"],
+                                            rule=rules.constraint_carrier_lca_impacts_total_rule,
+                                            doc='total yearly lca impacts of importing and exporting carriers')
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
             if len(optimization_setup.system[subclass.label]) > 0:
@@ -329,7 +324,7 @@ class CarrierRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_carrier_lca_impacts_total_rule(self, year):
-        """ total lca uimpacts of all carriers """
+        """ total lca impacts of all carriers """
 
         ### index sets
         # skipped because rule-based constraint
@@ -671,8 +666,7 @@ class CarrierRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
-                                                  model=self.model,
+        return self.constraints.return_contraints(constraints, model=self.model,
                                                   index_values=index.get_unique(["set_carriers"]),
                                                   index_names=["set_carriers"])
 

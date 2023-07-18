@@ -49,7 +49,7 @@ class TimeSeriesAggregation(object):
         else:
             self.typical_periods = pd.DataFrame()
             set_time_steps = self.set_base_time_steps
-            time_step_duration = self.energy_system.time_steps.calculatetime_step_duration(set_time_steps, self.set_base_time_steps)
+            time_step_duration = self.energy_system.time_steps.calculate_time_step_duration(set_time_steps, self.set_base_time_steps)
             sequence_time_steps = np.concatenate([[time_step] * time_step_duration[time_step] for time_step in time_step_duration])
             self.set_time_attributes(self, set_time_steps, time_step_duration, sequence_time_steps)
             # set aggregated time series
@@ -133,6 +133,7 @@ class TimeSeriesAggregation(object):
                 else:
                     not_aggregated_columns = df_ts.columns
                 # not aggregated columns because excluded
+                self.get_excluded_ts()
                 if (element.name, ts) in self.excluded_ts:
                     df_aggregated_ts = self.manually_aggregate_ts(df_ts)
                 # not aggregated columns because constant
