@@ -41,6 +41,11 @@ class TimeSeriesAggregation(object):
             if not self.df_ts_raw.empty:
                 # run time series aggregation to create typical periods
                 self.run_tsa()
+            # nothing to aggregate
+            else:
+                assert len(self.excluded_ts) == 0, "Do not exclude any time series from aggregation, if there is then nothing else to aggregate!"
+                # aggregate to single time step
+                self.single_ts_tsa()
         else:
             self.typical_periods = pd.DataFrame()
             set_time_steps = self.set_base_time_steps
@@ -361,6 +366,22 @@ class TimeSeriesAggregation(object):
         for ts in element.raw_time_series:
             element.raw_time_series[ts] = getattr(element, ts)
 
+    def single_ts_tsa(self):
+        """ manually aggregates the constant time series to single ts """
+        if self.number_typical_periods > 1:
+            logging.warning("You are trying to aggregate constant time series to more than one representative time step. This setting is overwritten to one representative time step.")
+            self.number_typical_periods = 1
+        unaggregated_time_steps = self.system["unaggregated_time_steps_per_year"]
+        set_time_steps = [0]
+        time_steps_duration = {0:unaggregated_time_steps}
+        sequence_time_steps = np.hstack(set_time_steps*unaggregated_time_steps)
+        self.set_time_attributes(self, set_time_steps, time_steps_duration, sequence_time_steps)
+        # create empty typical_period df
+        self.typical_periods = pd.DataFrame(index=set_time_steps)
+        # set aggregated time series
+        self.set_aggregated_ts_all_elements()
+        self.conducted_tsa = True
+
     @staticmethod
     def set_time_attributes(element, set_time_steps, time_steps_duration, sequence_time_steps):
         """ this method sets the operational time attributes of an element.
@@ -377,7 +398,3 @@ class TimeSeriesAggregation(object):
             element.set_time_steps_operation = set_time_steps
             element.time_steps_operation_duration = time_steps_duration
             element.sequence_time_steps = sequence_time_steps
-
-    def repeat_time_steps_for_years(self):
-        """ this method conducts time series aggregation """
-
