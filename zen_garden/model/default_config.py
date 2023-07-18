@@ -94,7 +94,8 @@ class Config(object):
                 "set_storage_technologies":"technology",
                 "set_technologies":"technology",
                 "set_technologies_existing": "technology_existing",
-                "set_capacity_types":"capacity_type"}
+                "set_capacity_types":"capacity_type",
+                "set_lca_impact_categories":"impact_category"}
         # time series aggregation
         self.analysis["time_series_aggregation"] = {
             "clusterMethod"         : "k_means",
@@ -150,6 +151,9 @@ class Config(object):
         self.system["knowledge_depreciation_rate"] = 0.1
         # enforce selfish behavior
         self.system["enforce_selfish_behavior"] = False
+        # LCA flag and set of impact categories
+        self.system['load_lca_factors'] = False
+        self.system['set_lca_impact_categories'] = []
 
         ## Solver - Items assignment
         # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)

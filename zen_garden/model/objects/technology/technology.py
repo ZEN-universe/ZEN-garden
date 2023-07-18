@@ -64,8 +64,11 @@ class Technology(Element):
         self.raw_time_series["opex_specific_variable"] = self.data_input.extract_input_data("opex_specific_variable", index_sets=[_set_location, "set_time_steps"], time_steps=set_base_time_steps_yearly)
         # non-time series input data
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[_set_location])
+        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        # self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[_set_location])
         self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[_set_location])
+        # if self.energy_system.system['load_lca_factors']:
+        #     self.technology_lca_factors = self.data_input.extract_input_data('technology_lca_factors', index_sets=[_set_location, 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps=set_time_steps_yearly)
         # extract existing capacity
         self.set_technologies_existing = self.data_input.extract_set_technologies_existing()
         self.capacity_existing = self.data_input.extract_input_data("capacity_existing", index_sets=[_set_location, "set_technologies_existing"])
@@ -386,7 +389,7 @@ class Technology(Element):
             doc="Parameter which specifies the maximum diffusion rate which is the maximum increase in capacity between investment steps")
         # capacity_limit of technologies
         optimization_setup.parameters.add_parameter(name="capacity_limit",
-            data=optimization_setup.initialize_component(cls, "capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location"], capacity_types=True),
+            data=optimization_setup.initialize_component(cls, "capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], capacity_types=True),
             doc='Parameter which specifies the capacity limit of technologies')
         # minimum load relative to capacity
         optimization_setup.parameters.add_parameter(name="min_load",

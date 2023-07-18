@@ -105,6 +105,8 @@ class EnergySystem:
         self.market_share_unbounded = self.data_input.extract_input_data("market_share_unbounded", index_sets=[])
         # knowledge_spillover_rate
         self.knowledge_spillover_rate = self.data_input.extract_input_data("knowledge_spillover_rate", index_sets=[])
+        # LCA impact categories
+        self.set_lca_impact_categories = self.system['set_lca_impact_categories']
 
     def calculate_edges_from_nodes(self):
         """ calculates set_nodes_on_edges from set_nodes
@@ -191,6 +193,10 @@ class EnergySystem:
         self.optimization_setup.sets.add_set(name="set_time_steps_yearly", data=self.set_time_steps_yearly, doc="Set of yearly time-steps")
         # yearly time steps of entire optimization horizon
         self.optimization_setup.sets.add_set(name="set_time_steps_yearly_entire_horizon", data=self.set_time_steps_yearly_entire_horizon, doc="Set of yearly time-steps of entire optimization horizon")
+        ## impact categories for LCA, only if flag to include LCA categories is True
+        if self.system['load_lca_factors']:
+            self.optimization_setup.sets.add_set(name='set_lca_impact_categories', data=self.set_lca_impact_categories,
+                                                 doc='Set of the LCIA impact categories to be investigated')
 
     def construct_params(self):
         """ constructs the pe.Params of the class <EnergySystem> """
