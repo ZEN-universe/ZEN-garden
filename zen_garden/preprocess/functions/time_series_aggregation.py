@@ -34,6 +34,7 @@ class TimeSeriesAggregation(object):
         self.set_base_time_steps = self.energy_system.set_base_time_steps_yearly
         self.number_typical_periods = min(self.system["unaggregated_time_steps_per_year"], self.system["aggregated_time_steps_per_year"])
         self.conducted_tsa = False
+        self.get_excluded_ts()
         # if number of time steps >= number of base time steps, skip aggregation
         if self.number_typical_periods < np.size(self.set_base_time_steps) and self.system["conduct_time_series_aggregation"]:
             # select time series
@@ -49,7 +50,7 @@ class TimeSeriesAggregation(object):
         else:
             self.typical_periods = pd.DataFrame()
             set_time_steps = self.set_base_time_steps
-            time_step_duration = self.energy_system.time_steps.calculatetime_step_duration(set_time_steps, self.set_base_time_steps)
+            time_step_duration = self.energy_system.time_steps.calculate_time_step_duration(set_time_steps, self.set_base_time_steps)
             sequence_time_steps = np.concatenate([[time_step] * time_step_duration[time_step] for time_step in time_step_duration])
             self.set_time_attributes(self, set_time_steps, time_step_duration, sequence_time_steps)
             # set aggregated time series
@@ -63,7 +64,6 @@ class TimeSeriesAggregation(object):
 
     def select_ts_of_all_elements(self):
         """ this method retrieves the raw time series for the aggregation of all input data sets. """
-        self.get_excluded_ts()
         dict_raw_ts = {}
         for element in self.optimization_setup.get_all_elements(Element):
             df_ts_raw = self.extract_raw_ts(element, self.header_set_time_steps)
