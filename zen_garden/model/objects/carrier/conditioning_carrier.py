@@ -1,14 +1,14 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        October-2021
-Authors:        Alissa Ganter (aganter@ethz.ch)
+"""
+:Title:          ZEN-GARDEN
+:Created:        October-2021
+:Authors:        Alissa Ganter (aganter@ethz.ch),
                 Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class defining compressable energy carriers.
-                The class takes as inputs the abstract optimization model. The class adds parameters, variables and
-                constraints of a generic carrier and returns the abstract optimization model.
-==========================================================================================================================================================================="""
+Class defining compressable energy carriers.
+The class takes as inputs the abstract optimization model. The class adds parameters, variables and
+constraints of a generic carrier and returns the abstract optimization model.
+"""
 import logging
 
 import linopy as lp
@@ -26,6 +26,7 @@ class ConditioningCarrier(Carrier):
 
     def __init__(self, carrier: str, optimization_setup):
         """initialization of a generic carrier object
+
         :param carrier: carrier that is added to the model
         :param optimization_setup: The OptimizationSetup the element is part of """
 
@@ -43,6 +44,7 @@ class ConditioningCarrier(Carrier):
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <Carrier>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         variables = optimization_setup.variables
@@ -56,6 +58,7 @@ class ConditioningCarrier(Carrier):
     @classmethod
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <Carrier>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
@@ -79,6 +82,7 @@ class ConditioningCarrierRules(GenericRule):
     def __init__(self, optimization_setup):
         """
         Inits the rules for a given EnergySystem
+
         :param optimization_setup: The OptimizationSetup the element is part of
         """
 
@@ -91,7 +95,13 @@ class ConditioningCarrierRules(GenericRule):
     # -----------------------
 
     def constraint_carrier_demand_coupling_block(self):
-        """ sum conditioning Carriers"""
+        """ sum conditioning carriers
+
+        .. math::
+            d_{c^p,n,t}^\mathrm{endogenous} = \sum_{c^c\in\mathcal{C}_i^c} d_{c^c,n,t}^\mathrm{endogenous}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_conditioning_carrier_parents", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
@@ -121,6 +131,16 @@ class ConditioningCarrierRules(GenericRule):
     def constraint_nodal_energy_balance_conditioning_block(self):
         """
         nodal energy balance for each time step.
+
+        .. math::
+            0 = -(d_{c,n,t}^\mathrm{endogenous} + d_{c,n,t}-D_{c,n,t})
+            + \\sum_{i\\in\mathcal{I}}(\\overline{G}_{c,i,n,t}-\\underline{G}_{c,i,n,t})
+            + \\sum_{j\\in\mathcal{J}}\\sum_{e\\in\\underline{\mathcal{E}}}F_{j,e,t}-F^\mathrm{l}_{j,e,t})-\\sum_{e'\\in\\overline{\mathcal{E}}}F_{j,e',t})
+            + \\sum_{k\\in\mathcal{K}}(\\overline{H}_{k,n,t}-\\underline{H}_{k,n,t})
+            + U_{c,n,t} - V_{c,n,t}
+
+        :return: #TODO describe parameter/return
+
         """
 
         ### index sets

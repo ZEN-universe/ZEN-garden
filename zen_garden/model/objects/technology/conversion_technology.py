@@ -1,14 +1,13 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        October-2021
-Authors:        Alissa Ganter (aganter@ethz.ch)
-                Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title: ZEN-GARDEN
+:Created: October-2021
+:Authors:   Alissa Ganter (aganter@ethz.ch), Jacob Mannhardt (jmannhardt@ethz.ch)
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class defining the parameters, variables and constraints of the conversion technologies.
-                The class takes the abstract optimization model as an input, and adds parameters, variables and
-                constraints of the conversion technologies.
-==========================================================================================================================================================================="""
+Class defining the parameters, variables, and constraints of the conversion technologies.
+The class takes the abstract optimization model as an input and adds parameters, variables, and
+constraints of the conversion technologies.
+"""
 import logging
 
 import numpy as np
@@ -22,15 +21,20 @@ from ..element import GenericRule
 
 
 class ConversionTechnology(Technology):
+    """
+    Class defining conversion technologies
+    """
     # set label
     label = "set_conversion_technologies"
     location_type = "set_nodes"
 
     def __init__(self, tech, optimization_setup):
-        """init conversion technology object
-        :param tech: name of added technology
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        """
+        init conversion technology object
 
+        :param tech: name of added technology
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         logging.info(f'Initialize conversion technology {tech}')
         super().__init__(tech, optimization_setup)
         # store input data
@@ -78,7 +82,12 @@ class ConversionTechnology(Technology):
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
 
     def calculate_capex_of_single_capacity(self, capacity, index):
-        """ this method calculates the annualized capex of a single existing capacity. """
+        """ this method calculates the annualized capex of a single existing capacity.
+
+        :param capacity: existing capacity of technology
+        :param index: index of capacity specifying node and time
+        :return: annualized capex of a single existing capacity
+        """
         if capacity == 0:
             return 0
         # linear
@@ -93,6 +102,7 @@ class ConversionTechnology(Technology):
     def get_capex_conversion_factor_all_elements(cls, optimization_setup, variable_type, selectPWA, index_names=None):
         """ similar to Element.get_attribute_of_all_elements but only for capex and conversion_factor.
         If selectPWA, extract pwa attributes, otherwise linear.
+
         :param optimization_setup: The OptimizationSetup the element is part of
         :param variable_type: either capex or conversion_factor
         :param selectPWA: boolean if get attributes for pwa
@@ -132,6 +142,7 @@ class ConversionTechnology(Technology):
     @classmethod
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <ConversionTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         # get input carriers
@@ -163,6 +174,7 @@ class ConversionTechnology(Technology):
     @classmethod
     def construct_params(cls, optimization_setup):
         """ constructs the pe.Params of the class <ConversionTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         # slope of linearly modeled capex
         optimization_setup.parameters.add_parameter(name="capex_specific_conversion",
@@ -177,6 +189,7 @@ class ConversionTechnology(Technology):
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <ConversionTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
 
         model = optimization_setup.model
@@ -251,6 +264,7 @@ class ConversionTechnology(Technology):
     @classmethod
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <ConversionTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
@@ -302,7 +316,15 @@ class ConversionTechnology(Technology):
     # defines disjuncts if technology on/off
     @classmethod
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
-        """definition of disjunct constraints if technology is On"""
+        """definition of disjunct constraints if technology is On
+
+        :param optimization_setup: #TODO describe parameter/return
+        :param tech: #TODO describe parameter/return
+        :param capacity_type: #TODO describe parameter/return
+        :param node: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        :param binary_var: #TODO describe parameter/return
+        """
         # get parameter object
         model = optimization_setup.model
         params = optimization_setup.parameters
@@ -334,7 +356,15 @@ class ConversionTechnology(Technology):
 
     @classmethod
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
-        """definition of disjunct constraints if technology is off"""
+        """definition of disjunct constraints if technology is off
+
+        :param optimization_setup: #TODO describe parameter/return
+        :param tech: #TODO describe parameter/return
+        :param capacity_type: #TODO describe parameter/return
+        :param node: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        :param binary_var: #TODO describe parameter/return
+        """
         sets = optimization_setup.sets
         model = optimization_setup.model
         constraints = optimization_setup.constraints
@@ -347,6 +377,7 @@ class ConversionTechnology(Technology):
     @classmethod
     def calculate_pwa_breakpoints_values(cls, optimization_setup, setPWA, type_pwa):
         """ calculates the breakpoints and function values for piecewise affine constraint
+
         :param optimization_setup: The OptimizationSetup the element is part of
         :param setPWA: set of variable indices in capex approximation, for which pwa is performed
         :param type_pwa: variable, for which pwa is performed
@@ -395,7 +426,16 @@ class ConversionTechnologyRules(GenericRule):
     # -----------------------
 
     def constraint_linear_capex_rule(self, tech, node, time):
-        """ if capacity and capex have a linear relationship"""
+        """ if capacity and capex have a linear relationship
+
+        .. math::
+            A_{h,p,y}^{approximation} = \\alpha_{h,n,y} S_{h,p,y}^{approximation}
+
+        :param tech: #TODO describe parameter/return
+        :param node: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # skipped because rule-based constraint
@@ -419,7 +459,16 @@ class ConversionTechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_capex_coupling_rule(self, tech, node, time):
-        """ couples capex variables based on modeling technique"""
+        """ couples capex variables based on modeling technique
+
+        .. math::
+            CAPEX_{y,n,i}^\\mathrm{cost, power} = A_{h,p,y}^{approximation}
+
+        :param tech: #TODO describe parameter/return
+        :param node: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # skipped because rule-based constraint
@@ -443,7 +492,16 @@ class ConversionTechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_capacity_coupling_rule(self, tech, node, time):
-        """ couples capacity variables based on modeling technique"""
+        """ couples capacity variables based on modeling technique
+
+        .. math::
+            \Delta S_{h,p,y}^\mathrm{power} = S_{h,p,y}^\mathrm{approximation}
+
+        :param tech: #TODO describe parameter/return
+        :param node: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # skipped because rule-based constraint
@@ -470,7 +528,15 @@ class ConversionTechnologyRules(GenericRule):
     # -----------------------
 
     def constraint_linear_conver_efficiency_block(self, index_values, index_names):
-        """ if reference carrier and dependent carrier have a linear relationship"""
+        """ if reference carrier and dependent carrier have a linear relationship
+
+        .. math::
+            G^\\mathrm{d,approximation}_{i,n,t} = \\eta_{i,c,n,y}G^\\mathrm{r,approximation}_{i,n,t}
+
+        :param index_values: index values
+        :param index_names: index names
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index = ZenIndex(index_values, index_names)
@@ -501,7 +567,17 @@ class ConversionTechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="constraint_linear_conver_efficiency_dim")
 
     def constraint_reference_flow_coupling_block(self, index_values, index_names):
-        """ couples reference flow variables based on modeling technique"""
+        """ couples reference flow variables based on modeling technique
+
+        .. math::
+            \mathrm{if\ reference\ carrier\ in\ input\ carriers}\ \\underline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}
+        .. math::
+            \mathrm{if\ reference\ carrier\ in\ output\ carriers}\ \\overline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}
+
+        :param index_values: index values
+        :param index_names: index names
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # check if we even have something
@@ -533,7 +609,17 @@ class ConversionTechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="constraint_reference_flow_coupling_dim")
 
     def constraint_dependent_flow_coupling_block(self, index_values, index_names):
-        """ couples dependent flow variables based on modeling technique"""
+        """ couples dependent flow variables based on modeling technique
+
+        .. math::
+            \mathrm{if\ dependent\ carrier\ in\ input\ carriers}\ \\underline{G}_{i,n,t}^\mathrm{d} = G^\mathrm{d,approximation}_{i,n,t}
+        .. math::
+            \mathrm{if\ dependent\ carrier\ in\ output\ carriers}\ \\overline{G}_{i,n,t}^\mathrm{d} = G^\mathrm{d,approximation}_{i,n,t}
+
+        :param index_values: index values
+        :param index_names: index names
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # check if we even have something

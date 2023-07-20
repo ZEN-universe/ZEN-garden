@@ -1,13 +1,13 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        January-2022
-Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
+"""
+:Title:          ZEN-GARDEN
+:Created:        January-2022
+:Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
+:Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:    Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
-                optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
-                optimization model as an input.
-==========================================================================================================================================================================="""
+Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
+optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
+optimization model as an input.
+"""
 import copy
 import logging
 
@@ -20,13 +20,17 @@ from .time_steps import TimeStepsDicts
 
 
 class EnergySystem:
-
+    """
+    Class defining a standard energy system
+    """
     def __init__(self, optimization_setup):
         """ initialization of the energy_system
+
         :param optimization_setup: The OptimizationSetup of the EnergySystem class"""
 
         # the name
         self.name = "EnergySystem"
+        self._name = "EnergySystem"
         # set attributes
         self.optimization_setup = optimization_setup
         # quick access
@@ -104,6 +108,7 @@ class EnergySystem:
 
     def calculate_edges_from_nodes(self):
         """ calculates set_nodes_on_edges from set_nodes
+
         :return set_nodes_on_edges: dict with edges and corresponding nodes """
 
         set_nodes_on_edges = {}
@@ -122,6 +127,7 @@ class EnergySystem:
 
     def set_technology_of_carrier(self, technology, list_technology_of_carrier):
         """ appends technology to carrier in dict_technology_of_carrier
+
         :param technology: name of technology in model
         :param list_technology_of_carrier: list of carriers correspondent to technology"""
         for carrier in list_technology_of_carrier:
@@ -133,6 +139,7 @@ class EnergySystem:
 
     def calculate_connected_edges(self, node, direction: str):
         """ calculates connected edges going in (direction = 'in') or going out (direction = 'out')
+
         :param node: current node, connected by edges
         :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
         :return _set_connected_edges: list of connected edges """
@@ -148,6 +155,7 @@ class EnergySystem:
 
     def calculate_reversed_edge(self, edge):
         """ calculates the reversed edge corresponding to an edge
+
         :param edge: input edge
         :return _reversed_edge: edge which corresponds to the reversed direction of edge"""
         _node_out, _node_in = self.set_nodes_on_edges[edge]
@@ -241,28 +249,27 @@ class EnergySystem:
         # create the rules
         self.rules = EnergySystemRules(self.optimization_setup)
 
-        # carbon emissions
+        # total carbon emissions
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_total", constraint=self.rules.constraint_carbon_emissions_total_block(),
                                          doc="total carbon emissions of energy system")
-        # carbon emissions
+        # cumulative carbon emissions
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_cumulative", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_cumulative_rule,
                                         doc="cumulative carbon emissions of energy system over time")
-        # cost of carbon emissions
-        constraints.add_constraint_block(model, name="constraint_carbon_cost_total", constraint=self.rules.constraint_carbon_cost_total_block(), doc="total carbon cost of energy system")
-        # carbon emissions
+        # annual limit carbon emissions
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_limit", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_limit_rule,
                                    doc="limit of total carbon emissions of energy system")
-        # carbon emission budget
+        # carbon emission budget limit
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_budget", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_budget_rule,
                                    doc="Budget of total carbon emissions of energy system")
         # limit carbon emission overshoot
         # constraints.add_constraint_block(model, name="constraint_carbon_emissions_overshoot_limit", constraint=self.rules.get_constraint_carbon_emissions_overshoot_limit(),
         #                            doc="Limit of overshot carbon emissions of energy system")
+        # cost of carbon emissions
+        constraints.add_constraint_block(model, name="constraint_carbon_cost_total", constraint=self.rules.constraint_carbon_cost_total_block(), doc="total carbon cost of energy system")
         # costs
-        constraints.add_constraint_block(model, name="constraint_cost_total", constraint=self.rules.get_constraint_cost_total(), doc="total cost of energy system")
+        constraints.add_constraint_block(model, name="constraint_cost_total", constraint=self.rules.constraint_cost_total_block(), doc="total cost of energy system")
         # net_present_cost
         constraints.add_constraint_rule(model, name="constraint_net_present_cost", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_net_present_cost_rule, doc="net_present_cost of energy system")
-
 
     def construct_objective(self):
         """ constructs the pe.Objective of the class <EnergySystem> """
@@ -298,8 +305,9 @@ class EnergySystemRules(GenericRule):
 
     def __init__(self, optimization_setup):
         """
-        Inits the constraints for a given energy system,
-        optimization_setup
+        Inits the constraints for a given energy system
+
+        :param optimization_setup: The OptimizationSetup of the EnergySystem class
         """
 
         super().__init__(optimization_setup)
@@ -308,7 +316,16 @@ class EnergySystemRules(GenericRule):
     # ----------------------
 
     def constraint_carbon_emissions_cumulative_rule(self, year):
-        """ cumulative carbon emissions over time """
+        """ cumulative carbon emissions over time
+
+        .. math::
+            \mathrm{First\ planning\ period}\ y = y_0,\quad E_y^\mathrm{c} = E_y
+        .. math::
+            \mathrm{Subsequent\ periods}\ y > y_0, \quad E_y^c = E_{y-1}^c + (\Delta^y-1)E_{y-1}+E_y
+
+        :param year: year of interest
+        :return: cumulative carbon emissions constraint for specified year
+        """
 
         ### index sets
         # skipped because rule-based constraint
@@ -339,7 +356,14 @@ class EnergySystemRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_carbon_emissions_limit_rule(self, year):
-        """ time dependent carbon emissions limit from technologies and carriers"""
+        """ time dependent carbon emissions limit from technologies and carriers
+
+        .. math::
+            E_y\leq e_y
+
+        :param year: year of interest
+        :return: carbon emissions limit constraint for specified year
+        """
 
         ### index sets
         # skipped because rule-based constraint
@@ -364,7 +388,12 @@ class EnergySystemRules(GenericRule):
     def constraint_carbon_emissions_budget_rule(self, year):
         """ carbon emissions budget of entire time horizon from technologies and carriers.
         The prediction extends until the end of the horizon, i.e.,
-        last optimization time step plus the current carbon emissions until the end of the horizon """
+        last optimization time step plus the current carbon emissions until the end of the horizon
+
+        #TODO constraint doesn't match model formulation definition
+
+        :param year: year of interest
+        :return: carbon emissions budget constraint for specified year"""
 
         ### index sets
         # skipped because rule-based constraint
@@ -395,35 +424,15 @@ class EnergySystemRules(GenericRule):
         ### return
         return self.constraints.return_contraints(constraints)
 
-    def get_constraint_cost_total(self):
-        """ add up all costs from technologies and carriers"""
-
-        ### index sets
-        # skipped because rule-based constraint
-
-        ### masks
-        # skipped because rule-based constraint
-
-        ### index loop
-        # skipped because rule-based constraint
-
-        ### auxiliary calculations
-        # not necessary
-
-        ### formulate constraint
-        lhs = (self.variables["cost_total"]
-               - self.variables["cost_capex_total"]
-               - self.variables["cost_opex_total"]
-               - self.variables["cost_carrier_total"]
-               - self.variables["cost_carbon_emissions_total"])
-        rhs = 0
-        constraints = lhs == rhs
-
-        ### return
-        return self.constraints.return_contraints(constraints)
-
     def constraint_net_present_cost_rule(self, year):
-        """ discounts the annual capital flows to calculate the net_present_cost """
+        """ discounts the annual capital flows to calculate the net_present_cost
+
+        .. math::
+            NPC_y = C_y \sum_{\\tilde{y} = 1}^{\Delta^\mathrm{y}-1}(\\frac{1}{1+r})^{\Delta^\mathrm{y}(y-y_0)+\\tilde{y}}
+
+        :param year: year of interest
+        :return: net present cost constraint for specified year
+       """
 
         ### index sets
         # skipped because rule-based constraint
@@ -457,7 +466,13 @@ class EnergySystemRules(GenericRule):
     # -----------------------
 
     def constraint_carbon_emissions_total_block(self):
-        """ add up all carbon emissions from technologies and carriers """
+        """ add up all carbon emissions from technologies and carriers
+
+        .. math::
+            E_y = E_{y,\mathcal{H}} + E_{y,\mathcal{C}}
+
+        :return: total carbon emissions constraint for specified year
+        """
 
         ### index sets
         # not necessary
@@ -482,7 +497,13 @@ class EnergySystemRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_carbon_cost_total_block(self):
-        """ carbon cost associated with the carbon emissions of the system in each year """
+        """ carbon cost associated with the carbon emissions of the system in each year
+
+        .. math::
+            OPEX_y^\mathrm{c} = E_y\mu + E_y^\mathrm{o}\mu^\mathrm{o}
+
+        :return: total cost carbon emissions constraint for specified year
+        """
 
         ### index sets
         # not necessary
@@ -507,20 +528,73 @@ class EnergySystemRules(GenericRule):
         ### return
         return self.constraints.return_contraints(constraints)
 
+    def constraint_cost_total_block(self):
+        """ add up all costs from technologies and carriers
+
+        .. math::
+            OPEX_y^\mathrm{c} = E_y\mu + E_y^\mathrm{o}\mu^\mathrm{o}
+
+        :return: total cost carbon emissions constraint for specified year
+        """
+
+        ### index sets
+        # skipped because rule-based constraint
+
+        ### masks
+        # skipped because rule-based constraint
+
+        ### index loop
+        # skipped because rule-based constraint
+
+        ### auxiliary calculations
+        # not necessary
+
+        ### formulate constraint
+        lhs = (self.variables["cost_total"]
+               - self.variables["cost_capex_total"]
+               - self.variables["cost_opex_total"]
+               - self.variables["cost_carrier_total"]
+               - self.variables["cost_carbon_emissions_total"])
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
+
     # Objective rules
     # ---------------
 
     def objective_total_cost_rule(self, model):
-        """objective function to minimize the total net present cost"""
+        """objective function to minimize the total net present cost
+
+        .. math::
+            J = \sum_{y\in\mathcal{Y}} NPC_y
+
+        :param model: optimization model
+        :return: net present cost objective function
+        """
         sets = self.sets
         return sum(model.variables["net_present_cost"][year] for year in sets["set_time_steps_yearly"])
 
     def objective_total_carbon_emissions_rule(self, model):
-        """objective function to minimize total emissions"""
+        """objective function to minimize total emissions
+
+        .. math::
+            J = \sum_{y\in\mathcal{Y}} E_y
+
+        :param model: optimization model
+        :return: total carbon emissions objective function
+        """
         sets = self.sets
         return sum(model.variables["carbon_emissions_total"][year] for year in sets["set_time_steps_yearly"])
 
     def objective_risk_rule(self, model):
-        """objective function to minimize total risk"""
+        """objective function to minimize total risk
+
+        #TODO add latex formula as soon as risk objective is implemented
+
+        :param model: optimization model
+        :return: risk objective function
+        """
         # TODO implement objective functions for risk
         return None

@@ -1,13 +1,13 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-              Davide Tonelli (davidetonelli@outlook.com)
+"""
+:Title:        ZEN-GARDEN
+:Created:      October-2021
+:Authors:      Alissa Ganter (aganter@ethz.ch),
+              Davide Tonelli (davidetonelli@outlook.com),
               Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Compilation  of the optimization problem.
-==========================================================================================================================================================================="""
+Compilation  of the optimization problem.
+"""
 import importlib.util
 import logging
 import os
@@ -27,6 +27,7 @@ def main(config, dataset_path=None, job_index=None):
     """
     This function runs the compile.py script that was used in ZEN-Garden prior to the package build, it is executed
     in the __main__.py script
+
     :param config: A config instance used for the run
     :param dataset_path: If not None, used to overwrite the config.analysis["dataset"]
     :param job_index: The index of the scenario to run, if None, all scenarios are run in sequence

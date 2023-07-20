@@ -1,11 +1,11 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        April-2022
-Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:          ZEN-GARDEN
+:Created:        April-2022
+:Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class containing the unit handling procedure.
-==========================================================================================================================================================================="""
+Class containing the unit handling procedure.
+"""
 import logging
 import numpy as np
 import pandas as pd
@@ -16,17 +16,28 @@ import copy
 
 
 class UnitHandling:
+    """
+    Class containing the unit handling procedure
+    """
 
-    def __init__(self, folder_path, round_decimal_points,define_ton_as_metric_ton = True):
-        """ initialization of the unit_handling instance"""
+    def __init__(self, folder_path, round_decimal_points, define_ton_as_metric_ton=True):
+        """ initialization of the unit_handling instance
+
+        :param folder_path: The path to the folder containing the system specifications
+        :param round_decimal_points: rounding tolerance
+        :param define_ton_as_metric_ton: bool to use another definition for tons
+        """
         self.folder_path = folder_path
         self.rounding_decimal_points = round_decimal_points
         self.get_base_units(define_ton_as_metric_ton)
         # dict of element attribute values
         self.dict_attribute_values = {}
 
-    def get_base_units(self,define_ton_as_metric_ton = True):
-        """ gets base units of energy system """
+    def get_base_units(self, define_ton_as_metric_ton=True):
+        """ gets base units of energy system
+
+        :param define_ton_as_metric_ton: bool to use another definition for tons
+        """
         _list_base_unit = self.extract_base_units()
         self.ureg = UnitRegistry()
 
@@ -89,13 +100,16 @@ class UnitHandling:
 
     def extract_base_units(self):
         """ extracts base units of energy system
+
         :return list_base_units: list of base units """
         list_base_units = pd.read_csv(self.folder_path + "/base_units.csv").squeeze().values.tolist()
         return list_base_units
 
     def calculate_combined_unit(self, input_unit, return_combination=False):
         """ calculates the combined unit for converting an input_unit to the base units
+
         :param input_unit: string of input unit
+        :param return_combination: If True, return the combination of units
         :return combined_unit: multiplication factor """
         # check if "h" and thus "planck_constant" in unit
         self.check_if_invalid_hourstring(input_unit)
@@ -159,6 +173,7 @@ class UnitHandling:
 
     def get_unit_multiplier(self, input_unit):
         """ calculates the multiplier for converting an input_unit to the base units
+
         :param input_unit: string of input unit
         :return multiplier: multiplication factor """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
@@ -178,7 +193,11 @@ class UnitHandling:
             return round(multiplier, self.rounding_decimal_points)
 
     def set_base_unit_combination(self, input_unit, attribute):
-        """ converts the input unit to the corresponding base unit """
+        """ converts the input unit to the corresponding base unit
+
+        :param input_unit: #TODO describe parameter/return
+        :param attribute: #TODO describe parameter/return
+        """
         # if input unit is already in base units --> the input unit is base unit
         if input_unit in self.base_units:
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
@@ -191,12 +210,20 @@ class UnitHandling:
             self.dict_attribute_values[attribute] = {"base_combination": base_unit_combination, "values": None}
 
     def set_attribute_values(self, df_output, attribute):
-        """ saves the attributes values of an attribute """
+        """ saves the attributes values of an attribute
+
+        :param df_output: #TODO describe parameter/return
+        :param attribute: #TODO describe parameter/return
+        """
         if attribute in self.dict_attribute_values.keys():
             self.dict_attribute_values[attribute]["values"] = df_output
 
     def recommend_base_units(self, immutable_unit, unit_exps):
-        """ gets the best base units based on the input parameter values """
+        """ gets the best base units based on the input parameter values
+
+        :param immutable_unit: #TODO describe parameter/return
+        :param unit_exps: #TODO describe parameter/return
+        """
         logging.info(f"Check for best base unit combination between 10^{unit_exps['min']} and 10^{unit_exps['max']} (interval: 10^{unit_exps['step_width']})")
         smallest_range = {"comb": None, "val": np.inf, "originalVal": np.inf}
         dict_values = {}
@@ -248,6 +275,7 @@ class UnitHandling:
 
     def check_if_invalid_hourstring(self, input_unit):
         """ checks if "h" and thus "planck_constant" in input_unit
+
         :param input_unit: string of input_unit """
         _tuple_units = self.ureg(input_unit).to_tuple()[1]
         _list_units = [_item[0] for _item in _tuple_units]
@@ -260,8 +288,9 @@ class UnitHandling:
     @staticmethod
     def check_pos_neg_boolean(array, axis=None):
         """ checks if the array has only positive or negative booleans (-1,0,1)
+
         :param array: numeric numpy array
-        :param axis:
+        :param axis: #TODO describe parameter/return
         :return is_pos_neg_boolean """
         if axis:
             is_pos_neg_boolean = np.apply_along_axis(lambda row: np.array_equal(np.abs(row), np.abs(row).astype(bool)), 1, array).any()

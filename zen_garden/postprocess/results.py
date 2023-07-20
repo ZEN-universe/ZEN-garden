@@ -1,11 +1,13 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:        ZEN-GARDEN
+:Created:      October-2021
+:Authors:      Alissa Ganter (aganter@ethz.ch)
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Class is defining to read in the results of an Optimization problem.
-==========================================================================================================================================================================="""
+Class is defining to read in the results of an Optimization problem.
+"""
+import logging
+import warnings
 
 import importlib
 import json
@@ -18,14 +20,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from tables import NaturalNameWarning
+# from tables import NaturalNameWarning
 from tqdm import tqdm
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
 
 # Warnings
-warnings.filterwarnings('ignore', category=NaturalNameWarning)
+# warnings.filterwarnings('ignore', category=NaturalNameWarning)
 
 # SETUP LOGGER
 utils.setup_logger()
@@ -38,8 +40,9 @@ class Results(object):
     def __init__(self, path, scenarios=None, load_opt=False):
         """
         Initializes the Results class with a given path
+
         :param path: Path to the output of the optimization problem
-        :param scenarios: A list of scenarios to load, defaults to all scenarios
+        :param scenarios: A None, str or tuple of scenarios to load, defaults to all scenarios
         :param load_opt: Optionally load the opt dictionary as well
         """
 
@@ -173,6 +176,7 @@ class Results(object):
     def _read_file(cls, name, lazy=True):
         """
         Reads out a file and decompresses it if necessary
+
         :param name: File name without extension
         :param lazy: When possible, load lazy
         :return: The decompressed content of the file as dict like object
@@ -209,6 +213,7 @@ class Results(object):
     def _dict2df(cls, dict_raw):
         """
         Transforms a parameter or variable dict to a dict containing actual pandas dataframes and not serialized jsons
+
         :param dict_raw: The raw dict to parse
         :return: A dict containing actual dataframes in the dataframe keys
         """
@@ -241,6 +246,7 @@ class Results(object):
     def _to_df(cls, string):
         """
         Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
+
         :param string: The string to decode
         :return: The corresponding dataframe
         """
@@ -261,6 +267,7 @@ class Results(object):
     def load_sets(cls, path, lazy=False):
         """
         Loads the set dict from a given path
+
         :param path: Path to load the parameter dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
         :return: The set dict
@@ -278,6 +285,7 @@ class Results(object):
     def load_params(cls, path, lazy=False):
         """
         Loads the parameter dict from a given path
+
         :param path: Path to load the parameter dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
         :return: The parameter dict
@@ -295,6 +303,7 @@ class Results(object):
     def load_vars(cls, path, lazy=False):
         """
         Loads the var dict from a given path
+
         :param path: Path to load the var dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
         :return: The var dict
@@ -312,6 +321,7 @@ class Results(object):
     def load_duals(cls, path, lazy=False):
         """
         Loads the dual dict from a given path
+
         :param path: Path to load the dual dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
         :return: The var dict
@@ -329,6 +339,7 @@ class Results(object):
     def load_system(cls, path):
         """
         Loads the system dict from a given path
+
         :param path: Directory to load the dictionary from
         :return: The system dictionary
         """
@@ -340,8 +351,8 @@ class Results(object):
 
     @classmethod
     def load_analysis(cls, path):
-        """
-        Loads the analysis dict from a given path
+        """Loads the analysis dict from a given path
+
         :param path: Directory to load the dictionary from
         :return: The analysis dictionary
         """
@@ -353,8 +364,8 @@ class Results(object):
 
     @classmethod
     def load_solver(cls, path):
-        """
-        Loads the solver dict from a given path
+        """Loads the solver dict from a given path
+
         :param path: Directory to load the dictionary from
         :return: The analysis dictionary
         """
@@ -366,8 +377,8 @@ class Results(object):
 
     @classmethod
     def load_scenarios(cls, path):
-        """
-        Loads the scenarios dict from a given path
+        """Loads the scenarios dict from a given path
+
         :param path: Directory to load the dictionary from
         :return: The analysis dictionary
         """
@@ -379,8 +390,8 @@ class Results(object):
 
     @classmethod
     def load_opt(cls, path):
-        """
-        Loads the opt dict from a given path
+        """Loads the opt dict from a given path
+
         :param path: Directory to load the dictionary from
         :return: The analysis dictionary
         """
@@ -392,8 +403,8 @@ class Results(object):
 
     @classmethod
     def load_sequence_time_steps(cls, path, scenario=None):
-        """
-        Loads the dict_sequence_time_steps from a given path
+        """Loads the dict_sequence_time_steps from a given path
+
         :param path: Path to load the dict from
         :param scenario: Name of the scenario to load
         :return: dict_sequence_time_steps
@@ -411,8 +422,8 @@ class Results(object):
 
     @classmethod
     def expand_dict(cls, dictionary):
-        """
-        Creates a copy of the dictionary where all lists are recursively transformed to numpy arrays
+        """Creates a copy of the dictionary where all lists are recursively transformed to numpy arrays
+
         :param dictionary: The input dictionary
         :return: A copy of the dictionary containing arrays instead of lists
         """
@@ -439,9 +450,10 @@ class Results(object):
 
     @classmethod
     def compare_configs(cls, results:list,scenarios = None):
-        """
-        Compares the configs of two or more results
+        """Compares the configs of two or more results
+
         :param results: list of results
+        :param scenarios: None, str or tuple of scenarios
         :return: a dictionary with diverging results
         """
         results,scenarios = cls.check_combine_results(results,scenarios)
@@ -464,9 +476,11 @@ class Results(object):
 
     @classmethod
     def compare_model_parameters(cls, results: list,compare_total = True,scenarios = None):
-        """
-        Compares the input data of two or more results
+        """Compares the input data of two or more results
+
         :param results: list of results
+        :param compare_total: if True, compare total value, not full time series
+        :param scenarios: None, str or tuple of scenarios
         :return: a dictionary with diverging results
         """
         results,scenarios = cls.check_combine_results(results,scenarios)
@@ -492,9 +506,11 @@ class Results(object):
 
     @classmethod
     def compare_model_variables(cls, results: list,compare_total = True,scenarios = None):
-        """
-        Compares the input data of two or more results
+        """Compares the input data of two or more results
+
         :param results: list of results
+        :param compare_total: if True, compare total value, not full time series
+        :param scenarios: None, str or tuple of scenarios
         :return: a dictionary with diverging results
         """
         results,scenarios = cls.check_combine_results(results,scenarios)
@@ -520,11 +536,12 @@ class Results(object):
 
     @classmethod
     def compare_component_values(cls,results,component,compare_total,scenarios,rtol=1e-3):
-        """
-        Compares component values of two results
+        """Compares component values of two results
+
         :param results: list with results
         :param component: component name
-        :param compare_total: boolean if total value is compared
+        :param compare_total: if True, compare total value, not full time series
+        :param scenarios: None, str or tuple of scenarios
         :param rtol: relative tolerance of equal values
         :return: dictionary with diverging component values
         """
@@ -564,8 +581,8 @@ class Results(object):
 
     @classmethod
     def check_combine_results(cls,results:list,scenarios=None):
-        """
-        Checks if results are a list of 2 results with the matching scenarios
+        """Checks if results are a list of 2 results with the matching scenarios
+
         :param results: list of results
         :param scenarios: None, str or tuple of scenarios
         :return: dictionary of results
@@ -585,8 +602,8 @@ class Results(object):
 
     @classmethod
     def check_scenario_results(cls,results:list,scenarios=None):
-        """
-        Checks if results have scenarios and if yes, if the provided scenarios match
+        """Checks if results have scenarios and if yes, if the provided scenarios match
+
         :param results: list of results
         :param scenarios: None, str or tuple of scenarios
         :return: scenarios
@@ -637,8 +654,8 @@ class Results(object):
 
     @classmethod
     def get_config_diff(cls,results, attribute):
-        """
-        returns a DeepDiff dict with the differences in attribute values
+        """returns a dict with the differences in attribute values
+
         :param results: dictionary with results
         :param attribute: name of result attribute
         :return: Dictionary with differences in attribute values
@@ -651,6 +668,13 @@ class Results(object):
 
     @classmethod
     def compare_dicts(cls,dict1,dict2,result_names):
+        """
+
+        :param dict1: first config dict
+        :param dict2: second config dict
+        :param result_names: names of results
+        :return: diff dict
+        """
         diff_dict = {}
         for key in dict1.keys() | dict2.keys():
             if isinstance(dict1.get(key), dict) and isinstance(dict2.get(key), dict):
@@ -667,8 +691,8 @@ class Results(object):
 
     @staticmethod
     def get_component_diff(results,component_type):
-        """
-        returns a list with the differences in component names
+        """returns a list with the differences in component names
+
         :param results: dictionary with results
         :return: list with the common params
         """
@@ -687,13 +711,14 @@ class Results(object):
         return common_component
 
     def get_df(self, name, scenario=None, to_csv=None, csv_kwargs=None,is_dual=False, is_set=False):
-        """
-        Extracts the dataframe from the results
+        """Extracts the dataframe from the results
+
         :param name: The name of the dataframe to extract
         :param scenario: If multiple scenarios are in the results, only consider this one
         :param to_csv: Save the dataframes to a csv file
         :param csv_kwargs: additional keyword arguments forwarded to the to_csv method of pandas
         :param is_dual: if dual variable dict is selected
+        :param is_set: if sets are selected
         :return: The dataframe that should have been extracted. If multiple scenarios are present a dictionary
                  with scenarios as keys and dataframes as value is returned
         """
@@ -734,14 +759,6 @@ class Results(object):
                     else:
                         # _data[scenario] = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
                         _var = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
-                    # # single element that is not a year
-                    # if len(_var) == 1 and _var.index.nlevels == 1 and not np.isfinite(_var.index[0]):
-                    #     _data[scenario] = _var
-                    #     break
-                    # # if the year is in the index (no multiindex)
-                    # elif year in _var.index:
-                    #     _mf_data[year] = _var.loc[year]
-                    #     yearly_component = True
 
                     # no multiindex
                     if _var.index.nlevels == 1:
@@ -870,11 +887,14 @@ class Results(object):
         return self.get_df("time_steps_storage_level_duration")
 
     def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False,discount_years=True):
-        """
-        Calculates the full timeseries for a given element
+        """Calculates the full timeseries for a given element
+
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
         :param element_name: The name of the element
+        :param year: year of which full time series is selected
         :param scenario: The scenario for with the component should be extracted (only if needed)
+        :param is_dual: if component is dual variable
+        :param discount_years: if discount dual variable
         :return: A dataframe containing the full timeseries of the element
         """
         # extract the data
@@ -923,16 +943,26 @@ class Results(object):
 
         return output_df
 
-    def get_full_ts_of_row(self,row,sequence_time_steps_dicts,element_name,_storage_string,time_step_duration,is_dual,annuity):
-        """ calculates the full ts for a single row of the input data """
+    def get_full_ts_of_row(self,row,sequence_time_steps_dicts,element_name,storage_string,time_step_duration,is_dual,annuity):
+        """ calculates the full ts for a single row of the input data
+
+        :param row: #TODO describe parameter/return
+        :param sequence_time_steps_dicts: #TODO describe parameter/return
+        :param element_name: #TODO describe parameter/return
+        :param storage_string: #TODO describe parameter/return
+        :param time_step_duration: #TODO describe parameter/return
+        :param is_dual: #TODO describe parameter/return
+        :param annuity: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         row_index = row.name
         # we know the name
         if element_name:
-            _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + _storage_string)
+            _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + storage_string)
             ts_duration = time_step_duration.loc[element_name]
         # we extract the name
         else:
-            _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(row_index[0] + _storage_string)
+            _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(row_index[0] + storage_string)
             ts_duration = time_step_duration.loc[row_index[0]]
         # if dual variables, divide by time step operational duration
         if is_dual:
@@ -942,7 +972,7 @@ class Results(object):
             else:
                 element_name_temp = row_index[0]
             for _year in annuity.index:
-                _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_temp + _storage_string,_year)
+                _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_temp + storage_string,_year)
                 row[_yearly_ts] = row[_yearly_ts] / annuity[_year]
         # throw together
         _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(row.index))]
@@ -950,14 +980,14 @@ class Results(object):
         return _output_temp
 
     def get_total(self, component, element_name=None, year=None, scenario=None, split_years=True):
-        """
-        Calculates the total Value of a component
+        """Calculates the total Value of a component
+
         :param component: Either a dataframe as returned from <get_df> or the name of the component
         :param element_name: The element name to calculate the value for, defaults to all elements
         :param year: The year to calculate the value for, defaults to all years
         :param scenario: The scenario to calculate the total value for
         :param split_years: Calculate the value for each year individually
-        :return: A dataframe containing the total value with the specified paramters
+        :return: A dataframe containing the total value with the specified parameters
         """
         # extract the data
         component_name, component_data = self._get_component_data(component, scenario)
@@ -1041,7 +1071,15 @@ class Results(object):
         return total_value
 
     def get_dual(self,constraint,scenario=None, element_name=None, year=None,discount_years=True):
-        """ extracts the dual variables of a constraint """
+        """ extracts the dual variables of a constraint
+
+        :param constraint: #TODO describe parameter/return
+        :param scenario: #TODO describe parameter/return
+        :param element_name: #TODO describe parameter/return
+        :param year: #TODO describe parameter/return
+        :param discount_years: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         if not self.results["solver"]["add_duals"]:
             logging.warning("Duals are not calculated. Skip.")
             return
@@ -1049,7 +1087,12 @@ class Results(object):
         return _duals
 
     def get_doc(self, component, index_set=False):
-        """extracts the doc string of a component"""
+        """extracts the doc string of a component
+
+        :param component: name of parameter/variable/constraint
+        :param index_set: bool to choose whether component's index_set should be returned as well
+        :return: docstring of component
+        """
         scenario = None
         if None not in self.scenarios:
             scenario = "scenario_"
@@ -1062,7 +1105,11 @@ class Results(object):
         return doc[0]
 
     def _get_annuity(self,discount_years):
-        """ discounts the duals """
+        """ discounts the duals
+
+        :param discount_years: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         system = self.results["system"]
         # calculate annuity
         discount_rate = self.results["analysis"]["discount_rate"]
@@ -1083,7 +1130,12 @@ class Results(object):
         return annuity
 
     def _get_ts_duration(self, scenario=None, is_storage=False):
-        """ extracts the time steps duration """
+        """ extracts the time steps duration
+
+        :param scenario: #TODO describe parameter/return
+        :param is_storage: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         # extract the right timestep duration
         if self.has_scenarios:
             if scenario is None:
@@ -1101,7 +1153,13 @@ class Results(object):
         return time_step_duration
 
     def _get_component_data(self, component, scenario=None,is_dual=False):
-        """ extracts the data for a component"""
+        """ extracts the data for a component
+
+        :param component: #TODO describe parameter/return
+        :param scenario: #TODO describe parameter/return
+        :param is_dual: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         # extract the data
         if isinstance(component, str):
             component_name = component
@@ -1121,7 +1179,13 @@ class Results(object):
         return component_name, component_data
 
     def _get_ts_type(self, component_data, component_name,force_output = False):
-        """ get time step type (operational, storage, yearly) """
+        """ get time step type (operational, storage, yearly)
+
+        :param component_data: #TODO describe parameter/return
+        :param component_name: #TODO describe parameter/return
+        :param force_output: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         _header_operational = self.results["analysis"]["header_data_inputs"]["set_time_steps_operation"]
         _header_storage = self.results["analysis"]["header_data_inputs"]["set_time_steps_storage_level"]
         _header_yearly = self.results["analysis"]["header_data_inputs"]["set_time_steps_yearly"]
@@ -1143,6 +1207,7 @@ class Results(object):
 
     def _unstack_time_level(self,component,component_name):
         """ unstacks the time level of a dataframe
+
         :param component: pd.Series of component
         :param component_name: name of component
         :returns unstacked_component: pd.Dataframe of unstacked component
@@ -1160,7 +1225,11 @@ class Results(object):
             unstacked_component = component
         return unstacked_component
     def _get_hours_of_year(self, year):
-        """ get total hours of year """
+        """ get total hours of year
+
+        :param year: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         _total_hours_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
         _hours_of_year = list(range(year * _total_hours_per_year, (year + 1) * _total_hours_per_year))
         return _hours_of_year
@@ -1169,8 +1238,8 @@ class Results(object):
         return f"Results of '{self.path}'"
 
     def standard_plots(self, save_fig=False, file_type=None):
-        """
-        Plots data of basic variables to get a first overview of the results
+        """Plots data of basic variables to get a first overview of the results
+
         :param save_fig: Choose if figure should be saved as pdf
         :param file_type: File type the figure is saved as (pdf, svg, png, ...)
         """
@@ -1199,15 +1268,14 @@ class Results(object):
                 cost_df = self.get_total(cost, scenario=scenario).sum(axis=0)
                 cost_df.name = "cost_shed_demand_total"
                 total_cost = pd.concat([total_cost, cost_df], axis=1)
-                total_cost = pd.concat([total_cost, cost_df], axis=1)
             else:
                 total_cost = pd.concat([total_cost, self.get_total(cost, scenario=scenario)], axis=1)
         self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
 
     def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None, demand_area=False, scenario=None):
-        """
-        Visualizes the energy balance of a specific carrier at a single node
-        :param node: String of node of interest
+        """Visualizes the energy balance of a specific carrier at a single node
+
+        :param node: node of interest
         :param carrier: String of carrier of interest
         :param year: Generic index of year of interest
         :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
@@ -1231,7 +1299,7 @@ class Results(object):
                 data_full_ts = self.edit_carrier_flows(self.get_full_ts("flow_transport", scenario=scenario), node, carrier, "out", scenario)
             else:
                 # get full timeseries of component and extract rows of relevant node
-                data_full_ts = self.edit_nodes_v2(self.get_full_ts(component, scenario=scenario), node)
+                data_full_ts = self.edit_nodes(self.get_full_ts(component, scenario=scenario), node)
                 # extract data of desired carrier
                 data_full_ts = self.extract_carrier(data_full_ts, carrier, scenario)
                 # check if return from extract_carrier() is still a data frame as it is possible that the desired carrier isn't contained --> None returned
@@ -1338,16 +1406,16 @@ class Results(object):
         plt.show()
 
     def plot(self, component, yearly=False, node_edit=None, sum_techs=False, tech_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}, save_fig=False, file_type=None, year=None, start_hour=None, duration=None, scenario=None):
-        """
-        Plots component data as specified by arguments
+        """Plots component data as specified by arguments
+
         :param component: Either the name of the component or a data frame of the component's data
         :param yearly: Operational time steps if false, else yearly time steps
         :param node_edit: By default, data is summed over nodes, chose node_edit="all" or a specific node (e.g. node_edit="CH") such that data is not summed over nodes or that a single node's data is extracted, respectively
         :param sum_techs: sum values of technologies per carrier if true
         :param tech_type: specify whether transport, storage or conversion technologies should be plotted separately (useful for capacity, etc.)
-        :param: plot_type: per default stacked bar plot, passing bar will plot normal bar plot
-        :param: reference_carrier: specify reference carrier such as electricity, heat, etc. to extract their data
-        :param: plot_strings: Dict of strings used to set title and labels of plot
+        :param plot_type: per default stacked bar plot, passing bar will plot normal bar plot
+        :param reference_carrier: specify reference carrier such as electricity, heat, etc. to extract their data
+        :param plot_strings: Dict of strings used to set title and labels of plot
         :param save_fig: Choose if figure should be saved as
         :param file_type: File type the figure is saved as (pdf, svg, png, ...)
         :param year: Year of interest (only for operational plots)
@@ -1369,31 +1437,31 @@ class Results(object):
                     return
 
             component_name, component_data = self._get_component_data(component, scenario=scenario)
-        #set timeseries type
+        # set timeseries type
         if yearly:
             ts_type = "yearly"
         else:
             ts_type = self._get_ts_type(component_data, component_name)
 
-        #needed for plot titles
+        # needed for plot titles
         title = f"{component}, "
         arguments = [node_edit, sum_techs, tech_type, reference_carrier, year, start_hour, duration, scenario]
         argument_names = ["node_edit", "sum_techs", "tech_type", "reference_carrier", "year", "start_hour", "duration", "scenario"]
 
-        #plot variable with operational time steps
+        # plot variable with operational time steps
         if ts_type == "operational":
             if isinstance(component, str):
                 data_full_ts = self.get_full_ts(component, scenario=scenario)
             elif isinstance(component, pd.DataFrame):
                 data_full_ts = component
-            #extract desired data
+            # extract desired data
             if node_edit != "all":
-                data_full_ts = self.edit_nodes_v2(data_full_ts, node_edit)
+                data_full_ts = self.edit_nodes(data_full_ts, node_edit)
             if sum_techs:
-                data_full_ts = self.sum_over_technologies_v2(data_full_ts)
+                data_full_ts = self.sum_over_technologies(data_full_ts)
             if reference_carrier != None:
                 data_full_ts = self.extract_reference_carrier(data_full_ts, reference_carrier, scenario)
-            #drop index levels having constant value in all indices
+            # drop index levels having constant value in all indices
             if isinstance(data_full_ts, pd.DataFrame) and data_full_ts.index.nlevels > 1:
                 drop_levs = []
                 for ind, lev_shape in enumerate(data_full_ts.index.levshape):
@@ -1401,7 +1469,7 @@ class Results(object):
                         if all(lev_value[ind] == data_full_ts.index.values[0][ind] for lev_value in data_full_ts.index.values[ind:]):
                             drop_levs.append(ind)
                 data_full_ts = data_full_ts.droplevel(level=drop_levs)
-            #extract data of a specific year
+            # extract data of a specific year
             data_full_ts = data_full_ts.transpose()
             if year is not None:
                 # extract the rows of the desired year
@@ -1414,18 +1482,18 @@ class Results(object):
             data_full_ts = data_full_ts.loc[:, (data_full_ts != 0).any(axis=0)]
             colors = plt.cm.tab20(range(data_full_ts.shape[1]))
             plt.rcParams["figure.figsize"] = (30 * 1, 6.5 * 1)
-            #create title containing argument values
+            # create title containing argument values
             for ind, arg in enumerate(arguments):
                 if arg is not None and arg is not False:
                     title += argument_names[ind]+": "+ f"{arg}, "
-            #check if there is a title passed by function argument
+            # check if there is a title passed by function argument
             if plot_strings["title"] != "":
                 title = plot_strings["title"]
             data_full_ts.plot(kind="area", stacked=True, color=colors, title=title)
             plt.xlabel("Time [hours]")
             plt.ylabel(component)
 
-        #plot variable with yearly time steps
+        # plot variable with yearly time steps
         elif ts_type == "yearly":
             if isinstance(component, str):
                 data_total = self.get_total(component, scenario=scenario)
@@ -1435,11 +1503,11 @@ class Results(object):
                 data_total = self.extract_technology(data_total, tech_type)
             if reference_carrier != None:
                 data_total = self.extract_reference_carrier(data_total, reference_carrier, scenario)
-            #sum data according to chosen options
+            # sum data according to chosen options
             if node_edit != "all":
-                data_total = self.edit_nodes_v2(data_total, node_edit)
+                data_total = self.edit_nodes(data_total, node_edit)
             if sum_techs:
-                data_total = self.sum_over_technologies_v2(data_total)
+                data_total = self.sum_over_technologies(data_total)
             #drop index levels having constant value in all indices
             if isinstance(data_total, pd.DataFrame) and data_total.index.nlevels > 1:
                 drop_levs = []
@@ -1508,29 +1576,37 @@ class Results(object):
 
     def calculate_connected_edges(self, node, direction: str, set_nodes_on_edges):
         """ calculates connected edges going in (direction = 'in') or going out (direction = 'out')
+
         :param node: current node, connected by edges
         :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
-        :return _set_connected_edges: list of connected edges """
+        :param set_nodes_on_edges: set of nodes on edges
+        :return set_connected_edges: list of connected edges """
         if direction == "in":
             # second entry is node into which the flow goes
-            _set_connected_edges = [edge for edge in set_nodes_on_edges if set_nodes_on_edges[edge][1] == node]
+            set_connected_edges = [edge for edge in set_nodes_on_edges if set_nodes_on_edges[edge][1] == node]
         elif direction == "out":
             # first entry is node out of which the flow starts
-            _set_connected_edges = [edge for edge in set_nodes_on_edges if set_nodes_on_edges[edge][0] == node]
+            set_connected_edges = [edge for edge in set_nodes_on_edges if set_nodes_on_edges[edge][0] == node]
         else:
             raise KeyError(f"invalid direction '{direction}'")
-        return _set_connected_edges
+        return set_connected_edges
 
     def edit_carrier_flows(self, data, node, carrier, direction, scenario):
+        """Extracts data of carrier_flow variable as needed for the plot_energy_balance function
+
+        :param data: pd.DataFrame containing data to extract
+        :param node: node of interest
+        :param carrier: carrier of interest
+        :param direction: flow direction with respect to node
+        :param scenario: scenario of interest
+        :return: pd.DataFrame containing carrier_flow data desired
         """
-        Extracts data of carrier_flow variable as needed for the plot_energy_balance function
-        """
-        set_nodes_on_edges = self.get_df("set_nodes_on_edges",is_set=True, scenario=scenario)
+        set_nodes_on_edges = self.get_df("set_nodes_on_edges", is_set=True, scenario=scenario)
         set_nodes_on_edges = {edge: set_nodes_on_edges[edge].split(",") for edge in set_nodes_on_edges.index}
         data = data.loc[(slice(None), self.calculate_connected_edges(node, direction, set_nodes_on_edges)), :]
 
         if "carrier" not in data.index.dtypes:
-            reference_carriers = self.get_df("set_reference_carriers",is_set=True, scenario=scenario)
+            reference_carriers = self.get_df("set_reference_carriers", is_set=True, scenario=scenario)
             data_extracted = pd.DataFrame()
             data = data.groupby(["technology"]).sum()
             for ind, tech in enumerate(data.index.get_level_values("technology")):
@@ -1539,17 +1615,18 @@ class Results(object):
 
         return data_extracted.transpose()
 
+    def edit_nodes(self, data, node_edit):
+        """Manipulates the data frame 'data' as specified by 'node_edit'
 
-    def edit_nodes_v2(self, data, node_edit):
-        """
-        Manipulates the data frame 'data' as specified by 'node_edit'
+        :param data: pd.DataFrame containing data to extract
         :param node_edit: string to specify if data should be summed over nodes (node_edit="all") or if a single node should be extracted (e.g. node_edit="CH")
+        :return: pd.DataFrame containing data of interest
         """
         if isinstance(data, pd.Series):
             return data
         if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
             return data
-        #check if data of specific node, specified by string, should be extracted
+        # check if data of specific node, specified by string, should be extracted
         if node_edit in self.results["system"]["set_nodes"]:
             if data.index.nlevels == 2:
                 data = data.loc[(slice(None), node_edit), :]
@@ -1559,7 +1636,7 @@ class Results(object):
                 return data
             elif data.index.nlevels == 4:
                 return
-        #check if data varying only in node value should be summed
+        # check if data varying only in node value should be summed
         elif node_edit is None:
             level_names = [name for name in data.index.names if name not in ["node", "location"]]
             if len(level_names) == 1:
@@ -1574,9 +1651,11 @@ class Results(object):
             warnings.warn(f"Chosen node_edit string '{node_edit}' is invalid")
             return data
 
-    def sum_over_technologies_v2(self, data):
-        """
-        Sums the data of technologies with the same output carrier
+    def sum_over_technologies(self, data):
+        """Sums the data of technologies with the same output carrier
+
+        :param data: pd.DataFrame containing data to extract
+        :return: pd.DataFrame containing data of interest
         """
         if "technology" not in data.index.dtypes:
             return data
@@ -1592,8 +1671,12 @@ class Results(object):
             return data
 
     def extract_carrier(self, data, carrier, scenario):
-        """
-        Extracts data of all technologies with the specified reference carrier
+        """Extracts data of all technologies with the specified reference carrier
+
+        :param data: pd.DataFrame containing data to extract
+        :param carrier: carrier of interest
+        :param scenario: scenario of interest
+        :return: pd.DataFrame containing data of interest
         """
         reference_carriers = self.get_df("set_reference_carriers", is_set=True, scenario=scenario)
         if "carrier" not in data.index.dtypes:
@@ -1612,51 +1695,55 @@ class Results(object):
             data = data.loc[(slice(None), carrier, slice(None)), :]
             return data
 
-    def extract_technology(self, data, type):
+    def extract_technology(self, data, tech_type):
+        """Extracts the technology type specified by 'type'
+
+        :param data: pd.DataFrame containing data to extract
+        :param tech_type: technology type (e.g., conversion)
+        :return: pd.DataFrame containing data of interest
         """
-        Extracts the technology type specified by 'type'
-        """
-        #check if data contains technologies
+        # check if data contains technologies
         if "technology" not in data.index.dtypes:
             return data
         index_list = []
-        #check if data contains technology and capacity_type index levels as it is the case for: capacity, ...
+        # check if data contains technology and capacity_type index levels as it is the case for: capacity, ...
         if "technology" in data.index.dtypes and "capacity_type" in data.index.dtypes:
             if "location" in data.index.dtypes:
                 #iterate over rows of data to find technologies with identical carrier
                 for pos, index in enumerate(data.index):
-                    if type == "conversion":
+                    if tech_type == "conversion":
                         if index[0] in self.results["system"]["set_conversion_technologies"]:
                             index_list.append(index)
-                    elif type == "transport":
+                    elif tech_type == "transport":
                         if index[0] in self.results["system"]["set_transport_technologies"]:
                             index_list.append(index)
-                    elif "storage" in type:
+                    elif "storage" in tech_type:
                         if index[0] in self.results["system"]["set_storage_technologies"]:
-                            if "power" in type and index[1] == "power":
+                            if "power" in tech_type and index[1] == "power":
                                 index_list.append(index)
-                            elif "energy" in type and index[1] == "energy":
+                            elif "energy" in tech_type and index[1] == "energy":
                                 index_list.append(index)
-                            elif "power" not in type and "energy" not in type:
+                            elif "power" not in tech_type and "energy" not in tech_type:
                                 index_list.append(index)
                     else:
-                        warnings.warn(f"Technology type '{type}' doesn't exist!")
+                        warnings.warn(f"Technology type '{tech_type}' doesn't exist!")
         return data.loc[data.index.isin(index_list)]
 
-    def extract_reference_carrier(self, data, type, scenario):
-        """
-        Extracts technologies of reference carrier type
+    def extract_reference_carrier(self, data, carrier_type, scenario):
+        """Extracts technologies of reference carrier type
+
         :param data: Data Frame containing set of technologies with different reference carriers
-        :param type: String specifying reference carrier whose technologies should be extracted from data
+        :param carrier_type: String specifying reference carrier whose technologies should be extracted from data
+        :param scenario: scenario of interest
         :return: Data Frame containing technologies of reference carrier only
         """
         reference_carriers = self.get_df("set_reference_carriers", is_set=True, scenario=scenario)
-        if type not in [carrier for carrier in reference_carriers]:
-            warnings.warn(f"Chosen reference carrier '{type}' doesn't exist")
+        if carrier_type not in [carrier for carrier in reference_carriers]:
+            warnings.warn(f"Chosen reference carrier '{carrier_type}' doesn't exist")
             return data
         index_list = []
         for tech, carrier in enumerate(reference_carriers):
-            if carrier == type:
+            if carrier == carrier_type:
                 index_list.extend([index for index in data.index if index[0] == reference_carriers.index[tech]])
 
         return data.loc[data.index.isin(index_list)]
@@ -1672,4 +1759,3 @@ if __name__ == "__main__":
         r = Results(out_folder)
     else:
         logging.critical("No results folder found!")
-    a=1

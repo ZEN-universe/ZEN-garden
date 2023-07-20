@@ -1,13 +1,13 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        March-2022
-Authors:        Alissa Ganter (aganter@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:          ZEN-GARDEN
+:Created:        March-2022
+:Authors:        Alissa Ganter (aganter@ethz.ch)
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class defining the parameters, variables and constraints of the conditioning technologies.
-                The class takes the abstract optimization model as an input, and adds parameters, variables and
-                constraints of the conversion technologies.
-==========================================================================================================================================================================="""
+Class defining the parameters, variables and constraints of the conditioning technologies.
+The class takes the abstract optimization model as an input, and adds parameters, variables and
+constraints of the conversion technologies.
+"""
 import logging
 
 import pandas as pd
@@ -21,6 +21,7 @@ class ConditioningTechnology(ConversionTechnology):
 
     def __init__(self, tech, optimization_setup):
         """init conditioning technology object
+
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of """
 
@@ -92,6 +93,7 @@ class ConditioningTechnology(ConversionTechnology):
     @classmethod
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <ConditioningTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         # get parent carriers
         _output_carriers = optimization_setup.get_attribute_of_all_elements(cls, "output_carrier")

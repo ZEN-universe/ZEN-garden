@@ -1,14 +1,14 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        October-2021
-Authors:        Alissa Ganter (aganter@ethz.ch)
+"""
+:Title:          ZEN-GARDEN
+:Created:        October-2021
+:Authors:        Alissa Ganter (aganter@ethz.ch),
                 Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class defining the parameters, variables and constraints that hold for all technologies.
-                The class takes the abstract optimization model as an input, and returns the parameters, variables and
-                constraints that hold for all technologies.
-==========================================================================================================================================================================="""
+Class defining the parameters, variables and constraints that hold for all technologies.
+The class takes the abstract optimization model as an input, and returns the parameters, variables and
+constraints that hold for all technologies.
+"""
 import logging
 import time
 
@@ -24,12 +24,16 @@ from ..element import Element, GenericRule
 
 
 class Technology(Element):
+    """
+    Class defining the parameters, variables and constraints that hold for all technologies.
+    """
     # set label
     label = "set_technologies"
     location_type = None
 
     def __init__(self, technology: str, optimization_setup):
         """init generic technology object
+
         :param technology: technology that is added to the model
         :param optimization_setup: The OptimizationSetup the element is part of """
 
@@ -69,7 +73,11 @@ class Technology(Element):
         self.lifetime_existing = self.data_input.extract_lifetime_existing("capacity_existing", index_sets=[_set_location, "set_technologies_existing"])
 
     def calculate_capex_of_capacities_existing(self, storage_energy=False):
-        """ this method calculates the annualized capex of the existing capacities """
+        """ this method calculates the annualized capex of the existing capacities
+
+        :param storage_energy: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         if self.__class__.__name__ == "StorageTechnology":
             if storage_energy:
                 capacities_existing = self.capacity_existing_energy
@@ -83,7 +91,10 @@ class Technology(Element):
         return capex_capacity_existing
 
     def calculate_capex_of_single_capacity(self, *args):
-        """ this method calculates the annualized capex of the existing capacities. Is implemented in child class """
+        """ this method calculates the annualized capex of the existing capacities. Is implemented in child class
+
+        :param args: #TODO describe parameter/return
+        """
         raise NotImplementedError
 
     def calculate_fraction_of_year(self):
@@ -93,7 +104,10 @@ class Technology(Element):
         return _fraction_year
 
     def overwrite_time_steps(self, base_time_steps: int):
-        """ overwrites set_time_steps_operation """
+        """ overwrites set_time_steps_operation
+
+        :param base_time_steps: #TODO describe parameter/return
+        """
         set_time_steps_operation = self.energy_system.time_steps.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation", yearly=True)
 
         # copy invest time steps
@@ -101,6 +115,7 @@ class Technology(Element):
 
     def add_new_capacity_addition_tech(self, capacity_addition: pd.Series, capex: pd.Series, base_time_steps: int):
         """ adds the newly built capacity to the existing capacity
+
         :param capacity_addition: pd.Series of newly built capacity of technology
         :param capex: pd.Series of capex of newly built capacity of technology
         :param base_time_steps: base time steps of current horizon step """
@@ -141,6 +156,7 @@ class Technology(Element):
 
     def add_new_capacity_investment(self, capacity_investment: pd.Series, step_horizon):
         """ adds the newly invested capacity to the list of invested capacity
+
         :param capacity_investment: pd.Series of newly built capacity of technology
         :param step_horizon: optimization time step """
         system = self.optimization_setup.system
@@ -163,7 +179,14 @@ class Technology(Element):
     ### --- classmethods
     @classmethod
     def get_lifetime_range(cls, optimization_setup, tech, time, time_step_type: str = None):
-        """ returns lifetime range of technology. If time_step_type, then converts the yearly time step 'time' to time_step_type """
+        """ returns lifetime range of technology. If time_step_type, then converts the yearly time step 'time' to time_step_type
+
+        :param optimization_setup: OptimizationSetup the technology is part of
+        :param tech: name of the technology
+        :param time: #TODO describe parameter/return
+        :param time_step_type: #TODO describe parameter/return
+        :return: lifetime range of technology
+        """
         if time_step_type:
             time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech,time)
         else:
@@ -176,6 +199,7 @@ class Technology(Element):
     def get_available_existing_quantity(cls, optimization_setup, tech, capacity_type, loc, time, type_existing_quantity, time_step_type: str = None):
         """ returns existing quantity of 'tech', that is still available at invest time step 'time'.
         Either capacity or capex.
+
         :param optimization_setup: The OptimizationSetup the element is part of
         :param tech: name of technology
         :param capacity_type: type of capacity
@@ -212,6 +236,7 @@ class Technology(Element):
     @classmethod
     def get_start_end_time_of_period(cls, optimization_setup, tech, time_step_year, period_type="lifetime", clip_to_first_time_step=True, id_capacity_existing=None, loc=None):
         """ counts back the period (either lifetime of construction_time) back to get the start invest time step and returns start_time_step_year
+
         :param energy_system: The Energy system to add everything
         :param tech: name of technology
         :param time_step_year: current investment time step
@@ -281,6 +306,7 @@ class Technology(Element):
     @classmethod
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <Technology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         # construct the pe.Sets of the class <Technology>
         energy_system = optimization_setup.energy_system
@@ -309,6 +335,7 @@ class Technology(Element):
     @classmethod
     def construct_params(cls, optimization_setup):
         """ constructs the pe.Params of the class <Technology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         # construct pe.Param of the class <Technology>
 
@@ -387,6 +414,7 @@ class Technology(Element):
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <Technology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
 
         model = optimization_setup.model
@@ -482,6 +510,7 @@ class Technology(Element):
     @classmethod
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <Technology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
@@ -580,7 +609,9 @@ class Technology(Element):
 
     @classmethod
     def _technology_installation_mask(cls, optimization_setup):
-        """check if the binary variable is necessary"""
+        """check if the binary variable is necessary
+
+        :param optimization_setup: optimization setup object"""
         params = optimization_setup.parameters
         model = optimization_setup.model
         sets = optimization_setup.sets
@@ -651,7 +682,13 @@ class TechnologyRules(GenericRule):
 
     def disjunct_on_technology_rule(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
-        iterate through all subclasses to find corresponding implementation of disjunct constraints """
+        iterate through all subclasses to find corresponding implementation of disjunct constraints
+
+        :param tech: #TODO describe parameter/return
+        :param capacity_type: #TODO describe parameter/return
+        :param loc: #TODO describe parameter/return
+        :param time:  #TODO describe parameter/return
+        """
         for subclass in Technology.__subclasses__():
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
                 # extract the relevant binary variable (not scalar, .loc is necessary)
@@ -661,7 +698,14 @@ class TechnologyRules(GenericRule):
 
     def disjunct_off_technology_rule(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is off
-        iterate through all subclasses to find corresponding implementation of disjunct constraints """
+        iterate through all subclasses to find corresponding implementation of disjunct constraints
+
+        :param disjunct: #TODO describe parameter/return
+        :param tech: #TODO describe parameter/return
+        :param capacity_type: #TODO describe parameter/return
+        :param loc: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        """
         for subclass in Technology.__subclasses__():
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
                 # extract the relevant binary variable (not scalar, .loc is necessary)
@@ -673,7 +717,14 @@ class TechnologyRules(GenericRule):
     # -----------------------
 
     def constraint_cost_capex_total_rule(self, year):
-        """ sums over all technologies to calculate total capex """
+        """ sums over all technologies to calculate total capex
+
+        .. math::
+            CAPEX_y = \\sum_{h\\in\mathcal{H}}\\sum_{p\\in\mathcal{P}}A_{h,p,y}+\\sum_{k\\in\mathcal{K}}\\sum_{n\\in\mathcal{N}}A^\mathrm{e}_{k,n,y}
+
+        :param year: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # skipped because rule-based constraint
@@ -697,7 +748,14 @@ class TechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_cost_opex_total_rule(self, year):
-        """ sums over all technologies to calculate total opex """
+        """ sums over all technologies to calculate total opex
+
+        .. math::
+            OPEX_y = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}} OPEX_{h,p,y}
+
+        :param year: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # skipped because rule-based constraint
@@ -724,7 +782,15 @@ class TechnologyRules(GenericRule):
     # -----------------------
 
     def constraint_technology_capacity_limit_block(self):
-        """limited capacity_limit of technology"""
+        """limited capacity_limit of technology
+
+        .. math::
+            \mathrm{if\ existing\ capacities\ < capacity\ limit}\ s^\mathrm{max}_{h,p} \geq S_{h,p,y}
+        .. math::
+            \mathrm{else}\ \Delta S_{h,p,y} = 0
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         # not necessary
@@ -751,7 +817,13 @@ class TechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints)
 
     def constraint_technology_min_capacity_block(self):
-        """ min capacity expansion of technology."""
+        """ min capacity expansion of technology
+
+        .. math::
+            s^\mathrm{add, min}_{h} B_{i,p,y} \le \Delta S_{h,p,y}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
@@ -784,7 +856,13 @@ class TechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints, mask=mask)
 
     def constraint_technology_max_capacity_block(self):
-        """max capacity expansion of technology"""
+        """max capacity expansion of technology
+
+        .. math::
+            s^\mathrm{add, max}_{h} B_{i,p,y} \ge \Delta S_{h,p,y}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
@@ -824,7 +902,17 @@ class TechnologyRules(GenericRule):
                                                   index_names=["set_technologies", "set_capacity_types"])
 
     def constraint_technology_construction_time_block(self):
-        """ construction time of technology, i.e., time that passes between investment and availability"""
+        """ construction time of technology, i.e., time that passes between investment and availability
+
+        .. math::
+            \mathrm{if\ start\ time\ step\ in\ set\ time\ steps\ yearly}\ \Delta S_{h,p,y} = S_{h,p,y}^\mathrm{invest}
+        .. math::
+            \mathrm{elif\ start\ time\ step\ in\ set\ time\ steps\ yearly\ entire\ horizon}\ \Delta S_{h,p,y} = s^\mathrm{invest, exist}_{h,p,y}
+        .. math::
+            \mathrm{else}\ \Delta S_{h,p,y} = 0
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
@@ -862,7 +950,14 @@ class TechnologyRules(GenericRule):
                                                   index_names=["set_technologies", "set_time_steps_yearly"])
 
     def constraint_technology_lifetime_block(self):
-        """ lifetime of technology constraint"""
+        """ limited lifetime of the technologies
+
+        .. math::
+            S_{h,p,y} = \\sum_{\\tilde{y}=\\max(y_0,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1)}^y \\Delta S_{h,p,\\tilde{y}}
+            + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1))}^{\\psi(y_0)} \\Delta s^\mathrm{ex}_{h,p,\\hat{y}}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
@@ -897,7 +992,14 @@ class TechnologyRules(GenericRule):
                                                   index_names=["set_technologies", "set_time_steps_yearly"])
 
     def constraint_technology_diffusion_limit_block(self):
-        """limited technology diffusion based on the existing capacity in the previous year """
+        """limited technology diffusion based on the existing capacity in the previous year
+
+        .. math::
+                \\Delta S_{j,e,y}\\leq ((1+\\vartheta_j)^{\\Delta^\mathrm{y}}-1)K_{j,e,y}
+                +\\Delta^\mathrm{y}(\\xi\\sum_{\\tilde{j}\\in\\tilde{\mathcal{J}}}S_{\\tilde{j},e,y} + \\zeta_j)
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
@@ -964,17 +1066,6 @@ class TechnologyRules(GenericRule):
                 else:
                     term_total_capacity_all_techs_param = self.parameters.existing_capacities.loc[other_techs,:,set_locations,time].sum("set_technologies")
                     term_total_capacity_all_techs_var = self.variables["capacity"].loc[tech, :, set_locations, time].where(False)
-                # total_capacity_all_techs_param = sum(self.parameters.existing_capacities.loc[other_tech, :, set_locations, time]
-                #                                      for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier)
-                # lifetime_range = Technology.get_lifetime_range(self.optimization_setup, tech, end_time)
-                # if len(lifetime_range) > 0:
-                #     previous_times = [previous_time for previous_time in lifetime_range]
-                #     other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
-                #     term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[:, :, set_locations, previous_times].sum("set_time_steps_yearly")
-                #     term_total_capacity_all_techs_var = term_total_capacity_all_techs_var[other_techs, :, :].sum("set_technologies")
-                # else:
-                #     # dummy term
-                #     term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False)
 
                 ### formulate constraint
                 # build the lhs
@@ -997,7 +1088,14 @@ class TechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="diffusion_limit_dim")
 
     def constraint_technology_diffusion_limit_total_block(self):
-        """limited technology diffusion based on the existing capacity in the previous year for the entire energy system"""
+        """limited technology diffusion based on the existing capacity in the previous year for the entire energy system
+
+        .. math:: #TODO
+                \\Delta S_{j,e,y}\\leq ((1+\\vartheta_j)^{\\Delta^\mathrm{y}}-1)K_{j,e,y}
+                +\\Delta^\mathrm{y}(\\xi\\sum_{\\tilde{j}\\in\\tilde{\mathcal{J}}}S_{\\tilde{j},e,y} + \\zeta_j)
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
@@ -1103,7 +1201,14 @@ class TechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="diffusion_limit_total_dim")
 
     def constraint_capex_yearly_block(self):
-        """ aggregates the capex of built capacity and of existing capacity """
+        """ aggregates the capex of built capacity and of existing capacity
+
+        .. math::
+            A_{h,p,y} = f_h (\\sum_{\\tilde{y} = \\max(y_0,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1)}^y \\alpha_{h,y}\\Delta S_{h,p,\\tilde{y}}
+            + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1))}^{\\psi(y_0)} \\alpha_{h,y_0}\\Delta s^\mathrm{ex}_{h,p,\\hat{y}})
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
@@ -1139,7 +1244,17 @@ class TechnologyRules(GenericRule):
                                                   index_names=["set_technologies", "set_time_steps_yearly"])
 
     def constraint_opex_technology_block(self):
-        """ calculate opex of each technology"""
+        """ calculate opex of each technology
+
+        .. math::
+            \mathrm{if\ tech\ is\ conversion\ tech}\ OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r}
+        .. math::
+            \mathrm{if\ tech\ is\ transport\ tech}\ OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} F_{j,e,t}
+        .. math::
+            \mathrm{if\ tech\ is\ storage\ tech}\ OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], self.optimization_setup)
@@ -1187,7 +1302,15 @@ class TechnologyRules(GenericRule):
                                                   index_names=["set_technologies"])
 
     def constraint_opex_yearly_block(self):
-        """ yearly opex for a technology at a location in each year """
+        """ yearly opex for a technology at a location in each year
+
+        .. math::
+            OPEX_{h,p,y} = \sum_{t\in\mathcal{T}}\tau_t OPEX_{h,p,t}^\mathrm{cost}
+            + \gamma_{h,y} S_{h,p,y}
+            #TODO complete constraint (second summation symbol)
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], self.optimization_setup)
@@ -1223,7 +1346,17 @@ class TechnologyRules(GenericRule):
                                                   index_names=["set_technologies", "set_time_steps_yearly"])
 
     def constraint_carbon_emissions_technology_block(self):
-        """ calculate carbon emissions of each technology"""
+        """ calculate carbon emissions of each technology
+
+        .. math::
+            \mathrm{if\ tech\ is\ conversion\ tech}\ E_{h,p,t} = \\epsilon_h G_{i,n,t,y}^\mathrm{r}
+        .. math::
+            \mathrm{if\ tech\ is\ transport\ tech}\ E_{h,p,t} = \\epsilon_h F_{j,e,t}
+        .. math::
+            \mathrm{if\ tech\ is\ storage\ tech}\ E_{h,p,t} = \\epsilon_h (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], self.optimization_setup)
@@ -1273,7 +1406,13 @@ class TechnologyRules(GenericRule):
                                                   index_names=["set_technologies"])
 
     def constraint_carbon_emissions_technology_total_block(self):
-        """ calculate total carbon emissions of each technology"""
+        """ calculate total carbon emissions of each technology
+
+        .. math::
+            E_y^{\mathcal{H}} = \sum_{t\in\mathcal{T}}\sum_{h\in\mathcal{H}} E_{h,p,t} \\tau_{t}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         years = self.sets["set_time_steps_yearly"]
@@ -1309,7 +1448,17 @@ class TechnologyRules(GenericRule):
                                                   index_names=["set_time_steps_yearly"])
 
     def constraint_capacity_factor_block(self):
-        """ Load is limited by the installed capacity and the maximum load factor"""
+        """ Load is limited by the installed capacity and the maximum load factor
+
+        .. math::
+            \mathrm{if\ tech\ is\ conversion\ tech}\ G_{i,n,t,y}^\mathrm{r} \\leq m_{i,n,t,y}S_{i,n,y}
+        .. math::
+            \mathrm{if\ tech\ is\ transport\ tech}\ F_{j,e,t,y}^\mathrm{r} \\leq m_{j,e,t,y}S_{j,e,y}
+        .. math::
+            \mathrm{if\ tech\ is\ storage\ tech}\ \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq m_{k,n,t,y}S_{k,n,y}
+
+        :return: #TODO describe parameter/return
+        """
 
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], self.optimization_setup)

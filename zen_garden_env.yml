@@ -16,6 +16,7 @@ dependencies:
   - matplotlib
   - entsoe-py
   - gurobi
+  - pytables
   - pip:
       - tsam
       - hdfdict
@@ -26,4 +27,4 @@ dependencies:
       - -e .
 
 # conda env create -f zen_garden_env.yml
-# conda remove --name zen-garden --all
+# conda remove --name zen-garden-linopy --all

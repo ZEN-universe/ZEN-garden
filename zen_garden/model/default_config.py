@@ -1,11 +1,11 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:        ZEN-GARDEN
+:Created:      October-2021
+:Authors:      Alissa Ganter (aganter@ethz.ch)
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Default configuration. Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
-==========================================================================================================================================================================="""
+Default configuration. Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
+"""
 
 
 class Config(object):
@@ -16,6 +16,7 @@ class Config(object):
         """
         Initializes an instance of the parameters containing all defaults. If dictionaries are provided the defaults
         are overwritten.
+
         :param analysis: A dictionary used to update the default values in analysis
         :param solver: A dictionary used to update the default values in solver
         :param system: A dictionary used to update the default values in system
@@ -52,7 +53,6 @@ class Config(object):
             self.system.update(system)
         if scenarios is not None:
             self.scenarios.update(scenarios)
-
 
     def _set_defaults(self):
         """
@@ -117,6 +117,7 @@ class Config(object):
         self.analysis["folder_name_system_specification"] = "system_specification"
         # earliest possible year of in input data, needed to differentiate between yearly and generic time indices
         self.analysis["earliest_year_of_data"] = 1900
+        self.analysis['use_capacities_existing'] = False
         ## System - Items assignment
         # set of energy carriers
         self.system["set_carriers"] = []
@@ -139,6 +140,8 @@ class Config(object):
         self.system["set_nodes"] = []
         # toggle to use time_series_aggregation
         self.system["conduct_time_series_aggregation"] = False
+        # toggle to exclude parameters from TSA, specified in system_specification/exclude_parameter_from_TSA
+        self.system["exclude_parameters_from_TSA"] = True
         # toggle to perform analysis for multiple scenarios
         self.system["conduct_scenario_analysis"] = False
         # total hours per year

@@ -63,6 +63,12 @@ def str2tuple(string):
 
 
 def compare_variables(test_model, optimization_setup,folder_path):
+    """
+    Compares the variables of a optimization_setup object from the test run to precomputed values
+    :param test_model: The model to test (name of the data set)
+    :param optimization_setup: optimization setup object
+    :param folder_path: The path to the folder containing the file with the correct variables
+    """
     # import csv file containing selected variable values of test model collection
     test_variables = pd.read_csv(os.path.join(folder_path, 'test_variables_readable.csv'),header=0, index_col=None)
     # dictionary to store variable names, indices, values and test values of variables which don't match the test values
@@ -398,6 +404,30 @@ def test_7b(config, folder_path):
 def test_7c(config, folder_path):
     # run the test
     data_set_name = "test_7c"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    res.close()
+
+def test_8a(config, folder_path):
+    # run the test
+    data_set_name = "test_8a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    res.close()
+
+def test_8b(config, folder_path):
+    # run the test
+    data_set_name = "test_8b"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
     # compare the variables of the optimization setup
