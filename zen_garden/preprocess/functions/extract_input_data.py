@@ -226,11 +226,49 @@ class DataInput:
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps=self.energy_system.set_time_steps_yearly)
             setattr(self, _name_yearly_variation, df_output)
 
-    def extract_locations(self, extract_nodes=True):
+    def extract_locations(self, extract_nodes=True, super_locations=False):
         """ reads input data to extract nodes or edges.
-
-        :param extract_nodes: boolean to switch between nodes and edges """
-        if extract_nodes:
+        :param extract_nodes: boolean to switch between nodes and edges
+        :param super_locations: """
+        if super_locations:
+            if extract_nodes:
+                set_super_locations = "set_super_nodes"
+                set_locations = "set_nodes"
+            else:
+                set_super_locations = "set_super_edges"
+                set_locations = "set_edges"
+            super_loc = self.analysis["header_data_inputs"][set_super_locations]
+            loc = self.analysis["header_data_inputs"][set_locations]
+            set_super_locations_config = set(self.system[set_super_locations])
+            if self.read_input_data(set_super_locations) is None:
+                assert len(set_super_locations_config) == 0, f"File for {set_super_locations} is missing."
+                return dict()
+            set_super_locations_input = self.read_input_data(set_super_locations).set_index(super_loc)
+            super_locations = set(set_super_locations_input.index.unique())
+            if len(set_super_locations_config) > 0:
+                super_locations = super_locations.intersection(set_super_locations_config)
+                assert len(super_locations) == len(set_super_locations_config), "Not all super sets are defined."
+            # drop super locations if nodes are not in set nodes
+            if extract_nodes:
+                bool_set_super_locations = set_super_locations_input[loc].isin(self.system["set_nodes"])
+            else:
+                bool_set_super_locations = set_super_locations_input["super_node_from"].isin(
+                    self.system["set_super_nodes"]) & set_super_locations_input["super_node_to"].isin(self.system["set_super_nodes"])
+            if not bool_set_super_locations.all():
+                logging.warning(f"The following {super_loc} are dropped from the super sets as they are not in the set of nodes: {set_super_locations_input[~bool_set_super_locations]}")
+                set_super_locations_input = set_super_locations_input[bool_set_super_locations]
+                self.system[set_super_locations] = list(set_super_locations_input.index.unique())
+            # create dict assigning locations to super locations
+            super_locations_dict = dict()
+            for l in set_super_locations_input.index:
+                if isinstance(set_super_locations_input.loc[l, loc], pd.Series):
+                    super_locations_dict[l] = set_super_locations_input.loc[l, loc]
+                elif np.isnan(set_super_locations_input.loc[l, loc]):
+                    super_locations_dict[l] = []
+                else:
+                    super_locations_dict[l] = [set_super_locations_input.loc[l, loc]]
+            return super_locations_dict
+        elif extract_nodes:
             set_nodes_config = self.system["set_nodes"]
             set_nodes_input = self.read_input_data("set_nodes")["node"].to_list()
             # if no nodes specified in system, use all nodes
@@ -250,7 +288,8 @@ class DataInput:
             if set_edges_input is not None:
                 set_edges = set_edges_input[(set_edges_input["node_from"].isin(self.energy_system.set_nodes)) & (set_edges_input["node_to"].isin(self.energy_system.set_nodes))]
                 set_edges = set_edges.set_index("edge")
-                return set_edges
+                set_nodes_on_edges = {edge: (set_edges.loc[edge, "node_from"], set_edges.loc[edge, "node_to"]) for edge in set_edges.index}
+                return set_nodes_on_edges
             else:
                 return None
 

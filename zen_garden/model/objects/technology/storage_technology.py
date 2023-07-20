@@ -28,6 +28,7 @@ class StorageTechnology(Technology):
     # set label
     label = "set_storage_technologies"
     location_type = "set_nodes"
+    location_type_super = "set_super_nodes"
 
     def __init__(self, tech, optimization_setup):
         """

@@ -653,24 +653,21 @@ class CarrierRules(GenericRule):
             ### auxiliary calculations
             yearly_time_steps = [self.time_steps.convert_time_step_operation2year(carrier, t) for t in times]
 
-            for lca_cat in index.get_unique(['set_lca_impact_categories']):
-                # get the time-dependent factor
-                mask = (self.parameters.availability_import.loc[carrier, :, yearly_time_steps] != 0) | (self.parameters.availability_export.loc[carrier, :, yearly_time_steps] != 0)
-                # fac = xr.where(mask, self.parameters.carrier_lca_factors.loc[carrier, :, lca_cat, yearly_time_steps], 0)
-                fac = np.where(mask, self.parameters.carrier_lca_factors.loc[carrier, :, lca_cat, yearly_time_steps], 0)
-                fac = xr.DataArray(fac, coords=[self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]])
-                term_flow_import_export = fac * (self.variables["flow_import"].loc[carrier, :] - self.variables["flow_export"].loc[carrier, :])
+            # get the time-dependent factor
+            mask = (self.parameters.availability_import.loc[carrier, :, yearly_time_steps] != 0) | (self.parameters.availability_export.loc[carrier, :, yearly_time_steps] != 0)
+            # make sure coordinates are the same
+            fac = self.parameters.carrier_lca_factors.loc[carrier, :, :, yearly_time_steps].rename({"set_time_steps_yearly": "set_time_steps_operation"}).where(mask, 0)
+            term_flow_import_export = fac * self.variables["flow_import"].loc[carrier, :] - fac * self.variables["flow_export"].loc[carrier, :]
 
-                ### formulate constraint
-                lhs = (self.variables["carrier_lca_impacts"].loc[carrier, :, lca_cat, yearly_time_steps]
-                       - term_flow_import_export)
-                rhs = 0
-                constraints.append(lhs == rhs)
+            ### formulate constraint
+            lhs = (self.variables["carrier_lca_impacts"].loc[carrier, :, :, yearly_time_steps] - term_flow_import_export)
+            rhs = 0
+            constraints.append(lhs == rhs)
 
         ### return
         return self.constraints.return_contraints(constraints, model=self.model,
-                                                  index_values=index.get_unique(["set_carriers", 'set_lca_impact_categories']),
-                                                  index_names=["set_carriers", 'set_lca_impact_categories'])
+                                                  index_values=index.get_unique(["set_carriers"]),
+                                                  index_names=["set_carriers"])
 
     def constraint_nodal_energy_balance_block(self):
         """

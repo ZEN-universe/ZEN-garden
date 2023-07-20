@@ -44,6 +44,7 @@ class Technology(Element):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # set attributes of technology
         _set_location = self.location_type
+        _set_location_super = self.location_type_super
 
         set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
         set_time_steps_yearly = self.energy_system.set_time_steps_yearly
@@ -65,7 +66,8 @@ class Technology(Element):
         # non-time series input data
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        # self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[_set_location])
+        # self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[_set_location])
         self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[_set_location])
         if self.energy_system.system['load_lca_factors']:
             self.technology_lca_factors = self.data_input.extract_input_data('technology_lca_factors', index_sets=[_set_location, 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps=set_time_steps_yearly)
@@ -391,6 +393,12 @@ class Technology(Element):
         optimization_setup.parameters.add_parameter(name="capacity_limit",
             data=optimization_setup.initialize_component(cls, "capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], capacity_types=True),
             doc='Parameter which specifies the capacity limit of technologies')
+        # capacity_limit of technologies for super level
+        optimization_setup.parameters.add_parameter(name="capacity_limit_super",
+            data=optimization_setup.initialize_component(cls, "capacity_limit_super",
+            index_names=["set_technologies", "set_capacity_types", "set_super_location"], capacity_types=True),
+        #     # index_names=["set_technologies", "set_capacity_types", "set_super_location", "set_time_steps_yearly"], capacity_types=True),
+            doc='Parameter which specifies the capacity limit of technologies for the super locations')
         # minimum load relative to capacity
         optimization_setup.parameters.add_parameter(name="min_load",
             data=optimization_setup.initialize_component(cls, "min_load", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], capacity_types=True),
@@ -535,6 +543,10 @@ class Technology(Element):
         constraints.add_constraint_block(model, name="constraint_technology_capacity_limit",
                                          constraint=rules.constraint_technology_capacity_limit_block(),
                                          doc='limited capacity of  technology depending on loc and time')
+        #  technology capacity_limit super
+        constraints.add_constraint_block(model, name="constraint_technology_capacity_limit_super",
+                                        constraint=rules.constraint_technology_capacity_limit_super_block(),
+                                        doc='limited capacity of technology depending on super loc and time')
         # minimum capacity
         constraints.add_constraint_block(model, name="constraint_technology_min_capacity",
                                          constraint=rules.constraint_technology_min_capacity_block(),
@@ -644,7 +656,6 @@ class Technology(Element):
                                            model.variables.coords["set_location"], ])
 
         # used in transport technology
-        techs = list(sets["set_transport_technologies"])
         techs = list(sets["set_transport_technologies"])
         if len(techs) > 0:
             edges = list(sets["set_edges"])
@@ -815,7 +826,9 @@ class TechnologyRules(GenericRule):
         """
 
         ### index sets
-        # not necessary
+        index_names = ["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"]
+        index_values, index_names = Element.create_custom_set(index_names, self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
 
         ### masks
         # create the masks for the two cases, m1 for capacity_limit not reached, m2 for capacity_limit reached
@@ -832,11 +845,60 @@ class TechnologyRules(GenericRule):
         # Note that this constraint has a different sign for the two cases
         lhs = self.variables["capacity"].where(m1) + self.variables["capacity_addition"].where(m2)
         rhs = self.parameters.capacity_limit.where(m1, 0.0)
-        sign = xr.DataArray("<=", coords=self.variables["capacity"].coords).where(m1, "=")
-        constraints = AnonymousConstraint(lhs, sign, rhs)
+        # sign = xr.DataArray("<=", coords=self.variables["capacity"].coords).where(m1, "=")
+        # constraints = AnonymousConstraint(lhs, sign, rhs)
+        constraints = lhs <= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_contraints(constraints, model=self.model, index_values=index.get_unique(index_names), index_names=index_names)
+
+    def constraint_technology_capacity_limit_super_block(self):
+        """limited capacity_limit of technology for super locations
+
+        .. math::
+            \mathrm{if\ existing\ capacities\ < capacity\ limit}\ s^\mathrm{max}_{h,sp} \geq \sum_{p \in \script{SP}_sp} S_{h,p,y}
+        .. math::
+            \mathrm{else}\ 0 \geq \sum_{p \in \script{SP}_sp} \Delta S_{h,p,y}
+
+        :return: #TODO describe parameter/return
+        """
+
+        ### index sets
+        index_names = ["set_technologies", "set_capacity_types", "set_super_location", "set_time_steps_yearly"]
+        index_values, index_names = Element.create_custom_set(index_names, self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # used within index loop
+
+        ### index loop
+        constraints = []
+        capacity_limit_super = self.parameters.capacity_limit_super
+        for super_loc in index.get_unique(levels=["set_super_location"]):
+            ## auxiliary calculations
+            # determine the total capacity at each super location
+            if super_loc in self.sets["set_super_nodes"]:
+                set_loc_in_super_loc = self.sets["set_nodes_in_super_nodes"][super_loc]
+            elif super_loc in self.sets["set_super_edges"]:
+                set_loc_in_super_loc = self.sets["set_edges_in_super_edges"][super_loc]
+            if not set_loc_in_super_loc:
+                continue
+            existing_capacities = sum(self.parameters.existing_capacities.loc[:, :, loc, :] for loc in set_loc_in_super_loc)
+            if not (isinstance(existing_capacities, float) or isinstance(existing_capacities, int)):
+                existing_capacities = existing_capacities.where(existing_capacities == np.nan, 0.0)
+            # masks to formulate constraints
+            m1 = (capacity_limit_super.loc[...,super_loc] != np.inf) & (existing_capacities < capacity_limit_super.loc[...,super_loc])
+            m2 = (capacity_limit_super.loc[...,super_loc] != np.inf) & ~(existing_capacities < capacity_limit_super.loc[...,super_loc])
+            ### formulate constraint
+            lhs = lp.merge(self.variables["capacity"].loc[:, :, set_loc_in_super_loc, :].where(m1).to_linexpr(),
+                           self.variables["capacity_addition"].loc[:, :, set_loc_in_super_loc, :].where(m2).to_linexpr(),
+                           compat="broadcast_equals")
+            # sum(self.variables["capacity"].loc[:,:,loc,:].where(m1) + self.variables["capacity_addition"].loc[:,:,loc,:].where(m2) for loc in set_loc_in_super_loc)
+            rhs = capacity_limit_super.loc[...,super_loc].where(m1, 0.0)
+            constraints.append(lhs<=rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints, model=self.model, index_values=index.get_unique(["set_super_location"]), index_names=["set_super_location"])
 
     def constraint_technology_min_capacity_block(self):
         """ min capacity expansion of technology

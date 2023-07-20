@@ -74,9 +74,11 @@ class Config(object):
                                "set_conversion_technologies": ["set_conditioning_technologies"]}
         # headers for the generation of input files
         self.analysis["header_data_inputs"] = {
+                "set_location": "location",
                 "set_nodes": "node",
                 "set_edges": "edge",
-                "set_location": "location",
+                "set_super_nodes": "super_node",
+                "set_super_edges": "super_edge",
                 "set_time_steps":"time", # IMPORTANT: time must be unique
                 "set_time_steps_operation":"time_operation",
                 "set_time_steps_storage_level":"time_storage_level",
@@ -139,6 +141,10 @@ class Config(object):
         self.system["set_bidirectional_transport_technologies"] = []
         # set of nodes
         self.system["set_nodes"] = []
+        # set of super nodes
+        self.system["set_super_nodes"] = []
+        # set of super edges
+        self.system["set_super_edges"] = []
         # toggle to use time_series_aggregation
         self.system["conduct_time_series_aggregation"] = False
         # toggle to exclude parameters from TSA, specified in system_specification/exclude_parameter_from_TSA
