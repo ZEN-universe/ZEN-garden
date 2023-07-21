@@ -13,6 +13,7 @@ import sys
 from collections import UserDict
 from contextlib import contextmanager
 from datetime import datetime
+from ordered_set import OrderedSet
 
 import h5py
 import linopy as lp
@@ -21,6 +22,8 @@ import pandas as pd
 import xarray as xr
 import yaml
 from numpy import string_
+
+
 
 
 def setup_logger(log_path=None, level=logging.INFO):
@@ -49,7 +52,7 @@ def get_inheritors(klass):
     :return: All children as a set
     """
 
-    subclasses = set()
+    subclasses = OrderedSet()
     work = [klass]
     while work:
         parent = work.pop()
@@ -106,29 +109,75 @@ class ScenarioDict(dict):
     This is a dictionary for the scenario analysis that has some convenience functions
     """
 
-    def __init__(self, init_dict):
+    def __init__(self, init_dict, system):
         """
         Initializes the dictionary from a normal dictionary
         :param init_dict: The dictionary to initialize from
+        :param system: The system to which the dictionary belongs
         """
+
+        # avoid circular imports
+        from . import inheritors
+        self.element_classes = reversed(inheritors.copy())
 
         # set the attributes and expand the dict
         self.init_dict = init_dict
-        self.dict = self.expand_dict(init_dict)
+        expanded_dict = self.expand_subsets(init_dict)
+        self.validate_dict(expanded_dict)
+        self.dict = expanded_dict
+        self.system = system
 
         # super init
         super().__init__(self.dict)
 
 
-    @staticmethod
-    def expand_dict(init_dict):
+    def expand_subsets(self, init_dict):
         """
         Expands a dictionary, e.g. expands sets etc.
         :param init_dict: The initial dict
         :return: A new dict which can be used for the scenario analysis
         """
 
-        return init_dict
+        new_dict = init_dict.copy()
+        for element in self.element_classes:
+            current_set = element.label
+            if current_set in new_dict:
+                # dict for expansion
+                base_dict = new_dict[current_set]
+                del new_dict[current_set]
+
+                # get the exlusion list
+                if "exclude" in base_dict:
+                    exclude_list = base_dict["exclude"]
+                    del base_dict["exclude"]
+                else:
+                    exclude_list = []
+
+                # expand the sets
+                for element in self.system.get(current_set, []):
+                    if element not in exclude_list:
+                        # merge with existing
+                        if element in new_dict:
+                            for key, value in base_dict.items():
+                                if key not in new_dict[element]:
+                                    new_dict[element][key] = value
+                        else:
+                            new_dict[element] = base_dict
+        return new_dict
+
+    def validate_dict(self, dict):
+        """
+        Validates a dictionary, raises an error if it is not valid
+        :param dict: The dictionary to validate
+        """
+
+        for element, element_dict in dict.items():
+            if not isinstance(element_dict, dict):
+                raise ValueError(f"The entry for {element} is not a dictionary!")
+
+            allowed_entries = {"default", "default_op", "file", "file_op"}
+            if len(set(element_dict.keys()) - allowed_entries) > 0:
+                raise ValueError(f"The entry for {element} contains invalid entries!")
 
     def get_default(self, element, param):
         """
