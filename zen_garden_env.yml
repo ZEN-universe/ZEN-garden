@@ -19,6 +19,7 @@ dependencies:
   - pytables
   - pip:
       - tsam
+      - filelock
       - hdfdict
       - ordered-set
       - pyogrio
