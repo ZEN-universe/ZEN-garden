@@ -121,11 +121,11 @@ class ScenarioDict(dict):
         self.element_classes = reversed(inheritors.copy())
 
         # set the attributes and expand the dict
+        self.system = system
         self.init_dict = init_dict
         expanded_dict = self.expand_subsets(init_dict)
         self.validate_dict(expanded_dict)
         self.dict = expanded_dict
-        self.system = system
 
         # super init
         super().__init__(self.dict)
@@ -139,30 +139,34 @@ class ScenarioDict(dict):
         """
 
         new_dict = init_dict.copy()
-        for element in self.element_classes:
-            current_set = element.label
+        for element_class in self.element_classes:
+            current_set = element_class.label
             if current_set in new_dict:
-                # dict for expansion
-                base_dict = new_dict[current_set]
-                del new_dict[current_set]
+                for param, param_dict in new_dict[current_set].items():
+                    # dict for expansion
+                    base_dict = param_dict
 
-                # get the exlusion list
-                if "exclude" in base_dict:
-                    exclude_list = base_dict["exclude"]
-                    del base_dict["exclude"]
-                else:
-                    exclude_list = []
+                    # get the exlusion list
+                    if "exclude" in base_dict:
+                        exclude_list = base_dict["exclude"]
+                        del base_dict["exclude"]
+                    else:
+                        exclude_list = []
 
-                # expand the sets
-                for element in self.system.get(current_set, []):
-                    if element not in exclude_list:
-                        # merge with existing
-                        if element in new_dict:
+                    # expand the sets
+                    for element in self.system.get(current_set, []):
+                        if element not in exclude_list:
+                            # create dicts if necessary
+                            if element not in new_dict:
+                                new_dict[element] = {}
+                            if param not in new_dict[element]:
+                                new_dict[element][param] = {}
+                            # merge
                             for key, value in base_dict.items():
-                                if key not in new_dict[element]:
-                                    new_dict[element][key] = value
-                        else:
-                            new_dict[element] = base_dict
+                                if key not in new_dict[element][param]:
+                                    new_dict[element][param][key] = value
+                # delete the old set
+                del new_dict[current_set]
         return new_dict
 
     def validate_dict(self, vali_dict):
