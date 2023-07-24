@@ -225,6 +225,8 @@ class OptimizationSetup(object):
             if len(_attribute) > 1:
                 dict_of_attributes[_combined_key] = _attribute
                 attribute_is_series = True
+            elif len(_attribute) == 0:  # catches an empty attribute that otherwise leads to wrong Series concatenation
+                attribute_is_series = True
             else:
                 dict_of_attributes[_combined_key] = _attribute.squeeze()
                 attribute_is_series = False

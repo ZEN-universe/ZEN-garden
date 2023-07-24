@@ -252,12 +252,12 @@ class DataInput:
             if extract_nodes:
                 bool_set_super_locations = set_super_locations_input[loc].isin(self.system["set_nodes"])
             else:
-                bool_set_super_locations = set_super_locations_input["super_node_from"].isin(
-                    self.system["set_super_nodes"]) & set_super_locations_input["super_node_to"].isin(self.system["set_super_nodes"])
+                bool_set_super_locations = set_super_locations_input["super_node_from"].isin(self.system["set_super_nodes"]) & \
+                set_super_locations_input["super_node_to"].isin(self.system["set_super_nodes"])
             if not bool_set_super_locations.all():
-                logging.warning(f"The following {super_loc} are dropped from the super sets as they are not in the set of nodes: {set_super_locations_input[~bool_set_super_locations]}")
+                logging.warning(f"The following {super_loc} are dropped from the super sets as they are not in the set of nodes: \n {set_super_locations_input[~bool_set_super_locations]}")
                 set_super_locations_input = set_super_locations_input[bool_set_super_locations]
-                self.system[set_super_locations] = list(set_super_locations_input.index.unique())
+            self.system[set_super_locations] = list(set_super_locations_input.index.unique())
             # create dict assigning locations to super locations
             super_locations_dict = dict()
             for l in set_super_locations_input.index:

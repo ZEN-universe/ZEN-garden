@@ -66,8 +66,8 @@ class Technology(Element):
         # non-time series input data
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        # self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[_set_location])
+        self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[_set_location_super, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        # self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[_set_location_super])
         self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[_set_location])
         if self.energy_system.system['load_lca_factors']:
             self.technology_lca_factors = self.data_input.extract_input_data('technology_lca_factors', index_sets=[_set_location, 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps=set_time_steps_yearly)
@@ -396,8 +396,7 @@ class Technology(Element):
         # capacity_limit of technologies for super level
         optimization_setup.parameters.add_parameter(name="capacity_limit_super",
             data=optimization_setup.initialize_component(cls, "capacity_limit_super",
-            index_names=["set_technologies", "set_capacity_types", "set_super_location"], capacity_types=True),
-        #     # index_names=["set_technologies", "set_capacity_types", "set_super_location", "set_time_steps_yearly"], capacity_types=True),
+            index_names=["set_technologies", "set_capacity_types", "set_super_location", "set_time_steps_yearly"], capacity_types=True),
             doc='Parameter which specifies the capacity limit of technologies for the super locations')
         # minimum load relative to capacity
         optimization_setup.parameters.add_parameter(name="min_load",
@@ -545,8 +544,8 @@ class Technology(Element):
                                          doc='limited capacity of  technology depending on loc and time')
         #  technology capacity_limit super
         constraints.add_constraint_block(model, name="constraint_technology_capacity_limit_super",
-                                        constraint=rules.constraint_technology_capacity_limit_super_block(),
-                                        doc='limited capacity of technology depending on super loc and time')
+                                         constraint=rules.constraint_technology_capacity_limit_super_block(),
+                                         doc='limited capacity of technology depending on super loc and time')
         # minimum capacity
         constraints.add_constraint_block(model, name="constraint_technology_min_capacity",
                                          constraint=rules.constraint_technology_min_capacity_block(),
@@ -887,14 +886,18 @@ class TechnologyRules(GenericRule):
             if not (isinstance(existing_capacities, float) or isinstance(existing_capacities, int)):
                 existing_capacities = existing_capacities.where(existing_capacities == np.nan, 0.0)
             # masks to formulate constraints
-            m1 = (capacity_limit_super.loc[...,super_loc] != np.inf) & (existing_capacities < capacity_limit_super.loc[...,super_loc])
-            m2 = (capacity_limit_super.loc[...,super_loc] != np.inf) & ~(existing_capacities < capacity_limit_super.loc[...,super_loc])
+            # m1 = (capacity_limit_super.loc[...,super_loc] != np.inf) & (existing_capacities < capacity_limit_super.loc[...,super_loc])
+            # m2 = (capacity_limit_super.loc[...,super_loc] != np.inf) & ~(existing_capacities < capacity_limit_super.loc[...,super_loc])
+            m1 = (capacity_limit_super.loc[:, :, super_loc, :] != np.inf) & (existing_capacities < capacity_limit_super.loc[:, :, super_loc, :])
+            m2 = (capacity_limit_super.loc[:, :, super_loc, :] != np.inf) & ~(existing_capacities < capacity_limit_super.loc[:, :, super_loc, :])
             ### formulate constraint
             lhs = lp.merge(self.variables["capacity"].loc[:, :, set_loc_in_super_loc, :].where(m1).to_linexpr(),
                            self.variables["capacity_addition"].loc[:, :, set_loc_in_super_loc, :].where(m2).to_linexpr(),
                            compat="broadcast_equals")
+            # check that coords are not aligned for 'waste' super location
             # sum(self.variables["capacity"].loc[:,:,loc,:].where(m1) + self.variables["capacity_addition"].loc[:,:,loc,:].where(m2) for loc in set_loc_in_super_loc)
-            rhs = capacity_limit_super.loc[...,super_loc].where(m1, 0.0)
+            rhs = capacity_limit_super.loc[:, :, super_loc, :].where(m1, 0.0).expand_dims(dim={'set_location': set_loc_in_super_loc})
+            rhs = rhs.transpose(*list(lhs.dims.keys())[:-1])  # does not work yet..
             constraints.append(lhs<=rhs)
 
         ### return
