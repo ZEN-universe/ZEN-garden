@@ -934,29 +934,38 @@ class Constraint(Component):
         if len(constraints) == 0:
             return constraints
 
-        # get the shape of the constraints
-        max_terms = max([c.lhs.shape[-1] for c in constraints])
-        c = constraints[0]
-        lhs_shape = c.lhs.shape[:-1] + (max_terms, )
-        coords = [xr.DataArray(np.arange(len(constraints)), dims=[stack_dim]), ] + [c.lhs.coords[d] for d in c.lhs.dims][:-1] + [xr.DataArray(np.arange(max_terms), dims=["_term"])]
-        coeffs = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=np.nan), coords=coords,
-                              dims=(stack_dim, *constraints[0].lhs.dims.keys()))
-        variables = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=-1), coords=coords,
-                                 dims=(stack_dim, *constraints[0].lhs.dims.keys()))
-        sign = xr.DataArray("=", coords=coords[:-1]).astype("U2")
-        rhs = xr.DataArray(np.nan, coords=coords[:-1])
+        # combine the different terms
+        stack_dim = xr.DataArray(np.arange(len(constraints)), dims=stack_dim)
 
-        for num, con in enumerate(constraints):
-            terms = con.lhs.dims["_term"]
-            coeffs[num, ..., :terms] = con.lhs.coeffs.data
-            variables[num, ..., :terms] = con.lhs.vars.data
-            sign[num, ...] = con.sign
-            rhs[num, ...] = con.rhs
-            # make sure all dims are in the right order and deal with subsets
-            sign[num, ...] = con.sign
-            rhs[num, ...] = rhs[num].where(~con.rhs.isnull(), con.rhs + rhs[num])
+        # here we need to take care of the term dimension
+        vars = []
+        coeffs = []
+        for c in constraints:
+            var = c.vars
+            var.coords["_term"] = np.arange(var.sizes["_term"])
+            vars.append(var)
+            coeff = c.coeffs
+            coeff.coords["_term"] = np.arange(coeff.sizes["_term"])
+            coeffs.append(coeff)
+        combined_vars = xr.concat(vars, dim=stack_dim, coords="minimal", fill_value=-1, join="outer",
+                                  compat="override", combine_attrs="drop")
+        combined_vars = combined_vars.drop_vars("_term")
+        combined_coeffs = xr.concat(coeffs, dim=stack_dim, coords="minimal", fill_value=np.nan, join="outer",
+                                    compat="override", combine_attrs="drop")
+        combined_coeffs = combined_coeffs.drop_vars("_term")
+        signs = [c.sign for c in constraints]
+        combined_signs = xr.concat(signs, dim=stack_dim, coords="minimal", fill_value=-1, join="outer",
+                                   compat="override", combine_attrs="drop")
+        rhs = [c.rhs for c in constraints]
+        combined_rhs = xr.concat(rhs, dim=stack_dim, coords="minimal", fill_value=np.nan, join="outer",
+                                 compat="override", combine_attrs="drop")
 
-        xr_ds = xr.Dataset({"coeffs": coeffs, "vars": variables})
+        # fill all the dimensions
+        vars, coeffs, sign, rhs = xr.align(combined_vars, combined_coeffs, combined_signs, combined_rhs, join="outer",
+                                           fill_value={"combined_vars": -1, "combined_coeffs": np.nan,
+                                                       "combined_signs": "=", "combined_rhs": np.nan})
+
+        xr_ds = xr.Dataset({"coeffs": coeffs, "vars": vars})
         lhs = lp.LinearExpression(xr_ds, model)
 
         return lp.constraints.AnonymousConstraint(lhs, sign, rhs)
