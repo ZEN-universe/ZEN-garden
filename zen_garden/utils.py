@@ -165,19 +165,20 @@ class ScenarioDict(dict):
                             new_dict[element] = base_dict
         return new_dict
 
-    def validate_dict(self, dict):
+    def validate_dict(self, vali_dict):
         """
         Validates a dictionary, raises an error if it is not valid
-        :param dict: The dictionary to validate
+        :param vali_dict: The dictionary to validate
         """
 
-        for element, element_dict in dict.items():
+        for element, element_dict in vali_dict.items():
             if not isinstance(element_dict, dict):
                 raise ValueError(f"The entry for {element} is not a dictionary!")
 
-            allowed_entries = {"default", "default_op", "file", "file_op"}
-            if len(set(element_dict.keys()) - allowed_entries) > 0:
-                raise ValueError(f"The entry for {element} contains invalid entries!")
+            for param, param_dict in element_dict.items():
+                allowed_entries = {"default", "default_op", "file", "file_op"}
+                if len(diff := (set(param_dict.keys()) - allowed_entries)) > 0:
+                    raise ValueError(f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
 
     def get_default(self, element, param):
         """

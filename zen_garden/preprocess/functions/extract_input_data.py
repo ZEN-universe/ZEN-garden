@@ -311,7 +311,7 @@ class DataInput:
             return df_output
 
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
-        if f_name in os.listdir(self.folder_path):
+        if f"{f_name}.csv" in os.listdir(self.folder_path):
             df_input = self.read_input_data(f_name)
             # fill output dataframe
             df_output = self.extract_general_input_data(df_input, df_output, "year_construction", index_name_list, default_value=0, time_steps=None)
