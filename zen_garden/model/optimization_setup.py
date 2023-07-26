@@ -12,6 +12,7 @@ class adds carriers and technologies to the Concrete model and returns the Concr
 The class also includes a method to solve the optimization problem.
 """
 import cProfile
+import copy
 import logging
 import os
 from collections import defaultdict
@@ -528,6 +529,7 @@ class OptimizationSetup(object):
                     # extract existing capacity
                     set_location = tech.location_type
                     set_time_steps_yearly = self.energy_system.set_time_steps_yearly_entire_horizon
+                    self.energy_system.set_time_steps_yearly = copy.deepcopy(set_time_steps_yearly)
                     tech.set_technologies_existing = tech.data_input.extract_set_technologies_existing()
                     tech.capacity_existing = tech.data_input.extract_input_data(
                         "capacity_existing",index_sets=[set_location,"set_technologies_existing"])
