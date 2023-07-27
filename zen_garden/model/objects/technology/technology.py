@@ -599,13 +599,13 @@ class Technology(Element):
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology_total", constraint=rules.constraint_carbon_emissions_technology_total_block(),
                                          doc="total carbon emissions for each technology at each location and time step")
         # LCA
-        # if optimization_setup.system['load_lca_factors']:
+        if optimization_setup.system['load_lca_factors']:
             # lca impacts
-            # constraints.add_constraint_block(mode, name='constraint_technology_lca_impacts', constraint=rules.constraint_technology_lca_impacts_block(),
-            #                                  doc='lca impacts of each technology at each location and time step')
+            constraints.add_constraint_block(model, name='constraint_technology_lca_impacts', constraint=rules.constraint_technology_lca_impacts_block(),
+                                             doc='lca impacts of each technology at each location and time step')
             # total LCA impacts
-            # constraints.add_constraint_block(model, name='constraint_technology_lca_impacts_total', constraint=rules.constraint_technology_lca_impacts_total_block(),
-            #                                  doc='total lca impacts of all technologies per year')
+            constraints.add_constraint_block(model, name='constraint_technology_lca_impacts_total', constraint=rules.constraint_technology_lca_impacts_total_block(),
+                                             doc='total lca impacts of all technologies per year')
 
         # disjunct if technology is on
         # the disjunction variables
@@ -1536,7 +1536,56 @@ class TechnologyRules(GenericRule):
 
     def constraint_technology_lca_impacts_block(self):
         """ lca impacts of all technologies per location and year"""
-        return None
+
+        ### index sets
+        index_values, index_names = Element.create_custom_set(['set_technologies', 'set_location', 'set_lca_impact_categories', 'set_time_steps_operation'], self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+        times = index.get_unique(["set_time_steps_operation"])
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over the technologies and vectorize over the locations, lca categories, and over the times after converting them from operation to yearly time steps
+        constraints = []
+        for tech in index.get_unique(['set_technologies']):
+            ### auxiliary calculations
+            yearly_time_steps = [self.time_steps.convert_time_step_operation2year(tech, t) for t in times]
+
+            ### auxiliary calculations
+            locs = index.get_values([tech], 1, unique=True)
+            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            if tech in self.sets["set_conversion_technologies"]:
+                if reference_carrier in self.sets["set_input_carriers"][tech]:
+                    reference_flow = self.variables["flow_conversion_input"].loc[tech, reference_carrier, locs].to_linexpr()
+                else:
+                    reference_flow = self.variables["flow_conversion_output"].loc[tech, reference_carrier, locs].to_linexpr()
+                reference_flow = reference_flow.rename({"set_nodes": "set_location", 'set_conversion_technologies': 'set_technologies'})
+            elif tech in self.sets["set_transport_technologies"]:
+                reference_flow = self.variables["flow_transport"].loc[tech, locs].to_linexpr()
+                reference_flow = reference_flow.rename({"set_edges": "set_location", 'set_transport_technologies': 'set_technologies'})
+            else:
+                reference_flow = self.variables["flow_storage_charge"].loc[tech, locs] + self.variables["flow_storage_discharge"].loc[tech, locs]
+                reference_flow = reference_flow.rename({"set_nodes": "set_location", 'set_storage_technologies': 'set_technologies'})
+            # make sure the coordinates are the same
+            # reference_flow = reference_flow.rename({'set_time_steps_operation': 'set_time_steps_yearly'}).broadcast_like(self.parameters.technology_lca_factors.loc[tech, locs, :, :])
+            fac = self.parameters.technology_lca_factors.loc[tech, locs, :, yearly_time_steps].assign_coords({'set_time_steps_yearly': times}).rename({"set_time_steps_yearly": "set_time_steps_operation"})
+            reference_flow = reference_flow.broadcast_like(fac)
+            term_reference_flow = - fac * reference_flow
+
+            ### formulate constraint
+            # the first term is just to ensure full shape
+            lhs = lp.merge(self.variables["technology_lca_impacts"].loc[tech].where(False).to_linexpr(),
+                           self.variables["technology_lca_impacts"].loc[tech, locs].to_linexpr(),
+                           term_reference_flow,
+                           compat="broadcast_equals")
+            rhs = 0
+            constraints.append(lhs == rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints, model=self.model,
+                                                  index_values=index.get_unique(["set_technologies"]),
+                                                  index_names=["set_technologies"])
 
     def constraint_technology_lca_impacts_total_block(self):
         """ calculate total lca impacts of each technology """
@@ -1557,17 +1606,16 @@ class TechnologyRules(GenericRule):
         for year in years:
 
             ### auxiliary calculations
-            term_summed_carbon_emissions_technology = []
+            term_summed_lca_impacts_technology = []
             for tech in index.get_unique(["set_technologies"]):
                 locs = index.get_values([tech], "set_location", unique=True)
                 times = self.time_steps.get_time_steps_year2operation(tech, year)
                 term_summed_lca_impacts_technology.append((self.variables['technology_lca_impacts'].loc[tech, locs, :, times] *
-                                                                self.parameters.time_steps_operation_duration.loc[tech, times]).sum())
-            term_summed_carbon_emissions_technology = lp_sum(term_summed_carbon_emissions_technology)
+                                                                self.parameters.time_steps_operation_duration.loc[tech, times]).sum(['set_time_steps_operation', 'set_location']))
+            term_summed_lca_impacts_technology = lp_sum(term_summed_lca_impacts_technology)
 
             ### formulate constraint
-            lhs = self.variables["carbon_emissions_technology_total"].loc[
-                      year] - term_summed_carbon_emissions_technology
+            lhs = self.variables["technology_lca_impacts_total"].loc[:, year] - term_summed_lca_impacts_technology
             rhs = 0
             constraints.append(lhs == rhs)
 

@@ -654,13 +654,13 @@ class CarrierRules(GenericRule):
             yearly_time_steps = [self.time_steps.convert_time_step_operation2year(carrier, t) for t in times]
 
             # get the time-dependent factor
-            mask = (self.parameters.availability_import.loc[carrier, :, yearly_time_steps] != 0) | (self.parameters.availability_export.loc[carrier, :, yearly_time_steps] != 0)
+            mask = (self.parameters.availability_import.loc[carrier, :, times] != 0) | (self.parameters.availability_export.loc[carrier, :, times] != 0)
             # make sure coordinates are the same
-            fac = self.parameters.carrier_lca_factors.loc[carrier, :, :, yearly_time_steps].rename({"set_time_steps_yearly": "set_time_steps_operation"}).where(mask, 0)
+            fac = self.parameters.carrier_lca_factors.loc[carrier, :, :, yearly_time_steps].assign_coords({'set_time_steps_yearly': times}).rename({"set_time_steps_yearly": "set_time_steps_operation"}).where(mask, 0)
             term_flow_import_export = fac * self.variables["flow_import"].loc[carrier, :] - fac * self.variables["flow_export"].loc[carrier, :]
 
             ### formulate constraint
-            lhs = (self.variables["carrier_lca_impacts"].loc[carrier, :, :, yearly_time_steps] - term_flow_import_export)
+            lhs = (self.variables["carrier_lca_impacts"].loc[carrier, :, :, times] - term_flow_import_export)
             rhs = 0
             constraints.append(lhs == rhs)
 
