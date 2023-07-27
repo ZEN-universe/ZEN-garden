@@ -1226,7 +1226,10 @@ class TechnologyRules(GenericRule):
             ### auxiliary calculations
             discount_rate = self.analysis["discount_rate"]
             lifetime = self.parameters.lifetime.loc[tech].item()
-            annuity = ((1+discount_rate)**lifetime * discount_rate)/((1+discount_rate)**lifetime - 1)
+            if discount_rate != 0:
+                annuity = ((1+discount_rate)**lifetime * discount_rate)/((1+discount_rate)**lifetime - 1)
+            else:
+                annuity = 1/lifetime
             term_neg_annuity_cost_capex_previous = []
             for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly"):
                 term_neg_annuity_cost_capex_previous.append(-annuity * self.variables["cost_capex"].loc[tech, :, :, previous_year])
