@@ -465,6 +465,37 @@ class EnergySystemRules(GenericRule):
     # Block-based constraints
     # -----------------------
 
+    def constraint_carbon_emissions_overshoot_block(self):
+        """ add up all carbon emissions from technologies and carriers
+
+        .. math::
+            E_y = E_{y,\mathcal{H}} + E_{y,\mathcal{C}}
+
+        :return: total carbon emissions constraint for specified year
+        """
+
+        ### index sets
+        # not necessary
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # not necessary
+
+        ### auxiliary calculations
+        # not necessary
+
+        ### formulate constraint
+        lhs = self.variables["carbon_emissions_overshoot"]
+        rhs = 0
+        if self.parameters.price_carbon_emissions_overshoot == np.inf:
+            constraints = lhs == rhs
+        else:
+            constraints = lhs >= rhs
+
+        return self.constraints.return_contraints(constraints)
+
     def constraint_carbon_emissions_total_block(self):
         """ add up all carbon emissions from technologies and carriers
 
@@ -516,7 +547,11 @@ class EnergySystemRules(GenericRule):
 
         ### auxiliary calculations
         mask_last_year = [year == self.sets["set_time_steps_yearly"][-1] for year in self.sets["set_time_steps_yearly"]]
-        term_cost_carbon_emissions_overshoot = self.variables["carbon_emissions_overshoot"].where(mask_last_year) * self.parameters.price_carbon_emissions_overshoot
+        if self.parameters.price_carbon_emissions_overshoot != np.inf:
+            price_carbon_emissions_overshoot = self.parameters.price_carbon_emissions_overshoot
+        else:
+            price_carbon_emissions_overshoot = 1 #linopy throws error if inf*0
+        term_cost_carbon_emissions_overshoot = self.variables["carbon_emissions_overshoot"].where(mask_last_year) * price_carbon_emissions_overshoot
 
         ### formulate constraint
         lhs = (self.variables["cost_carbon_emissions_total"]

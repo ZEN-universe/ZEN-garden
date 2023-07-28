@@ -23,7 +23,7 @@ from .utils import setup_logger
 setup_logger()
 
 
-def main(config, dataset_path=None, job_index=None):
+def main(config, dataset_path=None, job_index=None, name=""):
     """
     This function runs the compile.py script that was used in ZEN-Garden prior to the package build, it is executed
     in the __main__.py script
@@ -87,6 +87,8 @@ def main(config, dataset_path=None, job_index=None):
 
     # get the name of the dataset
     model_name = os.path.basename(config.analysis["dataset"])
+    if name:
+        model_name = model_name + "_" + name
     if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
         logging.warning(f"The output folder '{out_folder}' already exists")
         if config.analysis["overwrite_output"]:
