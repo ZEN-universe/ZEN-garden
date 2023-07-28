@@ -7,9 +7,8 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Scenario settings settings.
 ==========================================================================================================================================================================="""
 scenarios = dict()
-scenarios["1"] = {"natural_gas": {"price_import": {"default": "attributes_1"}},  # new import price for natural gas
-                  'natural_gas_boiler': {'capex_specific': {'default_op': 1.1}},  # increased capex by 10%
-                  'heat': {'demand': {'file': 'demand_1',  # new demand file for heat
-                                      'file_op': 2}},  # doubles the demand
+# increase the demand of heat
+scenarios["1"] = {"set_carriers": {"price_import": {"default_op": [1, 1.3, 1.6],  # increase price by 0, 30, 60%
+                                                    'exclude': ['heat']}},  # exclude price increase for heat
+                  'natural_gas_boiler': {'opex_specific_fixed': {'default': ['attributes_cheap', 'attributes_expensive']}}
                   }
-
