@@ -165,16 +165,14 @@ class DataInput:
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
-            if isinstance(attribute_value, str) and factor != 1.0:
-                logging.warning(f"WARNING: Attribute {attribute_name} of {self.element.name} is a string but has "
-                                f"custom factor {factor}, factor will be ignored...")
-            if not isinstance(attribute_value, str):
-                attribute_value *= factor
             multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"])
             try:
-                attribute = {"value": float(attribute_value) * multiplier, "multiplier": multiplier}
+                attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
-            except:
+            except ValueError:
+                if factor != 1:
+                    logging.warning(f"WARNING: Attribute {attribute_name} of {self.element.name} is not a number "
+                                    f"but has custom factor {factor}, factor will be ignored...")
                 return attribute_value
         else:
             return None
