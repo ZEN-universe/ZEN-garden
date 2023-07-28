@@ -13,6 +13,7 @@ import sys
 from collections import UserDict
 from contextlib import contextmanager
 from datetime import datetime
+from ordered_set import OrderedSet
 
 import h5py
 import linopy as lp
@@ -21,6 +22,8 @@ import pandas as pd
 import xarray as xr
 import yaml
 from numpy import string_
+
+
 
 
 def setup_logger(log_path=None, level=logging.INFO):
@@ -49,7 +52,7 @@ def get_inheritors(klass):
     :return: All children as a set
     """
 
-    subclasses = set()
+    subclasses = OrderedSet()
     work = [klass]
     while work:
         parent = work.pop()
@@ -59,7 +62,9 @@ def get_inheritors(klass):
                 work.append(child)
     return subclasses
 
+
 # This redirects output streams to files
+# --------------------------------------
 
 class RedirectStdStreams(object):
     """
@@ -95,6 +100,133 @@ class RedirectStdStreams(object):
         sys.stdout = self.old_stdout
         sys.stderr = self.old_stderr
 
+
+# This class is for the scenario analysis
+# ---------------------------------------
+
+class ScenarioDict(dict):
+    """
+    This is a dictionary for the scenario analysis that has some convenience functions
+    """
+
+    def __init__(self, init_dict, system):
+        """
+        Initializes the dictionary from a normal dictionary
+        :param init_dict: The dictionary to initialize from
+        :param system: The system to which the dictionary belongs
+        """
+
+        # avoid circular imports
+        from . import inheritors
+        self.element_classes = reversed(inheritors.copy())
+
+        # set the attributes and expand the dict
+        self.system = system
+        self.init_dict = init_dict
+        expanded_dict = self.expand_subsets(init_dict)
+        self.validate_dict(expanded_dict)
+        self.dict = expanded_dict
+
+        # super init
+        super().__init__(self.dict)
+
+
+    def expand_subsets(self, init_dict):
+        """
+        Expands a dictionary, e.g. expands sets etc.
+        :param init_dict: The initial dict
+        :return: A new dict which can be used for the scenario analysis
+        """
+
+        new_dict = init_dict.copy()
+        for element_class in self.element_classes:
+            current_set = element_class.label
+            if current_set in new_dict:
+                for param, param_dict in new_dict[current_set].items():
+                    # dict for expansion
+                    base_dict = param_dict
+
+                    # get the exlusion list
+                    if "exclude" in base_dict:
+                        exclude_list = base_dict["exclude"]
+                        del base_dict["exclude"]
+                    else:
+                        exclude_list = []
+
+                    # expand the sets
+                    for element in self.system.get(current_set, []):
+                        if element not in exclude_list:
+                            # create dicts if necessary
+                            if element not in new_dict:
+                                new_dict[element] = {}
+                            if param not in new_dict[element]:
+                                new_dict[element][param] = {}
+                            # merge
+                            for key, value in base_dict.items():
+                                if key not in new_dict[element][param]:
+                                    new_dict[element][param][key] = value
+                # delete the old set
+                del new_dict[current_set]
+        return new_dict
+
+    def validate_dict(self, vali_dict):
+        """
+        Validates a dictionary, raises an error if it is not valid
+        :param vali_dict: The dictionary to validate
+        """
+
+        for element, element_dict in vali_dict.items():
+            if not isinstance(element_dict, dict):
+                raise ValueError(f"The entry for {element} is not a dictionary!")
+
+            for param, param_dict in element_dict.items():
+                allowed_entries = {"default", "default_op", "file", "file_op"}
+                if len(diff := (set(param_dict.keys()) - allowed_entries)) > 0:
+                    raise ValueError(f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
+
+    def get_default(self, element, param):
+        """
+        Return the name where the default value should be read out
+        :param element: The element name
+        :param param: The parameter of the element
+        :return: If the entry is overwritten by the scenario analysis the entry and factor are returned, otherwise
+                 the default entry is returned with a factor of 1
+        """
+
+        # These are the default values
+        default_f_name = "attributes"
+        default_factor = 1.0
+
+        if element in self.dict and param in (element_dict := self.dict[element]):
+            param_dict = element_dict[param]
+            default_f_name = param_dict.get("default", default_f_name)
+            default_factor = param_dict.get("default_op", default_factor)
+
+        return default_f_name, default_factor
+
+    def get_param_file(self, element, param):
+        """
+        Return the file name where the parameter values should be read out
+        :param element: The element name
+        :param param: The parameter of the element
+        :return: If the entry is overwritten by the scenario analysis the entry and factor are returned, otherwise
+                 the default entry is returned with a factor of 1
+        """
+
+        # These are the default values
+        default_f_name = param
+        default_factor = 1.0
+
+        if element in self.dict and param in (element_dict := self.dict[element]):
+            param_dict = element_dict[param]
+            default_f_name = param_dict.get("file", default_f_name)
+            default_factor = param_dict.get("file_op", default_factor)
+
+        return default_f_name, default_factor
+
+
+# linopy helpers
+# --------------
 
 def lp_sum(exprs, dim='_term'):
     """

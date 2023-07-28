@@ -8,17 +8,18 @@ Class is defining the postprocessing of the results.
 The class takes as inputs the optimization problem (model) and the system configurations (system).
 The class contains methods to read the results and save them in a result dictionary (resultDict).
 """
+import json
 import logging
 import os
 import pathlib
 import sys
 import zlib
-import json
 
 import pandas as pd
 import xarray as xr
+from filelock import FileLock
 
-from ..utils import RedirectStdStreams, HDFPandasSerializer
+from ..utils import HDFPandasSerializer
 
 
 class Postprocess:
@@ -63,11 +64,6 @@ class Postprocess:
         self.overwrite = self.analysis["overwrite_output"]
         # get the compression param
         self.output_format = self.analysis["output_format"]
-
-        # save the pyomo yml
-        if self.analysis["write_results_yml"]:
-            with RedirectStdStreams(open(os.path.join(self.name_dir, "results.yml"), "w+")):
-                model.results.write()
 
         # save everything
         self.save_sets()
@@ -123,12 +119,14 @@ class Postprocess:
 
             # write if necessary
             if self.overwrite or not os.path.exists(f_name):
-                with open(f_name, f_mode) as outfile:
-                    outfile.write(serialized_dict)
+                with FileLock(f_name + ".lock").acquire(timeout=300):
+                    with open(f_name, f_mode) as outfile:
+                        outfile.write(serialized_dict)
 
         elif format == "h5":
             f_name = f"{name}.h5"
-            HDFPandasSerializer.serialize_dict(file_name=f_name, dictionary=dictionary, overwrite=self.overwrite)
+            with FileLock(f_name + ".lock").acquire(timeout=300):
+                HDFPandasSerializer.serialize_dict(file_name=f_name, dictionary=dictionary, overwrite=self.overwrite)
 
     def save_sets(self):
         """ Saves the Set values to a json file which can then be
