@@ -10,6 +10,7 @@ Class is defining to read in the results of an Optimization problem.
 import logging
 import os
 import sys
+import warnings
 from collections import UserDict
 from contextlib import contextmanager
 from datetime import datetime
@@ -159,12 +160,9 @@ class ScenarioDict(dict):
                             # create dicts if necessary
                             if element not in new_dict:
                                 new_dict[element] = {}
+                            # we only set the param dict if it is not already set
                             if param not in new_dict[element]:
-                                new_dict[element][param] = {}
-                            # merge
-                            for key, value in base_dict.items():
-                                if key not in new_dict[element][param]:
-                                    new_dict[element][param][key] = value
+                                new_dict[element][param] = base_dict.copy()
                 # delete the old set
                 del new_dict[current_set]
         return new_dict
@@ -184,6 +182,19 @@ class ScenarioDict(dict):
                 if len(diff := (set(param_dict.keys()) - allowed_entries)) > 0:
                     raise ValueError(f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
 
+    @staticmethod
+    def validate_file_name(fname):
+        """
+        Checks if the file name has an extension, it is expected to not have an extension
+        :param fname: The file name to validte
+        :return: The validated file name
+        """
+
+        fname, ext = os.path.splitext(fname)
+        if ext != "":
+            warnings.warn(f"The file name {fname}{ext} has an extension {ext}, removing it.")
+        return fname
+
     def get_default(self, element, param):
         """
         Return the name where the default value should be read out
@@ -200,6 +211,7 @@ class ScenarioDict(dict):
         if element in self.dict and param in (element_dict := self.dict[element]):
             param_dict = element_dict[param]
             default_f_name = param_dict.get("default", default_f_name)
+            default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("default_op", default_factor)
 
         return default_f_name, default_factor
@@ -220,6 +232,7 @@ class ScenarioDict(dict):
         if element in self.dict and param in (element_dict := self.dict[element]):
             param_dict = element_dict[param]
             default_f_name = param_dict.get("file", default_f_name)
+            default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("file_op", default_factor)
 
         return default_f_name, default_factor
