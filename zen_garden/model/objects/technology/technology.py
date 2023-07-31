@@ -886,17 +886,14 @@ class TechnologyRules(GenericRule):
             if not (isinstance(existing_capacities, float) or isinstance(existing_capacities, int)):
                 existing_capacities = existing_capacities.where(existing_capacities == np.nan, 0.0)
             # masks to formulate constraints
-            # m1 = (capacity_limit_super.loc[...,super_loc] != np.inf) & (existing_capacities < capacity_limit_super.loc[...,super_loc])
-            # m2 = (capacity_limit_super.loc[...,super_loc] != np.inf) & ~(existing_capacities < capacity_limit_super.loc[...,super_loc])
             m1 = (capacity_limit_super.loc[:, :, super_loc, :] != np.inf) & (existing_capacities < capacity_limit_super.loc[:, :, super_loc, :])
             m2 = (capacity_limit_super.loc[:, :, super_loc, :] != np.inf) & ~(existing_capacities < capacity_limit_super.loc[:, :, super_loc, :])
             ### formulate constraint
             lhs = lp.merge(self.variables["capacity"].loc[:, :, set_loc_in_super_loc, :].where(m1).to_linexpr(),
                            self.variables["capacity_addition"].loc[:, :, set_loc_in_super_loc, :].where(m2).to_linexpr(),
-                           compat="broadcast_equals")
-            # check that coords are not aligned for 'waste' super location
+                           compat="broadcast_equals").sum('set_location')
             # sum(self.variables["capacity"].loc[:,:,loc,:].where(m1) + self.variables["capacity_addition"].loc[:,:,loc,:].where(m2) for loc in set_loc_in_super_loc)
-            rhs = capacity_limit_super.loc[:, :, super_loc, :].where(m1, 0.0).expand_dims(dim={'set_location': set_loc_in_super_loc})
+            rhs = capacity_limit_super.loc[:, :, super_loc, :].where(m1, 0.0) # .expand_dims(dim={'set_location': set_loc_in_super_loc})
             rhs = rhs.transpose(*list(lhs.dims.keys())[:-1])  # does not work yet..
             constraints.append(lhs<=rhs)
 
