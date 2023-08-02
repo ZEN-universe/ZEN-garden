@@ -56,7 +56,8 @@ class StorageTechnology(Technology):
         # extract existing energy capacity
         self.capacity_addition_min_energy = self.data_input.extract_attribute("capacity_addition_min_energy")["value"]
         self.capacity_addition_max_energy = self.data_input.extract_attribute("capacity_addition_max_energy")["value"]
-        self.capacity_limit_energy = self.data_input.extract_input_data("capacity_limit_energy", index_sets=["set_nodes"])
+        self.capacity_limit_energy = self.data_input.extract_input_data("capacity_limit_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        self.capacity_limit_super_energy = self.data_input.extract_input_data("capacity_limit_super_energy", index_sets=["set_super_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.capacity_existing_energy = self.data_input.extract_input_data("capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"])
         self.capacity_investment_existing_energy = self.data_input.extract_input_data("capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)

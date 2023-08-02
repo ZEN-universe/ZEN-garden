@@ -395,8 +395,7 @@ class Technology(Element):
             doc='Parameter which specifies the capacity limit of technologies')
         # capacity_limit of technologies for super level
         optimization_setup.parameters.add_parameter(name="capacity_limit_super",
-            data=optimization_setup.initialize_component(cls, "capacity_limit_super",
-            index_names=["set_technologies", "set_capacity_types", "set_super_location", "set_time_steps_yearly"], capacity_types=True),
+            data=optimization_setup.initialize_component(cls, "capacity_limit_super", index_names=["set_technologies", "set_capacity_types", "set_super_location", "set_time_steps_yearly"], capacity_types=True),
             doc='Parameter which specifies the capacity limit of technologies for the super locations')
         # minimum load relative to capacity
         optimization_setup.parameters.add_parameter(name="min_load",

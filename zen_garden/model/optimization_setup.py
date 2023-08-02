@@ -36,7 +36,9 @@ class OptimizationSetup(object):
     dict_element_classes = {}
 
     def __init__(self, analysis: dict, prepare: Prepare, scenario_dict: dict):
-        """setup Pyomo Concrete Model
+        """
+        instantiates an optimization setup object
+
         :param analysis: dictionary defining the analysis framework
         :param prepare: A Prepare instance for the Optimization setup
         :param scenario_dict: dictionary defining the scenario
