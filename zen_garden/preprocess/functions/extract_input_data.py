@@ -257,7 +257,7 @@ class DataInput:
             self.system[set_super_locations] = list(set_super_locations_input.index.unique())
             # create dict assigning locations to super locations
             super_locations_dict = dict()
-            for l in set_super_locations_input.index:
+            for l in set_super_locations_input.index.unique():
                 if isinstance(set_super_locations_input.loc[l, loc], pd.Series):
                     super_locations_dict[l] = set_super_locations_input.loc[l, loc]
                 elif np.isnan(set_super_locations_input.loc[l, loc]):
