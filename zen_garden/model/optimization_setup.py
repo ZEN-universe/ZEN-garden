@@ -48,7 +48,7 @@ class OptimizationSetup(object):
         self.solver = prepare.solver
 
         # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self.system)
+        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
 
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)

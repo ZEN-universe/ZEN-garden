@@ -23,6 +23,8 @@ import pandas as pd
 import xarray as xr
 import yaml
 from numpy import string_
+from copy import deepcopy
+from collections import defaultdict
 
 
 
@@ -110,7 +112,10 @@ class ScenarioDict(dict):
     This is a dictionary for the scenario analysis that has some convenience functions
     """
 
-    def __init__(self, init_dict, system):
+    _param_dict_keys = {"file", "file_op", "default", "default_op"}
+    _special_elements = ["system", "analysis", "base_scenario", "sub_folder", "param_map"]
+
+    def __init__(self, init_dict, system, analysis):
         """
         Initializes the dictionary from a normal dictionary
         :param init_dict: The dictionary to initialize from
@@ -123,6 +128,7 @@ class ScenarioDict(dict):
 
         # set the attributes and expand the dict
         self.system = system
+        self.analysis = analysis
         self.init_dict = init_dict
         expanded_dict = self.expand_subsets(init_dict)
         self.validate_dict(expanded_dict)
@@ -131,6 +137,130 @@ class ScenarioDict(dict):
         # super init
         super().__init__(self.dict)
 
+        # finally we update the analysis and system
+        self.update_analysis_system()
+
+    def update_analysis_system(self):
+        """
+        Updates the analysis and system
+        """
+
+        if "analysis" in self.dict:
+            for key, value in self.dict["analysis"].items():
+                if type(self.analysis[key]) == type(value):
+                    self.analysis[key] = value
+                else:
+                    raise ValueError(f"Trying to update analysis with key {key} and value {value} of type {type(value)}, "
+                                     f"but the analysis has already a value of type {type(self.analysis[key])}")
+        if "system" in self.dict:
+            for key, value in self.dict["system"].items():
+                if type(self.system[key]) == type(value):
+                    self.system[key] = value
+                else:
+                    raise ValueError(f"Trying to update system with key {key} and value {value} of type {type(value)}, "
+                                     f"but the system has already a value of type {type(self.system[key])}")
+
+    @staticmethod
+    def expand_lists(scenarios: dict):
+        """
+        Expands all lists of parameters in the all scenarios and returns a new dict
+        :param scenarios: The initial dict of scenarios
+        :return: The expanded dict, where all necessary parameters are expanded and subpaths are set
+        """
+        expanded_scenarios = dict()
+        for scenario_name, scenario_dict in scenarios.items():
+            scenario_dict["base_scenario"] = scenario_name
+            scenario_dict["sub_folder"] = ""
+            scenario_dict["param_map"] = dict()
+            scenario_list = ScenarioDict._expand_scenario(scenario_dict)
+
+            # add the scenarios to the dict
+            for scenario in scenario_list:
+                if scenario["sub_folder"] == "":
+                    name = scenario["base_scenario"]
+                else:
+                    name = scenario["base_scenario"] + "_" + scenario["sub_folder"]
+                expanded_scenarios[name] = scenario
+
+        return expanded_scenarios
+
+    @staticmethod
+    def _expand_scenario(scenario: dict, param_map=None, counter=0):
+
+        # get the default
+        if param_map is None:
+            param_map = dict()
+
+        # list for the expanded scenarios
+        expanded_scenarios = []
+
+        # iterate over all elements
+        for element, element_dict in scenario.items():
+            # we do not expand these
+            if element in ScenarioDict._special_elements:
+                continue
+
+            for param, param_dict in element_dict.items():
+                for key in ScenarioDict._param_dict_keys:
+                    if key in param_dict and isinstance(param_dict[key], list):
+                        # get the old param dict entry
+                        if scenario["sub_folder"] != "":
+                            old_param_map_entry = param_map.pop(scenario["sub_folder"])
+                        else:
+                            old_param_map_entry = dict()
+
+                        # we need to expand this
+                        for num, value in enumerate(param_dict[key]):
+                            # copy the scenario
+                            new_scenario = deepcopy(scenario)
+
+                            # set the new value
+                            new_scenario[element][param][key] = value
+
+                            # create the name
+                            if key + "_fmt" in param_dict:
+                                if "{}" not in param_dict[key + "_fmt"]:
+                                    raise SyntaxError("When setting a format for a name, you need to include a "
+                                                      "placeholder '{}' for its value! No placeholder found in "
+                                                      f"for {key} in {param} in {element} in {scenario['base_scenario']}")
+                                name = param_dict[key + "_fmt"].format(value)
+                                del new_scenario[element][param][key + "_fmt"]
+                                # we don't need to increment the param for the next expansion
+                                param_up = 0
+                            else:
+                                name = f"p{counter:02d}_{num:03d}"
+                                # we need to increment the param for the next expansion
+                                param_up = 1
+
+
+                            # set the sub_folder
+                            if new_scenario["sub_folder"] == "":
+                                new_scenario["sub_folder"] = name
+                            else:
+                                new_scenario["sub_folder"] += "_" + name
+
+                            # update the param_map
+                            param_map[new_scenario["sub_folder"]] = deepcopy(old_param_map_entry)
+                            if element not in param_map[new_scenario["sub_folder"]]:
+                                param_map[new_scenario["sub_folder"]][element] = dict()
+                            if param not in param_map[new_scenario["sub_folder"]][element]:
+                                param_map[new_scenario["sub_folder"]][element][param] = dict()
+                            param_map[new_scenario["sub_folder"]][element][param][key] = value
+
+                            # set the param_map of the scenario
+                            new_scenario["param_map"] = param_map
+
+                            # expand this scenario as well
+                            expanded_scenarios.extend(ScenarioDict._expand_scenario(new_scenario, param_map, counter + param_up))
+
+                        # expansion done
+                        return expanded_scenarios
+
+        # nothing was expanded, so we just return the scenario
+        expanded_scenarios.append(scenario)
+
+        # return the list
+        return expanded_scenarios
 
     def expand_subsets(self, init_dict):
         """
@@ -174,12 +304,14 @@ class ScenarioDict(dict):
         """
 
         for element, element_dict in vali_dict.items():
+            if element in self._special_elements:
+                continue
+
             if not isinstance(element_dict, dict):
                 raise ValueError(f"The entry for {element} is not a dictionary!")
 
             for param, param_dict in element_dict.items():
-                allowed_entries = {"default", "default_op", "file", "file_op"}
-                if len(diff := (set(param_dict.keys()) - allowed_entries)) > 0:
+                if len(diff := (set(param_dict.keys()) - self._param_dict_keys)) > 0:
                     raise ValueError(f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
 
     @staticmethod

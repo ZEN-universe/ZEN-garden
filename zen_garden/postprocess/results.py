@@ -102,8 +102,26 @@ class Results(object):
             # init dict
             self.results[scenario] = {}
 
+            # get the base scenario
+            base_scenario = ""
+            scenario_subfolder = None
+            if self.has_scenarios:
+                # name without scenario_ prefix
+                name_short = scenario[9:]
+                base_scenario = self.results['scenarios'][name_short].get('base_scenario', '')
+                scenario_subfolder = self.results['scenarios'][name_short].get('sub_folder', '')
+                if scenario_subfolder == '':
+                    # no scenario subfolder -> no need to switch directories
+                    base_scenario = ""
+                    scenario_subfolder = scenario
+                else:
+                    # we need to go one level deeper
+                    base_scenario = f"scenario_{base_scenario}"
+                    scenario_subfolder = f"scenario_{scenario_subfolder}"
+
             # load the corresponding timestep dict
-            time_dict = self.load_sequence_time_steps(self.path, scenario)
+            sub_path = os.path.join(self.path, base_scenario)
+            time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder)
             self.results[scenario]["dict_sequence_time_steps"] = time_dict
             self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
             # load the operation2year and year2operation time steps
@@ -116,8 +134,7 @@ class Results(object):
                 # get the current path
                 subfolder = ""
                 if self.has_scenarios:
-                    # handle scenarios
-                    subfolder += scenario
+                    subfolder = scenario_subfolder
                     # add the buffer if necessary
                     if self.has_MF:
                         subfolder += "_"
@@ -126,7 +143,7 @@ class Results(object):
                     subfolder += mf
 
                 # Add together
-                current_path = os.path.join(self.path, subfolder)
+                current_path = os.path.join(sub_path, subfolder)
 
                 #create dict containing sets
                 self.results[scenario][mf]["sets"] = {}
