@@ -49,7 +49,8 @@ class OptimizationSetup(object):
 
         # dict to update elements according to scenario
         self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
-
+        # update element folders in prepare
+        prepare.check_existing_input_data()
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
         # pe.ConcreteModel
