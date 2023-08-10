@@ -11,13 +11,15 @@ Compilation  of the optimization problem.
 import importlib.util
 import logging
 import os
+from copy import deepcopy
+from pathlib import Path
 
 import pkg_resources
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
 from .preprocess.prepare import Prepare
-from .utils import setup_logger
+from .utils import setup_logger, ScenarioDict
 
 # we setup the logger here
 setup_logger()
@@ -30,7 +32,7 @@ def main(config, dataset_path=None, job_index=None):
 
     :param config: A config instance used for the run
     :param dataset_path: If not None, used to overwrite the config.analysis["dataset"]
-    :param job_index: The index of the scenario to run, if None, all scenarios are run in sequence
+    :param job_index: The index of the scenario to run or a list of indices, if None, all scenarios are run in sequence
     """
 
     # print the version
@@ -69,13 +71,21 @@ def main(config, dataset_path=None, job_index=None):
         scenarios = module.scenarios
         config.scenarios.update(scenarios)
 
+        # expand the scenarios
+        config.scenarios = ScenarioDict.expand_lists(config.scenarios)
+
         # deal with the job array
         if job_index is not None:
-            logging.info(f"Running scenario with job index: {job_index}")
+            if isinstance(job_index, int):
+                job_index = [job_index]
+            else:
+                job_index = list(job_index)
+            logging.info(f"Running scenarios with job indices: {job_index}")
+
 
             # reduce the scenario and element to a single one
-            scenarios = [list(config.scenarios.keys())[job_index]]
-            elements = [list(config.scenarios.values())[job_index]]
+            scenarios = [list(config.scenarios.keys())[jx] for jx in job_index]
+            elements = [list(config.scenarios.values())[jx] for jx in job_index]
         else:
             logging.info(f"Running all scenarios sequentially")
             scenarios = config.scenarios.keys()
@@ -134,17 +144,35 @@ def main(config, dataset_path=None, job_index=None):
             # EVALUATE RESULTS
             subfolder = ""
             scenario_name = None
+            param_map = None
+            output_scenarios = config.scenarios
             if config.system["conduct_scenario_analysis"]:
                 # handle scenarios
-                subfolder += f"scenario_{scenario}"
-                scenario_name = subfolder
+                scenario_name = f"scenario_{scenario}"
+                subfolder = Path(f"scenario_{elements['base_scenario']}")
+
+                # set the scenarios
+                if elements["sub_folder"] != "":
+                    # get the param map
+                    param_map = elements["param_map"]
+
+                    # get the output scenarios
+                    subfolder = subfolder.joinpath(f"scenario_{elements['sub_folder']}")
+                    scenario_name = f"scenario_{elements['sub_folder']}"
+                    output_scenarios = {}
+                    for s, s_dict in config.scenarios.items():
+                        if s_dict["base_scenario"] == elements["base_scenario"]:
+                            out_dict = deepcopy(s_dict)
+                            out_dict["base_scenario"] = s_dict["sub_folder"]
+                            out_dict["sub_folder"] = ""
+                            output_scenarios[s_dict["sub_folder"]] = out_dict
             # handle myopic foresight
             if len(steps_optimization_horizon) > 1:
                 if subfolder != "":
                     subfolder += f"_"
                 subfolder += f"MF_{step_horizon}"
             # write results
-            _ = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
-                            model_name=model_name, scenario_name=scenario_name)
+            _ = Postprocess(optimization_setup, scenarios=output_scenarios, subfolder=subfolder,
+                            model_name=model_name, scenario_name=scenario_name, param_map=param_map)
     logging.info("Optimization finished")
     return optimization_setup

@@ -18,6 +18,7 @@ import zlib
 import pandas as pd
 import xarray as xr
 from filelock import FileLock
+import yaml
 
 from ..utils import HDFPandasSerializer
 
@@ -26,14 +27,14 @@ class Postprocess:
     """
     Class is defining the postprocessing of the results
     """
-    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None, save_opt=False):
+    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None, param_map=None):
         """postprocessing of the results of the optimization
 
         :param model: optimization model
         :param model_name: The name of the model used to name the output folder
         :param subfolder: The subfolder used for the results
         :param scenario_name: The name of the current scenario
-        :param save_opt: Save the dict of the opt as gszip
+        :param param_map: A dictionary mapping the parameters to the scenario names
         """
         logging.info("Postprocess results")
         # get the necessary stuff from the model
@@ -47,6 +48,7 @@ class Postprocess:
         self.vars = model.variables
         self.sets = model.sets
         self.constraints = model.constraints
+        self.param_map = param_map
 
         # get name or directory
         self.model_name = model_name
@@ -74,6 +76,7 @@ class Postprocess:
         self.save_analysis()
         self.save_scenarios()
         self.save_solver()
+        self.save_param_map()
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
@@ -95,7 +98,22 @@ class Postprocess:
         # set the format
         if format is None:
             format = self.output_format
-        if format == "gzip" or format == "json":
+
+        if format == "yml":
+            # serialize to string
+            serialized_dict = yaml.dump(dictionary)
+
+            # prep output file
+            f_name = f"{name}.yml"
+            f_mode = "w"
+
+            # write if necessary
+            if self.overwrite or not os.path.exists(f_name):
+                with FileLock(f_name + ".lock").acquire(timeout=300):
+                    with open(f_name, f_mode) as outfile:
+                        outfile.write(serialized_dict)
+
+        elif format == "gzip" or format == "json":
             # serialize to string
             serialized_dict = json.dumps(dictionary, indent=2)
 
@@ -306,6 +324,19 @@ class Postprocess:
         else:
             fname = self.name_dir.joinpath('solver')
         self.write_file(fname, self.solver, format="json")
+
+    def save_param_map(self):
+        """
+        Saves the param_map dict as yaml
+        """
+
+        if self.param_map is not None:
+            # This we only need to save once
+            if self.subfolder:
+                fname = self.name_dir.parent.joinpath('param_map')
+            else:
+                fname = self.name_dir.joinpath('param_map')
+            self.write_file(fname, self.param_map, format="yml")
 
     def save_sequence_time_steps(self, scenario=None):
         """Saves the dict_all_sequence_time_steps dict as json
