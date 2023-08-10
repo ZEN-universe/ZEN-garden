@@ -27,8 +27,7 @@ from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 from ..preprocess.prepare import Prepare
 
-from ..utils import ScenarioDict
-
+from ..utils import ScenarioDict, IISConstraintParser
 
 class OptimizationSetup(object):
     """setup optimization setup """
@@ -482,13 +481,22 @@ class OptimizationSetup(object):
         logging.disable(logging.WARNING)
 
         if solver_name == "gurobi":
+            ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
             self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
                              keep_files=self.solver["keep_files"], sanitize_zeros=True,
                              # write an ILP file to print the IIS if infeasible
                              # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
-                             ResultFile=f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp",
+                             ResultFile=ilp_file,
                              # remaining kwargs are passed to the solver
                              **solver_options)
+
+            if self.model.termination_condition == 'infeasible':
+                logging.info("The optimization is infeasible")
+                parser = IISConstraintParser(ilp_file, self.model)
+                fname, _ = os.path.splitext(ilp_file)
+                outfile = fname + "_linopy.ilp"
+                logging.info(f"Writing parsed IIS to {outfile}")
+                parser.write_parsed_output(outfile)
         else:
             self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
                              keep_files=self.solver["keep_files"], sanitize_zeros=True)

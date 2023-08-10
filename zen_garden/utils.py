@@ -104,6 +104,97 @@ class RedirectStdStreams(object):
         sys.stderr = self.old_stderr
 
 
+# This functionality is for the IIS constraints
+# ---------------------------------------------
+
+class IISConstraintParser(object):
+    """
+    This class is used to parse the IIS constraints and print them in a nice way
+    Most functions here are just copied from linopy 0.2.x
+    """
+
+    EQUAL = "="
+    GREATER_EQUAL = ">="
+    LESS_EQUAL = "<="
+    SIGNS = {EQUAL, GREATER_EQUAL, LESS_EQUAL}
+    SIGNS_pretty = {EQUAL: "=", GREATER_EQUAL: "≥", LESS_EQUAL: "≤"}
+
+    def __init__(self, iis_file, model):
+        self.iis_file = iis_file
+        self.model = model
+
+        self.labels = self.read_labels()
+
+    def write_parsed_output(self, outfile=None):
+        """
+        Writes the parsed output to a file
+        :param outfile: The file to write to
+        """
+
+        # write the outfile
+        if outfile is None:
+            fname, _ = os.path.splitext(self.iis_file)
+            outfile = fname + "_linopy.ilp"
+        with open(outfile, "w") as f:
+            for label in self.labels:
+                f.write(self.print_single_constraint(label) + "\n")
+
+    def read_labels(self):
+        """
+        Reads the labels from the IIS file
+        :return: A list of labels
+        """
+
+        labels = []
+        with open(self.iis_file, "rb") as f:
+            for line in f.readlines():
+                line = line.decode()
+                if line.startswith(" c"):
+                    labels.append(int(line.split(":")[0][2:]))
+        return labels
+
+    def print_single_constraint(self, label):
+        constraints = self.model.constraints
+        name, coord = self.get_label_position(constraints, label)
+
+        coeffs, vars, sign, rhs = xr.broadcast(self.model.constraints[name].coeffs,
+                                               self.model.constraints[name].vars,
+                                               self.model.constraints[name].sign,
+                                               self.model.constraints[name].rhs)
+        coeffs = coeffs.sel(coord).values
+        vars = vars.sel(coord).values
+        sign = sign.sel(coord).item()
+        rhs = rhs.sel(coord).item()
+
+        expr = lp.constraints.print_single_expression(coeffs, vars, self.model)
+        sign = self.SIGNS_pretty[sign]
+
+        return f"{name}{self.print_coord(coord)}: {expr} {sign} {rhs:.12g}"
+
+    @staticmethod
+    def print_coord(coord):
+        if isinstance(coord, dict):
+            coord = coord.values()
+        return "[" + ", ".join([str(c) for c in coord]) + "]" if len(coord) else ""
+
+    @staticmethod
+    def get_label_position(constraints, value):
+        """
+        Get tuple of name and coordinate for variable labels.
+        """
+
+        name = constraints.get_name_by_label(value)
+        con = constraints[name]
+        indices = [i[0] for i in np.where(con.values == value)]
+
+        # Extract the coordinates from the indices
+        coord = {
+            dim: con.labels.indexes[dim][i] for dim, i in zip(con.labels.dims, indices)
+        }
+
+        return name, coord
+
+
 # This class is for the scenario analysis
 # ---------------------------------------
 
