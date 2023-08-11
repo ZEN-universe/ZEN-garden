@@ -18,6 +18,7 @@ from ordered_set import OrderedSet
 
 import h5py
 import linopy as lp
+from linopy.config import options
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -125,19 +126,33 @@ class IISConstraintParser(object):
 
         self.labels = self.read_labels()
 
-    def write_parsed_output(self, outfile=None):
+    def write_parsed_output(self, outfile=None, manual_display_max_terms = 100):
         """
         Writes the parsed output to a file
         :param outfile: The file to write to
+        :param manual_display_max_terms: the max number of terms that are displayed, overwriting the default
         """
-
+        # avoid truncating the expression
+        # default_config_options = lp.config.options
+        # lp.config.options = lp.config.OptionSettings(display_max_terms=manual_display_max_terms)
         # write the outfile
         if outfile is None:
             fname, _ = os.path.splitext(self.iis_file)
             outfile = fname + "_linopy.ilp"
+        seen_constraints = []
         with open(outfile, "w") as f:
+            constraints = self.model.constraints
             for label in self.labels:
-                f.write(self.print_single_constraint(label) + "\n")
+                name, coord = self.get_label_position(constraints, label)
+                constraint = constraints[name]
+                expr_str = self.print_single_constraint(constraint, coord)
+                coords_str = self.print_coord(coord)
+                cons_str = f"\t{coords_str}:\t{expr_str}\n"
+                if name not in seen_constraints:
+                    seen_constraints.append(name)
+                    cons_str = f"\n{name}:\n{cons_str}"
+                f.write(cons_str)
+        # lp.config.options = default_config_options
 
     def read_labels(self):
         """
@@ -153,23 +168,20 @@ class IISConstraintParser(object):
                     labels.append(int(line.split(":")[0][2:]))
         return labels
 
-    def print_single_constraint(self, label):
-        constraints = self.model.constraints
-        name, coord = self.get_label_position(constraints, label)
-
-        coeffs, vars, sign, rhs = xr.broadcast(self.model.constraints[name].coeffs,
-                                               self.model.constraints[name].vars,
-                                               self.model.constraints[name].sign,
-                                               self.model.constraints[name].rhs)
+    def print_single_constraint(self, constraint, coord):
+        coeffs, vars, sign, rhs = xr.broadcast(constraint.coeffs,
+                                               constraint.vars,
+                                               constraint.sign,
+                                               constraint.rhs)
         coeffs = coeffs.sel(coord).values
         vars = vars.sel(coord).values
-        sign = sign.sel(coord).item()
-        rhs = rhs.sel(coord).item()
+        sign = sign.sel(coord)[0].item()
+        rhs = rhs.sel(coord)[0].item()
 
         expr = lp.constraints.print_single_expression(coeffs, vars, self.model)
-        sign = self.SIGNS_pretty[sign]
+        # sign = self.SIGNS_pretty[sign]
 
-        return f"{name}{self.print_coord(coord)}: {expr} {sign} {rhs:.12g}"
+        return f"{expr} {sign} {rhs:.12g}"
 
     @staticmethod
     def print_coord(coord):
