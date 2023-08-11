@@ -291,8 +291,8 @@ test_6d,scenario_1_price_import_1_p00_000,cost_opex,"('natural_gas_boiler', 'CH'
 test_6d,scenario_1_price_import_1_p00_000,cost_opex,"('natural_gas_boiler', 'DE', 0)",0
 test_6d,scenario_1_price_import_1_p00_000,flow_export,"('natural_gas', 'CH', 0)",0
 test_6d,scenario_1_price_import_1_p00_000,flow_export,"('natural_gas', 'DE', 0)",0
-test_6d,scenario_1_price_import_1_p00_000,price_import,"('heat', 'CH', 0)",0
-test_6d,scenario_1_price_import_1_p00_000,price_import,"('heat', 'DE', 0)",0
+test_6d,scenario_1_price_import_1_p00_000,price_import,"('heat', 'CH', 0)",0.01
+test_6d,scenario_1_price_import_1_p00_000,price_import,"('heat', 'DE', 0)",0.01
 test_6d,scenario_1_price_import_1_p00_000,price_import,"('natural_gas', 'CH', 0)",0.023
 test_6d,scenario_1_price_import_1_p00_000,price_import,"('natural_gas', 'DE', 0)",0.023
 test_6d,scenario_1_price_import_1_p00_000,capex_specific_conversion,"('natural_gas_boiler', 'CH', 0)",0.1
@@ -311,16 +311,16 @@ test_6d,scenario_1_price_import_1.6_p00_000,price_import,"('natural_gas', 'CH', 
 test_6d,scenario_1_price_import_1.6_p00_000,price_import,"('natural_gas', 'DE', 0)",0.0368
 test_6d,scenario_1_price_import_1.6_p00_000,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.008
 test_6d,scenario_1_price_import_1.6_p00_000,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.008
-test_6d,scenario_1_price_import_1_p00_001,cost_carrier,"('natural_gas', 'CH', 0)",0.3289
-test_6d,scenario_1_price_import_1_p00_001,cost_carrier,"('natural_gas', 'DE', 0)",3.289
-test_6d,scenario_1_price_import_1_p00_001,price_import,"('natural_gas', 'CH', 0)",0.0299
-test_6d,scenario_1_price_import_1_p00_001,price_import,"('natural_gas', 'DE', 0)",0.0299
+test_6d,scenario_1_price_import_1_p00_001,cost_carrier,"('natural_gas', 'CH', 0)",0.253
+test_6d,scenario_1_price_import_1_p00_001,cost_carrier,"('natural_gas', 'DE', 0)",2.53
+test_6d,scenario_1_price_import_1_p00_001,price_import,"('natural_gas', 'CH', 0)",0.023
+test_6d,scenario_1_price_import_1_p00_001,price_import,"('natural_gas', 'DE', 0)",0.023
 test_6d,scenario_1_price_import_1_p00_001,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.015
 test_6d,scenario_1_price_import_1_p00_001,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.015
-test_6d,scenario_1_price_import_1.3_p00_001,cost_carrier,"('natural_gas', 'CH', 0)",0.4048
-test_6d,scenario_1_price_import_1.3_p00_001,cost_carrier,"('natural_gas', 'DE', 0)",4.048
-test_6d,scenario_1_price_import_1.3_p00_001,price_import,"('natural_gas', 'CH', 0)",0.0368
-test_6d,scenario_1_price_import_1.3_p00_001,price_import,"('natural_gas', 'DE', 0)",0.0368
+test_6d,scenario_1_price_import_1.3_p00_001,cost_carrier,"('natural_gas', 'CH', 0)",0.3289
+test_6d,scenario_1_price_import_1.3_p00_001,cost_carrier,"('natural_gas', 'DE', 0)",3.289
+test_6d,scenario_1_price_import_1.3_p00_001,price_import,"('natural_gas', 'CH', 0)",0.0299
+test_6d,scenario_1_price_import_1.3_p00_001,price_import,"('natural_gas', 'DE', 0)",0.0299
 test_6d,scenario_1_price_import_1.3_p00_001,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.015
 test_6d,scenario_1_price_import_1.3_p00_001,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.015
 test_6d,scenario_1_price_import_1.6_p00_001,cost_carrier,"('natural_gas', 'CH', 0)",0.4048

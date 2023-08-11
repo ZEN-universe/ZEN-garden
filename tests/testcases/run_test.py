@@ -110,23 +110,24 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
         # get the corresponding data frame from the results
         if not results.has_scenarios:
             variable_df = results.get_df(data_row["variable_name"])
+            added_str = ""
         else:
             variable_df = results.get_df(data_row["variable_name"],scenario=data_row["scenario"])
-
+            added_str = f" ({data_row['scenario']})"
         # iterate through indices of current variable
         for variable_index, variable_value in variable_df.items():
             # ensure equality of dataRow index and variable index
             if str(variable_index) == data_row["index"]:
                 # check if close
                 if not np.isclose(variable_value, data_row["value"], rtol=1e-3):
-                    failed_variables[data_row["variable_name"]][data_row["index"]] = {"computed_values": variable_value,
+                    failed_variables[data_row["variable_name"]+added_str][data_row["index"]] = {"computed_values": variable_value,
                                                                   "test_value": data_row["value"]}
     # create the string of all failed variables
     assertion_string = ""
     for failed_var, failed_value in failed_variables.items():
         assertion_string += f"\n{failed_var}: {failed_value}"
 
-    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
+    assert len(failed_variables) == 0, f"TestThe variables {assertion_string} don't match their test values"
 
 
 # All the tests
@@ -436,4 +437,4 @@ if __name__ == "__main__":
     from config import config
     config.solver["keep_files"] = False
     folder_path = os.path.dirname(__file__)
-    test_6d(config,folder_path)
+    test_6b(config,folder_path)
