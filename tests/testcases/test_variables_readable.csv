@@ -245,6 +245,7 @@ test_6a,scenario_1,demand,"('heat', 'CH', 0)",20
 test_6a,scenario_1,demand,"('heat', 'DE', 0)",180
 test_6a,scenario_1,capex_specific_conversion,"('natural_gas_boiler', 'CH', 0)",0.11
 test_6a,scenario_1,capex_specific_conversion,"('natural_gas_boiler', 'DE', 0)",0.11
+test_6a,scenario_1,price_carbon_emissions,"(0)",50
 test_6b,scenario_1,flow_import,"('natural_gas', 'CH', 0)",11
 test_6b,scenario_1,flow_import,"('natural_gas', 'DE', 0)",110
 test_6b,scenario_1,cost_carrier,"('natural_gas', 'CH', 0)",0.3036
