@@ -152,7 +152,6 @@ class IISConstraintParser(object):
                     seen_constraints.append(name)
                     cons_str = f"\n{name}:\n{cons_str}"
                 f.write(cons_str)
-        # lp.config.options = default_config_options
 
     def read_labels(self):
         """
@@ -178,7 +177,7 @@ class IISConstraintParser(object):
         sign = sign.sel(coord)[0].item()
         rhs = rhs.sel(coord)[0].item()
 
-        expr = lp.constraints.print_single_expression(coeffs, vars, self.model)
+        expr = self.print_single_expression(coeffs, vars, self.model)
         # sign = self.SIGNS_pretty[sign]
 
         return f"{expr} {sign} {rhs:.12g}"
@@ -205,6 +204,33 @@ class IISConstraintParser(object):
         }
 
         return name, coord
+
+    @staticmethod
+    def print_single_expression(c, v, model):
+        """
+        This is a linopy routine but without max terms
+        Print a single linear expression based on the coefficients and variables.
+        """
+
+        # catch case that to many terms would be printed
+        def print_line(expr):
+            res = []
+            for i, (coeff, (name, coord)) in enumerate(expr):
+                coord_string = IISConstraintParser.print_coord(coord)
+                if i:
+                    # split sign and coefficient
+                    coeff_string = f"{float(coeff):+.4}"
+                    res.append(f"{coeff_string[0]} {coeff_string[1:]} {name}{coord_string}")
+                else:
+                    res.append(f"{float(coeff):.4} {name}{coord_string}")
+            return " ".join(res) if len(res) else "None"
+
+        if isinstance(c, np.ndarray):
+            mask = v != -1
+            c, v = c[mask], v[mask]
+
+        expr = list(zip(c, model.variables.get_label_position(v)))
+        return print_line(expr)
 
 
 # This class is for the scenario analysis
