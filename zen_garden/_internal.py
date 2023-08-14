@@ -169,8 +169,14 @@ def main(config, dataset_path=None, job_index=None):
             # handle myopic foresight
             if len(steps_optimization_horizon) > 1:
                 if subfolder != "":
-                    subfolder = subfolder.joinpath(f"_")
-                subfolder = subfolder.joinpath(f"MF_{step_horizon}")
+                    if type(subfolder) == str:
+                        subfolder += "_"
+                    else:
+                        subfolder = subfolder.joinpath(f"_")
+                if type(subfolder) == str:
+                    subfolder += f"MF_{step_horizon}"
+                else:
+                    subfolder = subfolder.joinpath(f"MF_{step_horizon}")
             # write results
             _ = Postprocess(optimization_setup, scenarios=output_scenarios, subfolder=subfolder,
                             model_name=model_name, scenario_name=scenario_name, param_map=param_map)
