@@ -296,8 +296,11 @@ class ScenarioDict(dict):
         :param scenarios: The initial dict of scenarios
         :return: The expanded dict, where all necessary parameters are expanded and subpaths are set
         """
+
+        # Important, all for-loops through keys or items in this routine should be sorted!
+
         expanded_scenarios = dict()
-        for scenario_name, scenario_dict in scenarios.items():
+        for scenario_name, scenario_dict in sorted(scenarios.items(), key=lambda x: x[0]):
             scenario_dict["base_scenario"] = scenario_name
             scenario_dict["sub_folder"] = ""
             scenario_dict["param_map"] = dict()
@@ -324,13 +327,13 @@ class ScenarioDict(dict):
         expanded_scenarios = []
 
         # iterate over all elements
-        for element, element_dict in scenario.items():
+        for element, element_dict in sorted(scenario.items(), key=lambda x: x[0]):
             # we do not expand these
             if element in ScenarioDict._special_elements:
                 continue
 
-            for param, param_dict in element_dict.items():
-                for key in ScenarioDict._param_dict_keys:
+            for param, param_dict in sorted(element_dict.items(), key=lambda x: x[0]):
+                for key in sorted(ScenarioDict._param_dict_keys):
                     if key in param_dict and isinstance(param_dict[key], list):
                         # get the old param dict entry
                         if scenario["sub_folder"] != "":
