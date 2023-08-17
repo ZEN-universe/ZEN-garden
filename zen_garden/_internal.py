@@ -197,9 +197,11 @@ def main(config, dataset_path=None, job_index=None):
                             output_scenarios[s_dict["sub_folder"]] = out_dict
             # handle myopic foresight
             if len(steps_optimization_horizon) > 1:
-                if subfolder != Path(""):
-                    subfolder = subfolder.joinpath(f"_")
-                subfolder = subfolder.joinpath(f"MF_{step_horizon}")
+                sf_string = str(subfolder)
+                if sf_string != "":
+                    sf_string += "_"
+                sf_string += f"MF_{step_horizon}"
+                subfolder = Path(sf_string)
             # write results
             _ = Postprocess(optimization_setup, scenarios=output_scenarios, subfolder=subfolder,
                             model_name=model_name, scenario_name=scenario_name, param_map=param_map)
