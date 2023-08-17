@@ -502,8 +502,14 @@ class SensitivityAnalysis():
         y = run_configs.loc[y_param].values
         z = results.loc[param_name, runs, z_param].values
         # determine which techs are installed
-        E = results.loc[param_name, runs, "capacity_addition_electrolysis"].values
-        SMR_CCS = results.loc[param_name, runs, "capacity_addition_SMR_CCS"].values
+        if "capacity_addition_SMR_CCS" in results.index.unique(2):
+            E = results.loc[param_name, runs, "capacity_addition_electrolysis"].values
+        else:
+            E = None
+        if "capacity_addition_SMR_CCS" in results.index.unique(2):
+            SMR_CCS = results.loc[param_name, runs, "capacity_addition_SMR_CCS"].values
+        else:
+            SMR_CCS = None
         total = E + SMR_CCS
         # remove small values
         threshold = 0.011
