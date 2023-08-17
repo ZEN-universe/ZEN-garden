@@ -445,12 +445,13 @@ class EnergySystemRules(GenericRule):
 
         ### auxiliary calculations
         discount_rate = self.analysis["discount_rate"]
+
         if year == self.sets["set_time_steps_yearly_entire_horizon"][-1]:
             interval_between_years = 1
         else:
             interval_between_years = self.system["interval_between_years"]
         # economic discount
-        factor = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.sets["set_time_steps_yearly"][0]) + _intermediate_time_step))
+        factor = sum(((1 / (1 + discount_rate)) ** (self.system["interval_between_years"] * (year - self.sets["set_time_steps_yearly"][0]) + _intermediate_time_step))
                      for _intermediate_time_step in range(0, interval_between_years))
         term_discounted_cost_total = self.variables["cost_total"][year] * factor
 

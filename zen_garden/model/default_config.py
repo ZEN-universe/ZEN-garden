@@ -144,6 +144,10 @@ class Config(object):
         self.system["exclude_parameters_from_TSA"] = True
         # toggle to perform analysis for multiple scenarios
         self.system["conduct_scenario_analysis"] = False
+        # toggle to disable the default scenario (empty string), only considered if conduct_scenario_analysis is True
+        self.system["run_default_scenario"] = True
+        # toggle to delete all sub-scenarios that are not in the current scenario dict
+        self.system["clean_sub_scenarios"] = False
         # total hours per year
         self.system["total_hours_per_year"] = 8760
         # rate at which the knowledge stock of existing capacities is depreciated annually

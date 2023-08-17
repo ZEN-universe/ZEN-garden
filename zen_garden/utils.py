@@ -10,6 +10,7 @@ Class is defining to read in the results of an Optimization problem.
 import logging
 import os
 import sys
+import warnings
 from collections import UserDict
 from contextlib import contextmanager
 from datetime import datetime
@@ -17,11 +18,14 @@ from ordered_set import OrderedSet
 
 import h5py
 import linopy as lp
+from linopy.config import options
 import numpy as np
 import pandas as pd
 import xarray as xr
 import yaml
 from numpy import string_
+from copy import deepcopy
+from collections import defaultdict
 
 
 
@@ -101,6 +105,134 @@ class RedirectStdStreams(object):
         sys.stderr = self.old_stderr
 
 
+# This functionality is for the IIS constraints
+# ---------------------------------------------
+
+class IISConstraintParser(object):
+    """
+    This class is used to parse the IIS constraints and print them in a nice way
+    Most functions here are just copied from linopy 0.2.x
+    """
+
+    EQUAL = "="
+    GREATER_EQUAL = ">="
+    LESS_EQUAL = "<="
+    SIGNS = {EQUAL, GREATER_EQUAL, LESS_EQUAL}
+    SIGNS_pretty = {EQUAL: "=", GREATER_EQUAL: "≥", LESS_EQUAL: "≤"}
+
+    def __init__(self, iis_file, model):
+        self.iis_file = iis_file
+        self.model = model
+
+        self.labels = self.read_labels()
+
+    def write_parsed_output(self, outfile=None, manual_display_max_terms = 100):
+        """
+        Writes the parsed output to a file
+        :param outfile: The file to write to
+        :param manual_display_max_terms: the max number of terms that are displayed, overwriting the default
+        """
+        # avoid truncating the expression
+        # default_config_options = lp.config.options
+        # lp.config.options = lp.config.OptionSettings(display_max_terms=manual_display_max_terms)
+        # write the outfile
+        if outfile is None:
+            fname, _ = os.path.splitext(self.iis_file)
+            outfile = fname + "_linopy.ilp"
+        seen_constraints = []
+        with open(outfile, "w") as f:
+            constraints = self.model.constraints
+            for label in self.labels:
+                name, coord = self.get_label_position(constraints, label)
+                constraint = constraints[name]
+                expr_str = self.print_single_constraint(constraint, coord)
+                coords_str = self.print_coord(coord)
+                cons_str = f"\t{coords_str}:\t{expr_str}\n"
+                if name not in seen_constraints:
+                    seen_constraints.append(name)
+                    cons_str = f"\n{name}:\n{cons_str}"
+                f.write(cons_str)
+
+    def read_labels(self):
+        """
+        Reads the labels from the IIS file
+        :return: A list of labels
+        """
+
+        labels = []
+        with open(self.iis_file, "rb") as f:
+            for line in f.readlines():
+                line = line.decode()
+                if line.startswith(" c"):
+                    labels.append(int(line.split(":")[0][2:]))
+        return labels
+
+    def print_single_constraint(self, constraint, coord):
+        coeffs, vars, sign, rhs = xr.broadcast(constraint.coeffs,
+                                               constraint.vars,
+                                               constraint.sign,
+                                               constraint.rhs)
+        coeffs = coeffs.sel(coord).values
+        vars = vars.sel(coord).values
+        sign = sign.sel(coord)[0].item()
+        rhs = rhs.sel(coord)[0].item()
+
+        expr = self.print_single_expression(coeffs, vars, self.model)
+        # sign = self.SIGNS_pretty[sign]
+
+        return f"{expr} {sign} {rhs:.12g}"
+
+    @staticmethod
+    def print_coord(coord):
+        if isinstance(coord, dict):
+            coord = coord.values()
+        return "[" + ", ".join([str(c) for c in coord]) + "]" if len(coord) else ""
+
+    @staticmethod
+    def get_label_position(constraints, value):
+        """
+        Get tuple of name and coordinate for variable labels.
+        """
+
+        name = constraints.get_name_by_label(value)
+        con = constraints[name]
+        indices = [i[0] for i in np.where(con.values == value)]
+
+        # Extract the coordinates from the indices
+        coord = {
+            dim: con.labels.indexes[dim][i] for dim, i in zip(con.labels.dims, indices)
+        }
+
+        return name, coord
+
+    @staticmethod
+    def print_single_expression(c, v, model):
+        """
+        This is a linopy routine but without max terms
+        Print a single linear expression based on the coefficients and variables.
+        """
+
+        # catch case that to many terms would be printed
+        def print_line(expr):
+            res = []
+            for i, (coeff, (name, coord)) in enumerate(expr):
+                coord_string = IISConstraintParser.print_coord(coord)
+                if i:
+                    # split sign and coefficient
+                    coeff_string = f"{float(coeff):+.4}"
+                    res.append(f"{coeff_string[0]} {coeff_string[1:]} {name}{coord_string}")
+                else:
+                    res.append(f"{float(coeff):.4} {name}{coord_string}")
+            return " ".join(res) if len(res) else "None"
+
+        if isinstance(c, np.ndarray):
+            mask = v != -1
+            c, v = c[mask], v[mask]
+
+        expr = list(zip(c, model.variables.get_label_position(v)))
+        return print_line(expr)
+
+
 # This class is for the scenario analysis
 # ---------------------------------------
 
@@ -109,7 +241,10 @@ class ScenarioDict(dict):
     This is a dictionary for the scenario analysis that has some convenience functions
     """
 
-    def __init__(self, init_dict, system):
+    _param_dict_keys = {"file", "file_op", "default", "default_op"}
+    _special_elements = ["system", "analysis", "base_scenario", "sub_folder", "param_map"]
+
+    def __init__(self, init_dict, system, analysis):
         """
         Initializes the dictionary from a normal dictionary
         :param init_dict: The dictionary to initialize from
@@ -122,6 +257,7 @@ class ScenarioDict(dict):
 
         # set the attributes and expand the dict
         self.system = system
+        self.analysis = analysis
         self.init_dict = init_dict
         expanded_dict = self.expand_subsets(init_dict)
         self.validate_dict(expanded_dict)
@@ -130,6 +266,133 @@ class ScenarioDict(dict):
         # super init
         super().__init__(self.dict)
 
+        # finally we update the analysis and system
+        self.update_analysis_system()
+
+    def update_analysis_system(self):
+        """
+        Updates the analysis and system
+        """
+
+        if "analysis" in self.dict:
+            for key, value in self.dict["analysis"].items():
+                if type(self.analysis[key]) == type(value):
+                    self.analysis[key] = value
+                else:
+                    raise ValueError(f"Trying to update analysis with key {key} and value {value} of type {type(value)}, "
+                                     f"but the analysis has already a value of type {type(self.analysis[key])}")
+        if "system" in self.dict:
+            for key, value in self.dict["system"].items():
+                if type(self.system[key]) == type(value):
+                    self.system[key] = value
+                else:
+                    raise ValueError(f"Trying to update system with key {key} and value {value} of type {type(value)}, "
+                                     f"but the system has already a value of type {type(self.system[key])}")
+
+    @staticmethod
+    def expand_lists(scenarios: dict):
+        """
+        Expands all lists of parameters in the all scenarios and returns a new dict
+        :param scenarios: The initial dict of scenarios
+        :return: The expanded dict, where all necessary parameters are expanded and subpaths are set
+        """
+
+        # Important, all for-loops through keys or items in this routine should be sorted!
+
+        expanded_scenarios = dict()
+        for scenario_name, scenario_dict in sorted(scenarios.items(), key=lambda x: x[0]):
+            scenario_dict["base_scenario"] = scenario_name
+            scenario_dict["sub_folder"] = ""
+            scenario_dict["param_map"] = dict()
+            scenario_list = ScenarioDict._expand_scenario(scenario_dict)
+
+            # add the scenarios to the dict
+            for scenario in scenario_list:
+                if scenario["sub_folder"] == "":
+                    name = scenario["base_scenario"]
+                else:
+                    name = scenario["base_scenario"] + "_" + scenario["sub_folder"]
+                expanded_scenarios[name] = scenario
+
+        return expanded_scenarios
+
+    @staticmethod
+    def _expand_scenario(scenario: dict, param_map=None, counter=0):
+
+        # get the default
+        if param_map is None:
+            param_map = dict()
+
+        # list for the expanded scenarios
+        expanded_scenarios = []
+
+        # iterate over all elements
+        for element, element_dict in sorted(scenario.items(), key=lambda x: x[0]):
+            # we do not expand these
+            if element in ScenarioDict._special_elements:
+                continue
+
+            for param, param_dict in sorted(element_dict.items(), key=lambda x: x[0]):
+                for key in sorted(ScenarioDict._param_dict_keys):
+                    if key in param_dict and isinstance(param_dict[key], list):
+                        # get the old param dict entry
+                        if scenario["sub_folder"] != "":
+                            old_param_map_entry = param_map.pop(scenario["sub_folder"])
+                        else:
+                            old_param_map_entry = dict()
+
+                        # we need to expand this
+                        for num, value in enumerate(param_dict[key]):
+                            # copy the scenario
+                            new_scenario = deepcopy(scenario)
+
+                            # set the new value
+                            new_scenario[element][param][key] = value
+
+                            # create the name
+                            if key + "_fmt" in param_dict:
+                                if "{}" not in param_dict[key + "_fmt"]:
+                                    raise SyntaxError("When setting a format for a name, you need to include a "
+                                                      "placeholder '{}' for its value! No placeholder found in "
+                                                      f"for {key} in {param} in {element} in {scenario['base_scenario']}")
+                                name = param_dict[key + "_fmt"].format(value)
+                                del new_scenario[element][param][key + "_fmt"]
+                                # we don't need to increment the param for the next expansion
+                                param_up = 0
+                            else:
+                                name = f"p{counter:02d}_{num:03d}"
+                                # we need to increment the param for the next expansion
+                                param_up = 1
+
+
+                            # set the sub_folder
+                            if new_scenario["sub_folder"] == "":
+                                new_scenario["sub_folder"] = name
+                            else:
+                                new_scenario["sub_folder"] += "_" + name
+
+                            # update the param_map
+                            param_map[new_scenario["sub_folder"]] = deepcopy(old_param_map_entry)
+                            if element not in param_map[new_scenario["sub_folder"]]:
+                                param_map[new_scenario["sub_folder"]][element] = dict()
+                            if param not in param_map[new_scenario["sub_folder"]][element]:
+                                param_map[new_scenario["sub_folder"]][element][param] = dict()
+                            param_map[new_scenario["sub_folder"]][element][param][key] = value
+
+                            # set the param_map of the scenario
+                            new_scenario["param_map"] = param_map
+
+                            # expand this scenario as well
+                            expanded_scenarios.extend(ScenarioDict._expand_scenario(new_scenario, param_map, counter + param_up))
+
+                        # expansion done
+                        return expanded_scenarios
+
+        # nothing was expanded, so we just return the scenario
+        expanded_scenarios.append(scenario)
+
+        # return the list
+        return expanded_scenarios
 
     def expand_subsets(self, init_dict):
         """
@@ -159,12 +422,9 @@ class ScenarioDict(dict):
                             # create dicts if necessary
                             if element not in new_dict:
                                 new_dict[element] = {}
+                            # we only set the param dict if it is not already set
                             if param not in new_dict[element]:
-                                new_dict[element][param] = {}
-                            # merge
-                            for key, value in base_dict.items():
-                                if key not in new_dict[element][param]:
-                                    new_dict[element][param][key] = value
+                                new_dict[element][param] = base_dict.copy()
                 # delete the old set
                 del new_dict[current_set]
         return new_dict
@@ -176,13 +436,28 @@ class ScenarioDict(dict):
         """
 
         for element, element_dict in vali_dict.items():
+            if element in self._special_elements:
+                continue
+
             if not isinstance(element_dict, dict):
                 raise ValueError(f"The entry for {element} is not a dictionary!")
 
             for param, param_dict in element_dict.items():
-                allowed_entries = {"default", "default_op", "file", "file_op"}
-                if len(diff := (set(param_dict.keys()) - allowed_entries)) > 0:
+                if len(diff := (set(param_dict.keys()) - self._param_dict_keys)) > 0:
                     raise ValueError(f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
+
+    @staticmethod
+    def validate_file_name(fname):
+        """
+        Checks if the file name has an extension, it is expected to not have an extension
+        :param fname: The file name to validte
+        :return: The validated file name
+        """
+
+        fname, ext = os.path.splitext(fname)
+        if ext != "":
+            warnings.warn(f"The file name {fname}{ext} has an extension {ext}, removing it.")
+        return fname
 
     def get_default(self, element, param):
         """
@@ -200,6 +475,7 @@ class ScenarioDict(dict):
         if element in self.dict and param in (element_dict := self.dict[element]):
             param_dict = element_dict[param]
             default_f_name = param_dict.get("default", default_f_name)
+            default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("default_op", default_factor)
 
         return default_f_name, default_factor
@@ -220,6 +496,7 @@ class ScenarioDict(dict):
         if element in self.dict and param in (element_dict := self.dict[element]):
             param_dict = element_dict[param]
             default_f_name = param_dict.get("file", default_f_name)
+            default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("file_op", default_factor)
 
         return default_f_name, default_factor
