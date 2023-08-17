@@ -64,8 +64,6 @@ class Config(object):
         self.analysis["objective"] = "total_cost"
         # typology of optimisation: minimize or maximize
         self.analysis["sense"]     = "minimize"
-        # discount rate
-        self.analysis["discount_rate"] = 0.06
         # transport distance (euclidean or actual)
         self.analysis["transport_distance"] = "Euclidean"
         # dictionary with subsets related to set

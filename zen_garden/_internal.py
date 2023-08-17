@@ -198,6 +198,8 @@ def main(config, dataset_path=None, job_index=None):
             # handle myopic foresight
             if len(steps_optimization_horizon) > 1:
                 sf_string = str(subfolder)
+                if sf_string == ".":
+                    sf_string = ""
                 if sf_string != "":
                     sf_string += "_"
                 sf_string += f"MF_{step_horizon}"
