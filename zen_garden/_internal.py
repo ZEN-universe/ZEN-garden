@@ -11,8 +11,10 @@ Compilation  of the optimization problem.
 import importlib.util
 import logging
 import os
+from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
+import shutil
 
 import pkg_resources
 
@@ -70,6 +72,9 @@ def main(config, dataset_path=None, job_index=None):
         spec.loader.exec_module(module)
         scenarios = module.scenarios
         config.scenarios.update(scenarios)
+        # remove the default scenario if necessary
+        if not config.system["run_default_scenario"] and "" in config.scenarios:
+            del config.scenarios[""]
 
         # expand the scenarios
         config.scenarios = ScenarioDict.expand_lists(config.scenarios)
@@ -102,6 +107,30 @@ def main(config, dataset_path=None, job_index=None):
         if config.analysis["overwrite_output"]:
             logging.warning("Existing files will be overwritten!")
 
+    # clean sub-scenarios if necessary
+    if config.system["conduct_scenario_analysis"] and config.system["clean_sub_scenarios"]:
+        # collect all paths that are in the scenario dict
+        folder_dict = defaultdict(list)
+        for key, value in config.scenarios.items():
+            if value["sub_folder"] != "":
+                folder_dict[f"scenario_{value['base_scenario']}"].append(f"scenario_{value['sub_folder']}")
+                folder_dict[f"scenario_{value['base_scenario']}"].append(f"dict_all_sequence_time_steps_{value['sub_folder']}.h5")
+
+        # compare to existing sub-scenarios
+        for scenario_name, sub_folders in folder_dict.items():
+            scenario_path = os.path.join(out_folder, scenario_name)
+            if os.path.exists(scenario_path) and os.path.isdir(scenario_path):
+                existing_sub_folder = os.listdir(scenario_path)
+                for sub_folder in existing_sub_folder:
+                    # delete the scenario subfolder
+                    sub_folder_path = os.path.join(scenario_path, sub_folder)
+                    if os.path.isdir(sub_folder_path) and sub_folder not in sub_folders:
+                        logging.info(f"Removing sub-scenario {sub_folder}")
+                        shutil.rmtree(sub_folder_path, ignore_errors=True)
+                    # the time steps dict
+                    if sub_folder.startswith("dict_all_sequence_time_steps") and sub_folder not in sub_folders:
+                        logging.info(f"Removing time steps dict {sub_folder}")
+                        os.remove(sub_folder_path)
 
     # iterate through scenarios
     for scenario, elements in zip(scenarios, elements):
