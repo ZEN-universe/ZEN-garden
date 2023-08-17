@@ -7,9 +7,10 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Scenario settings settings.
 ==========================================================================================================================================================================="""
 scenarios = dict()
-scenarios["1"] = {"natural_gas": {"price_import": {"default": "attributes_1"}},  # new import price for natural gas
-                  'natural_gas_boiler': {'capex_specific': {'default_op': 1.1}},  # increased capex by 10%
-                  'heat': {'demand': {'file': 'demand_1',  # new demand file for heat
-                                      'file_op': 2}},  # doubles the demand
-                  }
-
+scenarios["1"] = {"system": {'reference_year': 2023,
+                             'set_nodes': ['CH'],
+                             'set_transport_technologies': [],
+                             'conduct_time_series_aggregation': True,
+                             'unaggregated_time_steps_per_year': 8760,
+                             'aggregated_time_steps_per_year': 1},
+                  'analysis': {"discount_rate": 0.03}}
