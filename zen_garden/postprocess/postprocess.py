@@ -11,7 +11,7 @@ The class contains methods to read the results and save them in a result diction
 import json
 import logging
 import os
-import pathlib
+from pathlib import Path
 import sys
 import zlib
 
@@ -52,12 +52,12 @@ class Postprocess:
 
         # get name or directory
         self.model_name = model_name
-        self.name_dir = pathlib.Path(self.analysis["folder_output"]).joinpath(self.model_name)
+        self.name_dir = Path(self.analysis["folder_output"]).joinpath(self.model_name)
 
         # deal with the subfolder
         self.subfolder = subfolder
         # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
-        if self.subfolder:
+        if self.subfolder != Path(""):
             self.name_dir = self.name_dir.joinpath(self.subfolder)
         # create the output directory
         os.makedirs(self.name_dir, exist_ok=True)
@@ -283,7 +283,7 @@ class Postprocess:
         """
 
         # This we only need to save once
-        if self.subfolder:
+        if self.subfolder != Path(""):
             fname = self.name_dir.parent.joinpath('system')
         else:
             fname = self.name_dir.joinpath('system')
@@ -295,7 +295,7 @@ class Postprocess:
         """
 
         # This we only need to save once
-        if self.subfolder:
+        if self.subfolder != Path(""):
             fname = self.name_dir.parent.joinpath('analysis')
         else:
             fname = self.name_dir.joinpath('analysis')
@@ -307,7 +307,7 @@ class Postprocess:
         """
 
         # This we only need to save once
-        if self.subfolder:
+        if self.subfolder != Path(""):
             fname = self.name_dir.parent.joinpath('scenarios')
         else:
             fname = self.name_dir.joinpath('scenarios')
@@ -319,7 +319,7 @@ class Postprocess:
         """
 
         # This we only need to save once
-        if self.subfolder:
+        if self.subfolder != Path(""):
             fname = self.name_dir.parent.joinpath('solver')
         else:
             fname = self.name_dir.joinpath('solver')
@@ -332,7 +332,7 @@ class Postprocess:
 
         if self.param_map is not None:
             # This we only need to save once
-            if self.subfolder:
+            if self.subfolder != Path(""):
                 fname = self.name_dir.parent.joinpath('param_map')
             else:
                 fname = self.name_dir.joinpath('param_map')
@@ -350,7 +350,7 @@ class Postprocess:
             add_on = ""
 
             # This we only need to save once
-        if self.subfolder:
+        if self.subfolder != Path(""):
             fname = self.name_dir.parent.joinpath(f'dict_all_sequence_time_steps{add_on}')
         else:
             fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
