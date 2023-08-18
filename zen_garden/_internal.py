@@ -171,7 +171,7 @@ def main(config, dataset_path=None, job_index=None):
             # add cumulative carbon emissions to previous carbon emissions
             optimization_setup.add_carbon_emission_cumulative(step_horizon)
             # EVALUATE RESULTS
-            subfolder = ""
+            subfolder = Path("")
             scenario_name = None
             param_map = None
             output_scenarios = config.scenarios
@@ -197,9 +197,13 @@ def main(config, dataset_path=None, job_index=None):
                             output_scenarios[s_dict["sub_folder"]] = out_dict
             # handle myopic foresight
             if len(steps_optimization_horizon) > 1:
-                if subfolder != "":
-                    subfolder += f"_"
-                subfolder += f"MF_{step_horizon}"
+                sf_string = str(subfolder)
+                if sf_string == ".":
+                    sf_string = ""
+                if sf_string != "":
+                    sf_string += "_"
+                sf_string += f"MF_{step_horizon}"
+                subfolder = Path(sf_string)
             # write results
             _ = Postprocess(optimization_setup, scenarios=output_scenarios, subfolder=subfolder,
                             model_name=model_name, scenario_name=scenario_name, param_map=param_map)

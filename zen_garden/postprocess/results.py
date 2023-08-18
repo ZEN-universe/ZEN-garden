@@ -883,7 +883,7 @@ class Results(object):
                 _data[scenario].to_csv(f"{fname}.csv", **csv_kwargs)
             return _data[scenario]
 
-        # return the dict
+        # return the dict or series
         else:
             # save if necessary
             if to_csv is not None:
@@ -916,26 +916,63 @@ class Results(object):
         """
         # extract the data
         component_name, component_data = self._get_component_data(component, scenario,is_dual = is_dual)
+        # loop over scenarios
+        # no scenarios
+        if not self.has_scenarios:
+            full_ts = self._get_full_ts_for_single_scenario(
+                component_data, component_name, scenario=None, element_name=element_name,
+                year=year, is_dual = is_dual, discount_years=discount_years)
+        # specific scenario
+        elif scenario is not None:
+            full_ts = self._get_full_ts_for_single_scenario(
+                component_data, component_name, scenario=scenario, element_name=element_name,
+                year=year, is_dual = is_dual, discount_years=discount_years)
+        # all scenarios
+        else:
+            full_ts_dict = {}
+            for scenario in self.scenarios:
+                component_data_scenario = component_data[scenario]
+                full_ts_dict[scenario] = self._get_full_ts_for_single_scenario(
+                    component_data_scenario, component_name, scenario=scenario, element_name=element_name,
+                    year=year, is_dual = is_dual,discount_years=discount_years)
+            if isinstance(full_ts_dict[scenario], pd.Series):
+                full_ts = pd.concat(full_ts_dict, keys=full_ts_dict.keys(), axis=1).T
+            else:
+                full_ts = pd.concat(full_ts_dict, keys=full_ts_dict.keys())
+        return full_ts
 
+
+    def _get_full_ts_for_single_scenario(self,component_data,component_name,scenario, element_name=None, year=None, is_dual=False,discount_years=True):
+        """ calculates total value for single scenario
+        :param component_data: numerical data of component
+        :param component_name: name of component
+        :param scenario: The scenario to calculate the total value for
+        :param element_name: The element name to calculate the value for, defaults to all elements
+        :param year: The year to calculate the value for, defaults to all years
+        :param is_dual: if component is dual variable
+        :param discount_years: if discount dual variable
+        :return: A dataframe containing the total value with the specified parameters
+        """
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
         ts_type = self._get_ts_type(component_data, component_name)
         if is_dual:
             annuity = self._get_annuity(discount_years)
         else:
-            annuity = pd.Series(index=self.years,data=1)
-        if isinstance(component_data,pd.Series):
-            return component_data/annuity
+            annuity = pd.Series(index=self.years, data=1)
+        if isinstance(component_data, pd.Series):
+            return component_data / annuity
         if ts_type == "yearly":
             if element_name is not None:
                 component_data = component_data.loc[element_name]
-            component_data = component_data.div(annuity,axis=1)
+            component_data = component_data.div(annuity, axis=1)
             # component indexed by yearly component
             if year is not None:
                 if year in component_data.columns:
                     return component_data[year]
                 else:
-                    print(f"WARNING: year {year} not in years {component_data.columns}. Return component values for all years")
+                    print(
+                        f"WARNING: year {year} not in years {component_data.columns}. Return component values for all years")
                     return component_data
             else:
                 return component_data
@@ -950,7 +987,9 @@ class Results(object):
         # calculate the full time series
         _output_temp = {}
         # extract time step duration
-        output_df = component_data.apply(lambda row: self.get_full_ts_of_row(row,sequence_time_steps_dicts,element_name,_storage_string,time_step_duration,is_dual,annuity),axis=1)
+        output_df = component_data.apply(
+            lambda row: self.get_full_ts_of_row(row, sequence_time_steps_dicts, element_name, _storage_string,
+                                                time_step_duration, is_dual, annuity), axis=1)
         if year is not None:
             if year in self.years:
                 hours_of_year = self._get_hours_of_year(year)
@@ -1008,11 +1047,45 @@ class Results(object):
         """
         # extract the data
         component_name, component_data = self._get_component_data(component, scenario)
-        # timestep dict
+        # loop over scenarios
+        # no scenarios
+        if not self.has_scenarios:
+            total_value = self._get_total_for_single_scenario(
+                component_data,component_name,scenario=None,
+                element_name=element_name, year=year, split_years=True)
+        # specific scenario
+        elif scenario is not None:
+            total_value = self._get_total_for_single_scenario(
+                component_data, component_name, scenario=scenario,
+                element_name=element_name, year=year, split_years=True)
+        # all scenarios
+        else:
+            total_value_dict = {}
+            for scenario in self.scenarios:
+                component_data_scenario = component_data[scenario]
+                total_value_dict[scenario] = self._get_total_for_single_scenario(
+                    component_data_scenario, component_name, scenario=scenario,
+                    element_name=element_name, year=year, split_years=True)
+            if isinstance(total_value_dict[scenario],pd.Series):
+                total_value = pd.concat(total_value_dict, keys=total_value_dict.keys(), axis=1).T
+            else:
+                total_value = pd.concat(total_value_dict,keys = total_value_dict.keys())
+        return total_value
+
+    def _get_total_for_single_scenario(self,component_data,component_name,scenario, element_name=None, year=None, split_years=True):
+        """ calculates total value for single scenario
+        :param component_data: numerical data of component
+        :param component_name: name of component
+        :param scenario: The scenario to calculate the total value for
+        :param element_name: The element name to calculate the value for, defaults to all elements
+        :param year: The year to calculate the value for, defaults to all years
+        :param split_years: Calculate the value for each year individually
+        :return: A dataframe containing the total value with the specified parameters
+        """
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
-        if isinstance(component_data,pd.Series):
+        if isinstance(component_data, pd.Series):
             return component_data
-        ts_type = self._get_ts_type(component_data, component_name,force_output=True)
+        ts_type = self._get_ts_type(component_data, component_name, force_output=True)
         if ts_type is None:
             return component_data
         elif ts_type == "yearly":
@@ -1022,7 +1095,8 @@ class Results(object):
                 if year in component_data.columns:
                     return component_data[year]
                 else:
-                    print(f"WARNING: year {year} not in years {component_data.columns}. Return total value for all years")
+                    print(
+                        f"WARNING: year {year} not in years {component_data.columns}. Return total value for all years")
                     return component_data.sum(axis=1)
             else:
                 if split_years:
@@ -1030,26 +1104,28 @@ class Results(object):
                 else:
                     return component_data.sum(axis=1)
         elif ts_type == "operational":
-            _isStorage = False
+            _is_storage = False
             _storage_string = ""
         else:
-            _isStorage = True
+            _is_storage = True
             _storage_string = "_storage_level"
 
         # extract time step duration
-        time_step_duration = self._get_ts_duration(scenario, is_storage=_isStorage)
+        time_step_duration = self._get_ts_duration(scenario, is_storage=_is_storage)
 
         # If we have an element name
         if element_name is not None:
             # check that it is in the index
-            assert element_name in component_data.index.get_level_values(level=0), f"element {element_name} is not found in index of {component_name}"
+            assert element_name in component_data.index.get_level_values(
+                level=0), f"element {element_name} is not found in index of {component_name}"
             # get the index
             component_data = component_data.loc[element_name]
             time_step_duration_element = time_step_duration.loc[element_name]
 
             if year is not None:
                 # only for the given year
-                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(element_name + _storage_string,  year)
+                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
+                    element_name + _storage_string, year)
                 total_value = (component_data * time_step_duration_element)[time_steps_year].sum(axis=1)
             else:
                 # for all years
@@ -1057,22 +1133,25 @@ class Results(object):
                     total_value_temp = pd.DataFrame(index=component_data.index, columns=self.years)
                     for year_temp in self.years:
                         # set a proxy for the element name
-                        time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(element_name + _storage_string, year_temp)
-                        total_value_temp[year_temp] = (component_data * time_step_duration_element)[time_steps_year].sum(axis=1)
+                        time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
+                            element_name + _storage_string, year_temp)
+                        total_value_temp[year_temp] = (component_data * time_step_duration_element)[
+                            time_steps_year].sum(axis=1)
                     total_value = total_value_temp
                 else:
                     total_value = (component_data * time_step_duration_element).sum(axis=1)
 
         # if we do not have an element name
         else:
-            if isinstance(component_data.index,pd.MultiIndex):
+            if isinstance(component_data.index, pd.MultiIndex):
                 total_value = component_data.apply(lambda row: row * time_step_duration.loc[row.name[0]], axis=1)
             else:
                 total_value = component_data.apply(lambda row: row * time_step_duration.loc[row.name], axis=1)
             if year is not None:
                 # set a proxy for the element name
                 element_name_proxy = component_data.index.get_level_values(level=0)[0]
-                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_proxy + _storage_string, year)
+                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
+                    element_name_proxy + _storage_string, year)
                 total_value = total_value[time_steps_year].sum(axis=1)
             else:
                 if split_years:
@@ -1080,7 +1159,8 @@ class Results(object):
                     for year_temp in self.years:
                         # set a proxy for the element name
                         element_name_proxy = component_data.index.get_level_values(level=0)[0]
-                        time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_proxy + _storage_string, year_temp)
+                        time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
+                            element_name_proxy + _storage_string, year_temp)
                         total_value_temp[year_temp] = total_value[time_steps_year].sum(axis=1)
                     total_value = total_value_temp
                 else:
@@ -1185,7 +1265,15 @@ class Results(object):
                 component_data = self.get_df(component,is_dual=is_dual)[scenario]
             else:
                 component_data = self.get_df(component,is_dual=is_dual)
-            if isinstance(component_data.index,pd.MultiIndex):
+            if isinstance(component_data,dict):
+                component_data_temp = {}
+                for key,data in component_data.items():
+                    if isinstance(data.index, pd.MultiIndex):
+                        component_data_temp[key] = self._unstack_time_level(data,component_name)
+                    else:
+                        component_data_temp[key] = data
+                component_data = component_data_temp
+            elif isinstance(component_data.index,pd.MultiIndex):
                 component_data = self._unstack_time_level(component_data,component_name)
         elif isinstance(component, pd.Series):
             component_name = component.name

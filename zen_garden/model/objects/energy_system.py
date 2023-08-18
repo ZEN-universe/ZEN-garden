@@ -92,6 +92,8 @@ class EnergySystem:
         self.set_conversion_technologies = self.system["set_conversion_technologies"]
         self.set_transport_technologies = self.system["set_transport_technologies"]
         self.set_storage_technologies = self.system["set_storage_technologies"]
+        # discount rate
+        self.discount_rate = self.data_input.extract_input_data("discount_rate", index_sets=[])
         # carbon emissions limit
         self.carbon_emissions_limit = self.data_input.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps_yearly"], time_steps=self.set_time_steps_yearly)
         _fraction_year = self.system["unaggregated_time_steps_per_year"] / self.system["total_hours_per_year"]
@@ -194,9 +196,14 @@ class EnergySystem:
 
     def construct_params(self):
         """ constructs the pe.Params of the class <EnergySystem> """
-        # carbon emissions limit
+
         cls = self.__class__
         parameters = self.optimization_setup.parameters
+        # discount rate
+        parameters.add_parameter(name="discount_rate",
+             data=self.optimization_setup.initialize_component(cls, "discount_rate"),
+             doc='Parameter which specifies the discount rate of the energy system')
+        # carbon emissions limit
         parameters.add_parameter(name="carbon_emissions_limit", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_limit", set_time_steps="set_time_steps_yearly"),
             doc='Parameter which specifies the total limit on carbon emissions')
         # carbon emissions budget
@@ -444,14 +451,12 @@ class EnergySystemRules(GenericRule):
         # skipped because rule-based constraint
 
         ### auxiliary calculations
-        discount_rate = self.analysis["discount_rate"]
-
         if year == self.sets["set_time_steps_yearly_entire_horizon"][-1]:
             interval_between_years = 1
         else:
             interval_between_years = self.system["interval_between_years"]
         # economic discount
-        factor = sum(((1 / (1 + discount_rate)) ** (self.system["interval_between_years"] * (year - self.sets["set_time_steps_yearly"][0]) + _intermediate_time_step))
+        factor = sum(((1 / (1 + self.parameters.discount_rate)) ** (self.system["interval_between_years"] * (year - self.sets["set_time_steps_yearly"][0]) + _intermediate_time_step))
                      for _intermediate_time_step in range(0, interval_between_years))
         term_discounted_cost_total = self.variables["cost_total"][year] * factor
 
