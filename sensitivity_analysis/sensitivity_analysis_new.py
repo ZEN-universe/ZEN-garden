@@ -31,8 +31,8 @@ class SensitivityAnalysis():
         self.set_suffix_ov_files(suffix_ov_file)
         self.set_file_name_attributes()
         self.set_suffix_attributes()
-        self.restore_reference_scenario()
-        self.save_original_input_files()
+        # self.restore_reference_scenario()
+        # self.save_original_input_files()
 
 
     def set_results_path(self):
@@ -240,7 +240,7 @@ class SensitivityAnalysis():
         return name
 
     def update_config(self):
-        """update config and load system.py"""
+        """update config and load system.py and scenario.py"""
         # update system
         system_path = os.path.join(self.dataset_path, "system.py")
         if not os.path.exists(system_path):
@@ -249,6 +249,14 @@ class SensitivityAnalysis():
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         self.config.system.update(module.system)
+        # update scenario
+        system_path = os.path.join(self.dataset_path, "scenarios.py")
+        if not os.path.exists(system_path):
+            raise FileNotFoundError(f"scenarios.py not found in dataset: {self.dataset_path}")
+        spec = importlib.util.spec_from_file_location("module", system_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.config.scenarios.update(module.scenarios)
 
     def save_original_input_files(self):
         """save original input data files"""
@@ -307,38 +315,6 @@ class SensitivityAnalysis():
                     ub = df_input * values["ub"]/values["ref"]
                     df_input = lb + sample.loc[uncertain_param].values * (ub - lb)
                 df_input.to_csv(os.path.join(path, param + self.file_format), index=True)
-
-    def run_zen_garden(self, t, s):
-        """run zen garden for sample s of trajectory t
-        :param t: trajectory in case of morris method or parameter in case of local sensitivity analysis
-        :param s: sample s of given trajectory or parameters
-        :return results: updated results dictionary
-        :return name: return name of current run"""
-        # run zen garden for sample s of trajectory or parameter t
-        name = self.get_results_name(t, s)
-        main(config=self.config, dataset_path=self.dataset_path, name=name)
-        # evaluate results and save relevant outputs
-        res = Results(os.path.join("outputs", self.dataset + f"_{name}"))
-        for var, _dict in self.var_dict.items():
-            value = res.get_total(_dict["var"])
-            if _dict["element"] == None:
-                self.results.loc[t, s, var] = value.sum()
-            elif _dict["element"] in value.index.unique(0):
-                self.results.loc[t, s, var] = value.loc[_dict["element"]].sum()[0]
-            elif _dict["element"] == "compute":
-                if var == "LCOH":
-                    hydrogen_outputs = res.get_total("flow_conversion_output").groupby(["carrier","technology"]).sum().loc["hydrogen"]
-                    hydrogen_production = hydrogen_outputs.loc[self.config.system["set_hydrogen_conversion_technologies"]].sum()
-                    discount = 1/(1+self.config.analysis["discount_rate"])
-                    present_hydrogen_production = sum(discount**y*hydrogen_production[y] for y in hydrogen_production.index)
-                    present_hydrogen_production /= 33.3 #GWh to kt
-                    present_cost = res.get_total("net_present_cost").sum() # [M€]
-                    self.results.loc[t, s, var] = present_cost/present_hydrogen_production # [M€/kt]=[€/kg]
-                else:
-                    raise  NotImplementedError
-            else:
-                raise NotImplementedError
-        res.close()
 
     def compute_elementary_effects(self, t, trajectory):
         """calculate elementary effects of trajectory t
@@ -451,25 +427,38 @@ class SensitivityAnalysis():
         sample = xr.DataArray(data=data, dims=list(coords.keys()), coords=coords)
         return sample
 
-    def explore_2d_param_space(self, param1: str, param2: str, res: int):
-        """explore a 2D parameter space"""
-        uncertain_param = f"{param1}_{param2}"
-        self.set_results_folder(name=f"param_space_{uncertain_param}")
-        step_size = 1 / res
-        samples = np.round(np.arange(0, 1 + step_size, step_size), 2)
-        # create scenario dict
-        scenarios = dict()
-        run_configs = dict()
-        run = 0
-        for s1 in samples:
-            for s2 in samples:
-                run_configs[run] = {param1: s1, param2: s2}
-                for param in [param1, param2]:
-                    p_dict = self.param_dict[param]
-                    p_range = np.arange(pdict["lb"]/pdict["ref"], pdict["ub"]/pdict["ref"]+step_size, step_size)
-                    scenarios[uncertain_param] = {pdict["element"]: {pdict["param"]: {"default_op": p_range}}}
+    def get_job_index(self, scenario):
+        """get job index for given scenario"""
+        if not hasattr(self,"job_index_dict"):
+            count = 0
+            self.job_index_dict = dict()
+            for scen, scen_dict in self.config.scenarios.items():
+                no_runs = 1
+                for element, element_dict in scen_dict.items():
+                    if element not in ["system", "analysis"]:
+                        for param, param_dict in element_dict.items():
+                            if "default_op" in param_dict.keys() and isinstance(param_dict["default_op"], list):
+                                no_runs *= len(param_dict["default_op"])
+                self.job_index_dict[scen] = np.arange(count,count+no_runs,1)
+                count += no_runs
+        return self.job_index_dict[scen]
 
-        self.config.scenarios.update(scenarios)
+    def explore_2d_param_space(self, scenario):
+        """explore a 2D parameter space"""
+        self.set_results_folder(name=scenario)
+        if not scenario.startswith("scenario"):
+            scenario="scenario_"+scenario
+        res = Results(os.path.join("outputs", self.dataset, scenario))
+
+        hydrogen_outputs = res.get_total("flow_conversion_output").groupby(["carrier", "technology"]).sum().loc[
+            "hydrogen"]
+        hydrogen_production = hydrogen_outputs.loc[self.config.system["set_hydrogen_conversion_technologies"]].sum()
+        discount = 1 / (1 + self.config.analysis["discount_rate"])
+        present_hydrogen_production = sum(discount ** y * hydrogen_production[y] for y in hydrogen_production.index)
+        present_hydrogen_production /= 33.3  # GWh to kt
+        present_cost = res.get_total("net_present_cost").sum()  # [M€]
+        self.results.loc[t, s, var] = present_cost / present_hydrogen_production  # [M€/kt]=[€/kg]
+
         # results xarray
         vars = list(self.var_dict.keys())
         coords = {"uncertain_param":[uncertain_param], "run": np.arange(0,len(samples)**2,1), "var": vars}
@@ -480,7 +469,7 @@ class SensitivityAnalysis():
 
 
         self.update_input_data(sample2)
-        self.run_zen_garden(uncertain_param, run)
+
         run += 1
         self.save_results(morris_method=False)
         results = self.results.copy(deep=True).to_dataframe("value")
@@ -489,10 +478,9 @@ class SensitivityAnalysis():
         return results, run_configs
     ### create plots
 
-    def feasibility_map_3d(self, x_param: str, y_param: str, z_param: str, res=10):
+    def feasibility_map_3d(self, scenario: str):
         """feasibility map"""
-        param_name = f"{x_param}_{y_param}"
-        results, run_configs = self.explore_2d_param_space(x_param, y_param, res=res)
+        results, run_configs = self.explore_2d_param_space(scenario)
         if os.path.exists(os.path.join(self.results_path, f"param_space_{x_param}_{y_param}", "results.csv")):
             results = pd.read_csv(os.path.join(self.results_path, f"param_space_{x_param}_{y_param}", "results.csv"), index_col=[0,1,2])
             run_configs = pd.read_csv(os.path.join(os.path.join(self.results_path, f"param_space_{x_param}_{y_param}", f"run_configs_{x_param}_{y_param}.csv")), index_col = 0)
@@ -581,7 +569,7 @@ if __name__ == "__main__":
     # sa.local_sensitivity_analysis(n_levels=4)
     # sa.morris_screening_method(n_runs=500, n_levels=4)
     sa = SensitivityAnalysis()
-    sa.feasibility_map_3d(x_param="capex_specific_SMR_CCS", y_param="capex_specific_electrolysis", z_param="LCOH", res=10)
+    sa.feasibility_map_3d("B_price_import_electricity_natural_gas")
     sa.feasibility_map_3d(x_param="price_import_electricity", y_param="capex_specific_electrolysis", z_param="LCOH", res=10)
     sa.feasibility_map_3d(x_param="price_import_natural_gas", y_param="capex_specific_electrolysis", z_param="LCOH", res=10)
     sa.feasibility_map_3d(x_param="price_import_electricity", y_param="price_import_natural_gas", z_param="LCOH", res=10)
