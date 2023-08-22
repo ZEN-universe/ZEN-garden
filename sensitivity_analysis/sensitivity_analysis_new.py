@@ -369,16 +369,25 @@ class SensitivityAnalysis():
         self.set_trajectory_params()
         self.results = self.get_xarray_results(morris_method=True)
         self.elementary_effects = self.get_xarray_elementary_effects()
+        scenarios = dict()
         for t in range(self.n_trajectories):
             trajectory = self.get_trajectory()
-            for s in self.samples:
-                self.update_input_data(trajectory.loc[s, :])
-                self.run_zen_garden(t, s)
-            self.compute_elementary_effects(t, trajectory)
-        self.calculate_elementary_effects_statistics()
-        # save results
-        self.save_results(morris_method=True)
-        self.elementary_effects.to_dataframe().to_csv()
+            # create scenario dict
+            scenario = {f"trajectory_{t}_sample_{s}": {
+                            # element
+                            self.param_dict[name]["element"]: {
+                                # param and default op
+                                self.param_dict[name]["param"]: {"default_op": float(trajectory.loc[s,name])}}
+                            for name in trajectory.coords["uncertain_params"].values}
+                            for s in self.samples}
+            scenarios.update(scenario)
+        return scenarios
+        #
+        # self.compute_elementary_effects(t, trajectory)
+        # self.calculate_elementary_effects_statistics()
+        # # save results
+        # self.save_results(morris_method=True)
+        # self.elementary_effects.to_dataframe().to_csv()
 
     def restore_reference_scenario(self):
         """restore reference scenario"""
@@ -445,65 +454,82 @@ class SensitivityAnalysis():
 
     def explore_2d_param_space(self, scenario):
         """explore a 2D parameter space"""
-        self.set_results_folder(name=scenario)
         if not scenario.startswith("scenario"):
             scenario="scenario_"+scenario
+        # check for existing results
+        if os.path.exists(os.path.join(self.results_path, scenario, scenario + ".csv")):
+            return pd.read_csv(os.path.join(self.results_path,  scenario, scenario + ".csv"), index_col=[0])
+        # create results folder and load results
+        self.set_results_folder(name=scenario)
         res = Results(os.path.join("outputs", self.dataset, scenario))
-
-        hydrogen_outputs = res.get_total("flow_conversion_output").groupby(["carrier", "technology"]).sum().loc[
-            "hydrogen"]
-        hydrogen_production = hydrogen_outputs.loc[self.config.system["set_hydrogen_conversion_technologies"]].sum()
-        discount = 1 / (1 + self.config.analysis["discount_rate"])
-        present_hydrogen_production = sum(discount ** y * hydrogen_production[y] for y in hydrogen_production.index)
-        present_hydrogen_production /= 33.3  # GWh to kt
-        present_cost = res.get_total("net_present_cost").sum()  # [M€]
-        self.results.loc[t, s, var] = present_cost / present_hydrogen_production  # [M€/kt]=[€/kg]
-
-        # results xarray
-        vars = list(self.var_dict.keys())
-        coords = {"uncertain_param":[uncertain_param], "run": np.arange(0,len(samples)**2,1), "var": vars}
-        results = np.full((1, len(samples)**2, len(vars)), np.nan)
-        self.results = xr.DataArray(data=results, dims=list(coords.keys()), coords=coords)
-        # explore parameter space
-        run=0
-
-
-        self.update_input_data(sample2)
-
-        run += 1
-        self.save_results(morris_method=False)
-        results = self.results.copy(deep=True).to_dataframe("value")
-        run_configs = pd.DataFrame.from_dict(run_configs)
-        run_configs.to_csv(os.path.join(self.results_path, self.results_folder, f"run_configs_{param1}_{param2}.csv"), index=True)
-        return results, run_configs
+        subscenarios = res.scenarios
+        # extract results
+        df_results = pd.DataFrame()
+        # net present cost
+        discount = 1 / (1 + 0.06)  # todo get discount rate form result dict
+        techs = [tech for tech in ["SMR_CCS", "electrolysis"] if tech in res.results["system"]["set_conversion_technologies"]]
+        hydrogen_production = res.get_total("flow_conversion_output").loc[subscenarios,techs,"hydrogen"].groupby(level=[0]).sum()
+        present_hydrogen_production = sum(discount ** y * hydrogen_production[y] for y in hydrogen_production.columns)
+        present_cost = res.get_total("net_present_cost").sum(axis=1)  # [M€]
+        df_results["lcoh"] = present_cost/(present_hydrogen_production/33.3)  # [M€/kt]=[€/kg]
+        # capacity addition
+        capacity_addition = res.get_total("capacity_addition").groupby(level=[1,0]).sum()
+        for tech in capacity_addition.index.unique("technology"):
+            name = f"capacity_addition_{tech}"
+            df_results[name] = capacity_addition.loc[tech].sum(axis=1)
+        df_results.to_csv(os.path.join(self.results_path, self.results_folder, f"results_{scenario}.csv"), index=True)
+        # parameter values
+        elements = [element for element in res.results["scenarios"][subscenarios[0][9:]].keys()
+                    if element not in ["base_scenario", "sub_folder","param_map"]]
+        params = []
+        for element in elements:
+            param = list(res.results["scenarios"][res.scenarios[0][9:]][element].keys())
+            assert len(param)==1, "More than one parameter is changed"
+            param = param[0]
+            if param == "capex_specific" and element in self.config.system["set_conversion_technologies"]:
+                param = param + "_conversion"
+            elif "set" in param:
+                continue
+            if param not in params:
+                params.append(param)
+        for param in params:
+            param_vals = res.get_total(param)
+            for level, values in enumerate(param_vals.index.levels):
+                for element in elements:
+                    if element in values:
+                        tmp = param_vals.groupby(level=[level, 0]).mean()
+                        df_results[f"{param}_{element}"] = tmp.loc[element].mean(axis=1)
+                        continue
+        # save results
+        df_results.to_csv(os.path.join(self.results_path,scenario+".csv"), index=True)
+        # delete results to reduce memory
+        del res
+        return df_results
     ### create plots
 
     def feasibility_map_3d(self, scenario: str):
         """feasibility map"""
-        results, run_configs = self.explore_2d_param_space(scenario)
-        if os.path.exists(os.path.join(self.results_path, f"param_space_{x_param}_{y_param}", "results.csv")):
-            results = pd.read_csv(os.path.join(self.results_path, f"param_space_{x_param}_{y_param}", "results.csv"), index_col=[0,1,2])
-            run_configs = pd.read_csv(os.path.join(os.path.join(self.results_path, f"param_space_{x_param}_{y_param}", f"run_configs_{x_param}_{y_param}.csv")), index_col = 0)
-        elif os.path.exists(os.path.join(self.results_path, f"param_space_{y_param}_{x_param}", "results.csv")):
-            param_name = f"{y_param}_{x_param}"
-            results = pd.read_csv(os.path.join(self.results_path, f"param_space_{y_param}_{x_param}", "results.csv"), index_col=[0, 1, 2])
-            run_configs = pd.read_csv(os.path.join(os.path.join(self.results_path, f"param_space_{y_param}_{x_param}", f"run_configs_{y_param}_{x_param}.csv")), index_col = 0)
-        else:
-            results, run_configs = self.explore_2d_param_space(x_param, y_param, res=res)
+        results = self.explore_2d_param_space(scenario)
 
         # get param values
-        run_configs = run_configs.rename(columns={col: int(col) for col in run_configs.columns})
-        for param in [x_param,y_param]:
-            run_configs.loc[param] = self.param_dict[param]["lb"] + (self.param_dict[param]["ub"]-self.param_dict[param]["lb"])*run_configs.loc[param]
+        x_param, y_param = results.columns[-2:]
+        x_support = results[x_param].unique()
+        y_support = results[y_param].unique()
 
-        runs = run_configs.columns
-        x = run_configs.loc[x_param].values
-        y = run_configs.loc[y_param].values
-        z = results.loc[param_name, runs, z_param].values
-        # determine which techs are installed
-        E = results.loc[param_name, runs, "capacity_addition_electrolysis"].values
-        SMR_CCS = results.loc[param_name, runs, "capacity_addition_SMR_CCS"].values
-        total = E + SMR_CCS
+        # param values
+        x = results[x_param].values
+        y = results[y_param].values
+        z = results["lcoh"].values
+        # technologies
+        if "capacity_addition_electrolysis" in results.columns:
+            E = results["capacity_addition_electrolysis"].values
+        else:
+            E  = np.zeros(len(results.index))
+        if "capacity_addition_SMR_CCS" in results.columns:
+            SMR_CCS = results["capacity_addition_SMR_CCS"].values
+        else:
+            SMR_CCS = np.zeros(len(results.index))
+        total = E+SMR_CCS
         # remove small values
         threshold = 0.011
         E[E/total<threshold] = 0
@@ -513,11 +539,11 @@ class SensitivityAnalysis():
         techs[E>0] = 1
         techs[(E>0)==(SMR_CCS>0)] = 2
         # create meshgrid
-        new_shape = len(run_configs.loc[x_param].unique())
-        x = x.reshape(new_shape,new_shape)
-        y = y.reshape(new_shape,new_shape)
-        z = z.reshape(new_shape,new_shape)
-        techs = techs.reshape(new_shape,new_shape)
+        shape = (len(x_support), len(y_support))
+        x = x.reshape(shape)
+        y = y.reshape(shape)
+        z = z.reshape(shape)
+        techs = techs.reshape(shape)
         #markers = [self.get_marker(results, param_name, run) for run in runs]
         #ax.scatter(x, y, c=z, cmap='viridis',) # marker=markers
         # define colormap and number of levels
@@ -552,31 +578,27 @@ class SensitivityAnalysis():
         # CS_new = ax.contour(x, y, z, 6)
         # plt.clabel(CS_new, inline=True, manual=label_pos)
         #set axis
-        ax.set_ylabel(y_param+" ["+self.param_dict[y_param]["unit"]+"]")
-        ax.set_xlabel(x_param+" ["+self.param_dict[x_param]["unit"]+"]")
+        ax.set_ylabel(y_param) #" ["+self.param_dict[y_param]["unit"]+"]"
+        ax.set_xlabel(x_param) #" ["+self.param_dict[y_param]["unit"]+"]"
         # save figure
-        plt.savefig(os.path.join(self.figures_path, param_name+".pdf"))
-        plt.savefig(os.path.join(self.figures_path, param_name + ".png"))
+        plt.savefig(os.path.join(self.figures_path, scenario+".pdf"))
+        plt.savefig(os.path.join(self.figures_path, scenario + ".png"))
         plt.show()
         plt.close(fig)
-
-
 
 
 if __name__ == "__main__":
     # sa = SensitivityAnalysis()
     # run sensitivity analysis
     # sa.local_sensitivity_analysis(n_levels=4)
-    # sa.morris_screening_method(n_runs=500, n_levels=4)
+
     sa = SensitivityAnalysis()
+    sa.morris_screening_method(n_runs=500, n_levels=4)
     sa.feasibility_map_3d("B_price_import_electricity_natural_gas")
-    sa.feasibility_map_3d(x_param="price_import_electricity", y_param="capex_specific_electrolysis", z_param="LCOH", res=10)
-    sa.feasibility_map_3d(x_param="price_import_natural_gas", y_param="capex_specific_electrolysis", z_param="LCOH", res=10)
-    sa.feasibility_map_3d(x_param="price_import_electricity", y_param="price_import_natural_gas", z_param="LCOH", res=10)
-    # # electrolysis only
-    saE = SensitivityAnalysis(dataset="HSC_paper3_electrolysis")
-    saE.feasibility_map_3d(x_param="price_import_electricity", y_param="capex_specific_electrolysis", z_param="LCOH")
-    # # SMR-CCS only
-    saSMR = SensitivityAnalysis(dataset="HSC_paper3_SMR_CCS")
-    saSMR.feasibility_map_3d(x_param="price_import_natural_gas", y_param="capex_specific_SMR_CCS", z_param="LCOH")
-    a=1
+    sa.feasibility_map_3d("B_capex_electrolysis_price_import_electricity")
+    sa.feasibility_map_3d("B_capex_electrolysis_price_import_natural_gas")
+    sa.feasibility_map_3d("B_capex_electrolysis_SMR")
+    sa.feasibility_map_3d("B_capex_electrolysis_CDR")
+    sa.feasibility_map_3d("B_capex_electrolysis_CDR")
+    sa.feasibility_map_3d("S_capex_SMR_price_import_natural_gas")
+
