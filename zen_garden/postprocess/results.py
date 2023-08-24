@@ -1209,7 +1209,7 @@ class Results(object):
         """
         system = self.results["system"]
         # calculate annuity
-        discount_rate = self.results["analysis"]["discount_rate"]
+        discount_rate = self.get_df("discount_rate").squeeze()
         annuity = pd.Series(index=self.years,dtype=float)
         for year in self.years:
             interval_between_years = system["interval_between_years"]
@@ -1430,7 +1430,7 @@ class Results(object):
 
         # extract the rows of the desired year
         if year not in list(range(self.results["system"]["optimized_years"])):
-            warnings.warn(f"Chosen year '{year}' hasn't been optimized")
+            warnings.warn(f"Chosen year '{year}' has not been optimized")
         else:
             ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
             data_plot = data_plot.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
@@ -1501,7 +1501,7 @@ class Results(object):
                 else:
                     plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + "_" + str(start_hour) + "_" + str(duration) + "." + file_type))
             elif file_type is None:
-                #save figure as pdf if file_type hasn't been specified
+                #save figure as pdf if file_type has not been specified
                 if start_hour is None and duration is None:
                     plt.savefig(os.path.join(path, "energy_balance_" + carrier + "_" + node + "_" + str(year) + ".pdf"))
                 else:
@@ -1670,7 +1670,7 @@ class Results(object):
                 else:
                     plt.savefig(os.path.join(path, plot_strings["title"] + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + "." + file_type))
             elif file_type is None:
-                #save figure as pdf if file_type hasn't been specified
+                #save figure as pdf if file_type has not been specified
                 if isinstance(component, str):
                     plt.savefig(os.path.join(path, component + "_yearly=" + str(yearly) + "_" + "node_edit=" + str(node_edit) + ".pdf" ))
                 else:
@@ -1788,7 +1788,7 @@ class Results(object):
             data_extracted = pd.DataFrame()
             for tech in data.index.get_level_values("technology"):
                 if reference_carriers[tech] == carrier:
-                    data_extracted = pd.concat([data_extracted, data.loc[(tech, slice(None)), :]], axis=1)
+                    data_extracted = pd.concat([data_extracted, data.loc[(tech, slice(None)), :]], axis=0)
             return data_extracted
         # check if desired carrier isn't contained in data (otherwise .loc raises an error)
         if carrier not in data.index.get_level_values("carrier"):

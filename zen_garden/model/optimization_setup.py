@@ -421,8 +421,6 @@ class OptimizationSetup(object):
                 # get min max
                 coeff_min = coeffs_sorted[0]
                 coeff_max = coeffs_sorted[-1]
-                if not ((0.0 < coeff_min < smallest_coeff[1]) or (coeff_max > largest_coeff[1])):
-                    continue
                 # same for variables
                 variables = cons.lhs.vars.data
                 variables_flat = variables.ravel()
