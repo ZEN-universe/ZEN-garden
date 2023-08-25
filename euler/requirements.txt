@@ -1,11 +1,12 @@
 numpy
 glpk
 geopandas
-gurobipy==9.5.1
+gurobipy
 hdfdict
 pandas
 pip
-pyomo>=6.0
+ordered-set
+linopy==0.1.5
 coverage
 pytest
 scipy
@@ -17,3 +18,5 @@ entsoe-py
 matplotlib
 mpmath
 tsam
+tables
+filelock

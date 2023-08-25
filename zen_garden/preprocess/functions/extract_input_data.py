@@ -1,12 +1,12 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      January-2022
-Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
-              Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
+"""
+:Title:         ZEN-GARDEN
+:Created:       January-2022
+:Authors:       Jacob Mannhardt (jmannhardt@ethz.ch),
+                Alissa Ganter (aganter@ethz.ch)
+:Organization:  Laboratory of Risk and Reliability Engineering, ETH Zurich
 
-Description:  Functions to extract the input data from the provided input files
-==========================================================================================================================================================================="""
+Functions to extract the input data from the provided input files
+"""
 import copy
 import logging
 import math
@@ -18,9 +18,12 @@ from scipy.stats import linregress
 
 
 class DataInput:
-
+    """
+    Class to extract input data
+    """
     def __init__(self, element, system, analysis, solver, energy_system, unit_handling):
         """ data input object to extract input data
+
         :param element: element for which data is extracted
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
@@ -32,6 +35,7 @@ class DataInput:
         self.analysis = analysis
         self.solver = solver
         self.energy_system = energy_system
+        self.scenario_dict = self.energy_system.optimization_setup.scenario_dict
         self.unit_handling = unit_handling
         # extract folder path
         self.folder_path = getattr(self.element, "input_path")
@@ -40,12 +44,12 @@ class DataInput:
         # self.index_names     = {index_name: self.analysis['header_data_inputs'][index_name][0] for index_name in self.analysis['header_data_inputs']}
         self.index_names = self.analysis['header_data_inputs']
 
-    def extract_input_data(self, file_name, index_sets, time_steps=None, scenario=""):
+    def extract_input_data(self, file_name, index_sets, time_steps=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
+
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param time_steps: specific time_steps of element
-        :param scenario: scenario name
         :return dataDict: dictionary with attribute values """
 
         # generic time steps
@@ -55,18 +59,19 @@ class DataInput:
         # if time steps are the yearly base time steps
         elif time_steps is self.energy_system.set_base_time_steps_yearly:
             yearly_variation = True
-            self.extract_yearly_variation(file_name, index_sets, scenario)
+            self.extract_yearly_variation(file_name, index_sets)
 
         # if existing capacities and existing capacities not used
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
-            df_output, *_ = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=0, scenario=scenario)
+            df_output, *_ = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=0)
             return df_output
         else:
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, scenario=scenario)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps)
         # read input file
-        df_input = self.read_input_data(file_name + scenario)
-        if scenario and yearly_variation and df_input is None:
-            logging.info(f"{file_name}{scenario} is missing from {self.folder_path}. {file_name} is used as input file")
+        f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
+        df_input = self.read_input_data(f_name)
+        if f_name != file_name and yearly_variation and df_input is None:
+            logging.info(f"{f_name} for current scenario is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_data(file_name)
 
         assert (df_input is not None or default_value is not None), f"input file for attribute {file_name} could not be imported and no default value is given."
@@ -74,10 +79,12 @@ class DataInput:
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value,time_steps)
         # save parameter values for analysis of numerics
         self.save_values_of_attribute(df_output=df_output, file_name=file_name)
-        return df_output
+        # finally apply the scenario_factor
+        return df_output*scenario_factor
 
     def extract_general_input_data(self, df_input, df_output, file_name, index_name_list, default_value, time_steps):
         """ fills df_output with data from df_input
+
         :param df_input: raw input dataframe
         :param df_output: empty output dataframe, only filled with default_value
         :param file_name: name of selected file
@@ -128,6 +135,7 @@ class DataInput:
 
     def read_input_data(self, input_file_name):
         """ reads input data and returns raw input dataframe
+
         :param input_file_name: name of selected file
         :return df_input: pd.DataFrame with input data """
 
@@ -142,42 +150,41 @@ class DataInput:
         else:
             return None
 
-    def extract_attribute(self, attribute_name, skip_warning=False, scenario=""):
+    def extract_attribute(self, attribute_name, skip_warning=False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
+
         :param attribute_name: name of selected attribute
         :param skip_warning: boolean to indicate if "Default" warning is skipped
-        :param scenario: scenario name
         :return attribute_value: attribute value """
-        filename = "attributes"
-        df_input = self.read_input_data(filename + scenario)
+
+        filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
+        df_input = self.read_input_data(filename)
         if df_input is not None:
             df_input = df_input.set_index("index").squeeze(axis=1)
             attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning)
-        elif scenario != "":
-            df_input = self.read_input_data(filename)
-            df_input = df_input.set_index("index").squeeze(axis=1)
-            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning)
-        # if df_input is None or attribute_name is None:
-        #     df_input = self.read_input_data(filename)
-        #     if df_input is not None:
-        #         df_input = df_input.set_index("index").squeeze(axis=1)
-        #     else:
-        #         return None
-        #     attribute_name = self.adapt_attribute_name(attribute_name,df_input,skip_warning)
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"])
+            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"],attribute_name)
             try:
-                attribute = {"value": float(attribute_value) * multiplier, "multiplier": multiplier}
+                attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
-            except:
+            except ValueError:
+                if factor != 1:
+                    logging.warning(f"WARNING: Attribute {attribute_name} of {self.element.name} is not a number "
+                                    f"but has custom factor {factor}, factor will be ignored...")
                 return attribute_value
         else:
             return None
 
     def adapt_attribute_name(self, attribute_name, df_input, skip_warning=False):
-        """ check if attribute in index"""
+        """ check if attribute in index
+
+        :param attribute_name: name of selected attribute
+        :param df_input: pd.DataFrame with input data
+        :param skip_warning: boolean to indicate if "Default" warning is skipped
+        :return:
+        """
         if attribute_name + "_default" not in df_input.index:
             if attribute_name not in df_input.index:
                 return None
@@ -187,11 +194,12 @@ class DataInput:
             attribute_name = attribute_name + "_default"
         return attribute_name
 
-    def extract_yearly_variation(self, file_name, index_sets, scenario=""):
+    def extract_yearly_variation(self, file_name, index_sets):
         """ reads the yearly variation of a time dependent quantity
-        :param self.folder_path: path to input files
+
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param scenario: scenario name
         """
         # remove intra-yearly time steps from index set and add inter-yearly time steps
         _index_sets = copy.deepcopy(index_sets)
@@ -200,9 +208,10 @@ class DataInput:
         # add Yearly_variation to file_name
         file_name += "_yearly_variation"
         # read input data
-        df_input = self.read_input_data(file_name + scenario)
-        if scenario and df_input is None:
-            logging.info(f"{file_name}{scenario} is missing from {self.folder_path}. {file_name} is used as input file")
+        f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
+        df_input = self.read_input_data(f_name)
+        if f_name != file_name and df_input is None:
+            logging.info(f"{f_name} is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_data(file_name)
         if df_input is not None:
             df_output, default_value, index_name_list = self.create_default_output(_index_sets, file_name=file_name, manual_default_value=1)
@@ -210,10 +219,13 @@ class DataInput:
             _selected_column = None
             _name_yearly_variation = file_name
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps=self.energy_system.set_time_steps_yearly)
+            # apply the scenario_factor
+            df_output = df_output * scenario_factor
             setattr(self, _name_yearly_variation, df_output)
 
     def extract_locations(self, extract_nodes=True):
         """ reads input data to extract nodes or edges.
+
         :param extract_nodes: boolean to switch between nodes and edges """
         if extract_nodes:
             set_nodes_config = self.system["set_nodes"]
@@ -241,6 +253,7 @@ class DataInput:
 
     def extract_conversion_carriers(self):
         """ reads input data and extracts conversion carriers
+
         :return carrier_dict: dictionary with input and output carriers of technology """
         carrier_dict = {}
         # get carriers
@@ -253,8 +266,9 @@ class DataInput:
             carrier_dict[_carrier_type] = _carrier_list
         return carrier_dict
 
-    def extract_set_technologies_existing(self, storage_energy=False, scenario=""):
+    def extract_set_technologies_existing(self, storage_energy=False):
         """ reads input data and creates setExistingCapacity for each technology
+
         :param storage_energy: boolean if existing energy capacity of storage technology (instead of power)
         :return set_technologies_existing: return set existing technologies"""
         #TODO merge changes in extract input data and optimization setup
@@ -265,7 +279,9 @@ class DataInput:
             else:
                 _energy_string = ""
 
-            df_input = self.read_input_data(f"capacity_existing{_energy_string}{scenario}")
+            # here we ignore the factor
+            f_name, _ = self.scenario_dict.get_param_file(self.element.name, f"capacity_existing{_energy_string}")
+            df_input = self.read_input_data(f_name)
             if df_input is None:
                 return [0]
             if self.element.name in self.system["set_transport_technologies"]:
@@ -278,10 +294,12 @@ class DataInput:
 
         return set_technologies_existing
 
-    def extract_lifetime_existing(self, file_name, index_sets, scenario=""):
+    def extract_lifetime_existing(self, file_name, index_sets):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
+
         :param file_name:  name of selected file
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param scenario: scenario name
         :return df_output: return existing capacity and existing lifetime """
         index_list, index_name_list = self.construct_index_list(index_sets, None)
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
@@ -290,18 +308,21 @@ class DataInput:
         if not self.analysis["use_capacities_existing"]:
             return df_output
 
-        if f"{file_name}{scenario}.csv" in os.listdir(self.folder_path):
-            df_input = self.read_input_data(file_name + scenario)
+        f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
+        if f"{f_name}.csv" in os.listdir(self.folder_path):
+            df_input = self.read_input_data(f_name)
             # fill output dataframe
             df_output = self.extract_general_input_data(df_input, df_output, "year_construction", index_name_list, default_value=0, time_steps=None)
             # get reference year
             reference_year = self.system["reference_year"]
             # calculate remaining lifetime
             df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime
-        return df_output
+        # apply scenario factor
+        return df_output*scenario_factor
 
     def extract_pwa_data(self, variable_type):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
+
         :param variable_type: technology approximation type
         :return pwa_dict: dictionary with pwa parameters """
         # attribute names
@@ -434,7 +455,8 @@ class DataInput:
                 return linear_dict, is_pwa
 
     def read_pwa_files(self, variable_type, file_type=str()):
-        """ reads pwa Files
+        """ reads pwa files
+
         :param variable_type: technology approximation type
         :param file_type: either breakpointsPWA, linear, or nonlinear
         :return df_input: raw input file"""
@@ -446,17 +468,17 @@ class DataInput:
                 columns = df_input.columns
             df_input_units = df_input[columns].iloc[-1]
             df_input = df_input.iloc[:-1]
-            _df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit))
+            _df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit,attribute_name=variable_type))
             df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='coerce'))
             df_input[columns] = df_input[columns] * _df_input_multiplier
         return df_input
 
-    def create_default_output(self, index_sets, file_name=None, time_steps=None, manual_default_value=None, scenario=""):
+    def create_default_output(self, index_sets, file_name=None, time_steps=None, manual_default_value=None):
         """ creates default output dataframe
+
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param time_steps: specific time_steps of element
-        :param scenario: investigated scenario
         :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv"""
         # select index
         index_list, index_name_list = self.construct_index_list(index_sets, time_steps)
@@ -470,7 +492,7 @@ class DataInput:
             default_name = None
         else:
             default_name = file_name
-            default_value = self.extract_attribute(default_name, scenario=scenario)
+            default_value = self.extract_attribute(default_name)
 
         # create output Series filled with default value
         if default_value is None:
@@ -478,16 +500,14 @@ class DataInput:
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit
-        self.save_unit_of_attribute(default_name, scenario)
+        self.save_unit_of_attribute(default_name)
         return df_output, default_value, index_name_list
 
-    def save_unit_of_attribute(self, file_name, scenario=""):
+    def save_unit_of_attribute(self, file_name):
         """ saves the unit of an attribute, converted to the base unit """
         # if numerics analyzed
         if self.solver["analyze_numerics"]:
-            attributes = "attributes"
-            if scenario and os.path.exists(os.path.join(self.folder_path, "attributes" + scenario + ".csv")):
-                attributes += scenario
+            attributes, _ = self.scenario_dict.get_default(self.element.name, file_name)
             df_input = self.read_input_data(attributes).set_index("index").squeeze(axis=1)
             # get attribute
             if file_name:
@@ -498,7 +518,11 @@ class DataInput:
             self.unit_handling.set_base_unit_combination(input_unit=input_unit, attribute=(self.element.name, file_name))
 
     def save_values_of_attribute(self, df_output, file_name):
-        """ saves the values of an attribute """
+        """ saves the values of an attribute
+
+        :param df_output: default output dataframe
+        :param file_name: name of selected file.
+        """
         # if numerics analyzed
         if self.solver["analyze_numerics"]:
             if file_name:
@@ -508,6 +532,7 @@ class DataInput:
 
     def construct_index_list(self, index_sets, time_steps):
         """ constructs index list from index sets and returns list of indices and list of index names
+
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param time_steps: specific time_steps of element
         :return index_list: list of indices
@@ -532,6 +557,7 @@ class DataInput:
 
     def exists_attribute(self, file_name, column=None):
         """ checks if default value or timeseries of an attribute exists in the input data
+
         :param file_name: name of selected file
         :param column: select specific column
         """
@@ -552,6 +578,7 @@ class DataInput:
 
     def convert_real_to_generic_time_indices(self, df_input, time_steps, file_name, index_name_list):
         """convert yearly time indices to generic time indices
+
         :param df_input: raw input dataframe
         :param time_steps: specific time_steps of element
         :param file_name: name of selected file
@@ -610,7 +637,7 @@ class DataInput:
                             self.energy_system.set_time_steps_years))
                     else:
                         index_list.append(df_input.index.get_level_values(index_name).unique())
-                combined_index = pd.MultiIndex.from_product(index_list, names=index_name_list).sort_values()
+                combined_index = pd.MultiIndex.from_product(index_list, names=index_names_column).sort_values()
                 is_single_index = False
             df_input_temp = pd.DataFrame(index=combined_index, columns=df_input.columns)
             common_index = df_input.index.intersection(combined_index)
@@ -644,6 +671,7 @@ class DataInput:
     @staticmethod
     def extract_from_input_without_missing_index(df_input, index_name_list, file_name):
         """ extracts the demanded values from Input dataframe and reformulates dataframe
+
         :param df_input: raw input dataframe
         :param index_name_list: list of name of indices
         :param file_name: name of selected file
@@ -660,6 +688,7 @@ class DataInput:
         """ extracts the demanded values from Input dataframe and reformulates dataframe if the index is missing.
         Either, the missing index is the column of df_input, or it is actually missing in df_input.
         Then, the values in df_input are extended to all missing index values.
+
         :param df_input: raw input dataframe
         :param df_output: default output dataframe
         :param index_name_list: list of name of indices
@@ -707,6 +736,7 @@ class DataInput:
     @staticmethod
     def extract_from_input_for_capacities_existing(df_input, df_output, index_name_list, column, missing_index):
         """ extracts the demanded values from input dataframe if extracting existing capacities
+
         :param df_input: raw input dataframe
         :param df_output: default output dataframe
         :param index_name_list: list of name of indices

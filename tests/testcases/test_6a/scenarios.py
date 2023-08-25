@@ -7,9 +7,10 @@ Organization: Laboratory of Risk and Reliability Engineering, ETH Zurich
 Description:  Scenario settings settings.
 ==========================================================================================================================================================================="""
 scenarios = dict()
-scenarios["1"] = {"EnergySystem": ["carbon_emissions_budget"]}        # change energy system parameter
-scenarios["2"] = {"EnergySystem": ["carbon_emissions_limit"]}         # change energy system parameter, yearly variation
-scenarios["3"] = {"heat": ["demand"]}                        # change carrier attribute, intra-yearly variation
-scenarios["4"] = {"heat": ["demand"]}                        # change carrier attribute, yearly variation (v1)
-scenarios["5"] = {"heat": ["demand_yearly_variation"]}         # change carrier attribute, yearly variation (v2)
-scenarios["6"] = {"natural_gas_boiler": ["capacity_existing"]}        # change technology attribute, add existing capacity
+scenarios["1"] = {"natural_gas": {"price_import": {"default": "attributes_1"}},  # new import price for natural gas
+                  'natural_gas_boiler': {'capex_specific': {'default_op': 1.1}},  # increased capex by 10%
+                  'heat': {'demand': {'file': 'demand_1',  # new demand file for heat
+                                      'file_op': 2}},  # doubles the demand
+                  "EnergySystem": {"price_carbon_emissions":{"default": "attributes_1"}} # increase the price for carbon emissions
+                  }
+

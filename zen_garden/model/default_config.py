@@ -1,11 +1,11 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      October-2021
-Authors:      Alissa Ganter (aganter@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:        ZEN-GARDEN
+:Created:      October-2021
+:Authors:      Alissa Ganter (aganter@ethz.ch)
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:  Default configuration. Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
-==========================================================================================================================================================================="""
+Default configuration. Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
+"""
 
 
 class Config(object):
@@ -16,6 +16,7 @@ class Config(object):
         """
         Initializes an instance of the parameters containing all defaults. If dictionaries are provided the defaults
         are overwritten.
+
         :param analysis: A dictionary used to update the default values in analysis
         :param solver: A dictionary used to update the default values in solver
         :param system: A dictionary used to update the default values in system
@@ -63,8 +64,6 @@ class Config(object):
         self.analysis["objective"] = "total_cost"
         # typology of optimisation: minimize or maximize
         self.analysis["sense"]     = "minimize"
-        # discount rate
-        self.analysis["discount_rate"] = 0.06
         # transport distance (euclidean or actual)
         self.analysis["transport_distance"] = "Euclidean"
         # dictionary with subsets related to set
@@ -93,8 +92,7 @@ class Config(object):
                 "set_storage_technologies":"technology",
                 "set_technologies":"technology",
                 "set_technologies_existing": "technology_existing",
-                "set_capacity_types":"capacity_type",
-                "set_lca_impact_categories":"impact_category"}
+                "set_capacity_types":"capacity_type"}
         # time series aggregation
         self.analysis["time_series_aggregation"] = {
             "clusterMethod"         : "k_means",
@@ -140,44 +138,48 @@ class Config(object):
         self.system["set_nodes"] = []
         # toggle to use time_series_aggregation
         self.system["conduct_time_series_aggregation"] = False
+        # toggle to exclude parameters from TSA, specified in system_specification/exclude_parameter_from_TSA
+        self.system["exclude_parameters_from_TSA"] = True
         # toggle to perform analysis for multiple scenarios
         self.system["conduct_scenario_analysis"] = False
+        # toggle to disable the default scenario (empty string), only considered if conduct_scenario_analysis is True
+        self.system["run_default_scenario"] = True
+        # toggle to delete all sub-scenarios that are not in the current scenario dict
+        self.system["clean_sub_scenarios"] = False
         # total hours per year
         self.system["total_hours_per_year"] = 8760
         # rate at which the knowledge stock of existing capacities is depreciated annually
         self.system["knowledge_depreciation_rate"] = 0.1
         # enforce selfish behavior
         self.system["enforce_selfish_behavior"] = False
-        # LCA flag and set of impact categories
-        self.system['load_lca_factors'] = False
-        self.system['set_lca_impact_categories'] = []
 
         ## Solver - Items assignment
         # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
         self.solver["name"]      = "glpk"
         # gurobi options
         self.solver["solver_options"] = {
-            "logfile":      ".//outputs//logs//pyomoLogFile.log",
+            "logfile":      ".//outputs//logs//GurobiLogFile.log",
             "MIPGap":       None,
             "TimeLimit":    None,
             "Method":       None
         }
-        # use symbolic labels, only sensible for debugging infeasible problems. Adds overhead
-        self.solver["use_symbolic_labels"] = False
+        # Directory for solver output
+        self.solver["solver_dir"] = ".//outputs//solver_files"
+        self.solver["keep_files"] = False
+        self.solver["io_api"] = "direct"
+        # This is not yet supported in linopy
+        self.solver["add_duals"] = False
         # analyze numerics
-        self.solver["analyze_numerics"]   = False
-        self.solver["immutable_unit"]     = []
+        self.solver["analyze_numerics"] = False
+        self.solver["recommend_base_units"] = False
+        self.solver["immutable_unit"] = []
         self.solver["range_unit_exponents"]    = {"min":-1,"max":1,"step_width":1}
         # assumes "ton" to be metric ton, not imperial ton
         self.solver["define_ton_as_metric_ton"] = True
         # round down to number of decimal points, for new capacity and unit multipliers
-        self.solver["rounding_decimal_points"]     = 5
+        self.solver["rounding_decimal_points"] = 5
         # round down to number of decimal points, for time series after TSA
-        self.solver["rounding_decimal_points_ts"]   = 3
-        # verbosity
-        self.solver["verbosity"] = True
-        # add duals 
-        self.solver["add_duals"] = False
+        self.solver["rounding_decimal_points_ts"] = 5
         # settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly:
         # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
         self.solver["linear_regression_check"] = {"eps_intercept":0.1,"epsRvalue":1-(1E-5)}

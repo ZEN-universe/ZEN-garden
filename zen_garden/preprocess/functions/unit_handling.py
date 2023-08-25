@@ -1,11 +1,11 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        April-2022
-Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:          ZEN-GARDEN
+:Created:        April-2022
+:Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class containing the unit handling procedure.
-==========================================================================================================================================================================="""
+Class containing the unit handling procedure.
+"""
 import logging
 import numpy as np
 import pandas as pd
@@ -16,17 +16,28 @@ import copy
 
 
 class UnitHandling:
+    """
+    Class containing the unit handling procedure
+    """
 
-    def __init__(self, folder_path, round_decimal_points,define_ton_as_metric_ton = True):
-        """ initialization of the unit_handling instance"""
+    def __init__(self, folder_path, round_decimal_points, define_ton_as_metric_ton=True):
+        """ initialization of the unit_handling instance
+
+        :param folder_path: The path to the folder containing the system specifications
+        :param round_decimal_points: rounding tolerance
+        :param define_ton_as_metric_ton: bool to use another definition for tons
+        """
         self.folder_path = folder_path
         self.rounding_decimal_points = round_decimal_points
         self.get_base_units(define_ton_as_metric_ton)
         # dict of element attribute values
         self.dict_attribute_values = {}
 
-    def get_base_units(self,define_ton_as_metric_ton = True):
-        """ gets base units of energy system """
+    def get_base_units(self, define_ton_as_metric_ton=True):
+        """ gets base units of energy system
+
+        :param define_ton_as_metric_ton: bool to use another definition for tons
+        """
         _list_base_unit = self.extract_base_units()
         self.ureg = UnitRegistry()
 
@@ -89,13 +100,16 @@ class UnitHandling:
 
     def extract_base_units(self):
         """ extracts base units of energy system
+
         :return list_base_units: list of base units """
         list_base_units = pd.read_csv(self.folder_path + "/base_units.csv").squeeze().values.tolist()
         return list_base_units
 
     def calculate_combined_unit(self, input_unit, return_combination=False):
         """ calculates the combined unit for converting an input_unit to the base units
+
         :param input_unit: string of input unit
+        :param return_combination: If True, return the combination of units
         :return combined_unit: multiplication factor """
         # check if "h" and thus "planck_constant" in unit
         self.check_if_invalid_hourstring(input_unit)
@@ -157,9 +171,11 @@ class UnitHandling:
         else:
             return combined_unit
 
-    def get_unit_multiplier(self, input_unit):
+    def get_unit_multiplier(self, input_unit,attribute_name):
         """ calculates the multiplier for converting an input_unit to the base units
+
         :param input_unit: string of input unit
+        :param attribute_name: name of attribute
         :return multiplier: multiplication factor """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if input_unit in self.base_units:
@@ -173,12 +189,16 @@ class UnitHandling:
             # magnitude of combined unit is multiplier
             multiplier = combined_unit.to_base_units().magnitude
             # check that multiplier is larger than rounding tolerance
-            assert multiplier >= 10 ** (-self.rounding_decimal_points), f"Multiplier {multiplier} of unit {input_unit} is smaller than rounding tolerance {10 ** (-self.rounding_decimal_points)}"
+            assert multiplier >= 10 ** (-self.rounding_decimal_points), f"Multiplier {multiplier} of unit {input_unit} in parameter {attribute_name} is smaller than rounding tolerance {10 ** (-self.rounding_decimal_points)}"
             # round to decimal points
             return round(multiplier, self.rounding_decimal_points)
 
     def set_base_unit_combination(self, input_unit, attribute):
-        """ converts the input unit to the corresponding base unit """
+        """ converts the input unit to the corresponding base unit
+
+        :param input_unit: #TODO describe parameter/return
+        :param attribute: #TODO describe parameter/return
+        """
         # if input unit is already in base units --> the input unit is base unit
         if input_unit in self.base_units:
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
@@ -191,12 +211,20 @@ class UnitHandling:
             self.dict_attribute_values[attribute] = {"base_combination": base_unit_combination, "values": None}
 
     def set_attribute_values(self, df_output, attribute):
-        """ saves the attributes values of an attribute """
+        """ saves the attributes values of an attribute
+
+        :param df_output: #TODO describe parameter/return
+        :param attribute: #TODO describe parameter/return
+        """
         if attribute in self.dict_attribute_values.keys():
             self.dict_attribute_values[attribute]["values"] = df_output
 
     def recommend_base_units(self, immutable_unit, unit_exps):
-        """ gets the best base units based on the input parameter values """
+        """ gets the best base units based on the input parameter values
+
+        :param immutable_unit: #TODO describe parameter/return
+        :param unit_exps: #TODO describe parameter/return
+        """
         logging.info(f"Check for best base unit combination between 10^{unit_exps['min']} and 10^{unit_exps['max']} (interval: 10^{unit_exps['step_width']})")
         smallest_range = {"comb": None, "val": np.inf, "originalVal": np.inf}
         dict_values = {}
@@ -211,9 +239,13 @@ class UnitHandling:
                 dict_units[item] = _df_units_temp
         df_values = pd.concat(dict_values, ignore_index=True).abs()
         df_units = pd.concat(dict_units, ignore_index=True)
-        df_dupl = pd.concat([df_values, df_units], axis=1).drop_duplicates()
-        df_values = df_values.loc[df_dupl.index]
-        df_units = df_units.loc[df_dupl.index, :]
+        # df_dupl = pd.concat([df_values, df_units], axis=1).drop_duplicates()
+        # df_dupl = pd.concat([df_values, df_units], axis=1).duplicated()
+        # # df_values = df_values.loc[df_dupl.index].values
+        # # df_units = df_units.loc[df_dupl.index, :]
+        # df_values = df_values.loc[~df_dupl].values
+        # df_units = df_units.loc[~df_dupl, :]
+        # df_values = df_values.values
         # original var and range
         smallest_range["originalVal"] = np.log10(df_values.max()) - np.log10(df_values.min())
         smallest_range["val"] = copy.copy(smallest_range["originalVal"])
@@ -223,11 +255,11 @@ class UnitHandling:
         step_width = unit_exps["step_width"]
         range_exp = range(min_exp, max_exp + 1, step_width)
         mutable_unit = self.dim_matrix.columns[self.dim_matrix.columns.isin(base_units.difference(immutable_unit))]
-        df_units = df_units.loc[:, mutable_unit]
+        df_units = df_units.loc[:, mutable_unit].values
         comb_mult = itertools.product(range_exp, repeat=len(mutable_unit))
         for comb in comb_mult:
-            df_scaled = df_units.multiply(comb, axis=1) * (-1)
-            df_scaled = 10 ** df_scaled.sum(axis=1).astype(float)
+            df_scaled = np.multiply(df_units,comb) * (-1)
+            df_scaled = 10 ** df_scaled.sum(axis=1)
             scaled_vals = df_values * df_scaled
             val_range = np.log10(scaled_vals.max()) - np.log10(scaled_vals.min())
             if val_range < smallest_range["val"]:
@@ -244,6 +276,7 @@ class UnitHandling:
 
     def check_if_invalid_hourstring(self, input_unit):
         """ checks if "h" and thus "planck_constant" in input_unit
+
         :param input_unit: string of input_unit """
         _tuple_units = self.ureg(input_unit).to_tuple()[1]
         _list_units = [_item[0] for _item in _tuple_units]
@@ -256,8 +289,9 @@ class UnitHandling:
     @staticmethod
     def check_pos_neg_boolean(array, axis=None):
         """ checks if the array has only positive or negative booleans (-1,0,1)
+
         :param array: numeric numpy array
-        :param axis:
+        :param axis: #TODO describe parameter/return
         :return is_pos_neg_boolean """
         if axis:
             is_pos_neg_boolean = np.apply_along_axis(lambda row: np.array_equal(np.abs(row), np.abs(row).astype(bool)), 1, array).any()

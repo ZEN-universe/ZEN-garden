@@ -1,9 +1,10 @@
-name: zen-garden
+name: zen-garden-linopy
 channels:
   - conda-forge
   - gurobi
 dependencies:
   - python=3.11
+  - cython
   - pytest
   - pip
   - numpy
@@ -15,13 +16,17 @@ dependencies:
   - pint
   - matplotlib
   - entsoe-py
-  - pyomo=6
   - gurobi
+  - h5py
+  - pytables
   - pip:
       - tsam
-      - hdfdict
+      - filelock
+      - ordered-set
       - pyogrio
+      - psutil
+      - linopy==0.1.5
       - -e .
 
 # conda env create -f zen_garden_env.yml
-# conda remove --name zen-garden --all
+# conda remove --name zen-garden-linopy --all

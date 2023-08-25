@@ -1,32 +1,41 @@
-"""===========================================================================================================================================================================
-Title:          ZEN-GARDEN
-Created:        October-2021
-Authors:        Alissa Ganter (aganter@ethz.ch)
-                Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
+"""
+:Title:          ZEN-GARDEN
+:Created:        October-2021
+:Authors:        Alissa Ganter (aganter@ethz.ch),
+                 Jacob Mannhardt (jmannhardt@ethz.ch)
+:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Description:    Class defining the parameters, variables and constraints that hold for all storage technologies.
-                The class takes the abstract optimization model as an input, and returns the parameters, variables and
-                constraints that hold for the storage technologies.
-==========================================================================================================================================================================="""
+Class defining the parameters, variables and constraints that hold for all storage technologies.
+The class takes the abstract optimization model as an input, and returns the parameters, variables and
+constraints that hold for the storage technologies.
+"""
 import cProfile
 import logging
 
 import numpy as np
-import pyomo.environ as pe
+import xarray as xr
 
+from zen_garden.utils import linexpr_from_tuple_np
 from .technology import Technology
+from ..component import ZenIndex, IndexSet
+from ..element import Element, GenericRule
 
 
 class StorageTechnology(Technology):
+    """
+    Class defining storage technologies
+    """
     # set label
     label = "set_storage_technologies"
     location_type = "set_nodes"
 
     def __init__(self, tech, optimization_setup):
-        """init storage technology object
+        """
+        init storage technology object
+
         :param tech: name of added technology
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
 
         logging.info(f'Initialize storage technology {tech}')
         super().__init__(tech, optimization_setup)
@@ -70,7 +79,13 @@ class StorageTechnology(Technology):
         self.capex_specific_energy = self.capex_specific_energy * fraction_year
 
     def calculate_capex_of_single_capacity(self, capacity, index, storage_energy=False):
-        """ this method calculates the annualized capex of a single existing capacity. """
+        """ this method calculates the annualized capex of a single existing capacity.
+
+        :param capacity: #TODO describe parameter/return
+        :param index: #TODO describe parameter/return
+        :param storage_energy: #TODO describe parameter/return
+        :return: #TODO describe parameter/return
+        """
         if storage_energy:
             _absolute_capex = self.capex_specific_energy[index[0]].iloc[0] * capacity
         else:
@@ -79,7 +94,8 @@ class StorageTechnology(Technology):
 
     def calculate_time_steps_storage_level(self, conducted_tsa):
         """ this method calculates the number of time steps on the storage level, and the sequence in which the storage levels are connected
-        conducted_tsa: boolean if the time series were aggregated. If not, the storage level index is the same as the carrier flow indices """
+
+        :param conducted_tsa: boolean if the time series were aggregated. If not, the storage level index is the same as the carrier flow indices  """
         sequence_time_steps = self.sequence_time_steps
         # if time series aggregation was conducted
         if conducted_tsa:
@@ -111,7 +127,10 @@ class StorageTechnology(Technology):
         self.energy_system.time_steps.set_time_steps_storage_startend(self.name, self.optimization_setup.system)
 
     def overwrite_time_steps(self, base_time_steps):
-        """ overwrites set_time_steps_storage_level """
+        """ overwrites set_time_steps_storage_level
+
+        :param base_time_steps: #TODO describe parameter/return
+        """
         super().overwrite_time_steps(base_time_steps)
         set_time_steps_storage_level = self.energy_system.time_steps.encode_time_step(self.name + "_storage_level", base_time_steps=base_time_steps, time_step_type="operation", yearly=True)
         setattr(self, "set_time_steps_storage_level", set_time_steps_storage_level.squeeze().tolist())
@@ -120,15 +139,17 @@ class StorageTechnology(Technology):
     @classmethod
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <StorageTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
-        model = optimization_setup.model
         # time steps of storage levels
-        model.set_time_steps_storage_level = pe.Set(model.set_storage_technologies, initialize=optimization_setup.get_attribute_of_all_elements(cls, "set_time_steps_storage_level"),
-            doc="Set of time steps of storage levels for all storage technologies. Dimensions: set_storage_technologies")
+        optimization_setup.sets.add_set(name="set_time_steps_storage_level", data=optimization_setup.get_attribute_of_all_elements(cls, "set_time_steps_storage_level"),
+                                        doc="Set of time steps of storage levels for all storage technologies. Dimensions: set_storage_technologies",
+                                        index_set="set_storage_technologies")
 
     @classmethod
     def construct_params(cls, optimization_setup):
         """ constructs the pe.Params of the class <StorageTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
 
         # time step duration of storage level
@@ -155,75 +176,122 @@ class StorageTechnology(Technology):
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <StorageTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
 
-        def flow_storage_bounds(model, tech, node, time):
-            """ return bounds of flow_storage for bigM expression
-            :param model: pe.ConcreteModel
-            :param tech: tech index
-            :param node: node index
-            :param time: time index
-            :return bounds: bounds of flow_storage"""
-            # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
-            bounds = model.capacity[tech, "power", node, time_step_year].bounds
-            return bounds
-
         model = optimization_setup.model
+        variables = optimization_setup.variables
+        sets = optimization_setup.sets
+
+        def flow_storage_bounds(index_values, index_list):
+            """ return bounds of carrier_flow for bigM expression
+            :param index_values: list of tuples with the index values
+            :param index_list: The names of the indices
+            :return bounds: bounds of carrier_flow"""
+
+            # get the arrays
+            tech_arr, node_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
+            # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
+            time_step_year = xr.DataArray([optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time) for tech, time in zip(tech_arr.data, time_arr.data)])
+            lower = model.variables["capacity"].lower.loc[tech_arr, "power", node_arr, time_step_year].data
+            upper = model.variables["capacity"].upper.loc[tech_arr, "power", node_arr, time_step_year].data
+            return np.stack([lower, upper], axis=-1)
+
         # flow of carrier on node into storage
-        optimization_setup.variables.add_variable(model, name="flow_storage_charge", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
-            bounds=flow_storage_bounds, doc='carrier flow into storage technology on node i and time t')
+        index_values, index_names = cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)
+        bounds = flow_storage_bounds(index_values, index_names)
+        variables.add_variable(model, name="flow_storage_charge", index_sets=(index_values, index_names),
+            bounds=bounds, doc='carrier flow into storage technology on node i and time t')
         # flow of carrier on node out of storage
-        optimization_setup.variables.add_variable(model, name="flow_storage_discharge", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup), domain=pe.NonNegativeReals,
-            bounds=flow_storage_bounds, doc='carrier flow out of storage technology on node i and time t')
+        variables.add_variable(model, name="flow_storage_discharge", index_sets=(index_values, index_names),
+            bounds=bounds, doc='carrier flow out of storage technology on node i and time t')
         # loss of carrier on node
-        optimization_setup.variables.add_variable(model, name="storage_level", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup), domain=pe.NonNegativeReals,
-            doc='storage level of storage technology on node in each storage time step')
+        variables.add_variable(model, name="storage_level", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup), bounds=(0, np.inf),
+            doc='storage level of storage technology ón node in each storage time step')
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <StorageTechnology>
+
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
+        constraints = optimization_setup.constraints
         rules = StorageTechnologyRules(optimization_setup)
         # Limit storage level
-        optimization_setup.constraints.add_constraint(model, name="constraint_storage_level_max", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup),
-            rule=rules.constraint_storage_level_max_rule, doc='limit maximum storage level to capacity')
+        constraints.add_constraint_block(model, name="constraint_storage_level_max",
+                                         constraint=rules.get_constraint_storage_level_max(),
+                                         doc='limit maximum storage level to capacity')
         # couple storage levels
-        optimization_setup.constraints.add_constraint(model, name="constraint_couple_storage_level", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], optimization_setup),
-            rule=rules.constraint_couple_storage_level_rule, doc='couple subsequent storage levels (time coupling constraints)')
+        constraints.add_constraint_block(model, name="constraint_couple_storage_level",
+                                         constraint=rules.constraint_couple_storage_level_block(),
+                                         doc='couple subsequent storage levels (time coupling constraints)')
         # Linear Capex
-        optimization_setup.constraints.add_constraint(model, name="constraint_storage_technology_capex",
-            index_sets=cls.create_custom_set(["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], optimization_setup), rule=rules.constraint_storage_technology_capex_rule,
-            doc='Capital expenditures for installing storage technology')
+        constraints.add_constraint_block(model, name="constraint_storage_technology_capex",
+                                         constraint=rules.constraint_storage_technology_capex_block(),
+                                         doc='Capital expenditures for installing storage technology')
 
         # defines disjuncts if technology on/off
 
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, disjunct, tech, capacity_type, node, time):
-        """definition of disjunct constraints if technology is on"""
-        model = disjunct.model()
+    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
+        """definition of disjunct constraints if technology is on
+
+        :param optimization_setup: #TODO describe parameter/return
+        :param tech: #TODO describe parameter/return
+        :param capacity_type: #TODO describe parameter/return
+        :param node: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        :param binary_var: #TODO describe parameter/return
+        """
         params = optimization_setup.parameters
+        constraints = optimization_setup.constraints
+        model = optimization_setup.model
         energy_system = optimization_setup.energy_system
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech,time)
         # disjunct constraints min load charge
-        disjunct.constraint_min_load_charge = pe.Constraint(
-            expr=model.flow_storage_charge[tech, node, time] >= params.min_load[tech, capacity_type, node, time] * model.capacity[tech, capacity_type, node, time_step_year])
+        constraints.add_constraint_block(model, name=f"constraint_min_load_charge_{tech}_{capacity_type}_{node}_{time}",
+                                         constraint=(model.variables["flow_storage_charge"][tech, node, time].to_expr()
+                                                     - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
+                                                     >= 0),
+                                         disjunction_var=binary_var)
+
         # disjunct constraints min load discharge
-        disjunct.constraint_min_load_discharge = pe.Constraint(
-            expr=model.flow_storage_discharge[tech, node, time] >= params.min_load[tech, capacity_type, node, time] * model.capacity[tech, capacity_type, node, time_step_year])
+        constraints.add_constraint_block(model, name=f"constraint_min_load_discharge_{tech}_{capacity_type}_{node}_{time}",
+                                         constraint=(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
+                                                     - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
+                                                     >= 0),
+                                         disjunction_var=binary_var)
 
     @classmethod
-    def disjunct_off_technology_rule(cls, disjunct, tech, capacity_type, node, time):
-        """definition of disjunct constraints if technology is off"""
-        model = disjunct.model()
-        # off charging
-        disjunct.constraint_no_load_charge = pe.Constraint(expr=model.flow_storage_charge[tech, node, time] == 0)
-        # off discharging
-        disjunct.constraint_no_load_discharge = pe.Constraint(expr=model.flow_storage_discharge[tech, node, time] == 0)
+    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
+        """definition of disjunct constraints if technology is off
 
-class StorageTechnologyRules:
+        :param optimization_setup: #TODO describe parameter/return
+        :param tech: #TODO describe parameter/return
+        :param capacity_type: #TODO describe parameter/return
+        :param node: #TODO describe parameter/return
+        :param time: #TODO describe parameter/return
+        :param binary_var: #TODO describe parameter/return
+        """
+        model = optimization_setup.model
+        constraints = optimization_setup.constraints
+
+        # for equality constraints we need to add upper and lower bounds
+        # off charging
+        constraints.add_constraint_block(model, name=f"constraint_off_charging_{tech}_{capacity_type}_{node}_{time}",
+                                         constraint=(model.variables["flow_storage_charge"][tech, node, time].to_expr()
+                                                     == 0),
+                                         disjunction_var=binary_var)
+
+        # off discharging
+        constraints.add_constraint_block(model, name=f"constraint_off_discharging_{tech}_{capacity_type}_{node}_{time}",
+                                         constraint=(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
+                                                     == 0),
+                                         disjunction_var=binary_var)
+
+
+class StorageTechnologyRules(GenericRule):
     """
     Rules for the StorageTechnology class
     """
@@ -231,52 +299,163 @@ class StorageTechnologyRules:
     def __init__(self, optimization_setup):
         """
         Inits the rules for a given EnergySystem
+
         :param optimization_setup: The OptimizationSetup the element is part of
         """
 
-        self.optimization_setup = optimization_setup
-        self.energy_system = optimization_setup.energy_system
+        super().__init__(optimization_setup)
 
-    ### --- functions with constraint rules --- ###
-    def constraint_storage_level_max_rule(self, model, tech, node, time):
-        """limit maximum storage level to capacity"""
-        # get invest time step
-        element_time_step = self.energy_system.time_steps.convert_time_step_energy2power(tech, time)
-        time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, element_time_step)
-        return (model.storage_level[tech, node, time] <= model.capacity[tech, "energy", node, time_step_year])
+    # Rule-based constraints
+    # ----------------------
 
-    def constraint_couple_storage_level_rule(self, model, tech, node, time):
-        """couple subsequent storage levels (time coupling constraints)"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        system = self.optimization_setup.system
-        element_time_step = self.energy_system.time_steps.convert_time_step_energy2power(tech, time)
-        # get invest time step
-        time_step_year = self.energy_system.time_steps.convert_time_step_operation2year(tech, element_time_step)
-        # get corresponding start time step at beginning of the year, if time is last time step in year
-        time_step_end = self.energy_system.time_steps.get_time_steps_storage_startend(tech, time)
-        enforce_periodicity = True
-        if time_step_end is not None:
-            previous_level_time_step = time_step_end
-            if not system["storage_periodicity"]:
-                enforce_periodicity = False
-        else:
-            previous_level_time_step = self.energy_system.time_steps.get_previous_storage_time_step(tech,time)
-        # self discharge, reformulate as partial geometric series
-        if params.self_discharge[tech, node] != 0:
-            after_self_discharge = (1-(1 - params.self_discharge[tech, node])**params.time_steps_storage_level_duration[tech, time])/(1-(1 - params.self_discharge[tech, node]))
-        else:
-            after_self_discharge = params.time_steps_storage_level_duration[tech, time]
-        if enforce_periodicity:
-            return (model.storage_level[tech, node, time] ==
-                    model.storage_level[tech, node, previous_level_time_step] * (1 - params.self_discharge[tech, node]) ** params.time_steps_storage_level_duration[tech, time]
-                    + (model.flow_storage_charge[tech, node, element_time_step] * params.efficiency_charge[tech, node, time_step_year]
-                       - model.flow_storage_discharge[tech, node, element_time_step] / params.efficiency_discharge[tech, node, time_step_year]) * after_self_discharge)
-        else:
-            return pe.Constraint.Skip
+    # Block-based constraints
+    # -----------------------
 
-    def constraint_storage_technology_capex_rule(self, model, tech, capacity_type, node, time):
-        """ definition of the capital expenditures for the storage technology"""
-        # get parameter object
-        params = self.optimization_setup.parameters
-        return (model.cost_capex[tech, capacity_type, node, time] == model.capacity_addition[tech, capacity_type, node, time] * params.capex_specific_storage[tech, capacity_type, node, time])
+    def get_constraint_storage_level_max(self):
+        """limit maximum storage level to capacity
+
+        .. math::
+            L_{k,n,t^\mathrm{k}} \le S^\mathrm{e}_{k,n,y}
+
+        :return: #TODO describe parameter/return
+        """
+
+        ### index sets
+        index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over the technologies for the time step conversion
+        # we vectorize over the nodes and storage time steps
+        constraints = []
+        for tech in index.get_unique(["set_storage_technologies"]):
+
+            ### auxiliary calculations
+            coords = [self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_storage_level"]]
+            nodes, times = index.get_values(locs=[tech], levels=[1, 2], dtype=list, unique=True)
+            element_time_step = [self.energy_system.time_steps.convert_time_step_energy2power(tech, t) for t in times]
+            time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in
+                              element_time_step]
+
+            ### formulate constraint
+            lhs = linexpr_from_tuple_np([(1.0, self.variables["storage_level"].loc[tech, nodes, times]),
+                                         (-1.0, self.variables["capacity"].loc[tech, "energy", nodes, time_step_year])],
+                                        coords, self.model)
+            rhs = 0
+            constraints.append(lhs <= rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(levels=["set_storage_technologies"]),
+                                                  index_names=["set_storage_technologies"])
+
+    def constraint_couple_storage_level_block(self):
+        """couple subsequent storage levels (time coupling constraints)
+
+        .. math::
+            L(t) = L_0\\kappa^t + \\Delta H\\frac{1-\\kappa^t}{1-\\kappa} = \\frac{\\Delta H}{1-\\kappa}+(L_0-\\frac{\\Delta H}{1-\\kappa})\\kappa^t
+
+        :return: #TODO describe parameter/return
+        """
+
+        ### index sets
+        index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage_level"], self.optimization_setup)
+        index = ZenIndex(index_values, index_names)
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # we loop over the technologies for the time step conversion
+        # we vectorize over the nodes and storage time steps
+        constraints = []
+        for tech in index.get_unique(["set_storage_technologies"]):
+
+            ### auxiliary calculations
+            nodes, times = index.get_values(locs=[tech], levels=[1, 2], dtype=list, unique=True)
+            element_time_step = [self.energy_system.time_steps.convert_time_step_energy2power(tech, t) for t in times]
+            # get invest time step
+            time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in
+                              element_time_step]
+            # get corresponding start time step at beginning of the year, if time is last time step in year
+            time_step_end = [self.energy_system.time_steps.get_time_steps_storage_startend(tech, t) for t in times]
+
+            # filter end time step and all others
+            previous_level_time_step = []
+            for t, te in zip(times, time_step_end):
+                if te is not None:
+                    if self.system["storage_periodicity"]:
+                        previous_level_time_step.append(te)
+                    else:
+                        previous_level_time_step.append(None)
+                else:
+                    previous_level_time_step.append(self.energy_system.time_steps.get_previous_storage_time_step(tech,t))
+            times = [t for t, tp in zip(times, previous_level_time_step) if tp is not None]
+            element_time_step = [t for t, tp in zip(element_time_step, previous_level_time_step) if tp is not None]
+            time_step_year = [t for t, tp in zip(time_step_year, previous_level_time_step) if tp is not None]
+            previous_level_time_step = [t for t in previous_level_time_step if t is not None]
+
+            # self discharge, reformulate as partial geometric series
+            after_self_discharge = xr.where(self.parameters.self_discharge.loc[tech, nodes] != 0,
+                                            (1 - (1 - self.parameters.self_discharge.loc[tech, nodes]) **
+                                             self.parameters.time_steps_storage_level_duration.loc[tech, times]) / (
+                                                        1 - (1 - self.parameters.self_discharge.loc[tech, nodes])),
+                                            self.parameters.time_steps_storage_level_duration.loc[tech, times])
+
+            coords = [self.variables.coords["set_nodes"],
+                      xr.DataArray(previous_level_time_step, dims=[f"{tech}_{nodes}_set_time_steps_storage_level_end"])]
+
+            ### formulate constraint
+            lhs = linexpr_from_tuple_np([(1.0, self.variables["storage_level"].loc[tech, nodes, times]),
+                                         (-(1.0 - self.parameters.self_discharge.loc[tech, nodes]) ** self.parameters.time_steps_storage_level_duration.loc[tech, times], self.variables["storage_level"].loc[tech, nodes, previous_level_time_step]),
+                                         (-after_self_discharge.data*self.parameters.efficiency_charge.loc[tech, nodes, time_step_year], self.variables["flow_storage_charge"].loc[tech, nodes, element_time_step]),
+                                         (after_self_discharge.data/self.parameters.efficiency_discharge.loc[tech, nodes, time_step_year], self.variables["flow_storage_discharge"].loc[tech, nodes, element_time_step])],
+                                        coords, self.model)
+            rhs = 0
+            constraints.append(lhs == rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=index.get_unique(["set_storage_technologies"]),
+                                                  index_names=["set_storage_technologies"])
+
+    def constraint_storage_technology_capex_block(self):
+        """ definition of the capital expenditures for the storage technology
+
+        .. math::
+            CAPEX_{y,n,i}^\mathrm{cost} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
+
+        :return: #TODO describe parameter/return
+        """
+
+        ### index sets
+        index_values, index_names = Element.create_custom_set(["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], self.optimization_setup)
+        # check if we need to continue
+        if len(index_values) == 0:
+            return []
+
+        ### masks
+        # not necessary
+
+        ### index loop
+        # not necessary
+
+        ### auxiliary calculations
+        # get all the arrays and coords
+        techs, capacity_types, nodes, times = IndexSet.tuple_to_arr(index_values, index_names, unique=True)
+        coords = [self.variables.coords["set_storage_technologies"], self.variables.coords["set_capacity_types"], self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_yearly"]]
+
+        ### formulate constraint
+        lhs = linexpr_from_tuple_np([(1.0, self.variables["cost_capex"].loc[techs, capacity_types, nodes, times]),
+                                     (-self.parameters.capex_specific_storage.loc[techs, capacity_types, nodes, times], self.variables["capacity_addition"].loc[techs, capacity_types, nodes, times])],
+                                     coords, self.model)
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
