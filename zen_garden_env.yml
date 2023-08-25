@@ -18,7 +18,7 @@ dependencies:
   - gurobi
   - pytables
   - pip:
-      - tsam
+      - tsam==2.3.0
       - filelock
       - hdfdict
       - ordered-set
