@@ -17,10 +17,11 @@ dependencies:
   - matplotlib
   - entsoe-py
   - gurobi
-  - h5py
+#  - h5py
   - pytables
   - pip:
       - tsam
+      - h5py
       - filelock
       - ordered-set
       - pyogrio
