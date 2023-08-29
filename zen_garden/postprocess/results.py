@@ -1440,8 +1440,9 @@ class Results(object):
             data_plot = data_plot.iloc[start_hour:start_hour+duration]
         # remove columns(technologies/variables) with constant zero value
         data_plot = data_plot.loc[:, (data_plot != 0).any(axis=0)]
-        # set colors and plot data frame
-        colors = plt.cm.tab20(range(data_plot.shape[1]))
+        # set colors and plot data frame, repeat tab20
+        num_repeat = np.ceil(data_plot.shape[1]/20)
+        colors = np.tile(np.array(plt.cm.tab20.colors),(int(num_repeat),1))
         # check if demand should be plotted as a line or as an area
         if demand_area is False:
             data_plot_wo_demand = data_plot.drop(columns=[demand for demand in data_plot.columns if "demand" in demand or "shed_demand" in demand])
