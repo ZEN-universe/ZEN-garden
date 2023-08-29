@@ -187,7 +187,7 @@ class DataInput:
         """
         if attribute_name + "_default" not in df_input.index:
             if attribute_name not in df_input.index:
-                return None
+                raise AttributeError(f"Attribute {attribute_name} doesn't exist in input data and must therefore be defined")
             elif not skip_warning:
                 logging.warning(f"DeprecationWarning: Attribute names without '_default' suffix are deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}")
         else:
