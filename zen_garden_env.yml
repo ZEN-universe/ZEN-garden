@@ -4,6 +4,7 @@ channels:
   - gurobi
 dependencies:
   - python=3.11
+  - cython
   - pytest
   - pip
   - numpy
@@ -16,11 +17,12 @@ dependencies:
   - matplotlib
   - entsoe-py
   - gurobi
+#  - h5py
   - pytables
   - pip:
       - tsam
+      - h5py
       - filelock
-      - hdfdict
       - ordered-set
       - pyogrio
       - psutil

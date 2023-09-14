@@ -215,8 +215,6 @@ class Technology(Element):
         :return existing_quantity: existing capacity or capex of existing capacity
         """
         params = optimization_setup.parameters.dict_parameters
-        system = optimization_setup.system
-        discount_rate = optimization_setup.analysis["discount_rate"]
         if time_step_type:
             time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech,time)
         else:
@@ -1307,9 +1305,12 @@ class TechnologyRules(GenericRule):
         for tech, year in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
 
             ### auxiliary calculations
-            discount_rate = self.analysis["discount_rate"]
+            discount_rate = self.parameters.discount_rate
             lifetime = self.parameters.lifetime.loc[tech].item()
-            annuity = ((1+discount_rate)**lifetime * discount_rate)/((1+discount_rate)**lifetime - 1)
+            if discount_rate != 0:
+                annuity = ((1+discount_rate)**lifetime * discount_rate)/((1+discount_rate)**lifetime - 1)
+            else:
+                annuity = 1/lifetime
             term_neg_annuity_cost_capex_previous = []
             for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly"):
                 term_neg_annuity_cost_capex_previous.append(-annuity * self.variables["cost_capex"].loc[tech, :, :, previous_year])

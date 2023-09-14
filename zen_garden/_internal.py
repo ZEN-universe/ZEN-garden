@@ -11,13 +11,17 @@ Compilation  of the optimization problem.
 import importlib.util
 import logging
 import os
+from collections import defaultdict
+from copy import deepcopy
+from pathlib import Path
+import shutil
 
 import pkg_resources
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
 from .preprocess.prepare import Prepare
-from .utils import setup_logger
+from .utils import setup_logger, ScenarioDict
 
 # we setup the logger here
 setup_logger()
@@ -30,7 +34,7 @@ def main(config, dataset_path=None, job_index=None):
 
     :param config: A config instance used for the run
     :param dataset_path: If not None, used to overwrite the config.analysis["dataset"]
-    :param job_index: The index of the scenario to run, if None, all scenarios are run in sequence
+    :param job_index: The index of the scenario to run or a list of indices, if None, all scenarios are run in sequence
     """
 
     # print the version
@@ -68,14 +72,25 @@ def main(config, dataset_path=None, job_index=None):
         spec.loader.exec_module(module)
         scenarios = module.scenarios
         config.scenarios.update(scenarios)
+        # remove the default scenario if necessary
+        if not config.system["run_default_scenario"] and "" in config.scenarios:
+            del config.scenarios[""]
+
+        # expand the scenarios
+        config.scenarios = ScenarioDict.expand_lists(config.scenarios)
 
         # deal with the job array
         if job_index is not None:
-            logging.info(f"Running scenario with job index: {job_index}")
+            if isinstance(job_index, int):
+                job_index = [job_index]
+            else:
+                job_index = list(job_index)
+            logging.info(f"Running scenarios with job indices: {job_index}")
+
 
             # reduce the scenario and element to a single one
-            scenarios = [list(config.scenarios.keys())[job_index]]
-            elements = [list(config.scenarios.values())[job_index]]
+            scenarios = [list(config.scenarios.keys())[jx] for jx in job_index]
+            elements = [list(config.scenarios.values())[jx] for jx in job_index]
         else:
             logging.info(f"Running all scenarios sequentially")
             scenarios = config.scenarios.keys()
@@ -92,6 +107,30 @@ def main(config, dataset_path=None, job_index=None):
         if config.analysis["overwrite_output"]:
             logging.warning("Existing files will be overwritten!")
 
+    # clean sub-scenarios if necessary
+    if config.system["conduct_scenario_analysis"] and config.system["clean_sub_scenarios"]:
+        # collect all paths that are in the scenario dict
+        folder_dict = defaultdict(list)
+        for key, value in config.scenarios.items():
+            if value["sub_folder"] != "":
+                folder_dict[f"scenario_{value['base_scenario']}"].append(f"scenario_{value['sub_folder']}")
+                folder_dict[f"scenario_{value['base_scenario']}"].append(f"dict_all_sequence_time_steps_{value['sub_folder']}.h5")
+
+        # compare to existing sub-scenarios
+        for scenario_name, sub_folders in folder_dict.items():
+            scenario_path = os.path.join(out_folder, scenario_name)
+            if os.path.exists(scenario_path) and os.path.isdir(scenario_path):
+                existing_sub_folder = os.listdir(scenario_path)
+                for sub_folder in existing_sub_folder:
+                    # delete the scenario subfolder
+                    sub_folder_path = os.path.join(scenario_path, sub_folder)
+                    if os.path.isdir(sub_folder_path) and sub_folder not in sub_folders:
+                        logging.info(f"Removing sub-scenario {sub_folder}")
+                        shutil.rmtree(sub_folder_path, ignore_errors=True)
+                    # the time steps dict
+                    if sub_folder.startswith("dict_all_sequence_time_steps") and sub_folder not in sub_folders:
+                        logging.info(f"Removing time steps dict {sub_folder}")
+                        os.remove(sub_folder_path)
 
     # iterate through scenarios
     for scenario, elements in zip(scenarios, elements):
@@ -132,19 +171,41 @@ def main(config, dataset_path=None, job_index=None):
             # add cumulative carbon emissions to previous carbon emissions
             optimization_setup.add_carbon_emission_cumulative(step_horizon)
             # EVALUATE RESULTS
-            subfolder = ""
+            subfolder = Path("")
             scenario_name = None
+            param_map = None
+            output_scenarios = config.scenarios
             if config.system["conduct_scenario_analysis"]:
                 # handle scenarios
-                subfolder += f"scenario_{scenario}"
-                scenario_name = subfolder
+                scenario_name = f"scenario_{scenario}"
+                subfolder = Path(f"scenario_{elements['base_scenario']}")
+
+                # set the scenarios
+                if elements["sub_folder"] != "":
+                    # get the param map
+                    param_map = elements["param_map"]
+
+                    # get the output scenarios
+                    subfolder = subfolder.joinpath(f"scenario_{elements['sub_folder']}")
+                    scenario_name = f"scenario_{elements['sub_folder']}"
+                    output_scenarios = {}
+                    for s, s_dict in config.scenarios.items():
+                        if s_dict["base_scenario"] == elements["base_scenario"]:
+                            out_dict = deepcopy(s_dict)
+                            out_dict["base_scenario"] = s_dict["sub_folder"]
+                            out_dict["sub_folder"] = ""
+                            output_scenarios[s_dict["sub_folder"]] = out_dict
             # handle myopic foresight
             if len(steps_optimization_horizon) > 1:
-                if subfolder != "":
-                    subfolder += f"_"
-                subfolder += f"MF_{step_horizon}"
+                sf_string = str(subfolder)
+                if sf_string == ".":
+                    sf_string = ""
+                if sf_string != "":
+                    sf_string += "_"
+                sf_string += f"MF_{step_horizon}"
+                subfolder = Path(sf_string)
             # write results
-            _ = Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
-                            model_name=model_name, scenario_name=scenario_name)
+            _ = Postprocess(optimization_setup, scenarios=output_scenarios, subfolder=subfolder,
+                            model_name=model_name, scenario_name=scenario_name, param_map=param_map)
     logging.info("Optimization finished")
     return optimization_setup

@@ -150,22 +150,23 @@ class DataInput:
         else:
             return None
 
-    def extract_attribute(self, attribute_name, skip_warning=False):
+    def extract_attribute(self, attribute_name, skip_warning=False, check_if_exists=False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param attribute_name: name of selected attribute
         :param skip_warning: boolean to indicate if "Default" warning is skipped
+        :param check_if_exists: check if attribute exists
         :return attribute_value: attribute value """
 
         filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
         df_input = self.read_input_data(filename)
         if df_input is not None:
             df_input = df_input.set_index("index").squeeze(axis=1)
-            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning)
+            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning,suppress_error=check_if_exists)
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"])
+            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"],attribute_name)
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -177,17 +178,21 @@ class DataInput:
         else:
             return None
 
-    def adapt_attribute_name(self, attribute_name, df_input, skip_warning=False):
+    def adapt_attribute_name(self, attribute_name, df_input, skip_warning=False,suppress_error=False):
         """ check if attribute in index
 
         :param attribute_name: name of selected attribute
         :param df_input: pd.DataFrame with input data
         :param skip_warning: boolean to indicate if "Default" warning is skipped
+        :param suppress_error: suppress AttributeError if only check for existence of attribute
         :return:
         """
         if attribute_name + "_default" not in df_input.index:
             if attribute_name not in df_input.index:
-                return None
+                if suppress_error:
+                    return None
+                else:
+                    raise AttributeError(f"Attribute {attribute_name} doesn't exist in input data and must therefore be defined")
             elif not skip_warning:
                 logging.warning(f"DeprecationWarning: Attribute names without '_default' suffix are deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}")
         else:
@@ -507,7 +512,7 @@ class DataInput:
                 columns = df_input.columns
             df_input_units = df_input[columns].iloc[-1]
             df_input = df_input.iloc[:-1]
-            _df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit))
+            _df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit,attribute_name=variable_type))
             df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='coerce'))
             df_input[columns] = df_input[columns] * _df_input_multiplier
         return df_input
@@ -605,7 +610,7 @@ class DataInput:
             default_name = column
         else:
             default_name = file_name
-        default_value = self.extract_attribute(default_name)
+        default_value = self.extract_attribute(default_name,check_if_exists=True)
 
         if default_value is None or math.isnan(default_value["value"]):  # if no default value exists or default value is nan
             _dfInput = self.read_input_data(file_name)
