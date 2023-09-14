@@ -100,4 +100,4 @@ class Prepare:
         # check if carriers exist
         self.system = system
         for carrier in self.system["set_carriers"]:
-            assert carrier in self.paths["set_carriers"].keys(), f"Carrier {carrier} selected in config does not exist in input data, excluded from model."
+            assert carrier in self.paths["set_carriers"].keys(), f"Carrier {carrier} does not exist in input data."
