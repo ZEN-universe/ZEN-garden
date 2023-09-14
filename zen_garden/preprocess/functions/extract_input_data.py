@@ -165,7 +165,7 @@ class DataInput:
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"])
+            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"],attribute_name)
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -468,7 +468,7 @@ class DataInput:
                 columns = df_input.columns
             df_input_units = df_input[columns].iloc[-1]
             df_input = df_input.iloc[:-1]
-            _df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit))
+            _df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit,attribute_name=variable_type))
             df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='coerce'))
             df_input[columns] = df_input[columns] * _df_input_multiplier
         return df_input
