@@ -20,7 +20,6 @@ import pkg_resources
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
-from .preprocess.prepare import Prepare
 from .utils import setup_logger, ScenarioDict
 
 # we setup the logger here
@@ -134,14 +133,9 @@ def main(config, dataset_path=None, job_index=None):
 
     # iterate through scenarios
     for scenario, elements in zip(scenarios, elements):
-        # create a dictionary with the paths to access the model inputs and check if input data exists
-        prepare = Prepare(config)
-        # check if all data inputs exist and remove non-existent
-        prepare.check_existing_input_data()
-
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the elements and read input data
-        optimization_setup = OptimizationSetup(config.analysis, prepare, scenario_dict=elements)
+        optimization_setup = OptimizationSetup(config, scenario_dict=elements)
         # get rolling horizon years
         steps_optimization_horizon = optimization_setup.get_optimization_horizon()
 

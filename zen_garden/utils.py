@@ -28,8 +28,6 @@ from copy import deepcopy
 from collections import defaultdict
 
 
-
-
 def setup_logger(log_path=None, level=logging.INFO):
     # SETUP LOGGER
     log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -126,7 +124,7 @@ class IISConstraintParser(object):
 
         self.labels = self.read_labels()
 
-    def write_parsed_output(self, outfile=None, manual_display_max_terms = 100):
+    def write_parsed_output(self, outfile=None, manual_display_max_terms=100):
         """
         Writes the parsed output to a file
         :param outfile: The file to write to
@@ -279,8 +277,9 @@ class ScenarioDict(dict):
                 if type(self.analysis[key]) == type(value):
                     self.analysis[key] = value
                 else:
-                    raise ValueError(f"Trying to update analysis with key {key} and value {value} of type {type(value)}, "
-                                     f"but the analysis has already a value of type {type(self.analysis[key])}")
+                    raise ValueError(
+                        f"Trying to update analysis with key {key} and value {value} of type {type(value)}, "
+                        f"but the analysis has already a value of type {type(self.analysis[key])}")
         if "system" in self.dict:
             for key, value in self.dict["system"].items():
                 if type(self.system[key]) == type(value):
@@ -364,7 +363,6 @@ class ScenarioDict(dict):
                                 # we need to increment the param for the next expansion
                                 param_up = 1
 
-
                             # set the sub_folder
                             if new_scenario["sub_folder"] == "":
                                 new_scenario["sub_folder"] = name
@@ -383,7 +381,8 @@ class ScenarioDict(dict):
                             new_scenario["param_map"] = param_map
 
                             # expand this scenario as well
-                            expanded_scenarios.extend(ScenarioDict._expand_scenario(new_scenario, param_map, counter + param_up))
+                            expanded_scenarios.extend(
+                                ScenarioDict._expand_scenario(new_scenario, param_map, counter + param_up))
 
                         # expansion done
                         return expanded_scenarios
@@ -444,7 +443,8 @@ class ScenarioDict(dict):
 
             for param, param_dict in element_dict.items():
                 if len(diff := (set(param_dict.keys()) - self._param_dict_keys)) > 0:
-                    raise ValueError(f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
+                    raise ValueError(
+                        f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
 
     @staticmethod
     def validate_file_name(fname):
@@ -570,10 +570,12 @@ def xr_like(fill_value, dtype, other, dims):
         coords[dim] = other.coords[dim]
 
     # create the data array
-    da = xr.DataArray(np.full([len(other.coords[dim]) for dim in dims], fill_value, dtype=dtype), coords=coords, dims=dims)
+    da = xr.DataArray(np.full([len(other.coords[dim]) for dim in dims], fill_value, dtype=dtype), coords=coords,
+                      dims=dims)
 
     # return
     return da
+
 
 # This is to lazy load h5 file most of it is taken from the hdfdict package
 ###########################################################################
@@ -728,6 +730,7 @@ def fill_dict(hdfobject, datadict, lazy=True, unpacker=unpack_dataset):
             datadict[key] = value
 
     return datadict
+
 
 def load(hdf, lazy=True, unpacker=unpack_dataset, *args, **kwargs):
     """
@@ -1015,3 +1018,94 @@ class HDFPandasSerializer(LazyDict):
 
         with pd.HDFStore(file_name, mode='w', complevel=4) as store:
             cls._recurse(store, dictionary)
+
+
+class InputDataChecks:
+    """
+    This class checks if the input data (folder structure, system.py settings, element definitions, etc.) is defined correctly
+    """
+
+    def __init__(self, config):
+        """
+        Initialize the class
+
+        :param config: config object used to extract the analysis, system and solver dictionaries
+        """
+        self.analysis = config.analysis
+    def check_technology_subset_folders(self):
+        """
+        Checks if the technology subset folders do exist in the dataset folder
+        """
+        for technology_subset in self.analysis["subsets"]["set_technologies"]:
+            if not os.path.exists(os.path.join(self.analysis["dataset"], technology_subset)):
+                raise AssertionError(f"Folder for input data {technology_subset} does not exist!")
+
+    @staticmethod
+    def check_existing_technology_data(optimization_setup):
+        """This method checks the existing input data and only regards those elements for which folders exist.
+        It is called in compile.py after the main Prepare routine."""
+
+        # check if technologies exist
+        optimization_setup.system["set_technologies"] = []
+        for technology_subset in optimization_setup.analysis["subsets"]["set_technologies"]:
+            for technology in optimization_setup.system[technology_subset]:
+                if technology not in optimization_setup.paths[technology_subset].keys():
+                    logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
+                    optimization_setup.system[technology_subset].remove(technology)
+                elif "attributes.csv" not in optimization_setup.paths[technology_subset][technology]:
+                    raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
+            optimization_setup.system["set_technologies"].extend(optimization_setup.system[technology_subset])
+            # check subsets of technology_subset
+            if technology_subset in optimization_setup.analysis["subsets"].keys():
+                for subset in optimization_setup.analysis["subsets"][technology_subset]:
+                    for technology in optimization_setup.system[subset]:
+                        if technology not in optimization_setup.paths[technology_subset].keys():
+                            logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
+                            optimization_setup.system[subset].remove(technology)
+                        elif "attributes.csv" not in optimization_setup.paths[technology_subset][technology]:
+                            raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
+                    optimization_setup.system[technology_subset].extend(optimization_setup.system[subset])
+                    optimization_setup.system["set_technologies"].extend(optimization_setup.system[subset])
+
+
+
+
+
+
+
+
+
+    @staticmethod
+    def check_folder_structure_techs(config):
+        structure = ["set_storage_technologies", "set_transport_technologies", "set_conversion_technologies"]
+
+        for folder in structure:
+            path = 1
+    @staticmethod
+    def check_folder_structure(config):
+        structure = dict(folders=dict(set_carriers=["attributes.csv"], set_conversion_technologies=["attributes.csv"],
+                                      set_storage_technologies=["attributes.csv"],
+                                      set_transport_technologies=["attributes.csv"],
+                                      system_specification=["attributes.csv", "base_units.csv", "set_edges.csv",
+                                                            "set_nodes.csv"]), files=["system.py"])
+        needed_carriers = []
+
+        for folder in structure["folders"].keys():
+            path = os.path.join(config.analysis["dataset"], folder)
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"The folder {folder} is missing in the input data structure")
+            for file in structure["folders"][folder]:
+                for entry in os.listdir(path):
+                    sub_path = os.path.join(path, entry)
+                    if not os.path.exists(os.path.join(sub_path, file)):
+                        raise FileNotFoundError(f"The file {file} is missing in the directory {sub_path}")
+
+    def check_input_output_carrier(self):
+        return
+
+    def get_active_techs(self):
+        system = self.config.system
+        active_techs = system["set_conversion_technologies"] + system["set_transport_technologies"] + system["set_storage_technologies"]
+        #needed_carriers = [carrier for carrier in]
+        self.input_carrier = self.data_input.extract_conversion_carriers()["input_carrier"]
+        self.output_carrier = self.data_input.extract_conversion_carriers()["output_carrier"]
