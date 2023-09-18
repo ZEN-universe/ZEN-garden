@@ -20,7 +20,7 @@ import pkg_resources
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
-from .utils import setup_logger, ScenarioDict
+from .utils import setup_logger, ScenarioDict, InputDataChecks
 
 # we setup the logger here
 setup_logger()
@@ -53,9 +53,8 @@ def main(config, dataset_path=None, job_index=None):
     config.analysis["folder_output"] = os.path.abspath(config.analysis['folder_output'])
 
     ### System - load system configurations
+    InputDataChecks.check_dataset(config=config)
     system_path = os.path.join(config.analysis['dataset'], "system.py")
-    if not os.path.exists(system_path):
-        raise FileNotFoundError(f"system.py not found in dataset: {config.analysis['dataset']}")
     spec = importlib.util.spec_from_file_location("module", system_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

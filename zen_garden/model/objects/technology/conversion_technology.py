@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from zen_garden.utils import linexpr_from_tuple_np
+from zen_garden.utils import linexpr_from_tuple_np, InputDataChecks
 from .technology import Technology
 from ..component import ZenIndex
 from ..element import GenericRule
@@ -48,9 +48,7 @@ class ConversionTechnology(Technology):
         self.input_carrier = self.data_input.extract_conversion_carriers()["input_carrier"]
         self.output_carrier = self.data_input.extract_conversion_carriers()["output_carrier"]
         self.energy_system.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
-        # check if reference carrier in input and output carriers and set technology to correspondent carrier
-        assert self.reference_carrier[0] in (self.input_carrier + self.output_carrier), \
-            f"reference carrier {self.reference_carrier} of technology {self.name} not in input and output carriers {self.input_carrier + self.output_carrier}"
+        InputDataChecks.check_carrier_configuration(input_carrier=self.input_carrier, output_carrier=self.output_carrier, reference_carrier=self.reference_carrier, name=self.name)
         # get conversion efficiency and capex
         self.get_conversion_factor()
         self.convert_to_fraction_of_capex()

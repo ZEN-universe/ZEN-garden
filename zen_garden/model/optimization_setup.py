@@ -43,11 +43,11 @@ class OptimizationSetup(object):
         self.analysis = config.analysis
         self.system = config.system
         self.solver = config.solver
-        #instantiate error input data object needed to do all the input data checks
-        self.input_data_checks = InputDataChecks(config)
+        #instantiate InputDataChecks object to conduct tests if input data is provided correctly
+        self.input_data_checks = InputDataChecks(config=config)
         # create a dictionary with the paths to access the model inputs and check if input data exists
         self.create_paths()
-        # check if all data inputs exist and remove non-existent
+        # check if all needed data inputs for the chosen technologies exist and remove non-existent
         InputDataChecks.check_existing_technology_data(optimization_setup=self)
         # dict to update elements according to scenario
         self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
@@ -95,7 +95,7 @@ class OptimizationSetup(object):
         # define path to access dataset related to the current analysis
         self.path_data = self.analysis['dataset']
         assert os.path.exists(self.path_data), f"Folder for input data {self.analysis['dataset']} does not exist!"
-        self.input_data_checks.check_technology_subset_folders()
+        InputDataChecks.check_primary_folder_structure(analysis=self.analysis)
         self.paths = dict()
         # create a dictionary with the keys based on the folders in path_data
         for folder_name in next(os.walk(self.path_data))[1]:
@@ -108,7 +108,10 @@ class OptimizationSetup(object):
         for carrier in next(os.walk(path))[1]:
             self.paths["set_carriers"][carrier] = dict()
             self.paths["set_carriers"][carrier]["folder"] = os.path.join(path, carrier)
-
+            #add paths of files inside the individual carrier directories
+            sub_path = os.path.join(path, carrier)
+            for file in next(os.walk(sub_path))[2]:
+                self.paths["set_carriers"][carrier][file] = os.path.join(sub_path, file)
         ## Technology Paths
         # add the paths for all the directories in technologies
         for technology_subset in self.analysis["subsets"]["set_technologies"]:
@@ -120,15 +123,6 @@ class OptimizationSetup(object):
                 sub_path = os.path.join(path, technology)
                 for file in next(os.walk(sub_path))[2]:
                     self.paths[technology_subset][technology][file] = os.path.join(sub_path, file)
-    def check_existing_carrier_data(self, system):
-        """checks the existing carrier data and only regards those carriers for which folders exist
-
-        :param system: dictionary defining the system
-        """
-        # check if carriers exist
-        self.system = system
-        for carrier in self.system["set_carriers"]:
-            assert carrier in self.paths["set_carriers"].keys(), f"Carrier {carrier} does not exist in input data."
 
     def add_elements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -146,7 +140,7 @@ class OptimizationSetup(object):
             if element_name == "set_carriers":
                 element_set = self.energy_system.set_carriers
                 self.system["set_carriers"] = element_set
-                self.check_existing_carrier_data(self.system)
+                InputDataChecks.check_existing_carrier_data(optimization_setup=self)
 
             # check if element_set has a subset and remove subset from element_set
             if element_name in self.analysis["subsets"].keys():
