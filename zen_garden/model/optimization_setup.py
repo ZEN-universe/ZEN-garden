@@ -47,8 +47,6 @@ class OptimizationSetup(object):
         self.paths = prepare.paths
         self.solver = prepare.solver
 
-        # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
         # update element folders in prepare
         prepare.check_existing_input_data()
         # empty dict of elements (will be filled with class_name: instance_list)
@@ -73,14 +71,23 @@ class OptimizationSetup(object):
         # Init the energy system
         self.energy_system = EnergySystem(optimization_setup=self)
 
+        # add Elements to optimization
+        self.add_elements()
+
+        # dict to update elements according to scenario
+        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
+
         # The time series aggregation
         self.time_series_aggregation = None
 
         # set base scenario
         self.set_base_configuration()
 
-        # add Elements to optimization
-        self.add_elements()
+        # read input data into elements
+        self.read_input_data()
+
+        # conduct time series aggregation
+        self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
     def add_elements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -88,7 +95,6 @@ class OptimizationSetup(object):
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system"""
         logging.info("\n--- Add elements to model--- \n")
-
         for element_name in self.element_list:
             element_class = self.dict_element_classes[element_name]
             element_name = element_class.label
@@ -111,11 +117,18 @@ class OptimizationSetup(object):
             # add element class
             for item in element_set:
                 self.add_element(element_class, item)
+
+    def read_input_data(self):
+        """ reads the input data of the energy system and elements and conducts the time series aggregation """
+        logging.info("\n--- Read input data of elements --- \n")
+        self.energy_system.store_input_data()
+        for element in self.dict_elements["Element"]:
+            element_class = [k for k,v in self.dict_element_classes.items() if v == element.__class__][0]
+            logging.info(f"Create {element_class} {element.name}")
+            element.store_input_data()
         if self.solver["recommend_base_units"]:
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
                                                                   unit_exps=self.solver["range_unit_exponents"])
-        # conduct time series aggregation
-        self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
     def add_element(self, element_class, name):
         """

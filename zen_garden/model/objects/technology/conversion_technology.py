@@ -35,15 +35,16 @@ class ConversionTechnology(Technology):
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        logging.info(f'Initialize conversion technology {tech}')
         super().__init__(tech, optimization_setup)
-        # store input data
-        self.store_input_data()
+        # store carriers of conversion technology
+        self.store_carriers()
+        # # store input data
+        # self.store_input_data()
 
-    def store_input_data(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
-        # get attributes from class <Technology>
-        super().store_input_data()
+    def store_carriers(self):
+        """ retrieves and stores information on reference, input and output carriers """
+        # get reference carrier from class <Technology>
+        super().store_carriers()
         # define input and output carrier
         self.input_carrier = self.data_input.extract_conversion_carriers()["input_carrier"]
         self.output_carrier = self.data_input.extract_conversion_carriers()["output_carrier"]
@@ -51,6 +52,12 @@ class ConversionTechnology(Technology):
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert self.reference_carrier[0] in (self.input_carrier + self.output_carrier), \
             f"reference carrier {self.reference_carrier} of technology {self.name} not in input and output carriers {self.input_carrier + self.output_carrier}"
+
+    def store_input_data(self):
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
+        # get attributes from class <Technology>
+        super().store_input_data()
+
         # get conversion efficiency and capex
         self.get_conversion_factor()
         self.convert_to_fraction_of_capex()

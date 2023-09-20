@@ -29,11 +29,7 @@ class ConditioningCarrier(Carrier):
 
         :param carrier: carrier that is added to the model
         :param optimization_setup: The OptimizationSetup the element is part of """
-
-        logging.info(f'Initialize conditioning carrier {carrier}')
         super().__init__(carrier, optimization_setup)
-        # store input data
-        self.store_input_data()
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """

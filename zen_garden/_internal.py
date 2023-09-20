@@ -86,8 +86,6 @@ def main(config, dataset_path=None, job_index=None):
             else:
                 job_index = list(job_index)
             logging.info(f"Running scenarios with job indices: {job_index}")
-
-
             # reduce the scenario and element to a single one
             scenarios = [list(config.scenarios.keys())[jx] for jx in job_index]
             elements = [list(config.scenarios.values())[jx] for jx in job_index]

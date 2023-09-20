@@ -24,11 +24,7 @@ class ConditioningTechnology(ConversionTechnology):
 
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of """
-
-        logging.info(f'Initialize conditioning technology {tech}')
         super().__init__(tech, optimization_setup)
-        # store input data
-        self.store_input_data()
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """

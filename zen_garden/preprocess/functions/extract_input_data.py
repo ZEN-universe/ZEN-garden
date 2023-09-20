@@ -35,7 +35,7 @@ class DataInput:
         self.analysis = analysis
         self.solver = solver
         self.energy_system = energy_system
-        self.scenario_dict = self.energy_system.optimization_setup.scenario_dict
+        self.scenario_dict = None
         self.unit_handling = unit_handling
         # extract folder path
         self.folder_path = getattr(self.element, "input_path")
@@ -157,8 +157,11 @@ class DataInput:
         :param skip_warning: boolean to indicate if "Default" warning is skipped
         :param check_if_exists: check if attribute exists
         :return attribute_value: attribute value """
-
-        filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
+        if self.scenario_dict is not None:
+            filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
+        else:
+            filename = "attributes"
+            factor = 1
         df_input = self.read_input_data(filename)
         if df_input is not None:
             df_input = df_input.set_index("index").squeeze(axis=1)
@@ -207,9 +210,9 @@ class DataInput:
         :param scenario: scenario name
         """
         # remove intra-yearly time steps from index set and add inter-yearly time steps
-        _index_sets = copy.deepcopy(index_sets)
-        _index_sets.remove("set_time_steps")
-        _index_sets.append("set_time_steps_yearly")
+        index_sets = copy.deepcopy(index_sets)
+        index_sets.remove("set_time_steps")
+        index_sets.append("set_time_steps_yearly")
         # add Yearly_variation to file_name
         file_name += "_yearly_variation"
         # read input data
@@ -219,7 +222,7 @@ class DataInput:
             logging.info(f"{f_name} is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_data(file_name)
         if df_input is not None:
-            df_output, default_value, index_name_list = self.create_default_output(_index_sets, file_name=file_name, manual_default_value=1)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, manual_default_value=1)
             # set yearly variation attribute to df_output
             _selected_column = None
             _name_yearly_variation = file_name
