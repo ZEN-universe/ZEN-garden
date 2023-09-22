@@ -48,7 +48,7 @@ class ConversionTechnology(Technology):
         self.input_carrier = self.data_input.extract_conversion_carriers()["input_carrier"]
         self.output_carrier = self.data_input.extract_conversion_carriers()["output_carrier"]
         self.energy_system.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
-        InputDataChecks.check_carrier_configuration(input_carrier=self.input_carrier, output_carrier=self.output_carrier, reference_carrier=self.reference_carrier, name=self.name)
+        self.optimization_setup.input_data_checks.check_carrier_configuration(input_carrier=self.input_carrier, output_carrier=self.output_carrier, reference_carrier=self.reference_carrier, name=self.name)
         # get conversion efficiency and capex
         self.get_conversion_factor()
         self.convert_to_fraction_of_capex()

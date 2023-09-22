@@ -34,7 +34,7 @@ class OptimizationSetup(object):
     # dict of element classes, this dict is filled in the __init__ of the package
     dict_element_classes = {}
 
-    def __init__(self, config, scenario_dict: dict):
+    def __init__(self, config, scenario_dict: dict, input_data_checks):
         """setup Pyomo Concrete Model
 
         :param config: config object used to extract the analysis, system and solver dictionaries
@@ -43,16 +43,14 @@ class OptimizationSetup(object):
         self.analysis = config.analysis
         self.system = config.system
         self.solver = config.solver
-        #instantiate InputDataChecks object to conduct tests if input data is provided correctly
-        self.input_data_checks = InputDataChecks(config=config)
+        self.input_data_checks = input_data_checks
+        self.input_data_checks.optimization_setup = self
         # create a dictionary with the paths to access the model inputs and check if input data exists
         self.create_paths()
         # check if all needed data inputs for the chosen technologies exist and remove non-existent
-        InputDataChecks.check_existing_technology_data(optimization_setup=self)
+        self.input_data_checks.check_existing_technology_data()
         # dict to update elements according to scenario
         self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
-        # update element folders
-        InputDataChecks.check_existing_technology_data(optimization_setup=self)
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
         # pe.ConcreteModel
@@ -95,7 +93,7 @@ class OptimizationSetup(object):
         # define path to access dataset related to the current analysis
         self.path_data = self.analysis['dataset']
         assert os.path.exists(self.path_data), f"Folder for input data {self.analysis['dataset']} does not exist!"
-        InputDataChecks.check_primary_folder_structure(analysis=self.analysis)
+        self.input_data_checks.check_primary_folder_structure()
         self.paths = dict()
         # create a dictionary with the keys based on the folders in path_data
         for folder_name in next(os.walk(self.path_data))[1]:
@@ -140,7 +138,7 @@ class OptimizationSetup(object):
             if element_name == "set_carriers":
                 element_set = self.energy_system.set_carriers
                 self.system["set_carriers"] = element_set
-                InputDataChecks.check_existing_carrier_data(optimization_setup=self)
+                self.input_data_checks.check_existing_carrier_data()
 
             # check if element_set has a subset and remove subset from element_set
             if element_name in self.analysis["subsets"].keys():

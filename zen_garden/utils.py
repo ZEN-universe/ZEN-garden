@@ -1022,10 +1022,10 @@ class HDFPandasSerializer(LazyDict):
 
 class InputDataChecks:
     """
-    This class checks if the input data (folder structure, system.py settings, element definitions, etc.) is defined correctly
+    This class checks if the input data (folder/file structure, system.py settings, element definitions, etc.) is defined correctly
     """
 
-    def __init__(self, config):
+    def __init__(self, config, optimization_setup):
         """
         Initialize the class
 
@@ -1033,8 +1033,7 @@ class InputDataChecks:
         """
         self.system = config.system
         self.analysis = config.analysis
-        self.check_technology_selected()
-        self.check_year_definitions()
+        self.optimization_setup = optimization_setup
 
     def check_technology_selected(self):
         """
@@ -1055,72 +1054,62 @@ class InputDataChecks:
         if self.system["years_in_rolling_horizon"] > self.system["optimized_years"] and self.system["use_rolling_horizon"]:
             warnings.warn(f"The chosen number of years in the rolling horizon step is larger than the total number of years optimized!")
 
-    @staticmethod
-    def check_primary_folder_structure(analysis):
+    def check_primary_folder_structure(self):
         """
         Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., system_specification) is provided correctly
 
         :param analysis: dictionary defining the analysis framework
         """
-        for technology_subset in analysis["subsets"]["set_technologies"]:
-            if not os.path.exists(os.path.join(analysis["dataset"], technology_subset)):
+        for technology_subset in self.analysis["subsets"]["set_technologies"]:
+            if not os.path.exists(os.path.join(self.analysis["dataset"], technology_subset)):
                 raise AssertionError(f"Folder {technology_subset} does not exist!")
-        if not os.path.exists(os.path.join(analysis["dataset"], "set_carriers")):
+        if not os.path.exists(os.path.join(self.analysis["dataset"], "set_carriers")):
             raise AssertionError(f"Folder set_carriers does not exist!")
-        if not os.path.exists(os.path.join(analysis["dataset"], "system_specification")):
+        if not os.path.exists(os.path.join(self.analysis["dataset"], "system_specification")):
             raise AssertionError(f"Folder system_specification does not exist!")
         for file_name in ["attributes.csv", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
-            if file_name not in os.listdir(os.path.join(analysis["dataset"], "system_specification")):
+            if file_name not in os.listdir(os.path.join(self.analysis["dataset"], "system_specification")):
                 raise FileNotFoundError(f"File {file_name} is missing in the system_specification directory")
 
-    @staticmethod
-    def check_existing_technology_data(optimization_setup):
+    def check_existing_technology_data(self):
         """
         This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.csv file exist.
-
-        :param optimization_setup: OptimizationSetup object
         """
-        optimization_setup.system["set_technologies"] = []
-        for technology_subset in optimization_setup.analysis["subsets"]["set_technologies"]:
-            for technology in optimization_setup.system[technology_subset]:
-                if technology not in optimization_setup.paths[technology_subset].keys():
+        self.optimization_setup.system["set_technologies"] = []
+        for technology_subset in self.optimization_setup.analysis["subsets"]["set_technologies"]:
+            for technology in self.optimization_setup.system[technology_subset]:
+                if technology not in self.optimization_setup.paths[technology_subset].keys():
                     logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
-                    optimization_setup.system[technology_subset].remove(technology)
-                elif "attributes.csv" not in optimization_setup.paths[technology_subset][technology]:
+                    self.optimization_setup.system[technology_subset].remove(technology)
+                elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
                     raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
-            optimization_setup.system["set_technologies"].extend(optimization_setup.system[technology_subset])
+            self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[technology_subset])
             # check subsets of technology_subset
-            if technology_subset in optimization_setup.analysis["subsets"].keys():
-                for subset in optimization_setup.analysis["subsets"][technology_subset]:
-                    for technology in optimization_setup.system[subset]:
-                        if technology not in optimization_setup.paths[technology_subset].keys():
+            if technology_subset in self.optimization_setup.analysis["subsets"].keys():
+                for subset in self.optimization_setup.analysis["subsets"][technology_subset]:
+                    for technology in self.optimization_setup.system[subset]:
+                        if technology not in self.optimization_setup.paths[technology_subset].keys():
                             logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
-                            optimization_setup.system[subset].remove(technology)
-                        elif "attributes.csv" not in optimization_setup.paths[technology_subset][technology]:
+                            self.optimization_setup.system[subset].remove(technology)
+                        elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
                             raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
-                    optimization_setup.system[technology_subset].extend(optimization_setup.system[subset])
-                    optimization_setup.system["set_technologies"].extend(optimization_setup.system[subset])
+                    self.optimization_setup.system[technology_subset].extend(self.optimization_setup.system[subset])
+                    self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[subset])
 
-    @staticmethod
-    def check_existing_carrier_data(optimization_setup):
+    def check_existing_carrier_data(self):
         """
         Checks the existing carrier data and only regards those carriers for which folders exist
-
-        :param optimization_setup: OptimizationSetup object
         """
         # check if carriers exist
-        for carrier in optimization_setup.system["set_carriers"]:
-            assert carrier in optimization_setup.paths["set_carriers"].keys(), f"Carrier {carrier} does not exist in input data."
-            assert "attributes.csv" in optimization_setup.paths["set_carriers"][carrier], f"Attributes.csv file does not exist for the carrier {carrier}"
+        for carrier in self.optimization_setup.system["set_carriers"]:
+            assert carrier in self.optimization_setup.paths["set_carriers"].keys(), f"Carrier {carrier} does not exist in input data."
+            assert "attributes.csv" in self.optimization_setup.paths["set_carriers"][carrier], f"Attributes.csv file does not exist for the carrier {carrier}"
 
-    @staticmethod
-    def check_dataset(config):
+    def check_dataset(self):
         """
         Ensures that the dataset chosen in the config does exist and contains a system.py file
-
-        :param config: config object used to extract the analysis dictionary
         """
-        dataset = config.analysis["dataset"].split("\\")[-1]
+        dataset = os.path.basename(self.analysis["dataset"])
         found = False
         if dataset in os.listdir(os.getcwd()):
             found = True
@@ -1130,12 +1119,12 @@ class InputDataChecks:
                     found = True
                     break
         if not found:
-            raise AssertionError(f"The chosen dataset {dataset} does not exist at {config.analysis['dataset']} as it is specified in the config")
+            raise AssertionError(f"The chosen dataset {dataset} does not exist at {self.analysis['dataset']} as it is specified in the config")
         #check if chosen dataset contains a system.py file
-        if not os.path.exists(os.path.join(config.analysis['dataset'], "system.py")):
-            raise FileNotFoundError(f"system.py not found in dataset: {config.analysis['dataset']}")
-    @staticmethod
-    def check_carrier_configuration(input_carrier, output_carrier, reference_carrier, name):
+        if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")):
+            raise FileNotFoundError(f"system.py not found in dataset: {self.analysis['dataset']}")
+
+    def check_carrier_configuration(self, input_carrier, output_carrier, reference_carrier, name):
         """
         Checks if the chosen input/output and reference carrier combination is reasonable
 
@@ -1151,4 +1140,4 @@ class InputDataChecks:
         set_input_carrier = set(input_carrier)
         set_output_carrier = set(output_carrier)
         #assert that input and output carrier of conversion tech are different
-        assert bool(set_input_carrier.intersection(set_output_carrier)) is False, f"The conversion technology {name} has the same input ({input_carrier[0]}) and output ({output_carrier[0]}) carrier!"
+        assert not set_input_carrier & set_output_carrier, f"The conversion technology {name} has the same input ({input_carrier[0]}) and output ({output_carrier[0]}) carrier!"

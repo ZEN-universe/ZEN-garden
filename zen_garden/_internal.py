@@ -53,13 +53,16 @@ def main(config, dataset_path=None, job_index=None):
     config.analysis["folder_output"] = os.path.abspath(config.analysis['folder_output'])
 
     ### System - load system configurations
-    InputDataChecks.check_dataset(config=config)
+    input_data_checks = InputDataChecks(config=config, optimization_setup=None)
+    input_data_checks.check_dataset()
     system_path = os.path.join(config.analysis['dataset'], "system.py")
     spec = importlib.util.spec_from_file_location("module", system_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     system = module.system
     config.system.update(system)
+    input_data_checks.check_technology_selected()
+    input_data_checks.check_year_definitions()
     ### overwrite default system and scenario dictionaries
     if config.system["conduct_scenario_analysis"]:
         scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
@@ -134,7 +137,7 @@ def main(config, dataset_path=None, job_index=None):
     for scenario, elements in zip(scenarios, elements):
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the elements and read input data
-        optimization_setup = OptimizationSetup(config, scenario_dict=elements)
+        optimization_setup = OptimizationSetup(config, scenario_dict=elements, input_data_checks=input_data_checks)
         # get rolling horizon years
         steps_optimization_horizon = optimization_setup.get_optimization_horizon()
 
