@@ -31,14 +31,13 @@ class Carrier(Element):
 
         :param carrier: carrier that is added to the model
         :param optimization_setup: The OptimizationSetup the element is part of """
-
-        logging.info(f'Initialize carrier {carrier}')
         super().__init__(carrier, optimization_setup)
-        # store input data
-        self.store_input_data()
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
+        # store scenario dict
+        super().store_scenario_dict()
+        # time steps
         set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
         set_time_steps_yearly = self.energy_system.set_time_steps_yearly
         # set attributes of carrier

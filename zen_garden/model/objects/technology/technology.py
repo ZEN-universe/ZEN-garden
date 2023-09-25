@@ -39,16 +39,19 @@ class Technology(Element):
 
         super().__init__(technology, optimization_setup)
 
+    def store_carriers(self):
+        """ retrieves and stores information on reference """
+        self.reference_carrier = [self.data_input.extract_attribute("reference_carrier", skip_warning=True)]
+        self.energy_system.set_technology_of_carrier(self.name, self.reference_carrier)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
+        # store scenario dict
+        super().store_scenario_dict()
         # set attributes of technology
         _set_location = self.location_type
-
         set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
         set_time_steps_yearly = self.energy_system.set_time_steps_yearly
-        self.reference_carrier = [self.data_input.extract_attribute("reference_carrier", skip_warning=True)]
-        self.energy_system.set_technology_of_carrier(self.name, self.reference_carrier)
         self.capacity_addition_min = self.data_input.extract_attribute("capacity_addition_min")["value"]
         self.capacity_addition_max = self.data_input.extract_attribute("capacity_addition_max")["value"]
         self.capacity_addition_unbounded = self.data_input.extract_attribute("capacity_addition_unbounded")["value"]

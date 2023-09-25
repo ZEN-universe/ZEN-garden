@@ -146,6 +146,9 @@ class Postprocess:
             with FileLock(f_name + ".lock").acquire(timeout=300):
                 HDFPandasSerializer.serialize_dict(file_name=f_name, dictionary=dictionary, overwrite=self.overwrite)
 
+        else:
+            raise AssertionError(f"The specified output format {format}, chosen in the config, is not supported")
+
     def save_sets(self):
         """ Saves the Set values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""

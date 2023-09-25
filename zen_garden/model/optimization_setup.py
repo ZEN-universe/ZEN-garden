@@ -26,31 +26,31 @@ from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
-from ..preprocess.prepare import Prepare
 
-from ..utils import ScenarioDict, IISConstraintParser
+from ..utils import ScenarioDict, IISConstraintParser, InputDataChecks
 
 class OptimizationSetup(object):
     """setup optimization setup """
     # dict of element classes, this dict is filled in the __init__ of the package
     dict_element_classes = {}
 
-    def __init__(self, analysis: dict, prepare: Prepare, scenario_dict: dict):
+    def __init__(self, config, scenario_dict: dict, input_data_checks):
         """setup Pyomo Concrete Model
-        :param analysis: dictionary defining the analysis framework
-        :param prepare: A Prepare instance for the Optimization setup
+
+        :param config: config object used to extract the analysis, system and solver dictionaries
         :param scenario_dict: dictionary defining the scenario
         """
-        self.prepare = prepare
-        self.analysis = analysis
-        self.system = prepare.system
-        self.paths = prepare.paths
-        self.solver = prepare.solver
-
+        self.analysis = config.analysis
+        self.system = config.system
+        self.solver = config.solver
+        self.input_data_checks = input_data_checks
+        self.input_data_checks.optimization_setup = self
+        # create a dictionary with the paths to access the model inputs and check if input data exists
+        self.create_paths()
         # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
-        # update element folders in prepare
-        prepare.check_existing_input_data()
+        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis, self.paths)
+        # check if all needed data inputs for the chosen technologies exist and remove non-existent
+        self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
         # pe.ConcreteModel
@@ -73,14 +73,60 @@ class OptimizationSetup(object):
         # Init the energy system
         self.energy_system = EnergySystem(optimization_setup=self)
 
+        # add Elements to optimization
+        self.add_elements()
+
         # The time series aggregation
         self.time_series_aggregation = None
 
         # set base scenario
         self.set_base_configuration()
 
-        # add Elements to optimization
-        self.add_elements()
+        # read input data into elements
+        self.read_input_data()
+
+        # conduct time series aggregation
+        self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
+
+    def create_paths(self):
+        """
+        This method creates a dictionary with the paths of the data split
+        by carriers, networks, technologies
+
+        :return: dictionary all the paths for reading data
+        """
+        ## General Paths
+        # define path to access dataset related to the current analysis
+        self.path_data = self.analysis['dataset']
+        assert os.path.exists(self.path_data), f"Folder for input data {self.analysis['dataset']} does not exist!"
+        self.input_data_checks.check_primary_folder_structure()
+        self.paths = dict()
+        # create a dictionary with the keys based on the folders in path_data
+        for folder_name in next(os.walk(self.path_data))[1]:
+            self.paths[folder_name] = dict()
+            self.paths[folder_name]["folder"] = os.path.join(self.path_data, folder_name)
+
+        ## Carrier Paths
+        # add the paths for all the directories in carrier folder
+        path = self.paths["set_carriers"]["folder"]
+        for carrier in next(os.walk(path))[1]:
+            self.paths["set_carriers"][carrier] = dict()
+            self.paths["set_carriers"][carrier]["folder"] = os.path.join(path, carrier)
+            #add paths of files inside the individual carrier directories
+            sub_path = os.path.join(path, carrier)
+            for file in next(os.walk(sub_path))[2]:
+                self.paths["set_carriers"][carrier][file] = os.path.join(sub_path, file)
+        ## Technology Paths
+        # add the paths for all the directories in technologies
+        for technology_subset in self.analysis["subsets"]["set_technologies"]:
+            path = self.paths[technology_subset]["folder"]
+            for technology in next(os.walk(path))[1]:
+                self.paths[technology_subset][technology] = dict()
+                self.paths[technology_subset][technology]["folder"] = os.path.join(path, technology)
+                #add paths of files inside the individual tech directories
+                sub_path = os.path.join(path, technology)
+                for file in next(os.walk(sub_path))[2]:
+                    self.paths[technology_subset][technology][file] = os.path.join(sub_path, file)
 
     def add_elements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -88,7 +134,6 @@ class OptimizationSetup(object):
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system"""
         logging.info("\n--- Add elements to model--- \n")
-
         for element_name in self.element_list:
             element_class = self.dict_element_classes[element_name]
             element_name = element_class.label
@@ -98,7 +143,7 @@ class OptimizationSetup(object):
             if element_name == "set_carriers":
                 element_set = self.energy_system.set_carriers
                 self.system["set_carriers"] = element_set
-                self.prepare.check_existing_carrier_data(self.system)
+                self.input_data_checks.check_existing_carrier_data()
 
             # check if element_set has a subset and remove subset from element_set
             if element_name in self.analysis["subsets"].keys():
@@ -111,11 +156,18 @@ class OptimizationSetup(object):
             # add element class
             for item in element_set:
                 self.add_element(element_class, item)
+
+    def read_input_data(self):
+        """ reads the input data of the energy system and elements and conducts the time series aggregation """
+        logging.info("\n--- Read input data of elements --- \n")
+        self.energy_system.store_input_data()
+        for element in self.dict_elements["Element"]:
+            element_class = [k for k,v in self.dict_element_classes.items() if v == element.__class__][0]
+            logging.info(f"Create {element_class} {element.name}")
+            element.store_input_data()
         if self.solver["recommend_base_units"]:
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
                                                                   unit_exps=self.solver["range_unit_exponents"])
-        # conduct time series aggregation
-        self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
     def add_element(self, element_class, name):
         """
