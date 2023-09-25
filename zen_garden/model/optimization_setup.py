@@ -48,7 +48,7 @@ class OptimizationSetup(object):
         # create a dictionary with the paths to access the model inputs and check if input data exists
         self.create_paths()
         # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
+        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis, self.paths)
         # check if all needed data inputs for the chosen technologies exist and remove non-existent
         self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
@@ -75,9 +75,6 @@ class OptimizationSetup(object):
 
         # add Elements to optimization
         self.add_elements()
-
-        # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
 
         # The time series aggregation
         self.time_series_aggregation = None

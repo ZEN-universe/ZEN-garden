@@ -50,12 +50,15 @@ class ConversionTechnology(Technology):
         self.output_carrier = self.data_input.extract_conversion_carriers()["output_carrier"]
         self.energy_system.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
-        assert self.reference_carrier[0] in (self.input_carrier + self.output_carrier), \
-            f"reference carrier {self.reference_carrier} of technology {self.name} not in input and output carriers {self.input_carrier + self.output_carrier}"
         self.optimization_setup.input_data_checks.check_carrier_configuration(input_carrier=self.input_carrier,
                                                                               output_carrier=self.output_carrier,
                                                                               reference_carrier=self.reference_carrier,
                                                                               name=self.name)
+
+    def store_input_data(self):
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
+        # get attributes from class <Technology>
+        super().store_input_data()
         # get conversion efficiency and capex
         self.get_conversion_factor()
         self.convert_to_fraction_of_capex()

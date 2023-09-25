@@ -242,7 +242,7 @@ class ScenarioDict(dict):
     _param_dict_keys = {"file", "file_op", "default", "default_op"}
     _special_elements = ["system", "analysis", "base_scenario", "sub_folder", "param_map"]
 
-    def __init__(self, init_dict, system, analysis):
+    def __init__(self, init_dict, system, analysis,paths):
         """
         Initializes the dictionary from a normal dictionary
         :param init_dict: The dictionary to initialize from
@@ -257,6 +257,7 @@ class ScenarioDict(dict):
         self.system = system
         self.analysis = analysis
         self.init_dict = init_dict
+        self.paths = paths
         expanded_dict = self.expand_subsets(init_dict)
         self.validate_dict(expanded_dict)
         self.dict = expanded_dict
@@ -416,8 +417,8 @@ class ScenarioDict(dict):
                         exclude_list = []
 
                     # expand the sets
-                    for element in self.system.get(current_set, []):
-                        if element not in exclude_list:
+                    for element in self.paths[current_set].keys():
+                        if element != "folder" and element not in exclude_list:
                             # create dicts if necessary
                             if element not in new_dict:
                                 new_dict[element] = {}
@@ -846,7 +847,7 @@ class LazyEntry(object):
         self.store = store
         self.value = value
 
-    def desarialize(self):
+    def deserialize(self):
         """
         Deserializes the data from the store.
 
@@ -868,7 +869,7 @@ class LazyEntry(object):
         elif self.dtype == "vector" or self.dtype == "matrix":
             return df.values
         else:
-            raise TypeError(f"Unkon type {self.dtype}")
+            raise TypeError(f"Unknown type {self.dtype}")
 
 
 class LazyDict(dict):
@@ -887,7 +888,7 @@ class LazyDict(dict):
         value = super().__getitem__(item)
 
         if isinstance(value, LazyEntry):
-            value = value.desarialize()
+            value = value.deserialize()
             super().__setitem__(item, value)
 
         return value
@@ -956,7 +957,7 @@ class HDFPandasSerializer(LazyDict):
                 if self._lazy:
                     current_dict[leave_key] = entry
                 else:
-                    current_dict[leave_key] = entry.desarialize()
+                    current_dict[leave_key] = entry.deserialize()
 
         # no need to keep the file open
         if not self._lazy:
@@ -1110,17 +1111,10 @@ class InputDataChecks:
         Ensures that the dataset chosen in the config does exist and contains a system.py file
         """
         dataset = os.path.basename(self.analysis["dataset"])
-        found = False
-        if dataset in os.listdir(os.getcwd()):
-            found = True
-        else:
-            for directory in next(os.walk(os.getcwd()))[1]:
-                if dataset in os.listdir(os.path.join(os.getcwd(), directory)) and directory != "outputs":
-                    found = True
-                    break
-        if not found:
-            raise AssertionError(f"The chosen dataset {dataset} does not exist at {self.analysis['dataset']} as it is specified in the config")
-        #check if chosen dataset contains a system.py file
+        dirname = os.path.dirname(self.analysis["dataset"])
+        assert os.path.exists(dirname),f"Requested folder {dirname} is not a valid path"
+        assert os.path.exists(self.analysis["dataset"]),f"The chosen dataset {dataset} does not exist at {self.analysis['dataset']} as it is specified in the config"
+        # check if chosen dataset contains a system.py file
         if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")):
             raise FileNotFoundError(f"system.py not found in dataset: {self.analysis['dataset']}")
 
@@ -1133,11 +1127,11 @@ class InputDataChecks:
         :param reference_carrier: reference carrier of technology
         :param name: name of conversion technology
         """
-        #assert that conversion technology has at least an input or an output carrier
+        # assert that conversion technology has at least an input or an output carrier
         assert len(input_carrier+output_carrier) > 0, f"Conversion technology {name} has neither an input nor an output carrier!"
-        #check if reference carrier in input and output carriers and set technology to correspondent carrier
+        # check if reference carrier in input and output carriers and set technology to correspondent carrier
         assert reference_carrier[0] in (input_carrier + output_carrier), f"reference carrier {reference_carrier} of technology {name} not in input and output carriers {input_carrier + output_carrier}"
         set_input_carrier = set(input_carrier)
         set_output_carrier = set(output_carrier)
-        #assert that input and output carrier of conversion tech are different
+        # assert that input and output carrier of conversion tech are different
         assert not set_input_carrier & set_output_carrier, f"The conversion technology {name} has the same input ({input_carrier[0]}) and output ({output_carrier[0]}) carrier!"
