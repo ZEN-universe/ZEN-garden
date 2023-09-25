@@ -28,8 +28,6 @@ from copy import deepcopy
 from collections import defaultdict
 
 
-
-
 def setup_logger(log_path=None, level=logging.INFO):
     # SETUP LOGGER
     log_format = '%(asctime)s %(filename)s: %(message)s'
@@ -126,7 +124,7 @@ class IISConstraintParser(object):
 
         self.labels = self.read_labels()
 
-    def write_parsed_output(self, outfile=None, manual_display_max_terms = 100):
+    def write_parsed_output(self, outfile=None, manual_display_max_terms=100):
         """
         Writes the parsed output to a file
         :param outfile: The file to write to
@@ -279,8 +277,9 @@ class ScenarioDict(dict):
                 if type(self.analysis[key]) == type(value):
                     self.analysis[key] = value
                 else:
-                    raise ValueError(f"Trying to update analysis with key {key} and value {value} of type {type(value)}, "
-                                     f"but the analysis has already a value of type {type(self.analysis[key])}")
+                    raise ValueError(
+                        f"Trying to update analysis with key {key} and value {value} of type {type(value)}, "
+                        f"but the analysis has already a value of type {type(self.analysis[key])}")
         if "system" in self.dict:
             for key, value in self.dict["system"].items():
                 if type(self.system[key]) == type(value):
@@ -364,7 +363,6 @@ class ScenarioDict(dict):
                                 # we need to increment the param for the next expansion
                                 param_up = 1
 
-
                             # set the sub_folder
                             if new_scenario["sub_folder"] == "":
                                 new_scenario["sub_folder"] = name
@@ -383,7 +381,8 @@ class ScenarioDict(dict):
                             new_scenario["param_map"] = param_map
 
                             # expand this scenario as well
-                            expanded_scenarios.extend(ScenarioDict._expand_scenario(new_scenario, param_map, counter + param_up))
+                            expanded_scenarios.extend(
+                                ScenarioDict._expand_scenario(new_scenario, param_map, counter + param_up))
 
                         # expansion done
                         return expanded_scenarios
@@ -444,7 +443,8 @@ class ScenarioDict(dict):
 
             for param, param_dict in element_dict.items():
                 if len(diff := (set(param_dict.keys()) - self._param_dict_keys)) > 0:
-                    raise ValueError(f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
+                    raise ValueError(
+                        f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
 
     @staticmethod
     def validate_file_name(fname):
@@ -570,10 +570,12 @@ def xr_like(fill_value, dtype, other, dims):
         coords[dim] = other.coords[dim]
 
     # create the data array
-    da = xr.DataArray(np.full([len(other.coords[dim]) for dim in dims], fill_value, dtype=dtype), coords=coords, dims=dims)
+    da = xr.DataArray(np.full([len(other.coords[dim]) for dim in dims], fill_value, dtype=dtype), coords=coords,
+                      dims=dims)
 
     # return
     return da
+
 
 # This is to lazy load h5 file most of it is taken from the hdfdict package
 ###########################################################################
@@ -728,6 +730,7 @@ def fill_dict(hdfobject, datadict, lazy=True, unpacker=unpack_dataset):
             datadict[key] = value
 
     return datadict
+
 
 def load(hdf, lazy=True, unpacker=unpack_dataset, *args, **kwargs):
     """
@@ -1015,3 +1018,126 @@ class HDFPandasSerializer(LazyDict):
 
         with pd.HDFStore(file_name, mode='w', complevel=4) as store:
             cls._recurse(store, dictionary)
+
+
+class InputDataChecks:
+    """
+    This class checks if the input data (folder/file structure, system.py settings, element definitions, etc.) is defined correctly
+    """
+
+    def __init__(self, config, optimization_setup):
+        """
+        Initialize the class
+
+        :param config: config object used to extract the analysis, system and solver dictionaries
+        """
+        self.system = config.system
+        self.analysis = config.analysis
+        self.optimization_setup = optimization_setup
+
+    def check_technology_selected(self):
+        """
+        Checks if at least one technology is selected in the system.py file
+        """
+        assert len(self.system["set_conversion_technologies"] + self.system["set_transport_technologies"] + self.system["set_storage_technologies"]) > 0, f"No technology selected in stystem.py"
+
+    def check_year_definitions(self):
+        """
+        Check if year-related parameters are defined correctly
+        """
+        #assert that number of optimized years is a positive integer
+        assert isinstance(self.system["optimized_years"], int) and self.system["optimized_years"] > 0, f"Number of optimized years must be a positive integer, however it is {self.system['optimized_years']}"
+        #assert that interval between years is a positive integer
+        assert isinstance(self.system["interval_between_years"], int) and self.system["interval_between_years"] > 0, f"Interval between years must be a positive integer, however it is {self.system['interval_between_years']}"
+        assert isinstance(self.system["reference_year"], int) and self.system["reference_year"] >= self.analysis["earliest_year_of_data"], f"Reference year must be an integer and larger than the defined earliest_year_of_data: {self.analysis['earliest_year_of_data']}"
+        #check if the number of years in the rolling horizon isn't larger than the number of optimized years
+        if self.system["years_in_rolling_horizon"] > self.system["optimized_years"] and self.system["use_rolling_horizon"]:
+            warnings.warn(f"The chosen number of years in the rolling horizon step is larger than the total number of years optimized!")
+
+    def check_primary_folder_structure(self):
+        """
+        Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., system_specification) is provided correctly
+
+        :param analysis: dictionary defining the analysis framework
+        """
+        for technology_subset in self.analysis["subsets"]["set_technologies"]:
+            if not os.path.exists(os.path.join(self.analysis["dataset"], technology_subset)):
+                raise AssertionError(f"Folder {technology_subset} does not exist!")
+        if not os.path.exists(os.path.join(self.analysis["dataset"], "set_carriers")):
+            raise AssertionError(f"Folder set_carriers does not exist!")
+        if not os.path.exists(os.path.join(self.analysis["dataset"], "system_specification")):
+            raise AssertionError(f"Folder system_specification does not exist!")
+        for file_name in ["attributes.csv", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
+            if file_name not in os.listdir(os.path.join(self.analysis["dataset"], "system_specification")):
+                raise FileNotFoundError(f"File {file_name} is missing in the system_specification directory")
+
+    def check_existing_technology_data(self):
+        """
+        This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.csv file exist.
+        """
+        self.optimization_setup.system["set_technologies"] = []
+        for technology_subset in self.optimization_setup.analysis["subsets"]["set_technologies"]:
+            for technology in self.optimization_setup.system[technology_subset]:
+                if technology not in self.optimization_setup.paths[technology_subset].keys():
+                    logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
+                    self.optimization_setup.system[technology_subset].remove(technology)
+                elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
+                    raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
+            self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[technology_subset])
+            # check subsets of technology_subset
+            if technology_subset in self.optimization_setup.analysis["subsets"].keys():
+                for subset in self.optimization_setup.analysis["subsets"][technology_subset]:
+                    for technology in self.optimization_setup.system[subset]:
+                        if technology not in self.optimization_setup.paths[technology_subset].keys():
+                            logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
+                            self.optimization_setup.system[subset].remove(technology)
+                        elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
+                            raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
+                    self.optimization_setup.system[technology_subset].extend(self.optimization_setup.system[subset])
+                    self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[subset])
+
+    def check_existing_carrier_data(self):
+        """
+        Checks the existing carrier data and only regards those carriers for which folders exist
+        """
+        # check if carriers exist
+        for carrier in self.optimization_setup.system["set_carriers"]:
+            assert carrier in self.optimization_setup.paths["set_carriers"].keys(), f"Carrier {carrier} does not exist in input data."
+            assert "attributes.csv" in self.optimization_setup.paths["set_carriers"][carrier], f"Attributes.csv file does not exist for the carrier {carrier}"
+
+    def check_dataset(self):
+        """
+        Ensures that the dataset chosen in the config does exist and contains a system.py file
+        """
+        dataset = os.path.basename(self.analysis["dataset"])
+        found = False
+        if dataset in os.listdir(os.getcwd()):
+            found = True
+        else:
+            for directory in next(os.walk(os.getcwd()))[1]:
+                if dataset in os.listdir(os.path.join(os.getcwd(), directory)) and directory != "outputs":
+                    found = True
+                    break
+        if not found:
+            raise AssertionError(f"The chosen dataset {dataset} does not exist at {self.analysis['dataset']} as it is specified in the config")
+        #check if chosen dataset contains a system.py file
+        if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")):
+            raise FileNotFoundError(f"system.py not found in dataset: {self.analysis['dataset']}")
+
+    def check_carrier_configuration(self, input_carrier, output_carrier, reference_carrier, name):
+        """
+        Checks if the chosen input/output and reference carrier combination is reasonable
+
+        :param input_carrier: input carrier of conversion technology
+        :param output_carrier: output carrier of conversion technology
+        :param reference_carrier: reference carrier of technology
+        :param name: name of conversion technology
+        """
+        #assert that conversion technology has at least an input or an output carrier
+        assert len(input_carrier+output_carrier) > 0, f"Conversion technology {name} has neither an input nor an output carrier!"
+        #check if reference carrier in input and output carriers and set technology to correspondent carrier
+        assert reference_carrier[0] in (input_carrier + output_carrier), f"reference carrier {reference_carrier} of technology {name} not in input and output carriers {input_carrier + output_carrier}"
+        set_input_carrier = set(input_carrier)
+        set_output_carrier = set(output_carrier)
+        #assert that input and output carrier of conversion tech are different
+        assert not set_input_carrier & set_output_carrier, f"The conversion technology {name} has the same input ({input_carrier[0]}) and output ({output_carrier[0]}) carrier!"

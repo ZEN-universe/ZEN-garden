@@ -20,8 +20,7 @@ import pkg_resources
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
-from .preprocess.prepare import Prepare
-from .utils import setup_logger, ScenarioDict
+from .utils import setup_logger, ScenarioDict, InputDataChecks
 
 # we setup the logger here
 setup_logger()
@@ -54,14 +53,16 @@ def main(config, dataset_path=None, job_index=None):
     config.analysis["folder_output"] = os.path.abspath(config.analysis['folder_output'])
 
     ### System - load system configurations
+    input_data_checks = InputDataChecks(config=config, optimization_setup=None)
+    input_data_checks.check_dataset()
     system_path = os.path.join(config.analysis['dataset'], "system.py")
-    if not os.path.exists(system_path):
-        raise FileNotFoundError(f"system.py not found in dataset: {config.analysis['dataset']}")
     spec = importlib.util.spec_from_file_location("module", system_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     system = module.system
     config.system.update(system)
+    input_data_checks.check_technology_selected()
+    input_data_checks.check_year_definitions()
     ### overwrite default system and scenario dictionaries
     if config.system["conduct_scenario_analysis"]:
         scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
@@ -132,14 +133,9 @@ def main(config, dataset_path=None, job_index=None):
 
     # iterate through scenarios
     for scenario, elements in zip(scenarios, elements):
-        # create a dictionary with the paths to access the model inputs and check if input data exists
-        prepare = Prepare(config)
-        # check if all data inputs exist and remove non-existent
-        prepare.check_existing_input_data()
-
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the elements and read input data
-        optimization_setup = OptimizationSetup(config.analysis, prepare, scenario_dict=elements)
+        optimization_setup = OptimizationSetup(config, scenario_dict=elements, input_data_checks=input_data_checks)
         # get rolling horizon years
         steps_optimization_horizon = optimization_setup.get_optimization_horizon()
 
