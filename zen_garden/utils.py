@@ -1096,7 +1096,7 @@ class InputDataChecks:
                             self.optimization_setup.system[subset].remove(technology)
                         elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
                             raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
-                        self.optimization_setup.paths["set_technologies"][technology] = self.optimization_setup.paths[subset][technology]
+                        self.optimization_setup.paths["set_technologies"][technology] = self.optimization_setup.paths[technology_subset][technology]
                     self.optimization_setup.system[technology_subset].extend(self.optimization_setup.system[subset])
                     self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[subset])
 
