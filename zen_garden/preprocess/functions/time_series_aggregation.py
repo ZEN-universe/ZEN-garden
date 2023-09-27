@@ -222,6 +222,8 @@ class TimeSeriesAggregation(object):
                 df_empty = pd.DataFrame(index=df_ts_non_constant.index)
                 dict_raw_ts[ts] = df_empty
             else:
+                if isinstance(df_ts_non_constant.columns,pd.MultiIndex):
+                    df_ts_non_constant.columns = df_ts_non_constant.columns.to_flat_index()
                 dict_raw_ts[ts] = df_ts_non_constant
         df_ts_raw = pd.concat(dict_raw_ts.values(), axis=1, keys=dict_raw_ts.keys())
         return df_ts_raw

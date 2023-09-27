@@ -542,12 +542,9 @@ class OptimizationSetup(object):
             ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
             self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
                              keep_files=self.solver["keep_files"], sanitize_zeros=True,
-                             # write an ILP file to print the IIS if infeasible
-                             # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
-                             ResultFile=ilp_file,
                              # remaining kwargs are passed to the solver
                              **solver_options)
-
+            # write an ILP file to print the IIS if infeasible
             if self.model.termination_condition == 'infeasible':
                 logging.info("The optimization is infeasible")
                 parser = IISConstraintParser(ilp_file, self.model)

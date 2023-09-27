@@ -450,13 +450,20 @@ class DataInput:
                 else:
                     df_output, default_value, index_name_list = self.create_default_output(index_sets, attribute_name, time_steps=time_steps)
                     common_index = list(set(index_name_list).intersection(df_input_linear.columns))
-                    for carrier in dependent_carrier:
-                        if common_index:
-                            df_input_carrier = df_input_linear[common_index + [carrier]]
-                            linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "linear_conversion_factor", index_name_list, default_value, time_steps=time_steps).copy(deep=True)
-                        else:
-                            linear_dict[carrier] = df_output.copy()
-                            linear_dict[carrier].loc[:] = df_input_linear[carrier].squeeze()
+                    # if only one dependent carrier and no carrier in columns
+                    if len(dependent_carrier) == 1 and len(df_input_linear.columns.intersection(dependent_carrier)) == 0:
+                        linear_dict[dependent_carrier[0]] = self.extract_general_input_data(df_input_linear, df_output,
+                                                                               "conversion_factor",
+                                                                               index_name_list, default_value,
+                                                                               time_steps=time_steps).copy(deep=True)
+                    else:
+                        for carrier in dependent_carrier:
+                            if common_index:
+                                df_input_carrier = df_input_linear[common_index + [carrier]]
+                                linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "conversion_factor", index_name_list, default_value, time_steps=time_steps).copy(deep=True)
+                            else:
+                                linear_dict[carrier] = df_output.copy()
+                                linear_dict[carrier].loc[:] = df_input_linear[carrier].squeeze()
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
