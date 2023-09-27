@@ -407,7 +407,7 @@ class OptimizationSetup(object):
                 # get smallest coeff and corresponding variable
                 coeffs = np.abs(cons.lhs.coeffs.data)
                 coeffs_flat = coeffs.ravel()
-                coeffs_reshaped = coeffs.reshape(-1, coeffs.shape[-1])
+                # coeffs_reshaped = coeffs.reshape(-1, coeffs.shape[-1])
                 # filter
                 sorted_args = np.argsort(coeffs_flat)
                 coeffs_sorted = coeffs_flat[sorted_args]
