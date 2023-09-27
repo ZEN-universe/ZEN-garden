@@ -284,10 +284,12 @@ class TimeSeriesAggregation(object):
 
         :param element: element of the optimization """
         for ts in element.raw_time_series:
+            if element.raw_time_series[ts] is None:
+                continue
             # multiply with yearly variation
-            _new_ts = self.multiply_yearly_variation(element, ts, getattr(element, ts))
+            new_ts = self.multiply_yearly_variation(element, ts, getattr(element, ts))
             # overwrite time series
-            setattr(element, ts, _new_ts)
+            setattr(element, ts, new_ts)
 
     def multiply_yearly_variation(self, element, ts_name, ts):
         """ this method multiplies time series with the yearly variation of the time series
