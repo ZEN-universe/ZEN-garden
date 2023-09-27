@@ -66,12 +66,11 @@ class ConversionTechnology(Technology):
     def get_conversion_factor(self):
         """retrieves and stores conversion_factor for <ConversionTechnology>.
         Each Child class overwrites method to store different conversion_factor """
-        # TODO read pwa Dict and set Params
-        _pwa_conversion_factor, self.conversion_factor_is_pwa = self.data_input.extract_pwa_data("conversion_factor")
+        pwa_conversion_factor, self.conversion_factor_is_pwa = self.data_input.extract_pwa_data("conversion_factor")
         if self.conversion_factor_is_pwa:
-            self.pwa_conversion_factor = _pwa_conversion_factor
+            self.pwa_conversion_factor = pwa_conversion_factor
         else:
-            self.conversion_factor_linear = _pwa_conversion_factor
+            self.raw_time_series["conversion_factor"] = pwa_conversion_factor
 
     def convert_to_fraction_of_capex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
@@ -115,25 +114,25 @@ class ConversionTechnology(Technology):
         :param variable_type: either capex or conversion_factor
         :param selectPWA: boolean if get attributes for pwa
         :return dict_of_attributes: returns dict of attribute values """
-        _class_elements = optimization_setup.get_all_elements(cls)
+        class_elements = optimization_setup.get_all_elements(cls)
         dict_of_attributes = {}
         if variable_type == "capex":
-            _is_pwa_attribute = "capex_is_pwa"
-            _attribute_name_pwa = "pwa_capex"
-            _attribute_name_linear = "capex_specific"
+            is_pwa_attribute = "capex_is_pwa"
+            attribute_name_pwa = "pwa_capex"
+            attribute_name_linear = "capex_specific"
         elif variable_type == "conversion_factor":
-            _is_pwa_attribute = "conversion_factor_is_pwa"
-            _attribute_name_pwa = "pwa_conversion_factor"
-            _attribute_name_linear = "conversion_factor_linear"
+            is_pwa_attribute = "conversion_factor_is_pwa"
+            attribute_name_pwa = "pwa_conversion_factor"
+            attribute_name_linear = "conversion_factor"
         else:
             raise KeyError("Select either 'capex' or 'conversion_factor'")
-        for _element in _class_elements:
+        for element in class_elements:
             # extract for pwa
-            if getattr(_element, _is_pwa_attribute) and selectPWA:
-                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(_element, _attribute_name_pwa, dict_of_attributes)
+            if getattr(element, is_pwa_attribute) and selectPWA:
+                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_pwa, dict_of_attributes)
             # extract for linear
-            elif not getattr(_element, _is_pwa_attribute) and not selectPWA:
-                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(_element, _attribute_name_linear, dict_of_attributes)
+            elif not getattr(element, is_pwa_attribute) and not selectPWA:
+                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes)
             if not dict_of_attributes:
                 _, index_names = cls.create_custom_set(index_names, optimization_setup)
                 return (dict_of_attributes, index_names)
@@ -191,7 +190,7 @@ class ConversionTechnology(Technology):
         # slope of linearly modeled conversion efficiencies
         optimization_setup.parameters.add_parameter(name="conversion_factor", data=cls.get_capex_conversion_factor_all_elements(optimization_setup, "conversion_factor", False,
                                                                                                                      index_names=["set_conversion_technologies", "set_conversion_factor_linear",
-                                                                                                                                  "set_nodes", "set_time_steps_yearly"]),
+                                                                                                                                  "set_nodes", "set_time_steps_operation"]),
             doc="Parameter which specifies the slope of the conversion efficiency if approximated linearly")
 
     @classmethod
@@ -231,11 +230,13 @@ class ConversionTechnology(Technology):
                     else:
                         time_step_year = [energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in timestep_set[tech]]
                         if carrier == sets["set_reference_carriers"][tech][0]:
-                            _conversion_factor = 1
+                            conversion_factor_lower = 1
+                            conversion_factor_upper = 1
                         else:
-                            _conversion_factor = params.conversion_factor.loc[tech, carrier, node_set, time_step_year]
-                        lower.loc[tech, carrier, ...] = model.variables["capacity"].lower.loc[tech, "power", node_set, time_step_year].data * _conversion_factor
-                        upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data * _conversion_factor
+                            conversion_factor_lower = params.conversion_factor.loc[tech, carrier, node_set].min().data
+                            conversion_factor_upper = params.conversion_factor.loc[tech, carrier, node_set].max().data
+                        lower.loc[tech, carrier, ...] = model.variables["capacity"].lower.loc[tech, "power", node_set, time_step_year].data * conversion_factor_lower
+                        upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data * conversion_factor_upper
 
             # make sure lower is never below 0
             return (lower, upper)
@@ -562,12 +563,13 @@ class ConversionTechnologyRules(GenericRule):
             coords = [self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]]
             nodes = index.get_values([tech, dependent_carrier], 2, dtype=list, unique=True)
             times = index.get_values([tech, dependent_carrier], 3, dtype=list, unique=True)
-            time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times]
+            # time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times]
 
             ### formulate constraint
-            lhs = linexpr_from_tuple_np([(1.0, self.variables["flow_approximation_dependent"].loc[tech, dependent_carrier, nodes, times]),
-                                         (-self.parameters.conversion_factor.loc[tech, dependent_carrier, nodes, time_step_year], self.variables["flow_approximation_reference"].loc[tech, dependent_carrier, nodes, times])],
-                                        coords=coords, model=self.model)
+            lhs = linexpr_from_tuple_np(
+                [(1.0, self.variables["flow_approximation_dependent"].loc[tech, dependent_carrier, nodes, times]),
+                (-self.parameters.conversion_factor.loc[tech, dependent_carrier, nodes, times],
+                self.variables["flow_approximation_reference"].loc[tech, dependent_carrier, nodes, times])],coords=coords, model=self.model)
             rhs = 0
             constraints.append(lhs == rhs)
 

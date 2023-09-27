@@ -118,6 +118,8 @@ class TimeSeriesAggregation(object):
 
             # iterate through raw time series
             for ts in raw_ts:
+                if raw_ts[ts] is None:
+                    continue
                 index_names = list(raw_ts[ts].index.names)
                 index_names.remove(self.header_set_time_steps)
                 df_ts = raw_ts[ts].unstack(level=index_names)
@@ -208,6 +210,8 @@ class TimeSeriesAggregation(object):
         dict_raw_ts = {}
         raw_ts = getattr(element, "raw_time_series")
         for ts in raw_ts:
+            if raw_ts[ts] is None:
+                continue
             raw_ts[ts].name = ts
             index_names = list(raw_ts[ts].index.names)
             index_names.remove(header_set_time_steps)
@@ -218,6 +222,8 @@ class TimeSeriesAggregation(object):
                 df_empty = pd.DataFrame(index=df_ts_non_constant.index)
                 dict_raw_ts[ts] = df_empty
             else:
+                if isinstance(df_ts_non_constant.columns,pd.MultiIndex):
+                    df_ts_non_constant.columns = df_ts_non_constant.columns.to_flat_index()
                 dict_raw_ts[ts] = df_ts_non_constant
         df_ts_raw = pd.concat(dict_raw_ts.values(), axis=1, keys=dict_raw_ts.keys())
         return df_ts_raw
@@ -260,27 +266,30 @@ class TimeSeriesAggregation(object):
         :param sequence_time_steps: new order of operational time steps """
         header_set_time_steps = self.analysis['header_data_inputs']["set_time_steps"]
         old_sequence_time_steps = element.sequence_time_steps
-        _idx_old2new = np.array([np.unique(old_sequence_time_steps[np.argwhere(idx == sequence_time_steps)]) for idx in set_time_steps_operation]).squeeze()
+        idx_old2new = np.array([np.unique(old_sequence_time_steps[np.argwhere(idx == sequence_time_steps)]) for idx in set_time_steps_operation]).squeeze()
         for ts in element.raw_time_series:
-            _old_ts = getattr(element, ts).unstack(header_set_time_steps)
-            _new_ts = pd.DataFrame(index=_old_ts.index, columns=set_time_steps_operation)
-            _new_ts = _old_ts.loc[:, _idx_old2new[_new_ts.columns]].T.reset_index(drop=True).T
-            _new_ts.columns.names = [header_set_time_steps]
-            _new_ts = _new_ts.stack()
-            # multiply with yearly variation
-            _new_ts = self.multiply_yearly_variation(element, ts, _new_ts)
-            # overwrite time series
-            setattr(element, ts, _new_ts)
+            if element.raw_time_series[ts] is not None:
+                old_ts = getattr(element, ts).unstack(header_set_time_steps)
+                new_ts = pd.DataFrame(index=old_ts.index, columns=set_time_steps_operation)
+                new_ts = old_ts.loc[:, idx_old2new[new_ts.columns]].T.reset_index(drop=True).T
+                new_ts.columns.names = [header_set_time_steps]
+                new_ts = new_ts.stack()
+                # multiply with yearly variation
+                new_ts = self.multiply_yearly_variation(element, ts, new_ts)
+                # overwrite time series
+                setattr(element, ts, new_ts)
 
     def yearly_variation_nonaggregated_ts(self, element):
         """ multiply the time series with the yearly variation if the element's time series are not aggregated
 
         :param element: element of the optimization """
         for ts in element.raw_time_series:
+            if element.raw_time_series[ts] is None:
+                continue
             # multiply with yearly variation
-            _new_ts = self.multiply_yearly_variation(element, ts, getattr(element, ts))
+            new_ts = self.multiply_yearly_variation(element, ts, getattr(element, ts))
             # overwrite time series
-            setattr(element, ts, _new_ts)
+            setattr(element, ts, new_ts)
 
     def multiply_yearly_variation(self, element, ts_name, ts):
         """ this method multiplies time series with the yearly variation of the time series

@@ -253,10 +253,10 @@ class OptimizationSetup(object):
         else:
             return dict_of_attributes
 
-    def append_attribute_of_element_to_dict(self, _element, attribute_name, dict_of_attributes, capacity_type=None):
+    def append_attribute_of_element_to_dict(self, element, attribute_name, dict_of_attributes, capacity_type=None):
         """ get attribute values of all elements in this class
 
-        :param _element: element of class
+        :param element: element of class
         :param attribute_name: str name of attribute
         :param dict_of_attributes: dict of attribute values
         :param capacity_type: capacity type for which attribute extracted. If None, not listed in key
@@ -266,35 +266,41 @@ class OptimizationSetup(object):
         # add Energy for energy capacity type
         if capacity_type == self.system["set_capacity_types"][1]:
             attribute_name += "_energy"
-        assert hasattr(_element, attribute_name), f"Element {_element.name} does not have attribute {attribute_name}"
-        _attribute = getattr(_element, attribute_name)
-        assert not isinstance(_attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {_element.name}"
-        # add attribute to dict_of_attributes
-        if _attribute is None:
-            return dict_of_attributes, False
-        elif isinstance(_attribute, dict):
-            dict_of_attributes.update({(_element.name,) + (key,): val for key, val in _attribute.items()})
-        elif isinstance(_attribute, pd.Series) and "pwa" not in attribute_name:
-            if capacity_type:
-                _combined_key = (_element.name, capacity_type)
+        # if element does not have attribute
+        if not hasattr(element, attribute_name):
+            # if attribute is time series that does not exist
+            if attribute_name in element.raw_time_series and element.raw_time_series[attribute_name] is None:
+                return dict_of_attributes, attribute_is_series
             else:
-                _combined_key = _element.name
-            if len(_attribute) > 1:
-                dict_of_attributes[_combined_key] = _attribute
+                raise AssertionError(f"Element {element.name} does not have attribute {attribute_name}")
+        attribute = getattr(element, attribute_name)
+        assert not isinstance(attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {element.name}"
+        # add attribute to dict_of_attributes
+        if attribute is None:
+            return dict_of_attributes, False
+        elif isinstance(attribute, dict):
+            dict_of_attributes.update({(element.name,) + (key,): val for key, val in attribute.items()})
+        elif isinstance(attribute, pd.Series) and "pwa" not in attribute_name:
+            if capacity_type:
+                _combined_key = (element.name, capacity_type)
+            else:
+                _combined_key = element.name
+            if len(attribute) > 1:
+                dict_of_attributes[_combined_key] = attribute
                 attribute_is_series = True
             else:
-                dict_of_attributes[_combined_key] = _attribute.squeeze()
+                dict_of_attributes[_combined_key] = attribute.squeeze()
                 attribute_is_series = False
-        elif isinstance(_attribute, int):
+        elif isinstance(attribute, int):
             if capacity_type:
-                dict_of_attributes[(_element.name, capacity_type)] = [_attribute]
+                dict_of_attributes[(element.name, capacity_type)] = [attribute]
             else:
-                dict_of_attributes[_element.name] = [_attribute]
+                dict_of_attributes[element.name] = [attribute]
         else:
             if capacity_type:
-                dict_of_attributes[(_element.name, capacity_type)] = _attribute
+                dict_of_attributes[(element.name, capacity_type)] = attribute
             else:
-                dict_of_attributes[_element.name] = _attribute
+                dict_of_attributes[element.name] = attribute
         return dict_of_attributes, attribute_is_series
 
     def get_attribute_of_specific_element(self, cls, element_name: str, attribute_name: str):
@@ -536,12 +542,9 @@ class OptimizationSetup(object):
             ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
             self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
                              keep_files=self.solver["keep_files"], sanitize_zeros=True,
-                             # write an ILP file to print the IIS if infeasible
-                             # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
-                             ResultFile=ilp_file,
                              # remaining kwargs are passed to the solver
                              **solver_options)
-
+            # write an ILP file to print the IIS if infeasible
             if self.model.termination_condition == 'infeasible':
                 logging.info("The optimization is infeasible")
                 parser = IISConstraintParser(ilp_file, self.model)
