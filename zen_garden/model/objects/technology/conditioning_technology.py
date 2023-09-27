@@ -49,7 +49,7 @@ class ConditioningTechnology(ConversionTechnology):
     def get_conversion_factor(self):
         """retrieves and stores conversion_factor for <ConditioningTechnology>.
         Create dictionary with input parameters with the same format as pwa_conversion_factor"""
-        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
+        set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
         specific_heat = self.data_input.extract_attribute("specific_heat")["value"]
         specific_heat_ratio = self.data_input.extract_attribute("specific_heat_ratio")["value"]
         pressure_in = self.data_input.extract_attribute("pressure_in")["value"]
@@ -75,16 +75,16 @@ class ConditioningTechnology(ConversionTechnology):
         self.conversion_factor_is_pwa = False
         conversion_factor = dict()
         conversion_factor[self.output_carrier[0]] = \
-        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=1)[
+        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly, manual_default_value=1)[
             0]  # TODO losses are not yet accounted for
         conversion_factor[_input_carriers[0]] = \
-        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly, manual_default_value=_energy_consumption)[0]
+        self.data_input.create_default_output(index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly, manual_default_value=_energy_consumption)[0]
         # dict to dataframe
         conversion_factor = pd.DataFrame.from_dict(conversion_factor)
         conversion_factor.columns.name = "carrier"
         conversion_factor = conversion_factor.stack()
-        _conversion_factor_levels = [conversion_factor.index.names[-1]] + conversion_factor.index.names[:-1]
-        self.raw_time_series["conversion_factor"] = conversion_factor.reorder_levels(_conversion_factor_levels)
+        conversion_factor_levels = [conversion_factor.index.names[-1]] + conversion_factor.index.names[:-1]
+        self.raw_time_series["conversion_factor"] = conversion_factor.reorder_levels(conversion_factor_levels)
 
     @classmethod
     def construct_sets(cls, optimization_setup):
