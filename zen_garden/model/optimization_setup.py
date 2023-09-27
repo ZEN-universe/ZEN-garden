@@ -47,10 +47,10 @@ class OptimizationSetup(object):
         self.input_data_checks.optimization_setup = self
         # create a dictionary with the paths to access the model inputs and check if input data exists
         self.create_paths()
-        # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis, self.paths)
         # check if all needed data inputs for the chosen technologies exist and remove non-existent
         self.input_data_checks.check_existing_technology_data()
+        # dict to update elements according to scenario
+        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis, self.paths)
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
         # pe.ConcreteModel
@@ -105,7 +105,6 @@ class OptimizationSetup(object):
         for folder_name in next(os.walk(self.path_data))[1]:
             self.paths[folder_name] = dict()
             self.paths[folder_name]["folder"] = os.path.join(self.path_data, folder_name)
-
         ## Carrier Paths
         # add the paths for all the directories in carrier folder
         path = self.paths["set_carriers"]["folder"]
