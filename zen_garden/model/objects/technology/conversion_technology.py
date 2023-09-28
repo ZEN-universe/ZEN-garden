@@ -74,14 +74,14 @@ class ConversionTechnology(Technology):
 
     def convert_to_fraction_of_capex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
-        _pwa_capex, self.capex_is_pwa = self.data_input.extract_pwa_data("capex")
+        pwa_capex, self.capex_is_pwa = self.data_input.extract_pwa_data("capex")
         # annualize cost_capex
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         if not self.capex_is_pwa:
-            self.capex_specific = _pwa_capex["capex"] * fraction_year
+            self.capex_specific = pwa_capex["capex"] * fraction_year
         else:
-            self.pwa_capex = _pwa_capex
+            self.pwa_capex = pwa_capex
             self.pwa_capex["capex"] = [value * fraction_year for value in self.pwa_capex["capex"]]
             # set bounds
             self.pwa_capex["bounds"]["capex"] = tuple([(bound * fraction_year) for bound in self.pwa_capex["bounds"]["capex"]])
@@ -153,23 +153,23 @@ class ConversionTechnology(Technology):
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         # get input carriers
-        _input_carriers = optimization_setup.get_attribute_of_all_elements(cls, "input_carrier")
-        _output_carriers = optimization_setup.get_attribute_of_all_elements(cls, "output_carrier")
-        _reference_carrier = optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier")
-        _dependent_carriers = {}
-        for tech in _input_carriers:
-            _dependent_carriers[tech] = _input_carriers[tech] + _output_carriers[tech]
-            _dependent_carriers[tech].remove(_reference_carrier[tech][0])
+        input_carriers = optimization_setup.get_attribute_of_all_elements(cls, "input_carrier")
+        output_carriers = optimization_setup.get_attribute_of_all_elements(cls, "output_carrier")
+        reference_carrier = optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier")
+        dependent_carriers = {}
+        for tech in input_carriers:
+            dependent_carriers[tech] = input_carriers[tech] + output_carriers[tech]
+            dependent_carriers[tech].remove(reference_carrier[tech][0])
         # input carriers of technology
-        optimization_setup.sets.add_set(name="set_input_carriers", data=_input_carriers,
+        optimization_setup.sets.add_set(name="set_input_carriers", data=input_carriers,
                                         doc="set of carriers that are an input to a specific conversion technology. Dimensions: set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # output carriers of technology
-        optimization_setup.sets.add_set(name="set_output_carriers", data=_output_carriers,
+        optimization_setup.sets.add_set(name="set_output_carriers", data=output_carriers,
                                         doc="set of carriers that are an output to a specific conversion technology. Dimensions: set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # dependent carriers of technology
-        optimization_setup.sets.add_set(name="set_dependent_carriers", data=_dependent_carriers,
+        optimization_setup.sets.add_set(name="set_dependent_carriers", data=dependent_carriers,
                                         doc="set of carriers that are an output to a specific conversion technology.\n\t Dimensions: set_conversion_technologies",
                                         index_set="set_conversion_technologies")
 

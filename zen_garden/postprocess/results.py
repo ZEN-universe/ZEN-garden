@@ -747,7 +747,7 @@ class Results(object):
             scenarios = self.scenarios
 
         # loop
-        _data = {}
+        data = {}
         for scenario in scenarios:
             # we get the timestep dict
             sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
@@ -756,60 +756,60 @@ class Results(object):
                 if not is_set:
                     # we set the dataframe of the variable into the data dict
                     if not is_dual:
-                        _data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
+                        data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
                     else:
-                        _data[scenario] = self._to_df(self.results[scenario][None]["duals"][name]["dataframe"])
+                        data[scenario] = self._to_df(self.results[scenario][None]["duals"][name]["dataframe"])
                 else:
-                    _data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
+                    data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
 
             else:
                 # init the scenario
-                _mf_data = {}
-                _is_multiindex = False
+                mf_data = {}
+                is_multiindex = False
                 # cycle through all MFs
                 for year, mf in enumerate(self.mf):
                     if not is_set:
                         if not is_dual:
-                            _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
+                            var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
                         else:
-                            _var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
+                            var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
                     else:
-                        # _data[scenario] = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
-                        _var = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
+                        # data[scenario] = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
+                        var = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
 
                     # no multiindex
-                    if _var.index.nlevels == 1:
-                        ts_type = self._get_ts_type(_var.T,name,force_output=True)
+                    if var.index.nlevels == 1:
+                        ts_type = self._get_ts_type(var.T,name,force_output=True)
                         # if yearly variable
                         if ts_type == "yearly":
-                            _mf_data[year] = _var.loc[year].squeeze()
+                            mf_data[year] = var.loc[year].squeeze()
                             yearly_component = True
-                            time_header = _var.index.name
+                            time_header = var.index.name
                         elif ts_type is None:
-                            _data[scenario] = _var
+                            data[scenario] = var
                             break
                         else:
                             raise KeyError(f"The time step type '{ts_type}' was not expected for variable '{name}'")
                     # multiindex
                     else:
-                        _is_multiindex = True
+                        is_multiindex = True
                         # unstack the year
-                        _varSeries = _var["value"].unstack()
+                        var_series = var["value"].unstack()
                         # get type of time steps
-                        ts_type = self._get_ts_type(_varSeries,name,force_output=True)
+                        ts_type = self._get_ts_type(var_series,name,force_output=True)
                         # if all columns in years (drop the value level)
-                        # if _varSeries.columns.droplevel(0).difference(self.years).empty:
+                        # if var_series.columns.droplevel(0).difference(self.years).empty:
                         if ts_type == "yearly":
                             # get the data
-                            tmp_data = _varSeries[year]
+                            tmp_data = var_series[year]
                             # rename
-                            tmp_data.name = _varSeries.columns.name
+                            tmp_data.name = var_series.columns.name
                             # set
-                            _mf_data[year] = tmp_data
+                            mf_data[year] = tmp_data
                             yearly_component = True
-                            time_header = _varSeries.columns.name
+                            time_header = var_series.columns.name
                         # if more time steps than years, then it is operational ts (we drop value in columns)
-                        # elif pd.to_numeric(_varSeries.columns.droplevel(0), errors="coerce").equals(_varSeries.columns.droplevel(0)):
+                        # elif pd.to_numeric(var_series.columns.droplevel(0), errors="coerce").equals(var_series.columns.droplevel(0)):
                         elif ts_type is not None:
                             if ts_type == "storage":
                                 techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" in k.lower()][0]
@@ -818,55 +818,55 @@ class Results(object):
                             # get the timesteps
                             time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(techProxy, year)
                             # get the data
-                            tmp_data = _varSeries[[tstep for tstep in time_steps_year]]
+                            tmp_data = var_series[[tstep for tstep in time_steps_year]]
                             # rename
-                            tmp_data.name = _varSeries.columns.name
+                            tmp_data.name = var_series.columns.name
                             # set
-                            _mf_data[year] = tmp_data
+                            mf_data[year] = tmp_data
                             yearly_component = False
-                            time_header = _varSeries.columns.name
+                            time_header = var_series.columns.name
                         # else not a time index
                         else:
-                            _data[scenario] = _varSeries.stack()
+                            data[scenario] = var_series.stack()
                             break
                 # This is a for-else, it is triggered if we did not break the loop
                 else:
                     # deal with the years
                     if yearly_component:
                         # concat
-                        if _is_multiindex:
+                        if is_multiindex:
                             new_header = [time_header]+tmp_data.index.names
                             new_order = tmp_data.index.names + [time_header]
-                            _df = pd.concat(_mf_data, axis=0, keys=_mf_data.keys(),names=new_header).reorder_levels(new_order)
-                            # _df_index = _df.index.copy()
-                            # for level, codes in enumerate(_df.index.codes):
+                            df = pd.concat(mf_data, axis=0, keys=mf_data.keys(),names=new_header).reorder_levels(new_order)
+                            # _df_index = df.index.copy()
+                            # for level, codes in enumerate(df.index.codes):
                             #     if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
                             #         _df_index = _df_index.droplevel(level)
                             #         break
-                            # _df.index = _df_index
+                            # df.index = _df_index
                         else:
-                            _df = pd.Series(_mf_data,index=_mf_data.keys())
-                            _df.index.name = time_header
+                            df = pd.Series(mf_data,index=mf_data.keys())
+                            df.index.name = time_header
 
                     else:
-                        _df = pd.concat(_mf_data, axis=1)
-                        _df.columns = _df.columns.droplevel(0)
-                        _df = _df.sort_index(axis=1).stack()
+                        df = pd.concat(mf_data, axis=1)
+                        df.columns = df.columns.droplevel(0)
+                        df = df.sort_index(axis=1).stack()
 
-                    _data[scenario] = _df
+                    data[scenario] = df
 
         # transform all dataframes to pd.Series with the element_name as name
-        for k, v in _data.items():
+        for k, v in data.items():
             if not isinstance(v, pd.Series):
                 # to series
                 series = pd.Series(data=v["value"], index=v.index)
                 series.name = name
                 # set
-                _data[k] = series
+                data[k] = series
             # we just make sure the name is right
             else:
                 v.name = name
-                _data[k] = v
+                data[k] = v
 
         # get the path to the csv file
         if to_csv is not None:
@@ -880,16 +880,16 @@ class Results(object):
         if len(scenarios) == 1:
             # save if necessary
             if to_csv is not None:
-                _data[scenario].to_csv(f"{fname}.csv", **csv_kwargs)
-            return _data[scenario]
+                data[scenario].to_csv(f"{fname}.csv", **csv_kwargs)
+            return data[scenario]
 
         # return the dict or series
         else:
             # save if necessary
             if to_csv is not None:
                 for scenario in scenarios:
-                    _data[scenario].to_csv(f"{fname}_{scenario}.csv", **csv_kwargs)
-            return _data
+                    data[scenario].to_csv(f"{fname}_{scenario}.csv", **csv_kwargs)
+            return data
 
     def load_time_step_operation_duration(self):
         """

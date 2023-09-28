@@ -47,8 +47,6 @@ class OptimizationSetup(object):
         self.input_data_checks.optimization_setup = self
         # create a dictionary with the paths to access the model inputs and check if input data exists
         self.create_paths()
-        # check if all needed data inputs for the chosen technologies exist and remove non-existent
-        self.input_data_checks.check_existing_technology_data()
         # dict to update elements according to scenario
         self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis, self.paths)
         # check if all needed data inputs for the chosen technologies exist and remove non-existent
@@ -113,21 +111,23 @@ class OptimizationSetup(object):
         for carrier in next(os.walk(path))[1]:
             self.paths["set_carriers"][carrier] = dict()
             self.paths["set_carriers"][carrier]["folder"] = os.path.join(path, carrier)
-            #add paths of files inside the individual carrier directories
+            # add paths of files inside the individual carrier directories
             sub_path = os.path.join(path, carrier)
             for file in next(os.walk(sub_path))[2]:
                 self.paths["set_carriers"][carrier][file] = os.path.join(sub_path, file)
         ## Technology Paths
+        self.paths["set_technologies"] = {}
         # add the paths for all the directories in technologies
         for technology_subset in self.analysis["subsets"]["set_technologies"]:
             path = self.paths[technology_subset]["folder"]
             for technology in next(os.walk(path))[1]:
                 self.paths[technology_subset][technology] = dict()
                 self.paths[technology_subset][technology]["folder"] = os.path.join(path, technology)
-                #add paths of files inside the individual tech directories
+                # add paths of files inside the individual tech directories
                 sub_path = os.path.join(path, technology)
                 for file in next(os.walk(sub_path))[2]:
                     self.paths[technology_subset][technology][file] = os.path.join(sub_path, file)
+                self.paths["set_technologies"][technology] = self.paths[technology_subset][technology]
 
     def add_elements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.

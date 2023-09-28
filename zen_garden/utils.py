@@ -1077,7 +1077,6 @@ class InputDataChecks:
         This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.csv file exist.
         """
         self.optimization_setup.system["set_technologies"] = []
-        self.optimization_setup.paths["set_technologies"] = {}
         for technology_subset in self.optimization_setup.analysis["subsets"]["set_technologies"]:
             for technology in self.optimization_setup.system[technology_subset]:
                 if technology not in self.optimization_setup.paths[technology_subset].keys():
@@ -1085,7 +1084,6 @@ class InputDataChecks:
                     self.optimization_setup.system[technology_subset].remove(technology)
                 elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
                     raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
-                self.optimization_setup.paths["set_technologies"][technology] = self.optimization_setup.paths[technology_subset][technology]
             self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[technology_subset])
             # check subsets of technology_subset
             if technology_subset in self.optimization_setup.analysis["subsets"].keys():
@@ -1096,10 +1094,8 @@ class InputDataChecks:
                             self.optimization_setup.system[subset].remove(technology)
                         elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
                             raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
-                        self.optimization_setup.paths["set_technologies"][technology] = self.optimization_setup.paths[technology_subset][technology]
                     self.optimization_setup.system[technology_subset].extend(self.optimization_setup.system[subset])
                     self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[subset])
-
 
     def check_existing_carrier_data(self):
         """
