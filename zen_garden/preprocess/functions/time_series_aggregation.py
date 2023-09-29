@@ -197,6 +197,8 @@ class TimeSeriesAggregation(object):
                 agg_df.loc[time_step] = df_slice.mean(axis=0)
             elif self.analysis["time_series_aggregation"]["clusterMethod"] == "k_medoids":
                 agg_df.loc[time_step] = df_slice.median(axis=0)
+            elif self.analysis["time_series_aggregation"]["clusterMethod"] == "hierarchical":
+                agg_df.loc[time_step] = df_slice.mean(axis=0)
             else:
                 raise NotImplementedError(f"Cluster method {self.analysis['time_series_aggregation']['clusterMethod']} not yet implemented for manually aggregating excluded time series")
         return agg_df.astype(float)
