@@ -12,5 +12,5 @@ scenarios["1"] = {"set_carriers": {"price_import": {"default_op": 1.2,
                                                     'exclude': ['heat']},
                                    'carbon_intensity': {'default_op': 2}},
                   'heat': {'carbon_intensity': {'default': 'attributes_1'}},  # overwrites the set carriers value
-                  'set_conversion_technologies': {'capex_specific': {'default_op': 1.1}},  # increased capex by 10%
+                  'set_technologies': {'capex_specific': {'default_op': 1.1}},  # increased capex by 10%
                   }
