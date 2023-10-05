@@ -9,10 +9,12 @@ Class containing the unit handling procedure.
 import logging
 import numpy as np
 import pandas as pd
+import scipy as sp
 import itertools
 from pint import UnitRegistry
 from pint.util import column_echelon_form
 import copy
+import warnings
 
 
 class UnitHandling:
@@ -272,6 +274,69 @@ class UnitHandling:
             for exp, unit in zip(smallest_range["comb"], mutable_unit):
                 if exp != 0:
                     list_units.append(str(self.ureg(f"{10 ** exp} {unit}").to_compact()))
+            logging.info(f"A better base unit combination is {', '.join(list_units)}. This reduces the parameter range by 10^{int(np.round(smallest_range['originalVal'] - smallest_range['val']))}")
+
+    def recommend_base_units_new(self, immutable_unit, unit_exps):
+        """ gets the best base units based on the input parameter values
+
+        :param immutable_unit: #TODO describe parameter/return
+        :param unit_exps: #TODO describe parameter/return
+        """
+        logging.info(f"Check for best base unit combination between 10^{unit_exps['min']} and 10^{unit_exps['max']} (interval: 10^{unit_exps['step_width']})")
+        smallest_range = {"comb": None, "val": np.inf, "originalVal": np.inf}
+        dict_values = {}
+        dict_units = {}
+        base_units = self.dim_matrix.columns.copy()
+        for item in self.dict_attribute_values:
+            if self.dict_attribute_values[item]["values"] is not None:
+                _df_values_temp = self.dict_attribute_values[item]["values"].reset_index(drop=True)
+                _df_units_temp = pd.DataFrame(index=_df_values_temp.index, columns=base_units)
+                _df_units_temp.loc[_df_values_temp.index, :] = self.dict_attribute_values[item]["base_combination"][base_units].values
+                dict_values[item] = _df_values_temp
+                dict_units[item] = _df_units_temp
+        df_values = pd.concat(dict_values, ignore_index=True).abs()
+        df_units = pd.concat(dict_units, ignore_index=True)
+        smallest_range["originalVal"] = np.log10(df_values.max()) - np.log10(df_values.min())
+        smallest_range["val"] = copy.copy(smallest_range["originalVal"])
+        smallest_range["comb"] = "original"
+        mutable_unit = self.dim_matrix.columns[self.dim_matrix.columns.isin(base_units.difference(immutable_unit))]
+        df_units = df_units.loc[:, mutable_unit].values
+
+        zero_rows_mask = np.all(df_units == 0, axis=1)
+        filtered_df_units = df_units[~zero_rows_mask]
+        filtered_df_values = df_values[~zero_rows_mask]
+
+        b = filtered_df_values
+        A = filtered_df_units
+        def objective(x):
+            b_tilde_log = np.log10(b) - np.dot(A, x)
+            b_avg = b.sum() / b.size
+            return ((b_tilde_log - np.log10(b_avg)) ** 2).sum()
+
+        x0 = np.ones(A.shape[1])
+        result = sp.optimize.minimize(objective, x0,method='L-BFGS-B',bounds=[(-2,2),(-2,2),(-2,2)])
+        if not result.success:
+            warnings.warn(f"Minimization not successful")
+        x_int = result.x.astype(int)
+
+        b_tilde_log_opt = np.log10(b) - np.dot(A, result.x)
+        b_tilde_opt = 10 ** b_tilde_log_opt
+
+        b_tilde_log_opt_int = np.log10(b) - np.dot(A, x_int)
+        b_tilde_opt_int = 10 ** b_tilde_log_opt_int
+
+        val_range_init = np.log10(b.max()) - np.log10(b.min())
+        val_range_opt = np.log10(b_tilde_opt.max()) - np.log10(b_tilde_opt.min())
+        val_range_opt_int = np.log10(b_tilde_opt_int.max()) - np.log10(b_tilde_opt_int.min())
+
+        if val_range_opt_int == smallest_range["originalVal"]:
+            logging.info("The current base unit setting is the best in the given search interval")
+        else:
+            smallest_range["comb"] = x_int
+            list_units = []
+            for exp, unit in zip(smallest_range["comb"], mutable_unit):
+                if exp != 0:
+                    list_units.append(str(self.ureg(f"{10.0 ** exp} {unit}").to_compact()))
             logging.info(f"A better base unit combination is {', '.join(list_units)}. This reduces the parameter range by 10^{int(np.round(smallest_range['originalVal'] - smallest_range['val']))}")
 
     def check_if_invalid_hourstring(self, input_unit):

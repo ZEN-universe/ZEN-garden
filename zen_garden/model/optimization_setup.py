@@ -167,6 +167,8 @@ class OptimizationSetup(object):
             logging.info(f"Create {element_class} {element.name}")
             element.store_input_data()
         if self.solver["recommend_base_units"]:
+            self.energy_system.unit_handling.recommend_base_units_new(immutable_unit=self.solver["immutable_unit"],
+                                                                  unit_exps=self.solver["range_unit_exponents"])
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
                                                                   unit_exps=self.solver["range_unit_exponents"])
 
