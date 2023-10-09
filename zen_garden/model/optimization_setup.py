@@ -28,6 +28,8 @@ from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
 from ..utils import ScenarioDict, IISConstraintParser, InputDataChecks
+from .default_config import SolverOptions
+from pydantic import BaseModel
 
 class OptimizationSetup(object):
     """setup optimization setup """
@@ -532,8 +534,12 @@ class OptimizationSetup(object):
 
         :param solver: dictionary containing the solver settings """
         solver_name = solver["name"]
+        if isinstance(solver["solver_options"], BaseModel):
+            solver_options: dict = solver["solver_options"].model_dump()
+        else:
+            solver_options = solver["solver_options"]
         # remove options that are None
-        solver_options = {key: solver["solver_options"][key] for key in solver["solver_options"] if solver["solver_options"][key] is not None}
+        solver_options = {key: solver_options[key] for key in solver_options if solver_options[key] is not None}
 
         logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily

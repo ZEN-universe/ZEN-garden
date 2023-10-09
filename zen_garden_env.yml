@@ -19,6 +19,7 @@ dependencies:
   - gurobi
 #  - h5py
   - pytables
+  - pydantic
   - pip:
       - tsam
       - h5py

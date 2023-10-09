@@ -12,6 +12,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from pydantic import BaseModel
 import sys
 import zlib
 
@@ -94,6 +95,9 @@ class Postprocess:
         :param dictionary: The dictionary to save
         :param format: Force the format to use, if None use output_format attribute of instance
         """
+
+        if isinstance(dictionary, BaseModel):
+            dictionary = dictionary.model_dump()
 
         # set the format
         if format is None:
