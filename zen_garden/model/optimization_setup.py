@@ -15,6 +15,7 @@ import cProfile
 import copy
 import logging
 import os
+import time
 from collections import defaultdict
 
 import linopy as lp
@@ -167,10 +168,17 @@ class OptimizationSetup(object):
             logging.info(f"Create {element_class} {element.name}")
             element.store_input_data()
         if self.solver["recommend_base_units"]:
+            t0 = time.perf_counter()
             self.energy_system.unit_handling.recommend_base_units_new(immutable_unit=self.solver["immutable_unit"],
                                                                   unit_exps=self.solver["range_unit_exponents"])
+            t1 = time.perf_counter()
+            logging.info(f"Time needed LSE {t1-t0}")
+            t0 = time.perf_counter()
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
                                                                   unit_exps=self.solver["range_unit_exponents"])
+            t1 = time.perf_counter()
+            logging.info(f"Time needed iterative approach {t1-t0}")
+            a = 1
 
     def add_element(self, element_class, name):
         """

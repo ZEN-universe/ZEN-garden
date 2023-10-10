@@ -302,21 +302,25 @@ class UnitHandling:
         mutable_unit = self.dim_matrix.columns[self.dim_matrix.columns.isin(base_units.difference(immutable_unit))]
         df_units = df_units.loc[:, mutable_unit].values
 
+        #remove rows of df_units which contain only zeros since they cannot be scaled anyway
         zero_rows_mask = np.all(df_units == 0, axis=1)
         filtered_df_units = df_units[~zero_rows_mask]
         filtered_df_values = df_values[~zero_rows_mask]
 
         b = filtered_df_values
         A = filtered_df_units
+
         def objective(x):
             b_tilde_log = np.log10(b) - np.dot(A, x)
             b_avg = b.sum() / b.size
             return ((b_tilde_log - np.log10(b_avg)) ** 2).sum()
 
         x0 = np.ones(A.shape[1])
-        result = sp.optimize.minimize(objective, x0,method='L-BFGS-B',bounds=[(-2,2),(-2,2),(-2,2)])
+        result = sp.optimize.minimize(objective, x0, method='L-BFGS-B', bounds=[(unit_exps["min"], unit_exps["max"]) for i in range(df_units.shape[1])])
+
         if not result.success:
-            warnings.warn(f"Minimization not successful")
+            raise AssertionError(f"Minimization not successful!")
+
         x_int = result.x.astype(int)
 
         b_tilde_log_opt = np.log10(b) - np.dot(A, result.x)
@@ -329,16 +333,18 @@ class UnitHandling:
         val_range_opt = np.log10(b_tilde_opt.max()) - np.log10(b_tilde_opt.min())
         val_range_opt_int = np.log10(b_tilde_opt_int.max()) - np.log10(b_tilde_opt_int.min())
 
-        if val_range_opt_int == smallest_range["originalVal"]:
+        if val_range_opt_int >= smallest_range["originalVal"]:
             logging.info("The current base unit setting is the best in the given search interval")
+            logging.info(f"LSE would be reduced by {objective(x=np.zeros(A.shape[1])) - result.fun} by applying base change")
         else:
             smallest_range["comb"] = x_int
+            smallest_range["val"] = val_range_opt_int
             list_units = []
             for exp, unit in zip(smallest_range["comb"], mutable_unit):
                 if exp != 0:
                     list_units.append(str(self.ureg(f"{10.0 ** exp} {unit}").to_compact()))
             logging.info(f"A better base unit combination is {', '.join(list_units)}. This reduces the parameter range by 10^{int(np.round(smallest_range['originalVal'] - smallest_range['val']))}")
-
+            logging.info(f"LSE reduced by {objective(x=np.zeros(A.shape[1])) - result.fun}")
     def check_if_invalid_hourstring(self, input_unit):
         """ checks if "h" and thus "planck_constant" in input_unit
 
