@@ -95,7 +95,7 @@ class Config(object):
                 "set_capacity_types":"capacity_type"}
         # time series aggregation
         self.analysis["time_series_aggregation"] = {
-            "clusterMethod"         : "hierarchical",
+            "clusterMethod"         : "k_means",
             "solver"                : "gurobi",
             "hoursPerPeriod"        : 1,
             "extremePeriodMethod"   : "None",

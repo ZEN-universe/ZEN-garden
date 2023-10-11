@@ -903,7 +903,7 @@ class Results(object):
         """
         return self.get_df("time_steps_storage_level_duration")
 
-    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False,discount_years=True):
+    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False,discount_to_first_step=True):
         """Calculates the full timeseries for a given element
 
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -911,7 +911,7 @@ class Results(object):
         :param year: year of which full time series is selected
         :param scenario: The scenario for with the component should be extracted (only if needed)
         :param is_dual: if component is dual variable
-        :param discount_years: if discount dual variable
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :return: A dataframe containing the full timeseries of the element
         """
         # extract the data
@@ -921,12 +921,12 @@ class Results(object):
         if not self.has_scenarios:
             full_ts = self._get_full_ts_for_single_scenario(
                 component_data, component_name, scenario=None, element_name=element_name,
-                year=year, is_dual = is_dual, discount_years=discount_years)
+                year=year, is_dual = is_dual, discount_to_first_step=discount_to_first_step)
         # specific scenario
         elif scenario is not None:
             full_ts = self._get_full_ts_for_single_scenario(
                 component_data, component_name, scenario=scenario, element_name=element_name,
-                year=year, is_dual = is_dual, discount_years=discount_years)
+                year=year, is_dual = is_dual, discount_to_first_step=discount_to_first_step)
         # all scenarios
         else:
             full_ts_dict = {}
@@ -934,7 +934,7 @@ class Results(object):
                 component_data_scenario = component_data[scenario]
                 full_ts_dict[scenario] = self._get_full_ts_for_single_scenario(
                     component_data_scenario, component_name, scenario=scenario, element_name=element_name,
-                    year=year, is_dual = is_dual,discount_years=discount_years)
+                    year=year, is_dual = is_dual,discount_to_first_step=discount_to_first_step)
             if isinstance(full_ts_dict[scenario], pd.Series):
                 full_ts = pd.concat(full_ts_dict, keys=full_ts_dict.keys(), axis=1).T
             else:
@@ -942,7 +942,7 @@ class Results(object):
         return full_ts
 
 
-    def _get_full_ts_for_single_scenario(self,component_data,component_name,scenario, element_name=None, year=None, is_dual=False,discount_years=True):
+    def _get_full_ts_for_single_scenario(self,component_data,component_name,scenario, element_name=None, year=None, is_dual=False,discount_to_first_step=True):
         """ calculates total value for single scenario
         :param component_data: numerical data of component
         :param component_name: name of component
@@ -950,14 +950,14 @@ class Results(object):
         :param element_name: The element name to calculate the value for, defaults to all elements
         :param year: The year to calculate the value for, defaults to all years
         :param is_dual: if component is dual variable
-        :param discount_years: if discount dual variable
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :return: A dataframe containing the total value with the specified parameters
         """
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
         ts_type = self._get_ts_type(component_data, component_name)
         if is_dual:
-            annuity = self._get_annuity(discount_years)
+            annuity = self._get_annuity(discount_to_first_step)
         else:
             annuity = pd.Series(index=self.years, data=1)
         if isinstance(component_data, pd.Series):
@@ -1167,20 +1167,20 @@ class Results(object):
                     total_value = total_value.sum(axis=1)
         return total_value
 
-    def get_dual(self,constraint,scenario=None, element_name=None, year=None,discount_years=True):
+    def get_dual(self,constraint,scenario=None, element_name=None, year=None,discount_to_first_step=True):
         """ extracts the dual variables of a constraint
 
         :param constraint: #TODO describe parameter/return
         :param scenario: #TODO describe parameter/return
         :param element_name: #TODO describe parameter/return
         :param year: #TODO describe parameter/return
-        :param discount_years: #TODO describe parameter/return
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :return: #TODO describe parameter/return
         """
         if not self.results["solver"]["add_duals"]:
             logging.warning("Duals are not calculated. Skip.")
             return
-        _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True, element_name=element_name, year=year,discount_years=discount_years)
+        _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True, element_name=element_name, year=year,discount_to_first_step=discount_to_first_step)
         return _duals
 
     def get_doc(self, component, index_set=False):
@@ -1201,10 +1201,10 @@ class Results(object):
             return doc, index_set
         return doc[0]
 
-    def _get_annuity(self,discount_years):
+    def _get_annuity(self,discount_to_first_step):
         """ discounts the duals
 
-        :param discount_years: #TODO describe parameter/return
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :return: #TODO describe parameter/return
         """
         system = self.results["system"]
@@ -1218,12 +1218,16 @@ class Results(object):
             else:
                 interval_between_years_this_year = system["interval_between_years"]
             if self.has_MF:
-                annuity[year] = sum(((1 / (1 + discount_rate)) ** (_intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years_this_year))
+                if discount_to_first_step:
+                    annuity[year] = interval_between_years_this_year * (1 / (1 + discount_rate))
+                else:
+                    annuity[year] = sum(((1 / (1 + discount_rate)) ** (_intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years_this_year))
             else:
-                annuity[year] = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.years[0]) + _intermediate_time_step))
+                if discount_to_first_step:
+                    annuity[year] = interval_between_years_this_year*((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.years[0])))
+                else:
+                    annuity[year] = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.years[0]) + _intermediate_time_step))
                         for _intermediate_time_step in range(0, interval_between_years_this_year))
-            if not discount_years:
-                annuity[year] /= interval_between_years_this_year
         return annuity
 
     def _get_ts_duration(self, scenario=None, is_storage=False):
