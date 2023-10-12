@@ -191,14 +191,29 @@ class TimeSeriesAggregation(object):
         :param df: dataframe that is manually aggregated
         :return agg_df: aggregated dataframe """
         agg_df = pd.DataFrame(index=self.set_time_steps,columns=df.columns)
+        tsa_options = self.analysis["time_series_aggregation"]
+        if tsa_options["representationMethod"] == "meanRepresentation":
+            representation_method = "mean"
+        elif tsa_options["representationMethod"] == "mediodRepresentation":
+            representation_method = "median"
+        elif tsa_options["representationMethod"] is None:
+            if tsa_options["clusterMethod"] == "k_means":
+                representation_method = "mean"
+            elif tsa_options["clusterMethod"] == "k_medoids" or tsa_options["clusterMethod"] == "hierarchical":
+                representation_method = "median"
+            else:
+                raise NotImplementedError(
+                    f"Default representation method not yet implemented for cluster method {tsa_options['clusterMethod']} manually aggregating excluded time series")
+        else:
+            raise NotImplementedError(
+                f"Representation method {self.analysis['time_series_aggregation']['representationMethod']} not yet implemented for manually aggregating excluded time series")
+
         for time_step in self.set_time_steps:
             df_slice = df.loc[self.sequence_time_steps == time_step]
-            if self.analysis["time_series_aggregation"]["clusterMethod"] == "k_means":
+            if representation_method == "mean":
                 agg_df.loc[time_step] = df_slice.mean(axis=0)
-            elif self.analysis["time_series_aggregation"]["clusterMethod"] == "k_medoids":
-                agg_df.loc[time_step] = df_slice.median(axis=0)
             else:
-                raise NotImplementedError(f"Cluster method {self.analysis['time_series_aggregation']['clusterMethod']} not yet implemented for manually aggregating excluded time series")
+                agg_df.loc[time_step] = df_slice.median(axis=0)
         return agg_df.astype(float)
 
     def extract_raw_ts(self, element, header_set_time_steps):
