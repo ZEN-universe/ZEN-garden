@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import linregress
 
+from ...utils import InputDataChecks
+
 
 class DataInput:
     """
@@ -76,7 +78,7 @@ class DataInput:
 
         assert (df_input is not None or default_value is not None), f"input file for attribute {file_name} could not be imported and no default value is given."
         if df_input is not None and not df_input.empty:
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value,time_steps)
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps)
         # save parameter values for analysis of numerics
         self.save_values_of_attribute(df_output=df_output, file_name=file_name)
         # finally apply the scenario_factor
@@ -115,6 +117,9 @@ class DataInput:
             else:
                 df_input = DataInput.extract_from_input_with_missing_index(df_input, df_output, copy.deepcopy(index_name_list), file_name, missing_index)
 
+        #check for duplicate indices
+        df_input = self.energy_system.optimization_setup.input_data_checks.check_duplicate_indices(df_input=df_input, file_name=file_name, folder_path=self.folder_path)
+
         # apply multiplier to input data
         df_input = df_input * default_value["multiplier"]
         # delete nans
@@ -146,6 +151,9 @@ class DataInput:
         file_names = os.listdir(self.folder_path)
         if input_file_name in file_names:
             df_input = pd.read_csv(os.path.join(self.folder_path, input_file_name), header=0, index_col=None)
+            #check for header name duplicates (pd.read_csv() adds a dot and a number to duplicate headers)
+            if any("." in col for col in df_input.columns):
+                raise AssertionError(f"The input data file {input_file_name} at {self.folder_path} contains two identical header names.")
             return df_input
         else:
             return None

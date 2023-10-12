@@ -28,7 +28,7 @@ from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
-from ..utils import ScenarioDict, IISConstraintParser, InputDataChecks
+from ..utils import ScenarioDict, IISConstraintParser
 
 class OptimizationSetup(object):
     """setup optimization setup """

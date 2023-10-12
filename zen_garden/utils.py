@@ -1118,7 +1118,8 @@ class InputDataChecks:
         if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")):
             raise FileNotFoundError(f"system.py not found in dataset: {self.analysis['dataset']}")
 
-    def check_carrier_configuration(self, input_carrier, output_carrier, reference_carrier, name):
+    @staticmethod
+    def check_carrier_configuration(input_carrier, output_carrier, reference_carrier, name):
         """
         Checks if the chosen input/output and reference carrier combination is reasonable
 
@@ -1135,3 +1136,31 @@ class InputDataChecks:
         set_output_carrier = set(output_carrier)
         # assert that input and output carrier of conversion tech are different
         assert not set_input_carrier & set_output_carrier, f"The conversion technology {name} has the same input ({input_carrier[0]}) and output ({output_carrier[0]}) carrier!"
+
+    @staticmethod
+    def check_duplicate_indices(df_input, file_name, folder_path):
+        """
+        Checks if df_input contains any duplicate indices and either removes them if they are of identical value or raises an error otherwise
+
+        :param df_input: raw input dataframe
+        :param folder_path: the path of the folder containing the selected file
+        :param file_name: name of selected file
+        :return: df_input without duplicate indices
+        """
+        unique_elements, counts = np.unique(df_input.index, return_counts=True)
+        duplicates = unique_elements[counts > 1]
+
+        if len(duplicates) != 0:
+            for duplicate in duplicates:
+                values = df_input.loc[duplicate]
+                #check if all the duplicates are of the same value
+                if values.nunique() == 1:
+                    logging.warning(f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with identical values: {df_input.loc[duplicates]}.")
+                else:
+                    raise AssertionError(f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with different values: {df_input.loc[duplicates]}.")
+            #remove duplicates
+            duplicate_mask = df_input.index.duplicated(keep='first')
+            df_input = df_input[~duplicate_mask]
+
+        return df_input
+
