@@ -21,6 +21,7 @@ setup(
         "matplotlib",
         "entsoe-py",
         "h5py",
-        "tables"
+        "tables",
+        "ordered-set"
     ],
 )
