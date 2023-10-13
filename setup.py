@@ -22,6 +22,9 @@ setup(
         "entsoe-py",
         "h5py",
         "tables",
-        "ordered-set"
+        "ordered-set",
+        "linopy",
+        "psutil",
+        "tsam"
     ],
 )
