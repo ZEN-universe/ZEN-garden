@@ -8,7 +8,6 @@ Default configuration. Changes from the default values are specified in config.p
 """
 
 from pydantic import BaseModel, ConfigDict
-from enum import Enum
 from typing import Any, Optional
 
 
@@ -24,19 +23,19 @@ class Subscriptable(BaseModel):
 
     def update(self, new_values: dict):
         for key, val in new_values.items():
-            if type(val) == dict:
+            if type(val) is dict:
                 getattr(self, key).update(val)
             else:
                 setattr(self, key, val)
 
     def items(self):
         return self.model_dump().items()
-    
+
     def __iter__(self):
         self.fix_keys = list(self.model_dump().keys())
         self.i = 0
         return self
-    
+
     def __next__(self):
         if self.i < len(self.fix_keys):
             ans = self.fix_keys[self.i]
@@ -44,7 +43,6 @@ class Subscriptable(BaseModel):
             return ans
         else:
             raise StopIteration
-            
 
 
 class Subsets(Subscriptable):
@@ -113,7 +111,7 @@ class Analysis(Subscriptable):
 
 
 class System(Subscriptable):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
     set_carriers: list = []
     set_conditioning_carriers: list = []
     set_capacity_types: list[str] = ["power", "energy"]
@@ -172,15 +170,15 @@ class Solver(Subscriptable):
 
 
 class Config(Subscriptable):
-    #analysis: dict = Analysis().model_dump()
+    # analysis: dict = Analysis().model_dump()
     analysis: Analysis = Analysis()
-    
-    #solver: dict = Solver().model_dump()
+
+    # solver: dict = Solver().model_dump()
     solver: Solver = Solver()
-    
+
     system: dict = System()
-    #system: System = System()
-    
+    # system: System = System()
+
     scenarios: dict = {"": {}}
 
 

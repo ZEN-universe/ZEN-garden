@@ -1511,6 +1511,96 @@ class Results(object):
                 warnings.warn(f"Plot couldn't be saved as specified file type '{file_type}' isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
         plt.show()
 
+    def get_summary_df(
+            self,
+            component,
+            yearly=False,
+            node_edit=None,
+            sum_techs=False,
+            tech_type=None,
+            reference_carrier=None,
+            year=None,
+            start_hour=None,
+            duration=None,
+            scenario=None):
+        if isinstance(component, str):
+            if None in self.scenarios:
+                if component not in self.results[None][None]["pars_and_vars"]:
+                    warnings.warn(f"Chosen component '{component}' doesn't exist")
+                    return
+            else:
+                if scenario is None:
+                    scenario = self.scenarios[0]
+                if component not in self.results[scenario][None]["pars_and_vars"]:
+                    warnings.warn(f"Chosen component '{component}' doesn't exist")
+                    return
+
+            component_name, component_data = self._get_component_data(component, scenario=scenario)
+        # set timeseries type
+        if yearly:
+            ts_type = "yearly"
+        else:
+            ts_type = self._get_ts_type(component_data, component_name)
+
+        # plot variable with operational time steps
+        if ts_type == "operational":
+            if isinstance(component, str):
+                data_full_ts = self.get_full_ts(component, scenario=scenario)
+            elif isinstance(component, pd.DataFrame):
+                data_full_ts = component
+            # extract desired data
+            if node_edit != "all":
+                data_full_ts = self.edit_nodes(data_full_ts, node_edit)
+            if sum_techs:
+                data_full_ts = self.sum_over_technologies(data_full_ts)
+            if reference_carrier != None:
+                data_full_ts = self.extract_reference_carrier(data_full_ts, reference_carrier, scenario)
+            # drop index levels having constant value in all indices
+            if isinstance(data_full_ts, pd.DataFrame) and data_full_ts.index.nlevels > 1:
+                drop_levs = []
+                for ind, lev_shape in enumerate(data_full_ts.index.levshape):
+                    if ind != 0:
+                        if all(lev_value[ind] == data_full_ts.index.values[0][ind] for lev_value in data_full_ts.index.values[ind:]):
+                            drop_levs.append(ind)
+                data_full_ts = data_full_ts.droplevel(level=drop_levs)
+            # extract data of a specific year
+            data_full_ts = data_full_ts.transpose()
+            if year is not None:
+                # extract the rows of the desired year
+                ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
+                data_full_ts = data_full_ts.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
+                # extract specific hours of year
+                if start_hour is not None and duration is not None:
+                    data_full_ts = data_full_ts.iloc[start_hour:start_hour + duration]
+            # remove columns(technologies/variables) with constant zero value
+            data_full_ts = data_full_ts.loc[:, (data_full_ts != 0).any(axis=0)]
+            return data_full_ts
+
+        # plot variable with yearly time steps
+        elif ts_type == "yearly":
+            if isinstance(component, str):
+                data_total = self.get_total(component, scenario=scenario)
+            elif isinstance(component, pd.DataFrame):
+                data_total = component
+            if tech_type != None:
+                data_total = self.extract_technology(data_total, tech_type)
+            if reference_carrier != None:
+                data_total = self.extract_reference_carrier(data_total, reference_carrier, scenario)
+            # sum data according to chosen options
+            if node_edit != "all":
+                data_total = self.edit_nodes(data_total, node_edit)
+            if sum_techs:
+                data_total = self.sum_over_technologies(data_total)
+            #drop index levels having constant value in all indices
+            if isinstance(data_total, pd.DataFrame) and data_total.index.nlevels > 1:
+                drop_levs = []
+                for ind, lev_shape in enumerate(data_total.index.levshape):
+                    if ind != 0:
+                        if all(lev_value[ind] == data_total.index.values[0][ind] for lev_value in data_total.index.values):
+                            drop_levs.append(ind)
+                data_total = data_total.droplevel(level=drop_levs)
+            return data_total
+
     def plot(self, component, yearly=False, node_edit=None, sum_techs=False, tech_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}, save_fig=False, file_type=None, year=None, start_hour=None, duration=None, scenario=None):
         """Plots component data as specified by arguments
 
