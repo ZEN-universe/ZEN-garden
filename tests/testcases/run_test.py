@@ -130,64 +130,31 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
 
 
-def check_get_total_get_full_ts(results: Results):
+def check_get_total_get_full_ts(results: Results, specific_scenario=False, year=None, element_name=None, discount_to_first_step=True, get_doc=False):
     """
     Tests the functionality of the Results methods get_total() and get_full_ts()
 
+    :param get_doc:
+    :param discount_to_first_step: Apply annuity to first year of interval or entire interval
+    :param element_name: Specific element
+    :param year: Specific year
+    :param specific_scenario: Specific scenario
     :param results: Results instance of testcase function has been called from
     """
-    test_variables = ["demand", "capacity"]
+    test_variables = ["demand", "capacity", "storage_level", "capacity_limit"]
+    scenario = None
+    if specific_scenario:
+        scenario = results.scenarios[0]
     for test_variable in test_variables:
-        df = results.get_df(test_variable)
-        df_total = results.get_total(test_variable)
-        df_full_ts = results.get_full_ts(test_variable)
-        scenario = None
-        if results.has_scenarios:
-            scenario = results.scenarios[0]
-            df = df[scenario]
-            df_total = df_total.loc[scenario]
-            df_full_ts = df_full_ts.loc[scenario]
-        component_name, component_data = results._get_component_data(test_variable, scenario=scenario)
-        ts_type = results._get_ts_type(component_data, component_name)
-
-        # test get_total()
-        # test shape of dataframe
-        if ts_type == "operational":
-            if results.results["system"]["conduct_time_series_aggregation"]:
-                assert df.size == df_total.shape[0] * results.results["system"]["optimized_years"] * results.results["system"][
-                    "aggregated_time_steps_per_year"]
-            else:
-                assert df.size == df_total.shape[0] * results.results["system"]["optimized_years"] * results.results["system"][
-                    "unaggregated_time_steps_per_year"]
-            assert df_total.columns.size == results.results["system"]["optimized_years"]
-        elif ts_type == "yearly":
-            assert df.size == df_total.shape[0] * results.results["system"]["optimized_years"]
-            assert df_total.columns.size == results.results["system"]["optimized_years"]
-
-        # test summation
-        if results.results["system"]["conduct_time_series_aggregation"]:
-            number_of_ts = results.results["system"]["aggregated_time_steps_per_year"]
-        #    for index in df_total.index:
-        #        for year in list(range(0,results.results["system"]["optimized_years"])):
-        #            assert df.loc[index][number_of_ts*year:(number_of_ts-1)*(year+1)].sum() == df_total.loc[index]
-        else:
-            number_of_ts = results.results["system"]["unaggregated_time_steps_per_year"]
-            for index in df_total.index:
-                for year in list(range(0, results.results["system"]["optimized_years"])):
-                    assert df.loc[index][year::results.results["system"]["optimized_years"]].sum() == df_total.loc[index][year]
-
-        # test get_full_ts()
-        # test shape of dataframe
-        if ts_type == "operational":
-            if results.results["system"]["conduct_time_series_aggregation"]:
-                assert df.size == df_full_ts.index.size * (
-                            df_full_ts.shape[1] - results.results["system"]["optimized_years"] * (
-                                results.results["system"]["unaggregated_time_steps_per_year"] - results.results["system"][
-                            "aggregated_time_steps_per_year"]))
-            else:
-                assert df.size == df_full_ts.index.size * df_full_ts.shape[1]
-        elif ts_type == "yearly":
-            assert df.size == df_full_ts.index.size * results.results["system"]["optimized_years"]
+        df_total = results.get_total(test_variable, scenario=scenario, year=year)
+        if test_variable != "capacity_limit":
+            df_full_ts = results.get_full_ts(test_variable, scenario=scenario, year=year, discount_to_first_step=discount_to_first_step)
+        if element_name is not None:
+            df_total = results.get_total(test_variable, element_name=df_total.index[0][0])
+            if test_variable != "capacity_limit":
+                df_full_ts = results.get_full_ts(test_variable, element_name=df_full_ts.index[0][0])
+    if get_doc:
+        results.get_doc(test_variables[0])
 
 # All the tests
 ###############
@@ -219,6 +186,8 @@ def test_1b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    #test functions get_total() and get_full_ts()
+    check_get_total_get_full_ts(res, element_name=True)
 
 
 def test_1c(config, folder_path):
@@ -331,8 +300,6 @@ def test_4a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
-    check_get_total_get_full_ts(res)
 
 
 def test_4b(config, folder_path):
@@ -359,6 +326,8 @@ def test_4c(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    #test functions get_total() and get_full_ts()
+    check_get_total_get_full_ts(res, year=0)
 
 
 def test_4d(config, folder_path):
@@ -371,6 +340,8 @@ def test_4d(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    #test functions get_total() and get_full_ts()
+    check_get_total_get_full_ts(res, discount_to_first_step=False)
 
 
 def test_4e(config, folder_path):
@@ -449,6 +420,8 @@ def test_6b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    #test functions get_total() and get_full_ts()
+    check_get_total_get_full_ts(res, specific_scenario=True)
 
 
 def test_6c(config, folder_path):

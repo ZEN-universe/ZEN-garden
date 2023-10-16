@@ -903,7 +903,7 @@ class Results(object):
         """
         return self.get_df("time_steps_storage_level_duration")
 
-    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False,discount_to_first_step=True):
+    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual=False, discount_to_first_step=True):
         """Calculates the full timeseries for a given element
 
         :param component: Either the dataframe of a component as pandas.Series or the name of the component

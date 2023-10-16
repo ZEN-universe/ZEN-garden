@@ -1036,11 +1036,19 @@ class InputDataChecks:
         self.analysis = config.analysis
         self.optimization_setup = optimization_setup
 
-    def check_technology_selected(self):
+    def check_technology_selections(self):
         """
-        Checks if at least one technology is selected in the system.py file
+        Checks selection of different technologies in system.py file
         """
+        #Checks if at least one technology is selected in the system.py file
         assert len(self.system["set_conversion_technologies"] + self.system["set_transport_technologies"] + self.system["set_storage_technologies"]) > 0, f"No technology selected in stystem.py"
+        #Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
+        for tech_list in ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]:
+            techs_selected = self.system[tech_list]
+            unique_elements = list(np.unique(techs_selected))
+            self.system[tech_list] = unique_elements
+
+
 
     def check_year_definitions(self):
         """
