@@ -1031,6 +1031,7 @@ class InputDataChecks:
         Initialize the class
 
         :param config: config object used to extract the analysis, system and solver dictionaries
+        :param optimization_setup: OptimizationSetup instance
         """
         self.system = config.system
         self.analysis = config.analysis
@@ -1126,6 +1127,18 @@ class InputDataChecks:
         if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")):
             raise FileNotFoundError(f"system.py not found in dataset: {self.analysis['dataset']}")
 
+    def check_single_directed_edges(self, set_edges_input):
+        """
+        Checks if single-directed edges exist in the dataset (e.g. CH-DE exists, DE-CH doesn't) and raises a warning
+
+        :param set_edges_input: DataFrame containing set of edges defined in set_edges.csv
+        """
+        for edge in set_edges_input.values:
+            reversed_edge = edge[2] + "-" + edge[1]
+            if reversed_edge not in [edge_string[0] for edge_string in set_edges_input.values] and edge[1] in self.system["set_nodes"] and edge[2] in self.system["set_nodes"]:
+                warnings.warn(f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!")
+
+
     @staticmethod
     def check_carrier_configuration(input_carrier, output_carrier, reference_carrier, name):
         """
@@ -1171,4 +1184,3 @@ class InputDataChecks:
             df_input = df_input[~duplicate_mask]
 
         return df_input
-
