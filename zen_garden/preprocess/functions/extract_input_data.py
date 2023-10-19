@@ -177,7 +177,7 @@ class DataInput:
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"],attribute_name)
+            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"], attribute_name, file_name=filename, path=self.folder_path)
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -496,7 +496,7 @@ class DataInput:
                 columns = df_input.columns
             df_input_units = df_input[columns].iloc[-1]
             df_input = df_input.iloc[:-1]
-            df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit,attribute_name=variable_type))
+            df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit, attribute_name=variable_type))
             df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='ignore'))
             df_input[columns] = df_input[columns] * df_input_multiplier
         return df_input

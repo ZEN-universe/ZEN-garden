@@ -1049,8 +1049,6 @@ class InputDataChecks:
             unique_elements = list(np.unique(techs_selected))
             self.system[tech_list] = unique_elements
 
-
-
     def check_year_definitions(self):
         """
         Check if year-related parameters are defined correctly
@@ -1137,7 +1135,6 @@ class InputDataChecks:
             reversed_edge = edge[2] + "-" + edge[1]
             if reversed_edge not in [edge_string[0] for edge_string in set_edges_input.values] and edge[1] in self.system["set_nodes"] and edge[2] in self.system["set_nodes"]:
                 warnings.warn(f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!")
-
 
     @staticmethod
     def check_carrier_configuration(input_carrier, output_carrier, reference_carrier, name):

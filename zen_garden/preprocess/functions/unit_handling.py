@@ -173,7 +173,7 @@ class UnitHandling:
         else:
             return combined_unit
 
-    def get_unit_multiplier(self, input_unit,attribute_name):
+    def get_unit_multiplier(self, input_unit, attribute_name, path=None, file_name=None):
         """ calculates the multiplier for converting an input_unit to the base units
 
         :param input_unit: string of input unit
@@ -182,8 +182,12 @@ class UnitHandling:
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if input_unit in self.base_units:
             return 1
-        # if input unit is nan --> dimensionless
+        # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
+            warnings.warn(f"DeprecationWarning: There are parameters without any units in {file_name+'.csv'} at {path} (assign unit '1' to unitless parameters to ensure that no units are missing)")
+            return 1
+        #if input unit is 1 --> dimensionless new definition
+        elif input_unit == str("1"):
             return 1
         else:
             combined_unit = self.calculate_combined_unit(input_unit)
@@ -204,8 +208,11 @@ class UnitHandling:
         # if input unit is already in base units --> the input unit is base unit
         if input_unit in self.base_units:
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
-        # if input unit is nan --> dimensionless
+        # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
+            base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
+        #if input unit is 1 --> dimensionless new definition
+        elif input_unit == str("1"):
             base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
         else:
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
@@ -280,9 +287,11 @@ class UnitHandling:
             logging.info(f"A better base unit combination is {', '.join(list_units)}. This reduces the square error of the coefficients compared to their mean by {'{:e}'.format(lse_initial_base_units-lse)}")
 
     def check_if_invalid_hourstring(self, input_unit):
-        """ checks if "h" and thus "planck_constant" in input_unit
+        """
+        checks if "h" and thus "planck_constant" in input_unit
 
-        :param input_unit: string of input_unit """
+        :param input_unit: string of input_unit
+        """
         _tuple_units = self.ureg(input_unit).to_tuple()[1]
         _list_units = [_item[0] for _item in _tuple_units]
         assert "planck_constant" not in _list_units, f"Error in input unit '{input_unit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"
