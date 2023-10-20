@@ -366,6 +366,9 @@ def test_4f(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    #test plot functions
+    res.standard_plots()
+    res.plot_energy_balance(node="DE", carrier="natural_gas", year=0)
 
 
 def test_4g(config, folder_path):
