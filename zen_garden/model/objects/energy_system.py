@@ -96,13 +96,13 @@ class EnergySystem:
         # discount rate
         self.discount_rate = self.data_input.extract_input_data("discount_rate", index_sets=[])
         # carbon emissions limit
-        self.carbon_emissions_limit = self.data_input.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps_yearly"], time_steps=self.set_time_steps_yearly)
+        self.carbon_emissions_limit = self.data_input.extract_input_data("carbon_emissions_limit", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly")
         _fraction_year = self.system["unaggregated_time_steps_per_year"] / self.system["total_hours_per_year"]
         self.carbon_emissions_limit = self.carbon_emissions_limit * _fraction_year  # reduce to fraction of year
         self.carbon_emissions_budget = self.data_input.extract_input_data("carbon_emissions_budget", index_sets=[])
         self.carbon_emissions_cumulative_existing = self.data_input.extract_input_data("carbon_emissions_cumulative_existing", index_sets=[])
         # price carbon emissions
-        self.price_carbon_emissions = self.data_input.extract_input_data("price_carbon_emissions", index_sets=["set_time_steps_yearly"], time_steps=self.set_time_steps_yearly)
+        self.price_carbon_emissions = self.data_input.extract_input_data("price_carbon_emissions", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly")
         self.price_carbon_emissions_overshoot = self.data_input.extract_input_data("price_carbon_emissions_overshoot", index_sets=[])
         # market share unbounded
         self.market_share_unbounded = self.data_input.extract_input_data("market_share_unbounded", index_sets=[])
