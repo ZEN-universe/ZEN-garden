@@ -42,7 +42,7 @@ We follow the [PEP-8](https://peps.python.org/pep-0008/)
 * the name of the classes should always be with the first capital letter
 * classes must all have a short description of what they do (right beneath the class name) and a second docstring describing the constructor along with its parameters (blank line between description and parameters is mandatory), e.g.:
 
-
+    ```python
     class Results(object):
       """
       This class reads in the results after the pipeline has run
