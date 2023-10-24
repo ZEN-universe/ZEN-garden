@@ -118,7 +118,7 @@ class System(Subscriptable):
     set_conversion_technologies: list[str] = []
     set_conditioning_technologies: list = []
     set_storage_technologies: list = []
-    storage_periodicity: list = True
+    storage_periodicity: bool = True
     set_transport_technologies: list = []
     double_capex_transport: bool = False
     set_bidirectional_transport_technologies: list = []
