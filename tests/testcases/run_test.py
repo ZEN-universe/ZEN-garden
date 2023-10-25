@@ -127,7 +127,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     for failed_var, failed_value in failed_variables.items():
         assertion_string += f"\n{failed_var}: {failed_value}"
 
-    assert len(failed_variables) == 0, f"TestThe variables {assertion_string} don't match their test values"
+    assert len(failed_variables) == 0, f"The variables {assertion_string} don't match their test values"
 
 
 # All the tests
@@ -433,8 +433,30 @@ def test_7c(config, folder_path):
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
+def test_8a(config, folder_path):
+    # run the test
+    data_set_name = "test_8a"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+def test_8b(config, folder_path):
+    # run the test
+    data_set_name = "test_8b"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
 if __name__ == "__main__":
     from config import config
     config.solver["keep_files"] = False
     folder_path = os.path.dirname(__file__)
-    test_6a(config,folder_path)
+    test_6b(config,folder_path)

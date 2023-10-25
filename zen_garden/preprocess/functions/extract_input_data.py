@@ -35,7 +35,7 @@ class DataInput:
         self.analysis = analysis
         self.solver = solver
         self.energy_system = energy_system
-        self.scenario_dict = self.energy_system.optimization_setup.scenario_dict
+        self.scenario_dict = None
         self.unit_handling = unit_handling
         # extract folder path
         self.folder_path = getattr(self.element, "input_path")
@@ -150,22 +150,26 @@ class DataInput:
         else:
             return None
 
-    def extract_attribute(self, attribute_name, skip_warning=False):
+    def extract_attribute(self, attribute_name, skip_warning=False, check_if_exists=False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param attribute_name: name of selected attribute
         :param skip_warning: boolean to indicate if "Default" warning is skipped
+        :param check_if_exists: check if attribute exists
         :return attribute_value: attribute value """
-
-        filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
+        if self.scenario_dict is not None:
+            filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
+        else:
+            filename = "attributes"
+            factor = 1
         df_input = self.read_input_data(filename)
         if df_input is not None:
             df_input = df_input.set_index("index").squeeze(axis=1)
-            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning)
+            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning,suppress_error=check_if_exists)
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"])
+            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"],attribute_name)
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -177,17 +181,21 @@ class DataInput:
         else:
             return None
 
-    def adapt_attribute_name(self, attribute_name, df_input, skip_warning=False):
+    def adapt_attribute_name(self, attribute_name, df_input, skip_warning=False,suppress_error=False):
         """ check if attribute in index
 
         :param attribute_name: name of selected attribute
         :param df_input: pd.DataFrame with input data
         :param skip_warning: boolean to indicate if "Default" warning is skipped
+        :param suppress_error: suppress AttributeError if only check for existence of attribute
         :return:
         """
         if attribute_name + "_default" not in df_input.index:
             if attribute_name not in df_input.index:
-                return None
+                if suppress_error:
+                    return None
+                else:
+                    raise AttributeError(f"Attribute {attribute_name} doesn't exist in input data and must therefore be defined")
             elif not skip_warning:
                 logging.warning(f"DeprecationWarning: Attribute names without '_default' suffix are deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}")
         else:
@@ -202,9 +210,9 @@ class DataInput:
         :param scenario: scenario name
         """
         # remove intra-yearly time steps from index set and add inter-yearly time steps
-        _index_sets = copy.deepcopy(index_sets)
-        _index_sets.remove("set_time_steps")
-        _index_sets.append("set_time_steps_yearly")
+        index_sets = copy.deepcopy(index_sets)
+        index_sets.remove("set_time_steps")
+        index_sets.append("set_time_steps_yearly")
         # add Yearly_variation to file_name
         file_name += "_yearly_variation"
         # read input data
@@ -214,14 +222,13 @@ class DataInput:
             logging.info(f"{f_name} is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_data(file_name)
         if df_input is not None:
-            df_output, default_value, index_name_list = self.create_default_output(_index_sets, file_name=file_name, manual_default_value=1)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, manual_default_value=1)
             # set yearly variation attribute to df_output
-            _selected_column = None
-            _name_yearly_variation = file_name
+            name_yearly_variation = file_name
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps=self.energy_system.set_time_steps_yearly)
             # apply the scenario_factor
             df_output = df_output * scenario_factor
-            setattr(self, _name_yearly_variation, df_output)
+            setattr(self, name_yearly_variation, df_output)
 
     def extract_locations(self, extract_nodes=True):
         """ reads input data to extract nodes or edges.
@@ -327,24 +334,22 @@ class DataInput:
         :return pwa_dict: dictionary with pwa parameters """
         # attribute names
         if variable_type == "capex":
-            _attribute_name = "capex_specific"
-            _index_sets = ["set_nodes", "set_time_steps_yearly"]
-            _time_steps = self.energy_system.set_time_steps_yearly
+            attribute_name = "capex_specific"
+            index_sets = ["set_nodes", "set_time_steps_yearly"]
+            time_steps = self.energy_system.set_time_steps_yearly
         elif variable_type == "conversion_factor":
-            # TODO decide if yearly or hourly
-            _attribute_name = "conversion_factor"
-            _index_sets = ["set_nodes", "set_time_steps_yearly"]
-            _index_name = self.index_names[_index_sets[-1]]
-            _time_steps = self.energy_system.set_time_steps_yearly
+            attribute_name = "conversion_factor"
+            index_sets = ["set_nodes", "set_time_steps"]
+            time_steps = self.energy_system.set_base_time_steps_yearly
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
         # import all input data
         df_input_nonlinear = self.read_pwa_files(variable_type, file_type="nonlinear_")
         df_input_breakpoints = self.read_pwa_files(variable_type, file_type="breakpoints_pwa_")
         df_input_linear = self.read_pwa_files(variable_type)
-        df_linear_exist = self.exists_attribute(_attribute_name)
+        df_linear_exist = self.exists_attribute(attribute_name)
         assert (df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
-        # check if capex_specific exists
+        # if nonlinear
         if (df_input_nonlinear is not None and df_input_breakpoints is not None):
             # select data
             pwa_dict = {}
@@ -378,16 +383,16 @@ class DataInput:
                                                        nonlinear_values[value_variable])
                     # calculate relative intercept (intercept/slope) if slope != 0
                     if linear_regress_object.slope != 0:
-                        _relative_intercept = np.abs(linear_regress_object.intercept / linear_regress_object.slope)
+                        relative_intercept = np.abs(linear_regress_object.intercept / linear_regress_object.slope)
                     else:
-                        _relative_intercept = np.abs(linear_regress_object.intercept)
+                        relative_intercept = np.abs(linear_regress_object.intercept)
                     # check if to a reasonable degree linear
-                    if _relative_intercept <= self.solver["linear_regression_check"]["eps_intercept"] \
+                    if relative_intercept <= self.solver["linear_regression_check"]["eps_intercept"] \
                             and linear_regress_object.rvalue >= self.solver["linear_regression_check"]["epsRvalue"]:
                         # model as linear function
                         slope_lin_reg = linear_regress_object.slope
                         linear_dict[value_variable] = \
-                        self.create_default_output(index_sets=_index_sets, time_steps=_time_steps,
+                            self.create_default_output(index_sets=index_sets, time_steps=time_steps,
                                                    manual_default_value=slope_lin_reg)[0]
                     else:
                         # model as pwa function
@@ -395,12 +400,13 @@ class DataInput:
                                                                   nonlinear_values[value_variable]))
                         pwa_dict["pwa_variables"].append(value_variable)
                         # save bounds
-                        _values_between_bounds = [pwa_dict[value_variable][idxBreakpoint] for idxBreakpoint, breakpoint
-                                                  in enumerate(breakpoints) if
-                                                  breakpoint >= min_capacity_tech and breakpoint <= max_capacity_tech]
-                        _values_between_bounds.extend(list(
+                        values_between_bounds = [pwa_dict
+                             [value_variable][idxBreakpoint] for idxBreakpoint, breakpoint in enumerate(breakpoints)
+                                if breakpoint >= min_capacity_tech and breakpoint <= max_capacity_tech
+                        ]
+                        values_between_bounds.extend(list(
                             np.interp([min_capacity_tech, max_capacity_tech], breakpoints, pwa_dict[value_variable])))
-                        pwa_dict["bounds"][value_variable] = (min(_values_between_bounds), max(_values_between_bounds))
+                        pwa_dict["bounds"][value_variable] = (min(values_between_bounds), max(values_between_bounds))
             # pwa
             if (len(pwa_dict["pwa_variables"]) > 0 and len(linear_dict) == 0):
                 is_pwa = True
@@ -411,8 +417,8 @@ class DataInput:
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
-                _conversion_factor_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
-                linear_dict = linear_dict.reorder_levels(_conversion_factor_levels)
+                conversion_factor_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
+                linear_dict = linear_dict.reorder_levels(conversion_factor_levels)
                 return linear_dict, is_pwa
             # no dependent carrier
             elif len(nonlinear_values) == 1:
@@ -426,32 +432,45 @@ class DataInput:
             is_pwa = False
             linear_dict = {}
             if variable_type == "capex":
-                linear_dict["capex"] = self.extract_input_data(_attribute_name, index_sets=_index_sets,
-                                                               time_steps=_time_steps)
+                linear_dict["capex"] = self.extract_input_data(attribute_name, index_sets=index_sets,
+                                                               time_steps=time_steps)
                 return linear_dict, is_pwa
             else:
-                _dependent_carrier = list(set(self.element.input_carrier + self.element.output_carrier).difference(
+                dependent_carrier = list(set(self.element.input_carrier + self.element.output_carrier).difference(
                     self.element.reference_carrier))
-                # TODO implement for more than 1 carrier
-                if _dependent_carrier == []:
+                if not dependent_carrier:
                     return None, is_pwa
-                elif len(_dependent_carrier) == 1 and df_input_linear is None:
-                    linear_dict[_dependent_carrier[0]] = self.extract_input_data(_attribute_name,
-                                                                                 index_sets=_index_sets,
-                                                                                 time_steps=_time_steps)
+                if df_input_linear is None:
+                    if len(dependent_carrier) == 1:
+                        linear_dict[dependent_carrier[0]] = self.extract_input_data(attribute_name,
+                                                                                 index_sets=index_sets,
+                                                                                 time_steps=time_steps)
+                    else:
+                        raise AssertionError(f"input file for linear_conversion_factor could not be imported.")
                 else:
-                    df_output, default_value, index_name_list = self.create_default_output(_index_sets, None, time_steps=_time_steps, manual_default_value=1)
-                    assert (df_input_linear is not None), f"input file for linear_conversion_factor could not be imported."
-                    # df_input_linear = df_input_linear.rename(columns={'year': 'time'})
-                    for carrier in _dependent_carrier:
-                        df_input_carrier = df_input_linear[[_index_name,carrier]]
-                        linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "linear_conversion_factor", index_name_list, default_value, time_steps=_time_steps).copy(deep=True)
-
+                    df_output, default_value, index_name_list = self.create_default_output(index_sets, attribute_name, time_steps=time_steps)
+                    common_index = list(set(index_name_list).intersection(df_input_linear.columns))
+                    # if only one dependent carrier and no carrier in columns
+                    if len(dependent_carrier) == 1 and len(df_input_linear.columns.intersection(dependent_carrier)) == 0:
+                        linear_dict[dependent_carrier[0]] = self.extract_general_input_data(df_input_linear, df_output,
+                                                                               "conversion_factor",
+                                                                               index_name_list, default_value,
+                                                                               time_steps=time_steps).copy(deep=True)
+                    else:
+                        for carrier in dependent_carrier:
+                            if common_index:
+                                df_input_carrier = df_input_linear[common_index + [carrier]]
+                                linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "conversion_factor", index_name_list, default_value, time_steps=time_steps).copy(deep=True)
+                            else:
+                                linear_dict[carrier] = df_output.copy()
+                                linear_dict[carrier].loc[:] = df_input_linear[carrier].squeeze()
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
-                _conversion_factor_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
-                linear_dict = linear_dict.reorder_levels(_conversion_factor_levels)
+                conversion_factor_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
+                linear_dict = linear_dict.reorder_levels(conversion_factor_levels)
+                # extract yearly variation
+                self.extract_yearly_variation(attribute_name, index_sets)
                 return linear_dict, is_pwa
 
     def read_pwa_files(self, variable_type, file_type=str()):
@@ -468,9 +487,9 @@ class DataInput:
                 columns = df_input.columns
             df_input_units = df_input[columns].iloc[-1]
             df_input = df_input.iloc[:-1]
-            _df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit))
-            df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='coerce'))
-            df_input[columns] = df_input[columns] * _df_input_multiplier
+            df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit,attribute_name=variable_type))
+            df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='ignore'))
+            df_input[columns] = df_input[columns] * df_input_multiplier
         return df_input
 
     def create_default_output(self, index_sets, file_name=None, time_steps=None, manual_default_value=None):
@@ -566,7 +585,7 @@ class DataInput:
             default_name = column
         else:
             default_name = file_name
-        default_value = self.extract_attribute(default_name)
+        default_value = self.extract_attribute(default_name,check_if_exists=True)
 
         if default_value is None or math.isnan(default_value["value"]):  # if no default value exists or default value is nan
             _dfInput = self.read_input_data(file_name)
@@ -604,14 +623,14 @@ class DataInput:
                 df_input = df_input.rename(columns={col: int(col) for col in df_input.columns if col.isnumeric()})
                 requested_index_values = set(time_steps)
                 requested_index_values_years = set(self.energy_system.set_time_steps_years)
-                _requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
-                _requested_index_values_years_in_columns = requested_index_values_years.intersection(df_input.columns)
-                if not _requested_index_values_in_columns and not _requested_index_values_years_in_columns:
+                requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
+                requested_index_values_years_in_columns = requested_index_values_years.intersection(df_input.columns)
+                if not requested_index_values_in_columns and not requested_index_values_years_in_columns:
                     return df_input.reset_index()
-                elif _requested_index_values_in_columns:
-                    requested_index_values = _requested_index_values_in_columns
+                elif requested_index_values_in_columns:
+                    requested_index_values = requested_index_values_in_columns
                 else:
-                    requested_index_values = _requested_index_values_years_in_columns
+                    requested_index_values = requested_index_values_years_in_columns
                 df_input.columns = df_input.columns.set_names(idx_name_year)
                 df_input = df_input[list(requested_index_values)].stack()
                 df_input = df_input.reset_index()
@@ -708,29 +727,28 @@ class DataInput:
         # missing index values
         requested_index_values = set(df_output.index.get_level_values(missing_index))
         # the missing index is the columns of df_input
-        _requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
-        if _requested_index_values_in_columns:
-            requested_index_values = _requested_index_values_in_columns
+        requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
+        if requested_index_values_in_columns:
+            requested_index_values = requested_index_values_in_columns
             df_input.columns = df_input.columns.set_names(missing_index)
             df_input = df_input[list(requested_index_values)].stack()
             df_input = df_input.reorder_levels(df_output.index.names)
         # the missing index does not appear in df_input
         # the values in df_input are extended to all missing index values
         else:
-            # logging.info(f"Missing index {missing_index} detected in {file_name}. Input dataframe is extended by this index")
-            _df_input_index_temp = pd.MultiIndex.from_product([df_input.index, requested_index_values], names=df_input.index.names + [missing_index])
-            _df_input_temp = pd.Series(index=_df_input_index_temp, dtype=float)
+            df_input_index_temp = pd.MultiIndex.from_product([df_input.index, requested_index_values], names=df_input.index.names + [missing_index])
+            df_input_temp = pd.Series(index=df_input_index_temp, dtype=float)
             if isinstance(df_input, pd.Series):
                 df_input = df_input.to_frame()
             if df_input.shape[1] == 1:
-                df_input = df_input.loc[_df_input_index_temp.get_level_values(df_input.index.names[0])].squeeze()
+                df_input = df_input.loc[df_input_index_temp.get_level_values(df_input.index.names[0])].squeeze(axis=1)
             else:
-                assert _df_input_temp.index.names[-1] != "time", f"Only works if columns contain time index and not for {_df_input_temp.index.names[-1]}"
-                df_input = _df_input_temp.to_frame().apply(lambda row: df_input.loc[row.name[0:-1], str(row.name[-1])], axis=1)
-            df_input.index = _df_input_temp.index
+                assert df_input_temp.index.names[-1] != "time", f"Only works if columns contain time index and not for {df_input_temp.index.names[-1]}"
+                df_input = df_input_temp.to_frame().apply(lambda row: df_input.loc[row.name[0:-1], str(row.name[-1])], axis=1)
+            df_input.index = df_input_temp.index
             df_input = df_input.reorder_levels(order=df_output.index.names)
             if isinstance(df_input, pd.DataFrame):
-                df_input = df_input.squeeze()
+                df_input = df_input.squeeze(axis=1)
         return df_input
 
     @staticmethod

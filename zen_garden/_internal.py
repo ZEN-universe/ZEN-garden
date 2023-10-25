@@ -20,8 +20,7 @@ import pkg_resources
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
-from .preprocess.prepare import Prepare
-from .utils import setup_logger, ScenarioDict
+from .utils import setup_logger, ScenarioDict, InputDataChecks
 
 # we setup the logger here
 setup_logger()
@@ -54,14 +53,16 @@ def main(config, dataset_path=None, job_index=None):
     config.analysis["folder_output"] = os.path.abspath(config.analysis['folder_output'])
 
     ### System - load system configurations
+    input_data_checks = InputDataChecks(config=config, optimization_setup=None)
+    input_data_checks.check_dataset()
     system_path = os.path.join(config.analysis['dataset'], "system.py")
-    if not os.path.exists(system_path):
-        raise FileNotFoundError(f"system.py not found in dataset: {config.analysis['dataset']}")
     spec = importlib.util.spec_from_file_location("module", system_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     system = module.system
     config.system.update(system)
+    input_data_checks.check_technology_selected()
+    input_data_checks.check_year_definitions()
     ### overwrite default system and scenario dictionaries
     if config.system["conduct_scenario_analysis"]:
         scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
@@ -86,8 +87,6 @@ def main(config, dataset_path=None, job_index=None):
             else:
                 job_index = list(job_index)
             logging.info(f"Running scenarios with job indices: {job_index}")
-
-
             # reduce the scenario and element to a single one
             scenarios = [list(config.scenarios.keys())[jx] for jx in job_index]
             elements = [list(config.scenarios.values())[jx] for jx in job_index]
@@ -133,15 +132,10 @@ def main(config, dataset_path=None, job_index=None):
                         os.remove(sub_folder_path)
 
     # iterate through scenarios
-    for scenario, elements in zip(scenarios, elements):
-        # create a dictionary with the paths to access the model inputs and check if input data exists
-        prepare = Prepare(config)
-        # check if all data inputs exist and remove non-existent
-        prepare.check_existing_input_data()
-
+    for scenario, scenario_dict in zip(scenarios, elements):
         # FORMULATE THE OPTIMIZATION PROBLEM
-        # add the elements and read input data
-        optimization_setup = OptimizationSetup(config.analysis, prepare, scenario_dict=elements)
+        # add the scenario_dict and read input data
+        optimization_setup = OptimizationSetup(config, scenario_dict=scenario_dict, input_data_checks=input_data_checks)
         # get rolling horizon years
         steps_optimization_horizon = optimization_setup.get_optimization_horizon()
 
@@ -149,8 +143,8 @@ def main(config, dataset_path=None, job_index=None):
             additional_scenario_string = f"for scenario {scenario} "
         else:
             additional_scenario_string = ""
-        #optimization_setup.restore_base_configuration(scenario,elements)  # per default scenario="" is used as base configuration. Use set_base_configuration(scenario, elements) if you want to change that
-        #optimization_setup.overwrite_params(scenario, elements)
+        #optimization_setup.restore_base_configuration(scenario,scenario_dict)  # per default scenario="" is used as base configuration. Use set_base_configuration(scenario, scenario_dict) if you want to change that
+        #optimization_setup.overwrite_params(scenario, scenario_dict)
         # iterate through horizon steps
         for step_horizon in steps_optimization_horizon:
             if len(steps_optimization_horizon) == 1:
@@ -178,19 +172,19 @@ def main(config, dataset_path=None, job_index=None):
             if config.system["conduct_scenario_analysis"]:
                 # handle scenarios
                 scenario_name = f"scenario_{scenario}"
-                subfolder = Path(f"scenario_{elements['base_scenario']}")
+                subfolder = Path(f"scenario_{scenario_dict['base_scenario']}")
 
                 # set the scenarios
-                if elements["sub_folder"] != "":
+                if scenario_dict["sub_folder"] != "":
                     # get the param map
-                    param_map = elements["param_map"]
+                    param_map = scenario_dict["param_map"]
 
                     # get the output scenarios
-                    subfolder = subfolder.joinpath(f"scenario_{elements['sub_folder']}")
-                    scenario_name = f"scenario_{elements['sub_folder']}"
+                    subfolder = subfolder.joinpath(f"scenario_{scenario_dict['sub_folder']}")
+                    scenario_name = f"scenario_{scenario_dict['sub_folder']}"
                     output_scenarios = {}
                     for s, s_dict in config.scenarios.items():
-                        if s_dict["base_scenario"] == elements["base_scenario"]:
+                        if s_dict["base_scenario"] == scenario_dict["base_scenario"]:
                             out_dict = deepcopy(s_dict)
                             out_dict["base_scenario"] = s_dict["sub_folder"]
                             out_dict["sub_folder"] = ""

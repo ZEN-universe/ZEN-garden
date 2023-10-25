@@ -171,10 +171,11 @@ class UnitHandling:
         else:
             return combined_unit
 
-    def get_unit_multiplier(self, input_unit):
+    def get_unit_multiplier(self, input_unit,attribute_name):
         """ calculates the multiplier for converting an input_unit to the base units
 
         :param input_unit: string of input unit
+        :param attribute_name: name of attribute
         :return multiplier: multiplication factor """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if input_unit in self.base_units:
@@ -188,7 +189,7 @@ class UnitHandling:
             # magnitude of combined unit is multiplier
             multiplier = combined_unit.to_base_units().magnitude
             # check that multiplier is larger than rounding tolerance
-            assert multiplier >= 10 ** (-self.rounding_decimal_points), f"Multiplier {multiplier} of unit {input_unit} is smaller than rounding tolerance {10 ** (-self.rounding_decimal_points)}"
+            assert multiplier >= 10 ** (-self.rounding_decimal_points), f"Multiplier {multiplier} of unit {input_unit} in parameter {attribute_name} is smaller than rounding tolerance {10 ** (-self.rounding_decimal_points)}"
             # round to decimal points
             return round(multiplier, self.rounding_decimal_points)
 

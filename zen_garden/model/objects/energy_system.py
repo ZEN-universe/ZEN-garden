@@ -61,18 +61,19 @@ class EnergySystem:
         self.data_input = DataInput(element=self, system=self.system,
                                     analysis=self.optimization_setup.analysis, solver=self.optimization_setup.solver,
                                     energy_system=self, unit_handling=self.unit_handling)
-
-        # store input data
-        self.store_input_data()
+        # initialize empty set_carriers list
+        self.set_carriers = []
+        # # store input data
+        # self.store_input_data()
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
-
+        # store scenario dict
+        self.data_input.scenario_dict = self.optimization_setup.scenario_dict
         # in class <EnergySystem>, all sets are constructed
         self.set_nodes = self.data_input.extract_locations()
         self.set_nodes_on_edges = self.calculate_edges_from_nodes()
         self.set_edges = list(self.set_nodes_on_edges.keys())
-        self.set_carriers = []
         self.set_technologies = self.system["set_technologies"]
         # base time steps
         self.set_base_time_steps = list(range(0, self.system["unaggregated_time_steps_per_year"] * self.system["optimized_years"]))

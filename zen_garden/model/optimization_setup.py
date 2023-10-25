@@ -26,31 +26,31 @@ from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
-from ..preprocess.prepare import Prepare
 
-from ..utils import ScenarioDict, IISConstraintParser
+from ..utils import ScenarioDict, IISConstraintParser, InputDataChecks
 
 class OptimizationSetup(object):
     """setup optimization setup """
     # dict of element classes, this dict is filled in the __init__ of the package
     dict_element_classes = {}
 
-    def __init__(self, analysis: dict, prepare: Prepare, scenario_dict: dict):
+    def __init__(self, config, scenario_dict: dict, input_data_checks):
         """setup Pyomo Concrete Model
-        :param analysis: dictionary defining the analysis framework
-        :param prepare: A Prepare instance for the Optimization setup
+
+        :param config: config object used to extract the analysis, system and solver dictionaries
         :param scenario_dict: dictionary defining the scenario
         """
-        self.prepare = prepare
-        self.analysis = analysis
-        self.system = prepare.system
-        self.paths = prepare.paths
-        self.solver = prepare.solver
-
+        self.analysis = config.analysis
+        self.system = config.system
+        self.solver = config.solver
+        self.input_data_checks = input_data_checks
+        self.input_data_checks.optimization_setup = self
+        # create a dictionary with the paths to access the model inputs and check if input data exists
+        self.create_paths()
         # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis)
-        # update element folders in prepare
-        prepare.check_existing_input_data()
+        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis, self.paths)
+        # check if all needed data inputs for the chosen technologies exist and remove non-existent
+        self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
         # pe.ConcreteModel
@@ -73,14 +73,61 @@ class OptimizationSetup(object):
         # Init the energy system
         self.energy_system = EnergySystem(optimization_setup=self)
 
+        # add Elements to optimization
+        self.add_elements()
+
         # The time series aggregation
         self.time_series_aggregation = None
 
         # set base scenario
         self.set_base_configuration()
 
-        # add Elements to optimization
-        self.add_elements()
+        # read input data into elements
+        self.read_input_data()
+
+        # conduct time series aggregation
+        self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
+
+    def create_paths(self):
+        """
+        This method creates a dictionary with the paths of the data split
+        by carriers, networks, technologies
+
+        :return: dictionary all the paths for reading data
+        """
+        ## General Paths
+        # define path to access dataset related to the current analysis
+        self.path_data = self.analysis['dataset']
+        assert os.path.exists(self.path_data), f"Folder for input data {self.analysis['dataset']} does not exist!"
+        self.input_data_checks.check_primary_folder_structure()
+        self.paths = dict()
+        # create a dictionary with the keys based on the folders in path_data
+        for folder_name in next(os.walk(self.path_data))[1]:
+            self.paths[folder_name] = dict()
+            self.paths[folder_name]["folder"] = os.path.join(self.path_data, folder_name)
+        ## Carrier Paths
+        # add the paths for all the directories in carrier folder
+        path = self.paths["set_carriers"]["folder"]
+        for carrier in next(os.walk(path))[1]:
+            self.paths["set_carriers"][carrier] = dict()
+            self.paths["set_carriers"][carrier]["folder"] = os.path.join(path, carrier)
+            # add paths of files inside the individual carrier directories
+            sub_path = os.path.join(path, carrier)
+            for file in next(os.walk(sub_path))[2]:
+                self.paths["set_carriers"][carrier][file] = os.path.join(sub_path, file)
+        ## Technology Paths
+        self.paths["set_technologies"] = {}
+        # add the paths for all the directories in technologies
+        for technology_subset in self.analysis["subsets"]["set_technologies"]:
+            path = self.paths[technology_subset]["folder"]
+            for technology in next(os.walk(path))[1]:
+                self.paths[technology_subset][technology] = dict()
+                self.paths[technology_subset][technology]["folder"] = os.path.join(path, technology)
+                # add paths of files inside the individual tech directories
+                sub_path = os.path.join(path, technology)
+                for file in next(os.walk(sub_path))[2]:
+                    self.paths[technology_subset][technology][file] = os.path.join(sub_path, file)
+                self.paths["set_technologies"][technology] = self.paths[technology_subset][technology]
 
     def add_elements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
@@ -88,7 +135,6 @@ class OptimizationSetup(object):
         :param analysis: dictionary defining the analysis framework
         :param system: dictionary defining the system"""
         logging.info("\n--- Add elements to model--- \n")
-
         for element_name in self.element_list:
             element_class = self.dict_element_classes[element_name]
             element_name = element_class.label
@@ -98,7 +144,7 @@ class OptimizationSetup(object):
             if element_name == "set_carriers":
                 element_set = self.energy_system.set_carriers
                 self.system["set_carriers"] = element_set
-                self.prepare.check_existing_carrier_data(self.system)
+                self.input_data_checks.check_existing_carrier_data()
 
             # check if element_set has a subset and remove subset from element_set
             if element_name in self.analysis["subsets"].keys():
@@ -111,11 +157,18 @@ class OptimizationSetup(object):
             # add element class
             for item in element_set:
                 self.add_element(element_class, item)
+
+    def read_input_data(self):
+        """ reads the input data of the energy system and elements and conducts the time series aggregation """
+        logging.info("\n--- Read input data of elements --- \n")
+        self.energy_system.store_input_data()
+        for element in self.dict_elements["Element"]:
+            element_class = [k for k,v in self.dict_element_classes.items() if v == element.__class__][0]
+            logging.info(f"Create {element_class} {element.name}")
+            element.store_input_data()
         if self.solver["recommend_base_units"]:
             self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
                                                                   unit_exps=self.solver["range_unit_exponents"])
-        # conduct time series aggregation
-        self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
     def add_element(self, element_class, name):
         """
@@ -201,10 +254,10 @@ class OptimizationSetup(object):
         else:
             return dict_of_attributes
 
-    def append_attribute_of_element_to_dict(self, _element, attribute_name, dict_of_attributes, capacity_type=None):
+    def append_attribute_of_element_to_dict(self, element, attribute_name, dict_of_attributes, capacity_type=None):
         """ get attribute values of all elements in this class
 
-        :param _element: element of class
+        :param element: element of class
         :param attribute_name: str name of attribute
         :param dict_of_attributes: dict of attribute values
         :param capacity_type: capacity type for which attribute extracted. If None, not listed in key
@@ -214,35 +267,41 @@ class OptimizationSetup(object):
         # add Energy for energy capacity type
         if capacity_type == self.system["set_capacity_types"][1]:
             attribute_name += "_energy"
-        assert hasattr(_element, attribute_name), f"Element {_element.name} does not have attribute {attribute_name}"
-        _attribute = getattr(_element, attribute_name)
-        assert not isinstance(_attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {_element.name}"
-        # add attribute to dict_of_attributes
-        if _attribute is None:
-            return dict_of_attributes, False
-        elif isinstance(_attribute, dict):
-            dict_of_attributes.update({(_element.name,) + (key,): val for key, val in _attribute.items()})
-        elif isinstance(_attribute, pd.Series) and "pwa" not in attribute_name:
-            if capacity_type:
-                _combined_key = (_element.name, capacity_type)
+        # if element does not have attribute
+        if not hasattr(element, attribute_name):
+            # if attribute is time series that does not exist
+            if attribute_name in element.raw_time_series and element.raw_time_series[attribute_name] is None:
+                return dict_of_attributes, attribute_is_series
             else:
-                _combined_key = _element.name
-            if len(_attribute) > 1:
-                dict_of_attributes[_combined_key] = _attribute
+                raise AssertionError(f"Element {element.name} does not have attribute {attribute_name}")
+        attribute = getattr(element, attribute_name)
+        assert not isinstance(attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {element.name}"
+        # add attribute to dict_of_attributes
+        if attribute is None:
+            return dict_of_attributes, False
+        elif isinstance(attribute, dict):
+            dict_of_attributes.update({(element.name,) + (key,): val for key, val in attribute.items()})
+        elif isinstance(attribute, pd.Series) and "pwa" not in attribute_name:
+            if capacity_type:
+                _combined_key = (element.name, capacity_type)
+            else:
+                _combined_key = element.name
+            if len(attribute) > 1:
+                dict_of_attributes[_combined_key] = attribute
                 attribute_is_series = True
             else:
-                dict_of_attributes[_combined_key] = _attribute.squeeze()
+                dict_of_attributes[_combined_key] = attribute.squeeze()
                 attribute_is_series = False
-        elif isinstance(_attribute, int):
+        elif isinstance(attribute, int):
             if capacity_type:
-                dict_of_attributes[(_element.name, capacity_type)] = [_attribute]
+                dict_of_attributes[(element.name, capacity_type)] = [attribute]
             else:
-                dict_of_attributes[_element.name] = [_attribute]
+                dict_of_attributes[element.name] = [attribute]
         else:
             if capacity_type:
-                dict_of_attributes[(_element.name, capacity_type)] = _attribute
+                dict_of_attributes[(element.name, capacity_type)] = attribute
             else:
-                dict_of_attributes[_element.name] = _attribute
+                dict_of_attributes[element.name] = attribute
         return dict_of_attributes, attribute_is_series
 
     def get_attribute_of_specific_element(self, cls, element_name: str, attribute_name: str):
@@ -421,8 +480,6 @@ class OptimizationSetup(object):
                 # get min max
                 coeff_min = coeffs_sorted[0]
                 coeff_max = coeffs_sorted[-1]
-                if not ((0.0 < coeff_min < smallest_coeff[1]) or (coeff_max > largest_coeff[1])):
-                    continue
                 # same for variables
                 variables = cons.lhs.vars.data
                 variables_flat = variables.ravel()
@@ -486,12 +543,9 @@ class OptimizationSetup(object):
             ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
             self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
                              keep_files=self.solver["keep_files"], sanitize_zeros=True,
-                             # write an ILP file to print the IIS if infeasible
-                             # (gives Warning: unable to write requested result file ".//outputs//logs//model.ilp" if feasible)
-                             ResultFile=ilp_file,
                              # remaining kwargs are passed to the solver
                              **solver_options)
-
+            # write an ILP file to print the IIS if infeasible
             if self.model.termination_condition == 'infeasible':
                 logging.info("The optimization is infeasible")
                 parser = IISConstraintParser(ilp_file, self.model)

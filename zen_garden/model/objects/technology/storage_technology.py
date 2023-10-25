@@ -36,11 +36,16 @@ class StorageTechnology(Technology):
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-
-        logging.info(f'Initialize storage technology {tech}')
         super().__init__(tech, optimization_setup)
-        # store input data
-        self.store_input_data()
+        # store carriers of storage technology
+        self.store_carriers()
+        # # store input data
+        # self.store_input_data()
+
+    def store_carriers(self):
+        """ retrieves and stores information on reference, input and output carriers """
+        # get reference carrier from class <Technology>
+        super().store_carriers()
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """

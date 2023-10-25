@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from zen_garden.utils import linexpr_from_tuple_np
+from zen_garden.utils import linexpr_from_tuple_np, InputDataChecks
 from .technology import Technology
 from ..component import ZenIndex
 from ..element import GenericRule
@@ -35,22 +35,30 @@ class ConversionTechnology(Technology):
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        logging.info(f'Initialize conversion technology {tech}')
         super().__init__(tech, optimization_setup)
-        # store input data
-        self.store_input_data()
+        # store carriers of conversion technology
+        self.store_carriers()
+        # # store input data
+        # self.store_input_data()
 
-    def store_input_data(self):
-        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
-        # get attributes from class <Technology>
-        super().store_input_data()
+    def store_carriers(self):
+        """ retrieves and stores information on reference, input and output carriers """
+        # get reference carrier from class <Technology>
+        super().store_carriers()
         # define input and output carrier
         self.input_carrier = self.data_input.extract_conversion_carriers()["input_carrier"]
         self.output_carrier = self.data_input.extract_conversion_carriers()["output_carrier"]
         self.energy_system.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
-        assert self.reference_carrier[0] in (self.input_carrier + self.output_carrier), \
-            f"reference carrier {self.reference_carrier} of technology {self.name} not in input and output carriers {self.input_carrier + self.output_carrier}"
+        self.optimization_setup.input_data_checks.check_carrier_configuration(input_carrier=self.input_carrier,
+                                                                              output_carrier=self.output_carrier,
+                                                                              reference_carrier=self.reference_carrier,
+                                                                              name=self.name)
+
+    def store_input_data(self):
+        """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
+        # get attributes from class <Technology>
+        super().store_input_data()
         # get conversion efficiency and capex
         self.get_conversion_factor()
         self.convert_to_fraction_of_capex()
@@ -58,23 +66,22 @@ class ConversionTechnology(Technology):
     def get_conversion_factor(self):
         """retrieves and stores conversion_factor for <ConversionTechnology>.
         Each Child class overwrites method to store different conversion_factor """
-        # TODO read pwa Dict and set Params
-        _pwa_conversion_factor, self.conversion_factor_is_pwa = self.data_input.extract_pwa_data("conversion_factor")
+        pwa_conversion_factor, self.conversion_factor_is_pwa = self.data_input.extract_pwa_data("conversion_factor")
         if self.conversion_factor_is_pwa:
-            self.pwa_conversion_factor = _pwa_conversion_factor
+            self.pwa_conversion_factor = pwa_conversion_factor
         else:
-            self.conversion_factor_linear = _pwa_conversion_factor
+            self.raw_time_series["conversion_factor"] = pwa_conversion_factor
 
     def convert_to_fraction_of_capex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
-        _pwa_capex, self.capex_is_pwa = self.data_input.extract_pwa_data("capex")
+        pwa_capex, self.capex_is_pwa = self.data_input.extract_pwa_data("capex")
         # annualize cost_capex
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         if not self.capex_is_pwa:
-            self.capex_specific = _pwa_capex["capex"] * fraction_year
+            self.capex_specific = pwa_capex["capex"] * fraction_year
         else:
-            self.pwa_capex = _pwa_capex
+            self.pwa_capex = pwa_capex
             self.pwa_capex["capex"] = [value * fraction_year for value in self.pwa_capex["capex"]]
             # set bounds
             self.pwa_capex["bounds"]["capex"] = tuple([(bound * fraction_year) for bound in self.pwa_capex["bounds"]["capex"]])
@@ -107,25 +114,25 @@ class ConversionTechnology(Technology):
         :param variable_type: either capex or conversion_factor
         :param selectPWA: boolean if get attributes for pwa
         :return dict_of_attributes: returns dict of attribute values """
-        _class_elements = optimization_setup.get_all_elements(cls)
+        class_elements = optimization_setup.get_all_elements(cls)
         dict_of_attributes = {}
         if variable_type == "capex":
-            _is_pwa_attribute = "capex_is_pwa"
-            _attribute_name_pwa = "pwa_capex"
-            _attribute_name_linear = "capex_specific"
+            is_pwa_attribute = "capex_is_pwa"
+            attribute_name_pwa = "pwa_capex"
+            attribute_name_linear = "capex_specific"
         elif variable_type == "conversion_factor":
-            _is_pwa_attribute = "conversion_factor_is_pwa"
-            _attribute_name_pwa = "pwa_conversion_factor"
-            _attribute_name_linear = "conversion_factor_linear"
+            is_pwa_attribute = "conversion_factor_is_pwa"
+            attribute_name_pwa = "pwa_conversion_factor"
+            attribute_name_linear = "conversion_factor"
         else:
             raise KeyError("Select either 'capex' or 'conversion_factor'")
-        for _element in _class_elements:
+        for element in class_elements:
             # extract for pwa
-            if getattr(_element, _is_pwa_attribute) and selectPWA:
-                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(_element, _attribute_name_pwa, dict_of_attributes)
+            if getattr(element, is_pwa_attribute) and selectPWA:
+                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_pwa, dict_of_attributes)
             # extract for linear
-            elif not getattr(_element, _is_pwa_attribute) and not selectPWA:
-                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(_element, _attribute_name_linear, dict_of_attributes)
+            elif not getattr(element, is_pwa_attribute) and not selectPWA:
+                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes)
             if not dict_of_attributes:
                 _, index_names = cls.create_custom_set(index_names, optimization_setup)
                 return (dict_of_attributes, index_names)
@@ -146,23 +153,23 @@ class ConversionTechnology(Technology):
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
         # get input carriers
-        _input_carriers = optimization_setup.get_attribute_of_all_elements(cls, "input_carrier")
-        _output_carriers = optimization_setup.get_attribute_of_all_elements(cls, "output_carrier")
-        _reference_carrier = optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier")
-        _dependent_carriers = {}
-        for tech in _input_carriers:
-            _dependent_carriers[tech] = _input_carriers[tech] + _output_carriers[tech]
-            _dependent_carriers[tech].remove(_reference_carrier[tech][0])
+        input_carriers = optimization_setup.get_attribute_of_all_elements(cls, "input_carrier")
+        output_carriers = optimization_setup.get_attribute_of_all_elements(cls, "output_carrier")
+        reference_carrier = optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier")
+        dependent_carriers = {}
+        for tech in input_carriers:
+            dependent_carriers[tech] = input_carriers[tech] + output_carriers[tech]
+            dependent_carriers[tech].remove(reference_carrier[tech][0])
         # input carriers of technology
-        optimization_setup.sets.add_set(name="set_input_carriers", data=_input_carriers,
+        optimization_setup.sets.add_set(name="set_input_carriers", data=input_carriers,
                                         doc="set of carriers that are an input to a specific conversion technology. Dimensions: set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # output carriers of technology
-        optimization_setup.sets.add_set(name="set_output_carriers", data=_output_carriers,
+        optimization_setup.sets.add_set(name="set_output_carriers", data=output_carriers,
                                         doc="set of carriers that are an output to a specific conversion technology. Dimensions: set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # dependent carriers of technology
-        optimization_setup.sets.add_set(name="set_dependent_carriers", data=_dependent_carriers,
+        optimization_setup.sets.add_set(name="set_dependent_carriers", data=dependent_carriers,
                                         doc="set of carriers that are an output to a specific conversion technology.\n\t Dimensions: set_conversion_technologies",
                                         index_set="set_conversion_technologies")
 
@@ -183,7 +190,7 @@ class ConversionTechnology(Technology):
         # slope of linearly modeled conversion efficiencies
         optimization_setup.parameters.add_parameter(name="conversion_factor", data=cls.get_capex_conversion_factor_all_elements(optimization_setup, "conversion_factor", False,
                                                                                                                      index_names=["set_conversion_technologies", "set_conversion_factor_linear",
-                                                                                                                                  "set_nodes", "set_time_steps_yearly"]),
+                                                                                                                                  "set_nodes", "set_time_steps_operation"]),
             doc="Parameter which specifies the slope of the conversion efficiency if approximated linearly")
 
     @classmethod
@@ -223,11 +230,13 @@ class ConversionTechnology(Technology):
                     else:
                         time_step_year = [energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in timestep_set[tech]]
                         if carrier == sets["set_reference_carriers"][tech][0]:
-                            _conversion_factor = 1
+                            conversion_factor_lower = 1
+                            conversion_factor_upper = 1
                         else:
-                            _conversion_factor = params.conversion_factor.loc[tech, carrier, node_set, time_step_year]
-                        lower.loc[tech, carrier, ...] = model.variables["capacity"].lower.loc[tech, "power", node_set, time_step_year].data * _conversion_factor
-                        upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data * _conversion_factor
+                            conversion_factor_lower = params.conversion_factor.loc[tech, carrier, node_set].min().data
+                            conversion_factor_upper = params.conversion_factor.loc[tech, carrier, node_set].max().data
+                        lower.loc[tech, carrier, ...] = model.variables["capacity"].lower.loc[tech, "power", node_set, time_step_year].data * conversion_factor_lower
+                        upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data * conversion_factor_upper
 
             # make sure lower is never below 0
             return (lower, upper)
@@ -554,12 +563,13 @@ class ConversionTechnologyRules(GenericRule):
             coords = [self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]]
             nodes = index.get_values([tech, dependent_carrier], 2, dtype=list, unique=True)
             times = index.get_values([tech, dependent_carrier], 3, dtype=list, unique=True)
-            time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times]
+            # time_step_year = [self.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times]
 
             ### formulate constraint
-            lhs = linexpr_from_tuple_np([(1.0, self.variables["flow_approximation_dependent"].loc[tech, dependent_carrier, nodes, times]),
-                                         (-self.parameters.conversion_factor.loc[tech, dependent_carrier, nodes, time_step_year], self.variables["flow_approximation_reference"].loc[tech, dependent_carrier, nodes, times])],
-                                        coords=coords, model=self.model)
+            lhs = linexpr_from_tuple_np(
+                [(1.0, self.variables["flow_approximation_dependent"].loc[tech, dependent_carrier, nodes, times]),
+                (-self.parameters.conversion_factor.loc[tech, dependent_carrier, nodes, times],
+                self.variables["flow_approximation_reference"].loc[tech, dependent_carrier, nodes, times])],coords=coords, model=self.model)
             rhs = 0
             constraints.append(lhs == rhs)
 
