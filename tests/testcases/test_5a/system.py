@@ -11,8 +11,7 @@ Description:  Model settings. Overwrite default values defined in default_config
 system = dict()
 
 ## System - settings update compared to default values
-system['set_conversion_technologies']     = ["natural_gas_boiler"] #, "natural_gas_expander"
-system['set_conditioning_technologies']   = ["natural_gas_compressor"]
+system['set_conversion_technologies']     = ["natural_gas_boiler"]
 system['set_storage_technologies']        = ["natural_gas_storage"]
 system['set_transport_technologies']      = ["natural_gas_pipeline"]
 
@@ -23,6 +22,9 @@ system["reference_year"]                 = 2022
 system["unaggregated_time_steps_per_year"]  = 1
 system["aggregated_time_steps_per_year"]    = 1
 system["conduct_time_series_aggregation"]  = False
+
+# scenario analysis:
+system['conduct_scenario_analysis'] = True
 
 system["optimized_years"]                = 1
 system["interval_between_years"]          = 1

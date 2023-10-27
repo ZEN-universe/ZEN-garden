@@ -12,7 +12,7 @@ carbon_intensity_default,0,kilotons/GWh
 construction_time_default,0,1
 capacity_investment_existing_default,0,GW
 opex_specific_fixed_default,87.6,Euro/kW
-max_diffusion_rate_default,inf,1
+max_diffusion_rate_default,0.15,1
 input_carrier,natural_gas,GW
 output_carrier,heat,GW
 conversion_factor_default,1.1,1

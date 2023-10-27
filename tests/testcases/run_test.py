@@ -399,6 +399,44 @@ def test_5a(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
+def test_5b(config, folder_path):
+    # run the test
+    data_set_name = "test_5b"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    #test functions get_total() and get_full_ts()
+    check_get_total_get_full_ts(res, specific_scenario=True)
+
+
+def test_5c(config, folder_path):
+    # run the test
+    data_set_name = "test_5c"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+
+def test_5d(config, folder_path):
+    # run the test
+    data_set_name = "test_5d"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+
 def test_6a(config, folder_path):
     # run the test
     data_set_name = "test_6a"
@@ -423,25 +461,11 @@ def test_6b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
-    check_get_total_get_full_ts(res, specific_scenario=True)
 
 
 def test_6c(config, folder_path):
     # run the test
     data_set_name = "test_6c"
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
-
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
-    # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-
-
-def test_6d(config, folder_path):
-    # run the test
-    data_set_name = "test_6d"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
     # compare the variables of the optimization setup
@@ -464,6 +488,7 @@ def test_7a(config, folder_path):
     #test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
+
 def test_7b(config, folder_path):
     # run the test
     data_set_name = "test_7b"
@@ -475,43 +500,9 @@ def test_7b(config, folder_path):
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-def test_7c(config, folder_path):
-    # run the test
-    data_set_name = "test_7c"
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
-
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
-    # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-
-def test_8a(config, folder_path):
-    # run the test
-    data_set_name = "test_8a"
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
-
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
-    # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
-    check_get_total_get_full_ts(res)
-
-def test_8b(config, folder_path):
-    # run the test
-    data_set_name = "test_8b"
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
-
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
-    # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
 
 if __name__ == "__main__":
     from config import config
     config.solver["keep_files"] = False
     folder_path = os.path.dirname(__file__)
-    test_6b(config,folder_path)
+    test_6b(config, folder_path)

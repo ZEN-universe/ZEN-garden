@@ -67,9 +67,7 @@ class Config(object):
         # transport distance (euclidean or actual)
         self.analysis["transport_distance"] = "Euclidean"
         # dictionary with subsets related to set
-        self.analysis["subsets"] = {"set_carriers": [],
-                               "set_technologies": ["set_conversion_technologies", "set_transport_technologies","set_storage_technologies"],
-                               "set_conversion_technologies": ["set_conditioning_technologies"]}
+        self.analysis["subsets"] = {"set_carriers": [], "set_technologies": ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]}
         # headers for the generation of input files
         self.analysis["header_data_inputs"] = {
                 "set_nodes": "node",
@@ -84,8 +82,6 @@ class Config(object):
                 "set_input_carriers": "carrier",
                 "set_output_carriers": "carrier",
                 "set_dependent_carriers": "carrier",
-                "set_conditioning_carriers": "carrier",
-                "set_conditioning_carrier_parents": "carrier",
                 "set_elements": "element",
                 "set_conversion_technologies": "technology",
                 "set_transport_technologies": "technology",
@@ -120,14 +116,10 @@ class Config(object):
         ## System - Items assignment
         # set of energy carriers
         self.system["set_carriers"] = []
-        # set of conditioning carriers
-        self.system["set_conditioning_carriers"] = []
         # set of capacity types: power-rated or energy-rated
         self.system["set_capacity_types"] = ["power", "energy"]
         # set of conversion technologies
         self.system["set_conversion_technologies"] = []
-        # set of conditioning technologies
-        self.system["set_conditioning_technologies"] = []
         # set of storage technologies
         self.system["set_storage_technologies"] = []
         self.system["storage_periodicity"] = True

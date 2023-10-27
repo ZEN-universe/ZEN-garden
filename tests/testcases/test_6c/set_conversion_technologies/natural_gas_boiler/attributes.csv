@@ -9,7 +9,7 @@ lifetime_default,25,1
 opex_specific_variable_default,0,kiloEuro/GWh
 reference_carrier,heat,GW
 carbon_intensity_default,0,kilotons/GWh
-construction_time_default,0,1
+construction_time_default,2,1
 capacity_investment_existing_default,0,GW
 opex_specific_fixed_default,87.6,Euro/kW
 max_diffusion_rate_default,inf,1
