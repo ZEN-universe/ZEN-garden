@@ -16,7 +16,7 @@ from copy import deepcopy
 from pathlib import Path
 import shutil
 
-import pkg_resources
+import importlib
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
@@ -37,7 +37,7 @@ def main(config, dataset_path=None, job_index=None):
     """
 
     # print the version
-    version = pkg_resources.require("zen_garden")[0].version
+    version = importlib.metadata.version("zen-garden")
     logging.info(f"Running ZEN-Garden version: {version}")
 
     # prevent double printing
