@@ -41,7 +41,7 @@ class Technology(Element):
 
     def store_carriers(self):
         """ retrieves and stores information on reference """
-        self.reference_carrier = [self.data_input.extract_attribute("reference_carrier", skip_warning=True)]
+        self.reference_carrier = self.data_input.extract_carriers(carrier_type="reference_carrier")
         self.energy_system.set_technology_of_carrier(self.name, self.reference_carrier)
 
     def store_input_data(self):
