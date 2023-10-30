@@ -323,7 +323,7 @@ class DataInput:
             # get reference year
             reference_year = self.system["reference_year"]
             # calculate remaining lifetime
-            df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime
+            df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime[0]
         # apply scenario factor
         return df_output*scenario_factor
 
