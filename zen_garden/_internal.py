@@ -61,7 +61,7 @@ def main(config, dataset_path=None, job_index=None):
     spec.loader.exec_module(module)
     system = module.system
     config.system.update(system)
-    input_data_checks.check_technology_selected()
+    input_data_checks.check_technology_selections()
     input_data_checks.check_year_definitions()
     ### overwrite default system and scenario dictionaries
     if config.system["conduct_scenario_analysis"]:

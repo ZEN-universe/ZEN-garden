@@ -40,22 +40,32 @@ We follow the [PEP-8](https://peps.python.org/pep-0008/)
  coding style.
 ### Classes
 * the name of the classes should always be with the first capital letter
-* classes should all have a short description of what they do, e.g.:
+* classes must all have a short description of what they do (right beneath the class name) and a second docstring describing the constructor along with its parameters (blank line between description and parameters is mandatory), e.g.:
 
-        """
-        This class creates the dictionary containing all the input data
-        :param analysis: dictionary defining the analysis framework
-        :return: dictionary containing all the input data
-        """
+    ```python
+    class Results(object):
+      """
+      This class reads in the results after the pipeline has run
+      """
+
+      def __init__(self, path, scenarios=None, load_opt=False):
+          """
+          Initializes the Results class with a given path
+  
+          :param path: Path to the output of the optimization problem
+          :param scenarios: A None, str or tuple of scenarios to load, defaults to all scenarios
+          :param load_opt: Optionally load the opt dictionary as well
+          """
 
 ### Methods
 * the name of the methods should always be in lower case letters
 * the name can be composed by multiple words, seprated by underscores
-* main methods should all have a short desciption of what they do, e.g.:
+* main methods should all have a short desciption of what they do (again, the blank line is mandatory), e.g.:
 
         """
         This method creates a dictionary with the paths of the data split
         by carriers, networks, technologies
+
         :param analysis: dictionary defining the analysis framework
         :return: dictionary all the paths for reading data
         """
@@ -68,16 +78,12 @@ We follow the [PEP-8](https://peps.python.org/pep-0008/)
 
 
         """
-      ===========================================================================================================================================================================
-        Title:        ZEN-GARDEN
-        Created:      month-20yy
-        Authors:      Jane Doe (jdoe@ethz.ch)
-        Organization: Labratory of Reliability and Risk Engineering, ETH Zurich
+        :Title:        ZEN-GARDEN
+        :Created:      month-20yy
+        :Authors:      Jane Doe (jdoe@ethz.ch)
+        :Organization: Labratory of Reliability and Risk Engineering, ETH Zurich
 
-        Description:  Class defining ...
-                      The class takes as inputs ...
-                      The class returns ... 
-      ===========================================================================================================================================================================
+        Class defining...; the class takes as inputs...; the class returns ...
         """
 
 ### Variables name

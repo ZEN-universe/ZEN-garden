@@ -15,6 +15,7 @@ import cProfile
 import copy
 import logging
 import os
+import time
 from collections import defaultdict
 
 import linopy as lp
@@ -25,9 +26,10 @@ from .objects.component import Parameter, Variable, Constraint, IndexSet
 from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
+from .objects.technology.transport_technology import TransportTechnology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
-from ..utils import ScenarioDict, IISConstraintParser, InputDataChecks
+from ..utils import ScenarioDict, IISConstraintParser
 
 class OptimizationSetup(object):
     """setup optimization setup """
@@ -290,8 +292,18 @@ class OptimizationSetup(object):
                 dict_of_attributes[_combined_key] = attribute
                 attribute_is_series = True
             else:
-                dict_of_attributes[_combined_key] = attribute.squeeze()
-                attribute_is_series = False
+                #since single-directed edges are allowed to exist (e.g. CH-DE exists, DE-CH doesn't), TransportTechnology attributes shared with other technologies (such as capacity existing)
+                # mustn't be squeezed even-though the attributes length is smaller than 1. Otherwise, pd.concat(dict_of_attributes) messes up in initialize_component(), leading to an error further on in the code.
+                if isinstance(element, TransportTechnology):
+                    if all([isinstance(value, float) for key, value in dict_of_attributes.items()]) and len(dict_of_attributes) > 0:
+                        dict_of_attributes[_combined_key] = attribute.squeeze()
+                        attribute_is_series = False
+                    else:
+                        dict_of_attributes[_combined_key] = attribute
+                        attribute_is_series = True
+                else:
+                    dict_of_attributes[_combined_key] = attribute.squeeze()
+                    attribute_is_series = False
         elif isinstance(attribute, int):
             if capacity_type:
                 dict_of_attributes[(element.name, capacity_type)] = [attribute]
@@ -599,19 +611,19 @@ class OptimizationSetup(object):
                     self.energy_system.set_time_steps_yearly = copy.deepcopy(set_time_steps_yearly)
                     tech.set_technologies_existing = tech.data_input.extract_set_technologies_existing()
                     tech.capacity_existing = tech.data_input.extract_input_data(
-                        "capacity_existing",index_sets=[set_location,"set_technologies_existing"])
+                        "capacity_existing", index_sets=[set_location, "set_technologies_existing"])
                     tech.capacity_investment_existing = tech.data_input.extract_input_data(
-                        "capacity_investment_existing",index_sets=[set_location,"set_time_steps_yearly"],time_steps=set_time_steps_yearly)
+                        "capacity_investment_existing", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
                     tech.lifetime_existing = tech.data_input.extract_lifetime_existing(
                         "capacity_existing", index_sets=[set_location, "set_technologies_existing"])
                     # calculate capex of existing capacity
                     tech.capex_capacity_existing = tech.calculate_capex_of_capacities_existing()
                     if tech.__class__.__name__ == "StorageTechnology":
                         tech.capacity_existing_energy = tech.data_input.extract_input_data(
-                            "capacity_existing_energy",index_sets=["set_nodes","set_technologies_existing"])
+                            "capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"])
                         tech.capacity_investment_existing_energy = tech.data_input.extract_input_data(
                             "capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
-                            time_steps=set_time_steps_yearly)
+                            time_steps="set_time_steps_yearly")
                         tech.capex_capacity_existing_energy = tech.calculate_capex_of_capacities_existing(storage_energy=True)
 
     def add_carbon_emission_cumulative(self, step_horizon):
