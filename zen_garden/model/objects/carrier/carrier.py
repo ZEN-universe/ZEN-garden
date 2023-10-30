@@ -53,8 +53,6 @@ class Carrier(Element):
         self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
         self.price_shed_demand = self.data_input.extract_input_data("price_shed_demand", index_sets=[])
-        # optional params
-        self.import_share = self.data_input.extract_input_data("import_share", index_sets=[])
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites set_time_steps_operation
@@ -109,10 +107,6 @@ class Carrier(Element):
         optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier",
             data=optimization_setup.initialize_component(cls, "carbon_intensity_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
             doc='Parameter which specifies the carbon intensity of carrier')
-        # minimum import
-        optimization_setup.parameters.add_parameter(name="import_share",
-                                                    data=optimization_setup.initialize_component(cls, "import_share", index_names=["set_carriers"]),
-                                                    doc='Parameter which specifies the minimum import of carrier')
 
     @classmethod
     def construct_vars(cls, optimization_setup):
@@ -178,10 +172,6 @@ class Carrier(Element):
         constraints.add_constraint_block(model, name="constraint_availability_export_yearly",
                                          constraint=rules.constraint_availability_export_yearly_block(),
                                          doc='node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year', )
-        # minimum share of import wrt. to availability import
-        constraints.add_constraint_block(model, name="constraint_availability_import_min",
-                                         constraint=rules.constraint_availability_import_min_block(),
-                                         doc='min share of import wrt. to availability import', )
         # cost for carrier
         constraints.add_constraint_block(model, name="constraint_cost_carrier",
                                          constraint=rules.constraint_cost_carrier_block(),
@@ -444,47 +434,6 @@ class CarrierRules(GenericRule):
                                                   mask=mask,
                                                   index_values=index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]),
                                                   index_names=["set_carriers", "set_time_steps_yearly"])
-
-    def constraint_availability_import_min_block(self):
-        """min share of import wrt. to availability import
-
-        .. math::
-            \\sum_{t\\in\mathcal{T}} \\sum_{n\\in\mathcal{N}} U_{c,n,t} \\leq \\xi_c \\sum_{t\\in\mathcal{T}} \\sum_{n\\in\mathcal{N}} a_{c,n,t}^\mathrm{import}
-        :return: #TODO describe parameter/return
-        """
-
-        ### index sets
-        index_values, index_names = Element.create_custom_set(["set_carriers", "set_time_steps_yearly"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
-
-        ### masks
-        # dummy mask
-        mask = xr.DataArray(False, coords=[index.get_unique("set_carriers"), index.get_unique("set_time_steps_yearly")],
-                                 dims = index_names)
-
-        ### index loop
-        constraints = []
-        for carrier, year in index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]):
-            ### auxiliary calculations
-            operational_time_steps = self.time_steps.get_time_steps_year2operation(carrier, year)
-            term_summed_availability_import = (self.parameters.availability_import.loc[carrier, :, operational_time_steps].sum("set_nodes") \
-                                               * self.parameters.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum("set_time_steps_operation")
-            # only add constraint if import share is finite and availability is larger than zero and finite
-            if (self.parameters.import_share.loc[carrier] != np.inf):
-                mask.loc[carrier,year] = (term_summed_availability_import) != 0 & (term_summed_availability_import != np.inf)
-            # multiply availability with import share
-            term_summed_availability_import *= self.parameters.import_share.loc[carrier]
-            term_summed_import_flow = (self.variables["flow_import"].loc[carrier, :, operational_time_steps].sum("set_nodes") \
-                                        * self.parameters.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum("set_time_steps_operation")
-
-            ### formulate constraint
-            lhs = term_summed_import_flow
-            rhs = term_summed_availability_import
-            constraints.append(lhs == rhs)
-
-        ### return
-        return self.constraints.return_contraints(constraints, model=self.model, mask=mask, index_values=index.get_unique(["set_carriers", "set_time_steps_yearly"]), index_names=["set_carriers", "set_time_steps_yearly"])
-
 
     def constraint_cost_carrier_block(self):
         """ cost of importing and exporting carrier
