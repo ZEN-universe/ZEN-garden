@@ -52,11 +52,11 @@ class Technology(Element):
         set_location = self.location_type
         set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
         set_time_steps_yearly = self.energy_system.set_time_steps_yearly
-        self.capacity_addition_min = self.data_input.extract_attribute("capacity_addition_min")["value"]
-        self.capacity_addition_max = self.data_input.extract_attribute("capacity_addition_max")["value"]
-        self.capacity_addition_unbounded = self.data_input.extract_attribute("capacity_addition_unbounded")["value"]
-        self.lifetime = self.data_input.extract_attribute("lifetime")["value"]
-        self.construction_time = self.data_input.extract_attribute("construction_time")["value"]
+        self.capacity_addition_min = self.data_input.extract_input_data("capacity_addition_min", index_sets=[])
+        self.capacity_addition_max = self.data_input.extract_input_data("capacity_addition_max", index_sets=[])
+        self.capacity_addition_unbounded = self.data_input.extract_input_data("capacity_addition_unbounded", index_sets=[])
+        self.lifetime = self.data_input.extract_input_data("lifetime", index_sets=[])
+        self.construction_time = self.data_input.extract_input_data("construction_time", index_sets=[])
         # maximum diffusion rate
         self.max_diffusion_rate = self.data_input.extract_input_data("max_diffusion_rate", index_sets=["set_time_steps_yearly"], time_steps=set_time_steps_yearly)
 
@@ -136,7 +136,7 @@ class Technology(Element):
             self.set_technologies_existing = np.append(self.set_technologies_existing, index_new_technology)
             # add new remaining lifetime
             _lifetime = self.lifetime_existing.unstack()
-            _lifetime[index_new_technology] = self.lifetime
+            _lifetime[index_new_technology] = self.lifetime[0]
             self.lifetime_existing = _lifetime.stack()
 
             for type_capacity in list(set(_new_capacity_addition.index.get_level_values(0))):
