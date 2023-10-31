@@ -90,9 +90,8 @@ class Results(object):
         for scenario in self.scenarios:
             # init dict
             self.results[scenario] = {}
-            #folder path to access scenario/MF dependent system and analysis
+            #folder path addition to access scenario/MF dependent system and analysis
             folder_path = ""
-
             # get the base scenario
             base_scenario = ""
             scenario_subfolder = None
@@ -114,7 +113,7 @@ class Results(object):
                     folder_path = os.path.join(base_scenario, scenario_subfolder)
                     MF_subfolder_names = [folder.name for folder in os.scandir(os.path.join(self.path, base_scenario)) if folder.is_dir() and scenario_subfolder + "_MF_" in folder.name]
 
-            #myopic foresight
+            #find correct myopic foresight folder path additions
             MF_folder_names = [folder.name for folder in os.scandir(self.path) if folder.is_dir() and "MF_" in folder.name]
             if MF_folder_names:
                 #check for normal MF without scenario analysis
@@ -127,6 +126,7 @@ class Results(object):
                 elif MF_subfolder_names:
                     folder_path = os.path.join(base_scenario, MF_subfolder_names[0])
 
+            #load scenario-dependent system and analysis
             self.results[scenario]["system"] = self.load_system(os.path.join(self.path, folder_path))
             self.results[scenario]["analysis"] = self.load_analysis(os.path.join(self.path, folder_path))
             self.results[scenario]["years"] = list(range(0, self.results[scenario]["system"]["optimized_years"]))
@@ -155,10 +155,10 @@ class Results(object):
                 if self.has_scenarios:
                     subfolder = scenario_subfolder
                     # add the buffer if necessary
-                    if self.results[scenario]["has_MF"]:
+                    if self.results[scenario]["has_MF"] and self.results[scenario]["system"]["optimized_years"] > 1:
                         subfolder += "_"
                 # deal with MF
-                if self.results[scenario]["has_MF"]:
+                if self.results[scenario]["has_MF"] and self.results[scenario]["system"]["optimized_years"] > 1:
                     subfolder += mf
 
                 # Add together
