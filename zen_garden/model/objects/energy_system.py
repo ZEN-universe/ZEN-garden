@@ -73,6 +73,7 @@ class EnergySystem:
         # in class <EnergySystem>, all sets are constructed
         self.set_nodes = self.data_input.extract_locations()
         self.set_nodes_on_edges = self.calculate_edges_from_nodes()
+        self.coordinates = self.data_input.extract_locations(extract_coordinates=True)
         self.set_edges = list(self.set_nodes_on_edges.keys())
         self.set_technologies = self.system["set_technologies"]
         # base time steps

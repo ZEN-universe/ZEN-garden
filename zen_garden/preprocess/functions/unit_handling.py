@@ -187,7 +187,7 @@ class UnitHandling:
             warnings.warn(f"DeprecationWarning: There are parameters without any units in {file_name+'.csv'} at {path} (assign unit '1' to unitless parameters to ensure that no units are missing)")
             return 1
         #if input unit is 1 --> dimensionless new definition
-        elif input_unit == str("1"):
+        elif input_unit == "1":
             return 1
         else:
             combined_unit = self.calculate_combined_unit(input_unit)
@@ -212,7 +212,7 @@ class UnitHandling:
         elif type(input_unit) != str and np.isnan(input_unit):
             base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
         #if input unit is 1 --> dimensionless new definition
-        elif input_unit == str("1"):
+        elif input_unit == "1":
             base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
         else:
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
