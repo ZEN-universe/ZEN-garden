@@ -48,7 +48,7 @@ class TransportTechnology(Technology):
         super().store_input_data()
         # set attributes for parameters of child class <TransportTechnology>
         self.distance = self.data_input.extract_input_data("distance", index_sets=["set_edges"])
-        self.transport_loss_factor = self.data_input.extract_attribute("transport_loss_factor")["value"]
+        self.transport_loss_factor = self.data_input.extract_input_data("transport_loss_factor", index_sets=[])
         # get capex of transport technology
         self.get_capex_transport()
         # annualize capex

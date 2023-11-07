@@ -478,7 +478,7 @@ class OptimizationSetup(object):
                 # get smallest coeff and corresponding variable
                 coeffs = np.abs(cons.lhs.coeffs.data)
                 coeffs_flat = coeffs.ravel()
-                coeffs_reshaped = coeffs.reshape(-1, coeffs.shape[-1])
+                # coeffs_reshaped = coeffs.reshape(-1, coeffs.shape[-1])
                 # filter
                 sorted_args = np.argsort(coeffs_flat)
                 coeffs_sorted = coeffs_flat[sorted_args]
@@ -634,9 +634,9 @@ class OptimizationSetup(object):
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 interval_between_years = self.energy_system.system["interval_between_years"]
                 _carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[step_horizon].item()
-                carbon_emissions = self.model.solution["carbon_emissions_total"].loc[step_horizon].item()
+                carbon_emissions_annual = self.model.solution["carbon_emissions_annual"].loc[step_horizon].item()
                 # carbon_emissions_overshoot = self.model.solution["carbon_emissions_overshoot"].loc[step_horizon].item()
-                self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + carbon_emissions * (interval_between_years - 1)
+                self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + carbon_emissions_annual * (interval_between_years - 1)
             else:
                 self.energy_system.carbon_emissions_cumulative_existing = self.energy_system.data_input.extract_input_data(
                     "carbon_emissions_cumulative_existing",index_sets=[])

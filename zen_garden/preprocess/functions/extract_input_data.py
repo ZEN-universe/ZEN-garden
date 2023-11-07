@@ -278,20 +278,18 @@ class DataInput:
             else:
                 return None
 
-    def extract_conversion_carriers(self):
+    def extract_carriers(self, carrier_type):
         """ reads input data and extracts conversion carriers
 
-        :return carrier_dict: dictionary with input and output carriers of technology """
-        carrier_dict = {}
-        # get carriers
-        for _carrier_type in ["input_carrier", "output_carrier"]:
-            _carrier_string = self.extract_attribute(_carrier_type, skip_warning=True)
-            if type(_carrier_string) == str:
-                _carrier_list = _carrier_string.strip().split(" ")
-            else:
-                _carrier_list = []
-            carrier_dict[_carrier_type] = _carrier_list
-        return carrier_dict
+        :return carrier_list: list with input, output or reference carriers of technology """
+        assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier"], "carrier type must be either input_carrier, output_carrier, or reference_carrier"
+        carrier_string = self.extract_attribute(carrier_type, skip_warning=True)
+        if type(carrier_string) == str:
+            carrier_list = carrier_string.strip().split(" ")
+        else:
+            carrier_list = []
+        assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
+        return carrier_list
 
     def extract_set_technologies_existing(self, storage_energy=False):
         """ reads input data and creates setExistingCapacity for each technology
@@ -343,7 +341,7 @@ class DataInput:
             # get reference year
             reference_year = self.system["reference_year"]
             # calculate remaining lifetime
-            df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime
+            df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime[0]
         # apply scenario factor
         return df_output*scenario_factor
 
