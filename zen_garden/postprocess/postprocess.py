@@ -284,25 +284,13 @@ class Postprocess:
         """
         Saves the system dict as json
         """
-
-        # This we only need to save once
-        if self.subfolder != Path(""):
-            fname = self.name_dir.parent.joinpath('system')
-        else:
-            fname = self.name_dir.joinpath('system')
-        self.write_file(fname, self.system, format="json")
+        self.write_file(self.name_dir.joinpath('system'), self.system, format="json")
 
     def save_analysis(self):
         """
         Saves the analysis dict as json
         """
-
-        # This we only need to save once
-        if self.subfolder != Path(""):
-            fname = self.name_dir.parent.joinpath('analysis')
-        else:
-            fname = self.name_dir.joinpath('analysis')
-        self.write_file(fname, self.analysis, format="json")
+        self.write_file(self.name_dir.joinpath('analysis'), self.analysis, format="json")
 
     def save_scenarios(self):
         """
