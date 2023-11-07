@@ -67,6 +67,9 @@ class DataInput:
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
             df_output, *_ = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=0)
             return df_output
+        #use distances computed with node coordinates as default values
+        elif file_name == "distance":
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=self.energy_system.set_haversine_distances_edges)
         else:
             df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps)
         # read input file
@@ -523,7 +526,12 @@ class DataInput:
             index_multi_index = pd.MultiIndex.from_product(index_list, names=index_name_list)
         else:
             index_multi_index = pd.Index([0])
-        if manual_default_value:
+        #use distances computed with node coordinates as default values
+        if file_name == "distance":
+            default_name = file_name
+            default_value = self.extract_attribute(default_name)
+            default_value["value"] = manual_default_value
+        elif manual_default_value:
             default_value = {"value": manual_default_value, "multiplier": 1}
             default_name = None
         else:
@@ -533,6 +541,11 @@ class DataInput:
         # create output Series filled with default value
         if default_value is None:
             df_output = pd.Series(index=index_multi_index, dtype=float)
+        #use distances computed with node coordinates as default values
+        elif file_name == "distance":
+            df_output = pd.Series(index=index_multi_index, dtype=float)
+            for key, value in default_value["value"].items():
+                df_output[key] = value
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit

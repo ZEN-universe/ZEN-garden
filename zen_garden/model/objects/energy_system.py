@@ -73,8 +73,8 @@ class EnergySystem:
         # in class <EnergySystem>, all sets are constructed
         self.set_nodes = self.data_input.extract_locations()
         self.set_nodes_on_edges = self.calculate_edges_from_nodes()
-        self.coordinates = self.data_input.extract_locations(extract_coordinates=True)
         self.set_edges = list(self.set_nodes_on_edges.keys())
+        self.set_haversine_distances_edges = self.calaculate_haversine_distances_from_nodes()
         self.set_technologies = self.system["set_technologies"]
         # base time steps
         self.set_base_time_steps = list(range(0, self.system["unaggregated_time_steps_per_year"] * self.system["optimized_years"]))
@@ -128,6 +128,35 @@ class EnergySystem:
                     if node_from != node_to:
                         set_nodes_on_edges[node_from + "-" + node_to] = (node_from, node_to)
         return set_nodes_on_edges
+
+    def calaculate_haversine_distances_from_nodes(self):
+        """
+        Computes the distance in kilometers between two nodes by using their lon lat coordinates and the Haversine formula
+
+        :return: dict containing all edges along with their distances
+        """
+        set_haversine_distances_of_edges = {}
+        #read coords file
+        df_coords_input = self.data_input.extract_locations(extract_coordinates=True)
+        #convert coords from decimal degrees to radians
+        df_coords_input["lon"] = df_coords_input["lon"] * np.pi / 180
+        df_coords_input["lat"] = df_coords_input["lat"] * np.pi / 180
+        # Radius of the Earth in kilometers
+        radius = 6371.0
+        for edge, nodes in self.set_nodes_on_edges.items():
+            node_1, node_2 = nodes
+            coords1 = df_coords_input[df_coords_input["node"] == node_1]
+            coords2 = df_coords_input[df_coords_input["node"] == node_2]
+            # Haversine formula
+            dlon = coords2["lon"].squeeze() - coords1["lon"].squeeze()
+            dlat = coords2["lat"].squeeze() - coords1["lat"].squeeze()
+            a = np.sin(dlat / 2) ** 2 + np.cos(coords1["lat"].squeeze()) * np.cos(coords2["lat"].squeeze()) * np.sin(dlon / 2) ** 2
+            c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+            distance = radius * c
+            set_haversine_distances_of_edges[edge] = distance
+        multiplier = self.unit_handling.get_unit_multiplier("km", attribute_name="distance")
+        set_haversine_distances_of_edges = {key: value * multiplier for key, value in set_haversine_distances_of_edges.items()}
+        return set_haversine_distances_of_edges
 
     def set_technology_of_carrier(self, technology, list_technology_of_carrier):
         """ appends technology to carrier in dict_technology_of_carrier
