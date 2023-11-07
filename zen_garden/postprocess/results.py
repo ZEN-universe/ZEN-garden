@@ -26,11 +26,24 @@ from tqdm import tqdm
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
 
+
 # Warnings
 # warnings.filterwarnings('ignore', category=NaturalNameWarning)
 
 # SETUP LOGGER
 utils.setup_logger()
+
+class TimeStepDictFromFile:
+    def __init__(self, time_dict: dict, scenario: str):
+        self.time_dict = time_dict
+        self.scenario = "default" if scenario is None else scenario
+
+    def get_time_steps_year2operation(self, techProxy: str, year: int) -> pd.DataFrame:
+        return self.time_dict["time_steps_year2operation"][techProxy][str(year)].deserialize()
+    
+    def get_sequence_time_steps(self, name: str) -> pd.DataFrame:
+        return self.time_dict["operation"][name]
+    
 
 class Results(object):
     """
@@ -85,10 +98,12 @@ class Results(object):
         elif self.results["system"]["conduct_scenario_analysis"]:
             self.has_scenarios = True
             self.scenarios = [f"scenario_{scenario}" for scenario in self.results["scenarios"].keys()]
+
         # there are no scenarios
         else:
             self.has_scenarios = False
             self.scenarios = [None]
+
         # myopic foresight
         if self.results["system"]["use_rolling_horizon"]:
             self.has_MF = True
@@ -122,11 +137,16 @@ class Results(object):
             # load the corresponding timestep dict
             sub_path = os.path.join(self.path, base_scenario)
             time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder)
+            
             self.results[scenario]["dict_sequence_time_steps"] = time_dict
-            self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
-            # load the operation2year and year2operation time steps
-            for element in time_dict["operation"]:
-                self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_operation2year_both_dir(element,time_dict["operation"][element],time_dict["yearly"][None])
+            if "time_steps_year2operation" in time_dict:
+                self.results[scenario]["sequence_time_steps_dicts"] = TimeStepDictFromFile(time_dict, scenario)
+            else:
+                self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
+                # load the operation2year and year2operation time steps
+                for element in time_dict["operation"]:
+                    self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_operation2year_both_dir(element,time_dict["operation"][element].deserialize(),time_dict["yearly"][None].deserialize())
+
             for mf in self.mf:
                 # init dict
                 self.results[scenario][mf] = {}
@@ -176,7 +196,6 @@ class Results(object):
                 # the opt we only load when requested
                 if load_opt:
                     self.results[scenario][mf]["optdict"] = self.load_opt(current_path)
-
         # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
@@ -432,8 +451,7 @@ class Results(object):
             fname += f"_{scenario}"
 
         # get the dict
-        dict_sequence_time_steps = cls._read_file(fname, lazy=False)
-
+        dict_sequence_time_steps = cls._read_file(fname, lazy=True)
         # tranform all lists to arrays
         return cls.expand_dict(dict_sequence_time_steps)
 
