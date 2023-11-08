@@ -22,7 +22,6 @@ import numpy as np
 import pandas as pd
 # from tables import NaturalNameWarning
 from tqdm import tqdm
-import time
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
@@ -145,6 +144,7 @@ class Results:
             time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder)
             
             self.results[scenario]["dict_sequence_time_steps"] = time_dict
+
             if "time_steps_year2operation" in time_dict:
                 self.results[scenario]["sequence_time_steps_dicts"] = TimeStepDictFromFile(time_dict, scenario)
             else:
@@ -221,6 +221,7 @@ class Results:
 
         :param name: File name without extension
         :param lazy: When possible, load lazy
+        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The decompressed content of the file as dict like object
         """
 
@@ -318,11 +319,12 @@ class Results:
 
         :param path: Path to load the parameter dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
+        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The set dict
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "set_dict"))
+        raw_dict = cls._read_file(os.path.join(path, "set_dict"), use_hdf_pandas_serializer=use_hdf_pandas_serializer)
 
         if lazy:
             return raw_dict
@@ -336,6 +338,7 @@ class Results:
 
         :param path: Path to load the parameter dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
+        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The parameter dict
         """
 
@@ -354,6 +357,7 @@ class Results:
 
         :param path: Path to load the var dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
+        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The var dict
         """
 
@@ -372,6 +376,7 @@ class Results:
 
         :param path: Path to load the dual dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
+        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The var dict
         """
 
