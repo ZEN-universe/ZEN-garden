@@ -6,8 +6,6 @@
 
 Class is defining to read in the results of an Optimization problem.
 """
-import logging
-import warnings
 
 import importlib
 import json
@@ -56,7 +54,6 @@ class Results(object):
         # load the onetime stuff
         self.results = {}
         self.results["scenarios"] = self.load_scenarios(self.path)
-        self.results["solver"] = self.load_solver(self.path)
         self.component_names = {
             "pars": {},
             "vars": {},
@@ -90,12 +87,11 @@ class Results(object):
         for scenario in self.scenarios:
             # init dict
             self.results[scenario] = {}
-            #folder path addition to access scenario/MF dependent system and analysis
-            folder_path = ""
             # get the base scenario
             base_scenario = ""
             scenario_subfolder = None
-            MF_subfolder_names = None
+            #path to access scenario-dependent files
+            file_folder = Path("")
             if self.has_scenarios:
                 # name without scenario_ prefix
                 name_short = scenario[9:]
@@ -105,30 +101,17 @@ class Results(object):
                     # no scenario subfolder -> no need to switch directories
                     base_scenario = ""
                     scenario_subfolder = scenario
-                    folder_path = scenario
+                    file_folder = scenario_subfolder
                 else:
                     # we need to go one level deeper
                     base_scenario = f"scenario_{base_scenario}"
                     scenario_subfolder = f"scenario_{scenario_subfolder}"
-                    folder_path = os.path.join(base_scenario, scenario_subfolder)
-                    MF_subfolder_names = [folder.name for folder in os.scandir(os.path.join(self.path, base_scenario)) if folder.is_dir() and scenario_subfolder + "_MF_" in folder.name]
+                    file_folder = os.path.join(base_scenario, scenario_subfolder)
 
-            #find correct myopic foresight folder path additions
-            MF_folder_names = [folder.name for folder in os.scandir(self.path) if folder.is_dir() and "MF_" in folder.name]
-            if MF_folder_names:
-                #check for normal MF without scenario analysis
-                if not [name for name in MF_folder_names if "scenario" in name]:
-                    folder_path = MF_folder_names[0]
-                #check for MF within a scenario analysis
-                elif [name for name in MF_folder_names if scenario + "_MF_" in name]:
-                    folder_path = MF_folder_names[0]
-                #check for MF within a sub-folder of a scenario analysis (when scenarios are defined with lists)
-                elif MF_subfolder_names:
-                    folder_path = os.path.join(base_scenario, MF_subfolder_names[0])
-
-            #load scenario-dependent system and analysis
-            self.results[scenario]["system"] = self.load_system(os.path.join(self.path, folder_path))
-            self.results[scenario]["analysis"] = self.load_analysis(os.path.join(self.path, folder_path))
+            #load scenario-dependent files
+            self.results[scenario]["system"] = self.load_system(os.path.join(self.path, file_folder))
+            self.results[scenario]["analysis"] = self.load_analysis(os.path.join(self.path, file_folder))
+            self.results[scenario]["solver"] = self.load_solver(os.path.join(self.path, file_folder))
             self.results[scenario]["years"] = list(range(0, self.results[scenario]["system"]["optimized_years"]))
             #myopic foresight
             if self.results[scenario]["system"]["use_rolling_horizon"]:
@@ -149,18 +132,13 @@ class Results(object):
             for mf in self.results[scenario]["mf"]:
                 # init dict
                 self.results[scenario][mf] = {}
-
                 # get the current path
-                subfolder = ""
+                subfolder = Path("")
                 if self.has_scenarios:
-                    subfolder = scenario_subfolder
-                    # add the buffer if necessary
-                    if self.results[scenario]["has_MF"] and self.results[scenario]["system"]["optimized_years"] > 1:
-                        subfolder += "_"
+                    subfolder = Path(scenario_subfolder)
                 # deal with MF
                 if self.results[scenario]["has_MF"] and self.results[scenario]["system"]["optimized_years"] > 1:
-                    subfolder += mf
-
+                    subfolder = os.path.join(subfolder, Path(mf))
                 # Add together
                 current_path = os.path.join(sub_path, subfolder)
 
@@ -186,7 +164,7 @@ class Results(object):
                 self.results[scenario][mf]["pars_and_vars"].update(vars)
 
                 # load duals
-                if self.results["solver"]["add_duals"]:
+                if self.results[scenario]["solver"]["add_duals"]:
                     duals = self.load_duals(current_path, lazy=True)
                     self._lazydicts.append(duals)
                     if not self.component_names["duals"]:
@@ -199,6 +177,7 @@ class Results(object):
         # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
+        a=1
 
     def close(self):
         """
@@ -446,6 +425,8 @@ class Results(object):
         :return: dict_sequence_time_steps
         """
         # get the file name
+        if scenario:
+            path = os.path.join(path, scenario)
         fname = os.path.join(path, "dict_all_sequence_time_steps")
         if scenario is not None:
             fname += f"_{scenario}"
@@ -485,21 +466,21 @@ class Results(object):
         return out_dict
 
     @classmethod
-    def compare_configs(cls, results:list,scenarios = None):
+    def compare_configs(cls, results: list, scenarios=None):
         """Compares the configs of two or more results
 
         :param results: list of results
         :param scenarios: None, str or tuple of scenarios
         :return: a dictionary with diverging results
         """
-        results,scenarios = cls.check_combine_results(results,scenarios)
+        results, scenarios = cls.check_combine_results(results, scenarios)
         if results is None:
             return
         result_names = [res.name for res in results]
         logging.info(f"Comparing the configs of {result_names}")
-        diff_analysis = cls.get_config_diff(results,"analysis")
-        diff_system = cls.get_config_diff(results,"system")
-        diff_solver = cls.get_config_diff(results,"solver")
+        diff_analysis = cls.get_config_diff(results, "analysis", scenarios)
+        diff_system = cls.get_config_diff(results, "system", scenarios)
+        diff_solver = cls.get_config_diff(results, "solver", scenarios)
 
         diff_dict = {}
         if diff_analysis:
@@ -511,7 +492,7 @@ class Results(object):
         return diff_dict
 
     @classmethod
-    def compare_model_parameters(cls, results: list,compare_total = True,scenarios = None):
+    def compare_model_parameters(cls, results: list, compare_total=True, scenarios=None):
         """Compares the input data of two or more results
 
         :param results: list of results
@@ -519,7 +500,7 @@ class Results(object):
         :param scenarios: None, str or tuple of scenarios
         :return: a dictionary with diverging results
         """
-        results,scenarios = cls.check_combine_results(results,scenarios)
+        results, scenarios = cls.check_combine_results(results, scenarios)
         if results is None:
             return
         result_names = [res.name for res in results]
@@ -527,13 +508,13 @@ class Results(object):
         diff_pars = cls.get_component_diff(results,"pars")
         diff_dict = {}
         # initialize progress bar
-        pbar = tqdm(total = len(diff_pars))
+        pbar = tqdm(total=len(diff_pars))
         for par in diff_pars:
             # update progress bar
             pbar.update(1)
             pbar.set_description(f"Compare parameter {par}")
             # check par
-            comparison_df = cls.compare_component_values(results,par,compare_total,scenarios=scenarios)
+            comparison_df = cls.compare_component_values(results, par, compare_total, scenarios=scenarios)
             if not comparison_df.empty:
                 logging.info(f"Parameter {par} has different values")
                 diff_dict[par] = comparison_df
@@ -541,7 +522,7 @@ class Results(object):
         return diff_dict
 
     @classmethod
-    def compare_model_variables(cls, results: list,compare_total = True,scenarios = None):
+    def compare_model_variables(cls, results: list, compare_total=True, scenarios=None):
         """Compares the input data of two or more results
 
         :param results: list of results
@@ -563,7 +544,7 @@ class Results(object):
             pbar.update(1)
             pbar.set_description(f"Compare variable {var}")
             # check var
-            comparison_df = cls.compare_component_values(results,var,compare_total,scenarios=scenarios)
+            comparison_df = cls.compare_component_values(results, var, compare_total, scenarios=scenarios)
             if not comparison_df.empty:
                 logging.info(f"Variable {var} has different values")
                 diff_dict[var] = comparison_df
@@ -571,7 +552,7 @@ class Results(object):
         return diff_dict
 
     @classmethod
-    def compare_component_values(cls,results,component,compare_total,scenarios,rtol=1e-3):
+    def compare_component_values(cls, results, component, compare_total, scenarios, rtol=1e-3):
         """Compares component values of two results
 
         :param results: list with results
@@ -616,7 +597,7 @@ class Results(object):
         return comparison_df
 
     @classmethod
-    def check_combine_results(cls,results:list,scenarios=None):
+    def check_combine_results(cls, results: list, scenarios=None):
         """Checks if results are a list of 2 results with the matching scenarios
 
         :param results: list of results
@@ -625,7 +606,7 @@ class Results(object):
         """
         if len(results) != 2:
             logging.warning("You must select exactly two results to compare. Skip.")
-            return None,None
+            return None, None
         if type(results) != list:
             logging.warning("You must pass the results as list. Skip")
             return None,None
@@ -633,8 +614,8 @@ class Results(object):
             if type(el) != cls:
                 logging.warning(f"You must pass a list of ZEN-garden results, not type {type(el)}. Skip")
                 return None,None
-        scenarios = cls.check_scenario_results(results,scenarios)
-        return results,scenarios
+        scenarios = cls.check_scenario_results(results, scenarios)
+        return results, scenarios
 
     @classmethod
     def check_scenario_results(cls,results:list,scenarios=None):
@@ -650,7 +631,7 @@ class Results(object):
             return scenarios
         # if scenarios is None, choose base scenario for both
         elif scenarios is None:
-            scenarios = (results[0].scenarios[0],results[1].scenarios[0])
+            scenarios = (results[0].scenarios[0], results[1].scenarios[0])
             logging.info(f"At least one result has scenarios but no scenarios are provided. Scenarios {scenarios} are selected")
         # if one scenario string is provided
         elif type(scenarios) == str:
@@ -689,7 +670,7 @@ class Results(object):
         return scenarios
 
     @classmethod
-    def get_config_diff(cls,results, attribute):
+    def get_config_diff(cls, results, attribute, scenarios):
         """returns a dict with the differences in attribute values
 
         :param results: dictionary with results
@@ -698,8 +679,8 @@ class Results(object):
         """
         result_names = [res.name for res in results]
         diff_dict = cls.compare_dicts(
-            results[0].results[attribute],
-            results[1].results[attribute],result_names)
+            results[0].results[scenarios[0]][attribute],
+            results[1].results[scenarios[1]][attribute], result_names)
         return diff_dict
 
     @classmethod
@@ -1185,10 +1166,10 @@ class Results(object):
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :return: #TODO describe parameter/return
         """
-        if not self.results["solver"]["add_duals"]:
+        if not self.results[scenario]["solver"]["add_duals"]:
             logging.warning("Duals are not calculated. Skip.")
             return
-        _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True, element_name=element_name, year=year,discount_to_first_step=discount_to_first_step)
+        _duals = self.get_full_ts(component=constraint, scenario=scenario, is_dual=True, element_name=element_name, year=year, discount_to_first_step=discount_to_first_step)
         return _duals
 
     def get_doc(self, component, index_set=False):
