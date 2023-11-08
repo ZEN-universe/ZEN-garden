@@ -67,6 +67,9 @@ class DataInput:
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
             df_output, *_ = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=0)
             return df_output
+        #use distances computed with node coordinates as default values
+        elif file_name == "distance":
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=self.energy_system.set_haversine_distances_edges)
         else:
             df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps)
         # read input file
@@ -238,25 +241,33 @@ class DataInput:
             df_output = df_output * scenario_factor
             setattr(self, name_yearly_variation, df_output)
 
-    def extract_locations(self, extract_nodes=True):
+    def extract_locations(self, extract_nodes=True, extract_coordinates=False):
         """ reads input data to extract nodes or edges.
 
-        :param extract_nodes: boolean to switch between nodes and edges """
+        :param extract_nodes: boolean to switch between nodes and edges
+        :param extract_coordinates: boolean to switch between nodes and nodes + coordinates
+        """
         if extract_nodes:
             set_nodes_config = self.system["set_nodes"]
-            set_nodes_input = self.read_input_data("set_nodes")["node"].to_list()
-            # if no nodes specified in system, use all nodes
-            if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
-                self.system["set_nodes"] = set_nodes_input
-                set_nodes_config = set_nodes_input
+            df_nodes_w_coords = self.read_input_data("set_nodes")
+            if extract_coordinates:
+                if len(set_nodes_config) != 0:
+                    df_nodes_w_coords = df_nodes_w_coords[df_nodes_w_coords["node"].isin(set_nodes_config)]
+                return df_nodes_w_coords
             else:
-                assert len(set_nodes_config) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
-                _missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
-                assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
-            if not isinstance(set_nodes_config, list):
-                set_nodes_config = set_nodes_config.to_list()
-            set_nodes_config.sort()
-            return set_nodes_config
+                set_nodes_input = df_nodes_w_coords["node"].to_list()
+                # if no nodes specified in system, use all nodes
+                if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
+                    self.system["set_nodes"] = set_nodes_input
+                    set_nodes_config = set_nodes_input
+                else:
+                    assert len(set_nodes_config) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
+                    _missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
+                    assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
+                if not isinstance(set_nodes_config, list):
+                    set_nodes_config = set_nodes_config.to_list()
+                set_nodes_config.sort()
+                return set_nodes_config
         else:
             set_edges_input = self.read_input_data("set_edges")
             self.energy_system.optimization_setup.input_data_checks.check_single_directed_edges(set_edges_input=set_edges_input)
@@ -513,7 +524,12 @@ class DataInput:
             index_multi_index = pd.MultiIndex.from_product(index_list, names=index_name_list)
         else:
             index_multi_index = pd.Index([0])
-        if manual_default_value:
+        #use distances computed with node coordinates as default values
+        if file_name == "distance":
+            default_name = file_name
+            default_value = self.extract_attribute(default_name)
+            default_value["value"] = manual_default_value
+        elif manual_default_value:
             default_value = {"value": manual_default_value, "multiplier": 1}
             default_name = None
         else:
@@ -523,6 +539,11 @@ class DataInput:
         # create output Series filled with default value
         if default_value is None:
             df_output = pd.Series(index=index_multi_index, dtype=float)
+        #use distances computed with node coordinates as default values
+        elif file_name == "distance":
+            df_output = pd.Series(index=index_multi_index, dtype=float)
+            for key, value in default_value["value"].items():
+                df_output[key] = value
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit

@@ -57,8 +57,15 @@ class Postprocess:
         # deal with the subfolder
         self.subfolder = subfolder
         # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
-        if self.subfolder != Path(""):
-            self.name_dir = self.name_dir.joinpath(self.subfolder)
+        if subfolder != Path(""):
+            #check if mf within scenario analysis
+            if isinstance(self.subfolder, tuple):
+                scenario_dir = self.name_dir.joinpath(self.subfolder[0])
+                os.makedirs(scenario_dir, exist_ok=True)
+                mf_in_scenario_dir = self.subfolder[0].joinpath(self.subfolder[1])
+                self.name_dir = self.name_dir.joinpath(mf_in_scenario_dir)
+            else:
+                self.name_dir = self.name_dir.joinpath(self.subfolder)
         # create the output directory
         os.makedirs(self.name_dir, exist_ok=True)
 
@@ -284,13 +291,21 @@ class Postprocess:
         """
         Saves the system dict as json
         """
-        self.write_file(self.name_dir.joinpath('system'), self.system, format="json")
+        if self.system["use_rolling_horizon"]:
+            fname = self.name_dir.parent.joinpath('system')
+        else:
+            fname = self.name_dir.joinpath('system')
+        self.write_file(fname, self.system, format="json")
 
     def save_analysis(self):
         """
         Saves the analysis dict as json
         """
-        self.write_file(self.name_dir.joinpath('analysis'), self.analysis, format="json")
+        if self.system["use_rolling_horizon"]:
+            fname = self.name_dir.parent.joinpath('analysis')
+        else:
+            fname = self.name_dir.joinpath('analysis')
+        self.write_file(fname, self.analysis, format="json")
 
     def save_scenarios(self):
         """
@@ -298,8 +313,18 @@ class Postprocess:
         """
 
         # This we only need to save once
-        if self.subfolder != Path(""):
+        #check if MF within scenario analysis
+        if isinstance(self.subfolder, tuple):
+            #check if there are sub_scenarios (parent must then be the name of the parent scenario)
+            if not self.subfolder[0].parent == Path("."):
+                fname = self.name_dir.parent.parent.parent.joinpath('scenarios')
+            else:
+                #MF with in scenario analysis without sub-scenarios
+                fname = self.name_dir.parent.parent.joinpath('scenarios')
+        #only MF or only scenario analysis
+        elif self.subfolder != Path(""):
             fname = self.name_dir.parent.joinpath('scenarios')
+        #neither MF nor scenario analysis
         else:
             fname = self.name_dir.joinpath('scenarios')
         self.write_file(fname, self.scenarios, format="json")
@@ -310,7 +335,7 @@ class Postprocess:
         """
 
         # This we only need to save once
-        if self.subfolder != Path(""):
+        if self.system["use_rolling_horizon"]:
             fname = self.name_dir.parent.joinpath('solver')
         else:
             fname = self.name_dir.joinpath('solver')
@@ -323,7 +348,9 @@ class Postprocess:
 
         if self.param_map is not None:
             # This we only need to save once
-            if self.subfolder != Path(""):
+            if self.system["use_rolling_horizon"] and self.system["conduct_scenario_analysis"]:
+                fname = self.name_dir.parent.parent.joinpath('param_map')
+            elif self.subfolder != Path(""):
                 fname = self.name_dir.parent.joinpath('param_map')
             else:
                 fname = self.name_dir.joinpath('param_map')
@@ -341,11 +368,10 @@ class Postprocess:
             add_on = ""
 
             # This we only need to save once
-        if self.subfolder != Path(""):
+        if self.system["use_rolling_horizon"]:
             fname = self.name_dir.parent.joinpath(f'dict_all_sequence_time_steps{add_on}')
         else:
             fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
-
         self.write_file(fname, self.dict_sequence_time_steps)
 
     def _transform_df(self, df, doc):

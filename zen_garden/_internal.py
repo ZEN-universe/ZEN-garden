@@ -182,22 +182,15 @@ def main(config, dataset_path=None, job_index=None):
                     # get the output scenarios
                     subfolder = subfolder.joinpath(f"scenario_{scenario_dict['sub_folder']}")
                     scenario_name = f"scenario_{scenario_dict['sub_folder']}"
-                    output_scenarios = {}
-                    for s, s_dict in config.scenarios.items():
-                        if s_dict["base_scenario"] == scenario_dict["base_scenario"]:
-                            out_dict = deepcopy(s_dict)
-                            out_dict["base_scenario"] = s_dict["sub_folder"]
-                            out_dict["sub_folder"] = ""
-                            output_scenarios[s_dict["sub_folder"]] = out_dict
+
             # handle myopic foresight
             if len(steps_optimization_horizon) > 1:
-                sf_string = str(subfolder)
-                if sf_string == ".":
-                    sf_string = ""
-                if sf_string != "":
-                    sf_string += "_"
-                sf_string += f"MF_{step_horizon}"
-                subfolder = Path(sf_string)
+                mf_f_string = f"MF_{step_horizon}"
+                #handle combination of MF and scenario analysis
+                if config.system["conduct_scenario_analysis"]:
+                    subfolder = Path(subfolder), Path(mf_f_string)
+                else:
+                    subfolder = Path(mf_f_string)
             # write results
             _ = Postprocess(optimization_setup, scenarios=output_scenarios, subfolder=subfolder,
                             model_name=model_name, scenario_name=scenario_name, param_map=param_map)
