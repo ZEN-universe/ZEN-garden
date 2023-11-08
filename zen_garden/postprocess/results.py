@@ -22,9 +22,11 @@ import numpy as np
 import pandas as pd
 # from tables import NaturalNameWarning
 from tqdm import tqdm
+import time
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
+import h5py
 
 
 # Warnings
@@ -32,6 +34,7 @@ from zen_garden.model.objects.time_steps import TimeStepsDicts
 
 # SETUP LOGGER
 utils.setup_logger()
+
 
 class TimeStepDictFromFile:
     def __init__(self, time_dict: dict, scenario: str):
@@ -43,9 +46,9 @@ class TimeStepDictFromFile:
     
     def get_sequence_time_steps(self, name: str) -> pd.DataFrame:
         return self.time_dict["operation"][name]
-    
 
-class Results(object):
+
+class Results:
     """
     This class reads in the results after the pipeline has run
     """
@@ -83,7 +86,10 @@ class Results(object):
 
         # this is a list for lazy dict to keep the datasets open
         self._lazydicts = []
-
+        
+        # Specify if HDFPandasSerializer should be used or not.
+        self.use_hdf_pandas_serializer = False
+        
         # if we only want to load a subset
         if scenarios is not None:
             self.has_scenarios = True
@@ -164,10 +170,9 @@ class Results(object):
 
                 # Add together
                 current_path = os.path.join(sub_path, subfolder)
-
                 #create dict containing sets
                 self.results[scenario][mf]["sets"] = {}
-                sets = self.load_sets(current_path, lazy=True)
+                sets = self.load_sets(current_path, lazy=True, use_hdf_pandas_serializer=self.use_hdf_pandas_serializer)
                 self._lazydicts.append(sets)
                 if not self.component_names["sets"]:
                     self.component_names["sets"] = list(sets.keys())
@@ -175,12 +180,12 @@ class Results(object):
 
                 # create dict containing params and vars
                 self.results[scenario][mf]["pars_and_vars"] = {}
-                pars = self.load_params(current_path, lazy=True)
+                pars = self.load_params(current_path, lazy=True, use_hdf_pandas_serializer=self.use_hdf_pandas_serializer)
                 self._lazydicts.append(pars)
                 if not self.component_names["pars"]:
                     self.component_names["pars"] = list(pars.keys())
                 self.results[scenario][mf]["pars_and_vars"].update(pars)
-                vars = self.load_vars(current_path, lazy=True)
+                vars = self.load_vars(current_path, lazy=True, use_hdf_pandas_serializer=self.use_hdf_pandas_serializer)
                 self._lazydicts.append(vars)
                 if not self.component_names["vars"]:
                     self.component_names["vars"] = list(vars.keys())
@@ -188,12 +193,13 @@ class Results(object):
 
                 # load duals
                 if self.results["solver"]["add_duals"]:
-                    duals = self.load_duals(current_path, lazy=True)
+                    duals = self.load_duals(current_path, lazy=True, use_hdf_pandas_serializer=self.use_hdf_pandas_serializer)
                     self._lazydicts.append(duals)
                     if not self.component_names["duals"]:
                         self.component_names["duals"] = list(duals.keys())
                     self.results[scenario][mf]["duals"] = duals
                 # the opt we only load when requested
+
                 if load_opt:
                     self.results[scenario][mf]["optdict"] = self.load_opt(current_path)
         # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
@@ -209,7 +215,7 @@ class Results(object):
             lazydict.close()
 
     @classmethod
-    def _read_file(cls, name, lazy=True):
+    def _read_file(cls, name, lazy=True, use_hdf_pandas_serializer=True):
         """
         Reads out a file and decompresses it if necessary
 
@@ -220,14 +226,17 @@ class Results(object):
 
         # h5 version
         if os.path.exists(f"{name}.h5"):
-            try:
-                content = utils.HDFPandasSerializer(file_name=f"{name}.h5", lazy=lazy)
-            except KeyError:
-                warnings.warn("The old h5 dict results are decrepated, please rerun the model to get the new results")
-                content = utils.load(f"{name}.h5")
-                if not lazy:
-                    content = content.unlazy(return_dict=True)
-            return content
+            if use_hdf_pandas_serializer:
+                try:
+                    content = utils.HDFPandasSerializer(file_name=f"{name}.h5", lazy=lazy)
+                except KeyError:
+                    warnings.warn("The old h5 dict results are decrepated, please rerun the model to get the new results")
+                    content = utils.load(f"{name}.h5")
+                    if not lazy:
+                        content = content.unlazy(return_dict=True)
+                return content
+            else:
+                return h5py.File(f"{name}.h5")
 
         # compressed version
         if os.path.exists(f"{name}.gzip"):
@@ -290,6 +299,9 @@ class Results(object):
         # nothing to do
         if isinstance(string, (pd.DataFrame, pd.Series)):
             return string
+        
+        if isinstance(string, h5py.Group):
+            return pd.read_hdf(string.file.filename, string.name)
 
         # transform back to dataframes
         if isinstance(string, np.ndarray):
@@ -300,7 +312,7 @@ class Results(object):
         return pd.read_json(json_dump, orient="table")
 
     @classmethod
-    def load_sets(cls, path, lazy=False):
+    def load_sets(cls, path, lazy=False, use_hdf_pandas_serializer=True):
         """
         Loads the set dict from a given path
 
@@ -318,7 +330,7 @@ class Results(object):
             return cls._dict2df(raw_dict)
 
     @classmethod
-    def load_params(cls, path, lazy=False):
+    def load_params(cls, path, lazy=False, use_hdf_pandas_serializer=True):
         """
         Loads the parameter dict from a given path
 
@@ -328,7 +340,7 @@ class Results(object):
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "param_dict"))
+        raw_dict = cls._read_file(os.path.join(path, "param_dict"), use_hdf_pandas_serializer=use_hdf_pandas_serializer)
 
         if lazy:
             return raw_dict
@@ -336,7 +348,7 @@ class Results(object):
             return cls._dict2df(raw_dict)
 
     @classmethod
-    def load_vars(cls, path, lazy=False):
+    def load_vars(cls, path, lazy=False, use_hdf_pandas_serializer=True):
         """
         Loads the var dict from a given path
 
@@ -346,7 +358,7 @@ class Results(object):
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "var_dict"))
+        raw_dict = cls._read_file(os.path.join(path, "var_dict"), use_hdf_pandas_serializer=use_hdf_pandas_serializer)
 
         if lazy:
             return raw_dict
@@ -354,7 +366,7 @@ class Results(object):
             return cls._dict2df(raw_dict)
 
     @classmethod
-    def load_duals(cls, path, lazy=False):
+    def load_duals(cls, path, lazy=False, use_hdf_pandas_serializer=True):
         """
         Loads the dual dict from a given path
 
@@ -364,7 +376,7 @@ class Results(object):
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "dual_dict"))
+        raw_dict = cls._read_file(os.path.join(path, "dual_dict"), use_hdf_pandas_serializer=use_hdf_pandas_serializer)
 
         if lazy:
             return raw_dict
