@@ -41,7 +41,7 @@ class TimeStepDictFromFile:
         self.scenario = "default" if scenario is None else scenario
 
     def get_time_steps_year2operation(self, techProxy: str, year: int) -> pd.DataFrame:
-        return self.time_dict["time_steps_year2operation"][techProxy][str(year)].deserialize()
+        return Results._to_df(self.time_dict["time_steps_year2operation"][techProxy][str(year)])
     
     def get_sequence_time_steps(self, name: str) -> pd.DataFrame:
         return self.time_dict["operation"][name]
@@ -86,9 +86,10 @@ class Results:
         # this is a list for lazy dict to keep the datasets open
         self._lazydicts = []
         
-        # Specify if HDFPandasSerializer should be used or not.
+        # Specify loading strategy
         self.use_hdf_pandas_serializer = False
-        
+        self.use_precalculated_timesteps = True
+
         # if we only want to load a subset
         if scenarios is not None:
             self.has_scenarios = True
@@ -120,6 +121,7 @@ class Results:
         # cycle through the dirs
         for scenario in self.scenarios:
             # init dict
+
             self.results[scenario] = {}
 
             # get the base scenario
@@ -141,17 +143,18 @@ class Results:
 
             # load the corresponding timestep dict
             sub_path = os.path.join(self.path, base_scenario)
-            time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder)
-            
-            self.results[scenario]["dict_sequence_time_steps"] = time_dict
 
-            if "time_steps_year2operation" in time_dict:
+            if self.use_precalculated_timesteps:
+                time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder, use_hdf_pandas_serializer=False, lazy=True)
                 self.results[scenario]["sequence_time_steps_dicts"] = TimeStepDictFromFile(time_dict, scenario)
             else:
+                time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder)
                 self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
                 # load the operation2year and year2operation time steps
                 for element in time_dict["operation"]:
-                    self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_operation2year_both_dir(element,time_dict["operation"][element].deserialize(),time_dict["yearly"][None].deserialize())
+                    self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_operation2year_both_dir(element,time_dict["operation"][element], time_dict["yearly"][None])
+
+            self.results[scenario]["dict_sequence_time_steps"] = time_dict
 
             for mf in self.mf:
                 # init dict
@@ -454,8 +457,9 @@ class Results:
 
         return raw_dict
 
+
     @classmethod
-    def load_sequence_time_steps(cls, path, scenario=None):
+    def load_sequence_time_steps(cls, path, scenario=None, lazy=False, use_hdf_pandas_serializer=True):
         """Loads the dict_sequence_time_steps from a given path
 
         :param path: Path to load the dict from
@@ -468,7 +472,11 @@ class Results:
             fname += f"_{scenario}"
 
         # get the dict
-        dict_sequence_time_steps = cls._read_file(fname, lazy=True)
+        dict_sequence_time_steps = cls._read_file(
+            fname, 
+            lazy=lazy, 
+            use_hdf_pandas_serializer=use_hdf_pandas_serializer
+        )
         # tranform all lists to arrays
         return cls.expand_dict(dict_sequence_time_steps)
 
