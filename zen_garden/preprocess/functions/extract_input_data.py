@@ -180,7 +180,7 @@ class DataInput:
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"], attribute_name, file_name=filename, path=self.folder_path)
+            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"], attribute_name, path=self.folder_path)
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute

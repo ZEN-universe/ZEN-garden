@@ -10,12 +10,12 @@ import logging
 import numpy as np
 import pandas as pd
 import scipy as sp
-import itertools
+import warnings
 from pint import UnitRegistry
 from pint.util import column_echelon_form
-import copy
-import warnings
 
+# enable Deprecation Warnings
+warnings.simplefilter('always', DeprecationWarning)
 
 class UnitHandling:
     """
@@ -173,18 +173,19 @@ class UnitHandling:
         else:
             return combined_unit
 
-    def get_unit_multiplier(self, input_unit, attribute_name, path=None, file_name=None):
+    def get_unit_multiplier(self, input_unit, attribute_name, path=None):
         """ calculates the multiplier for converting an input_unit to the base units
 
         :param input_unit: string of input unit
         :param attribute_name: name of attribute
+        :param path: path of element
         :return multiplier: multiplication factor """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if input_unit in self.base_units:
             return 1
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
-            warnings.warn(f"DeprecationWarning: There are parameters without any units in {file_name+'.csv'} at {path} (assign unit '1' to unitless parameters to ensure that no units are missing)")
+            warnings.warn(f"Parameter {attribute_name} of {path.name} has no unit (assign unit '1' to unitless parameters)",DeprecationWarning)
             return 1
         #if input unit is 1 --> dimensionless new definition
         elif input_unit == "1":
