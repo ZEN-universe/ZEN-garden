@@ -39,12 +39,15 @@ class TimeStepDictFromFile:
     def __init__(self, time_dict: dict, scenario: str):
         self.time_dict = time_dict
         self.scenario = "default" if scenario is None else scenario
+        self.sequence_time_steps_cache = {}
 
     def get_time_steps_year2operation(self, techProxy: str, year: int) -> pd.DataFrame:
         return Results._to_df(self.time_dict["time_steps_year2operation"][techProxy][str(year)])
     
     def get_sequence_time_steps(self, name: str) -> pd.DataFrame:
-        return self.time_dict["operation"][name]
+        if name not in self.sequence_time_steps_cache:
+            self.sequence_time_steps_cache[name] = self.time_dict["operation"][name]["values"][:]
+        return self.sequence_time_steps_cache[name]
 
 
 class Results:
@@ -946,7 +949,7 @@ class Results:
         """
         return self.get_df("time_steps_storage_level_duration")
 
-    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False,discount_years=True):
+    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False,discount_years=True, node=None):
         """Calculates the full timeseries for a given element
 
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -959,6 +962,13 @@ class Results:
         """
         # extract the data
         component_name, component_data = self._get_component_data(component, scenario,is_dual = is_dual)
+
+        if node is not None:
+            location_name = set(component_data.index.names).intersection(set(["node", "edge"])).pop()
+            locations = [i for i in set(component_data.index.get_level_values(location_name)) if node in i]
+            filter_index = [slice(None) for i in component_data.index.names if i not in ["node", "edge"]] + [locations]
+            component_data = component_data.loc[tuple(filter_index),:]
+        
         # loop over scenarios
         # no scenarios
         if not self.has_scenarios:
@@ -1033,13 +1043,13 @@ class Results:
         output_df = component_data.apply(
             lambda row: self.get_full_ts_of_row(row, sequence_time_steps_dicts, element_name, _storage_string,
                                                 time_step_duration, is_dual, annuity), axis=1)
+        
         if year is not None:
             if year in self.years:
                 hours_of_year = self._get_hours_of_year(year)
                 output_df = (output_df[hours_of_year]).T.reset_index(drop=True).T
             else:
                 print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
-
         return output_df
 
     def get_full_ts_of_row(self,row,sequence_time_steps_dicts,element_name,storage_string,time_step_duration,is_dual,annuity):
@@ -1055,6 +1065,7 @@ class Results:
         :return: #TODO describe parameter/return
         """
         row_index = row.name
+
         # we know the name
         if element_name:
             _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + storage_string)
@@ -1074,8 +1085,9 @@ class Results:
                 _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_temp + storage_string,_year)
                 row[_yearly_ts] = row[_yearly_ts] / annuity[_year]
         # throw together
-        _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(row.index))]
+        #_sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(row.index))]
         _output_temp = row[_sequence_time_steps].reset_index(drop=True)
+
         return _output_temp
 
     def get_total(self, component, element_name=None, year=None, scenario=None, split_years=True):
@@ -1420,34 +1432,25 @@ class Results:
                 total_cost = pd.concat([total_cost, self.get_total(cost, scenario=scenario)], axis=1)
         self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
 
-    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None, demand_area=False, scenario=None):
-        """Visualizes the energy balance of a specific carrier at a single node
 
-        :param node: node of interest
-        :param carrier: String of carrier of interest
-        :param year: Generic index of year of interest
-        :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
-        :param duration: Number of hours that should be plotted from start_hour
-        :param save_fig: Choose if figure should be saved as pdf
-        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
-        :param demand_area: Choose if carrier demand should be plotted as area with other negative flows (instead of line)
-        :param scenario: Choose scenario of interest (only for multi-scenario simulations, per default scenario_ is plotted)
-        """
-        # plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
-        fig,ax = plt.subplots(figsize=(30,6.5),layout = "constrained")
+    def get_energy_balance_df(self, node, carrier, scenario=None):
         components = ["flow_conversion_output", "flow_conversion_input", "flow_export", "flow_import", "flow_storage_charge", "flow_storage_discharge", "demand", "flow_transport_in", "flow_transport_out", "shed_demand"]
         lowers = ["flow_conversion_input", "flow_export", "flow_storage_charge", "flow_transport_out"]
+        
         data_plot = pd.DataFrame()
         if scenario not in self.scenarios:
             scenario = "scenario_"
         for component in components:
             if component == "flow_transport_in":
-                data_full_ts = self.edit_carrier_flows(self.get_full_ts("flow_transport", scenario=scenario), node, carrier, "in", scenario)
+                full_ts = self.get_full_ts("flow_transport", scenario=scenario, node=node)
+                data_full_ts = self.edit_carrier_flows(full_ts, node, carrier, "in", scenario)
             elif component == "flow_transport_out":
-                data_full_ts = self.edit_carrier_flows(self.get_full_ts("flow_transport", scenario=scenario), node, carrier, "out", scenario)
+                full_ts = self.get_full_ts("flow_transport", scenario=scenario, node=node)
+                data_full_ts = self.edit_carrier_flows(full_ts, node, carrier, "out", scenario)
             else:
                 # get full timeseries of component and extract rows of relevant node
-                data_full_ts = self.edit_nodes(self.get_full_ts(component, scenario=scenario), node)
+                full_ts = self.get_full_ts(component, scenario=scenario, node=node)
+                data_full_ts = self.edit_nodes(full_ts, node)
                 # extract data of desired carrier
                 data_full_ts = self.extract_carrier(data_full_ts, carrier, scenario)
                 # check if return from extract_carrier() is still a data frame as it is possible that the desired carrier isn't contained --> None returned
@@ -1470,7 +1473,24 @@ class Results:
                 data_full_ts.name = component
             # add data of current variable to the plot data frame
             data_plot = pd.concat([data_plot, data_full_ts], axis=1)
+        return data_plot
 
+    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None, demand_area=False, scenario=None):
+        """Visualizes the energy balance of a specific carrier at a single node
+
+        :param node: node of interest
+        :param carrier: String of carrier of interest
+        :param year: Generic index of year of interest
+        :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
+        :param duration: Number of hours that should be plotted from start_hour
+        :param save_fig: Choose if figure should be saved as pdf
+        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
+        :param demand_area: Choose if carrier demand should be plotted as area with other negative flows (instead of line)
+        :param scenario: Choose scenario of interest (only for multi-scenario simulations, per default scenario_ is plotted)
+        """
+        # plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
+        fig,ax = plt.subplots(figsize=(30,6.5),layout = "constrained")
+        data_plot = self.get_energy_balance_df(node, carrier, scenario=None)
         # extract the rows of the desired year
         if year not in list(range(self.results["system"]["optimized_years"])):
             warnings.warn(f"Chosen year '{year}' has not been optimized")
@@ -1553,96 +1573,6 @@ class Results:
             else:
                 warnings.warn(f"Plot couldn't be saved as specified file type '{file_type}' isn't supported or has not been passed in the following form: 'pdf', 'svg', 'png', etc.")
         plt.show()
-
-    def get_summary_df(
-            self,
-            component,
-            yearly=False,
-            node_edit=None,
-            sum_techs=False,
-            tech_type=None,
-            reference_carrier=None,
-            year=None,
-            start_hour=None,
-            duration=None,
-            scenario=None):
-        if isinstance(component, str):
-            if None in self.scenarios:
-                if component not in self.results[None][None]["pars_and_vars"]:
-                    warnings.warn(f"Chosen component '{component}' doesn't exist")
-                    return
-            else:
-                if scenario is None:
-                    scenario = self.scenarios[0]
-                if component not in self.results[scenario][None]["pars_and_vars"]:
-                    warnings.warn(f"Chosen component '{component}' doesn't exist")
-                    return
-
-            component_name, component_data = self._get_component_data(component, scenario=scenario)
-        # set timeseries type
-        if yearly:
-            ts_type = "yearly"
-        else:
-            ts_type = self._get_ts_type(component_data, component_name)
-
-        # plot variable with operational time steps
-        if ts_type == "operational":
-            if isinstance(component, str):
-                data_full_ts = self.get_full_ts(component, scenario=scenario)
-            elif isinstance(component, pd.DataFrame):
-                data_full_ts = component
-            # extract desired data
-            if node_edit != "all":
-                data_full_ts = self.edit_nodes(data_full_ts, node_edit)
-            if sum_techs:
-                data_full_ts = self.sum_over_technologies(data_full_ts)
-            if reference_carrier != None:
-                data_full_ts = self.extract_reference_carrier(data_full_ts, reference_carrier, scenario)
-            # drop index levels having constant value in all indices
-            if isinstance(data_full_ts, pd.DataFrame) and data_full_ts.index.nlevels > 1:
-                drop_levs = []
-                for ind, lev_shape in enumerate(data_full_ts.index.levshape):
-                    if ind != 0:
-                        if all(lev_value[ind] == data_full_ts.index.values[0][ind] for lev_value in data_full_ts.index.values[ind:]):
-                            drop_levs.append(ind)
-                data_full_ts = data_full_ts.droplevel(level=drop_levs)
-            # extract data of a specific year
-            data_full_ts = data_full_ts.transpose()
-            if year is not None:
-                # extract the rows of the desired year
-                ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
-                data_full_ts = data_full_ts.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
-                # extract specific hours of year
-                if start_hour is not None and duration is not None:
-                    data_full_ts = data_full_ts.iloc[start_hour:start_hour + duration]
-            # remove columns(technologies/variables) with constant zero value
-            data_full_ts = data_full_ts.loc[:, (data_full_ts != 0).any(axis=0)]
-            return data_full_ts
-
-        # plot variable with yearly time steps
-        elif ts_type == "yearly":
-            if isinstance(component, str):
-                data_total = self.get_total(component, scenario=scenario)
-            elif isinstance(component, pd.DataFrame):
-                data_total = component
-            if tech_type != None:
-                data_total = self.extract_technology(data_total, tech_type)
-            if reference_carrier != None:
-                data_total = self.extract_reference_carrier(data_total, reference_carrier, scenario)
-            # sum data according to chosen options
-            if node_edit != "all":
-                data_total = self.edit_nodes(data_total, node_edit)
-            if sum_techs:
-                data_total = self.sum_over_technologies(data_total)
-            #drop index levels having constant value in all indices
-            if isinstance(data_total, pd.DataFrame) and data_total.index.nlevels > 1:
-                drop_levs = []
-                for ind, lev_shape in enumerate(data_total.index.levshape):
-                    if ind != 0:
-                        if all(lev_value[ind] == data_total.index.values[0][ind] for lev_value in data_total.index.values):
-                            drop_levs.append(ind)
-                data_total = data_total.droplevel(level=drop_levs)
-            return data_total
 
     def plot(self, component, yearly=False, node_edit=None, sum_techs=False, tech_type=None, plot_type=None, reference_carrier=None, plot_strings={"title": "", "ylabel": ""}, save_fig=False, file_type=None, year=None, start_hour=None, duration=None, scenario=None):
         """Plots component data as specified by arguments
