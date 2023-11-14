@@ -1433,11 +1433,12 @@ class Results:
         self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
 
 
-    def get_energy_balance_df(self, node, carrier, scenario=None):
+    def get_energy_balance_df(self, node, carrier, scenario=None) -> pd.DataFrame:
         components = ["flow_conversion_output", "flow_conversion_input", "flow_export", "flow_import", "flow_storage_charge", "flow_storage_discharge", "demand", "flow_transport_in", "flow_transport_out", "shed_demand"]
         lowers = ["flow_conversion_input", "flow_export", "flow_storage_charge", "flow_transport_out"]
         
         data_plot = pd.DataFrame()
+        
         if scenario not in self.scenarios:
             scenario = "scenario_"
         for component in components:
@@ -1490,7 +1491,7 @@ class Results:
         """
         # plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
         fig,ax = plt.subplots(figsize=(30,6.5),layout = "constrained")
-        data_plot = self.get_energy_balance_df(node, carrier, scenario=None)
+        data_plot = self.get_energy_balance_df(node, carrier, scenario)
         # extract the rows of the desired year
         if year not in list(range(self.results["system"]["optimized_years"])):
             warnings.warn(f"Chosen year '{year}' has not been optimized")
