@@ -142,8 +142,6 @@ def main(config, dataset_path=None, job_index=None):
             additional_scenario_string = f"for scenario {scenario} "
         else:
             additional_scenario_string = ""
-        #optimization_setup.restore_base_configuration(scenario,scenario_dict)  # per default scenario="" is used as base configuration. Use set_base_configuration(scenario, scenario_dict) if you want to change that
-        #optimization_setup.overwrite_params(scenario, scenario_dict)
         # iterate through horizon steps
         for step_horizon in steps_optimization_horizon:
             if len(steps_optimization_horizon) == 1:

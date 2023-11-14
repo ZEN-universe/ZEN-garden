@@ -187,7 +187,7 @@ class UnitHandling:
         elif type(input_unit) != str and np.isnan(input_unit):
             warnings.warn(f"Parameter {attribute_name} of {path.name} has no unit (assign unit '1' to unitless parameters)",DeprecationWarning)
             return 1
-        #if input unit is 1 --> dimensionless new definition
+        # if input unit is 1 --> dimensionless new definition
         elif input_unit == "1":
             return 1
         else:
