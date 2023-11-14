@@ -37,21 +37,18 @@ class Carrier(Element):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
         # store scenario dict
         super().store_scenario_dict()
-        # time steps
-        set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
-        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
         # set attributes of carrier
         # raw import
         self.raw_time_series = {}
-        self.raw_time_series["demand"] = self.data_input.extract_input_data("demand", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["availability_import"] = self.data_input.extract_input_data("availability_import", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["availability_export"] = self.data_input.extract_input_data("availability_export", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["price_export"] = self.data_input.extract_input_data("price_export", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["price_import"] = self.data_input.extract_input_data("price_import", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["demand"] = self.data_input.extract_input_data("demand", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["availability_import"] = self.data_input.extract_input_data("availability_import", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["availability_export"] = self.data_input.extract_input_data("availability_export", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["price_export"] = self.data_input.extract_input_data("price_export", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["price_import"] = self.data_input.extract_input_data("price_import", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
         # non-time series input data
-        self.availability_import_yearly = self.data_input.extract_input_data("availability_import_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        self.availability_import_yearly = self.data_input.extract_input_data("availability_import_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+        self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+        self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
         self.price_shed_demand = self.data_input.extract_input_data("price_shed_demand", index_sets=[])
 
     def overwrite_time_steps(self, base_time_steps):
@@ -200,6 +197,7 @@ class Carrier(Element):
         constraints.add_constraint_block(model, name="constraint_nodal_energy_balance",
                                          constraint=rules.constraint_nodal_energy_balance_block(),
                                          doc='node- and time-dependent energy balance for each carrier', )
+
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
             if len(optimization_setup.system[subclass.label]) > 0:

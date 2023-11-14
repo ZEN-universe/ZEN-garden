@@ -16,7 +16,7 @@ from copy import deepcopy
 from pathlib import Path
 import shutil
 
-import pkg_resources
+import importlib
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
@@ -36,7 +36,7 @@ def main(config, dataset_path=None, job_index=None):
     """
 
     # print the version
-    version = pkg_resources.require("zen_garden")[0].version
+    version = importlib.metadata.version("zen-garden")
     logging.info(f"Running ZEN-Garden version: {version}")
 
     # prevent double printing
@@ -60,7 +60,7 @@ def main(config, dataset_path=None, job_index=None):
     spec.loader.exec_module(module)
     system = module.system
     config.system.update(system)
-    input_data_checks.check_technology_selected()
+    input_data_checks.check_technology_selections()
     input_data_checks.check_year_definitions()
     ### overwrite default system and scenario dictionaries
     if config.system["conduct_scenario_analysis"]:
@@ -181,22 +181,15 @@ def main(config, dataset_path=None, job_index=None):
                     # get the output scenarios
                     subfolder = subfolder.joinpath(f"scenario_{scenario_dict['sub_folder']}")
                     scenario_name = f"scenario_{scenario_dict['sub_folder']}"
-                    output_scenarios = {}
-                    for s, s_dict in config.scenarios.items():
-                        if s_dict["base_scenario"] == scenario_dict["base_scenario"]:
-                            out_dict = deepcopy(s_dict)
-                            out_dict["base_scenario"] = s_dict["sub_folder"]
-                            out_dict["sub_folder"] = ""
-                            output_scenarios[s_dict["sub_folder"]] = out_dict
+
             # handle myopic foresight
             if len(steps_optimization_horizon) > 1:
-                sf_string = str(subfolder)
-                if sf_string == ".":
-                    sf_string = ""
-                if sf_string != "":
-                    sf_string += "_"
-                sf_string += f"MF_{step_horizon}"
-                subfolder = Path(sf_string)
+                mf_f_string = f"MF_{step_horizon}"
+                #handle combination of MF and scenario analysis
+                if config.system["conduct_scenario_analysis"]:
+                    subfolder = Path(subfolder), Path(mf_f_string)
+                else:
+                    subfolder = Path(mf_f_string)
             # write results
             _ = Postprocess(optimization_setup, scenarios=output_scenarios, subfolder=subfolder,
                             model_name=model_name, scenario_name=scenario_name, param_map=param_map)

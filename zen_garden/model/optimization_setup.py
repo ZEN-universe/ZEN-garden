@@ -15,6 +15,7 @@ import cProfile
 import copy
 import logging
 import os
+import time
 from collections import defaultdict
 
 import linopy as lp
@@ -25,9 +26,10 @@ from .objects.component import Parameter, Variable, Constraint, IndexSet
 from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
+from .objects.technology.transport_technology import TransportTechnology
 from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
 
-from ..utils import ScenarioDict, IISConstraintParser, InputDataChecks
+from ..utils import ScenarioDict, IISConstraintParser
 
 class OptimizationSetup(object):
     """setup optimization setup """
@@ -290,8 +292,14 @@ class OptimizationSetup(object):
                 dict_of_attributes[_combined_key] = attribute
                 attribute_is_series = True
             else:
-                dict_of_attributes[_combined_key] = attribute.squeeze()
-                attribute_is_series = False
+                if attribute.index == 0:
+                    dict_of_attributes[_combined_key] = attribute.squeeze()
+                    attribute_is_series = False
+                #since single-directed edges are allowed to exist (e.g. CH-DE exists, DE-CH doesn't), TransportTechnology attributes shared with other technologies (such as capacity existing)
+                # mustn't be squeezed even-though the attributes length is smaller than 1. Otherwise, pd.concat(dict_of_attributes) messes up in initialize_component(), leading to an error further on in the code.
+                else:
+                    dict_of_attributes[_combined_key] = attribute
+                    attribute_is_series = True
         elif isinstance(attribute, int):
             if capacity_type:
                 dict_of_attributes[(element.name, capacity_type)] = [attribute]
@@ -466,7 +474,7 @@ class OptimizationSetup(object):
                 # get smallest coeff and corresponding variable
                 coeffs = np.abs(cons.lhs.coeffs.data)
                 coeffs_flat = coeffs.ravel()
-                coeffs_reshaped = coeffs.reshape(-1, coeffs.shape[-1])
+                # coeffs_reshaped = coeffs.reshape(-1, coeffs.shape[-1])
                 # filter
                 sorted_args = np.argsort(coeffs_flat)
                 coeffs_sorted = coeffs_flat[sorted_args]
@@ -599,19 +607,19 @@ class OptimizationSetup(object):
                     self.energy_system.set_time_steps_yearly = copy.deepcopy(set_time_steps_yearly)
                     tech.set_technologies_existing = tech.data_input.extract_set_technologies_existing()
                     tech.capacity_existing = tech.data_input.extract_input_data(
-                        "capacity_existing",index_sets=[set_location,"set_technologies_existing"])
+                        "capacity_existing", index_sets=[set_location, "set_technologies_existing"])
                     tech.capacity_investment_existing = tech.data_input.extract_input_data(
-                        "capacity_investment_existing",index_sets=[set_location,"set_time_steps_yearly"],time_steps=set_time_steps_yearly)
+                        "capacity_investment_existing", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
                     tech.lifetime_existing = tech.data_input.extract_lifetime_existing(
                         "capacity_existing", index_sets=[set_location, "set_technologies_existing"])
                     # calculate capex of existing capacity
                     tech.capex_capacity_existing = tech.calculate_capex_of_capacities_existing()
                     if tech.__class__.__name__ == "StorageTechnology":
                         tech.capacity_existing_energy = tech.data_input.extract_input_data(
-                            "capacity_existing_energy",index_sets=["set_nodes","set_technologies_existing"])
+                            "capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"])
                         tech.capacity_investment_existing_energy = tech.data_input.extract_input_data(
                             "capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
-                            time_steps=set_time_steps_yearly)
+                            time_steps="set_time_steps_yearly")
                         tech.capex_capacity_existing_energy = tech.calculate_capex_of_capacities_existing(storage_energy=True)
 
     def add_carbon_emission_cumulative(self, step_horizon):
@@ -622,9 +630,9 @@ class OptimizationSetup(object):
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 interval_between_years = self.energy_system.system["interval_between_years"]
                 _carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[step_horizon].item()
-                carbon_emissions = self.model.solution["carbon_emissions_total"].loc[step_horizon].item()
+                carbon_emissions_annual = self.model.solution["carbon_emissions_annual"].loc[step_horizon].item()
                 # carbon_emissions_overshoot = self.model.solution["carbon_emissions_overshoot"].loc[step_horizon].item()
-                self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + carbon_emissions * (interval_between_years - 1)
+                self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + carbon_emissions_annual * (interval_between_years - 1)
             else:
                 self.energy_system.carbon_emissions_cumulative_existing = self.energy_system.data_input.extract_input_data(
                     "carbon_emissions_cumulative_existing",index_sets=[])

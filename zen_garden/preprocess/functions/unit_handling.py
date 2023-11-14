@@ -9,10 +9,12 @@ Class containing the unit handling procedure.
 import logging
 import numpy as np
 import pandas as pd
+import scipy as sp
 import itertools
 from pint import UnitRegistry
 from pint.util import column_echelon_form
 import copy
+import warnings
 
 
 class UnitHandling:
@@ -171,7 +173,7 @@ class UnitHandling:
         else:
             return combined_unit
 
-    def get_unit_multiplier(self, input_unit,attribute_name):
+    def get_unit_multiplier(self, input_unit, attribute_name, path=None, file_name=None):
         """ calculates the multiplier for converting an input_unit to the base units
 
         :param input_unit: string of input unit
@@ -180,8 +182,12 @@ class UnitHandling:
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if input_unit in self.base_units:
             return 1
-        # if input unit is nan --> dimensionless
+        # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
+            warnings.warn(f"DeprecationWarning: There are parameters without any units in {file_name+'.csv'} at {path} (assign unit '1' to unitless parameters to ensure that no units are missing)")
+            return 1
+        #if input unit is 1 --> dimensionless new definition
+        elif input_unit == "1":
             return 1
         else:
             combined_unit = self.calculate_combined_unit(input_unit)
@@ -202,8 +208,11 @@ class UnitHandling:
         # if input unit is already in base units --> the input unit is base unit
         if input_unit in self.base_units:
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
-        # if input unit is nan --> dimensionless
+        # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
+            base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
+        #if input unit is 1 --> dimensionless new definition
+        elif input_unit == "1":
             base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
         else:
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
@@ -222,11 +231,10 @@ class UnitHandling:
     def recommend_base_units(self, immutable_unit, unit_exps):
         """ gets the best base units based on the input parameter values
 
-        :param immutable_unit: #TODO describe parameter/return
-        :param unit_exps: #TODO describe parameter/return
+        :param immutable_unit: base units which must not be changed to recommend a better set of base units
+        :param unit_exps: exponent range inbetween which the base units can be scaled by 10^exponent
         """
-        logging.info(f"Check for best base unit combination between 10^{unit_exps['min']} and 10^{unit_exps['max']} (interval: 10^{unit_exps['step_width']})")
-        smallest_range = {"comb": None, "val": np.inf, "originalVal": np.inf}
+        logging.info(f"Check for best base unit combination between 10^{unit_exps['min']} and 10^{unit_exps['max']}")
         dict_values = {}
         dict_units = {}
         base_units = self.dim_matrix.columns.copy()
@@ -239,45 +247,51 @@ class UnitHandling:
                 dict_units[item] = _df_units_temp
         df_values = pd.concat(dict_values, ignore_index=True).abs()
         df_units = pd.concat(dict_units, ignore_index=True)
-        # df_dupl = pd.concat([df_values, df_units], axis=1).drop_duplicates()
-        # df_dupl = pd.concat([df_values, df_units], axis=1).duplicated()
-        # # df_values = df_values.loc[df_dupl.index].values
-        # # df_units = df_units.loc[df_dupl.index, :]
-        # df_values = df_values.loc[~df_dupl].values
-        # df_units = df_units.loc[~df_dupl, :]
-        # df_values = df_values.values
-        # original var and range
-        smallest_range["originalVal"] = np.log10(df_values.max()) - np.log10(df_values.min())
-        smallest_range["val"] = copy.copy(smallest_range["originalVal"])
-        smallest_range["comb"] = "original"
-        min_exp = unit_exps["min"]
-        max_exp = unit_exps["max"]
-        step_width = unit_exps["step_width"]
-        range_exp = range(min_exp, max_exp + 1, step_width)
         mutable_unit = self.dim_matrix.columns[self.dim_matrix.columns.isin(base_units.difference(immutable_unit))]
         df_units = df_units.loc[:, mutable_unit].values
-        comb_mult = itertools.product(range_exp, repeat=len(mutable_unit))
-        for comb in comb_mult:
-            df_scaled = np.multiply(df_units,comb) * (-1)
-            df_scaled = 10 ** df_scaled.sum(axis=1)
-            scaled_vals = df_values * df_scaled
-            val_range = np.log10(scaled_vals.max()) - np.log10(scaled_vals.min())
-            if val_range < smallest_range["val"]:
-                smallest_range["comb"] = comb
-                smallest_range["val"] = val_range
-        if smallest_range["val"] == smallest_range["originalVal"]:
+
+        #remove rows of df_units which contain only zeros since they cannot be scaled anyway and may influence minimization convergence
+        zero_rows_mask = np.all(df_units == 0, axis=1)
+        A = df_units[~zero_rows_mask]
+        b = df_values[~zero_rows_mask]
+
+        def fun_LSE(x):
+            """
+            function to compute the least square error of the individual coefficients compared to their mean value
+
+            :param x: array of exponents the coefficients get scaled with (b_tilde = b * 10^(A*x))
+            :return: square error evaluated at x
+            """
+            b_tilde_log = np.log10(b) - np.dot(A, x)
+            b_avg = b.sum() / b.size
+            return ((b_tilde_log - np.log10(b_avg)) ** 2).sum()
+
+        x0 = np.ones(A.shape[1])
+        result = sp.optimize.minimize(fun_LSE, x0, method='L-BFGS-B', bounds=[(unit_exps["min"], unit_exps["max"]) for i in range(df_units.shape[1])])
+
+        if not result.success:
+            logging.info(f"Minimization for better base units was not successful, initial base units will therefore be used.")
+
+        #cast solution array to integers since base units should be scaled by factors of 10, 100, etc.
+        x_int = result.x.astype(int)
+
+        lse_initial_base_units = fun_LSE(np.zeros(df_units.shape[1]))
+        lse = fun_LSE(x_int)
+        if lse >= lse_initial_base_units:
             logging.info("The current base unit setting is the best in the given search interval")
         else:
             list_units = []
-            for exp, unit in zip(smallest_range["comb"], mutable_unit):
+            for exp, unit in zip(x_int, mutable_unit):
                 if exp != 0:
-                    list_units.append(str(self.ureg(f"{10 ** exp} {unit}").to_compact()))
-            logging.info(f"A better base unit combination is {', '.join(list_units)}. This reduces the parameter range by 10^{int(np.round(smallest_range['originalVal'] - smallest_range['val']))}")
+                    list_units.append(str(self.ureg(f"{10.0 ** exp} {unit}").to_compact()))
+            logging.info(f"A better base unit combination is {', '.join(list_units)}. This reduces the square error of the coefficients compared to their mean by {'{:e}'.format(lse_initial_base_units-lse)}")
 
     def check_if_invalid_hourstring(self, input_unit):
-        """ checks if "h" and thus "planck_constant" in input_unit
+        """
+        checks if "h" and thus "planck_constant" in input_unit
 
-        :param input_unit: string of input_unit """
+        :param input_unit: string of input_unit
+        """
         _tuple_units = self.ureg(input_unit).to_tuple()[1]
         _list_units = [_item[0] for _item in _tuple_units]
         assert "planck_constant" not in _list_units, f"Error in input unit '{input_unit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"

@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import linregress
 
+from ...utils import InputDataChecks
+
 
 class DataInput:
     """
@@ -49,15 +51,15 @@ class DataInput:
 
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param time_steps: specific time_steps of element
+        :param time_steps: string specifying time_steps of element
         :return dataDict: dictionary with attribute values """
 
         # generic time steps
         yearly_variation = False
         if not time_steps:
-            time_steps = self.energy_system.set_base_time_steps
+            time_steps = "set_base_time_steps"
         # if time steps are the yearly base time steps
-        elif time_steps is self.energy_system.set_base_time_steps_yearly:
+        elif time_steps == "set_base_time_steps_yearly":
             yearly_variation = True
             self.extract_yearly_variation(file_name, index_sets)
 
@@ -65,6 +67,9 @@ class DataInput:
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
             df_output, *_ = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=0)
             return df_output
+        #use distances computed with node coordinates as default values
+        elif file_name == "distance":
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=self.energy_system.set_haversine_distances_edges)
         else:
             df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps)
         # read input file
@@ -76,7 +81,7 @@ class DataInput:
 
         assert (df_input is not None or default_value is not None), f"input file for attribute {file_name} could not be imported and no default value is given."
         if df_input is not None and not df_input.empty:
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value,time_steps)
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps)
         # save parameter values for analysis of numerics
         self.save_values_of_attribute(df_output=df_output, file_name=file_name)
         # finally apply the scenario_factor
@@ -93,7 +98,7 @@ class DataInput:
         :param time_steps: specific time_steps of element
         :return df_output: filled output dataframe """
 
-        df_input = self.convert_real_to_generic_time_indices(df_input,time_steps,file_name, index_name_list)
+        df_input = self.convert_real_to_generic_time_indices(df_input, time_steps, file_name, index_name_list)
 
         assert df_input.columns is not None, f"Input file '{file_name}' has no columns"
         # set index by index_name_list
@@ -114,6 +119,9 @@ class DataInput:
             # index missing
             else:
                 df_input = DataInput.extract_from_input_with_missing_index(df_input, df_output, copy.deepcopy(index_name_list), file_name, missing_index)
+
+        #check for duplicate indices
+        df_input = self.energy_system.optimization_setup.input_data_checks.check_duplicate_indices(df_input=df_input, file_name=file_name, folder_path=self.folder_path)
 
         # apply multiplier to input data
         df_input = df_input * default_value["multiplier"]
@@ -146,6 +154,9 @@ class DataInput:
         file_names = os.listdir(self.folder_path)
         if input_file_name in file_names:
             df_input = pd.read_csv(os.path.join(self.folder_path, input_file_name), header=0, index_col=None)
+            #check for header name duplicates (pd.read_csv() adds a dot and a number to duplicate headers)
+            if any("." in col for col in df_input.columns):
+                raise AssertionError(f"The input data file {input_file_name} at {self.folder_path} contains two identical header names.")
             return df_input
         else:
             return None
@@ -169,7 +180,7 @@ class DataInput:
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"],attribute_name)
+            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"], attribute_name, file_name=filename, path=self.folder_path)
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -225,32 +236,41 @@ class DataInput:
             df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, manual_default_value=1)
             # set yearly variation attribute to df_output
             name_yearly_variation = file_name
-            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps=self.energy_system.set_time_steps_yearly)
+            df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps="set_time_steps_yearly")
             # apply the scenario_factor
             df_output = df_output * scenario_factor
             setattr(self, name_yearly_variation, df_output)
 
-    def extract_locations(self, extract_nodes=True):
+    def extract_locations(self, extract_nodes=True, extract_coordinates=False):
         """ reads input data to extract nodes or edges.
 
-        :param extract_nodes: boolean to switch between nodes and edges """
+        :param extract_nodes: boolean to switch between nodes and edges
+        :param extract_coordinates: boolean to switch between nodes and nodes + coordinates
+        """
         if extract_nodes:
             set_nodes_config = self.system["set_nodes"]
-            set_nodes_input = self.read_input_data("set_nodes")["node"].to_list()
-            # if no nodes specified in system, use all nodes
-            if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
-                self.system["set_nodes"] = set_nodes_input
-                set_nodes_config = set_nodes_input
+            df_nodes_w_coords = self.read_input_data("set_nodes")
+            if extract_coordinates:
+                if len(set_nodes_config) != 0:
+                    df_nodes_w_coords = df_nodes_w_coords[df_nodes_w_coords["node"].isin(set_nodes_config)]
+                return df_nodes_w_coords
             else:
-                assert len(set_nodes_config) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
-                _missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
-                assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
-            if not isinstance(set_nodes_config, list):
-                set_nodes_config = set_nodes_config.to_list()
-            set_nodes_config.sort()
-            return set_nodes_config
+                set_nodes_input = df_nodes_w_coords["node"].to_list()
+                # if no nodes specified in system, use all nodes
+                if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
+                    self.system["set_nodes"] = set_nodes_input
+                    set_nodes_config = set_nodes_input
+                else:
+                    assert len(set_nodes_config) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
+                    _missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
+                    assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
+                if not isinstance(set_nodes_config, list):
+                    set_nodes_config = set_nodes_config.to_list()
+                set_nodes_config.sort()
+                return set_nodes_config
         else:
             set_edges_input = self.read_input_data("set_edges")
+            self.energy_system.optimization_setup.input_data_checks.check_single_directed_edges(set_edges_input=set_edges_input)
             if set_edges_input is not None:
                 set_edges = set_edges_input[(set_edges_input["node_from"].isin(self.energy_system.set_nodes)) & (set_edges_input["node_to"].isin(self.energy_system.set_nodes))]
                 set_edges = set_edges.set_index("edge")
@@ -258,20 +278,18 @@ class DataInput:
             else:
                 return None
 
-    def extract_conversion_carriers(self):
+    def extract_carriers(self, carrier_type):
         """ reads input data and extracts conversion carriers
 
-        :return carrier_dict: dictionary with input and output carriers of technology """
-        carrier_dict = {}
-        # get carriers
-        for _carrier_type in ["input_carrier", "output_carrier"]:
-            _carrier_string = self.extract_attribute(_carrier_type, skip_warning=True)
-            if type(_carrier_string) == str:
-                _carrier_list = _carrier_string.strip().split(" ")
-            else:
-                _carrier_list = []
-            carrier_dict[_carrier_type] = _carrier_list
-        return carrier_dict
+        :return carrier_list: list with input, output or reference carriers of technology """
+        assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier"], "carrier type must be either input_carrier, output_carrier, or reference_carrier"
+        carrier_string = self.extract_attribute(carrier_type, skip_warning=True)
+        if type(carrier_string) == str:
+            carrier_list = carrier_string.strip().split(" ")
+        else:
+            carrier_list = []
+        assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
+        return carrier_list
 
     def extract_set_technologies_existing(self, storage_energy=False):
         """ reads input data and creates setExistingCapacity for each technology
@@ -323,7 +341,7 @@ class DataInput:
             # get reference year
             reference_year = self.system["reference_year"]
             # calculate remaining lifetime
-            df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime
+            df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime[0]
         # apply scenario factor
         return df_output*scenario_factor
 
@@ -336,11 +354,11 @@ class DataInput:
         if variable_type == "capex":
             attribute_name = "capex_specific"
             index_sets = ["set_nodes", "set_time_steps_yearly"]
-            time_steps = self.energy_system.set_time_steps_yearly
+            time_steps = "set_time_steps_yearly"
         elif variable_type == "conversion_factor":
             attribute_name = "conversion_factor"
             index_sets = ["set_nodes", "set_time_steps"]
-            time_steps = self.energy_system.set_base_time_steps_yearly
+            time_steps = "set_base_time_steps_yearly"
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
         # import all input data
@@ -487,7 +505,7 @@ class DataInput:
                 columns = df_input.columns
             df_input_units = df_input[columns].iloc[-1]
             df_input = df_input.iloc[:-1]
-            df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit,attribute_name=variable_type))
+            df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit, attribute_name=variable_type))
             df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='ignore'))
             df_input[columns] = df_input[columns] * df_input_multiplier
         return df_input
@@ -506,7 +524,12 @@ class DataInput:
             index_multi_index = pd.MultiIndex.from_product(index_list, names=index_name_list)
         else:
             index_multi_index = pd.Index([0])
-        if manual_default_value:
+        #use distances computed with node coordinates as default values
+        if file_name == "distance":
+            default_name = file_name
+            default_value = self.extract_attribute(default_name)
+            default_value["value"] = manual_default_value
+        elif manual_default_value:
             default_value = {"value": manual_default_value, "multiplier": 1}
             default_name = None
         else:
@@ -516,6 +539,11 @@ class DataInput:
         # create output Series filled with default value
         if default_value is None:
             df_output = pd.Series(index=index_multi_index, dtype=float)
+        #use distances computed with node coordinates as default values
+        elif file_name == "distance":
+            df_output = pd.Series(index=index_multi_index, dtype=float)
+            for key, value in default_value["value"].items():
+                df_output[key] = value
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit
@@ -563,7 +591,7 @@ class DataInput:
         for index in index_sets:
             index_name_list.append(self.index_names[index])
             if "set_time_steps" in index and time_steps:
-                index_list.append(time_steps)
+                index_list.append(getattr(self.energy_system, time_steps))
             elif index == "set_technologies_existing":
                 index_list.append(self.element.set_technologies_existing)
             elif index in self.system:
@@ -606,7 +634,7 @@ class DataInput:
         """
         # check if input data is time-dependent and has yearly time steps
         idx_name_year = self.index_names["set_time_steps_yearly"]
-        if time_steps is self.energy_system.set_time_steps_yearly or time_steps is self.energy_system.set_time_steps_yearly_entire_horizon:
+        if time_steps == "set_time_steps_yearly" or time_steps == "set_time_steps_yearly_entire_horizon":
             # check if temporal header of input data is still given as 'time' instead of 'year'
             if "time" in df_input.axes[1]:
                 logging.warning(
@@ -621,7 +649,7 @@ class DataInput:
                     return df_input
                 df_input = df_input.set_index(idx_name_list)
                 df_input = df_input.rename(columns={col: int(col) for col in df_input.columns if col.isnumeric()})
-                requested_index_values = set(time_steps)
+                requested_index_values = set(getattr(self.energy_system, time_steps))
                 requested_index_values_years = set(self.energy_system.set_time_steps_years)
                 requested_index_values_in_columns = requested_index_values.intersection(df_input.columns)
                 requested_index_values_years_in_columns = requested_index_values_years.intersection(df_input.columns)
@@ -683,7 +711,7 @@ class DataInput:
             # remove data of years that won't be simulated
             df_input = df_input[df_input[temporal_header].isin(self.energy_system.set_time_steps_years)]
             # convert yearly time indices to generic ones
-            year2step = {year: step for year, step in zip(self.energy_system.set_time_steps_years, time_steps)}
+            year2step = {year: step for year, step in zip(self.energy_system.set_time_steps_years, getattr(self.energy_system, time_steps))}
             df_input[temporal_header] = df_input[temporal_header].apply(lambda year: year2step[year])
         return df_input
 
