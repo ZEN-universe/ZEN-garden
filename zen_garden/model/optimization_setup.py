@@ -292,18 +292,14 @@ class OptimizationSetup(object):
                 dict_of_attributes[_combined_key] = attribute
                 attribute_is_series = True
             else:
-                #since single-directed edges are allowed to exist (e.g. CH-DE exists, DE-CH doesn't), TransportTechnology attributes shared with other technologies (such as capacity existing)
-                # mustn't be squeezed even-though the attributes length is smaller than 1. Otherwise, pd.concat(dict_of_attributes) messes up in initialize_component(), leading to an error further on in the code.
-                if isinstance(element, TransportTechnology):
-                    if all([isinstance(value, float) for key, value in dict_of_attributes.items()]) and len(dict_of_attributes) > 0:
-                        dict_of_attributes[_combined_key] = attribute.squeeze()
-                        attribute_is_series = False
-                    else:
-                        dict_of_attributes[_combined_key] = attribute
-                        attribute_is_series = True
-                else:
+                if attribute.index == 0:
                     dict_of_attributes[_combined_key] = attribute.squeeze()
                     attribute_is_series = False
+                #since single-directed edges are allowed to exist (e.g. CH-DE exists, DE-CH doesn't), TransportTechnology attributes shared with other technologies (such as capacity existing)
+                # mustn't be squeezed even-though the attributes length is smaller than 1. Otherwise, pd.concat(dict_of_attributes) messes up in initialize_component(), leading to an error further on in the code.
+                else:
+                    dict_of_attributes[_combined_key] = attribute
+                    attribute_is_series = True
         elif isinstance(attribute, int):
             if capacity_type:
                 dict_of_attributes[(element.name, capacity_type)] = [attribute]
