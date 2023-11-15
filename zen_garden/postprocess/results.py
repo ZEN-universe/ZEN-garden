@@ -949,7 +949,18 @@ class Results:
         """
         return self.get_df("time_steps_storage_level_duration")
 
-    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False,discount_years=True, node=None):
+    def get_full_ts(
+            self, 
+            component, 
+            element_name=None, 
+            year=None, 
+            scenario=None,
+            is_dual = False,
+            discount_years=True, 
+            node=None,
+            start_time_step = 0,
+            end_time_step = None
+        ):
         """Calculates the full timeseries for a given element
 
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -974,12 +985,12 @@ class Results:
         if not self.has_scenarios:
             full_ts = self._get_full_ts_for_single_scenario(
                 component_data, component_name, scenario=None, element_name=element_name,
-                year=year, is_dual = is_dual, discount_years=discount_years)
+                year=year, is_dual = is_dual, discount_years=discount_years, start_time_step=start_time_step, end_time_step=end_time_step)
         # specific scenario
         elif scenario is not None:
             full_ts = self._get_full_ts_for_single_scenario(
                 component_data, component_name, scenario=scenario, element_name=element_name,
-                year=year, is_dual = is_dual, discount_years=discount_years)
+                year=year, is_dual = is_dual, discount_years=discount_years, start_time_step=start_time_step, end_time_step=end_time_step)
         # all scenarios
         else:
             full_ts_dict = {}
@@ -987,15 +998,24 @@ class Results:
                 component_data_scenario = component_data[scenario]
                 full_ts_dict[scenario] = self._get_full_ts_for_single_scenario(
                     component_data_scenario, component_name, scenario=scenario, element_name=element_name,
-                    year=year, is_dual = is_dual,discount_years=discount_years)
+                    year=year, is_dual = is_dual,discount_years=discount_years, start_time_step=start_time_step, end_time_step=end_time_step)
             if isinstance(full_ts_dict[scenario], pd.Series):
                 full_ts = pd.concat(full_ts_dict, keys=full_ts_dict.keys(), axis=1).T
             else:
                 full_ts = pd.concat(full_ts_dict, keys=full_ts_dict.keys())
         return full_ts
 
-
-    def _get_full_ts_for_single_scenario(self,component_data,component_name,scenario, element_name=None, year=None, is_dual=False,discount_years=True):
+    def _get_full_ts_for_single_scenario(
+            self,
+            component_data,
+            component_name,scenario, 
+            element_name=None, 
+            year=None, 
+            is_dual=False,
+            discount_years=True,
+            start_time_step = 0,
+            end_time_step = None
+        ):
         """ calculates total value for single scenario
         :param component_data: numerical data of component
         :param component_name: name of component
@@ -1042,7 +1062,7 @@ class Results:
         # extract time step duration
         output_df = component_data.apply(
             lambda row: self.get_full_ts_of_row(row, sequence_time_steps_dicts, element_name, _storage_string,
-                                                time_step_duration, is_dual, annuity), axis=1)
+                                                time_step_duration, is_dual, annuity, start_time_step, end_time_step), axis=1)
         
         if year is not None:
             if year in self.years:
@@ -1052,7 +1072,18 @@ class Results:
                 print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
         return output_df
 
-    def get_full_ts_of_row(self,row,sequence_time_steps_dicts,element_name,storage_string,time_step_duration,is_dual,annuity):
+    def get_full_ts_of_row(
+            self,
+            row,
+            sequence_time_steps_dicts,
+            element_name,
+            storage_string,
+            time_step_duration,
+            is_dual,
+            annuity,
+            start_time_step = 0, 
+            end_time_step = None
+        ):
         """ calculates the full ts for a single row of the input data
 
         :param row: #TODO describe parameter/return
@@ -1085,9 +1116,11 @@ class Results:
                 _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_temp + storage_string,_year)
                 row[_yearly_ts] = row[_yearly_ts] / annuity[_year]
         # throw together
-        #_sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(row.index))]
+        if end_time_step is not None:
+            _sequence_time_steps = _sequence_time_steps[start_time_step:end_time_step]
+        _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(row.index))]
         _output_temp = row[_sequence_time_steps].reset_index(drop=True)
-
+        
         return _output_temp
 
     def get_total(self, component, element_name=None, year=None, scenario=None, split_years=True):
@@ -1433,7 +1466,14 @@ class Results:
         self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
 
 
-    def get_energy_balance_df(self, node, carrier, scenario=None) -> pd.DataFrame:
+    def get_energy_balance_df(
+            self, 
+            node, 
+            carrier, 
+            scenario=None, 
+            start_time_step = 0,
+            end_time_step = None
+        ) -> pd.DataFrame:
         components = ["flow_conversion_output", "flow_conversion_input", "flow_export", "flow_import", "flow_storage_charge", "flow_storage_discharge", "demand", "flow_transport_in", "flow_transport_out", "shed_demand"]
         lowers = ["flow_conversion_input", "flow_export", "flow_storage_charge", "flow_transport_out"]
         
@@ -1443,14 +1483,14 @@ class Results:
             scenario = "scenario_"
         for component in components:
             if component == "flow_transport_in":
-                full_ts = self.get_full_ts("flow_transport", scenario=scenario, node=node)
+                full_ts = self.get_full_ts("flow_transport", scenario=scenario, node=node, start_time_step=start_time_step, end_time_step=end_time_step)
                 data_full_ts = self.edit_carrier_flows(full_ts, node, carrier, "in", scenario)
             elif component == "flow_transport_out":
-                full_ts = self.get_full_ts("flow_transport", scenario=scenario, node=node)
+                full_ts = self.get_full_ts("flow_transport", scenario=scenario, node=node, start_time_step=start_time_step, end_time_step=end_time_step)
                 data_full_ts = self.edit_carrier_flows(full_ts, node, carrier, "out", scenario)
             else:
                 # get full timeseries of component and extract rows of relevant node
-                full_ts = self.get_full_ts(component, scenario=scenario, node=node)
+                full_ts = self.get_full_ts(component, scenario=scenario, node=node, start_time_step=start_time_step, end_time_step=end_time_step)
                 data_full_ts = self.edit_nodes(full_ts, node)
                 # extract data of desired carrier
                 data_full_ts = self.extract_carrier(data_full_ts, carrier, scenario)
@@ -1491,13 +1531,18 @@ class Results:
         """
         # plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
         fig,ax = plt.subplots(figsize=(30,6.5),layout = "constrained")
-        data_plot = self.get_energy_balance_df(node, carrier, scenario)
         # extract the rows of the desired year
+        fetch_fast = True
         if year not in list(range(self.results["system"]["optimized_years"])):
             warnings.warn(f"Chosen year '{year}' has not been optimized")
+            data_plot = self.get_energy_balance_df(node, carrier, scenario)
         else:
             ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
-            data_plot = data_plot.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
+            if fetch_fast:
+                data_plot = self.get_energy_balance_df(node, carrier, scenario, start_time_step=ts_per_year*year, end_time_step=ts_per_year*year+ts_per_year)
+            else:
+                data_plot = self.get_energy_balance_df(node, carrier, scenario, start_time_step=ts_per_year*year)
+                data_plot = data_plot.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
         # extract specific hours of year
         data_plot = data_plot.reset_index(drop=True)
         if start_hour is not None and duration is not None:
