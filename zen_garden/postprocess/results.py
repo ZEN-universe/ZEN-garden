@@ -108,15 +108,14 @@ class Results(object):
                     scenario_subfolder = f"scenario_{scenario_subfolder}"
                     file_folder = os.path.join(base_scenario, scenario_subfolder)
 
-            #load scenario-dependent files
+            # load scenario-dependent files
             self.results[scenario]["system"] = self.load_system(os.path.join(self.path, file_folder))
             self.results[scenario]["analysis"] = self.load_analysis(os.path.join(self.path, file_folder))
             self.results[scenario]["solver"] = self.load_solver(os.path.join(self.path, file_folder))
-            self.results[scenario]["years"] = list(range(0, self.results[scenario]["system"]["optimized_years"]))
-            #myopic foresight
+            # myopic foresight
             if self.results[scenario]["system"]["use_rolling_horizon"]:
                 self.results[scenario]["has_MF"] = True
-                self.results[scenario]["mf"] = [f"MF_{step_horizon}" for step_horizon in self.results[scenario]["years"]]
+                self.results[scenario]["mf"] = [f"MF_{step_horizon}" for step_horizon in self.get_years(scenario)]
             else:
                 self.results[scenario]["has_MF"] = False
                 self.results[scenario]["mf"] = [None]
@@ -177,7 +176,6 @@ class Results(object):
         # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
-        a=1
 
     def close(self):
         """
@@ -670,17 +668,17 @@ class Results(object):
         return scenarios
 
     @classmethod
-    def get_config_diff(cls, results, attribute, scenarios):
-        """returns a dict with the differences in attribute values
+    def get_config_diff(cls, results, config_type, scenarios):
+        """returns a dict with the differences in config_type values
 
         :param results: dictionary with results
-        :param attribute: name of result attribute
-        :return: Dictionary with differences in attribute values
+        :param config_type: name of result config_type
+        :return: Dictionary with differences in config_type values
         """
         result_names = [res.name for res in results]
         diff_dict = cls.compare_dicts(
-            results[0].results[scenarios[0]][attribute],
-            results[1].results[scenarios[1]][attribute], result_names)
+            results[0]._get_config_dict(config_type,scenarios[0]),
+            results[1]._get_config_dict(config_type,scenarios[0]), result_names)
         return diff_dict
 
     @classmethod
@@ -959,7 +957,7 @@ class Results(object):
         if is_dual:
             annuity = self._get_annuity(discount_to_first_step, scenario=scenario)
         else:
-            annuity = pd.Series(index=self.results[scenario]["years"], data=1)
+            annuity = pd.Series(index=self.get_years(scenario), data=1)
         if isinstance(component_data, pd.Series):
             return component_data / annuity
         if ts_type == "yearly":
@@ -991,7 +989,7 @@ class Results(object):
             lambda row: self.get_full_ts_of_row(row, sequence_time_steps_dicts, element_name, _storage_string,
                                                 time_step_duration, is_dual, annuity), axis=1)
         if year is not None:
-            if year in self.results[scenario]["years"]:
+            if year in self.get_years(scenario):
                 hours_of_year = self._get_hours_of_year(year, scenario)
                 output_df = (output_df[hours_of_year]).T.reset_index(drop=True).T
             else:
@@ -1124,8 +1122,8 @@ class Results(object):
                     element_name + _storage_string, year)
                 total_value = (component_data * time_step_duration_element)[time_steps_year].sum(axis=1)
             else:
-                total_value_temp = pd.DataFrame(index=component_data.index, columns=self.results[scenario]["years"])
-                for year_temp in self.results[scenario]["years"]:
+                total_value_temp = pd.DataFrame(index=component_data.index, columns=self.get_years(scenario))
+                for year_temp in self.get_years(scenario):
                     # set a proxy for the element name
                     time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
                         element_name + _storage_string, year_temp)
@@ -1146,8 +1144,8 @@ class Results(object):
                     element_name_proxy + _storage_string, year)
                 total_value = total_value[time_steps_year].sum(axis=1)
             else:
-                total_value_temp = pd.DataFrame(index=total_value.index, columns=self.results[scenario]["years"])
-                for year_temp in self.results[scenario]["years"]:
+                total_value_temp = pd.DataFrame(index=total_value.index, columns=self.get_years(scenario))
+                for year_temp in self.get_years(scenario):
                     # set a proxy for the element name
                     element_name_proxy = component_data.index.get_level_values(level=0)[0]
                     time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
@@ -1190,6 +1188,58 @@ class Results(object):
             return doc, index_set
         return doc[0]
 
+    def get_system(self,scenario=None):
+        """ returns the system of a model. For multiple scenarios, return all
+        :param scenario: scenario in model
+        :return: system dict """
+        system = self._get_config_dict(config_type="system",scenario=scenario)
+        return system
+
+    def get_analysis(self,scenario=None):
+        """ returns the analysis of a model. For multiple scenarios, return all
+        :param scenario: scenario in model
+        :return: analysis dict """
+        analysis = self._get_config_dict(config_type="analysis",scenario=scenario)
+        return analysis
+
+    def get_solver(self,scenario=None):
+        """ returns the solver of a model. For multiple scenarios, return all
+        :param scenario: scenario in model
+        :return: solver dict """
+        solver = self._get_config_dict(config_type="solver",scenario=scenario)
+        return solver
+
+    def get_years(self,scenario=None):
+        """ returns the optimization years of a model.
+        If a model has scenarios and no scenario is specified, use first one.
+        :param scenario: scenario in model
+        :return: years"""
+        if self.has_scenarios and scenario is None:
+            scenario = self.scenarios[0]
+        system = self.get_system(scenario)
+        years = list(range(0, system["optimized_years"]))
+        return years
+
+    def _get_config_dict(self, config_type,scenario=None):
+        """ returns a config dict (system, analysis, solver) of a model. For multiple scenarios, return all
+        :param config_type: name of config type (system, analysis, solver)
+        :param scenario: manual scenario
+        :return: config of model """
+        # has scenarios
+        if self.has_scenarios:
+            if scenario is not None:
+                if scenario in self.scenarios:
+                    config = self.results[scenario][config_type]
+                    return config
+                else:
+                    logging.warning(f"Requested scenario {scenario} not in {self.scenarios} of {self.name}")
+            config = {}
+            for s in self.scenarios:
+                config[s] = self.results[s][config_type]
+        else:
+            config = self.results[None][config_type]
+        return config
+
     def _get_annuity(self,discount_to_first_step, scenario):
         """ discounts the duals
 
@@ -1200,10 +1250,10 @@ class Results(object):
         system = self.results[scenario]["system"]
         # calculate annuity
         discount_rate = self.get_df("discount_rate").squeeze()
-        annuity = pd.Series(index=self.results[scenario]["years"], dtype=float)
-        for year in self.results[scenario]["years"]:
+        annuity = pd.Series(index=self.get_years(scenario), dtype=float)
+        for year in self.get_years(scenario):
             interval_between_years = system["interval_between_years"]
-            if year == self.results[scenario]["years"][-1]:
+            if year == self.get_years(scenario)[-1]:
                 interval_between_years_this_year = 1
             else:
                 interval_between_years_this_year = system["interval_between_years"]
@@ -1214,9 +1264,9 @@ class Results(object):
                     annuity[year] = sum(((1 / (1 + discount_rate)) ** (_intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years_this_year))
             else:
                 if discount_to_first_step:
-                    annuity[year] = interval_between_years_this_year*((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.results[scenario]["years"][0])))
+                    annuity[year] = interval_between_years_this_year*((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.get_years(scenario)[0])))
                 else:
-                    annuity[year] = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.results[scenario]["years"][0]) + _intermediate_time_step))
+                    annuity[year] = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.get_years(scenario)[0]) + _intermediate_time_step))
                         for _intermediate_time_step in range(0, interval_between_years_this_year))
         return annuity
 
