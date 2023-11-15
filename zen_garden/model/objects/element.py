@@ -15,7 +15,7 @@ import logging
 import os
 import psutil
 import time
-
+from pathlib import Path
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 
 class Element:
@@ -61,7 +61,7 @@ class Element:
                     class_label = set_name
                     break
         # get input path for current class_label
-        self.input_path = paths[class_label][self.name]["folder"]
+        self.input_path = Path(paths[class_label][self.name]["folder"])
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites time steps. Must be implemented in child classes

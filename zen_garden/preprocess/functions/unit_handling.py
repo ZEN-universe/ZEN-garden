@@ -10,12 +10,12 @@ import logging
 import numpy as np
 import pandas as pd
 import scipy as sp
-import itertools
+import warnings
 from pint import UnitRegistry
 from pint.util import column_echelon_form
-import copy
-import warnings
 
+# enable Deprecation Warnings
+warnings.simplefilter('always', DeprecationWarning)
 
 class UnitHandling:
     """
@@ -173,23 +173,26 @@ class UnitHandling:
         else:
             return combined_unit
 
-    def get_unit_multiplier(self, input_unit, attribute_name, path=None, file_name=None):
+    def get_unit_multiplier(self, input_unit, attribute_name, path=None):
         """ calculates the multiplier for converting an input_unit to the base units
 
         :param input_unit: string of input unit
         :param attribute_name: name of attribute
+        :param path: path of element
         :return multiplier: multiplication factor """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if input_unit in self.base_units:
             return 1
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
-            warnings.warn(f"DeprecationWarning: There are parameters without any units in {file_name+'.csv'} at {path} (assign unit '1' to unitless parameters to ensure that no units are missing)")
-            return 1
-        #if input unit is 1 --> dimensionless new definition
-        elif input_unit == "1":
+            warnings.warn(f"Parameter {attribute_name} of {path.name} has no unit (assign unit '1' to unitless parameters)",DeprecationWarning)
             return 1
         else:
+            # convert to string
+            input_unit = str(input_unit)
+            # if input unit is 1 --> dimensionless new definition
+            if input_unit == "1":
+                return 1
             combined_unit = self.calculate_combined_unit(input_unit)
             assert combined_unit.to_base_units().unitless, f"The unit conversion of unit {input_unit} did not resolve to a dimensionless conversion factor. Something went wrong."
             # magnitude of combined unit is multiplier
@@ -205,16 +208,19 @@ class UnitHandling:
         :param input_unit: #TODO describe parameter/return
         :param attribute: #TODO describe parameter/return
         """
+        # TODO combine overlap with get_unit_multiplier
         # if input unit is already in base units --> the input unit is base unit
         if input_unit in self.base_units:
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
             base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
-        #if input unit is 1 --> dimensionless new definition
-        elif input_unit == "1":
-            base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
         else:
+            # convert to string
+            input_unit = str(input_unit)
+            # if input unit is 1 --> dimensionless new definition
+            if input_unit == "1":
+                return 1
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
         if (base_unit_combination != 0).any():
             self.dict_attribute_values[attribute] = {"base_combination": base_unit_combination, "values": None}
