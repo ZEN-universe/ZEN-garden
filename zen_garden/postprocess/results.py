@@ -1220,6 +1220,16 @@ class Results(object):
         years = list(range(0, system["optimized_years"]))
         return years
 
+    def has_MF(self,scenario=None):
+        """ returns if the model is myopic foresight .
+        If a model has scenarios and no scenario is specified, use first one.
+        :param scenario: scenario in model
+        :return: boolean if model has myopic foresight"""
+        if self.has_scenarios and scenario is None:
+            scenario = self.scenarios[0]
+        has_mf = self._get_config_dict(config_type="has_MF",scenario=scenario)
+        return has_mf
+
     def _get_config_dict(self, config_type,scenario=None):
         """ returns a config dict (system, analysis, solver) of a model. For multiple scenarios, return all
         :param config_type: name of config type (system, analysis, solver)
@@ -1376,6 +1386,7 @@ class Results(object):
         else:
             unstacked_component = component
         return unstacked_component
+
     def _get_hours_of_year(self, year, scenario):
         """ get total hours of year
 
