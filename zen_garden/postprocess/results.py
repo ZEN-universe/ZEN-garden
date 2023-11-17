@@ -200,7 +200,7 @@ class Results(object):
             try:
                 content = utils.HDFPandasSerializer(file_name=f"{name}.h5", lazy=lazy)
             except KeyError:
-                warnings.warn("The old h5 dict results are decrepated, please rerun the model to get the new results")
+                warnings.warn("The old h5 dict results are deprecated, please rerun the model to get the new results")
                 content = utils.load(f"{name}.h5")
                 if not lazy:
                     content = content.unlazy(return_dict=True)
