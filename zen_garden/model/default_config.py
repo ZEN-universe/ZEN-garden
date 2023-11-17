@@ -145,7 +145,12 @@ class SolverOptions(Subscriptable):
     logfile: str = ".//outputs//logs//GurobiLogFile.log"
     MIPGap: Optional[str] = None
     TimeLimit: Optional[int] = None
-    Method: Optional[str] = None
+    Method: Optional[int] = None,
+    NodeMethod: Optional[int] = None
+    BarHomogeneous: Optional[int] = None
+    Threads: Optional[int] = None
+    Crossover: Optional[int] = None
+    ScaleFlag: Optional[int] = None
 
 
 class Solver(Subscriptable):
@@ -167,6 +172,7 @@ class Solver(Subscriptable):
         "epsRvalue": 1 - (1e-5),
     }
     analyze_numerics: bool = True
+    use_symbolic_labels: bool = False
 
 
 class Config(Subscriptable):
