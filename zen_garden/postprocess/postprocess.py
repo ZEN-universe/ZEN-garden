@@ -14,7 +14,8 @@ import os
 from pathlib import Path
 import sys
 import zlib
-
+from tables import NaturalNameWarning
+import warnings
 import pandas as pd
 import xarray as xr
 from filelock import FileLock
@@ -22,6 +23,8 @@ import yaml
 
 from ..utils import HDFPandasSerializer
 
+# Warnings
+warnings.filterwarnings('ignore', category=NaturalNameWarning)
 
 class Postprocess:
     """
