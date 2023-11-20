@@ -12,7 +12,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from pydantic import BaseModel
 import sys
 import zlib
 from tables import NaturalNameWarning
@@ -91,7 +90,6 @@ class Postprocess:
         self.save_solver()
         self.save_param_map()
 
-
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
 
@@ -99,6 +97,7 @@ class Postprocess:
             for element, sequence_operation in self.dict_sequence_time_steps["operation"].items():
                 sequence_yearly = self.dict_sequence_time_steps["yearly"]["null"]
                 self.energy_system.time_steps.set_time_steps_operation2year_both_dir(element, sequence_operation, sequence_yearly)
+
             self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
 
         self.save_sequence_time_steps(scenario=scenario_name)
@@ -115,9 +114,6 @@ class Postprocess:
         :param dictionary: The dictionary to save
         :param format: Force the format to use, if None use output_format attribute of instance
         """
-
-        if isinstance(dictionary, BaseModel):
-            dictionary = dictionary.model_dump()
 
         # set the format
         if format is None:
