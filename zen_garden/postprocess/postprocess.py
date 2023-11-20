@@ -22,7 +22,6 @@ from filelock import FileLock
 import yaml
 
 from ..utils import HDFPandasSerializer
-from ..model.optimization_setup import OptimizationSetup
 
 # Warnings
 warnings.filterwarnings('ignore', category=NaturalNameWarning)
@@ -31,7 +30,7 @@ class Postprocess:
     """
     Class is defining the postprocessing of the results
     """
-    def __init__(self, model: OptimizationSetup, scenarios, model_name, subfolder=None, scenario_name=None, param_map=None, include_year2operation=True):
+    def __init__(self, model, scenarios, model_name, subfolder=None, scenario_name=None, param_map=None):
         """postprocessing of the results of the optimization
 
         :param model: optimization model
@@ -39,7 +38,6 @@ class Postprocess:
         :param subfolder: The subfolder used for the results
         :param scenario_name: The name of the current scenario
         :param param_map: A dictionary mapping the parameters to the scenario names
-        :param include_year2operation: Specify if the year2operation dict should be included in the results file
         """
         logging.info("Postprocess results")
         # get the necessary stuff from the model
@@ -92,14 +90,6 @@ class Postprocess:
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
-
-        if include_year2operation:
-            for element, sequence_operation in self.dict_sequence_time_steps["operation"].items():
-                sequence_yearly = self.dict_sequence_time_steps["yearly"]["null"]
-                self.energy_system.time_steps.set_time_steps_operation2year_both_dir(element, sequence_operation, sequence_yearly)
-
-            self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
-
         self.save_sequence_time_steps(scenario=scenario_name)
 
         # case where we should run the post-process as normal
@@ -447,11 +437,3 @@ class Postprocess:
             if index in self.analysis["header_data_inputs"].keys():
                 index_list_final.append(self.analysis["header_data_inputs"][index])  # else:  #     pass  #     # index_list_final.append(index)
         return index_list_final
-
-    def get_time_steps_year2operation(self):
-        """ Returns a HDF5-Serializable version of the dict_time_steps_year2operation dictionary."""
-        ans = {}
-        for key, val in self.energy_system.time_steps.dict_time_steps_year2operation.items():
-            data = {str(year): time_steps for year, time_steps in val.items()}
-            ans[key] = data
-        return ans
