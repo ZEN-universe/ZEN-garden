@@ -88,10 +88,6 @@ class Results(object):
 
         # this is a list for lazy dict to keep the datasets open
         self._lazydicts = []
-        
-        # Specify loading strategy
-        self.use_hdf_pandas_serializer = False
-        self.use_precalculated_timesteps = True
 
         # if we only want to load a subset
         if scenarios is not None:
@@ -107,7 +103,6 @@ class Results(object):
         elif [folder.name for folder in os.scandir(self.path) if folder.is_dir() and "scenario_" in folder.name]:
             self.has_scenarios = True
             self.scenarios = [f"scenario_{scenario}" for scenario in self.results["scenarios"].keys()]
-
         # there are no scenarios
         else:
             self.has_scenarios = False
@@ -116,7 +111,6 @@ class Results(object):
         # cycle through the dirs
         for scenario in self.scenarios:
             # init dict
-
             self.results[scenario] = {}
             # get the base scenario
             base_scenario = ""
@@ -179,9 +173,10 @@ class Results(object):
                     subfolder = os.path.join(subfolder, Path(mf))
                 # Add together
                 current_path = os.path.join(sub_path, subfolder)
+
                 #create dict containing sets
                 self.results[scenario][mf]["sets"] = {}
-                sets = self.load_sets(current_path, lazy=True, use_hdf_pandas_serializer=self.use_hdf_pandas_serializer)
+                sets = self.load_sets(current_path, lazy=True)
                 self._lazydicts.append(sets)
                 if not self.component_names["sets"]:
                     self.component_names["sets"] = list(sets.keys())
@@ -189,12 +184,12 @@ class Results(object):
 
                 # create dict containing params and vars
                 self.results[scenario][mf]["pars_and_vars"] = {}
-                pars = self.load_params(current_path, lazy=True, use_hdf_pandas_serializer=self.use_hdf_pandas_serializer)
+                pars = self.load_params(current_path, lazy=True)
                 self._lazydicts.append(pars)
                 if not self.component_names["pars"]:
                     self.component_names["pars"] = list(pars.keys())
                 self.results[scenario][mf]["pars_and_vars"].update(pars)
-                vars = self.load_vars(current_path, lazy=True, use_hdf_pandas_serializer=self.use_hdf_pandas_serializer)
+                vars = self.load_vars(current_path, lazy=True)
                 self._lazydicts.append(vars)
                 if not self.component_names["vars"]:
                     self.component_names["vars"] = list(vars.keys())
@@ -208,9 +203,9 @@ class Results(object):
                         self.component_names["duals"] = list(duals.keys())
                     self.results[scenario][mf]["duals"] = duals
                 # the opt we only load when requested
-
                 if load_opt:
                     self.results[scenario][mf]["optdict"] = self.load_opt(current_path)
+
         # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
@@ -224,13 +219,12 @@ class Results(object):
             lazydict.close()
 
     @classmethod
-    def _read_file(cls, name, lazy=True, use_hdf_pandas_serializer=True):
+    def _read_file(cls, name, lazy=True):
         """
         Reads out a file and decompresses it if necessary
 
         :param name: File name without extension
         :param lazy: When possible, load lazy
-        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The decompressed content of the file as dict like object
         """
 
@@ -303,9 +297,6 @@ class Results(object):
         # nothing to do
         if isinstance(string, (pd.DataFrame, pd.Series)):
             return string
-        
-        if isinstance(string, h5py.Group):
-            return pd.read_hdf(string.file.filename, string.name)
 
         if isinstance(string, h5py.Group):
             return pd.read_hdf(string.file.filename, string.name)
@@ -319,18 +310,17 @@ class Results(object):
         return pd.read_json(json_dump, orient="table")
 
     @classmethod
-    def load_sets(cls, path, lazy=False, use_hdf_pandas_serializer=True):
+    def load_sets(cls, path, lazy=False):
         """
         Loads the set dict from a given path
 
         :param path: Path to load the parameter dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
-        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The set dict
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "set_dict"), use_hdf_pandas_serializer=use_hdf_pandas_serializer)
+        raw_dict = cls._read_file(os.path.join(path, "set_dict"))
 
         if lazy:
             return raw_dict
@@ -338,18 +328,17 @@ class Results(object):
             return cls._dict2df(raw_dict)
 
     @classmethod
-    def load_params(cls, path, lazy=False, use_hdf_pandas_serializer=True):
+    def load_params(cls, path, lazy=False):
         """
         Loads the parameter dict from a given path
 
         :param path: Path to load the parameter dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
-        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The parameter dict
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "param_dict"), use_hdf_pandas_serializer=use_hdf_pandas_serializer)
+        raw_dict = cls._read_file(os.path.join(path, "param_dict"))
 
         if lazy:
             return raw_dict
@@ -357,18 +346,17 @@ class Results(object):
             return cls._dict2df(raw_dict)
 
     @classmethod
-    def load_vars(cls, path, lazy=False, use_hdf_pandas_serializer=True):
+    def load_vars(cls, path, lazy=False):
         """
         Loads the var dict from a given path
 
         :param path: Path to load the var dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
-        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The var dict
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "var_dict"), use_hdf_pandas_serializer=use_hdf_pandas_serializer)
+        raw_dict = cls._read_file(os.path.join(path, "var_dict"))
 
         if lazy:
             return raw_dict
@@ -376,18 +364,17 @@ class Results(object):
             return cls._dict2df(raw_dict)
 
     @classmethod
-    def load_duals(cls, path, lazy=False, use_hdf_pandas_serializer=True):
+    def load_duals(cls, path, lazy=False):
         """
         Loads the dual dict from a given path
 
         :param path: Path to load the dual dict from
         :param lazy: Load lazy, this will not transform the data into dataframes
-        :param use_hdf_pandas_serializer: Use HDFPandasSerializer when possible
         :return: The var dict
         """
 
         # load the raw dict
-        raw_dict = cls._read_file(os.path.join(path, "dual_dict"), use_hdf_pandas_serializer=use_hdf_pandas_serializer)
+        raw_dict = cls._read_file(os.path.join(path, "dual_dict"))
 
         if lazy:
             return raw_dict
@@ -459,7 +446,6 @@ class Results(object):
         raw_dict = cls._read_file(os.path.join(path, "opt_dict"))
 
         return raw_dict
-
 
     @classmethod
     def load_sequence_time_steps(cls, path, scenario=None, lazy=False):
@@ -1112,7 +1098,6 @@ class Results(object):
         :return: #TODO describe parameter/return
         """
         row_index = row.name
-
         # we know the name
         if element_name:
             _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + storage_string)
@@ -1138,7 +1123,6 @@ class Results(object):
         _sequence_time_steps = _sequence_time_steps[start_time_step:end_time_step]
         _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(row.index))]
         _output_temp = row[_sequence_time_steps].reset_index(drop=True)
-        
         return _output_temp
 
     def get_total(self, component, element_name=None, year=None, scenario=None):
