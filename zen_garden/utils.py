@@ -1031,16 +1031,23 @@ class InputDataChecks:
         Initialize the class
 
         :param config: config object used to extract the analysis, system and solver dictionaries
+        :param optimization_setup: OptimizationSetup instance
         """
         self.system = config.system
         self.analysis = config.analysis
         self.optimization_setup = optimization_setup
 
-    def check_technology_selected(self):
+    def check_technology_selections(self):
         """
-        Checks if at least one technology is selected in the system.py file
+        Checks selection of different technologies in system.py file
         """
+        #Checks if at least one technology is selected in the system.py file
         assert len(self.system["set_conversion_technologies"] + self.system["set_transport_technologies"] + self.system["set_storage_technologies"]) > 0, f"No technology selected in stystem.py"
+        #Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
+        for tech_list in ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]:
+            techs_selected = self.system[tech_list]
+            unique_elements = list(np.unique(techs_selected))
+            self.system[tech_list] = unique_elements
 
     def check_year_definitions(self):
         """
@@ -1118,7 +1125,19 @@ class InputDataChecks:
         if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")):
             raise FileNotFoundError(f"system.py not found in dataset: {self.analysis['dataset']}")
 
-    def check_carrier_configuration(self, input_carrier, output_carrier, reference_carrier, name):
+    def check_single_directed_edges(self, set_edges_input):
+        """
+        Checks if single-directed edges exist in the dataset (e.g. CH-DE exists, DE-CH doesn't) and raises a warning
+
+        :param set_edges_input: DataFrame containing set of edges defined in set_edges.csv
+        """
+        for edge in set_edges_input.values:
+            reversed_edge = edge[2] + "-" + edge[1]
+            if reversed_edge not in [edge_string[0] for edge_string in set_edges_input.values] and edge[1] in self.system["set_nodes"] and edge[2] in self.system["set_nodes"]:
+                warnings.warn(f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!")
+
+    @staticmethod
+    def check_carrier_configuration(input_carrier, output_carrier, reference_carrier, name):
         """
         Checks if the chosen input/output and reference carrier combination is reasonable
 
@@ -1135,3 +1154,30 @@ class InputDataChecks:
         set_output_carrier = set(output_carrier)
         # assert that input and output carrier of conversion tech are different
         assert not set_input_carrier & set_output_carrier, f"The conversion technology {name} has the same input ({input_carrier[0]}) and output ({output_carrier[0]}) carrier!"
+
+    @staticmethod
+    def check_duplicate_indices(df_input, file_name, folder_path):
+        """
+        Checks if df_input contains any duplicate indices and either removes them if they are of identical value or raises an error otherwise
+
+        :param df_input: raw input dataframe
+        :param folder_path: the path of the folder containing the selected file
+        :param file_name: name of selected file
+        :return: df_input without duplicate indices
+        """
+        unique_elements, counts = np.unique(df_input.index, return_counts=True)
+        duplicates = unique_elements[counts > 1]
+
+        if len(duplicates) != 0:
+            for duplicate in duplicates:
+                values = df_input.loc[duplicate]
+                #check if all the duplicates are of the same value
+                if values.nunique() == 1:
+                    logging.warning(f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with identical values: {df_input.loc[duplicates]}.")
+                else:
+                    raise AssertionError(f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with different values: {df_input.loc[duplicates]}.")
+            #remove duplicates
+            duplicate_mask = df_input.index.duplicated(keep='first')
+            df_input = df_input[~duplicate_mask]
+
+        return df_input

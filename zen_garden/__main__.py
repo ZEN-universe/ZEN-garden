@@ -36,7 +36,7 @@ def run_module(args=None):
                                                                                         "defaults to config.py in the current directory.")
     parser.add_argument("--dataset", required=False, type=str, default=None, help="Path to the dataset used for the run. IMPORTANT: This will overwrite the "
                                                                                   "config.analysis['dataset'] attribute of the config file!")
-    parser.add_argument("--job_index", required=False, type=str, default=None, help="A coma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
+    parser.add_argument("--job_index", required=False, type=str, default=None, help="A comma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
     parser.add_argument("--job_index_var", required=False, type=str, default="SLURM_ARRAY_TASK_ID", help="Try to read out the job index from the environment variable specified here. "
                                                                                                          "If both --job_index and --job_index_var are specified, --job_index will be used.")
     args = parser.parse_args(args)
