@@ -416,7 +416,7 @@ class DataInput:
                         # model as linear function
                         slope_lin_reg = linear_regress_object.slope
                         linear_dict[value_variable] = \
-                            self.create_default_output(index_sets=index_sets, time_steps=time_steps,
+                            self.create_default_output(index_sets=index_sets, unit_category=unit_category, time_steps=time_steps,
                                                    manual_default_value=slope_lin_reg)[0]
                     else:
                         # model as pwa function

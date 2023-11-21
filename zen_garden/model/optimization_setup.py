@@ -531,19 +531,19 @@ class OptimizationSetup(object):
                     self.energy_system.set_time_steps_yearly = copy.deepcopy(set_time_steps_yearly)
                     tech.set_technologies_existing = tech.data_input.extract_set_technologies_existing()
                     tech.capacity_existing = tech.data_input.extract_input_data(
-                        "capacity_existing", index_sets=[set_location, "set_technologies_existing"])
+                        "capacity_existing", index_sets=[set_location, "set_technologies_existing"], unit_category={"product": 1, "time": -1})
                     tech.capacity_investment_existing = tech.data_input.extract_input_data(
-                        "capacity_investment_existing", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+                        "capacity_investment_existing", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"product": 1, "time": -1})
                     tech.lifetime_existing = tech.data_input.extract_lifetime_existing(
                         "capacity_existing", index_sets=[set_location, "set_technologies_existing"])
                     # calculate capex of existing capacity
                     tech.capex_capacity_existing = tech.calculate_capex_of_capacities_existing()
                     if tech.__class__.__name__ == "StorageTechnology":
                         tech.capacity_existing_energy = tech.data_input.extract_input_data(
-                            "capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"])
+                            "capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"], unit_category={"product": 1})
                         tech.capacity_investment_existing_energy = tech.data_input.extract_input_data(
                             "capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
-                            time_steps="set_time_steps_yearly")
+                            time_steps="set_time_steps_yearly", unit_category={"product": 1})
                         tech.capex_capacity_existing_energy = tech.calculate_capex_of_capacities_existing(storage_energy=True)
 
     def add_carbon_emission_cumulative(self, step_horizon):
@@ -559,7 +559,7 @@ class OptimizationSetup(object):
                 self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + carbon_emissions_annual * (interval_between_years - 1)
             else:
                 self.energy_system.carbon_emissions_cumulative_existing = self.energy_system.data_input.extract_input_data(
-                    "carbon_emissions_cumulative_existing",index_sets=[])
+                    "carbon_emissions_cumulative_existing", index_sets=[], unit_category={"emissions": 1})
 
     def initialize_component(self, calling_class, component_name, index_names=None, set_time_steps=None, capacity_types=False):
         """ this method initializes a modeling component by extracting the stored input data.

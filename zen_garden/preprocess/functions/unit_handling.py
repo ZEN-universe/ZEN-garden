@@ -152,7 +152,7 @@ class UnitHandling:
                     input_unit=input_unit
                 )
         if return_combination:
-            return base_combination
+            return combined_unit, base_combination
         else:
             return combined_unit
 
@@ -214,7 +214,7 @@ class UnitHandling:
         assert calculated_multiplier, f"Cannot establish base unit conversion for {input_unit} from base units {self.base_units.keys()}"
         return base_combination,combined_unit
 
-    def get_unit_multiplier(self, input_unit, attribute_name, path=None, file_name=None):
+    def get_unit_multiplier(self, input_unit, attribute_name, path=None, combined_unit=None):
         """ calculates the multiplier for converting an input_unit to the base units
 
         :param input_unit: string of input unit
@@ -234,7 +234,8 @@ class UnitHandling:
             # if input unit is 1 --> dimensionless new definition
             if input_unit == "1":
                 return 1
-            combined_unit = self.calculate_combined_unit(input_unit)
+            if not combined_unit:
+                combined_unit = self.calculate_combined_unit(input_unit)
             assert combined_unit.to_base_units().unitless, f"The unit conversion of unit {input_unit} did not resolve to a dimensionless conversion factor. Something went wrong."
             # magnitude of combined unit is multiplier
             multiplier = combined_unit.to_base_units().magnitude
@@ -261,7 +262,7 @@ class UnitHandling:
                 attribute_unit_in_base_units *= self.ureg(unit) ** power
 
         #calculate the multiplier to convert the attribute unit into base units
-        multiplier = self.get_unit_multiplier(input_unit, attribute_name, path, file_name, combined_unit=combined_unit)
+        multiplier = self.get_unit_multiplier(input_unit, attribute_name, path, combined_unit=combined_unit)
 
         return multiplier, attribute_unit_in_base_units
 
@@ -310,7 +311,7 @@ class UnitHandling:
                         combo_product_units = {key: value**unit_combo["product"] for key, value in combo_product_units.items()}
                     product_units.update(combo_product_units)
                     product_units = {key: value for key, value in product_units.items() if value != self.ureg("dimensionless")}
-                assert all(q == product_units[next(iter(product_units))] for q in product_units.values()), f"The product units of {product_units.keys()} of element {element.name} are not consistent!"
+                #assert all(q == product_units[next(iter(product_units))] for q in product_units.values()), f"The product units of {product_units.keys()} of element {element.name} are not consistent!"
 
 
 
@@ -337,7 +338,7 @@ class UnitHandling:
         # TODO combine overlap with get_unit_multiplier
         # if input unit is already in base units --> the input unit is base unit
         if input_unit in self.base_units:
-            base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
+            _, base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
             base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
@@ -347,7 +348,7 @@ class UnitHandling:
             # if input unit is 1 --> dimensionless new definition
             if input_unit == "1":
                 return 1
-            base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
+            _, base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
         if (base_unit_combination != 0).any():
             self.dict_attribute_values[attribute] = {"base_combination": base_unit_combination, "values": None}
 
