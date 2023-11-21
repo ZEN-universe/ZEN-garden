@@ -11,40 +11,26 @@ import logging
 import os
 import sys
 import warnings
-from collections import UserDict
+import importlib.util
+from collections import UserDict,defaultdict
 from contextlib import contextmanager
 from datetime import datetime
 from ordered_set import OrderedSet
-
 import h5py
 import linopy as lp
-from linopy.config import options
 import numpy as np
 import pandas as pd
 import xarray as xr
 import yaml
+import shutil
 from numpy import string_
 from copy import deepcopy
-from collections import defaultdict
+from pathlib import Path
 
-
-def setup_logger(log_path=None, level=logging.INFO):
-    # SETUP LOGGER
-    log_format = '%(asctime)s %(filename)s: %(message)s'
-
-    if log_path is None:
-        log_path = os.path.join('outputs', 'logs')
-        os.makedirs(log_path, exist_ok=True)
-    logging.basicConfig(filename=os.path.join(log_path, 'valueChain.log'), level=level, format=log_format,
-                        datefmt='%Y-%m-%d %H:%M:%S')
+def setup_logger(level=logging.INFO):
+    """ set up logger"""
+    logging.basicConfig(level=level,format="%(message)s",datefmt='%Y-%m-%d %H:%M:%S')
     logging.captureWarnings(True)
-    # we don't want to add this multiple times
-    if not any([handle.name == "STDOUT" for handle in logging.getLogger().handlers]):
-        handler = logging.StreamHandler(sys.stdout)
-        handler.set_name("STDOUT")
-        handler.setLevel(level)
-        logging.getLogger().addHandler(handler)
-
 
 def get_inheritors(klass):
     """
@@ -64,10 +50,8 @@ def get_inheritors(klass):
                 work.append(child)
     return subclasses
 
-
 # This redirects output streams to files
 # --------------------------------------
-
 class RedirectStdStreams(object):
     """
     A context manager that redirects the output to a file
@@ -1171,13 +1155,182 @@ class InputDataChecks:
         if len(duplicates) != 0:
             for duplicate in duplicates:
                 values = df_input.loc[duplicate]
-                #check if all the duplicates are of the same value
+                # check if all the duplicates are of the same value
                 if values.nunique() == 1:
                     logging.warning(f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with identical values: {df_input.loc[duplicates]}.")
                 else:
                     raise AssertionError(f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with different values: {df_input.loc[duplicates]}.")
-            #remove duplicates
+            # remove duplicates
             duplicate_mask = df_input.index.duplicated(keep='first')
             df_input = df_input[~duplicate_mask]
 
         return df_input
+
+class StringUtils:
+    """
+    This class handles some strings for logging and filenames to tidy up scripts
+    """
+    def __init__(self):
+        """ Initializes the class """
+        pass
+
+    @classmethod
+    def print_optimization_progress(cls,scenario, steps_horizon,step):
+        """ prints the current optimization progress
+
+        :param scenario: string of scenario name
+        :param steps_horizon: all steps of horizon
+        :param step: current step of horizon """
+        scenario_string = ScenarioUtils.scenario_string(scenario)
+        if len(steps_horizon) == 1:
+            logging.info(f"\n--- Conduct optimization for perfect foresight {scenario_string}--- \n")
+        else:
+            logging.info(
+                f"\n--- Conduct optimization for rolling horizon step {step} of {max(steps_horizon)} {scenario_string}--- \n")
+
+    @classmethod
+    def generate_folder_path(cls,config,scenario,scenario_dict,steps_horizon, step):
+        """ generates the folder path for the results
+        :param config: config of optimization
+        :param scenario: name of scenario
+        :param scenario_dict: current scenario dict
+        :param steps_horizon: all steps of horizon
+        :param step: current step of horizon
+        :return: scenario name in folder
+        :return: subfolder in results file
+        :return: mapping of parameters
+        """
+        subfolder = Path("")
+        scenario_name = None
+        param_map = None
+        if config.system["conduct_scenario_analysis"]:
+            # handle scenarios
+            scenario_name = f"scenario_{scenario}"
+            subfolder = Path(f"scenario_{scenario_dict['base_scenario']}")
+
+            # set the scenarios
+            if scenario_dict["sub_folder"] != "":
+                # get the param map
+                param_map = scenario_dict["param_map"]
+
+                # get the output scenarios
+                subfolder = subfolder.joinpath(f"scenario_{scenario_dict['sub_folder']}")
+                scenario_name = f"scenario_{scenario_dict['sub_folder']}"
+
+        # handle myopic foresight
+        if len(steps_horizon) > 1:
+            mf_f_string = f"MF_{step}"
+            # handle combination of MF and scenario analysis
+            if config.system["conduct_scenario_analysis"]:
+                subfolder = Path(subfolder), Path(mf_f_string)
+            else:
+                subfolder = Path(mf_f_string)
+
+        return scenario_name,subfolder,param_map
+
+    @staticmethod
+    def get_model_name(config):
+        """
+        return model name while conducting some tests
+        :param config: config of optimziation
+        :return: model name
+        :return: output folder
+        """
+        model_name = os.path.basename(config.analysis["dataset"])
+        if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
+            logging.warning(f"The output folder '{out_folder}' already exists")
+            if config.analysis["overwrite_output"]:
+                logging.warning("Existing files will be overwritten!")
+        return model_name,out_folder
+class ScenarioUtils:
+    """
+    This class handles some stuff for scenarios to tidy up scripts
+    """
+
+    def __init__(self):
+        """ Initializes the class """
+        pass
+
+    @staticmethod
+    def scenario_string(scenario):
+        """ creates additional scenario string
+        :param scenario: scenario name
+        :return: scenario string """
+        if scenario != "":
+            scenario_string = f"for scenario {scenario} "
+        else:
+            scenario_string = ""
+        return scenario_string
+
+    @staticmethod
+    def clean_scenario_folder(config, out_folder):
+        """ cleans scenario dict when overwritten
+        :param config: config of optimization
+        :param out_folder: output folder"""
+        # compare to existing sub-scenarios
+        if config.system["conduct_scenario_analysis"] and config.system["clean_sub_scenarios"]:
+            # collect all paths that are in the scenario dict
+            folder_dict = defaultdict(list)
+            for key, value in config.scenarios.items():
+                if value["sub_folder"] != "":
+                    folder_dict[f"scenario_{value['base_scenario']}"].append(f"scenario_{value['sub_folder']}")
+                    folder_dict[f"scenario_{value['base_scenario']}"].append(
+                        f"dict_all_sequence_time_steps_{value['sub_folder']}.h5")
+            for scenario_name, sub_folders in folder_dict.items():
+                scenario_path = os.path.join(out_folder, scenario_name)
+                if os.path.exists(scenario_path) and os.path.isdir(scenario_path):
+                    existing_sub_folder = os.listdir(scenario_path)
+                    for sub_folder in existing_sub_folder:
+                        # delete the scenario subfolder
+                        sub_folder_path = os.path.join(scenario_path, sub_folder)
+                        if os.path.isdir(sub_folder_path) and sub_folder not in sub_folders:
+                            logging.info(f"Removing sub-scenario {sub_folder}")
+                            shutil.rmtree(sub_folder_path, ignore_errors=True)
+                        # the time steps dict
+                        if sub_folder.startswith("dict_all_sequence_time_steps") and sub_folder not in sub_folders:
+                            logging.info(f"Removing time steps dict {sub_folder}")
+                            os.remove(sub_folder_path)
+
+    @staticmethod
+    def get_scenarios(config,job_index):
+        """ retrieves and overwrites the scenario dicts
+        :param config: config of optimization
+        :param job_index: index of current job, if passed
+        :return: scenarios of optimization
+        :return: elements in scenario
+        """
+        if config.system["conduct_scenario_analysis"]:
+            scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
+            if not os.path.exists(scenarios_path):
+                raise FileNotFoundError(f"scenarios.py not found in dataset: {config.analysis['dataset']}")
+            spec = importlib.util.spec_from_file_location("module", scenarios_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            scenarios = module.scenarios
+            config.scenarios.update(scenarios)
+            # remove the default scenario if necessary
+            if not config.system["run_default_scenario"] and "" in config.scenarios:
+                del config.scenarios[""]
+
+            # expand the scenarios
+            config.scenarios = ScenarioDict.expand_lists(config.scenarios)
+
+            # deal with the job array
+            if job_index is not None:
+                if isinstance(job_index, int):
+                    job_index = [job_index]
+                else:
+                    job_index = list(job_index)
+                logging.info(f"Running scenarios with job indices: {job_index}")
+                # reduce the scenario and element to a single one
+                scenarios = [list(config.scenarios.keys())[jx] for jx in job_index]
+                elements = [list(config.scenarios.values())[jx] for jx in job_index]
+            else:
+                logging.info(f"Running all scenarios sequentially")
+                scenarios = config.scenarios.keys()
+                elements = config.scenarios.values()
+        # Nothing to do with the scenarios
+        else:
+            scenarios = [""]
+            elements = [{}]
+        return scenarios,elements

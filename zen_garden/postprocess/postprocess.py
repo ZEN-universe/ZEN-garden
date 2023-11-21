@@ -41,7 +41,7 @@ class Postprocess:
         :param param_map: A dictionary mapping the parameters to the scenario names
         :param include_year2operation: Specify if the year2operation dict should be included in the results file
         """
-        logging.info("Postprocess results")
+        logging.info("--- Postprocess results ---")
         # get the necessary stuff from the model
         self.model = model.model
         self.scenarios = scenarios
