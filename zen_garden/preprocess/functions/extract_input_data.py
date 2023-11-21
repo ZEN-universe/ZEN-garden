@@ -542,7 +542,7 @@ class DataInput:
         # create output Series filled with default value
         if default_value is None:
             df_output = pd.Series(index=index_multi_index, dtype=float)
-        #use distances computed with node coordinates as default values
+        # use distances computed with node coordinates as default values
         elif file_name == "distance":
             df_output = pd.Series(index=index_multi_index, dtype=float)
             for key, value in default_value["value"].items():

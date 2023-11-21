@@ -290,9 +290,12 @@ class Technology(Element):
 
         # if start_base_time_step is further in the past than first base time step, use first base time step
         if clip_to_first_time_step:
-            start_base_time_step = int(max(sets["set_base_time_steps"][0], base_time_step - base_period + 1))
+            start_base_time_step = max(sets["set_base_time_steps"][0], base_time_step - base_period + 1)
         else:
-            start_base_time_step = int(base_time_step - base_period + 1)
+            start_base_time_step = base_time_step - base_period + 1
+        if type(start_base_time_step) == np.ndarray or type(start_base_time_step) == np.array:
+            start_base_time_step = start_base_time_step.squeeze()
+        start_base_time_step = int(start_base_time_step)
         start_base_time_step = min(start_base_time_step, sets["set_base_time_steps"][-1])
         # if period of existing capacity, then only return the start base time step
         if id_capacity_existing is not None:
