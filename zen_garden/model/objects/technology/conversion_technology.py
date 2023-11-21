@@ -46,8 +46,8 @@ class ConversionTechnology(Technology):
         # get reference carrier from class <Technology>
         super().store_carriers()
         # define input and output carrier
-        self.input_carrier = self.data_input.extract_carriers(carrier_type="input_carrier")
-        self.output_carrier = self.data_input.extract_carriers(carrier_type="output_carrier")
+        self.input_carrier = self.data_input.extract_carriers(carrier_type="input_carrier", unit_category={"product": 1, "time": -1})
+        self.output_carrier = self.data_input.extract_carriers(carrier_type="output_carrier", unit_category={"product": 1, "time": -1})
         self.energy_system.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         self.optimization_setup.input_data_checks.check_carrier_configuration(input_carrier=self.input_carrier,

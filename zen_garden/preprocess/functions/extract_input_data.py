@@ -46,7 +46,7 @@ class DataInput:
         # self.index_names     = {index_name: self.analysis['header_data_inputs'][index_name][0] for index_name in self.analysis['header_data_inputs']}
         self.index_names = self.analysis['header_data_inputs']
 
-    def extract_input_data(self, file_name, index_sets, time_steps=None):
+    def extract_input_data(self, file_name, index_sets, unit_category, time_steps=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param file_name: name of selected file.
@@ -61,17 +61,17 @@ class DataInput:
         # if time steps are the yearly base time steps
         elif time_steps == "set_base_time_steps_yearly":
             yearly_variation = True
-            self.extract_yearly_variation(file_name, index_sets)
+            self.extract_yearly_variation(file_name, index_sets, unit_category)
 
         # if existing capacities and existing capacities not used
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
-            df_output, *_ = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=0)
+            df_output, *_ = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps, manual_default_value=0)
             return df_output
         #use distances computed with node coordinates as default values
         elif file_name == "distance":
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=self.energy_system.set_haversine_distances_edges)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps, manual_default_value=self.energy_system.set_haversine_distances_edges)
         else:
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps)
         # read input file
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
         df_input = self.read_input_data(f_name)
@@ -161,7 +161,7 @@ class DataInput:
         else:
             return None
 
-    def extract_attribute(self, attribute_name, skip_warning=False, check_if_exists=False):
+    def extract_attribute(self, attribute_name, unit_category, skip_warning=False, check_if_exists=False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param attribute_name: name of selected attribute
@@ -176,11 +176,15 @@ class DataInput:
         df_input = self.read_input_data(filename)
         if df_input is not None:
             df_input = df_input.set_index("index").squeeze(axis=1)
-            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning,suppress_error=check_if_exists)
+            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning, suppress_error=check_if_exists)
         if attribute_name is not None:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"], attribute_name, file_name=filename, path=self.folder_path)
+            attribute_unit = df_input.loc[attribute_name, "unit"]
+            multiplier, attribute_unit_in_base_units = self.unit_handling.convert_unit(attribute_unit, attribute_name, file_name=filename, path=self.folder_path)
+            #don't save input-/output carrier if they don't exist for a conversion technology
+            if not(pd.isna(attribute_value) and attribute_name in ["input_carrier", "output_carrier"]):
+                self.element.units[attribute_name] = unit_category, attribute_unit_in_base_units
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -192,7 +196,7 @@ class DataInput:
         else:
             return None
 
-    def adapt_attribute_name(self, attribute_name, df_input, skip_warning=False,suppress_error=False):
+    def adapt_attribute_name(self, attribute_name, df_input, skip_warning=False, suppress_error=False):
         """ check if attribute in index
 
         :param attribute_name: name of selected attribute
@@ -213,7 +217,7 @@ class DataInput:
             attribute_name = attribute_name + "_default"
         return attribute_name
 
-    def extract_yearly_variation(self, file_name, index_sets):
+    def extract_yearly_variation(self, file_name, index_sets, unit_category):
         """ reads the yearly variation of a time dependent quantity
 
         :param file_name: name of selected file.
@@ -233,7 +237,7 @@ class DataInput:
             logging.info(f"{f_name} is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_data(file_name)
         if df_input is not None:
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, manual_default_value=1)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, file_name=file_name, manual_default_value=1)
             # set yearly variation attribute to df_output
             name_yearly_variation = file_name
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps="set_time_steps_yearly")
@@ -278,12 +282,12 @@ class DataInput:
             else:
                 return None
 
-    def extract_carriers(self, carrier_type):
+    def extract_carriers(self, carrier_type, unit_category):
         """ reads input data and extracts conversion carriers
 
         :return carrier_list: list with input, output or reference carriers of technology """
         assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier"], "carrier type must be either input_carrier, output_carrier, or reference_carrier"
-        carrier_string = self.extract_attribute(carrier_type, skip_warning=True)
+        carrier_string = self.extract_attribute(carrier_type, unit_category, skip_warning=True)
         if type(carrier_string) == str:
             carrier_list = carrier_string.strip().split(" ")
         else:
@@ -355,17 +359,19 @@ class DataInput:
             attribute_name = "capex_specific"
             index_sets = ["set_nodes", "set_time_steps_yearly"]
             time_steps = "set_time_steps_yearly"
+            unit_category = {"money": 1, "product": -1, "time": -1}
         elif variable_type == "conversion_factor":
             attribute_name = "conversion_factor"
             index_sets = ["set_nodes", "set_time_steps"]
             time_steps = "set_base_time_steps_yearly"
+            unit_category = {"product": 0}
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
         # import all input data
         df_input_nonlinear = self.read_pwa_files(variable_type, file_type="nonlinear_")
         df_input_breakpoints = self.read_pwa_files(variable_type, file_type="breakpoints_pwa_")
         df_input_linear = self.read_pwa_files(variable_type)
-        df_linear_exist = self.exists_attribute(attribute_name)
+        df_linear_exist = self.exists_attribute(attribute_name, unit_category)
         assert (df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
         # if nonlinear
         if (df_input_nonlinear is not None and df_input_breakpoints is not None):
@@ -450,8 +456,7 @@ class DataInput:
             is_pwa = False
             linear_dict = {}
             if variable_type == "capex":
-                linear_dict["capex"] = self.extract_input_data(attribute_name, index_sets=index_sets,
-                                                               time_steps=time_steps)
+                linear_dict["capex"] = self.extract_input_data(attribute_name, index_sets=index_sets, unit_category=unit_category, time_steps=time_steps)
                 return linear_dict, is_pwa
             else:
                 dependent_carrier = list(set(self.element.input_carrier + self.element.output_carrier).difference(
@@ -460,13 +465,11 @@ class DataInput:
                     return None, is_pwa
                 if df_input_linear is None:
                     if len(dependent_carrier) == 1:
-                        linear_dict[dependent_carrier[0]] = self.extract_input_data(attribute_name,
-                                                                                 index_sets=index_sets,
-                                                                                 time_steps=time_steps)
+                        linear_dict[dependent_carrier[0]] = self.extract_input_data(attribute_name, index_sets=index_sets, unit_category=unit_category, time_steps=time_steps)
                     else:
                         raise AssertionError(f"input file for linear_conversion_factor could not be imported.")
                 else:
-                    df_output, default_value, index_name_list = self.create_default_output(index_sets, attribute_name, time_steps=time_steps)
+                    df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, attribute_name, time_steps=time_steps)
                     common_index = list(set(index_name_list).intersection(df_input_linear.columns))
                     # if only one dependent carrier and no carrier in columns
                     if len(dependent_carrier) == 1 and len(df_input_linear.columns.intersection(dependent_carrier)) == 0:
@@ -488,7 +491,7 @@ class DataInput:
                 conversion_factor_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
                 linear_dict = linear_dict.reorder_levels(conversion_factor_levels)
                 # extract yearly variation
-                self.extract_yearly_variation(attribute_name, index_sets)
+                self.extract_yearly_variation(attribute_name, index_sets, unit_category)
                 return linear_dict, is_pwa
 
     def read_pwa_files(self, variable_type, file_type=str()):
@@ -510,7 +513,7 @@ class DataInput:
             df_input[columns] = df_input[columns] * df_input_multiplier
         return df_input
 
-    def create_default_output(self, index_sets, file_name=None, time_steps=None, manual_default_value=None):
+    def create_default_output(self, index_sets, unit_category, file_name=None, time_steps=None, manual_default_value=None):
         """ creates default output dataframe
 
         :param file_name: name of selected file.
@@ -527,14 +530,14 @@ class DataInput:
         #use distances computed with node coordinates as default values
         if file_name == "distance":
             default_name = file_name
-            default_value = self.extract_attribute(default_name)
+            default_value = self.extract_attribute(default_name, unit_category)
             default_value["value"] = manual_default_value
         elif manual_default_value:
             default_value = {"value": manual_default_value, "multiplier": 1}
             default_name = None
         else:
             default_name = file_name
-            default_value = self.extract_attribute(default_name)
+            default_value = self.extract_attribute(default_name, unit_category)
 
         # create output Series filled with default value
         if default_value is None:
@@ -602,7 +605,7 @@ class DataInput:
                 raise AttributeError(f"Index '{index}' cannot be found.")
         return index_list, index_name_list
 
-    def exists_attribute(self, file_name, column=None):
+    def exists_attribute(self, file_name, unit_category, column=None):
         """ checks if default value or timeseries of an attribute exists in the input data
 
         :param file_name: name of selected file
@@ -613,7 +616,7 @@ class DataInput:
             default_name = column
         else:
             default_name = file_name
-        default_value = self.extract_attribute(default_name,check_if_exists=True)
+        default_value = self.extract_attribute(default_name, unit_category, check_if_exists=True)
 
         if default_value is None or math.isnan(default_value["value"]):  # if no default value exists or default value is nan
             _dfInput = self.read_input_data(file_name)

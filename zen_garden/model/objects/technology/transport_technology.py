@@ -47,8 +47,8 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().store_input_data()
         # set attributes for parameters of child class <TransportTechnology>
-        self.distance = self.data_input.extract_input_data("distance", index_sets=["set_edges"])
-        self.transport_loss_factor = self.data_input.extract_input_data("transport_loss_factor", index_sets=[])
+        self.distance = self.data_input.extract_input_data("distance", index_sets=["set_edges"], unit_category={"distance": 1})
+        self.transport_loss_factor = self.data_input.extract_input_data("transport_loss_factor", index_sets=[], unit_category={"distance": -1})
         # get capex of transport technology
         self.get_capex_transport()
         # annualize capex
@@ -64,12 +64,12 @@ class TransportTechnology(Technology):
             self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
             self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
         else:  # Here only capex_specific is used, and capex_per_distance_transport is set to Zero.
-            if self.data_input.exists_attribute("capex_per_distance_transport"):
-                self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+            if self.data_input.exists_attribute("capex_per_distance_transport", unit_category={"money": 1, "distance": -1, "product": -1, "time": -1}):
+                self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1, "product": -1, "time": -1})
                 self.capex_specific = self.capex_per_distance_transport * self.distance
                 self.opex_specific_fixed = self.opex_specific_fixed * self.distance
             elif self.data_input.exists_attribute("capex_specific"):
-                self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+                self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "product": -1, "time": -1})
             else:
                 raise AttributeError(f"The transport technology {self.name} has neither capex_per_distance_transport nor capex_specific attribute.")
             self.capex_per_distance_transport = self.capex_specific * 0.0
@@ -171,7 +171,7 @@ class TransportTechnology(Technology):
             bounds=bounds, doc='carrier flow through transport technology on edge i and time t')
         # loss of carrier on edge
         variables.add_variable(model, name="flow_transport_loss", index_sets=(index_values, index_names), bounds=(0,np.inf),
-            doc='carrier flow through transport technology on edge i and time t')
+            doc='carrier flow lost due to resistances etc. by transporting carrier through transport technology on edge i and time t')
 
     @classmethod
     def construct_constraints(cls, optimization_setup):

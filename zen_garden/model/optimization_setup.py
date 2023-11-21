@@ -87,6 +87,9 @@ class OptimizationSetup(object):
         # read input data into elements
         self.read_input_data()
 
+        #conduct consistency checks of input units
+        self.energy_system.unit_handling.consistency_checks_input_units(elements=self.dict_elements["Element"], energy_system=self.energy_system)
+
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
