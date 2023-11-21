@@ -972,7 +972,7 @@ class Results(object):
         if not self.has_scenarios:
             full_ts = self._get_full_ts_for_single_scenario(
                 component_data, component_name, scenario=None, element_name=element_name,
-                year=year, is_dual = is_dual, discount_to_first_step=discount_to_first_step, 
+                year=year, is_dual = is_dual, discount_to_first_step=discount_to_first_step,
                 start_time_step=start_time_step, end_time_step=end_time_step)
         # specific scenario
         elif scenario is not None:
@@ -1529,18 +1529,18 @@ class Results(object):
         self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
 
     def get_energy_balance_df(
-            self, 
-            node, 
-            carrier, 
-            scenario=None, 
+            self,
+            node,
+            carrier,
+            scenario=None,
             start_time_step = 0,
             end_time_step = None
         ) -> pd.DataFrame:
         components = ["flow_conversion_output", "flow_conversion_input", "flow_export", "flow_import", "flow_storage_charge", "flow_storage_discharge", "demand", "flow_transport_in", "flow_transport_out", "shed_demand"]
         lowers = ["flow_conversion_input", "flow_export", "flow_storage_charge", "flow_transport_out"]
-        
+
         data_plot = pd.DataFrame()
-        
+
         if scenario not in self.scenarios:
             scenario = "scenario_"
         for component in components:

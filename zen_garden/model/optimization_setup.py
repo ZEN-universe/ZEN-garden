@@ -456,32 +456,21 @@ class OptimizationSetup(object):
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
 
-    def solve(self, solver):
-        """Create model instance by assigning parameter values and instantiating the sets
-
-        :param solver: dictionary containing the solver settings """
-        solver_name = solver["name"]
+    def solve(self):
+        """Create model instance by assigning parameter values and instantiating the sets """
+        solver_name = self.solver["name"]
         # remove options that are None
-        solver_options = {key: solver["solver_options"][key] for key in solver["solver_options"] if solver["solver_options"][key] is not None}
+        solver_options = {key: self.solver["solver_options"][key] for key in self.solver["solver_options"] if self.solver["solver_options"][key] is not None}
 
         logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily
         logging.disable(logging.WARNING)
 
         if solver_name == "gurobi":
-            ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
             self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
                              keep_files=self.solver["keep_files"], sanitize_zeros=True,
                              # remaining kwargs are passed to the solver
                              **solver_options)
-            # write an ILP file to print the IIS if infeasible
-            if self.model.termination_condition == 'infeasible':
-                logging.info("The optimization is infeasible")
-                parser = IISConstraintParser(ilp_file, self.model)
-                fname, _ = os.path.splitext(ilp_file)
-                outfile = fname + "_linopy.ilp"
-                logging.info(f"Writing parsed IIS to {outfile}")
-                parser.write_parsed_output(outfile)
         else:
             self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
                              keep_files=self.solver["keep_files"], sanitize_zeros=True)
@@ -493,13 +482,35 @@ class OptimizationSetup(object):
         elif self.model.termination_condition == "suboptimal":
             logging.info("The optimization is suboptimal")
             self.optimality = True
+        elif self.model.termination_condition == "infeasible":
+            logging.info("The optimization is infeasible")
+            self.optimality = False
         else:
             logging.info("The optimization is infeasible or unbounded, or finished with an error")
             self.optimality = False
 
+    def write_IIS(self):
+        """ write an ILP file to print the IIS if infeasible. Only possible for gurobi """
+        if self.model.termination_condition == 'infeasible' and self.solver["name"] == "gurobi":
+            logging.info("The optimization is infeasible")
+            # ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
+            ilp_file = f"//infeasible_model_IIS.ilp"
+            parser = IISConstraintParser(ilp_file, self.model)
+            fname, _ = os.path.splitext(ilp_file)
+            outfile = fname + "_linopy.ilp"
+            logging.info(f"Writing parsed IIS to {outfile}")
+            parser.write_parsed_output(outfile)
+
+    def add_results_of_optimization_step(self, step_horizon):
+        """ adds the new capacity additions and the cumulative carbon emissions for next
+        :param step_horizon: step of the rolling horizon """
+        # add newly capacity_addition of first year to existing capacity
+        self.add_new_capacity_addition(step_horizon)
+        # add cumulative carbon emissions to previous carbon emissions
+        self.add_carbon_emission_cumulative(step_horizon)
+
     def add_new_capacity_addition(self, step_horizon):
         """ adds the newly built capacity to the existing capacity
-
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:

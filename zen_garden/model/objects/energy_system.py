@@ -138,9 +138,9 @@ class EnergySystem:
         :return: dict containing all edges along with their distances
         """
         set_haversine_distances_of_edges = {}
-        #read coords file
+        # read coords file
         df_coords_input = self.data_input.extract_locations(extract_coordinates=True)
-        #convert coords from decimal degrees to radians
+        # convert coords from decimal degrees to radians
         df_coords_input["lon"] = df_coords_input["lon"] * np.pi / 180
         df_coords_input["lat"] = df_coords_input["lat"] * np.pi / 180
         # Radius of the Earth in kilometers
