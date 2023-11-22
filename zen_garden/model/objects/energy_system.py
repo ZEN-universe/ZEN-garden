@@ -80,7 +80,6 @@ class EnergySystem:
         self.set_super_nodes = list(self.set_nodes_in_super_nodes.keys())
         self.set_edges_in_super_edges = self.data_input.extract_locations(extract_nodes=False, super_locations=True)
         self.set_super_edges = list(self.set_edges_in_super_edges.keys())
-        self.set_carriers = []
         self.set_haversine_distances_edges = self.calaculate_haversine_distances_from_nodes()
         self.set_technologies = self.system["set_technologies"]
         # base time steps
