@@ -309,7 +309,7 @@ class DataInput:
                 return set_nodes_config
         else:
             set_edges_input = self.read_input_data("set_edges")
-            self.energy_system.optimization_setup.input_data_checks.check_single_directed_edges(set_edges_input=set_edges_input)
+            # self.energy_system.optimization_setup.input_data_checks.check_single_directed_edges(set_edges_input=set_edges_input)
             if set_edges_input is not None:
                 set_edges = set_edges_input[(set_edges_input["node_from"].isin(self.energy_system.set_nodes)) & (set_edges_input["node_to"].isin(self.energy_system.set_nodes))]
                 set_edges = set_edges.set_index("edge")

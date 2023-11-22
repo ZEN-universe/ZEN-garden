@@ -66,7 +66,7 @@ class Technology(Element):
         self.raw_time_series["opex_specific_variable"] = self.data_input.extract_input_data("opex_specific_variable", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly")
         # non-time series input data
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location])
+        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location, "set_time_steps_yearly"], time_steps='set_time_steps_yearly')
         self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[set_location_super, "set_time_steps_yearly"],
                                                                        time_steps="set_time_steps_yearly")
         self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[set_location])
