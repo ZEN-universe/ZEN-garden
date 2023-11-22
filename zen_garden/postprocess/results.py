@@ -6,8 +6,6 @@
 
 Class is defining to read in the results of an Optimization problem.
 """
-import logging
-import warnings
 
 import importlib
 import json
@@ -19,18 +17,43 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 # from tables import NaturalNameWarning
 from tqdm import tqdm
 
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
+import h5py
+from typing import Any
 
 # Warnings
 # warnings.filterwarnings('ignore', category=NaturalNameWarning)
 
 # SETUP LOGGER
 utils.setup_logger()
+
+
+class TimeStepDictFromFile:
+    def __init__(self, time_dict: dict[Any, Any], scenario: str):
+        self.time_dict = time_dict
+        self.scenario = "default" if scenario is None else scenario
+        self.sequence_time_steps_cache: dict[str, npt.NDArray[np.float_]] = {}
+        self.year2operation_cache: dict[str, pd.DataFrame] = {}
+
+    def get_time_steps_year2operation(self, techProxy: str, year: int) -> pd.DataFrame:
+        hash_key = techProxy + str(year)
+        if hash_key not in self.year2operation_cache:
+            self.year2operation_cache[hash_key] = Results._to_df(
+                self.time_dict["time_steps_year2operation"][techProxy][str(year)]
+            )
+        return self.year2operation_cache[hash_key]
+
+    def get_sequence_time_steps(self, name: str) -> npt.NDArray[np.float_]:
+        if name not in self.sequence_time_steps_cache:
+            self.sequence_time_steps_cache[name] = self.time_dict["operation"][name]["values"][:]
+        return self.sequence_time_steps_cache[name]
+
 
 class Results(object):
     """
@@ -55,18 +78,13 @@ class Results(object):
 
         # load the onetime stuff
         self.results = {}
-        self.results["analysis"] = self.load_analysis(self.path)
         self.results["scenarios"] = self.load_scenarios(self.path)
-        self.results["solver"] = self.load_solver(self.path)
-        self.results["system"] = self.load_system(self.path)
         self.component_names = {
             "pars": {},
             "vars": {},
             "sets": {},
             "duals": {},
         }
-        # get the years
-        self.years = list(range(0, self.results["system"]["optimized_years"]))
 
         # this is a list for lazy dict to keep the datasets open
         self._lazydicts = []
@@ -82,29 +100,23 @@ class Results(object):
                 else:
                     self.scenarios.append(scenario)
         # we have scenarios and load all
-        elif self.results["system"]["conduct_scenario_analysis"]:
+        elif [folder.name for folder in os.scandir(self.path) if folder.is_dir() and "scenario_" in folder.name]:
             self.has_scenarios = True
             self.scenarios = [f"scenario_{scenario}" for scenario in self.results["scenarios"].keys()]
         # there are no scenarios
         else:
             self.has_scenarios = False
             self.scenarios = [None]
-        # myopic foresight
-        if self.results["system"]["use_rolling_horizon"]:
-            self.has_MF = True
-            self.mf = [f"MF_{step_horizon}" for step_horizon in self.years]
-        else:
-            self.has_MF = False
-            self.mf = [None]
 
         # cycle through the dirs
         for scenario in self.scenarios:
             # init dict
             self.results[scenario] = {}
-
             # get the base scenario
             base_scenario = ""
             scenario_subfolder = None
+            #path to access scenario-dependent files
+            file_folder = Path("")
             if self.has_scenarios:
                 # name without scenario_ prefix
                 name_short = scenario[9:]
@@ -114,34 +126,51 @@ class Results(object):
                     # no scenario subfolder -> no need to switch directories
                     base_scenario = ""
                     scenario_subfolder = scenario
+                    file_folder = scenario_subfolder
                 else:
                     # we need to go one level deeper
                     base_scenario = f"scenario_{base_scenario}"
                     scenario_subfolder = f"scenario_{scenario_subfolder}"
+                    file_folder = os.path.join(base_scenario, scenario_subfolder)
+
+            # load scenario-dependent files
+            self.results[scenario]["system"] = self.load_system(os.path.join(self.path, file_folder))
+            self.results[scenario]["analysis"] = self.load_analysis(os.path.join(self.path, file_folder))
+            self.results[scenario]["solver"] = self.load_solver(os.path.join(self.path, file_folder))
+            # myopic foresight
+            if self.results[scenario]["system"]["use_rolling_horizon"]:
+                self.results[scenario]["has_MF"] = True
+                self.results[scenario]["mf"] = [f"MF_{step_horizon}" for step_horizon in self.get_years(scenario)]
+            else:
+                self.results[scenario]["has_MF"] = False
+                self.results[scenario]["mf"] = [None]
 
             # load the corresponding timestep dict
             sub_path = os.path.join(self.path, base_scenario)
-            time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder)
+            time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder, lazy=True)
+            timesteps_are_precalculated = "time_steps_year2operation" in time_dict
+
+            if timesteps_are_precalculated:
+                self.results[scenario]["sequence_time_steps_dicts"] = TimeStepDictFromFile(time_dict, scenario)
+            else:
+                time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder, lazy=False)
+                self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
+                # load the operation2year and year2operation time steps
+                for element in time_dict["operation"]:
+                    self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_operation2year_both_dir(element,time_dict["operation"][element], time_dict["yearly"][None])
+
             self.results[scenario]["dict_sequence_time_steps"] = time_dict
-            self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
-            # load the operation2year and year2operation time steps
-            for element in time_dict["operation"]:
-                self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_operation2year_both_dir(element,time_dict["operation"][element],time_dict["yearly"][None])
-            for mf in self.mf:
+
+            for mf in self.results[scenario]["mf"]:
                 # init dict
                 self.results[scenario][mf] = {}
-
                 # get the current path
-                subfolder = ""
+                subfolder = Path("")
                 if self.has_scenarios:
-                    subfolder = scenario_subfolder
-                    # add the buffer if necessary
-                    if self.has_MF:
-                        subfolder += "_"
+                    subfolder = Path(scenario_subfolder)
                 # deal with MF
-                if self.has_MF:
-                    subfolder += mf
-
+                if self.results[scenario]["has_MF"] and self.results[scenario]["system"]["optimized_years"] > 1:
+                    subfolder = os.path.join(subfolder, Path(mf))
                 # Add together
                 current_path = os.path.join(sub_path, subfolder)
 
@@ -167,7 +196,7 @@ class Results(object):
                 self.results[scenario][mf]["pars_and_vars"].update(vars)
 
                 # load duals
-                if self.results["solver"]["add_duals"]:
+                if self.results[scenario]["solver"]["add_duals"]:
                     duals = self.load_duals(current_path, lazy=True)
                     self._lazydicts.append(duals)
                     if not self.component_names["duals"]:
@@ -201,13 +230,10 @@ class Results(object):
 
         # h5 version
         if os.path.exists(f"{name}.h5"):
-            try:
+            if not lazy:
                 content = utils.HDFPandasSerializer(file_name=f"{name}.h5", lazy=lazy)
-            except KeyError:
-                warnings.warn("The old h5 dict results are decrepated, please rerun the model to get the new results")
-                content = utils.load(f"{name}.h5")
-                if not lazy:
-                    content = content.unlazy(return_dict=True)
+            else:
+                content = h5py.File(f"{name}.h5")
             return content
 
         # compressed version
@@ -271,6 +297,9 @@ class Results(object):
         # nothing to do
         if isinstance(string, (pd.DataFrame, pd.Series)):
             return string
+
+        if isinstance(string, h5py.Group):
+            return pd.read_hdf(string.file.filename, string.name)
 
         # transform back to dataframes
         if isinstance(string, np.ndarray):
@@ -419,7 +448,7 @@ class Results(object):
         return raw_dict
 
     @classmethod
-    def load_sequence_time_steps(cls, path, scenario=None):
+    def load_sequence_time_steps(cls, path, scenario=None, lazy=False):
         """Loads the dict_sequence_time_steps from a given path
 
         :param path: Path to load the dict from
@@ -427,12 +456,14 @@ class Results(object):
         :return: dict_sequence_time_steps
         """
         # get the file name
+        if scenario:
+            path = os.path.join(path, scenario)
         fname = os.path.join(path, "dict_all_sequence_time_steps")
         if scenario is not None:
             fname += f"_{scenario}"
 
         # get the dict
-        dict_sequence_time_steps = cls._read_file(fname, lazy=False)
+        dict_sequence_time_steps = cls._read_file(fname, lazy=lazy)
 
         # tranform all lists to arrays
         return cls.expand_dict(dict_sequence_time_steps)
@@ -466,21 +497,21 @@ class Results(object):
         return out_dict
 
     @classmethod
-    def compare_configs(cls, results:list,scenarios = None):
+    def compare_configs(cls, results: list, scenarios=None):
         """Compares the configs of two or more results
 
         :param results: list of results
         :param scenarios: None, str or tuple of scenarios
         :return: a dictionary with diverging results
         """
-        results,scenarios = cls.check_combine_results(results,scenarios)
+        results, scenarios = cls.check_combine_results(results, scenarios)
         if results is None:
             return
         result_names = [res.name for res in results]
         logging.info(f"Comparing the configs of {result_names}")
-        diff_analysis = cls.get_config_diff(results,"analysis")
-        diff_system = cls.get_config_diff(results,"system")
-        diff_solver = cls.get_config_diff(results,"solver")
+        diff_analysis = cls.get_config_diff(results, "analysis", scenarios)
+        diff_system = cls.get_config_diff(results, "system", scenarios)
+        diff_solver = cls.get_config_diff(results, "solver", scenarios)
 
         diff_dict = {}
         if diff_analysis:
@@ -492,7 +523,7 @@ class Results(object):
         return diff_dict
 
     @classmethod
-    def compare_model_parameters(cls, results: list,compare_total = True,scenarios = None):
+    def compare_model_parameters(cls, results: list, compare_total=True, scenarios=None):
         """Compares the input data of two or more results
 
         :param results: list of results
@@ -500,7 +531,7 @@ class Results(object):
         :param scenarios: None, str or tuple of scenarios
         :return: a dictionary with diverging results
         """
-        results,scenarios = cls.check_combine_results(results,scenarios)
+        results, scenarios = cls.check_combine_results(results, scenarios)
         if results is None:
             return
         result_names = [res.name for res in results]
@@ -508,13 +539,13 @@ class Results(object):
         diff_pars = cls.get_component_diff(results,"pars")
         diff_dict = {}
         # initialize progress bar
-        pbar = tqdm(total = len(diff_pars))
+        pbar = tqdm(total=len(diff_pars))
         for par in diff_pars:
             # update progress bar
             pbar.update(1)
             pbar.set_description(f"Compare parameter {par}")
             # check par
-            comparison_df = cls.compare_component_values(results,par,compare_total,scenarios=scenarios)
+            comparison_df = cls.compare_component_values(results, par, compare_total, scenarios=scenarios)
             if not comparison_df.empty:
                 logging.info(f"Parameter {par} has different values")
                 diff_dict[par] = comparison_df
@@ -522,7 +553,7 @@ class Results(object):
         return diff_dict
 
     @classmethod
-    def compare_model_variables(cls, results: list,compare_total = True,scenarios = None):
+    def compare_model_variables(cls, results: list, compare_total=True, scenarios=None):
         """Compares the input data of two or more results
 
         :param results: list of results
@@ -544,7 +575,7 @@ class Results(object):
             pbar.update(1)
             pbar.set_description(f"Compare variable {var}")
             # check var
-            comparison_df = cls.compare_component_values(results,var,compare_total,scenarios=scenarios)
+            comparison_df = cls.compare_component_values(results, var, compare_total, scenarios=scenarios)
             if not comparison_df.empty:
                 logging.info(f"Variable {var} has different values")
                 diff_dict[var] = comparison_df
@@ -552,7 +583,7 @@ class Results(object):
         return diff_dict
 
     @classmethod
-    def compare_component_values(cls,results,component,compare_total,scenarios,rtol=1e-3):
+    def compare_component_values(cls, results, component, compare_total, scenarios, rtol=1e-3):
         """Compares component values of two results
 
         :param results: list with results
@@ -597,7 +628,7 @@ class Results(object):
         return comparison_df
 
     @classmethod
-    def check_combine_results(cls,results:list,scenarios=None):
+    def check_combine_results(cls, results: list, scenarios=None):
         """Checks if results are a list of 2 results with the matching scenarios
 
         :param results: list of results
@@ -606,7 +637,7 @@ class Results(object):
         """
         if len(results) != 2:
             logging.warning("You must select exactly two results to compare. Skip.")
-            return None,None
+            return None, None
         if type(results) != list:
             logging.warning("You must pass the results as list. Skip")
             return None,None
@@ -614,8 +645,8 @@ class Results(object):
             if type(el) != cls:
                 logging.warning(f"You must pass a list of ZEN-garden results, not type {type(el)}. Skip")
                 return None,None
-        scenarios = cls.check_scenario_results(results,scenarios)
-        return results,scenarios
+        scenarios = cls.check_scenario_results(results, scenarios)
+        return results, scenarios
 
     @classmethod
     def check_scenario_results(cls,results:list,scenarios=None):
@@ -631,7 +662,7 @@ class Results(object):
             return scenarios
         # if scenarios is None, choose base scenario for both
         elif scenarios is None:
-            scenarios = (results[0].scenarios[0],results[1].scenarios[0])
+            scenarios = (results[0].scenarios[0], results[1].scenarios[0])
             logging.info(f"At least one result has scenarios but no scenarios are provided. Scenarios {scenarios} are selected")
         # if one scenario string is provided
         elif type(scenarios) == str:
@@ -670,17 +701,17 @@ class Results(object):
         return scenarios
 
     @classmethod
-    def get_config_diff(cls,results, attribute):
-        """returns a dict with the differences in attribute values
+    def get_config_diff(cls, results, config_type, scenarios):
+        """returns a dict with the differences in config_type values
 
         :param results: dictionary with results
-        :param attribute: name of result attribute
-        :return: Dictionary with differences in attribute values
+        :param config_type: name of result config_type
+        :return: Dictionary with differences in config_type values
         """
         result_names = [res.name for res in results]
         diff_dict = cls.compare_dicts(
-            results[0].results[attribute],
-            results[1].results[attribute],result_names)
+            results[0]._get_config_dict(config_type,scenarios[0]),
+            results[1]._get_config_dict(config_type,scenarios[0]), result_names)
         return diff_dict
 
     @classmethod
@@ -747,69 +778,69 @@ class Results(object):
             scenarios = self.scenarios
 
         # loop
-        _data = {}
+        data = {}
         for scenario in scenarios:
             # we get the timestep dict
             sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
 
-            if not self.has_MF:
+            if not self.results[scenario]["has_MF"]:
                 if not is_set:
                     # we set the dataframe of the variable into the data dict
                     if not is_dual:
-                        _data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
+                        data[scenario] = self._to_df(self.results[scenario][None]["pars_and_vars"][name]["dataframe"])
                     else:
-                        _data[scenario] = self._to_df(self.results[scenario][None]["duals"][name]["dataframe"])
+                        data[scenario] = self._to_df(self.results[scenario][None]["duals"][name]["dataframe"])
                 else:
-                    _data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
+                    data[scenario] = self._to_df(self.results[scenario][None]["sets"][name]["dataframe"])
 
             else:
                 # init the scenario
-                _mf_data = {}
-                _is_multiindex = False
+                mf_data = {}
+                is_multiindex = False
                 # cycle through all MFs
-                for year, mf in enumerate(self.mf):
+                for year, mf in enumerate(self.results[scenario]["mf"]):
                     if not is_set:
                         if not is_dual:
-                            _var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
+                            var = self._to_df(self.results[scenario][mf]["pars_and_vars"][name]["dataframe"])
                         else:
-                            _var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
+                            var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
                     else:
-                        # _data[scenario] = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
-                        _var = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
+                        # data[scenario] = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
+                        var = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
 
                     # no multiindex
-                    if _var.index.nlevels == 1:
-                        ts_type = self._get_ts_type(_var.T,name,force_output=True)
+                    if var.index.nlevels == 1:
+                        ts_type = self._get_ts_type(var.T, name, scenario=scenario, force_output=True)
                         # if yearly variable
                         if ts_type == "yearly":
-                            _mf_data[year] = _var.loc[year].squeeze()
+                            mf_data[year] = var.loc[year].squeeze()
                             yearly_component = True
-                            time_header = _var.index.name
+                            time_header = var.index.name
                         elif ts_type is None:
-                            _data[scenario] = _var
+                            data[scenario] = var
                             break
                         else:
                             raise KeyError(f"The time step type '{ts_type}' was not expected for variable '{name}'")
                     # multiindex
                     else:
-                        _is_multiindex = True
+                        is_multiindex = True
                         # unstack the year
-                        _varSeries = _var["value"].unstack()
+                        var_series = var["value"].unstack()
                         # get type of time steps
-                        ts_type = self._get_ts_type(_varSeries,name,force_output=True)
+                        ts_type = self._get_ts_type(var_series, name, scenario=scenario, force_output=True)
                         # if all columns in years (drop the value level)
-                        # if _varSeries.columns.droplevel(0).difference(self.years).empty:
+                        # if var_series.columns.droplevel(0).difference(self.years).empty:
                         if ts_type == "yearly":
                             # get the data
-                            tmp_data = _varSeries[year]
+                            tmp_data = var_series[year]
                             # rename
-                            tmp_data.name = _varSeries.columns.name
+                            tmp_data.name = var_series.columns.name
                             # set
-                            _mf_data[year] = tmp_data
+                            mf_data[year] = tmp_data
                             yearly_component = True
-                            time_header = _varSeries.columns.name
+                            time_header = var_series.columns.name
                         # if more time steps than years, then it is operational ts (we drop value in columns)
-                        # elif pd.to_numeric(_varSeries.columns.droplevel(0), errors="coerce").equals(_varSeries.columns.droplevel(0)):
+                        # elif pd.to_numeric(var_series.columns.droplevel(0), errors="coerce").equals(var_series.columns.droplevel(0)):
                         elif ts_type is not None:
                             if ts_type == "storage":
                                 techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" in k.lower()][0]
@@ -818,55 +849,55 @@ class Results(object):
                             # get the timesteps
                             time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(techProxy, year)
                             # get the data
-                            tmp_data = _varSeries[[tstep for tstep in time_steps_year]]
+                            tmp_data = var_series[[tstep for tstep in time_steps_year]]
                             # rename
-                            tmp_data.name = _varSeries.columns.name
+                            tmp_data.name = var_series.columns.name
                             # set
-                            _mf_data[year] = tmp_data
+                            mf_data[year] = tmp_data
                             yearly_component = False
-                            time_header = _varSeries.columns.name
+                            time_header = var_series.columns.name
                         # else not a time index
                         else:
-                            _data[scenario] = _varSeries.stack()
+                            data[scenario] = var_series.stack()
                             break
                 # This is a for-else, it is triggered if we did not break the loop
                 else:
                     # deal with the years
                     if yearly_component:
                         # concat
-                        if _is_multiindex:
+                        if is_multiindex:
                             new_header = [time_header]+tmp_data.index.names
                             new_order = tmp_data.index.names + [time_header]
-                            _df = pd.concat(_mf_data, axis=0, keys=_mf_data.keys(),names=new_header).reorder_levels(new_order)
-                            # _df_index = _df.index.copy()
-                            # for level, codes in enumerate(_df.index.codes):
+                            df = pd.concat(mf_data, axis=0, keys=mf_data.keys(),names=new_header).reorder_levels(new_order)
+                            # _df_index = df.index.copy()
+                            # for level, codes in enumerate(df.index.codes):
                             #     if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
                             #         _df_index = _df_index.droplevel(level)
                             #         break
-                            # _df.index = _df_index
+                            # df.index = _df_index
                         else:
-                            _df = pd.Series(_mf_data,index=_mf_data.keys())
-                            _df.index.name = time_header
+                            df = pd.Series(mf_data,index=mf_data.keys())
+                            df.index.name = time_header
 
                     else:
-                        _df = pd.concat(_mf_data, axis=1)
-                        _df.columns = _df.columns.droplevel(0)
-                        _df = _df.sort_index(axis=1).stack()
+                        df = pd.concat(mf_data, axis=1)
+                        df.columns = df.columns.droplevel(0)
+                        df = df.sort_index(axis=1).stack()
 
-                    _data[scenario] = _df
+                    data[scenario] = df
 
         # transform all dataframes to pd.Series with the element_name as name
-        for k, v in _data.items():
+        for k, v in data.items():
             if not isinstance(v, pd.Series):
                 # to series
                 series = pd.Series(data=v["value"], index=v.index)
                 series.name = name
                 # set
-                _data[k] = series
+                data[k] = series
             # we just make sure the name is right
             else:
                 v.name = name
-                _data[k] = v
+                data[k] = v
 
         # get the path to the csv file
         if to_csv is not None:
@@ -880,16 +911,16 @@ class Results(object):
         if len(scenarios) == 1:
             # save if necessary
             if to_csv is not None:
-                _data[scenario].to_csv(f"{fname}.csv", **csv_kwargs)
-            return _data[scenario]
+                data[scenario].to_csv(f"{fname}.csv", **csv_kwargs)
+            return data[scenario]
 
         # return the dict or series
         else:
             # save if necessary
             if to_csv is not None:
                 for scenario in scenarios:
-                    _data[scenario].to_csv(f"{fname}_{scenario}.csv", **csv_kwargs)
-            return _data
+                    data[scenario].to_csv(f"{fname}_{scenario}.csv", **csv_kwargs)
+            return data
 
     def load_time_step_operation_duration(self):
         """
@@ -903,7 +934,17 @@ class Results(object):
         """
         return self.get_df("time_steps_storage_level_duration")
 
-    def get_full_ts(self, component, element_name=None, year=None, scenario=None,is_dual = False,discount_years=True):
+    def get_full_ts(
+            self,
+            component,
+            element_name=None,
+            year=None,
+            scenario=None,
+            is_dual=False,
+            discount_to_first_step=True,
+            node=None,
+            start_time_step=0,
+            end_time_step=None):
         """Calculates the full timeseries for a given element
 
         :param component: Either the dataframe of a component as pandas.Series or the name of the component
@@ -911,22 +952,34 @@ class Results(object):
         :param year: year of which full time series is selected
         :param scenario: The scenario for with the component should be extracted (only if needed)
         :param is_dual: if component is dual variable
-        :param discount_years: if discount dual variable
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
+        :param node: Filter the results by a specific node
+        :param start_time_step: Filter the results by a specific start time step
+        :param end_time_step: Filter the results by a specific end time step
         :return: A dataframe containing the full timeseries of the element
         """
         # extract the data
-        component_name, component_data = self._get_component_data(component, scenario,is_dual = is_dual)
+        component_name, component_data = self._get_component_data(component, scenario, is_dual=is_dual)
+
+        if node is not None:
+            location_name = set(component_data.index.names).intersection(set(["node", "edge"])).pop()
+            locations = [i for i in set(component_data.index.get_level_values(location_name)) if node in i]
+            filter_index = [slice(None) for i in component_data.index.names if i not in ["node", "edge"]] + [locations]
+            component_data = component_data.loc[tuple(filter_index), :]
+
         # loop over scenarios
         # no scenarios
         if not self.has_scenarios:
             full_ts = self._get_full_ts_for_single_scenario(
                 component_data, component_name, scenario=None, element_name=element_name,
-                year=year, is_dual = is_dual, discount_years=discount_years)
+                year=year, is_dual = is_dual, discount_to_first_step=discount_to_first_step,
+                start_time_step=start_time_step, end_time_step=end_time_step)
         # specific scenario
         elif scenario is not None:
             full_ts = self._get_full_ts_for_single_scenario(
                 component_data, component_name, scenario=scenario, element_name=element_name,
-                year=year, is_dual = is_dual, discount_years=discount_years)
+                year=year, is_dual = is_dual, discount_to_first_step=discount_to_first_step,
+                start_time_step=start_time_step, end_time_step=end_time_step)
         # all scenarios
         else:
             full_ts_dict = {}
@@ -934,7 +987,8 @@ class Results(object):
                 component_data_scenario = component_data[scenario]
                 full_ts_dict[scenario] = self._get_full_ts_for_single_scenario(
                     component_data_scenario, component_name, scenario=scenario, element_name=element_name,
-                    year=year, is_dual = is_dual,discount_years=discount_years)
+                    year=year, is_dual = is_dual,discount_to_first_step=discount_to_first_step,
+                    start_time_step=start_time_step, end_time_step=end_time_step)
             if isinstance(full_ts_dict[scenario], pd.Series):
                 full_ts = pd.concat(full_ts_dict, keys=full_ts_dict.keys(), axis=1).T
             else:
@@ -942,7 +996,16 @@ class Results(object):
         return full_ts
 
 
-    def _get_full_ts_for_single_scenario(self,component_data,component_name,scenario, element_name=None, year=None, is_dual=False,discount_years=True):
+    def _get_full_ts_for_single_scenario(
+            self,
+            component_data,component_name,
+            scenario,
+            element_name=None,
+            year=None,
+            is_dual=False,
+            discount_to_first_step=True,
+            start_time_step = 0,
+            end_time_step = None):
         """ calculates total value for single scenario
         :param component_data: numerical data of component
         :param component_name: name of component
@@ -950,16 +1013,18 @@ class Results(object):
         :param element_name: The element name to calculate the value for, defaults to all elements
         :param year: The year to calculate the value for, defaults to all years
         :param is_dual: if component is dual variable
-        :param discount_years: if discount dual variable
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
+        :param start_time_step: Filter the results by a specific start time step
+        :param end_time_step: Filter the results by a specific end time step
         :return: A dataframe containing the total value with the specified parameters
         """
         # timestep dict
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
-        ts_type = self._get_ts_type(component_data, component_name)
+        ts_type = self._get_ts_type(component_data, component_name, scenario=scenario)
         if is_dual:
-            annuity = self._get_annuity(discount_years)
+            annuity = self._get_annuity(discount_to_first_step, scenario=scenario)
         else:
-            annuity = pd.Series(index=self.years, data=1)
+            annuity = pd.Series(index=self.get_years(scenario), data=1)
         if isinstance(component_data, pd.Series):
             return component_data / annuity
         if ts_type == "yearly":
@@ -988,18 +1053,37 @@ class Results(object):
         _output_temp = {}
         # extract time step duration
         output_df = component_data.apply(
-            lambda row: self.get_full_ts_of_row(row, sequence_time_steps_dicts, element_name, _storage_string,
-                                                time_step_duration, is_dual, annuity), axis=1)
+            lambda row: self.get_full_ts_of_row(
+                row,
+                sequence_time_steps_dicts,
+                element_name,
+                _storage_string,
+                time_step_duration,
+                is_dual,
+                annuity,
+                start_time_step=start_time_step,
+                end_time_step=end_time_step
+                ), axis=1)
         if year is not None:
-            if year in self.years:
-                hours_of_year = self._get_hours_of_year(year)
+            if year in self.get_years(scenario):
+                hours_of_year = self._get_hours_of_year(year, scenario)
                 output_df = (output_df[hours_of_year]).T.reset_index(drop=True).T
             else:
-                print(f"WARNING: year {year} not in years {self.years}. Return component values for all years")
+                print(f"WARNING: year {year} not in years {self.results[scenario]['years']}. Return component values for all years")
 
         return output_df
 
-    def get_full_ts_of_row(self,row,sequence_time_steps_dicts,element_name,storage_string,time_step_duration,is_dual,annuity):
+    def get_full_ts_of_row(
+            self,
+            row,
+            sequence_time_steps_dicts,
+            element_name,
+            storage_string,
+            time_step_duration,
+            is_dual,
+            annuity,
+            start_time_step=0,
+            end_time_step=None):
         """ calculates the full ts for a single row of the input data
 
         :param row: #TODO describe parameter/return
@@ -1009,6 +1093,8 @@ class Results(object):
         :param time_step_duration: #TODO describe parameter/return
         :param is_dual: #TODO describe parameter/return
         :param annuity: #TODO describe parameter/return
+        :param start_time_step: Filter the results by a specific start time step
+        :param end_time_step: Filter the results by a specific end time step
         :return: #TODO describe parameter/return
         """
         row_index = row.name
@@ -1031,18 +1117,21 @@ class Results(object):
                 _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_temp + storage_string,_year)
                 row[_yearly_ts] = row[_yearly_ts] / annuity[_year]
         # throw together
+        if end_time_step is None:
+            end_time_step = len(_sequence_time_steps)
+
+        _sequence_time_steps = _sequence_time_steps[start_time_step:end_time_step]
         _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(row.index))]
         _output_temp = row[_sequence_time_steps].reset_index(drop=True)
         return _output_temp
 
-    def get_total(self, component, element_name=None, year=None, scenario=None, split_years=True):
+    def get_total(self, component, element_name=None, year=None, scenario=None):
         """Calculates the total Value of a component
 
         :param component: Either a dataframe as returned from <get_df> or the name of the component
         :param element_name: The element name to calculate the value for, defaults to all elements
         :param year: The year to calculate the value for, defaults to all years
         :param scenario: The scenario to calculate the total value for
-        :param split_years: Calculate the value for each year individually
         :return: A dataframe containing the total value with the specified parameters
         """
         # extract the data
@@ -1051,13 +1140,13 @@ class Results(object):
         # no scenarios
         if not self.has_scenarios:
             total_value = self._get_total_for_single_scenario(
-                component_data,component_name,scenario=None,
-                element_name=element_name, year=year, split_years=True)
+                component_data, component_name, scenario=None,
+                element_name=element_name, year=year)
         # specific scenario
         elif scenario is not None:
             total_value = self._get_total_for_single_scenario(
                 component_data, component_name, scenario=scenario,
-                element_name=element_name, year=year, split_years=True)
+                element_name=element_name, year=year)
         # all scenarios
         else:
             total_value_dict = {}
@@ -1065,14 +1154,14 @@ class Results(object):
                 component_data_scenario = component_data[scenario]
                 total_value_dict[scenario] = self._get_total_for_single_scenario(
                     component_data_scenario, component_name, scenario=scenario,
-                    element_name=element_name, year=year, split_years=True)
-            if isinstance(total_value_dict[scenario],pd.Series):
+                    element_name=element_name, year=year)
+            if isinstance(total_value_dict[scenario], pd.Series):
                 total_value = pd.concat(total_value_dict, keys=total_value_dict.keys(), axis=1).T
             else:
-                total_value = pd.concat(total_value_dict,keys = total_value_dict.keys())
+                total_value = pd.concat(total_value_dict, keys=total_value_dict.keys())
         return total_value
 
-    def _get_total_for_single_scenario(self,component_data,component_name,scenario, element_name=None, year=None, split_years=True):
+    def _get_total_for_single_scenario(self, component_data, component_name, scenario, element_name=None, year=None, split_years=True):
         """ calculates total value for single scenario
         :param component_data: numerical data of component
         :param component_name: name of component
@@ -1085,7 +1174,7 @@ class Results(object):
         sequence_time_steps_dicts = self.results[scenario]["sequence_time_steps_dicts"]
         if isinstance(component_data, pd.Series):
             return component_data
-        ts_type = self._get_ts_type(component_data, component_name, force_output=True)
+        ts_type = self._get_ts_type(component_data, component_name, scenario=scenario, force_output=True)
         if ts_type is None:
             return component_data
         elif ts_type == "yearly":
@@ -1099,10 +1188,7 @@ class Results(object):
                         f"WARNING: year {year} not in years {component_data.columns}. Return total value for all years")
                     return component_data.sum(axis=1)
             else:
-                if split_years:
-                    return component_data
-                else:
-                    return component_data.sum(axis=1)
+                return component_data
         elif ts_type == "operational":
             _is_storage = False
             _storage_string = ""
@@ -1128,18 +1214,14 @@ class Results(object):
                     element_name + _storage_string, year)
                 total_value = (component_data * time_step_duration_element)[time_steps_year].sum(axis=1)
             else:
-                # for all years
-                if split_years:
-                    total_value_temp = pd.DataFrame(index=component_data.index, columns=self.years)
-                    for year_temp in self.years:
-                        # set a proxy for the element name
-                        time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
-                            element_name + _storage_string, year_temp)
-                        total_value_temp[year_temp] = (component_data * time_step_duration_element)[
-                            time_steps_year].sum(axis=1)
-                    total_value = total_value_temp
-                else:
-                    total_value = (component_data * time_step_duration_element).sum(axis=1)
+                total_value_temp = pd.DataFrame(index=component_data.index, columns=self.get_years(scenario))
+                for year_temp in self.get_years(scenario):
+                    # set a proxy for the element name
+                    time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
+                        element_name + _storage_string, year_temp)
+                    total_value_temp[year_temp] = (component_data * time_step_duration_element)[
+                        time_steps_year].sum(axis=1)
+                total_value = total_value_temp
 
         # if we do not have an element name
         else:
@@ -1154,33 +1236,30 @@ class Results(object):
                     element_name_proxy + _storage_string, year)
                 total_value = total_value[time_steps_year].sum(axis=1)
             else:
-                if split_years:
-                    total_value_temp = pd.DataFrame(index=total_value.index, columns=self.years)
-                    for year_temp in self.years:
-                        # set a proxy for the element name
-                        element_name_proxy = component_data.index.get_level_values(level=0)[0]
-                        time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
-                            element_name_proxy + _storage_string, year_temp)
-                        total_value_temp[year_temp] = total_value[time_steps_year].sum(axis=1)
-                    total_value = total_value_temp
-                else:
-                    total_value = total_value.sum(axis=1)
+                total_value_temp = pd.DataFrame(index=total_value.index, columns=self.get_years(scenario))
+                for year_temp in self.get_years(scenario):
+                    # set a proxy for the element name
+                    element_name_proxy = component_data.index.get_level_values(level=0)[0]
+                    time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
+                        element_name_proxy + _storage_string, year_temp)
+                    total_value_temp[year_temp] = total_value[time_steps_year].sum(axis=1)
+                total_value = total_value_temp
         return total_value
 
-    def get_dual(self,constraint,scenario=None, element_name=None, year=None,discount_years=True):
+    def get_dual(self, constraint, scenario=None, element_name=None, year=None, discount_to_first_step=True):
         """ extracts the dual variables of a constraint
 
         :param constraint: #TODO describe parameter/return
         :param scenario: #TODO describe parameter/return
         :param element_name: #TODO describe parameter/return
         :param year: #TODO describe parameter/return
-        :param discount_years: #TODO describe parameter/return
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :return: #TODO describe parameter/return
         """
-        if not self.results["solver"]["add_duals"]:
+        if not self.results[scenario]["solver"]["add_duals"]:
             logging.warning("Duals are not calculated. Skip.")
             return
-        _duals = self.get_full_ts(component=constraint,scenario=scenario,is_dual=True, element_name=element_name, year=year,discount_years=discount_years)
+        _duals = self.get_full_ts(component=constraint, scenario=scenario, is_dual=True, element_name=element_name, year=year, discount_to_first_step=discount_to_first_step)
         return _duals
 
     def get_doc(self, component, index_set=False):
@@ -1201,29 +1280,96 @@ class Results(object):
             return doc, index_set
         return doc[0]
 
-    def _get_annuity(self,discount_years):
+    def get_system(self,scenario=None):
+        """ returns the system of a model. For multiple scenarios, return all
+        :param scenario: scenario in model
+        :return: system dict """
+        system = self._get_config_dict(config_type="system",scenario=scenario)
+        return system
+
+    def get_analysis(self,scenario=None):
+        """ returns the analysis of a model. For multiple scenarios, return all
+        :param scenario: scenario in model
+        :return: analysis dict """
+        analysis = self._get_config_dict(config_type="analysis",scenario=scenario)
+        return analysis
+
+    def get_solver(self,scenario=None):
+        """ returns the solver of a model. For multiple scenarios, return all
+        :param scenario: scenario in model
+        :return: solver dict """
+        solver = self._get_config_dict(config_type="solver",scenario=scenario)
+        return solver
+
+    def get_years(self,scenario=None):
+        """ returns the optimization years of a model.
+        If a model has scenarios and no scenario is specified, use first one.
+        :param scenario: scenario in model
+        :return: years"""
+        if self.has_scenarios and scenario is None:
+            scenario = self.scenarios[0]
+        system = self.get_system(scenario)
+        years = list(range(0, system["optimized_years"]))
+        return years
+
+    def has_MF(self,scenario=None):
+        """ returns if the model is myopic foresight .
+        If a model has scenarios and no scenario is specified, use first one.
+        :param scenario: scenario in model
+        :return: boolean if model has myopic foresight"""
+        if self.has_scenarios and scenario is None:
+            scenario = self.scenarios[0]
+        has_mf = self._get_config_dict(config_type="has_MF",scenario=scenario)
+        return has_mf
+
+    def _get_config_dict(self, config_type,scenario=None):
+        """ returns a config dict (system, analysis, solver) of a model. For multiple scenarios, return all
+        :param config_type: name of config type (system, analysis, solver)
+        :param scenario: manual scenario
+        :return: config of model """
+        # has scenarios
+        if self.has_scenarios:
+            if scenario is not None:
+                if scenario in self.scenarios:
+                    config = self.results[scenario][config_type]
+                    return config
+                else:
+                    logging.warning(f"Requested scenario {scenario} not in {self.scenarios} of {self.name}")
+            config = {}
+            for s in self.scenarios:
+                config[s] = self.results[s][config_type]
+        else:
+            config = self.results[None][config_type]
+        return config
+
+    def _get_annuity(self,discount_to_first_step, scenario):
         """ discounts the duals
 
-        :param discount_years: #TODO describe parameter/return
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
+        :param scenario: scenario name whose results are assessed
         :return: #TODO describe parameter/return
         """
-        system = self.results["system"]
+        system = self.results[scenario]["system"]
         # calculate annuity
         discount_rate = self.get_df("discount_rate").squeeze()
-        annuity = pd.Series(index=self.years,dtype=float)
-        for year in self.years:
+        annuity = pd.Series(index=self.get_years(scenario), dtype=float)
+        for year in self.get_years(scenario):
             interval_between_years = system["interval_between_years"]
-            if year == self.years[-1]:
+            if year == self.get_years(scenario)[-1]:
                 interval_between_years_this_year = 1
             else:
                 interval_between_years_this_year = system["interval_between_years"]
-            if self.has_MF:
-                annuity[year] = sum(((1 / (1 + discount_rate)) ** (_intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years_this_year))
+            if self.results[scenario]["has_MF"]:
+                if discount_to_first_step:
+                    annuity[year] = interval_between_years_this_year * (1 / (1 + discount_rate))
+                else:
+                    annuity[year] = sum(((1 / (1 + discount_rate)) ** (_intermediate_time_step)) for _intermediate_time_step in range(0, interval_between_years_this_year))
             else:
-                annuity[year] = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.years[0]) + _intermediate_time_step))
+                if discount_to_first_step:
+                    annuity[year] = interval_between_years_this_year*((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.get_years(scenario)[0])))
+                else:
+                    annuity[year] = sum(((1 / (1 + discount_rate)) ** (interval_between_years * (year - self.get_years(scenario)[0]) + _intermediate_time_step))
                         for _intermediate_time_step in range(0, interval_between_years_this_year))
-            if not discount_years:
-                annuity[year] /= interval_between_years_this_year
         return annuity
 
     def _get_ts_duration(self, scenario=None, is_storage=False):
@@ -1249,7 +1395,7 @@ class Results(object):
                 time_step_duration = self.time_step_operational_duration.unstack()
         return time_step_duration
 
-    def _get_component_data(self, component, scenario=None,is_dual=False):
+    def _get_component_data(self, component, scenario=None, is_dual=False):
         """ extracts the data for a component
 
         :param component: #TODO describe parameter/return
@@ -1262,39 +1408,40 @@ class Results(object):
             component_name = component
             # only use the data from one scenario if specified
             if scenario is not None:
-                component_data = self.get_df(component,is_dual=is_dual)[scenario]
+                component_data = self.get_df(component, is_dual=is_dual)[scenario]
             else:
-                component_data = self.get_df(component,is_dual=is_dual)
-            if isinstance(component_data,dict):
+                component_data = self.get_df(component, is_dual=is_dual)
+            if isinstance(component_data, dict):
                 component_data_temp = {}
                 for key,data in component_data.items():
                     if isinstance(data.index, pd.MultiIndex):
-                        component_data_temp[key] = self._unstack_time_level(data,component_name)
+                        component_data_temp[key] = self._unstack_time_level(data, component_name, scenario=scenario)
                     else:
                         component_data_temp[key] = data
                 component_data = component_data_temp
-            elif isinstance(component_data.index,pd.MultiIndex):
-                component_data = self._unstack_time_level(component_data,component_name)
+            elif isinstance(component_data.index, pd.MultiIndex):
+                component_data = self._unstack_time_level(component_data, component_name, scenario)
         elif isinstance(component, pd.Series):
             component_name = component.name
-            component_data = self._unstack_time_level(component,component_name)
+            component_data = self._unstack_time_level(component, component_name, scenario=scenario)
         else:
             raise TypeError(f"Type {type(component).__name__} of input is not supported.")
 
         return component_name, component_data
 
-    def _get_ts_type(self, component_data, component_name,force_output = False):
+    def _get_ts_type(self, component_data, component_name, scenario, force_output=False):
         """ get time step type (operational, storage, yearly)
 
         :param component_data: #TODO describe parameter/return
         :param component_name: #TODO describe parameter/return
+        :param scenario: scenario name whose ts type is examined
         :param force_output: #TODO describe parameter/return
         :return: #TODO describe parameter/return
         """
-        _header_operational = self.results["analysis"]["header_data_inputs"]["set_time_steps_operation"]
-        _header_storage = self.results["analysis"]["header_data_inputs"]["set_time_steps_storage_level"]
-        _header_yearly = self.results["analysis"]["header_data_inputs"]["set_time_steps_yearly"]
-        if isinstance(component_data,pd.Series):
+        _header_operational = self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_operation"]
+        _header_storage = self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_storage_level"]
+        _header_yearly = self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_yearly"]
+        if isinstance(component_data, pd.Series):
             axis_name = component_data.index.name
         else:
             axis_name = component_data.columns.name
@@ -1310,7 +1457,7 @@ class Results(object):
             else:
                 raise KeyError(f"Axis index name of '{component_name}' ({axis_name}) is unknown. Should be (operational, storage, yearly)")
 
-    def _unstack_time_level(self,component,component_name):
+    def _unstack_time_level(self, component, component_name, scenario):
         """ unstacks the time level of a dataframe
 
         :param component: pd.Series of component
@@ -1318,9 +1465,11 @@ class Results(object):
         :returns unstacked_component: pd.Dataframe of unstacked component
         """
         headers = []
-        headers.append(self.results["analysis"]["header_data_inputs"]["set_time_steps_operation"])
-        headers.append(self.results["analysis"]["header_data_inputs"]["set_time_steps_storage_level"])
-        headers.append(self.results["analysis"]["header_data_inputs"]["set_time_steps_yearly"])
+        if scenario is None:
+            scenario = self.scenarios[0]
+        headers.append(self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_operation"])
+        headers.append(self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_storage_level"])
+        headers.append(self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_yearly"])
         headers = set(headers)
         sel_header = list(headers.intersection(component.index.names))
         assert len(sel_header) <= 1, f"Index of component {component_name} has multiple time headers: {sel_header}"
@@ -1329,13 +1478,15 @@ class Results(object):
         else:
             unstacked_component = component
         return unstacked_component
-    def _get_hours_of_year(self, year):
+
+    def _get_hours_of_year(self, year, scenario):
         """ get total hours of year
 
         :param year: #TODO describe parameter/return
+        :param scenario: scenario name whose hours of specific year are accessed
         :return: #TODO describe parameter/return
         """
-        _total_hours_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
+        _total_hours_per_year = self.results[scenario]["system"]["unaggregated_time_steps_per_year"]
         _hours_of_year = list(range(year * _total_hours_per_year, (year + 1) * _total_hours_per_year))
         return _hours_of_year
 
@@ -1377,34 +1528,32 @@ class Results(object):
                 total_cost = pd.concat([total_cost, self.get_total(cost, scenario=scenario)], axis=1)
         self.plot(total_cost.transpose(), yearly=True, node_edit="all" ,plot_strings={"title": "Total Cost", "ylabel": "Cost"}, save_fig=save_fig, file_type=file_type)
 
-    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None, demand_area=False, scenario=None):
-        """Visualizes the energy balance of a specific carrier at a single node
-
-        :param node: node of interest
-        :param carrier: String of carrier of interest
-        :param year: Generic index of year of interest
-        :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
-        :param duration: Number of hours that should be plotted from start_hour
-        :param save_fig: Choose if figure should be saved as pdf
-        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
-        :param demand_area: Choose if carrier demand should be plotted as area with other negative flows (instead of line)
-        :param scenario: Choose scenario of interest (only for multi-scenario simulations, per default scenario_ is plotted)
-        """
-        # plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
-        fig,ax = plt.subplots(figsize=(30,6.5),layout = "constrained")
+    def get_energy_balance_df(
+            self,
+            node,
+            carrier,
+            scenario=None,
+            start_time_step = 0,
+            end_time_step = None
+        ) -> pd.DataFrame:
         components = ["flow_conversion_output", "flow_conversion_input", "flow_export", "flow_import", "flow_storage_charge", "flow_storage_discharge", "demand", "flow_transport_in", "flow_transport_out", "shed_demand"]
         lowers = ["flow_conversion_input", "flow_export", "flow_storage_charge", "flow_transport_out"]
+
         data_plot = pd.DataFrame()
+
         if scenario not in self.scenarios:
             scenario = "scenario_"
         for component in components:
             if component == "flow_transport_in":
-                data_full_ts = self.edit_carrier_flows(self.get_full_ts("flow_transport", scenario=scenario), node, carrier, "in", scenario)
+                full_ts = self.get_full_ts("flow_transport", scenario=scenario, node=node, start_time_step=start_time_step, end_time_step=end_time_step)
+                data_full_ts = self.edit_carrier_flows(full_ts, node, carrier, "in", scenario)
             elif component == "flow_transport_out":
-                data_full_ts = self.edit_carrier_flows(self.get_full_ts("flow_transport", scenario=scenario), node, carrier, "out", scenario)
+                full_ts = self.get_full_ts("flow_transport", scenario=scenario, node=node, start_time_step=start_time_step, end_time_step=end_time_step)
+                data_full_ts = self.edit_carrier_flows(full_ts, node, carrier, "out", scenario)
             else:
                 # get full timeseries of component and extract rows of relevant node
-                data_full_ts = self.edit_nodes(self.get_full_ts(component, scenario=scenario), node)
+                full_ts = self.get_full_ts(component, scenario=scenario, node=node, start_time_step=start_time_step, end_time_step=end_time_step)
+                data_full_ts = self.edit_nodes(full_ts, node, scenario)
                 # extract data of desired carrier
                 data_full_ts = self.extract_carrier(data_full_ts, carrier, scenario)
                 # check if return from extract_carrier() is still a data frame as it is possible that the desired carrier isn't contained --> None returned
@@ -1427,13 +1576,40 @@ class Results(object):
                 data_full_ts.name = component
             # add data of current variable to the plot data frame
             data_plot = pd.concat([data_plot, data_full_ts], axis=1)
+        return data_plot
 
+    def plot_energy_balance(self, node, carrier, year, start_hour=None, duration=None, save_fig=False, file_type=None, demand_area=False, scenario=None):
+        """Visualizes the energy balance of a specific carrier at a single node
+
+        :param node: node of interest
+        :param carrier: String of carrier of interest
+        :param year: Generic index of year of interest
+        :param start_hour: Specific hour of year, where plot should start (needs to be passed together with duration)
+        :param duration: Number of hours that should be plotted from start_hour
+        :param save_fig: Choose if figure should be saved as pdf
+        :param file_type: File type the figure is saved as (pdf, svg, png, ...)
+        :param demand_area: Choose if carrier demand should be plotted as area with other negative flows (instead of line)
+        :param scenario: Choose scenario of interest (only for multi-scenario simulations, per default scenario_ is plotted)
+        """
+        # plt.rcParams["figure.figsize"] = (30*1, 6.5*1)
+        fig,ax = plt.subplots(figsize=(30,6.5),layout = "constrained")
         # extract the rows of the desired year
-        if year not in list(range(self.results["system"]["optimized_years"])):
+        fetch_fast = True
+
+        if scenario not in self.scenarios:
+            scenario = self.scenarios[0]
+
+        if year not in list(range(self.results[scenario]["system"]["optimized_years"])):
             warnings.warn(f"Chosen year '{year}' has not been optimized")
+            data_plot = self.get_energy_balance_df(node, carrier, scenario)
         else:
-            ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
-            data_plot = data_plot.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
+            ts_per_year = self.results[scenario]["system"]["unaggregated_time_steps_per_year"]
+            if fetch_fast:
+                data_plot = self.get_energy_balance_df(node, carrier, scenario, start_time_step=ts_per_year*year, end_time_step=ts_per_year*year+ts_per_year)
+            else:
+                data_plot = self.get_energy_balance_df(node, carrier, scenario)
+                data_plot = data_plot.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
+
         # extract specific hours of year
         data_plot = data_plot.reset_index(drop=True)
         if start_hour is not None and duration is not None:
@@ -1492,7 +1668,7 @@ class Results(object):
         fig.legend(handles, labels, loc='outside right')
         if save_fig:
             path = os.path.join(os.getcwd(), "outputs")
-            path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
+            path = os.path.join(path, os.path.basename(self.results[scenario]["analysis"]["dataset"]))
             path = os.path.join(path, "result_plots")
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -1547,7 +1723,7 @@ class Results(object):
         if yearly:
             ts_type = "yearly"
         else:
-            ts_type = self._get_ts_type(component_data, component_name)
+            ts_type = self._get_ts_type(component_data, component_name, scenario=scenario)
 
         # needed for plot titles
         title = f"{component}, "
@@ -1562,7 +1738,7 @@ class Results(object):
                 data_full_ts = component
             # extract desired data
             if node_edit != "all":
-                data_full_ts = self.edit_nodes(data_full_ts, node_edit)
+                data_full_ts = self.edit_nodes(data_full_ts, node_edit, scenario=scenario)
             if sum_techs:
                 data_full_ts = self.sum_over_technologies(data_full_ts)
             if reference_carrier != None:
@@ -1579,7 +1755,7 @@ class Results(object):
             data_full_ts = data_full_ts.transpose()
             if year is not None:
                 # extract the rows of the desired year
-                ts_per_year = self.results["system"]["unaggregated_time_steps_per_year"]
+                ts_per_year = self.results[scenario]["system"]["unaggregated_time_steps_per_year"]
                 data_full_ts = data_full_ts.iloc[ts_per_year*year:ts_per_year*year+ts_per_year]
                 # extract specific hours of year
                 if start_hour is not None and duration is not None:
@@ -1606,12 +1782,12 @@ class Results(object):
             elif isinstance(component, pd.DataFrame):
                 data_total = component
             if tech_type != None:
-                data_total = self.extract_technology(data_total, tech_type)
+                data_total = self.extract_technology(data_total, tech_type, scenario=scenario)
             if reference_carrier != None:
                 data_total = self.extract_reference_carrier(data_total, reference_carrier, scenario)
             # sum data according to chosen options
             if node_edit != "all":
-                data_total = self.edit_nodes(data_total, node_edit)
+                data_total = self.edit_nodes(data_total, node_edit, scenario=scenario)
             if sum_techs:
                 data_total = self.sum_over_technologies(data_total)
             #drop index levels having constant value in all indices
@@ -1649,7 +1825,7 @@ class Results(object):
                     bar = plt.bar(data_total.columns.values + 1/(data_total.shape[0]+1) * ind, row, 1/(data_total.shape[0]+1))
                     bars.append(bar)
                 #data_total.columns.values dtype needs to be cast to an integer as edit_nodes changes the dtype to an object
-                plt.xticks(np.array(data_total.columns.values, dtype=int) + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), np.array(data_total.columns.values, dtype=int)+self.results["system"]["reference_year"])
+                plt.xticks(np.array(data_total.columns.values, dtype=int) + 1/(data_total.shape[0]+1) * 1/2 * (data_total.shape[0]-1), np.array(data_total.columns.values, dtype=int)+self.results[scenario]["system"]["reference_year"])
                 plt.legend((bars),(data_total.index.values),ncols=max(1,int(data_total.shape[0]/7)))
 
             else:
@@ -1661,7 +1837,7 @@ class Results(object):
 
         if save_fig:
             path = os.path.join(os.getcwd(), "outputs")
-            path = os.path.join(path, os.path.basename(self.results["analysis"]["dataset"]))
+            path = os.path.join(path, os.path.basename(self.results[scenario]["analysis"]["dataset"]))
             path = os.path.join(path, "result_plots")
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -1721,11 +1897,12 @@ class Results(object):
 
         return data_extracted.transpose()
 
-    def edit_nodes(self, data, node_edit):
+    def edit_nodes(self, data, node_edit, scenario):
         """Manipulates the data frame 'data' as specified by 'node_edit'
 
         :param data: pd.DataFrame containing data to extract
         :param node_edit: string to specify if data should be summed over nodes (node_edit="all") or if a single node should be extracted (e.g. node_edit="CH")
+        :param scenario: scenario name
         :return: pd.DataFrame containing data of interest
         """
         if isinstance(data, pd.Series):
@@ -1733,7 +1910,7 @@ class Results(object):
         if "node" not in data.index.dtypes and "location" not in data.index.dtypes:
             return data
         # check if data of specific node, specified by string, should be extracted
-        if node_edit in self.results["system"]["set_nodes"]:
+        if node_edit in self.results[scenario]["system"]["set_nodes"]:
             if data.index.nlevels == 2:
                 data = data.loc[(slice(None), node_edit), :]
                 return data
@@ -1801,11 +1978,12 @@ class Results(object):
             data = data.loc[(slice(None), carrier, slice(None)), :]
             return data
 
-    def extract_technology(self, data, tech_type):
+    def extract_technology(self, data, tech_type, scenario):
         """Extracts the technology type specified by 'type'
 
         :param data: pd.DataFrame containing data to extract
         :param tech_type: technology type (e.g., conversion)
+        :param scenario: scenario name
         :return: pd.DataFrame containing data of interest
         """
         # check if data contains technologies
@@ -1818,13 +1996,13 @@ class Results(object):
                 #iterate over rows of data to find technologies with identical carrier
                 for pos, index in enumerate(data.index):
                     if tech_type == "conversion":
-                        if index[0] in self.results["system"]["set_conversion_technologies"]:
+                        if index[0] in self.results[scenario]["system"]["set_conversion_technologies"]:
                             index_list.append(index)
                     elif tech_type == "transport":
-                        if index[0] in self.results["system"]["set_transport_technologies"]:
+                        if index[0] in self.results[scenario]["system"]["set_transport_technologies"]:
                             index_list.append(index)
                     elif "storage" in tech_type:
-                        if index[0] in self.results["system"]["set_storage_technologies"]:
+                        if index[0] in self.results[scenario]["system"]["set_storage_technologies"]:
                             if "power" in tech_type and index[1] == "power":
                                 index_list.append(index)
                             elif "energy" in tech_type and index[1] == "energy":

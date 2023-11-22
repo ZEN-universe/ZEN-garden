@@ -39,43 +39,44 @@ class Technology(Element):
 
         super().__init__(technology, optimization_setup)
 
+    def store_carriers(self):
+        """ retrieves and stores information on reference """
+        self.reference_carrier = self.data_input.extract_carriers(carrier_type="reference_carrier")
+        self.energy_system.set_technology_of_carrier(self.name, self.reference_carrier)
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
+        # store scenario dict
+        super().store_scenario_dict()
         # set attributes of technology
-        _set_location = self.location_type
-        _set_location_super = self.location_type_super
-
-        set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
-        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
-        self.reference_carrier = [self.data_input.extract_attribute("reference_carrier", skip_warning=True)]
-        self.energy_system.set_technology_of_carrier(self.name, self.reference_carrier)
-        self.capacity_addition_min = self.data_input.extract_attribute("capacity_addition_min")["value"]
-        self.capacity_addition_max = self.data_input.extract_attribute("capacity_addition_max")["value"]
-        self.capacity_addition_unbounded = self.data_input.extract_attribute("capacity_addition_unbounded")["value"]
-        self.lifetime = self.data_input.extract_attribute("lifetime")["value"]
-        self.construction_time = self.data_input.extract_attribute("construction_time")["value"]
+        set_location = self.location_type
+        set_location_super = self.location_type_super
+        self.capacity_addition_min = self.data_input.extract_input_data("capacity_addition_min", index_sets=[])
+        self.capacity_addition_max = self.data_input.extract_input_data("capacity_addition_max", index_sets=[])
+        self.capacity_addition_unbounded = self.data_input.extract_input_data("capacity_addition_unbounded", index_sets=[])
+        self.lifetime = self.data_input.extract_input_data("lifetime", index_sets=[])
+        self.construction_time = self.data_input.extract_input_data("construction_time", index_sets=[])
         # maximum diffusion rate
-        self.max_diffusion_rate = self.data_input.extract_input_data("max_diffusion_rate", index_sets=["set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        self.max_diffusion_rate = self.data_input.extract_input_data("max_diffusion_rate", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly")
 
         # add all raw time series to dict
         self.raw_time_series = {}
-        self.raw_time_series["min_load"] = self.data_input.extract_input_data("min_load", index_sets=[_set_location, "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["max_load"] = self.data_input.extract_input_data("max_load", index_sets=[_set_location, "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["opex_specific_variable"] = self.data_input.extract_input_data("opex_specific_variable", index_sets=[_set_location, "set_time_steps"], time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["min_load"] = self.data_input.extract_input_data("min_load", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["max_load"] = self.data_input.extract_input_data("max_load", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["opex_specific_variable"] = self.data_input.extract_input_data("opex_specific_variable", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly")
         # non-time series input data
-        self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[_set_location_super, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        # self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[_set_location_super])
-        self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[_set_location])
+        self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location])
+        self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[set_location_super, "set_time_steps_yearly"],
+                                                                       time_steps="set_time_steps_yearly")
+        self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[set_location])
         if self.energy_system.system['load_lca_factors']:
-            self.technology_lca_factors = self.data_input.extract_input_data('technology_lca_factors', index_sets=[_set_location, 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps=set_time_steps_yearly)
+            self.technology_lca_factors = self.data_input.extract_input_data('technology_lca_factors', index_sets=[set_location, 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps="set_time_steps_yearly")
         # extract existing capacity
         self.set_technologies_existing = self.data_input.extract_set_technologies_existing()
-        self.capacity_existing = self.data_input.extract_input_data("capacity_existing", index_sets=[_set_location, "set_technologies_existing"])
-        self.capacity_investment_existing = self.data_input.extract_input_data("capacity_investment_existing", index_sets=[_set_location, "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.lifetime_existing = self.data_input.extract_lifetime_existing("capacity_existing", index_sets=[_set_location, "set_technologies_existing"])
+        self.capacity_existing = self.data_input.extract_input_data("capacity_existing", index_sets=[set_location, "set_technologies_existing"])
+        self.capacity_investment_existing = self.data_input.extract_input_data("capacity_investment_existing", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+        self.lifetime_existing = self.data_input.extract_lifetime_existing("capacity_existing", index_sets=[set_location, "set_technologies_existing"])
 
     def calculate_capex_of_capacities_existing(self, storage_energy=False):
         """ this method calculates the annualized capex of the existing capacities
@@ -138,7 +139,7 @@ class Technology(Element):
             self.set_technologies_existing = np.append(self.set_technologies_existing, index_new_technology)
             # add new remaining lifetime
             _lifetime = self.lifetime_existing.unstack()
-            _lifetime[index_new_technology] = self.lifetime
+            _lifetime[index_new_technology] = self.lifetime[0]
             self.lifetime_existing = _lifetime.stack()
 
             for type_capacity in list(set(_new_capacity_addition.index.get_level_values(0))):
@@ -294,9 +295,12 @@ class Technology(Element):
 
         # if start_base_time_step is further in the past than first base time step, use first base time step
         if clip_to_first_time_step:
-            start_base_time_step = int(max(sets["set_base_time_steps"][0], base_time_step - base_period + 1))
+            start_base_time_step = max(sets["set_base_time_steps"][0], base_time_step - base_period + 1)
         else:
-            start_base_time_step = int(base_time_step - base_period + 1)
+            start_base_time_step = base_time_step - base_period + 1
+        if type(start_base_time_step) == np.ndarray or type(start_base_time_step) == np.array:
+            start_base_time_step = start_base_time_step.squeeze()
+        start_base_time_step = int(start_base_time_step)
         start_base_time_step = min(start_base_time_step, sets["set_base_time_steps"][-1])
         # if period of existing capacity, then only return the start base time step
         if id_capacity_existing is not None:

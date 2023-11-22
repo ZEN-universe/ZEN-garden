@@ -67,9 +67,7 @@ class Config(object):
         # transport distance (euclidean or actual)
         self.analysis["transport_distance"] = "Euclidean"
         # dictionary with subsets related to set
-        self.analysis["subsets"] = {"set_carriers": [],
-                               "set_technologies": ["set_conversion_technologies", "set_transport_technologies","set_storage_technologies"],
-                               "set_conversion_technologies": ["set_conditioning_technologies"]}
+        self.analysis["subsets"] = {"set_carriers": [], "set_technologies": ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]}
         # headers for the generation of input files
         self.analysis["header_data_inputs"] = {
                 "set_location": "location",
@@ -77,25 +75,23 @@ class Config(object):
                 "set_edges": "edge",
                 "set_super_nodes": "super_node",
                 "set_super_edges": "super_edge",
-                "set_time_steps":"time", # IMPORTANT: time must be unique
-                "set_time_steps_operation":"time_operation",
-                "set_time_steps_storage_level":"time_storage_level",
-                "set_time_steps_yearly":"year", # IMPORTANT: year must be unique
-                "set_time_steps_yearly_entire_horizon":"year_entire_horizon",
-                "set_carriers":"carrier",
-                "set_input_carriers":"carrier",
-                "set_output_carriers":"carrier",
-                "set_dependent_carriers":"carrier",
-                "set_conditioning_carriers":"carrier",
-                "set_conditioning_carrier_parents":"carrier",
-                "set_elements":"element",
-                "set_conversion_technologies":"technology",
-                "set_transport_technologies":"technology",
-                "set_storage_technologies":"technology",
-                "set_technologies":"technology",
+                "set_time_steps": "time", # IMPORTANT: time must be unique
+                "set_time_steps_operation": "time_operation",
+                "set_time_steps_storage_level": "time_storage_level",
+                "set_time_steps_yearly": "year", # IMPORTANT: year must be unique
+                "set_time_steps_yearly_entire_horizon": "year_entire_horizon",
+                "set_carriers": "carrier",
+                "set_input_carriers": "carrier",
+                "set_output_carriers": "carrier",
+                "set_dependent_carriers": "carrier",
+                "set_elements": "element",
+                "set_conversion_technologies": "technology",
+                "set_transport_technologies": "technology",
+                "set_storage_technologies": "technology",
+                "set_technologies": "technology",
                 "set_technologies_existing": "technology_existing",
-                "set_capacity_types":"capacity_type",
-                "set_lca_impact_categories":"impact_category"}
+                "set_capacity_types": "capacity_type",
+                "set_lca_impact_categories": "impact_category"}
         # time series aggregation
         self.analysis["time_series_aggregation"] = {
             "clusterMethod"         : "k_means",
@@ -119,17 +115,14 @@ class Config(object):
         # earliest possible year of input data, needed to differentiate between yearly and generic time indices
         self.analysis["earliest_year_of_data"] = 1900
         self.analysis['use_capacities_existing'] = False
+
         ## System - Items assignment
         # set of energy carriers
         self.system["set_carriers"] = []
-        # set of conditioning carriers
-        self.system["set_conditioning_carriers"] = []
         # set of capacity types: power-rated or energy-rated
-        self.system["set_capacity_types"] = ["power","energy"]
+        self.system["set_capacity_types"] = ["power", "energy"]
         # set of conversion technologies
         self.system["set_conversion_technologies"] = []
-        # set of conditioning technologies
-        self.system["set_conditioning_technologies"] = []
         # set of storage technologies
         self.system["set_storage_technologies"] = []
         self.system["storage_periodicity"] = True
@@ -159,6 +152,7 @@ class Config(object):
         self.system["knowledge_depreciation_rate"] = 0.1
         # enforce selfish behavior
         self.system["enforce_selfish_behavior"] = False
+        self.system["use_rolling_horizon"] = False
         # LCA flag and set of impact categories
         self.system['load_lca_factors'] = False
         self.system['set_lca_impact_categories'] = []
@@ -168,8 +162,6 @@ class Config(object):
         self.solver["name"]      = "glpk"
         # gurobi options
         self.solver["solver_options"] = {
-            "logfile":      ".//outputs//logs//GurobiLogFile.log",
-            "MIPGap":       None,
             "TimeLimit":    None,
             "Method":       None
         }
@@ -183,7 +175,7 @@ class Config(object):
         self.solver["analyze_numerics"] = False
         self.solver["recommend_base_units"] = False
         self.solver["immutable_unit"] = []
-        self.solver["range_unit_exponents"]    = {"min":-1,"max":1,"step_width":1}
+        self.solver["range_unit_exponents"]    = {"min": -3, "max": 3}
         # assumes "ton" to be metric ton, not imperial ton
         self.solver["define_ton_as_metric_ton"] = True
         # round down to number of decimal points, for new capacity and unit multipliers

@@ -31,32 +31,29 @@ class Carrier(Element):
 
         :param carrier: carrier that is added to the model
         :param optimization_setup: The OptimizationSetup the element is part of """
-
         logging.info(f'Initialize carrier {carrier}')
         super().__init__(carrier, optimization_setup)
-        # store input data
-        self.store_input_data()
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
-        set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
-        set_time_steps_yearly = self.energy_system.set_time_steps_yearly
+        # store scenario dict
+        super().store_scenario_dict()
         # set attributes of carrier
         # raw import
         self.raw_time_series = {}
-        self.raw_time_series["demand"] = self.data_input.extract_input_data("demand", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["availability_import"] = self.data_input.extract_input_data("availability_import", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["availability_export"] = self.data_input.extract_input_data("availability_export", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["price_export"] = self.data_input.extract_input_data("price_export", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
-        self.raw_time_series["price_import"] = self.data_input.extract_input_data("price_import", index_sets=["set_nodes", "set_time_steps"], time_steps=set_base_time_steps_yearly)
+        self.raw_time_series["demand"] = self.data_input.extract_input_data("demand", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["availability_import"] = self.data_input.extract_input_data("availability_import", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["availability_export"] = self.data_input.extract_input_data("availability_export", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["price_export"] = self.data_input.extract_input_data("price_export", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["price_import"] = self.data_input.extract_input_data("price_import", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
         # non-time series input data
-        self.availability_import_yearly = self.data_input.extract_input_data("availability_import_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
-        self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps=set_time_steps_yearly)
+        self.availability_import_yearly = self.data_input.extract_input_data("availability_import_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+        self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+        self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
         self.price_shed_demand = self.data_input.extract_input_data("price_shed_demand", index_sets=[])
         # LCA factors
         if self.energy_system.system['load_lca_factors']:
-            self.carrier_lca_factors = self.data_input.extract_input_data('carrier_lca_factors', index_sets=['set_nodes', 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps=set_time_steps_yearly)
+            self.carrier_lca_factors = self.data_input.extract_input_data('carrier_lca_factors', index_sets=['set_nodes', 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps="set_time_steps_yearly")
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites set_time_steps_operation
@@ -227,6 +224,7 @@ class Carrier(Element):
                                             index_sets=cls.create_custom_set(['set_lca_impact_categories', "set_time_steps_yearly"], optimization_setup),
                                             rule=rules.constraint_carrier_lca_impacts_total_rule,
                                             doc='total yearly lca impacts of importing and exporting carriers')
+
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
             if len(optimization_setup.system[subclass.label]) > 0:

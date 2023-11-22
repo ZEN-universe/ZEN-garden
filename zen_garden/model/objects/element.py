@@ -15,7 +15,7 @@ import logging
 import os
 import psutil
 import time
-
+from pathlib import Path
 from zen_garden.preprocess.functions.extract_input_data import DataInput
 
 class Element:
@@ -61,7 +61,7 @@ class Element:
                     class_label = set_name
                     break
         # get input path for current class_label
-        self.input_path = paths[class_label][self.name]["folder"]
+        self.input_path = Path(paths[class_label][self.name]["folder"])
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites time steps. Must be implemented in child classes
@@ -69,6 +69,11 @@ class Element:
         :param base_time_steps: #TODO describe parameter/return
         """
         raise NotImplementedError("overwrite_time_steps must be implemented in child classes!")
+
+    def store_scenario_dict(self):
+        """ stores scenario dict in each data input object """
+        # store scenario dict
+        self.data_input.scenario_dict = self.optimization_setup.scenario_dict
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
     # Here, after defining EnergySystem-specific components, the components of the other classes are constructed
@@ -177,7 +182,7 @@ class Element:
         sets = optimization_setup.sets
         indexing_sets = optimization_setup.energy_system.indexing_sets
         # check if all index sets are already defined in model and no set is indexed
-        if all([(index in sets and not sets.is_indexed(index)) for index in list_index]):
+        if all([(index in sets.sets and not sets.is_indexed(index)) for index in list_index]):
             # check if no set is indexed
             list_sets = []
             # iterate through indices
