@@ -108,7 +108,7 @@ class TimeSeriesAggregation(object):
         self.conducted_tsa = True
 
     def set_aggregated_ts_all_elements(self):
-        """ this method sets the aggregated time series and sets the necessary attributes after the aggregation to a single time grid """
+        """ this method sets the aggregated time series and sets the necessary attributes after the aggregation """
         for element in self.optimization_setup.get_all_elements(Element):
             raw_ts = getattr(element, "raw_time_series")
             # set_time_steps, duration and sequence time steps
