@@ -378,9 +378,9 @@ class CarrierRules(GenericRule):
         constraints = []
         for carrier, year in index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]):
             ### auxiliary calculations
-            operational_time_steps = self.time_steps.get_time_steps_year2operation(carrier, year)
+            operational_time_steps = self.time_steps.get_time_steps_year2operation(year)
             term_summed_import_flow = (self.variables["flow_import"].loc[carrier, :, operational_time_steps]
-                                       * self.parameters.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum("set_time_steps_operation")
+                                       * self.sets.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum("set_time_steps_operation")
 
             ### formulate constraint
             lhs = term_summed_import_flow

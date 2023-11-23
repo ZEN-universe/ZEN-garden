@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import linregress
 
-from ...utils import InputDataChecks
+from zen_garden.utils import InputDataChecks
 
 
 class DataInput:

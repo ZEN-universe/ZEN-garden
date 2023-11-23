@@ -11,11 +11,9 @@ dictionaries analysis and system which are passed to the class. After initializi
 class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
 The class also includes a method to solve the optimization problem.
 """
-import cProfile
 import copy
 import logging
 import os
-import time
 from collections import defaultdict
 
 import linopy as lp
@@ -26,8 +24,7 @@ from .objects.component import Parameter, Variable, Constraint, IndexSet
 from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
-from .objects.technology.transport_technology import TransportTechnology
-from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
+from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 
 from ..utils import ScenarioDict, IISConstraintParser
 
@@ -348,8 +345,8 @@ class OptimizationSetup(object):
         # if using rolling horizon
         if self.system["use_rolling_horizon"]:
             self.years_in_horizon = self.system["years_in_rolling_horizon"]
-            _time_steps_yearly = self.energy_system.set_time_steps_yearly
-            self.steps_horizon = {year: list(range(year, min(year + self.years_in_horizon, max(_time_steps_yearly) + 1))) for year in _time_steps_yearly}
+            time_steps_yearly = self.energy_system.set_time_steps_yearly
+            self.steps_horizon = {year: list(range(year, min(year + self.years_in_horizon, max(time_steps_yearly) + 1))) for year in time_steps_yearly}
         # if no rolling horizon
         else:
             self.years_in_horizon = len(self.energy_system.set_time_steps_yearly)
@@ -370,17 +367,17 @@ class OptimizationSetup(object):
         :param step_horizon: step of the rolling horizon """
 
         if self.system["use_rolling_horizon"]:
-            _time_steps_yearly_horizon = self.steps_horizon[step_horizon]
-            _base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(_time_steps_yearly_horizon)
+            time_steps_yearly_horizon = self.steps_horizon[step_horizon]
+            base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(time_steps_yearly_horizon)
             # overwrite time steps of each element
             for element in self.get_all_elements(Element):
-                element.overwrite_time_steps(_base_time_steps_horizon)
+                element.overwrite_time_steps(base_time_steps_horizon)
             # overwrite base time steps and yearly base time steps
-            _new_base_time_steps_horizon = _base_time_steps_horizon.squeeze().tolist()
-            if not isinstance(_new_base_time_steps_horizon, list):
-                _new_base_time_steps_horizon = [_new_base_time_steps_horizon]
-            self.energy_system.set_base_time_steps = _new_base_time_steps_horizon
-            self.energy_system.set_time_steps_yearly = _time_steps_yearly_horizon
+            new_base_time_steps_horizon = base_time_steps_horizon.squeeze().tolist()
+            if not isinstance(new_base_time_steps_horizon, list):
+                new_base_time_steps_horizon = [new_base_time_steps_horizon]
+            self.energy_system.set_base_time_steps = new_base_time_steps_horizon
+            self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
 
     def analyze_numerics(self):
         """ get largest and smallest matrix coefficients and RHS """

@@ -212,7 +212,7 @@ class Technology(Element):
         """
         params = optimization_setup.parameters.dict_parameters
         if time_step_type:
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech,time)
+            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(time)
         else:
             time_step_year = time
 

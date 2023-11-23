@@ -228,7 +228,7 @@ class ConversionTechnology(Technology):
                             lower.loc[tech, carrier, ...] = bounds[0]
                         upper.loc[tech, carrier, ...] = bounds[1]
                     else:
-                        time_step_year = [energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in timestep_set[tech]]
+                        time_step_year = [energy_system.time_steps.convert_time_step_operation2year(t) for t in timestep_set]
                         if carrier == sets["set_reference_carriers"][tech][0]:
                             conversion_factor_lower = 1
                             conversion_factor_upper = 1
