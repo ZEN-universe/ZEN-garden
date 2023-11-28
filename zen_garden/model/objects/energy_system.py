@@ -315,7 +315,7 @@ class EnergySystem:
         # carbon emission budget limit
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_budget", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_budget_rule,
                                    doc="Budget of total carbon emissions of energy system")
-       # net_present_cost
+        # net_present_cost
         constraints.add_constraint_rule(model, name="constraint_net_present_cost", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_net_present_cost_rule, doc="net_present_cost of energy system")
         # total carbon emissions
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_annual", constraint=self.rules.constraint_carbon_emissions_annual_block(),

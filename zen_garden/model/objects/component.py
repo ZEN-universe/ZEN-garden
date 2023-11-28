@@ -501,35 +501,40 @@ class Parameter(Component):
         if isinstance(data, dict) and data:
             data = pd.Series(data)
         if isinstance(data, pd.Series):
-            _abs = data.abs()
-            _abs = _abs[(_abs != 0) & (_abs != np.inf)]
-            if not _abs.empty:
-                _idxmax = name + "_" + "_".join(map(str, _abs.index[_abs.argmax()]))
-                _valmax = _abs.max()
-                _idxmin = name + "_" + "_".join(map(str, _abs.index[_abs.argmin()]))
-                _valmin = _abs.min()
+            abs_val = data.abs()
+            abs_val = abs_val[(abs_val != 0) & (abs_val != np.inf)]
+            if not abs_val.empty:
+                if isinstance(abs_val.index,pd.MultiIndex):
+                    idxmax = name + "_" + "_".join(map(str, abs_val.index[abs_val.argmax()]))
+                    idxmin = name + "_" + "_".join(map(str, abs_val.index[abs_val.argmin()]))
+                else:
+                    idxmax = f"{name}_{abs_val.index[abs_val.argmax()]}"
+                    idxmin = f"{name}_{abs_val.index[abs_val.argmin()]}"
+                valmax = abs_val.max()
+
+                valmin = abs_val.min()
             else:
                 return
         else:
             if not data or (abs(data) == 0) or (abs(data) == np.inf):
                 return
-            _abs = abs(data)
-            _idxmax = name
-            _valmax = _abs
-            _idxmin = name
-            _valmin = _abs
+            abs_val = abs(data)
+            idxmax = name
+            valmax = abs_val
+            idxmin = name
+            valmin = abs_val
         if not self.max_parameter_value["name"]:
-            self.max_parameter_value["name"] = _idxmax
-            self.max_parameter_value["value"] = _valmax
-            self.min_parameter_value["name"] = _idxmin
-            self.min_parameter_value["value"] = _valmin
+            self.max_parameter_value["name"] = idxmax
+            self.max_parameter_value["value"] = valmax
+            self.min_parameter_value["name"] = idxmin
+            self.min_parameter_value["value"] = valmin
         else:
-            if _valmax > self.max_parameter_value["value"]:
-                self.max_parameter_value["name"] = _idxmax
-                self.max_parameter_value["value"] = _valmax
-            if _valmin < self.min_parameter_value["value"]:
-                self.min_parameter_value["name"] = _idxmin
-                self.min_parameter_value["value"] = _valmin
+            if valmax > self.max_parameter_value["value"]:
+                self.max_parameter_value["name"] = idxmax
+                self.max_parameter_value["value"] = valmax
+            if valmin < self.min_parameter_value["value"]:
+                self.min_parameter_value["name"] = idxmin
+                self.min_parameter_value["value"] = valmin
 
     @staticmethod
     def convert_to_dict(data):

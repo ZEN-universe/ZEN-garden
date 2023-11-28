@@ -369,9 +369,23 @@ class OptimizationSetup(object):
         if self.system["use_rolling_horizon"]:
             time_steps_yearly_horizon = self.steps_horizon[step_horizon]
             base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(time_steps_yearly_horizon)
-            # overwrite time steps of each element
-            for element in self.get_all_elements(Element):
-                element.overwrite_time_steps(base_time_steps_horizon)
+            # # overwrite time steps of each element
+            # for element in self.get_all_elements(Element):
+            #     element.overwrite_time_steps(base_time_steps_horizon)
+            # overwrite aggregated time steps - operation
+            set_time_steps_operation = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps_horizon,
+                                                                                      time_step_type="operation")
+            # overwrite aggregated time steps - storage
+            set_time_steps_storage = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps_horizon,
+                                                                                      time_step_type="storage")
+            # copy invest time steps
+            time_steps_operation = set_time_steps_operation.squeeze().tolist()
+            time_steps_storage = set_time_steps_storage.squeeze().tolist()
+            if isinstance(time_steps_operation,int):
+                time_steps_operation = [time_steps_operation]
+                time_steps_storage = [time_steps_storage]
+            self.energy_system.time_steps.time_steps_operation = time_steps_operation
+            self.energy_system.time_steps.time_steps_storage = time_steps_storage
             # overwrite base time steps and yearly base time steps
             new_base_time_steps_horizon = base_time_steps_horizon.squeeze().tolist()
             if not isinstance(new_base_time_steps_horizon, list):
@@ -605,7 +619,8 @@ class OptimizationSetup(object):
                 component_data = pd.concat(component_data, keys=component_data.keys())
             if not index_names:
                 logging.warning(f"Initializing a parameter ({component_name}) without the specifying the index names will be deprecated!")
-
+        if isinstance(component_data,pd.Series) and not isinstance(component_data.index,pd.MultiIndex):
+            component_data.index = pd.MultiIndex.from_product([component_data.index.to_list()])
         return component_data, index_list
 
     def check_for_subindex(self, component_data, custom_set):

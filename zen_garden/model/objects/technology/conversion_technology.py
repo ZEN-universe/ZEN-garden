@@ -346,7 +346,7 @@ class ConversionTechnology(Technology):
         else:
             reference_flow = model.variables["flow_conversion_output"][tech, reference_carrier, node, time]
         # get invest time step
-        time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech, time)
+        time_step_year = energy_system.time_steps.convert_time_step_operation2year(time)
         # disjunct constraints min load
         constraints.add_constraint_block(model, name=f"constraint_min_load_{'_'.join([str(tech), str(node), str(time)])}",
                                          constraint=(reference_flow.to_linexpr()
