@@ -12,11 +12,10 @@ import copy
 import logging
 
 import numpy as np
-import xarray as xr
 
 from zen_garden.model.objects.element import GenericRule
-from zen_garden.preprocess.functions.extract_input_data import DataInput
-from zen_garden.preprocess.functions.unit_handling import UnitHandling
+from zen_garden.preprocess.extract_input_data import DataInput
+from zen_garden.preprocess.unit_handling import UnitHandling
 from .time_steps import TimeStepsDicts
 
 
@@ -86,7 +85,7 @@ class EnergySystem:
         self.set_time_steps_yearly_entire_horizon = copy.deepcopy(self.set_time_steps_yearly)
         time_steps_yearly_duration = self.time_steps.calculate_time_step_duration(self.set_time_steps_yearly, self.set_base_time_steps)
         self.sequence_time_steps_yearly = np.concatenate([[time_step] * time_steps_yearly_duration[time_step] for time_step in time_steps_yearly_duration])
-        self.time_steps.set_sequence_time_steps(None, self.sequence_time_steps_yearly, time_step_type="yearly")
+        self.time_steps.sequence_time_steps_yearly = self.sequence_time_steps_yearly
         # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_steps_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
@@ -226,12 +225,24 @@ class EnergySystem:
         self.optimization_setup.sets.add_set(name="set_time_steps_yearly", data=self.set_time_steps_yearly, doc="Set of yearly time-steps")
         # yearly time steps of entire optimization horizon
         self.optimization_setup.sets.add_set(name="set_time_steps_yearly_entire_horizon", data=self.set_time_steps_yearly_entire_horizon, doc="Set of yearly time-steps of entire optimization horizon")
+        # operational time steps
+        self.optimization_setup.sets.add_set(name="set_time_steps_operation",data=self.time_steps.time_steps_operation,doc="Set of operational time steps")
+        # storage time steps
+        self.optimization_setup.sets.add_set(name="set_time_steps_storage",data=self.time_steps.time_steps_storage,doc="Set of storage level time steps")
 
     def construct_params(self):
         """ constructs the pe.Params of the class <EnergySystem> """
 
         cls = self.__class__
         parameters = self.optimization_setup.parameters
+        # operational time step duration
+        parameters.add_parameter(name="time_steps_operation_duration",
+                                 data=self.optimization_setup.initialize_component(cls, "time_steps_operation_duration", set_time_steps="set_time_steps_operation"),
+                                 doc="Parameter which specifies the duration of each operational time step")
+        # storage time step duration
+        parameters.add_parameter(name="time_steps_storage_duration",
+                                 data=self.optimization_setup.initialize_component(cls, "time_steps_storage_duration", set_time_steps="set_time_steps_storage"),
+                                 doc="Parameter which specifies the duration of each storage time step")
         # discount rate
         parameters.add_parameter(name="discount_rate",
              data=self.optimization_setup.initialize_component(cls, "discount_rate"),
@@ -304,7 +315,7 @@ class EnergySystem:
         # carbon emission budget limit
         constraints.add_constraint_rule(model, name="constraint_carbon_emissions_budget", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_carbon_emissions_budget_rule,
                                    doc="Budget of total carbon emissions of energy system")
-       # net_present_cost
+        # net_present_cost
         constraints.add_constraint_rule(model, name="constraint_net_present_cost", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_net_present_cost_rule, doc="net_present_cost of energy system")
         # total carbon emissions
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_annual", constraint=self.rules.constraint_carbon_emissions_annual_block(),

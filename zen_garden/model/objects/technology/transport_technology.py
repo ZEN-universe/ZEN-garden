@@ -158,7 +158,7 @@ class TransportTechnology(Technology):
             # get the arrays
             tech_arr, edge_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
             # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-            time_step_year = xr.DataArray([optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time) for tech, time in zip(tech_arr.data, time_arr.data)])
+            time_step_year = xr.DataArray([optimization_setup.energy_system.time_steps.convert_time_step_operation2year(time) for time in time_arr.data])
 
             lower = model.variables["capacity"].lower.loc[tech_arr, "power", edge_arr, time_step_year].data
             upper = model.variables["capacity"].upper.loc[tech_arr, "power", edge_arr, time_step_year].data

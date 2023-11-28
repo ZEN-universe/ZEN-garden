@@ -3,7 +3,6 @@
 :Created:      September-2022
 :Authors:      Janis Fluri (janis.fluri@id.ethz.ch),
               Alissa Ganter (aganter@ethz.ch),
-              Davide Tonelli (davidetonelli@outlook.com),
               Jacob Mannhardt (jmannhardt@ethz.ch)
 :Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
@@ -26,7 +25,7 @@ def run_module(args=None):
         args = sys.argv[1:]
 
     # parse the args
-    description = "Run ZEN-Garden with a given config file. Per default, the config file will be read out from the " \
+    description = "Run ZEN garden with a given config file. Per default, the config file will be read out from the " \
                   "current working directory. You can specify a config file with the --config argument. However, " \
                   "note that the output directory will always be the current working directory, independent of the " \
                   "dataset specified in the config file."

@@ -52,39 +52,39 @@ def get_inheritors(klass):
 
 # This redirects output streams to files
 # --------------------------------------
-class RedirectStdStreams(object):
-    """
-    A context manager that redirects the output to a file
-    """
-
-    def __init__(self, stdout=None, stderr=None):
-        """
-        Initializes the context manager
-
-        :param stdout: Stream for stdout
-        :param stderr: Stream for stderr
-        """
-        self._stdout = stdout or sys.stdout
-        self._stderr = stderr or sys.stderr
-
-    def __enter__(self):
-        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
-        self.old_stdout.flush()
-        self.old_stderr.flush()
-        sys.stdout, sys.stderr = self._stdout, self._stderr
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """
-        The exit function of the context manager
-
-        :param exc_type: Type of the exit
-        :param exc_value: Value of the exit
-        :param traceback:  traceback of the error
-        """
-        self._stdout.flush()
-        self._stderr.flush()
-        sys.stdout = self.old_stdout
-        sys.stderr = self.old_stderr
+# class RedirectStdStreams(object):
+#     """
+#     A context manager that redirects the output to a file
+#     """
+#
+#     def __init__(self, stdout=None, stderr=None):
+#         """
+#         Initializes the context manager
+#
+#         :param stdout: Stream for stdout
+#         :param stderr: Stream for stderr
+#         """
+#         self._stdout = stdout or sys.stdout
+#         self._stderr = stderr or sys.stderr
+#
+#     def __enter__(self):
+#         self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
+#         self.old_stdout.flush()
+#         self.old_stderr.flush()
+#         sys.stdout, sys.stderr = self._stdout, self._stderr
+#
+#     def __exit__(self, exc_type, exc_value, traceback):
+#         """
+#         The exit function of the context manager
+#
+#         :param exc_type: Type of the exit
+#         :param exc_value: Value of the exit
+#         :param traceback:  traceback of the error
+#         """
+#         self._stdout.flush()
+#         self._stderr.flush()
+#         sys.stdout = self.old_stdout
+#         sys.stderr = self.old_stderr
 
 
 # This functionality is for the IIS constraints
@@ -1025,9 +1025,9 @@ class InputDataChecks:
         """
         Checks selection of different technologies in system.py file
         """
-        #Checks if at least one technology is selected in the system.py file
+        # Checks if at least one technology is selected in the system.py file
         assert len(self.system["set_conversion_technologies"] + self.system["set_transport_technologies"] + self.system["set_storage_technologies"]) > 0, f"No technology selected in stystem.py"
-        #Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
+        # Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
         for tech_list in ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]:
             techs_selected = self.system[tech_list]
             unique_elements = list(np.unique(techs_selected))
@@ -1037,12 +1037,12 @@ class InputDataChecks:
         """
         Check if year-related parameters are defined correctly
         """
-        #assert that number of optimized years is a positive integer
+        # assert that number of optimized years is a positive integer
         assert isinstance(self.system["optimized_years"], int) and self.system["optimized_years"] > 0, f"Number of optimized years must be a positive integer, however it is {self.system['optimized_years']}"
-        #assert that interval between years is a positive integer
+        # assert that interval between years is a positive integer
         assert isinstance(self.system["interval_between_years"], int) and self.system["interval_between_years"] > 0, f"Interval between years must be a positive integer, however it is {self.system['interval_between_years']}"
         assert isinstance(self.system["reference_year"], int) and self.system["reference_year"] >= self.analysis["earliest_year_of_data"], f"Reference year must be an integer and larger than the defined earliest_year_of_data: {self.analysis['earliest_year_of_data']}"
-        #check if the number of years in the rolling horizon isn't larger than the number of optimized years
+        # check if the number of years in the rolling horizon isn't larger than the number of optimized years
         if self.system["years_in_rolling_horizon"] > self.system["optimized_years"] and self.system["use_rolling_horizon"]:
             warnings.warn(f"The chosen number of years in the rolling horizon step is larger than the total number of years optimized!")
 
