@@ -40,14 +40,16 @@ class ConversionTechnology(Technology):
         self.store_carriers()
         # # store input data
         # self.store_input_data()
+        #variable to save conversion factor units from (nonlinear-)conversion_factor csv file for unit consistency checks
+        self.units_conversion_factor_files = None
 
     def store_carriers(self):
         """ retrieves and stores information on reference, input and output carriers """
         # get reference carrier from class <Technology>
         super().store_carriers()
         # define input and output carrier
-        self.input_carrier = self.data_input.extract_carriers(carrier_type="input_carrier", unit_category={"product": 1, "time": -1})
-        self.output_carrier = self.data_input.extract_carriers(carrier_type="output_carrier", unit_category={"product": 1, "time": -1})
+        self.input_carrier = self.data_input.extract_carriers(carrier_type="input_carrier", unit_category={"energy_quantity": 1, "time": -1})
+        self.output_carrier = self.data_input.extract_carriers(carrier_type="output_carrier", unit_category={"energy_quantity": 1, "time": -1})
         self.energy_system.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         self.optimization_setup.input_data_checks.check_carrier_configuration(input_carrier=self.input_carrier,
@@ -61,6 +63,7 @@ class ConversionTechnology(Technology):
         super().store_input_data()
         # get conversion efficiency and capex
         self.get_conversion_factor()
+        self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": -1})
         self.convert_to_fraction_of_capex()
 
     def get_conversion_factor(self):

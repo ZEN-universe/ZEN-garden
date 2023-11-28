@@ -13,6 +13,9 @@ import scipy as sp
 import warnings
 from pint import UnitRegistry
 from pint.util import column_echelon_form
+from pathlib import Path
+from zen_garden.model.objects.technology.technology import Technology
+from zen_garden.model.objects.carrier.carrier import Carrier
 
 # enable Deprecation Warnings
 warnings.simplefilter('always', DeprecationWarning)
@@ -226,7 +229,7 @@ class UnitHandling:
             return 1
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
-            warnings.warn(f"Parameter {attribute_name} of {path.name} has no unit (assign unit '1' to unitless parameters)",DeprecationWarning)
+            warnings.warn(f"Parameter {attribute_name} of {Path(path).name} has no unit (assign unit '1' to unitless parameters)",DeprecationWarning)
             return 1
         else:
             # convert to string
@@ -244,14 +247,15 @@ class UnitHandling:
             # round to decimal points
             return round(multiplier, self.rounding_decimal_points)
 
-    def convert_unit(self, input_unit, attribute_name, file_name, path):
+    def convert_unit(self, input_unit, attribute_name, path, get_multiplier=True):
         """
+        Converts the input_unit into base units and returns the multiplier such that the combined unit mustn't be computed twice
 
-        :param input_unit:
-        :param attribute_name:
-        :param file_name:
-        :param path:
-        :return:
+        :param input_unit: unit read from input csv files
+        :param attribute_name: name of the attribute the input_unit corresponds to
+        :param path: path of the attribute's csv file
+        :param get_multiplier: bool whether multiplier should be returned or not
+        :return: multiplier to convert input_unit to base  units, pint Quantity of input_unit converted to base units
         """
         #convert attribute unit into unit combination of base units
         combined_unit = None
@@ -260,74 +264,103 @@ class UnitHandling:
             combined_unit, base_combination = self.calculate_combined_unit(input_unit, return_combination=True)
             for unit, power in zip(base_combination.index, base_combination):
                 attribute_unit_in_base_units *= self.ureg(unit) ** power
-
         #calculate the multiplier to convert the attribute unit into base units
-        multiplier = self.get_unit_multiplier(input_unit, attribute_name, path, combined_unit=combined_unit)
+        if get_multiplier:
+            multiplier = self.get_unit_multiplier(input_unit, attribute_name, path, combined_unit=combined_unit)
+            return multiplier, attribute_unit_in_base_units
+        else:
+            return attribute_unit_in_base_units
 
-        return multiplier, attribute_unit_in_base_units
-
-    def consistency_checks_input_units(self, elements, energy_system):
+    def consistency_checks_input_units(self, optimization_setup):
         """
+        Checks if the units of the parameters specified in the input csv files are consistent
 
-        :return:
+        :param optimization_setup: OptimizationSetup object
         """
-        import json
-        from zen_garden.model.objects.carrier.carrier import Carrier
-        #technology element-wise category consistency checks
-        for element in elements:
-            if not isinstance(element, Carrier):
-                unit_categories = [value[0] for _, value in element.units.items()]
-                #find all unique unit categories
-                str_array = np.array([json.dumps(d, sort_keys=True) for d in unit_categories])
-                unique_str_array = np.unique(str_array)
-                unique_categories = [json.loads(unique_dict) for unique_dict in unique_str_array]
+        elements = optimization_setup.dict_elements["Element"]
+        items = elements + [optimization_setup.energy_system]
+        distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
+        conversion_factor_units = {}
+        for item in items:
+            product_units = {}
+            unit_dict = item.units
+            if item.__class__.__base__ is Technology:
+                reference_carrier_name = item.reference_carrier[0]
+                reference_carrier = [carrier for carrier in elements if carrier.name == reference_carrier_name][0]
+                unit_dict.update(reference_carrier.units)
 
-                #for each category
-                #dict to save the "product" part of each unit
-                product_units = {}
-                for unit_combo in unique_categories:
-                    #get all units of technology element belonging to this category
-                    category_units = {key: value[1] for key, value in element.units.items() if value[0] == unit_combo}
+            #add units of conversion factors to carrier units to perform consistency checks (works only since carriers are located at end of optimization_setup.dict_elements)
+            if item.__class__ is Carrier:
+                for tech_name, unit_pairs in conversion_factor_units.items():
+                    for index, unit_pair in enumerate(unit_pairs):
+                        units_to_check = [unit for key, unit in unit_pair.items() if key == item.name]
+                        assert len(units_to_check) <= 1, f"A conversion factor cannot be defined with a single carrier"
+                        if len(units_to_check) != 0:
+                            unit_in_base_units = self.convert_unit(units_to_check[0], "conversion_factor_default", None, get_multiplier=False)
+                            product_units.update({tech_name+"_conversion_factor_"+str(index): unit_in_base_units})
 
-                    #get all units of technology's reference carrier belonging to this category
-                    reference_carrier_name = element.reference_carrier[0]
-                    reference_carrier_element = [carrier for carrier in elements if carrier.name == reference_carrier_name][0]
-                    category_units_carrier = {key: value[1] for key, value in reference_carrier_element.units.items() if value[0] == unit_combo}
-                    category_units.update(category_units_carrier)
-                    #complete unit consistency check
-                    assert all(q == category_units[next(iter(category_units))] for q in category_units.values()), f"The units of the attributes {category_units.keys()} of element {element.name} are not consistent!"
+            #conduct consistency checks
+            for attribute_name, unit_specs in unit_dict.items():
+                #conversion factor unit consistency must be checked differently
+                if attribute_name == "conversion_factor_default":
+                    units, non_linear = self.conversion_factor_consistency_checks(conversion_element=item, unit_string=unit_specs[1])
+                    if non_linear:
+                        for index, factor in enumerate(units):
+                            for carrier, unit in factor.items():
+                                unit_specs = {"time": -1}, self.ureg(unit)
+                                unit = self.remove_non_energy_units(unit_specs, distinct_dims, attribute_name)[attribute_name]
+                                units[index][carrier] = str(unit.units)
+                        conversion_factor_units[item.name] = units
+                    else:
+                        conversion_factor_units[item.name] = units
+                #units of input/output/reference carrier not of interest for consistency
+                elif attribute_name not in ["input_carrier", "output_carrier", "reference_carrier"]:
+                    product_units.update(self.remove_non_energy_units(unit_specs, distinct_dims, attribute_name))
 
-                    #dimension-wise consistency checks
-                    distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
-                    combo_product_units = category_units
-                    for dim, dim_name in distinct_dims.items():
-                        if dim in unit_combo:
-                            dim_unit = [key for key, value in self.base_units.items() if value == dim_name][0]
-                            if dim == "time" and "product" in unit_combo:
-                                combo_product_units = {key: value/self.ureg(dim_unit)**(-1*unit_combo["product"]) for key, value in combo_product_units.items()}
-                            else:
-                                combo_product_units = {key: value / self.ureg(dim_unit)**unit_combo[dim] for key, value in combo_product_units.items()}
-                    if "product" in unit_combo:
-                        combo_product_units = {key: value**unit_combo["product"] for key, value in combo_product_units.items()}
-                    product_units.update(combo_product_units)
-                    product_units = {key: value for key, value in product_units.items() if value != self.ureg("dimensionless")}
-                #assert all(q == product_units[next(iter(product_units))] for q in product_units.values()), f"The product units of {product_units.keys()} of element {element.name} are not consistent!"
+            product_units = {key: value for key, value in product_units.items() if value != self.ureg("dimensionless")}
+            assert all(q == product_units[next(iter(product_units))] for q in product_units.values()), f"The unit dimensionality of the attributes {product_units.keys()} of {item.name} is not consistent!"
 
+    def conversion_factor_consistency_checks(self, conversion_element, unit_string):
+        #conversion factor definition: input_carrier/reference_carrier or output_carrier/reference_carrier
+        carrier_pairs = []
+        reference_carrier = conversion_element.reference_carrier[0]
+        carrier_pairs.extend([carrier for carrier in conversion_element.input_carrier if carrier != reference_carrier])
+        carrier_pairs.extend([carrier for carrier in conversion_element.output_carrier if carrier != reference_carrier])
+        conversion_factor_units = []
+        non_linear = False
+        for carrier_name in carrier_pairs:
+            factor_units = {}
+            #conversion factor units were specified in conversion factor file
+            if conversion_element.units_conversion_factor_files is not None:
+                #units of non-linear conversion factors are defined differently than those of linear factors
+                if "nonlinear" in conversion_element.units_conversion_factor_files:
+                    units = conversion_element.units_conversion_factor_files["nonlinear"]
+                    units = [units[carrier_name], units[reference_carrier]]
+                    non_linear = True
+                else:
+                    units = conversion_element.units_conversion_factor_files["linear"][carrier_name].split("/")
+            #conversion factor units must be specified in attributes file
+            else:
+                assert unit_string != self.ureg("dimensionless"), f"Since there doesn't exist a conversion_factor file for the technology {conversion_element.name}, the attribute conversion_factor_default must be defined with units to ensure unit consistency"
+                units = unit_string.split("/")
+            assert len(units) == 2, f"The conversion factor units of technology {conversion_element.name} must be defined as energy of input/output carrier divided by energy of reference carrier, e.g. GWh/GWh or kg/MWh instead of {units}"
+            factor_units[carrier_name] = units[0]
+            factor_units[reference_carrier] = units[1]
+            conversion_factor_units.append(factor_units)
+        return conversion_factor_units, non_linear
 
-
-
-        # energy system parameters consistency checks
-        unit_combinations = [value[0] for _, value in energy_system.units.items()]
-        str_array = np.array([json.dumps(d, sort_keys=True) for d in unit_combinations])
-        unique_str_array = np.unique(str_array)
-        unique_combos = [json.loads(unique_dict) for unique_dict in unique_str_array]
-        for unit_combo in unique_combos:
-            category_units = [value[1] for key, value in energy_system.units.items() if value[0] == unit_combo]
-            keys = [key for key, value in energy_system.units.items() if value[0] == unit_combo]
-            assert all(q == category_units[0] for q in
-                       category_units), f"The units of the attributes {keys} of the energy system are not consistent!"
-
-
+    def remove_non_energy_units(self, unit_specs, distinct_dims, attribute_name):
+        unit = unit_specs[1]
+        for dim, dim_name in distinct_dims.items():
+            if dim in unit_specs[0]:
+                dim_unit = [key for key, value in self.base_units.items() if value == dim_name][0]
+                if dim == "time" and "energy_quantity" in unit_specs[0]:
+                    unit = unit / self.ureg(dim_unit) ** (-1 * unit_specs[0]["energy_quantity"])
+                else:
+                    unit = unit / self.ureg(dim_unit) ** unit_specs[0][dim]
+        if "energy_quantity" in unit_specs[0]:
+            unit = unit ** unit_specs[0]["energy_quantity"]
+        return {attribute_name: unit}
 
     def set_base_unit_combination(self, input_unit, attribute):
         """ converts the input unit to the corresponding base unit

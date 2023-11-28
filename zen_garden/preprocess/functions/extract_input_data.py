@@ -181,10 +181,13 @@ class DataInput:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
             attribute_unit = df_input.loc[attribute_name, "unit"]
-            multiplier, attribute_unit_in_base_units = self.unit_handling.convert_unit(attribute_unit, attribute_name, file_name=filename, path=self.folder_path)
-            #don't save input-/output carrier if they don't exist for a conversion technology
+            multiplier, attribute_unit_in_base_units = self.unit_handling.convert_unit(attribute_unit, attribute_name, path=self.folder_path)
+            #don't try to save input-/output carrier if they don't exist for a conversion technology
             if not(pd.isna(attribute_value) and attribute_name in ["input_carrier", "output_carrier"]):
                 self.element.units[attribute_name] = unit_category, attribute_unit_in_base_units
+            #don't convert unit of conversion factor to base units since e.g. kWh/kWh would become 1 (however, conversion factors' unit consistency must be checked with the corresponding carriers)
+            if attribute_name == "conversion_factor_default":
+                self.element.units[attribute_name] = unit_category, attribute_unit
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -359,12 +362,12 @@ class DataInput:
             attribute_name = "capex_specific"
             index_sets = ["set_nodes", "set_time_steps_yearly"]
             time_steps = "set_time_steps_yearly"
-            unit_category = {"money": 1, "product": -1, "time": -1}
+            unit_category = {"money": 1, "energy_quantity": -1, "time": -1}
         elif variable_type == "conversion_factor":
             attribute_name = "conversion_factor"
             index_sets = ["set_nodes", "set_time_steps"]
             time_steps = "set_base_time_steps_yearly"
-            unit_category = {"product": 0}
+            unit_category = {"energy_quantity": 0}
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
         # import all input data
@@ -507,6 +510,12 @@ class DataInput:
             else:
                 columns = df_input.columns
             df_input_units = df_input[columns].iloc[-1]
+            #save conversion factor unit for unit consistency checks
+            if not df_input_units.empty and file_type != "breakpoints_pwa_":
+                if file_type == "nonlinear_":
+                    self.element.units_conversion_factor_files = {"nonlinear": df_input_units}
+                else:
+                    self.element.units_conversion_factor_files = {"linear": df_input_units}
             df_input = df_input.iloc[:-1]
             df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit, attribute_name=variable_type))
             df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='ignore'))

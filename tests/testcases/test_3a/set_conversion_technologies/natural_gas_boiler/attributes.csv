@@ -15,6 +15,6 @@ opex_specific_fixed_default,87.6,Euro/kW
 max_diffusion_rate_default,inf,1
 input_carrier,natural_gas,GW
 output_carrier,heat carbon,GW
-conversion_factor_default,1.1,1
+conversion_factor_default,1.1,GWh/GWh
 capex_specific_default,876,Euro/kW
 capacity_addition_unbounded_default,0,GW
