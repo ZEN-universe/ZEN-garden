@@ -968,7 +968,11 @@ class Results(object):
         """
         d = self.get_df("time_steps_operation_duration")
         if not self.new_time_steps:
-            d = d.unstack().iloc[0]
+            if self.has_scenarios:
+                # TODO make time_step_operation_duration scenario-dependent
+                d = d[self.scenarios[0]].unstack().iloc[0]
+            else:
+                d = d.unstack().iloc[0]
         return d
 
     def load_time_step_storage_duration(self):
@@ -977,7 +981,11 @@ class Results(object):
         """
         if not self.new_time_steps:
             d = self.get_df("time_steps_storage_level_duration")
-            d = d.unstack().iloc[0]
+            if self.has_scenarios:
+                # TODO make time_step_storage_duration scenario-dependent
+                d = d[self.scenarios[0]].unstack().iloc[0]
+            else:
+                d = d.unstack().iloc[0]
         else:
             d = self.get_df("time_steps_storage_duration")
         return d
@@ -1442,7 +1450,10 @@ class Results(object):
             else:
                 time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(year)
         else:
-            tech_proxy = self.get_system()["set_storage_technologies"][0]
+            if self.has_scenarios:
+                tech_proxy = self.get_system(scenario=self.scenarios[0])["set_storage_technologies"][0]
+            else:
+                tech_proxy = self.get_system()["set_storage_technologies"][0]
             if ts_type == "storage":
                  tech_proxy = tech_proxy + "_storage_level"
             time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation_old(tech_proxy, year)
