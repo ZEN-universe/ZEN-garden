@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import Optional, Any
-from zen_garden.postprocess.new_results.solution_loader import SolutionLoader
+from zen_garden.postprocess.new_results.solution_loader import SolutionLoader, Scenario
 from zen_garden.postprocess.new_results.multi_hdf_loader import MultiHdfLoader
 
 
@@ -44,13 +44,13 @@ class Results:
     def get_full_ts(self) -> None:
         pass
 
-    def get_total(
+    def get_total_from_scenario(
         self,
+        scenario: Scenario,
         component_name: str,
         element_name: Optional[str] = None,
         year: Optional[int] = None,
-    ) -> Any:
-        scenario = self.solution_loader.scenarios["none"]
+    ) -> pd.DataFrame:
         component = scenario.components[component_name]
         series = component.get_mf_aggregated_series()
 
@@ -66,28 +66,54 @@ class Results:
                 ans = series.unstack(component.timestep_name)
                 return ans[years]
             else:
-                # Weird behaviour
-                return series.to_frame()
+                return series
 
         unstacked_series = series.unstack(component.timestep_name)
-
-        timestep_duration = scenario.get_timestep_duration(
+        unstacked_timestep_duration = scenario.get_timestep_duration(
             component.timestep_type
         ).unstack()
 
-        if isinstance(unstacked_series.index, pd.MultiIndex):
-            total_value = unstacked_series.apply(
-                lambda row: row * timestep_duration.loc[row.name[0]], axis=1
-            )
-        else:
-            total_value = unstacked_series.apply(
-                lambda row: row * timestep_duration.loc[row.name], axis=1
-            )
+        row_slice = (
+            0 if isinstance(unstacked_series.index, pd.MultiIndex) else slice(None)
+        )
+
+        total_value = unstacked_series.apply(
+            lambda row: row * unstacked_timestep_duration.loc[row.name[row_slice]],
+            axis=1,
+        )
+
+        ans = pd.DataFrame()
 
         for year in years:
             timesteps = self.solution_loader.get_time_steps_year2operation(
                 year, is_storage=component.timestep_type.value == "time_storage_level"
             )
-            total_value_series: pd.Series[Any] = total_value[timesteps].sum(axis=1)
+            ans.insert(year, year, total_value[timesteps].sum(axis=1))
 
-        return total_value_series.to_frame()
+        return ans
+
+    def get_total(
+        self,
+        component_name: str,
+        element_name: Optional[str] = None,
+        year: Optional[int] = None,
+        scenario_name: str = None,
+    ) -> Any:
+        if scenario_name is None:
+            scenario_names = list(self.solution_loader.scenarios)
+        else:
+            scenario_names = [scenario_name]
+
+        scenarios_dict = {}
+        for scenario_name in scenario_names:
+            scenario = self.solution_loader.scenarios[scenario_name]
+            scenarios_dict[scenario_name] = self.get_total_from_scenario(
+                scenario, component_name, element_name, year
+            )
+        if isinstance(scenarios_dict[scenario_name], pd.Series):
+            total_value = pd.concat(
+                scenarios_dict, keys=scenarios_dict.keys(), axis=1
+            ).T
+        else:
+            total_value = pd.concat(scenarios_dict, keys=scenarios_dict.keys())
+        return total_value
