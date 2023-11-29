@@ -26,9 +26,7 @@ from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 
-
 from ..utils import ScenarioDict, IISConstraintParser
-from pydantic import BaseModel
 
 class OptimizationSetup(object):
     """setup optimization setup """
