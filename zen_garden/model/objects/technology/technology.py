@@ -109,7 +109,7 @@ class Technology(Element):
 
         :param base_time_steps: #TODO describe parameter/return
         """
-        set_time_steps_operation = self.energy_system.time_steps.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation", yearly=True)
+        set_time_steps_operation = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps, time_step_type="operation")
 
         # copy invest time steps
         self.set_time_steps_operation = set_time_steps_operation.squeeze().tolist()
@@ -124,36 +124,36 @@ class Technology(Element):
         # reduce lifetime of existing capacities and add new remaining lifetime
         self.lifetime_existing = (self.lifetime_existing - system["interval_between_years"]).clip(lower=0)
         # new capacity
-        _time_step_years = self.energy_system.time_steps.encode_time_step(self.name, base_time_steps, "yearly", yearly=True)
-        _new_capacity_addition = capacity_addition[_time_step_years].sum(axis=1)
-        _capex = capex[_time_step_years].sum(axis=1)
+        time_step_years = self.energy_system.time_steps.encode_time_step(base_time_steps, time_step_type="yearly")
+        new_capacity_addition = capacity_addition[time_step_years].sum(axis=1)
+        new_capex = capex[time_step_years].sum(axis=1)
         # if at least one value unequal to zero
-        if not (_new_capacity_addition == 0).all():
+        if not (new_capacity_addition == 0).all():
             # add new index to set_technologies_existing
             index_new_technology = max(self.set_technologies_existing) + 1
             self.set_technologies_existing = np.append(self.set_technologies_existing, index_new_technology)
             # add new remaining lifetime
-            _lifetime = self.lifetime_existing.unstack()
-            _lifetime[index_new_technology] = self.lifetime[0]
-            self.lifetime_existing = _lifetime.stack()
+            lifetime = self.lifetime_existing.unstack()
+            lifetime[index_new_technology] = self.lifetime[0]
+            self.lifetime_existing = lifetime.stack()
 
-            for type_capacity in list(set(_new_capacity_addition.index.get_level_values(0))):
+            for type_capacity in list(set(new_capacity_addition.index.get_level_values(0))):
                 # if power
                 if type_capacity == system["set_capacity_types"][0]:
-                    _energy_string = ""
+                    energy_string = ""
                 # if energy
                 else:
-                    _energy_string = "_energy"
-                _capacity_existing = getattr(self, "capacity_existing" + _energy_string)
-                _capex_capacity_existing = getattr(self, "capex_capacity_existing" + _energy_string)
+                    energy_string = "_energy"
+                capacity_existing = getattr(self, "capacity_existing" + energy_string)
+                capex_capacity_existing = getattr(self, "capex_capacity_existing" + energy_string)
                 # add new existing capacity
-                _capacity_existing = _capacity_existing.unstack()
-                _capacity_existing[index_new_technology] = _new_capacity_addition.loc[type_capacity]
-                setattr(self, "capacity_existing" + _energy_string, _capacity_existing.stack())
+                capacity_existing = capacity_existing.unstack()
+                capacity_existing[index_new_technology] = new_capacity_addition.loc[type_capacity]
+                setattr(self, "capacity_existing" + energy_string, capacity_existing.stack())
                 # calculate capex of existing capacity
-                _capex_capacity_existing = _capex_capacity_existing.unstack()
-                _capex_capacity_existing[index_new_technology] = _capex.loc[type_capacity]
-                setattr(self, "capex_capacity_existing" + _energy_string, _capex_capacity_existing.stack())
+                capex_capacity_existing = capex_capacity_existing.unstack()
+                capex_capacity_existing[index_new_technology] = new_capex.loc[type_capacity]
+                setattr(self, "capex_capacity_existing" + energy_string, capex_capacity_existing.stack())
 
     def add_new_capacity_investment(self, capacity_investment: pd.Series, step_horizon):
         """ adds the newly invested capacity to the list of invested capacity
@@ -161,21 +161,21 @@ class Technology(Element):
         :param capacity_investment: pd.Series of newly built capacity of technology
         :param step_horizon: optimization time step """
         system = self.optimization_setup.system
-        _new_capacity_investment = capacity_investment[step_horizon]
-        _new_capacity_investment = _new_capacity_investment.fillna(0)
-        if not (_new_capacity_investment == 0).all():
-            for type_capacity in list(set(_new_capacity_investment.index.get_level_values(0))):
+        new_capacity_investment = capacity_investment[step_horizon]
+        new_capacity_investment = new_capacity_investment.fillna(0)
+        if not (new_capacity_investment == 0).all():
+            for type_capacity in list(set(new_capacity_investment.index.get_level_values(0))):
                 # if power
                 if type_capacity == system["set_capacity_types"][0]:
-                    _energy_string = ""
+                    energy_string = ""
                 # if energy
                 else:
-                    _energy_string = "_energy"
-                _capacity_investment_existing = getattr(self, "capacity_investment_existing" + _energy_string)
+                    energy_string = "_energy"
+                capacity_investment_existing = getattr(self, "capacity_investment_existing" + energy_string)
                 # add new existing invested capacity
-                _capacity_investment_existing = _capacity_investment_existing.unstack()
-                _capacity_investment_existing[step_horizon] = _new_capacity_investment.loc[type_capacity]
-                setattr(self, "capacity_investment_existing" + _energy_string, _capacity_investment_existing.stack())
+                capacity_investment_existing = capacity_investment_existing.unstack()
+                capacity_investment_existing[step_horizon] = new_capacity_investment.loc[type_capacity]
+                setattr(self, "capacity_investment_existing" + energy_string, capacity_investment_existing.stack())
 
     ### --- classmethods
     @classmethod
@@ -189,7 +189,7 @@ class Technology(Element):
         :return: lifetime range of technology
         """
         if time_step_type:
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech,time)
+            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(time)
         else:
             time_step_year = time
         t_start, t_end = cls.get_start_end_time_of_period(optimization_setup, tech, time_step_year)
@@ -212,7 +212,7 @@ class Technology(Element):
         """
         params = optimization_setup.parameters.dict_parameters
         if time_step_type:
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech,time)
+            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(time)
         else:
             time_step_year = time
 
@@ -283,7 +283,7 @@ class Technology(Element):
         if int(base_period) != base_period:
             logging.warning(f"The period {period_type} of {tech} does not translate to an integer time interval in the base time domain ({base_period})")
         # decode to base time steps
-        base_time_steps = energy_system.time_steps.decode_time_step(tech, time_step_year, time_step_type="yearly")
+        base_time_steps = energy_system.time_steps.decode_time_step(time_step_year, time_step_type="yearly")
         if len(base_time_steps) == 0:
             return sets["set_base_time_steps"][0], sets["set_base_time_steps"][0] - 1
         base_time_step = base_time_steps[0]
@@ -300,7 +300,7 @@ class Technology(Element):
         # if period of existing capacity, then only return the start base time step
         if id_capacity_existing is not None:
             return start_base_time_step
-        start_time_step_year = energy_system.time_steps.encode_time_step(tech, start_base_time_step, time_step_type="yearly", yearly=True)[0]
+        start_time_step_year = energy_system.time_steps.encode_time_step(start_base_time_step, time_step_type="yearly")[0]
 
         return start_time_step_year, end_time_step_year
 
@@ -437,19 +437,19 @@ class Technology(Element):
                 system = optimization_setup.system
                 params = optimization_setup.parameters.dict_parameters
                 if capacity_type == system["set_capacity_types"][0]:
-                    _energy_string = ""
+                    energy_string = ""
                 else:
-                    _energy_string = "_energy"
-                _capacity_existing = getattr(params, "capacity_existing" + _energy_string)
-                _capacity_addition_max = getattr(params, "capacity_addition_max" + _energy_string)
-                _capacity_limit = getattr(params, "capacity_limit" + _energy_string)
+                    energy_string = "_energy"
+                capacity_existing = getattr(params, "capacity_existing" + energy_string)
+                _capacity_addition_max = getattr(params, "capacity_addition_max" + energy_string)
+                _capacity_limit = getattr(params, "capacity_limit" + energy_string)
                 capacities_existing = 0
                 for id_technology_existing in sets["set_technologies_existing"][tech]:
                     if params.lifetime_existing[tech, loc, id_technology_existing] > params.lifetime[tech]:
                         if time > params.lifetime_existing[tech, loc, id_technology_existing] - params.lifetime[tech]:
-                            capacities_existing += _capacity_existing[tech, capacity_type, loc, id_technology_existing]
+                            capacities_existing += capacity_existing[tech, capacity_type, loc, id_technology_existing]
                     elif time <= params.lifetime_existing[tech, loc, id_technology_existing] + 1:
-                        capacities_existing += _capacity_existing[tech, capacity_type, loc, id_technology_existing]
+                        capacities_existing += capacity_existing[tech, capacity_type, loc, id_technology_existing]
 
                 capacity_addition_max = len(sets["set_time_steps_yearly"]) * _capacity_addition_max[tech, capacity_type]
                 max_capacity_limit = _capacity_limit[tech, capacity_type, loc]
@@ -1331,9 +1331,9 @@ class TechnologyRules(GenericRule):
         for tech, year in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
 
             ### auxiliary calculations
-            times = self.time_steps.get_time_steps_year2operation(tech, year)
+            times = self.time_steps.get_time_steps_year2operation(year)
 
-            term_neg_summed_cost_opex = - (self.variables["cost_opex"].loc[tech, :, times] * self.parameters.time_steps_operation_duration.loc[tech, times]).sum(["set_time_steps_operation"])
+            term_neg_summed_cost_opex = - (self.variables["cost_opex"].loc[tech, :, times] * self.parameters.time_steps_operation_duration.loc[times]).sum(["set_time_steps_operation"])
             term_neg_summed_capacities = - lp_sum([self.parameters.opex_specific_fixed.loc[tech, capacity_type, :, year]*self.variables["capacity"].loc[tech, capacity_type, :, year]
                                                    for capacity_type in self.system["set_capacity_types"] if tech in self.sets["set_storage_technologies"] or capacity_type == self.system["set_capacity_types"][0]])
 
@@ -1437,8 +1437,8 @@ class TechnologyRules(GenericRule):
             term_summed_carbon_emissions_technology = []
             for tech in index.get_unique(["set_technologies"]):
                 locs = index.get_values([tech], "set_location", unique=True)
-                times = self.time_steps.get_time_steps_year2operation(tech, year)
-                term_summed_carbon_emissions_technology.append((self.variables["carbon_emissions_technology"].loc[tech, locs, times] * self.parameters.time_steps_operation_duration.loc[tech, times]).sum())
+                times = self.time_steps.get_time_steps_year2operation(year)
+                term_summed_carbon_emissions_technology.append((self.variables["carbon_emissions_technology"].loc[tech, locs, times] * self.parameters.time_steps_operation_duration.loc[times]).sum())
             term_summed_carbon_emissions_technology = lp_sum(term_summed_carbon_emissions_technology)
 
             ### formulate constraint
@@ -1486,7 +1486,7 @@ class TechnologyRules(GenericRule):
             # the reference carrier
             reference_carrier = self.sets["set_reference_carriers"][tech][0]
             # get invest time step
-            time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, t) for t in times.data], coords=[times])
+            time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
             # we create the capacity term (the dimension reassignment does not change the variables, just the broadcasting)
             term_capacity = self.parameters.max_load.loc[tech, capacity_types, locs, times] * self.variables["capacity"].loc[tech, capacity_types, locs, time_step_year].to_linexpr()
 

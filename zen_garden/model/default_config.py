@@ -257,6 +257,7 @@ class _Config(object):
                 "set_time_steps": "time", # IMPORTANT: time must be unique
                 "set_time_steps_operation": "time_operation",
                 "set_time_steps_storage_level": "time_storage_level",
+                "set_time_steps_storage": "time_storage_level",
                 "set_time_steps_yearly": "year", # IMPORTANT: year must be unique
                 "set_time_steps_yearly_entire_horizon": "year_entire_horizon",
                 "set_carriers": "carrier",
@@ -333,8 +334,6 @@ class _Config(object):
         self.solver["name"] = "glpk"
         # gurobi options
         self.solver["solver_options"] = {
-            "logfile":      ".//outputs//logs//gurobi_logfile.log",
-            "MIPGap":       None,
             "TimeLimit":    None,
             "Method":       None
         }
