@@ -155,7 +155,7 @@ class TimeSeriesAggregation(object):
         """ gets the names of all elements and parameter ts that shall be excluded from the time series aggregation """
         self.excluded_ts = []
         if self.system["exclude_parameters_from_TSA"]:
-            excluded_parameters = self.optimization_setup.energy_system.data_input.read_input_data("exclude_parameter_from_TSA")
+            excluded_parameters = self.optimization_setup.energy_system.data_input.read_input_csv("exclude_parameter_from_TSA")
             # exclude file exists
             if excluded_parameters is not None:
                 for _,vals in excluded_parameters.iterrows():

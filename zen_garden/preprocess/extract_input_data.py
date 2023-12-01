@@ -11,7 +11,7 @@ import copy
 import logging
 import math
 import os
-
+import json
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
@@ -41,10 +41,10 @@ class DataInput:
         self.unit_handling = unit_handling
         # extract folder path
         self.folder_path = getattr(self.element, "input_path")
-
         # get names of indices
-        # self.index_names     = {index_name: self.analysis['header_data_inputs'][index_name][0] for index_name in self.analysis['header_data_inputs']}
         self.index_names = self.analysis['header_data_inputs']
+        # load attributes file
+        self.attribute_dict = self.load_attribute_file()
 
     def extract_input_data(self, file_name, index_sets, time_steps=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
@@ -74,10 +74,10 @@ class DataInput:
             df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps)
         # read input file
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
-        df_input = self.read_input_data(f_name)
+        df_input = self.read_input_csv(f_name)
         if f_name != file_name and yearly_variation and df_input is None:
             logging.info(f"{f_name} for current scenario is missing from {self.folder_path}. {file_name} is used as input file")
-            df_input = self.read_input_data(file_name)
+            df_input = self.read_input_csv(file_name)
 
         assert (df_input is not None or default_value is not None), f"input file for attribute {file_name} could not be imported and no default value is given."
         if df_input is not None and not df_input.empty:
@@ -120,7 +120,7 @@ class DataInput:
             else:
                 df_input = DataInput.extract_from_input_with_missing_index(df_input, df_output, copy.deepcopy(index_name_list), file_name, missing_index)
 
-        #check for duplicate indices
+        # check for duplicate indices
         df_input = self.energy_system.optimization_setup.input_data_checks.check_duplicate_indices(df_input=df_input, file_name=file_name, folder_path=self.folder_path)
 
         # apply multiplier to input data
@@ -141,7 +141,7 @@ class DataInput:
         df_output.loc[common_index] = df_input.loc[common_index]
         return df_output
 
-    def read_input_data(self, input_file_name):
+    def read_input_csv(self, input_file_name):
         """ reads input data and returns raw input dataframe
 
         :param input_file_name: name of selected file
@@ -154,33 +154,79 @@ class DataInput:
         file_names = os.listdir(self.folder_path)
         if input_file_name in file_names:
             df_input = pd.read_csv(os.path.join(self.folder_path, input_file_name), header=0, index_col=None)
-            #check for header name duplicates (pd.read_csv() adds a dot and a number to duplicate headers)
+            # check for header name duplicates (pd.read_csv() adds a dot and a number to duplicate headers)
             if any("." in col for col in df_input.columns):
                 raise AssertionError(f"The input data file {input_file_name} at {self.folder_path} contains two identical header names.")
             return df_input
         else:
             return None
 
-    def extract_attribute(self, attribute_name, skip_warning=False, check_if_exists=False):
+    def load_attribute_file(self,filename="attributes"):
+        """
+        loads attribute file. Either as csv (old version) or json (new version)
+        :param filename: name of attributes file, default is 'attributes'
+        :return: attribute_dict
+        """
+        if os.path.exists(self.folder_path / f"{filename}.json"):
+            attribute_dict = self._load_attribute_file_json(filename=filename)
+        # extract csv
+        elif os.path.exists(self.folder_path / f"{filename}.csv"):
+            raise NotImplementedError(f"The .csv format for attributes is deprecated ({filename} of {self.element.name}). Use .json instead.")
+        else:
+            raise FileNotFoundError(f"Attributes file does not exist for {self.element.name}")
+        return attribute_dict
+
+    def _load_attribute_file_json(self,filename):
+        """
+        loads json attributes file
+        :param filename:
+        :return: attributes
+        """
+        file_path = self.folder_path / f"{filename}.json"
+        with open(file_path, "r") as file:
+            data = json.load(file)
+        attribute_dict = {k: v for item in data for k, v in item.items()}
+        return attribute_dict
+
+    # def _load_attribute_file_csv(self,filename):
+    #     """
+    #     loads csv attributes file
+    #     :param filename:
+    #     :return: attributes
+    #     """
+    #     df_input = self.read_input_csv(filename)
+    #     df_input = df_input.set_index("index").squeeze(axis=1)
+    #     dict_input = df_input.T.to_dict()
+    #     attributes_dict = {}
+    #     for k, v in dict_input.items():
+    #         attributes_dict[k.replace("_default", "")] = {
+    #             "default_value": v["value"],
+    #             "unit": v["unit"]
+    #         }
+    #     return attributes_dict
+
+    def extract_attribute(self, attribute_name, check_if_exists=False, return_unit=False):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param attribute_name: name of selected attribute
-        :param skip_warning: boolean to indicate if "Default" warning is skipped
         :param check_if_exists: check if attribute exists
-        :return attribute_value: attribute value """
+        :param return_unit: only returns unit
+        :return: attribute value and multiplier
+        :return: unit of attribute """
         if self.scenario_dict is not None:
             filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
         else:
             filename = "attributes"
             factor = 1
-        df_input = self.read_input_data(filename)
-        if df_input is not None:
-            df_input = df_input.set_index("index").squeeze(axis=1)
-            attribute_name = self.adapt_attribute_name(attribute_name, df_input, skip_warning,suppress_error=check_if_exists)
-        if attribute_name is not None:
-            # get attribute
-            attribute_value = df_input.loc[attribute_name, "value"]
-            multiplier = self.unit_handling.get_unit_multiplier(df_input.loc[attribute_name, "unit"], attribute_name, path=self.folder_path)
+        if filename != "attributes":
+            attribute_dict = self.load_attribute_file(filename)
+        else:
+            attribute_dict = self.attribute_dict
+        attribute_value, attribute_unit = self._extract_attribute_value(attribute_name,attribute_dict,check_if_exists)
+        if return_unit:
+            return attribute_unit
+        if attribute_value is not None:
+            multiplier = self.unit_handling.get_unit_multiplier(attribute_unit, attribute_name, path=self.folder_path)
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -188,30 +234,30 @@ class DataInput:
                 if factor != 1:
                     logging.warning(f"WARNING: Attribute {attribute_name} of {self.element.name} is not a number "
                                     f"but has custom factor {factor}, factor will be ignored...")
-                return attribute_value
+                attribute = attribute_value
+                return attribute
         else:
             return None
 
-    def adapt_attribute_name(self, attribute_name, df_input, skip_warning=False,suppress_error=False):
-        """ check if attribute in index
-
-        :param attribute_name: name of selected attribute
-        :param df_input: pd.DataFrame with input data
-        :param skip_warning: boolean to indicate if "Default" warning is skipped
-        :param suppress_error: suppress AttributeError if only check for existence of attribute
-        :return:
+    def _extract_attribute_value(self,attribute_name,attribute_dict,check_if_exists):
         """
-        if attribute_name + "_default" not in df_input.index:
-            if attribute_name not in df_input.index:
-                if suppress_error:
-                    return None
-                else:
-                    raise AttributeError(f"Attribute {attribute_name} doesn't exist in input data and must therefore be defined")
-            elif not skip_warning:
-                logging.warning(f"DeprecationWarning: Attribute names without '_default' suffix are deprecated. \nChange for {attribute_name} of attributes in path {self.folder_path}")
-        else:
-            attribute_name = attribute_name + "_default"
-        return attribute_name
+        reads attribute value from dict
+        :param attribute_name: name of selected attribute
+        :param attribute_dict: name of selected attribute
+        :param check_if_exists: check if attribute exists
+        :return: attribute value, attribute unit
+        """
+        if attribute_name not in attribute_dict:
+            if check_if_exists:
+                return None,None
+            else:
+                raise AttributeError(f"Attribute {attribute_name} doesn't exist in input data and must therefore be defined")
+        try:
+            attribute_value = float(attribute_dict[attribute_name]["default_value"])
+        except ValueError:
+            attribute_value = attribute_dict[attribute_name]["default_value"]
+        attribute_unit = attribute_dict[attribute_name]["unit"]
+        return attribute_value,attribute_unit
 
     def extract_yearly_variation(self, file_name, index_sets):
         """ reads the yearly variation of a time dependent quantity
@@ -228,10 +274,10 @@ class DataInput:
         file_name += "_yearly_variation"
         # read input data
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
-        df_input = self.read_input_data(f_name)
+        df_input = self.read_input_csv(f_name)
         if f_name != file_name and df_input is None:
             logging.info(f"{f_name} is missing from {self.folder_path}. {file_name} is used as input file")
-            df_input = self.read_input_data(file_name)
+            df_input = self.read_input_csv(file_name)
         if df_input is not None:
             df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, manual_default_value=1)
             # set yearly variation attribute to df_output
@@ -249,7 +295,7 @@ class DataInput:
         """
         if extract_nodes:
             set_nodes_config = self.system["set_nodes"]
-            df_nodes_w_coords = self.read_input_data("set_nodes")
+            df_nodes_w_coords = self.read_input_csv("set_nodes")
             if extract_coordinates:
                 if len(set_nodes_config) != 0:
                     df_nodes_w_coords = df_nodes_w_coords[df_nodes_w_coords["node"].isin(set_nodes_config)]
@@ -269,7 +315,7 @@ class DataInput:
                 set_nodes_config.sort()
                 return set_nodes_config
         else:
-            set_edges_input = self.read_input_data("set_edges")
+            set_edges_input = self.read_input_csv("set_edges")
             self.energy_system.optimization_setup.input_data_checks.check_single_directed_edges(set_edges_input=set_edges_input)
             if set_edges_input is not None:
                 set_edges = set_edges_input[(set_edges_input["node_from"].isin(self.energy_system.set_nodes)) & (set_edges_input["node_to"].isin(self.energy_system.set_nodes))]
@@ -283,12 +329,12 @@ class DataInput:
 
         :return carrier_list: list with input, output or reference carriers of technology """
         assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier"], "carrier type must be either input_carrier, output_carrier, or reference_carrier"
-        carrier_string = self.extract_attribute(carrier_type, skip_warning=True)
+        carrier_string = self.extract_attribute(carrier_type)
         if type(carrier_string) == str:
             carrier_list = carrier_string.strip().split(" ")
         else:
             carrier_list = []
-        assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
+        assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"Reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
         return carrier_list
 
     def extract_set_technologies_existing(self, storage_energy=False):
@@ -306,7 +352,7 @@ class DataInput:
 
             # here we ignore the factor
             f_name, _ = self.scenario_dict.get_param_file(self.element.name, f"capacity_existing{_energy_string}")
-            df_input = self.read_input_data(f_name)
+            df_input = self.read_input_csv(f_name)
             if df_input is None:
                 return [0]
             if self.element.name in self.system["set_transport_technologies"]:
@@ -335,7 +381,7 @@ class DataInput:
 
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
         if f"{f_name}.csv" in os.listdir(self.folder_path):
-            df_input = self.read_input_data(f_name)
+            df_input = self.read_input_csv(f_name)
             # fill output dataframe
             df_output = self.extract_general_input_data(df_input, df_output, "year_construction", index_name_list, default_value=0, time_steps=None)
             # get reference year
@@ -497,7 +543,7 @@ class DataInput:
         :param variable_type: technology approximation type
         :param file_type: either breakpointsPWA, linear, or nonlinear
         :return df_input: raw input file"""
-        df_input = self.read_input_data(file_type + variable_type)
+        df_input = self.read_input_csv(file_type + variable_type)
         if df_input is not None:
             if "unit" in df_input.values:
                 columns = df_input.iloc[-1][df_input.iloc[-1] != "unit"].dropna().index
@@ -550,19 +596,12 @@ class DataInput:
         self.save_unit_of_attribute(default_name)
         return df_output, default_value, index_name_list
 
-    def save_unit_of_attribute(self, file_name):
+    def save_unit_of_attribute(self, attribute_name):
         """ saves the unit of an attribute, converted to the base unit """
         # if numerics analyzed
         if self.solver["analyze_numerics"]:
-            attributes, _ = self.scenario_dict.get_default(self.element.name, file_name)
-            df_input = self.read_input_data(attributes).set_index("index").squeeze(axis=1)
-            # get attribute
-            if file_name:
-                attribute_name = self.adapt_attribute_name(file_name, df_input)
-                input_unit = df_input.loc[attribute_name, "unit"]
-            else:
-                input_unit = np.nan
-            self.unit_handling.set_base_unit_combination(input_unit=input_unit, attribute=(self.element.name, file_name))
+            input_unit = self.extract_attribute(attribute_name,return_unit=True)
+            self.unit_handling.set_base_unit_combination(input_unit=input_unit, attribute=(self.element.name, attribute_name))
 
     def save_values_of_attribute(self, df_output, file_name):
         """ saves the values of an attribute
@@ -616,7 +655,7 @@ class DataInput:
         default_value = self.extract_attribute(default_name,check_if_exists=True)
 
         if default_value is None or math.isnan(default_value["value"]):  # if no default value exists or default value is nan
-            _dfInput = self.read_input_data(file_name)
+            _dfInput = self.read_input_csv(file_name)
             return (_dfInput is not None)
         elif default_value and not math.isnan(default_value["value"]):  # if default value exists and is not nan
             return True

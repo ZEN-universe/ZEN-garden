@@ -82,7 +82,7 @@ class OptimizationSetup(object):
         self.set_base_configuration()
 
         # read input data into elements
-        self.read_input_data()
+        self.read_input_csv()
 
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
@@ -157,7 +157,7 @@ class OptimizationSetup(object):
             for item in element_set:
                 self.add_element(element_class, item)
 
-    def read_input_data(self):
+    def read_input_csv(self):
         """ reads the input data of the energy system and elements and conducts the time series aggregation """
         logging.info("\n--- Read input data of elements --- \n")
         self.energy_system.store_input_data()

@@ -46,7 +46,7 @@ class UnitHandling:
         if define_ton_as_metric_ton:
             self.define_ton_as_metric()
         # load additional units
-        self.ureg.load_definitions(self.folder_path + "/unit_definitions.txt")
+        self.ureg.load_definitions(self.folder_path / "unit_definitions.txt")
 
         # empty base units and dimensionality matrix
         self.base_units = {}
@@ -104,7 +104,7 @@ class UnitHandling:
         """ extracts base units of energy system
 
         :return list_base_units: list of base units """
-        list_base_units = pd.read_csv(self.folder_path + "/base_units.csv").squeeze().values.tolist()
+        list_base_units = pd.read_csv(self.folder_path / "base_units.csv").squeeze().values.tolist()
         return list_base_units
 
     def calculate_combined_unit(self, input_unit, return_combination=False):

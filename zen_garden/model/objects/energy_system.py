@@ -17,7 +17,7 @@ from zen_garden.model.objects.element import GenericRule
 from zen_garden.preprocess.extract_input_data import DataInput
 from zen_garden.preprocess.unit_handling import UnitHandling
 from .time_steps import TimeStepsDicts
-
+from pathlib import Path
 
 class EnergySystem:
     """
@@ -50,7 +50,7 @@ class EnergySystem:
 
         # set input path
         _folder_label = self.optimization_setup.analysis["folder_name_system_specification"]
-        self.input_path = self.optimization_setup.paths[_folder_label]["folder"]
+        self.input_path = Path(self.optimization_setup.paths[_folder_label]["folder"])
 
         # create UnitHandling object
         self.unit_handling = UnitHandling(self.input_path,
@@ -89,7 +89,7 @@ class EnergySystem:
         # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_steps_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
-        self.parameters_interpolation_off = self.data_input.read_input_data("parameters_interpolation_off")
+        self.parameters_interpolation_off = self.data_input.read_input_csv("parameters_interpolation_off")
         # technology-specific
         self.set_conversion_technologies = self.system["set_conversion_technologies"]
         self.set_transport_technologies = self.system["set_transport_technologies"]
