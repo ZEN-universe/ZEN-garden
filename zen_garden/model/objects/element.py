@@ -15,8 +15,8 @@ import logging
 import os
 import psutil
 import time
-
-from zen_garden.preprocess.functions.extract_input_data import DataInput
+from pathlib import Path
+from zen_garden.preprocess.extract_input_data import DataInput
 
 class Element:
     """
@@ -61,7 +61,7 @@ class Element:
                     class_label = set_name
                     break
         # get input path for current class_label
-        self.input_path = paths[class_label][self.name]["folder"]
+        self.input_path = Path(paths[class_label][self.name]["folder"])
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites time steps. Must be implemented in child classes
@@ -121,9 +121,6 @@ class Element:
         logging.info("Construct pe.Sets")
         # construct pe.Sets of energy system
         optimization_setup.energy_system.construct_sets()
-        # operational time steps
-        optimization_setup.sets.add_set(name="set_time_steps_operation", data=optimization_setup.get_attribute_of_all_elements(cls, "set_time_steps_operation"),
-                                        doc="Set of time steps in operation for all technologies. Dimensions: set_elements", index_set="set_elements")
         # construct pe.Sets of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_sets(optimization_setup)
@@ -136,12 +133,6 @@ class Element:
         logging.info("Construct pe.Params")
         # construct pe.Params of energy system
         optimization_setup.energy_system.construct_params()
-        # construct pe.Sets of class elements
-        # operational time step duration
-        optimization_setup.parameters.add_parameter(name="time_steps_operation_duration",
-            data=optimization_setup.initialize_component(cls, "time_steps_operation_duration", index_names=["set_elements", "set_time_steps_operation"]),  # .astype(int),
-            # doc="Parameter which specifies the time step duration in operation for all technologies. Dimensions: set_elements, set_time_steps_operation"
-            doc="Parameter which specifies the time step duration in operation for all technologies")
         # construct pe.Params of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_params(optimization_setup)

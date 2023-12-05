@@ -56,7 +56,7 @@ class Carrier(Element):
 
         :param base_time_steps: #TODO describe parameter/return
         """
-        set_time_steps_operation = self.energy_system.time_steps.encode_time_step(self.name, base_time_steps=base_time_steps, time_step_type="operation", yearly=True)
+        set_time_steps_operation = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps, time_step_type="operation")
         setattr(self, "set_time_steps_operation", set_time_steps_operation.squeeze().tolist())
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
@@ -244,9 +244,9 @@ class CarrierRules(GenericRule):
         terms = []
         # This vectorizes over times and locations
         for carrier in self.sets["set_carriers"]:
-            times = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
+            times = self.energy_system.time_steps.get_time_steps_year2operation(year)
             expr = (self.variables["cost_carrier"].loc[carrier, :, times]
-                    + self.variables["cost_shed_demand"].loc[carrier, :, times]) * self.parameters.time_steps_operation_duration.loc[carrier, times]
+                    + self.variables["cost_shed_demand"].loc[carrier, :, times]) * self.parameters.time_steps_operation_duration.loc[times]
             terms.append(expr.sum())
         term_summed_carrier_shed_demand_costs = lp_sum(terms)
 
@@ -281,8 +281,8 @@ class CarrierRules(GenericRule):
         terms = []
         # This vectorizes over times and locations
         for carrier in self.sets["set_carriers"]:
-            times = self.energy_system.time_steps.get_time_steps_year2operation(carrier, year)
-            expr = self.variables["carbon_emissions_carrier"].loc[carrier, :, times] * self.parameters.time_steps_operation_duration.loc[carrier, times]
+            times = self.energy_system.time_steps.get_time_steps_year2operation(year)
+            expr = self.variables["carbon_emissions_carrier"].loc[carrier, :, times] * self.parameters.time_steps_operation_duration.loc[times]
             terms.append(expr.sum())
         term_summed_carbon_emissions_carrier = lp_sum(terms)
 
@@ -378,9 +378,9 @@ class CarrierRules(GenericRule):
         constraints = []
         for carrier, year in index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]):
             ### auxiliary calculations
-            operational_time_steps = self.time_steps.get_time_steps_year2operation(carrier, year)
+            operational_time_steps = self.time_steps.get_time_steps_year2operation(year)
             term_summed_import_flow = (self.variables["flow_import"].loc[carrier, :, operational_time_steps]
-                                       * self.parameters.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum("set_time_steps_operation")
+                                       * self.parameters.time_steps_operation_duration.loc[operational_time_steps]).sum("set_time_steps_operation")
 
             ### formulate constraint
             lhs = term_summed_import_flow
@@ -416,9 +416,9 @@ class CarrierRules(GenericRule):
         constraints = []
         for carrier, year in index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]):
             ### auxiliary calculations
-            operational_time_steps = self.time_steps.get_time_steps_year2operation(carrier, year)
+            operational_time_steps = self.time_steps.get_time_steps_year2operation(year)
             term_summed_export_flow = (self.variables["flow_export"].loc[carrier, :, operational_time_steps]
-                                       * self.parameters.time_steps_operation_duration.loc[carrier, operational_time_steps]).sum("set_time_steps_operation")
+                                       * self.parameters.time_steps_operation_duration.loc[operational_time_steps]).sum("set_time_steps_operation")
 
             ### formulate constraint
             lhs = term_summed_export_flow
@@ -557,7 +557,7 @@ class CarrierRules(GenericRule):
         constraints = []
         for carrier in index.get_unique(["set_carriers"]):
             ### auxiliary calculations
-            yearly_time_steps = [self.time_steps.convert_time_step_operation2year(carrier, t) for t in times]
+            yearly_time_steps = [self.time_steps.convert_time_step_operation2year(t) for t in times]
 
             # get the time-dependent factor
             mask = (self.parameters.availability_import.loc[carrier, :, times] != 0) | (self.parameters.availability_export.loc[carrier, :, times] != 0)

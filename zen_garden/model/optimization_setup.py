@@ -11,11 +11,9 @@ dictionaries analysis and system which are passed to the class. After initializi
 class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
 The class also includes a method to solve the optimization problem.
 """
-import cProfile
 import copy
 import logging
 import os
-import time
 from collections import defaultdict
 
 import linopy as lp
@@ -26,8 +24,7 @@ from .objects.component import Parameter, Variable, Constraint, IndexSet
 from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
-from .objects.technology.transport_technology import TransportTechnology
-from ..preprocess.functions.time_series_aggregation import TimeSeriesAggregation
+from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 
 from ..utils import ScenarioDict, IISConstraintParser
 
@@ -292,18 +289,14 @@ class OptimizationSetup(object):
                 dict_of_attributes[_combined_key] = attribute
                 attribute_is_series = True
             else:
-                #since single-directed edges are allowed to exist (e.g. CH-DE exists, DE-CH doesn't), TransportTechnology attributes shared with other technologies (such as capacity existing)
-                # mustn't be squeezed even-though the attributes length is smaller than 1. Otherwise, pd.concat(dict_of_attributes) messes up in initialize_component(), leading to an error further on in the code.
-                if isinstance(element, TransportTechnology):
-                    if all([isinstance(value, float) for key, value in dict_of_attributes.items()]) and len(dict_of_attributes) > 0:
-                        dict_of_attributes[_combined_key] = attribute.squeeze()
-                        attribute_is_series = False
-                    else:
-                        dict_of_attributes[_combined_key] = attribute
-                        attribute_is_series = True
-                else:
+                if attribute.index == 0:
                     dict_of_attributes[_combined_key] = attribute.squeeze()
                     attribute_is_series = False
+                #since single-directed edges are allowed to exist (e.g. CH-DE exists, DE-CH doesn't), TransportTechnology attributes shared with other technologies (such as capacity existing)
+                # mustn't be squeezed even-though the attributes length is smaller than 1. Otherwise, pd.concat(dict_of_attributes) messes up in initialize_component(), leading to an error further on in the code.
+                else:
+                    dict_of_attributes[_combined_key] = attribute
+                    attribute_is_series = True
         elif isinstance(attribute, int):
             if capacity_type:
                 dict_of_attributes[(element.name, capacity_type)] = [attribute]
@@ -352,8 +345,8 @@ class OptimizationSetup(object):
         # if using rolling horizon
         if self.system["use_rolling_horizon"]:
             self.years_in_horizon = self.system["years_in_rolling_horizon"]
-            _time_steps_yearly = self.energy_system.set_time_steps_yearly
-            self.steps_horizon = {year: list(range(year, min(year + self.years_in_horizon, max(_time_steps_yearly) + 1))) for year in _time_steps_yearly}
+            time_steps_yearly = self.energy_system.set_time_steps_yearly
+            self.steps_horizon = {year: list(range(year, min(year + self.years_in_horizon, max(time_steps_yearly) + 1))) for year in time_steps_yearly}
         # if no rolling horizon
         else:
             self.years_in_horizon = len(self.energy_system.set_time_steps_yearly)
@@ -368,102 +361,37 @@ class OptimizationSetup(object):
         self.base_scenario = scenario
         self.base_configuration = elements
 
-    def restore_base_configuration(self, scenario, elements):
-        """restore default configuration
-
-        :param scenario: scenario name
-        :param elements: dictionary of scenario dependent elements and parameters"""
-        if not scenario == self.base_scenario:
-            # restore base configuration
-            self.overwrite_params(self.base_scenario, self.base_configuration)
-            # continuously update base_configuration so all parameters are reset to their base value after being changed
-            for element_name, params in elements.items():
-                if element_name not in self.base_configuration.keys():
-                    self.base_configuration[element_name] = params
-                else:
-                    for param in params:
-                        if param not in self.base_configuration[element_name]:
-                            self.base_configuration[element_name].append(param)
-
-    def overwrite_params(self, scenario, elements):
-        """overwrite scenario dependent parameters
-
-        :param scenario: scenario name
-        :param elements: dictionary of scenario dependent elements and parameters"""
-        if scenario != "":
-            scenario = "_" + scenario
-        # list of parameters with raw_time_series
-        conduct_tsa = False
-        # overwrite scenario dependent parameter values for all elements
-        for element_name, params in elements.items():
-            if element_name == "EnergySystem":
-                element = self.energy_system
-            else:
-                element = self.get_element(Element, element_name)
-            if element is None:
-                logging.warning(f"Cannot update params {params} of element {element_name} because element does not exist. Skipped.")
-                continue
-            # overwrite scenario dependent parameters
-            for param in params:
-                assert "pwa" not in param, "Scenarios are not implemented for piece-wise affine parameters."
-                file_name = param
-                if "yearly_variation" in param:
-                    param = param.replace("_yearly_variation", "")
-                    file_name = param
-                # get old param value
-                _old_param = getattr(element, param)
-                _index_names = _old_param.index.names
-                _index_sets = [index_set for index_set, index_name in element.data_input.index_names.items() if index_name in _index_names]
-                _time_steps = None
-                # if existing capacity is changed, set_technologies_existing, existing lifetime, and capexExistingCapacity have to be updated as well
-                if "set_technologies_existing" in _index_sets:
-                    # update set_technologies_existing and lifetime_existing
-                    _technologies_existing = element.data_input.extract_set_technologies_existing(scenario=scenario)
-                    setattr(element, "set_technologies_existing", _technologies_existing)
-                    _lifetime_existing = element.data_input.extract_lifetime_existing(param, index_sets=_index_sets, scenario=scenario)
-                    setattr(element, "lifetime_existing", _lifetime_existing)
-                # set new parameter value
-                if hasattr(element, "raw_time_series") and param in element.raw_time_series.keys():
-                    conduct_tsa = True
-                    _time_steps = self.energy_system.set_base_time_steps_yearly
-                    element.raw_time_series[param] = element.data_input.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
-                else:
-                    assert isinstance(_old_param, pd.Series) or isinstance(_old_param, pd.DataFrame), f"Param values of '{param}' have to be a pd.DataFrame or pd.Series."
-                    if "time" in _index_names:
-                        _time_steps = self.energy_system.set_base_time_steps_yearly
-                    elif "year" in _index_names:
-                        _time_steps = self.energy_system.set_time_steps_yearly_entire_horizon
-                    _new_param = element.data_input.extract_input_data(file_name, index_sets=_index_sets, time_steps=_time_steps, scenario=scenario)
-                    setattr(element, param, _new_param)
-                    # if existing capacity is changed, capex_capacity_existing also has to be updated
-                    if "capacity_existing" in param:
-                        storage_energy = False
-                        if element in self.energy_system.system["set_storage_technologies"]:
-                            storage_energy = True
-                        _capex_capacities_existing = element.calculate_capex_of_capacities_existing(storage_energy=storage_energy)
-                        setattr(element, "capex_capacity_existing", _capex_capacities_existing)
-        # if scenario contains timeSeries dependent params conduct tsa
-        if conduct_tsa:
-            # we need to reset the Aggregation because the energy system might have changed
-            self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
-
     def overwrite_time_indices(self, step_horizon):
         """ select subset of time indices, matching the step horizon
 
         :param step_horizon: step of the rolling horizon """
 
         if self.system["use_rolling_horizon"]:
-            _time_steps_yearly_horizon = self.steps_horizon[step_horizon]
-            _base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(_time_steps_yearly_horizon)
-            # overwrite time steps of each element
-            for element in self.get_all_elements(Element):
-                element.overwrite_time_steps(_base_time_steps_horizon)
+            time_steps_yearly_horizon = self.steps_horizon[step_horizon]
+            base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(time_steps_yearly_horizon)
+            # # overwrite time steps of each element
+            # for element in self.get_all_elements(Element):
+            #     element.overwrite_time_steps(base_time_steps_horizon)
+            # overwrite aggregated time steps - operation
+            set_time_steps_operation = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps_horizon,
+                                                                                      time_step_type="operation")
+            # overwrite aggregated time steps - storage
+            set_time_steps_storage = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps_horizon,
+                                                                                      time_step_type="storage")
+            # copy invest time steps
+            time_steps_operation = set_time_steps_operation.squeeze().tolist()
+            time_steps_storage = set_time_steps_storage.squeeze().tolist()
+            if isinstance(time_steps_operation,int):
+                time_steps_operation = [time_steps_operation]
+                time_steps_storage = [time_steps_storage]
+            self.energy_system.time_steps.time_steps_operation = time_steps_operation
+            self.energy_system.time_steps.time_steps_storage = time_steps_storage
             # overwrite base time steps and yearly base time steps
-            _new_base_time_steps_horizon = _base_time_steps_horizon.squeeze().tolist()
-            if not isinstance(_new_base_time_steps_horizon, list):
-                _new_base_time_steps_horizon = [_new_base_time_steps_horizon]
-            self.energy_system.set_base_time_steps = _new_base_time_steps_horizon
-            self.energy_system.set_time_steps_yearly = _time_steps_yearly_horizon
+            new_base_time_steps_horizon = base_time_steps_horizon.squeeze().tolist()
+            if not isinstance(new_base_time_steps_horizon, list):
+                new_base_time_steps_horizon = [new_base_time_steps_horizon]
+            self.energy_system.set_base_time_steps = new_base_time_steps_horizon
+            self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
 
     def analyze_numerics(self):
         """ get largest and smallest matrix coefficients and RHS """
@@ -539,32 +467,21 @@ class OptimizationSetup(object):
             logging.info(
                 f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
 
-    def solve(self, solver):
-        """Create model instance by assigning parameter values and instantiating the sets
-
-        :param solver: dictionary containing the solver settings """
-        solver_name = solver["name"]
+    def solve(self):
+        """Create model instance by assigning parameter values and instantiating the sets """
+        solver_name = self.solver["name"]
         # remove options that are None
-        solver_options = {key: solver["solver_options"][key] for key in solver["solver_options"] if solver["solver_options"][key] is not None}
+        solver_options = {key: self.solver["solver_options"][key] for key in self.solver["solver_options"] if self.solver["solver_options"][key] is not None}
 
         logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily
         logging.disable(logging.WARNING)
 
         if solver_name == "gurobi":
-            ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
             self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
                              keep_files=self.solver["keep_files"], sanitize_zeros=True,
                              # remaining kwargs are passed to the solver
                              **solver_options)
-            # write an ILP file to print the IIS if infeasible
-            if self.model.termination_condition == 'infeasible':
-                logging.info("The optimization is infeasible")
-                parser = IISConstraintParser(ilp_file, self.model)
-                fname, _ = os.path.splitext(ilp_file)
-                outfile = fname + "_linopy.ilp"
-                logging.info(f"Writing parsed IIS to {outfile}")
-                parser.write_parsed_output(outfile)
         else:
             self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
                              keep_files=self.solver["keep_files"], sanitize_zeros=True)
@@ -576,13 +493,35 @@ class OptimizationSetup(object):
         elif self.model.termination_condition == "suboptimal":
             logging.info("The optimization is suboptimal")
             self.optimality = True
+        elif self.model.termination_condition == "infeasible":
+            logging.info("The optimization is infeasible")
+            self.optimality = False
         else:
             logging.info("The optimization is infeasible or unbounded, or finished with an error")
             self.optimality = False
 
+    def write_IIS(self):
+        """ write an ILP file to print the IIS if infeasible. Only possible for gurobi """
+        if self.model.termination_condition == 'infeasible' and self.solver["name"] == "gurobi":
+            logging.info("The optimization is infeasible")
+            # ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
+            ilp_file = f"//infeasible_model_IIS.ilp"
+            parser = IISConstraintParser(ilp_file, self.model)
+            fname, _ = os.path.splitext(ilp_file)
+            outfile = fname + "_linopy.ilp"
+            logging.info(f"Writing parsed IIS to {outfile}")
+            parser.write_parsed_output(outfile)
+
+    def add_results_of_optimization_step(self, step_horizon):
+        """ adds the new capacity additions and the cumulative carbon emissions for next
+        :param step_horizon: step of the rolling horizon """
+        # add newly capacity_addition of first year to existing capacity
+        self.add_new_capacity_addition(step_horizon)
+        # add cumulative carbon emissions to previous carbon emissions
+        self.add_carbon_emission_cumulative(step_horizon)
+
     def add_new_capacity_addition(self, step_horizon):
         """ adds the newly built capacity to the existing capacity
-
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
@@ -680,7 +619,8 @@ class OptimizationSetup(object):
                 component_data = pd.concat(component_data, keys=component_data.keys())
             if not index_names:
                 logging.warning(f"Initializing a parameter ({component_name}) without the specifying the index names will be deprecated!")
-
+        if isinstance(component_data,pd.Series) and not isinstance(component_data.index,pd.MultiIndex):
+            component_data.index = pd.MultiIndex.from_product([component_data.index.to_list()])
         return component_data, index_list
 
     def check_for_subindex(self, component_data, custom_set):

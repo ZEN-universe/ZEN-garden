@@ -10,12 +10,12 @@ import logging
 import numpy as np
 import pandas as pd
 import scipy as sp
-import itertools
+import warnings
 from pint import UnitRegistry
 from pint.util import column_echelon_form
-import copy
-import warnings
 
+# enable Deprecation Warnings
+warnings.simplefilter('always', DeprecationWarning)
 
 class UnitHandling:
     """
@@ -51,25 +51,25 @@ class UnitHandling:
         # empty base units and dimensionality matrix
         self.base_units = {}
         self.dim_matrix = pd.DataFrame(index=_list_base_unit).astype(int)
-        for _base_unit in _list_base_unit:
-            dim_unit = self.ureg.get_dimensionality(self.ureg(_base_unit))
-            self.base_units[_base_unit] = self.ureg(_base_unit).dimensionality
-            self.dim_matrix.loc[_base_unit, list(dim_unit.keys())] = list(dim_unit.values())
+        for base_unit in _list_base_unit:
+            dim_unit = self.ureg.get_dimensionality(self.ureg(base_unit))
+            self.base_units[base_unit] = self.ureg(base_unit).dimensionality
+            self.dim_matrix.loc[base_unit, list(dim_unit.keys())] = list(dim_unit.values())
         self.dim_matrix = self.dim_matrix.fillna(0).astype(int).T
 
         # check if unit defined twice or more
-        _duplicate_units = self.dim_matrix.T.duplicated()
-        if _duplicate_units.any():
-            _dim_matrix_duplicate = self.dim_matrix.loc[:, _duplicate_units]
-            for _duplicate in _dim_matrix_duplicate:
+        duplicate_units = self.dim_matrix.T.duplicated()
+        if duplicate_units.any():
+            dim_matrix_duplicate = self.dim_matrix.loc[:, duplicate_units]
+            for duplicate in dim_matrix_duplicate:
                 # if same unit twice (same order of magnitude and same dimensionality)
-                if len(self.dim_matrix[_duplicate].shape) > 1:
-                    logging.warning(f"The base unit <{_duplicate}> was defined more than once. Duplicates are dropped.")
-                    _duplicateDim = self.dim_matrix[_duplicate].T.drop_duplicates().T
-                    self.dim_matrix = self.dim_matrix.drop(_duplicate, axis=1)
-                    self.dim_matrix[_duplicate] = _duplicateDim
+                if len(self.dim_matrix[duplicate].shape) > 1:
+                    logging.warning(f"The base unit <{duplicate}> was defined more than once. Duplicates are dropped.")
+                    _duplicateDim = self.dim_matrix[duplicate].T.drop_duplicates().T
+                    self.dim_matrix = self.dim_matrix.drop(duplicate, axis=1)
+                    self.dim_matrix[duplicate] = _duplicateDim
                 else:
-                    raise KeyError(f"More than one base unit defined for dimensionality {self.base_units[_duplicate]} (e.g., {_duplicate})")
+                    raise KeyError(f"More than one base unit defined for dimensionality {self.base_units[duplicate]} (e.g., {duplicate})")
         # get linearly dependent units
         M, I, pivot = column_echelon_form(np.array(self.dim_matrix), ntype=float)
         M = np.array(M).squeeze()
@@ -118,25 +118,24 @@ class UnitHandling:
         # create dimensionality vector for input_unit
         dim_input = self.ureg.get_dimensionality(self.ureg(input_unit))
         dim_vector = pd.Series(index=self.dim_matrix.index, data=0)
-        _missing_dim = set(dim_input.keys()).difference(dim_vector.keys())
-        assert len(_missing_dim) == 0, f"No base unit defined for dimensionalities <{_missing_dim}>"
+        missing_dim = set(dim_input.keys()).difference(dim_vector.keys())
+        assert len(missing_dim) == 0, f"No base unit defined for dimensionalities <{missing_dim}>"
         dim_vector[list(dim_input.keys())] = list(dim_input.values())
         # calculate dimensionless combined unit (e.g., tons and kilotons)
         combined_unit = self.ureg(input_unit).units
         # if unit (with a different multiplier) is already in base units
         if self.dim_matrix.isin(dim_vector).all(axis=0).any():
             base_combination = self.dim_matrix.isin(dim_vector).all(axis=0).astype(int)
-            _base_unit = self.ureg(self.dim_matrix.columns[self.dim_matrix.isin(dim_vector).all(axis=0)][0])
-            combined_unit *= _base_unit ** (-1)
+            base_unit = self.ureg(self.dim_matrix.columns[self.dim_matrix.isin(dim_vector).all(axis=0)][0])
+            combined_unit *= base_unit ** (-1)
         # if inverse of unit (with a different multiplier) is already in base units (e.g. 1/km and km)
         elif (self.dim_matrix * -1).isin(dim_vector).all(axis=0).any():
             base_combination = (self.dim_matrix * -1).isin(dim_vector).all(axis=0).astype(int) * (-1)
-            _base_unit = self.ureg(self.dim_matrix.columns[(self.dim_matrix * -1).isin(dim_vector).all(axis=0)][0])
-            combined_unit *= _base_unit
+            base_unit = self.ureg(self.dim_matrix.columns[(self.dim_matrix * -1).isin(dim_vector).all(axis=0)][0])
+            combined_unit *= base_unit
         else:
-            dim_analysis = self.dim_analysis
             # drop dependent units
-            dim_matrix_reduced = self.dim_matrix.drop(dim_analysis["dependent_units"], axis=1)
+            dim_matrix_reduced = self.dim_matrix.drop(self.dim_analysis["dependent_units"], axis=1)
             # solve system of linear equations
             combination_solution = np.linalg.solve(dim_matrix_reduced, dim_vector)
             # check if only -1, 0, 1
@@ -147,49 +146,94 @@ class UnitHandling:
                 for unit, power in zip(dim_matrix_reduced.columns, combination_solution):
                     combined_unit *= self.ureg(unit) ** (-1 * power)
             else:
-                calculated_multiplier = False
-                for unit, power in zip(dim_matrix_reduced.columns, combination_solution):
-                    # try to substitute unit by a dependent unit
-                    if not calculated_multiplier:
-                        # iterate through dependent units
-                        for dependent_unit, dependent_dim in zip(dim_analysis["dependent_units"], dim_analysis["dependent_dims"]):
-                            idx_unit_in_reduced_matrix = list(dim_matrix_reduced.columns).index(unit)
-                            # if the power of the unit is the same as of the dimensionality in the dependent unit
-                            if np.abs(dependent_dim[idx_unit_in_reduced_matrix]) == np.abs(power):
-                                dim_matrix_reduced_temp = dim_matrix_reduced.drop(unit, axis=1)
-                                dim_matrix_reduced_temp[dependent_unit] = self.dim_matrix[dependent_unit]
-                                combination_solution_temp = np.linalg.solve(dim_matrix_reduced_temp, dim_vector)
-                                if UnitHandling.check_pos_neg_boolean(combination_solution_temp):
-                                    # compose relevant units to dimensionless combined unit
-                                    base_combination = pd.Series(index=self.dim_matrix.columns, data=0)
-                                    base_combination[dim_matrix_reduced_temp.columns] = combination_solution_temp
-                                    for unit_temp, power_temp in zip(dim_matrix_reduced_temp.columns, combination_solution_temp):
-                                        combined_unit *= self.ureg(unit_temp) ** (-1 * power_temp)
-                                    calculated_multiplier = True
-                                    break
-                assert calculated_multiplier, f"Cannot establish base unit conversion for {input_unit} from base units {self.base_units.keys()}"
+                base_combination,combined_unit = self._get_combined_unit_of_different_matrix(
+                    dim_matrix_reduced= dim_matrix_reduced,
+                    dim_vector=dim_vector,
+                    input_unit=input_unit
+                )
         if return_combination:
             return base_combination
         else:
             return combined_unit
 
-    def get_unit_multiplier(self, input_unit, attribute_name, path=None, file_name=None):
+    def _get_combined_unit_of_different_matrix(self,dim_matrix_reduced,dim_vector,input_unit):
+        """ calculates the combined unit for a different dimensionality matrix.
+        We substitute base units by the dependent units and try again.
+        If the matrix is singular we solve the overdetermined problem
+        :param dim_matrix_reduced: dimensionality matrix without dependent units
+        :param dim_vector: dimensionality vector of input unit
+        :param input_unit: input unit
+        :return base_combination: base combination of input unit
+        :return combined_unit: input unit expressed in base units
+        """
+        calculated_multiplier = False
+        combined_unit = self.ureg(input_unit).units
+        base_combination = pd.Series(index=self.dim_matrix.columns, data=0)
+        # try to substitute unit by a dependent unit
+        for unit in dim_matrix_reduced.columns:
+            if not calculated_multiplier:
+                # iterate through dependent units
+                for dependent_unit, dependent_dim in zip(self.dim_analysis["dependent_units"],
+                                                         self.dim_analysis["dependent_dims"]):
+                    # substitute current unit with dependent unit
+                    dim_matrix_reduced_temp = dim_matrix_reduced.drop(unit, axis=1)
+                    dim_matrix_reduced_temp[dependent_unit] = self.dim_matrix[dependent_unit]
+                    # if full rank
+                    if np.linalg.matrix_rank == np.size(dim_matrix_reduced_temp, 1):
+                        combination_solution_temp = np.linalg.solve(dim_matrix_reduced_temp, dim_vector)
+                    # if singular, check if zero row in matrix corresponds to zero row in unit dimensionality
+                    else:
+                        zero_row = dim_matrix_reduced_temp.index[~dim_matrix_reduced_temp.any(axis=1)]
+                        if (dim_vector[zero_row] == 0).all():
+                            # remove zero row
+                            dim_matrix_reduced_temp_reduced = dim_matrix_reduced_temp.drop(zero_row, axis=0)
+                            dim_vector_reduced = dim_vector.drop(zero_row, axis=0)
+                            # formulate as optimization problem with 1,-1 bounds
+                            # to determine solution of overdetermined matrix
+                            ub = np.array([1] * len(dim_matrix_reduced_temp_reduced.columns))
+                            lb = np.array([-1] * len(dim_matrix_reduced_temp_reduced.columns))
+                            res = sp.optimize.lsq_linear(
+                                dim_matrix_reduced_temp_reduced, dim_vector_reduced,
+                                bounds=(lb, ub))
+                            # if an exact solution is found (after rounding)
+                            if np.round(res.cost, 4) == 0:
+                                combination_solution_temp = np.round(res.x, 4)
+                            # if not solution is found
+                            else:
+                                continue
+                        # definitely not a solution because zero row corresponds to nonzero dimensionality
+                        else:
+                            continue
+                    if UnitHandling.check_pos_neg_boolean(combination_solution_temp):
+                        # compose relevant units to dimensionless combined unit
+                        base_combination[dim_matrix_reduced_temp.columns] = combination_solution_temp
+                        for unit_temp, power_temp in zip(dim_matrix_reduced_temp.columns, combination_solution_temp):
+                            combined_unit *= self.ureg(unit_temp) ** (-1 * power_temp)
+                        calculated_multiplier = True
+                        break
+        assert calculated_multiplier, f"Cannot establish base unit conversion for {input_unit} from base units {self.base_units.keys()}"
+        return base_combination,combined_unit
+
+    def get_unit_multiplier(self, input_unit, attribute_name, path=None):
         """ calculates the multiplier for converting an input_unit to the base units
 
         :param input_unit: string of input unit
         :param attribute_name: name of attribute
+        :param path: path of element
         :return multiplier: multiplication factor """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if input_unit in self.base_units:
             return 1
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
-            warnings.warn(f"DeprecationWarning: There are parameters without any units in {file_name+'.csv'} at {path} (assign unit '1' to unitless parameters to ensure that no units are missing)")
-            return 1
-        #if input unit is 1 --> dimensionless new definition
-        elif input_unit == "1":
+            warnings.warn(f"Parameter {attribute_name} of {path.name} has no unit (assign unit '1' to unitless parameters)",DeprecationWarning)
             return 1
         else:
+            # convert to string
+            input_unit = str(input_unit)
+            # if input unit is 1 --> dimensionless new definition
+            if input_unit == "1":
+                return 1
             combined_unit = self.calculate_combined_unit(input_unit)
             assert combined_unit.to_base_units().unitless, f"The unit conversion of unit {input_unit} did not resolve to a dimensionless conversion factor. Something went wrong."
             # magnitude of combined unit is multiplier
@@ -205,16 +249,19 @@ class UnitHandling:
         :param input_unit: #TODO describe parameter/return
         :param attribute: #TODO describe parameter/return
         """
+        # TODO combine overlap with get_unit_multiplier
         # if input unit is already in base units --> the input unit is base unit
         if input_unit in self.base_units:
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
             base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
-        #if input unit is 1 --> dimensionless new definition
-        elif input_unit == "1":
-            base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
         else:
+            # convert to string
+            input_unit = str(input_unit)
+            # if input unit is 1 --> dimensionless new definition
+            if input_unit == "1":
+                return 1
             base_unit_combination = self.calculate_combined_unit(input_unit, return_combination=True)
         if (base_unit_combination != 0).any():
             self.dict_attribute_values[attribute] = {"base_combination": base_unit_combination, "values": None}
@@ -250,7 +297,7 @@ class UnitHandling:
         mutable_unit = self.dim_matrix.columns[self.dim_matrix.columns.isin(base_units.difference(immutable_unit))]
         df_units = df_units.loc[:, mutable_unit].values
 
-        #remove rows of df_units which contain only zeros since they cannot be scaled anyway and may influence minimization convergence
+        # remove rows of df_units which contain only zeros since they cannot be scaled anyway and may influence minimization convergence
         zero_rows_mask = np.all(df_units == 0, axis=1)
         A = df_units[~zero_rows_mask]
         b = df_values[~zero_rows_mask]

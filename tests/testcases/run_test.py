@@ -172,7 +172,7 @@ def test_1a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
 
@@ -186,7 +186,7 @@ def test_1b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, element_name=True)
 
 
@@ -224,7 +224,7 @@ def test_2a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
 
@@ -274,7 +274,7 @@ def test_3a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
 
@@ -312,7 +312,7 @@ def test_4b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
 
@@ -326,7 +326,7 @@ def test_4c(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, year=0)
 
 
@@ -340,7 +340,7 @@ def test_4d(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, discount_to_first_step=False)
 
 
@@ -381,7 +381,7 @@ def test_4g(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
 
@@ -395,7 +395,7 @@ def test_5a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
 
@@ -409,7 +409,7 @@ def test_5b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, specific_scenario=True)
 
 
@@ -447,7 +447,7 @@ def test_6a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
 
@@ -485,7 +485,7 @@ def test_7a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    #test functions get_total() and get_full_ts()
+    # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
 
