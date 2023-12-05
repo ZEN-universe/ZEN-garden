@@ -16,6 +16,7 @@ from pint.util import column_echelon_form
 from pathlib import Path
 from zen_garden.model.objects.technology.technology import Technology
 from zen_garden.model.objects.carrier.carrier import Carrier
+from zen_garden.model.objects.technology.conversion_technology import ConversionTechnology
 
 # enable Deprecation Warnings
 warnings.simplefilter('always', DeprecationWarning)
@@ -247,7 +248,7 @@ class UnitHandling:
             # round to decimal points
             return round(multiplier, self.rounding_decimal_points)
 
-    def convert_unit(self, input_unit, attribute_name, path, get_multiplier=True):
+    def convert_unit_into_base_units(self, input_unit, get_multiplier=False, attribute_name=None, path=None):
         """
         Converts the input_unit into base units and returns the multiplier such that the combined unit mustn't be computed twice
 
@@ -279,11 +280,11 @@ class UnitHandling:
         """
         elements = optimization_setup.dict_elements["Element"]
         items = elements + [optimization_setup.energy_system]
-        distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
         conversion_factor_units = {}
         for item in items:
             product_units = {}
             unit_dict = item.units
+            #since technology elements have a lot of parameters related to their reference carrier, their unit consistency must be checked together
             if item.__class__.__base__ is Technology:
                 reference_carrier_name = item.reference_carrier[0]
                 reference_carrier = [carrier for carrier in elements if carrier.name == reference_carrier_name][0]
@@ -296,38 +297,97 @@ class UnitHandling:
                         units_to_check = [unit for key, unit in unit_pair.items() if key == item.name]
                         assert len(units_to_check) <= 1, f"A conversion factor cannot be defined with a single carrier"
                         if len(units_to_check) != 0:
-                            unit_in_base_units = self.convert_unit(units_to_check[0], "conversion_factor_default", None, get_multiplier=False)
+                            unit_in_base_units = self.convert_unit_into_base_units(units_to_check[0])
                             product_units.update({tech_name+"_conversion_factor_"+str(index): unit_in_base_units})
 
             #conduct consistency checks
             for attribute_name, unit_specs in unit_dict.items():
-                #conversion factor unit consistency must be checked differently
-                if attribute_name == "conversion_factor_default":
-                    units, non_linear = self.conversion_factor_consistency_checks(conversion_element=item, unit_string=unit_specs[1])
-                    if non_linear:
-                        for index, factor in enumerate(units):
-                            for carrier, unit in factor.items():
-                                unit_specs = {"time": -1}, self.ureg(unit)
-                                unit = self.remove_non_energy_units(unit_specs, distinct_dims, attribute_name)[attribute_name]
-                                units[index][carrier] = str(unit.units)
-                        conversion_factor_units[item.name] = units
-                    else:
-                        conversion_factor_units[item.name] = units
+                #check if the unit must be dimensionless
+                if unit_specs[0] == {}:
+                    assert unit_specs[1] == self.ureg("dimensionless"), f"The attribute {attribute_name} of {item.__class__.__name__} {item.name} is per definition dimensionless. However, its unit was defined as {unit_specs[1]}."
+                #conversion factor unit consistency must be checked with underlying carriers and are therefore saved
+                elif attribute_name == "conversion_factor_default":
+                    units = self.get_conversion_factor_units(conversion_element=item, unit_string=unit_specs[1], reference_carrier_units=reference_carrier.units, elements=elements)
+                    conversion_factor_units[item.name] = units
+                #check if nonlinear capex file exists for conversion technology since the units defined there overwrite the attributes file units
+                elif attribute_name == "capex_specific_default" and hasattr(item, "units_nonlinear_capex_files"):
+                    capex_specific_unit = item.units_nonlinear_capex_files["capex"]
+                    #since it is defined per energy in the nonlinear file, it must be converted to per power (since capex_specific is per power per default)
+                    time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
+                    capex_specific_unit = capex_specific_unit + "*" + time_base_unit
+                    unit_specs = unit_specs[0], self.convert_unit_into_base_units(capex_specific_unit)
+                    product_units.update(self.remove_non_energy_units(unit_specs, "capex_nonlinear"))
                 #units of input/output/reference carrier not of interest for consistency
                 elif attribute_name not in ["input_carrier", "output_carrier", "reference_carrier"]:
-                    product_units.update(self.remove_non_energy_units(unit_specs, distinct_dims, attribute_name))
+                    product_units.update(self.remove_non_energy_units(unit_specs, attribute_name))
 
+            #remove attributes whose units became dimensionless since they don't have an energy quantity
             product_units = {key: value for key, value in product_units.items() if value != self.ureg("dimensionless")}
-            assert all(q == product_units[next(iter(product_units))] for q in product_units.values()), f"The unit dimensionality of the attributes {product_units.keys()} of {item.name} is not consistent!"
 
-    def conversion_factor_consistency_checks(self, conversion_element, unit_string):
+            #if unit consistency is not fulfilled, try to change "wrong" conversion factor units from power/power to energy/energy (since both is allowed)
+            if not all(q == product_units[next(iter(product_units))] for q in product_units.values()):
+                attributes_with_least_appearance = self.get_attributes_with_least_often_appearing_unit(product_units)
+                for key, value in attributes_with_least_appearance.items():
+                    if "conversion_factor" in key:
+                        time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
+                        product_units[key] = value * self.ureg(time_base_unit)
+            #get attributes with least often appearing energy unit such that it could be used to highlight a possible unit inconsistency
+            attributes_with_least_appearance = self.get_attributes_with_least_often_appearing_unit(product_units)
+
+            #assert unit consistency
+            if item in elements and not (all(q == product_units[next(iter(product_units))] for q in product_units.values())):
+                if any([name for name in attributes_with_least_appearance.keys() if "conversion_factor" in name]):
+                    wrong_conversion_factors = {tech: conversion_factor_units[tech].keys() for tech in conversion_factor_units if tech in any([name for name in attributes_with_least_appearance.keys() if tech in name])}
+                elif item.__class__ is Carrier:
+                    raise AssertionError(f"The attribute units of the {item.__class__.__name__} {item.name} are not consistent! Most certainly, the unit(s) of the attribute(s) {list(attributes_with_least_appearance.keys())} are wrong.")
+                else:
+                    raise AssertionError(f"The attribute units of the {item.__class__.__name__} {item.name} and its reference carrier {reference_carrier_name} are not consistent! Most certainly, the unit(s) of the attribute(s) {list(attributes_with_least_appearance.keys())} are wrong.")
+            #since energy system doesn't have any attributes with energy dimension, its dict must be empty
+            elif item not in elements:
+                assert len(product_units) == 0, f"The attribute units defined in the system_specification are not consistent! Most certainly, the unit(s) of the attribute(s) {list(attributes_with_least_appearance.keys())} are wrong."
+
+    def get_attributes_with_least_often_appearing_unit(self, product_units):
+        """
+
+        :param product_units:
+        :return:
+        """
+        min_unit_count = np.inf
+        wrong_value = None
+        # count for all unique units how many times they appear to get an estimate which unit most likely is the wrong one
+        for distinct_unit in set(product_units.values()):
+            unit_count = list(product_units.values()).count(distinct_unit)
+            if unit_count < min_unit_count:
+                min_unit_count = unit_count
+                wrong_value = distinct_unit
+        attributes_with_least_appearance = {key: value for key, value in product_units.items() if value == wrong_value}
+        return attributes_with_least_appearance
+
+    def get_most_often_appearing_energy_unit(self, energy_units):
+        max_unit_count = 0
+        correct_value = None
+        # count for all unique units how many times they appear to get an estimate which unit most likely is the correct one
+        for distinct_unit in set(energy_units.values()):
+            unit_count = list(energy_units.values()).count(distinct_unit)
+            if unit_count > max_unit_count:
+                max_unit_count = unit_count
+                correct_value = distinct_unit
+        return correct_value
+
+    def get_conversion_factor_units(self, conversion_element, unit_string, reference_carrier_units, elements):
+        """Gets the conversion factor units and returns them carrier-wise
+
+        :param conversion_element: corresponding conversion technology element
+        :param unit_string: Conversion factor units as string
+        :return: list of dicts containing units assigned to carriers
+        """
         #conversion factor definition: input_carrier/reference_carrier or output_carrier/reference_carrier
         carrier_pairs = []
         reference_carrier = conversion_element.reference_carrier[0]
+        #get all carriers which must be the upper carrier of a conversion factor
         carrier_pairs.extend([carrier for carrier in conversion_element.input_carrier if carrier != reference_carrier])
         carrier_pairs.extend([carrier for carrier in conversion_element.output_carrier if carrier != reference_carrier])
         conversion_factor_units = []
-        non_linear = False
         for carrier_name in carrier_pairs:
             factor_units = {}
             #conversion factor units were specified in conversion factor file
@@ -336,20 +396,69 @@ class UnitHandling:
                 if "nonlinear" in conversion_element.units_conversion_factor_files:
                     units = conversion_element.units_conversion_factor_files["nonlinear"]
                     units = [units[carrier_name], units[reference_carrier]]
-                    non_linear = True
                 else:
                     units = conversion_element.units_conversion_factor_files["linear"][carrier_name].split("/")
             #conversion factor units must be specified in attributes file
             else:
-                assert unit_string != self.ureg("dimensionless"), f"Since there doesn't exist a conversion_factor file for the technology {conversion_element.name}, the attribute conversion_factor_default must be defined with units to ensure unit consistency"
+                assert unit_string != "1", f"Since there doesn't exist a conversion_factor file for the technology {conversion_element.name}, the attribute conversion_factor_default must be defined with units to ensure unit consistency"
                 units = unit_string.split("/")
-            assert len(units) == 2, f"The conversion factor units of technology {conversion_element.name} must be defined as energy of input/output carrier divided by energy of reference carrier, e.g. GWh/GWh or kg/MWh instead of {units}"
-            factor_units[carrier_name] = units[0]
-            factor_units[reference_carrier] = units[1]
-            conversion_factor_units.append(factor_units)
-        return conversion_factor_units, non_linear
 
-    def remove_non_energy_units(self, unit_specs, distinct_dims, attribute_name):
+            #problem: we don't know which parts of cf unit belong to which carrier for units of format different from "unit/unit" (e.g. kg/h/kW)
+            upper_carrier = [carrier for carrier in elements if carrier.name == carrier_name][0]
+
+            div_signs_upper_carrier_energy = self.get_number_of_division_signs_of_corresponding_carrier_energy_quantity(upper_carrier.units)
+            div_signs_ref_carrier_energy = self.get_number_of_division_signs_of_corresponding_carrier_energy_quantity(reference_carrier_units)
+            number_of_division_signs_energy = div_signs_upper_carrier_energy + div_signs_ref_carrier_energy
+
+            div_signs_upper_carrier_power = self.get_number_of_division_signs_of_corresponding_carrier_energy_quantity(upper_carrier.units, power=True)
+            div_signs_ref_carrier_power = self.get_number_of_division_signs_of_corresponding_carrier_energy_quantity(reference_carrier_units, power=True)
+            number_of_division_signs_power = div_signs_ref_carrier_power + div_signs_upper_carrier_power
+
+            #conversion factor unit must be defined as energy/energy or product/product in the corresponding carrier energy quantity units (or power i.e. divided by hour and thus 1 or 2 division signs more)
+            #Check if the conversion factor is defined as energy/energy
+            if len(units) - 2 == number_of_division_signs_energy:
+                #assign the unit parts to the corresponding carriers
+                factor_units[carrier_name] = units[0:div_signs_upper_carrier_energy + 1]
+                factor_units[reference_carrier] = units[div_signs_upper_carrier_energy + 1:]
+            #check if the conversion factor is defined as power/power
+            elif len(units) - 2 == number_of_division_signs_power:
+                #assign the unit parts to the corresponding carriers
+                factor_units[carrier_name] = units[0:div_signs_upper_carrier_power + 1]
+                factor_units[reference_carrier] = units[div_signs_upper_carrier_power + 1:]
+            else:
+                raise AssertionError(f"The conversion factor units of technology {conversion_element.name} must be defined as power/power or energy/energy of input/output carrier divided by reference carrier, e.g. MW/MW, MW/kg/s or GWh/GWh, kg/MWh etc.")
+            #recombine the separated units to the initial fraction
+            for key, value in factor_units.items():
+                factor_units[key] = "/".join(value)
+            conversion_factor_units.append(factor_units)
+        return conversion_factor_units
+
+    def get_number_of_division_signs_of_corresponding_carrier_energy_quantity(self, carrier_units, power=False):
+        """Finds the most common energy quantity of a carrier and counts its number of division signs (or the number of division signs of the resulting power unit)
+
+        :param carrier_units: unit attribute of the underlying carrier element
+        :param power: bool to get the number of division signs of the most common power quantity (energy quantity divided by time)
+        :return: number of division signs of the carriers most common energy/power unit
+        """
+        energy_units = {}
+        time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
+        for attribute_name, unit_specs in carrier_units.items():
+            energy_unit = self.remove_non_energy_units(unit_specs, attribute_name)
+            if power:
+                energy_unit[attribute_name] = energy_unit[attribute_name] / self.ureg(time_base_unit)
+            energy_units.update(energy_unit)
+        energy_unit_ref_carrier = self.get_most_often_appearing_energy_unit(energy_units)
+        return len(str(energy_unit_ref_carrier.units).split("/")) - 1
+
+    def remove_non_energy_units(self, unit_specs, attribute_name):
+        """Removes all non-energy dimensions from unit by multiplication/division
+
+        :param unit_specs: tuple containing unit dimensions and unit as pint Quantity in base units
+        :param attribute_name: name of attribute whose unit is reduced to energy unit
+        :return: dict with attribute name and reduced unit
+        """
+        #dictionary which assigns unit dimensions to corresponding base unit namings
+        distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
         unit = unit_specs[1]
         for dim, dim_name in distinct_dims.items():
             if dim in unit_specs[0]:

@@ -181,7 +181,7 @@ class DataInput:
             # get attribute
             attribute_value = df_input.loc[attribute_name, "value"]
             attribute_unit = df_input.loc[attribute_name, "unit"]
-            multiplier, attribute_unit_in_base_units = self.unit_handling.convert_unit(attribute_unit, attribute_name, path=self.folder_path)
+            multiplier, attribute_unit_in_base_units = self.unit_handling.convert_unit_into_base_units(attribute_unit, get_multiplier=True, attribute_name=attribute_name, path=self.folder_path)
             #don't try to save input-/output carrier if they don't exist for a conversion technology
             if not(pd.isna(attribute_value) and attribute_name in ["input_carrier", "output_carrier"]):
                 self.element.units[attribute_name] = unit_category, attribute_unit_in_base_units
@@ -510,11 +510,14 @@ class DataInput:
             else:
                 columns = df_input.columns
             df_input_units = df_input[columns].iloc[-1]
-            #save conversion factor unit for unit consistency checks
+            #save conversion factor and nonlinear capex units for unit consistency checks
             if not df_input_units.empty and file_type != "breakpoints_pwa_":
                 if file_type == "nonlinear_":
-                    self.element.units_conversion_factor_files = {"nonlinear": df_input_units}
-                else:
+                    if variable_type == "conversion_factor":
+                        self.element.units_conversion_factor_files = {"nonlinear": df_input_units}
+                    else:
+                        self.element.units_nonlinear_capex_files = df_input_units
+                elif variable_type == "conversion_factor":
                     self.element.units_conversion_factor_files = {"linear": df_input_units}
             df_input = df_input.iloc[:-1]
             df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit, attribute_name=variable_type))

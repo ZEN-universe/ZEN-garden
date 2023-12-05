@@ -63,7 +63,7 @@ class ConversionTechnology(Technology):
         super().store_input_data()
         # get conversion efficiency and capex
         self.get_conversion_factor()
-        self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": -1})
+        self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
         self.convert_to_fraction_of_capex()
 
     def get_conversion_factor(self):

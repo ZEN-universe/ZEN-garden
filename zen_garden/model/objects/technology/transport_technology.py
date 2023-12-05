@@ -75,8 +75,8 @@ class TransportTechnology(Technology):
         if self.data_input.exists_attribute("opex_specific_fixed_per_distance", unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1}):
             self.opex_specific_fixed_per_distance = self.data_input.extract_input_data("opex_specific_fixed_per_distance", index_sets=["set_edges", "set_time_steps_yearly"], unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
             self.opex_specific_fixed = self.opex_specific_fixed_per_distance * self.distance
-        elif self.data_input.exists_attribute("opex_specific_fixed", unit_category={"money": 1, "energy_quantity": -1, "time": -1}):
-            self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": -1})
+        elif self.data_input.exists_attribute("opex_specific_fixed", unit_category={"money": 1, "energy_quantity": -1, "time": 1}):
+            self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
         else:
             raise AttributeError(f"The transport technology {self.name} has neither opex_specific_fixed_per_distance nor opex_specific_fixed attribute.")
     def convert_to_fraction_of_capex(self):
