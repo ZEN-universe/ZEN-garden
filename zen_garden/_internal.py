@@ -15,15 +15,15 @@ import importlib
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
-from .utils import setup_logger, ScenarioDict, InputDataChecks, StringUtils, ScenarioUtils
+from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
 
 # we setup the logger here
 setup_logger()
 
 def main(config, dataset_path=None, job_index=None):
     """
-    This function runs the compile.py script that was used in ZEN-Garden prior to the package build, it is executed
-    in the __main__.py script
+    This function runs ZEN garden,
+    it is executed in the __main__.py script
 
     :param config: A config instance used for the run
     :param dataset_path: If not None, used to overwrite the config.analysis["dataset"]

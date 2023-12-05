@@ -11,17 +11,15 @@ import importlib
 import json
 import logging
 import os
-import warnings
 import zlib
 from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import warnings
 # from tables import NaturalNameWarning
 from tqdm import tqdm
-
 from zen_garden import utils
 from zen_garden.model.objects.time_steps import TimeStepsDicts
 import h5py
@@ -40,20 +38,49 @@ class TimeStepDictFromFile:
         self.scenario = "default" if scenario is None else scenario
         self.sequence_time_steps_cache: dict[str, npt.NDArray[np.float_]] = {}
         self.year2operation_cache: dict[str, pd.DataFrame] = {}
+        self.year2storage_cache: dict[str, pd.DataFrame] = {}
 
-    def get_time_steps_year2operation(self, techProxy: str, year: int) -> pd.DataFrame:
-        hash_key = techProxy + str(year)
+    def get_time_steps_year2operation(self, year: int) -> pd.DataFrame:
+        hash_key = str(year)
         if hash_key not in self.year2operation_cache:
             self.year2operation_cache[hash_key] = Results._to_df(
-                self.time_dict["time_steps_year2operation"][techProxy][str(year)]
+                self.time_dict["time_steps_year2operation"][str(year)]
             )
         return self.year2operation_cache[hash_key]
 
-    def get_sequence_time_steps(self, name: str) -> npt.NDArray[np.float_]:
-        if name not in self.sequence_time_steps_cache:
-            self.sequence_time_steps_cache[name] = self.time_dict["operation"][name]["values"][:]
-        return self.sequence_time_steps_cache[name]
+    def get_time_steps_year2operation_old(self, tech_proxy:str,year: int) -> pd.DataFrame:
+        hash_key = tech_proxy + str(year)
+        if hash_key not in self.year2operation_cache:
+            self.year2operation_cache[hash_key] = Results._to_df(
+                self.time_dict["time_steps_year2operation"][tech_proxy][str(year)]
+            )
+        return self.year2operation_cache[hash_key]
 
+    def get_time_steps_year2storage(self, year: int) -> pd.DataFrame:
+        hash_key = str(year)
+        if hash_key not in self.year2storage_cache:
+            self.year2storage_cache[hash_key] = Results._to_df(
+                self.time_dict["time_steps_year2storage"][str(year)]
+            )
+        return self.year2storage_cache[hash_key]
+
+    def get_sequence_time_steps(self,time_step_type = "operation") -> npt.NDArray[np.float_]:
+        """
+        Get sequence ot time steps of element
+
+        :param time_step_type: type of time step (operation, storage or yearly)
+        :return sequence_time_steps: list of time steps corresponding to base time step
+        """
+        if time_step_type not in self.sequence_time_steps_cache:
+            if time_step_type not in self.time_dict:
+                sequence_storage = [v for k,v in self.time_dict["operation"].items() if "storage_level" in k]
+                if time_step_type == "storage" and len(sequence_storage) > 0:
+                    self.sequence_time_steps_cache[time_step_type] = sequence_storage[0]["values"][:]
+                else:
+                    raise KeyError(f"Time step type {time_step_type} is incorrect")
+            else:
+                self.sequence_time_steps_cache[time_step_type] = self.time_dict[time_step_type]["values"][:]
+        return self.sequence_time_steps_cache[time_step_type]
 
 class Results(object):
     """
@@ -115,7 +142,7 @@ class Results(object):
             # get the base scenario
             base_scenario = ""
             scenario_subfolder = None
-            #path to access scenario-dependent files
+            # path to access scenario-dependent files
             file_folder = Path("")
             if self.has_scenarios:
                 # name without scenario_ prefix
@@ -148,33 +175,46 @@ class Results(object):
             # load the corresponding timestep dict
             sub_path = os.path.join(self.path, base_scenario)
             time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder, lazy=True)
+            # if updated time steps
+            if "storage" in time_dict:
+                self.new_time_steps = True
+            else:
+                self.new_time_steps = False
+                logging.warning("Old time step dict will be deprecated. Please rerun results.")
             timesteps_are_precalculated = "time_steps_year2operation" in time_dict
-
             if timesteps_are_precalculated:
                 self.results[scenario]["sequence_time_steps_dicts"] = TimeStepDictFromFile(time_dict, scenario)
             else:
                 time_dict = self.load_sequence_time_steps(sub_path, scenario_subfolder, lazy=False)
-                self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
-                # load the operation2year and year2operation time steps
-                for element in time_dict["operation"]:
-                    self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_operation2year_both_dir(element,time_dict["operation"][element], time_dict["yearly"][None])
+                if not self.new_time_steps:
+                    self.results[scenario]["sequence_time_steps_dicts"] = TimeStepsDicts(time_dict)
+                    # load the operation2year and year2operation time steps
+                    self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_operation2year_both_dir()
+                    self.results[scenario]["sequence_time_steps_dicts"].set_time_steps_storage2year_both_dir()
+                else:
+                    raise NotImplementedError("New time step structure without precalculated sequences is not yet implemented")
 
-            self.results[scenario]["dict_sequence_time_steps"] = time_dict
+            # self.results[scenario]["dict_sequence_time_steps"] = time_dict
 
             for mf in self.results[scenario]["mf"]:
                 # init dict
                 self.results[scenario][mf] = {}
-                # get the current path
-                subfolder = Path("")
-                if self.has_scenarios:
-                    subfolder = Path(scenario_subfolder)
                 # deal with MF
                 if self.results[scenario]["has_MF"] and self.results[scenario]["system"]["optimized_years"] > 1:
-                    subfolder = os.path.join(subfolder, Path(mf))
-                # Add together
-                current_path = os.path.join(sub_path, subfolder)
+                    if self.has_scenarios:
+                        scenfolder = Path(scenario_subfolder)
+                        subfolder = os.path.join(scenfolder, Path(mf))
+                    else:
+                        subfolder = Path(mf)
+                    # Add together
+                    current_path = os.path.join(sub_path, subfolder)
+                else:
+                    current_path = Path(sub_path)
+                    if self.has_scenarios:
+                        scenfolder = Path(scenario_subfolder)
+                        current_path = os.path.join(current_path,scenfolder)
 
-                #create dict containing sets
+                # create dict containing sets
                 self.results[scenario][mf]["sets"] = {}
                 sets = self.load_sets(current_path, lazy=True)
                 self._lazydicts.append(sets)
@@ -805,7 +845,6 @@ class Results(object):
                         else:
                             var = self._to_df(self.results[scenario][mf]["duals"][name]["dataframe"])
                     else:
-                        # data[scenario] = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
                         var = self._to_df(self.results[scenario][mf]["sets"][name]["dataframe"])
 
                     # no multiindex
@@ -816,11 +855,15 @@ class Results(object):
                             mf_data[year] = var.loc[year].squeeze()
                             yearly_component = True
                             time_header = var.index.name
-                        elif ts_type is None:
+                        elif ts_type is not None:
+                            # get the timesteps
+                            time_steps_year = self._get_time_steps_of_year(sequence_time_steps_dicts,ts_type,year)
+                            mf_data[year] = var.loc[time_steps_year].squeeze()
+                            yearly_component = False
+                            time_header = var.index.name
+                        else:
                             data[scenario] = var
                             break
-                        else:
-                            raise KeyError(f"The time step type '{ts_type}' was not expected for variable '{name}'")
                     # multiindex
                     else:
                         is_multiindex = True
@@ -828,8 +871,6 @@ class Results(object):
                         var_series = var["value"].unstack()
                         # get type of time steps
                         ts_type = self._get_ts_type(var_series, name, scenario=scenario, force_output=True)
-                        # if all columns in years (drop the value level)
-                        # if var_series.columns.droplevel(0).difference(self.years).empty:
                         if ts_type == "yearly":
                             # get the data
                             tmp_data = var_series[year]
@@ -839,15 +880,10 @@ class Results(object):
                             mf_data[year] = tmp_data
                             yearly_component = True
                             time_header = var_series.columns.name
-                        # if more time steps than years, then it is operational ts (we drop value in columns)
-                        # elif pd.to_numeric(var_series.columns.droplevel(0), errors="coerce").equals(var_series.columns.droplevel(0)):
+                        # operational ts (we drop value in columns)
                         elif ts_type is not None:
-                            if ts_type == "storage":
-                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" in k.lower()][0]
-                            else:
-                                techProxy = [k for k in self.results[scenario]["dict_sequence_time_steps"]["operation"].keys() if "storage_level" not in k.lower()][0]
                             # get the timesteps
-                            time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(techProxy, year)
+                            time_steps_year = self._get_time_steps_of_year(sequence_time_steps_dicts,ts_type,year)
                             # get the data
                             tmp_data = var_series[[tstep for tstep in time_steps_year]]
                             # rename
@@ -869,20 +905,21 @@ class Results(object):
                             new_header = [time_header]+tmp_data.index.names
                             new_order = tmp_data.index.names + [time_header]
                             df = pd.concat(mf_data, axis=0, keys=mf_data.keys(),names=new_header).reorder_levels(new_order)
-                            # _df_index = df.index.copy()
-                            # for level, codes in enumerate(df.index.codes):
-                            #     if len(np.unique(codes)) == 1 and np.unique(codes) == 0:
-                            #         _df_index = _df_index.droplevel(level)
-                            #         break
-                            # df.index = _df_index
                         else:
                             df = pd.Series(mf_data,index=mf_data.keys())
                             df.index.name = time_header
 
                     else:
-                        df = pd.concat(mf_data, axis=1)
-                        df.columns = df.columns.droplevel(0)
-                        df = df.sort_index(axis=1).stack()
+                        if isinstance(mf_data[list(mf_data.keys())[0]],pd.Series):
+                            df = pd.concat(mf_data)
+                            df.index = df.index.droplevel(0)
+                            df = df.sort_index()
+                        elif isinstance(mf_data[list(mf_data.keys())[0]],pd.DataFrame):
+                            df = pd.concat(mf_data, axis=1)
+                            df.columns = df.columns.droplevel(0)
+                            df = df.sort_index(axis=1).stack()
+                        else:
+                            df = pd.Series(mf_data)
 
                     data[scenario] = df
 
@@ -922,17 +959,36 @@ class Results(object):
                     data[scenario].to_csv(f"{fname}_{scenario}.csv", **csv_kwargs)
             return data
 
+    def _single_operational_df(self):
+        """ extracts a single operational df"""
+
     def load_time_step_operation_duration(self):
         """
         Loads duration of operational time steps
         """
-        return self.get_df("time_steps_operation_duration")
+        d = self.get_df("time_steps_operation_duration")
+        if not self.new_time_steps:
+            if self.has_scenarios:
+                # TODO make time_step_operation_duration scenario-dependent
+                d = d[self.scenarios[0]].unstack().iloc[0]
+            else:
+                d = d.unstack().iloc[0]
+        return d
 
     def load_time_step_storage_duration(self):
         """
         Loads duration of operational time steps
         """
-        return self.get_df("time_steps_storage_level_duration")
+        if not self.new_time_steps:
+            d = self.get_df("time_steps_storage_level_duration")
+            if self.has_scenarios:
+                # TODO make time_step_storage_duration scenario-dependent
+                d = d[self.scenarios[0]].unstack().iloc[0]
+            else:
+                d = d.unstack().iloc[0]
+        else:
+            d = self.get_df("time_steps_storage_duration")
+        return d
 
     def get_full_ts(
             self,
@@ -995,7 +1051,6 @@ class Results(object):
                 full_ts = pd.concat(full_ts_dict, keys=full_ts_dict.keys())
         return full_ts
 
-
     def _get_full_ts_for_single_scenario(
             self,
             component_data,component_name,
@@ -1042,28 +1097,31 @@ class Results(object):
             else:
                 return component_data
         elif ts_type == "operational":
-            _storage_string = ""
-            time_step_duration = self._get_ts_duration(scenario, is_storage=False)
+            is_storage = False
         else:
-            _storage_string = "_storage_level"
-            time_step_duration = self._get_ts_duration(scenario, is_storage=True)
+            is_storage = True
+        time_step_duration = self._get_ts_duration(scenario, is_storage=is_storage)
         if element_name is not None:
             component_data = component_data.loc[element_name]
-        # calculate the full time series
-        _output_temp = {}
-        # extract time step duration
-        output_df = component_data.apply(
-            lambda row: self.get_full_ts_of_row(
-                row,
-                sequence_time_steps_dicts,
-                element_name,
-                _storage_string,
-                time_step_duration,
-                is_dual,
-                annuity,
-                start_time_step=start_time_step,
-                end_time_step=end_time_step
-                ), axis=1)
+        # expand time steps
+        if is_storage:
+            sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(time_step_type="storage")
+        else:
+            sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(time_step_type="operation")
+        # if dual variables, divide by time step operational duration
+        if is_dual:
+            component_data = component_data.div(time_step_duration, axis=1)
+            for year_temp in annuity.index:
+                time_steps_year = self._get_time_steps_of_year(sequence_time_steps_dicts,ts_type,year_temp)
+                component_data[time_steps_year] = component_data[time_steps_year] / annuity[year_temp]
+        # throw together
+        if end_time_step is None:
+            end_time_step = len(sequence_time_steps)
+        sequence_time_steps = sequence_time_steps[start_time_step:end_time_step]
+        sequence_time_steps = sequence_time_steps[np.in1d(sequence_time_steps, list(component_data.columns))]
+        output_df = component_data[sequence_time_steps]  # .reset_index(drop=True,axis=1)
+        output_df = output_df.T.reset_index(drop=True).T
+        # select single year
         if year is not None:
             if year in self.get_years(scenario):
                 hours_of_year = self._get_hours_of_year(year, scenario)
@@ -1072,58 +1130,6 @@ class Results(object):
                 print(f"WARNING: year {year} not in years {self.results[scenario]['years']}. Return component values for all years")
 
         return output_df
-
-    def get_full_ts_of_row(
-            self,
-            row,
-            sequence_time_steps_dicts,
-            element_name,
-            storage_string,
-            time_step_duration,
-            is_dual,
-            annuity,
-            start_time_step=0,
-            end_time_step=None):
-        """ calculates the full ts for a single row of the input data
-
-        :param row: #TODO describe parameter/return
-        :param sequence_time_steps_dicts: #TODO describe parameter/return
-        :param element_name: #TODO describe parameter/return
-        :param storage_string: #TODO describe parameter/return
-        :param time_step_duration: #TODO describe parameter/return
-        :param is_dual: #TODO describe parameter/return
-        :param annuity: #TODO describe parameter/return
-        :param start_time_step: Filter the results by a specific start time step
-        :param end_time_step: Filter the results by a specific end time step
-        :return: #TODO describe parameter/return
-        """
-        row_index = row.name
-        # we know the name
-        if element_name:
-            _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(element_name + storage_string)
-            ts_duration = time_step_duration.loc[element_name]
-        # we extract the name
-        else:
-            _sequence_time_steps = sequence_time_steps_dicts.get_sequence_time_steps(row_index[0] + storage_string)
-            ts_duration = time_step_duration.loc[row_index[0]]
-        # if dual variables, divide by time step operational duration
-        if is_dual:
-            row = row / ts_duration
-            if element_name:
-                element_name_temp = element_name
-            else:
-                element_name_temp = row_index[0]
-            for _year in annuity.index:
-                _yearly_ts = sequence_time_steps_dicts.get_time_steps_year2operation(element_name_temp + storage_string,_year)
-                row[_yearly_ts] = row[_yearly_ts] / annuity[_year]
-        # throw together
-        if end_time_step is None:
-            end_time_step = len(_sequence_time_steps)
-
-        _sequence_time_steps = _sequence_time_steps[start_time_step:end_time_step]
-        _sequence_time_steps = _sequence_time_steps[np.in1d(_sequence_time_steps, list(row.index))]
-        _output_temp = row[_sequence_time_steps].reset_index(drop=True)
-        return _output_temp
 
     def get_total(self, component, element_name=None, year=None, scenario=None):
         """Calculates the total Value of a component
@@ -1190,14 +1196,12 @@ class Results(object):
             else:
                 return component_data
         elif ts_type == "operational":
-            _is_storage = False
-            _storage_string = ""
+            is_storage = False
         else:
-            _is_storage = True
-            _storage_string = "_storage_level"
+            is_storage = True
 
         # extract time step duration
-        time_step_duration = self._get_ts_duration(scenario, is_storage=_is_storage)
+        time_step_duration = self._get_ts_duration(scenario, is_storage=is_storage)
 
         # If we have an element name
         if element_name is not None:
@@ -1206,44 +1210,17 @@ class Results(object):
                 level=0), f"element {element_name} is not found in index of {component_name}"
             # get the index
             component_data = component_data.loc[element_name]
-            time_step_duration_element = time_step_duration.loc[element_name]
 
-            if year is not None:
-                # only for the given year
-                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
-                    element_name + _storage_string, year)
-                total_value = (component_data * time_step_duration_element)[time_steps_year].sum(axis=1)
-            else:
-                total_value_temp = pd.DataFrame(index=component_data.index, columns=self.get_years(scenario))
-                for year_temp in self.get_years(scenario):
-                    # set a proxy for the element name
-                    time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
-                        element_name + _storage_string, year_temp)
-                    total_value_temp[year_temp] = (component_data * time_step_duration_element)[
-                        time_steps_year].sum(axis=1)
-                total_value = total_value_temp
-
-        # if we do not have an element name
+        total_value = component_data.multiply(time_step_duration,axis=1)
+        if year is not None:
+            time_steps_year = self._get_time_steps_of_year(sequence_time_steps_dicts,ts_type,year)
+            total_value = total_value[time_steps_year].sum(axis=1)
         else:
-            if isinstance(component_data.index, pd.MultiIndex):
-                total_value = component_data.apply(lambda row: row * time_step_duration.loc[row.name[0]], axis=1)
-            else:
-                total_value = component_data.apply(lambda row: row * time_step_duration.loc[row.name], axis=1)
-            if year is not None:
-                # set a proxy for the element name
-                element_name_proxy = component_data.index.get_level_values(level=0)[0]
-                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
-                    element_name_proxy + _storage_string, year)
-                total_value = total_value[time_steps_year].sum(axis=1)
-            else:
-                total_value_temp = pd.DataFrame(index=total_value.index, columns=self.get_years(scenario))
-                for year_temp in self.get_years(scenario):
-                    # set a proxy for the element name
-                    element_name_proxy = component_data.index.get_level_values(level=0)[0]
-                    time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(
-                        element_name_proxy + _storage_string, year_temp)
-                    total_value_temp[year_temp] = total_value[time_steps_year].sum(axis=1)
-                total_value = total_value_temp
+            total_value_temp = pd.DataFrame(index=total_value.index, columns=self.get_years(scenario))
+            for year_temp in self.get_years(scenario):
+                time_steps_year = self._get_time_steps_of_year(sequence_time_steps_dicts,ts_type,year_temp)
+                total_value_temp[year_temp] = total_value[time_steps_year].sum(axis=1)
+            total_value = total_value_temp
         return total_value
 
     def get_dual(self, constraint, scenario=None, element_name=None, year=None, discount_to_first_step=True):
@@ -1385,14 +1362,14 @@ class Results(object):
                 raise ValueError("Please specify a scenario!")
             else:
                 if is_storage:
-                    time_step_duration = self.time_step_storage_duration[scenario].unstack()
+                    time_step_duration = self.time_step_storage_duration[scenario]
                 else:
-                    time_step_duration = self.time_step_operational_duration[scenario].unstack()
+                    time_step_duration = self.time_step_operational_duration[scenario]
         else:
             if is_storage:
-                time_step_duration = self.time_step_storage_duration.unstack()
+                time_step_duration = self.time_step_storage_duration
             else:
-                time_step_duration = self.time_step_operational_duration.unstack()
+                time_step_duration = self.time_step_operational_duration
         return time_step_duration
 
     def _get_component_data(self, component, scenario=None, is_dual=False):
@@ -1438,24 +1415,49 @@ class Results(object):
         :param force_output: #TODO describe parameter/return
         :return: #TODO describe parameter/return
         """
-        _header_operational = self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_operation"]
-        _header_storage = self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_storage_level"]
-        _header_yearly = self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_yearly"]
+        header_operational = self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_operation"]
+        header_storage = self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_storage_level"]
+        header_yearly = self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_yearly"]
         if isinstance(component_data, pd.Series):
             axis_name = component_data.index.name
         else:
             axis_name = component_data.columns.name
-        if axis_name == _header_operational:
+        if axis_name == header_operational:
             return "operational"
-        elif axis_name == _header_storage:
+        elif axis_name == header_storage:
             return "storage"
-        elif axis_name == _header_yearly:
+        elif axis_name == header_yearly:
             return "yearly"
         else:
             if force_output:
                 return None
             else:
                 raise KeyError(f"Axis index name of '{component_name}' ({axis_name}) is unknown. Should be (operational, storage, yearly)")
+
+    def _get_time_steps_of_year(self,sequence_time_steps_dicts,ts_type,year):
+        """
+        returns time steps of given year
+        :param sequence_time_steps_dicts:
+        :param ts_type:
+        :param year:
+        :return:
+        """
+        if ts_type != "storage" and ts_type != "operational":
+            raise KeyError(f"Time step type {ts_type} unknown.")
+        if not (isinstance(sequence_time_steps_dicts,TimeStepDictFromFile) and not self.new_time_steps):
+            if ts_type == "storage":
+                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2storage(year)
+            else:
+                time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(year)
+        else:
+            if self.has_scenarios:
+                tech_proxy = self.get_system(scenario=self.scenarios[0])["set_storage_technologies"][0]
+            else:
+                tech_proxy = self.get_system()["set_storage_technologies"][0]
+            if ts_type == "storage":
+                 tech_proxy = tech_proxy + "_storage_level"
+            time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation_old(tech_proxy, year)
+        return time_steps_year
 
     def _unstack_time_level(self, component, component_name, scenario):
         """ unstacks the time level of a dataframe
@@ -1468,8 +1470,11 @@ class Results(object):
         if scenario is None:
             scenario = self.scenarios[0]
         headers.append(self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_operation"])
-        headers.append(self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_storage_level"])
         headers.append(self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_yearly"])
+        if self.new_time_steps:
+            headers.append(self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_storage"])
+        else:
+            headers.append(self.results[scenario]["analysis"]["header_data_inputs"]["set_time_steps_storage_level"])
         headers = set(headers)
         sel_header = list(headers.intersection(component.index.names))
         assert len(sel_header) <= 1, f"Index of component {component_name} has multiple time headers: {sel_header}"

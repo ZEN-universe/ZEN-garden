@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import linregress
 
-from ...utils import InputDataChecks
+from zen_garden.utils import InputDataChecks
 
 
 class DataInput:
@@ -67,7 +67,7 @@ class DataInput:
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
             df_output, *_ = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps, manual_default_value=0)
             return df_output
-        #use distances computed with node coordinates as default values
+        # use distances computed with node coordinates as default values
         elif file_name == "distance":
             df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps, manual_default_value=self.energy_system.set_haversine_distances_edges)
         else:
@@ -539,7 +539,7 @@ class DataInput:
             index_multi_index = pd.MultiIndex.from_product(index_list, names=index_name_list)
         else:
             index_multi_index = pd.Index([0])
-        #use distances computed with node coordinates as default values
+        # use distances computed with node coordinates as default values
         if file_name == "distance":
             default_name = file_name
             default_value = self.extract_attribute(default_name, unit_category)

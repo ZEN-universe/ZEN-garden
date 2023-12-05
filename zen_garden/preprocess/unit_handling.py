@@ -62,18 +62,18 @@ class UnitHandling:
         self.dim_matrix = self.dim_matrix.fillna(0).astype(int).T
 
         # check if unit defined twice or more
-        _duplicate_units = self.dim_matrix.T.duplicated()
-        if _duplicate_units.any():
-            _dim_matrix_duplicate = self.dim_matrix.loc[:, _duplicate_units]
-            for _duplicate in _dim_matrix_duplicate:
+        duplicate_units = self.dim_matrix.T.duplicated()
+        if duplicate_units.any():
+            dim_matrix_duplicate = self.dim_matrix.loc[:, duplicate_units]
+            for duplicate in dim_matrix_duplicate:
                 # if same unit twice (same order of magnitude and same dimensionality)
-                if len(self.dim_matrix[_duplicate].shape) > 1:
-                    logging.warning(f"The base unit <{_duplicate}> was defined more than once. Duplicates are dropped.")
-                    _duplicateDim = self.dim_matrix[_duplicate].T.drop_duplicates().T
-                    self.dim_matrix = self.dim_matrix.drop(_duplicate, axis=1)
-                    self.dim_matrix[_duplicate] = _duplicateDim
+                if len(self.dim_matrix[duplicate].shape) > 1:
+                    logging.warning(f"The base unit <{duplicate}> was defined more than once. Duplicates are dropped.")
+                    _duplicateDim = self.dim_matrix[duplicate].T.drop_duplicates().T
+                    self.dim_matrix = self.dim_matrix.drop(duplicate, axis=1)
+                    self.dim_matrix[duplicate] = _duplicateDim
                 else:
-                    raise KeyError(f"More than one base unit defined for dimensionality {self.base_units[_duplicate]} (e.g., {_duplicate})")
+                    raise KeyError(f"More than one base unit defined for dimensionality {self.base_units[duplicate]} (e.g., {duplicate})")
         # get linearly dependent units
         M, I, pivot = column_echelon_form(np.array(self.dim_matrix), ntype=float)
         M = np.array(M).squeeze()
@@ -525,7 +525,7 @@ class UnitHandling:
         mutable_unit = self.dim_matrix.columns[self.dim_matrix.columns.isin(base_units.difference(immutable_unit))]
         df_units = df_units.loc[:, mutable_unit].values
 
-        #remove rows of df_units which contain only zeros since they cannot be scaled anyway and may influence minimization convergence
+        # remove rows of df_units which contain only zeros since they cannot be scaled anyway and may influence minimization convergence
         zero_rows_mask = np.all(df_units == 0, axis=1)
         A = df_units[~zero_rows_mask]
         b = df_values[~zero_rows_mask]
