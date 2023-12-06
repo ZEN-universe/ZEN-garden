@@ -87,30 +87,30 @@
   {
     "input_carrier": {
       "default_value": [
-        "natural_gas"
+        "natural_gas",
+        "oxygen"
       ]
     }
   },
   {
     "output_carrier": {
       "default_value": [
-        "heat",
-        "carbon"
+        "heat"
       ]
     }
   },
   {
     "conversion_factor": [
       {
-        "natural_gas": {
-          "default_value": 1.1,
+        "oxygen": {
+          "default_value": 0.8,
           "unit": "GWh/GWh"
         }
       },
       {
-        "carbon": {
-          "default_value": 0.01,
-          "unit": "kilotons/GWh"
+        "natural_gas": {
+          "default_value": 1.1,
+          "unit": "GWh/GWh"
         }
       }
     ]

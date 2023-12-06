@@ -1059,7 +1059,7 @@ class InputDataChecks:
             raise AssertionError(f"Folder set_carriers does not exist!")
         if not os.path.exists(os.path.join(self.analysis["dataset"], "system_specification")):
             raise AssertionError(f"Folder system_specification does not exist!")
-        for file_name in ["attributes.csv", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
+        for file_name in ["attributes.json", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
             if file_name not in os.listdir(os.path.join(self.analysis["dataset"], "system_specification")):
                 raise FileNotFoundError(f"File {file_name} is missing in the system_specification directory")
 
@@ -1073,8 +1073,8 @@ class InputDataChecks:
                 if technology not in self.optimization_setup.paths[technology_subset].keys():
                     logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
                     self.optimization_setup.system[technology_subset].remove(technology)
-                elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
-                    raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
+                elif "attributes.json" not in self.optimization_setup.paths[technology_subset][technology]:
+                    raise FileNotFoundError(f"The file attributes.json does not exist for the technology {technology}")
             self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[technology_subset])
             # check subsets of technology_subset
             if technology_subset in self.optimization_setup.analysis["subsets"].keys():
@@ -1083,8 +1083,8 @@ class InputDataChecks:
                         if technology not in self.optimization_setup.paths[technology_subset].keys():
                             logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
                             self.optimization_setup.system[subset].remove(technology)
-                        elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
-                            raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
+                        elif "attributes.json" not in self.optimization_setup.paths[technology_subset][technology]:
+                            raise FileNotFoundError(f"The file attributes.json does not exist for the technology {technology}")
                     self.optimization_setup.system[technology_subset].extend(self.optimization_setup.system[subset])
                     self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[subset])
 
@@ -1095,7 +1095,7 @@ class InputDataChecks:
         # check if carriers exist
         for carrier in self.optimization_setup.system["set_carriers"]:
             assert carrier in self.optimization_setup.paths["set_carriers"].keys(), f"Carrier {carrier} does not exist in input data."
-            assert "attributes.csv" in self.optimization_setup.paths["set_carriers"][carrier], f"Attributes.csv file does not exist for the carrier {carrier}"
+            assert "attributes.json" in self.optimization_setup.paths["set_carriers"][carrier], f"Attributes.json file does not exist for the carrier {carrier}"
 
     def check_dataset(self):
         """

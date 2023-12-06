@@ -46,13 +46,14 @@ class DataInput:
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
 
-    def extract_input_data(self, file_name, index_sets, time_steps=None):
+    def extract_input_data(self, file_name, index_sets, time_steps=None,subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param time_steps: string specifying time_steps of element
-        :return dataDict: dictionary with attribute values """
+        :param time_steps: string specifying time_steps
+        :param subelement: string specifying dependent element
+        :return: dictionary with attribute values """
 
         # generic time steps
         yearly_variation = False
@@ -71,7 +72,7 @@ class DataInput:
         elif file_name == "distance":
             df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=self.energy_system.set_haversine_distances_edges)
         else:
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps,subelement=subelement)
         # read input file
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
         df_input = self.read_input_csv(f_name)
@@ -185,7 +186,14 @@ class DataInput:
         file_path = self.folder_path / f"{filename}.json"
         with open(file_path, "r") as file:
             data = json.load(file)
-        attribute_dict = {k: v for item in data for k, v in item.items()}
+        # attribute_dict = {k: v for item in data for k, v in item.items()}
+        attribute_dict = {}
+        for item in data:
+            for k, v in item.items():
+                if type(v) == list:
+                    attribute_dict[k] = {sk: sv for d in v for sk, sv in d.items()}
+                else:
+                    attribute_dict[k] = v
         return attribute_dict
 
     # def _load_attribute_file_csv(self,filename):
@@ -205,12 +213,12 @@ class DataInput:
     #         }
     #     return attributes_dict
 
-    def extract_attribute(self, attribute_name, check_if_exists=False, return_unit=False):
+    def extract_attribute(self, attribute_name, return_unit=False,subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param attribute_name: name of selected attribute
-        :param check_if_exists: check if attribute exists
         :param return_unit: only returns unit
+        :param subelement: dependent element for which data is extracted
         :return: attribute value and multiplier
         :return: unit of attribute """
         if self.scenario_dict is not None:
@@ -222,9 +230,15 @@ class DataInput:
             attribute_dict = self.load_attribute_file(filename)
         else:
             attribute_dict = self.attribute_dict
-        attribute_value, attribute_unit = self._extract_attribute_value(attribute_name,attribute_dict,check_if_exists)
+        attribute_value, attribute_unit = self._extract_attribute_value(attribute_name,attribute_dict)
+        if subelement is not None:
+            assert subelement in attribute_value.keys(), f"{subelement} not in {attribute_name} of {self.element.name}"
+            attribute_unit = attribute_value[subelement]["unit"]
+            attribute_value = attribute_value[subelement]["default_value"]
         if return_unit:
             return attribute_unit
+        if attribute_unit is None:
+            return attribute_value
         if attribute_value is not None:
             multiplier = self.unit_handling.get_unit_multiplier(attribute_unit, attribute_name, path=self.folder_path)
             try:
@@ -239,24 +253,29 @@ class DataInput:
         else:
             return None
 
-    def _extract_attribute_value(self,attribute_name,attribute_dict,check_if_exists):
+    def _extract_attribute_value(self,attribute_name,attribute_dict):
         """
         reads attribute value from dict
         :param attribute_name: name of selected attribute
         :param attribute_dict: name of selected attribute
-        :param check_if_exists: check if attribute exists
         :return: attribute value, attribute unit
         """
         if attribute_name not in attribute_dict:
-            if check_if_exists:
-                return None,None
-            else:
-                raise AttributeError(f"Attribute {attribute_name} doesn't exist in input data and must therefore be defined")
+            raise AttributeError(f"Attribute {attribute_name} doesn't exist in input data of {self.element.name} and must therefore be defined")
         try:
             attribute_value = float(attribute_dict[attribute_name]["default_value"])
+            attribute_unit = attribute_dict[attribute_name]["unit"]
+        # for string attributes
         except ValueError:
             attribute_value = attribute_dict[attribute_name]["default_value"]
-        attribute_unit = attribute_dict[attribute_name]["unit"]
+            attribute_unit = attribute_dict[attribute_name]["unit"]
+        # for list of attributes
+        except (TypeError, KeyError):
+            if "default_value" in attribute_dict[attribute_name]:
+                attribute_value = attribute_dict[attribute_name]["default_value"]
+            else:
+                attribute_value = attribute_dict[attribute_name]
+            attribute_unit = None
         return attribute_value,attribute_unit
 
     def extract_yearly_variation(self, file_name, index_sets):
@@ -329,11 +348,7 @@ class DataInput:
 
         :return carrier_list: list with input, output or reference carriers of technology """
         assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier"], "carrier type must be either input_carrier, output_carrier, or reference_carrier"
-        carrier_string = self.extract_attribute(carrier_type)
-        if type(carrier_string) == str:
-            carrier_list = carrier_string.strip().split(" ")
-        else:
-            carrier_list = []
+        carrier_list = self.extract_attribute(carrier_type)
         assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"Reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
         return carrier_list
 
@@ -408,13 +423,14 @@ class DataInput:
         else:
             raise KeyError(f"variable type {variable_type} unknown.")
         # import all input data
-        df_input_nonlinear = self.read_pwa_files(variable_type, file_type="nonlinear_")
-        df_input_breakpoints = self.read_pwa_files(variable_type, file_type="breakpoints_pwa_")
-        df_input_linear = self.read_pwa_files(variable_type)
-        df_linear_exist = self.exists_attribute(attribute_name)
-        assert (df_input_nonlinear is not None and df_input_breakpoints is not None) or df_linear_exist or df_input_linear is not None, f"Neither pwa nor linear data exist for {variable_type} of {self.element.name}"
+        default_value = self.extract_attribute(attribute_name)
+        df_input_nonlinear,has_unit_nonlinear = self.read_pwa_files(variable_type, file_type="nonlinear_")
+        df_input_breakpoints,has_unit_breakpoints = self.read_pwa_files(variable_type, file_type="breakpoints_pwa_")
+        df_input_linear,has_unit_linear = self.read_pwa_files(variable_type)
         # if nonlinear
         if (df_input_nonlinear is not None and df_input_breakpoints is not None):
+            if not has_unit_nonlinear or not has_unit_breakpoints:
+                raise NotImplementedError("Nonlinear pwa files must have units")
             # select data
             pwa_dict = {}
             # extract all data values
@@ -465,7 +481,7 @@ class DataInput:
                         pwa_dict["pwa_variables"].append(value_variable)
                         # save bounds
                         values_between_bounds = [pwa_dict
-                             [value_variable][idxBreakpoint] for idxBreakpoint, breakpoint in enumerate(breakpoints)
+                             [value_variable][idx_breakpoint] for idx_breakpoint, breakpoint in enumerate(breakpoints)
                                 if breakpoint >= min_capacity_tech and breakpoint <= max_capacity_tech
                         ]
                         values_between_bounds.extend(list(
@@ -504,30 +520,22 @@ class DataInput:
                     self.element.reference_carrier))
                 if not dependent_carrier:
                     return None, is_pwa
-                if df_input_linear is None:
-                    if len(dependent_carrier) == 1:
-                        linear_dict[dependent_carrier[0]] = self.extract_input_data(attribute_name,
-                                                                                 index_sets=index_sets,
-                                                                                 time_steps=time_steps)
+                for carrier in dependent_carrier:
+                    if df_input_linear is None:
+                        linear_dict[carrier] = self.extract_input_data(attribute_name, index_sets=index_sets,
+                                                                   time_steps=time_steps, subelement=carrier)
                     else:
-                        raise AssertionError(f"input file for linear_conversion_factor could not be imported.")
-                else:
-                    df_output, default_value, index_name_list = self.create_default_output(index_sets, attribute_name, time_steps=time_steps)
-                    common_index = list(set(index_name_list).intersection(df_input_linear.columns))
-                    # if only one dependent carrier and no carrier in columns
-                    if len(dependent_carrier) == 1 and len(df_input_linear.columns.intersection(dependent_carrier)) == 0:
-                        linear_dict[dependent_carrier[0]] = self.extract_general_input_data(df_input_linear, df_output,
-                                                                               "conversion_factor",
-                                                                               index_name_list, default_value,
-                                                                               time_steps=time_steps).copy(deep=True)
-                    else:
-                        for carrier in dependent_carrier:
-                            if common_index:
-                                df_input_carrier = df_input_linear[common_index + [carrier]]
-                                linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output, "conversion_factor", index_name_list, default_value, time_steps=time_steps).copy(deep=True)
-                            else:
-                                linear_dict[carrier] = df_output.copy()
-                                linear_dict[carrier].loc[:] = df_input_linear[carrier].squeeze()
+                        df_output, default_value, index_name_list = self.create_default_output(
+                            index_sets, file_name=attribute_name, time_steps=time_steps,subelement=carrier)
+                        linear_dict[carrier] = df_output.copy()
+                        common_index = list(set(index_name_list).intersection(df_input_linear.columns))
+                        if not common_index:
+                            logging.warning(f"File {attribute_name} has no matching index with {self.element.name}. File is ignored")
+                        else:
+                            df_input_carrier = df_input_linear[common_index + [carrier]]
+                            linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output,
+                                                                                   attribute_name, index_name_list,
+                                                                                   default_value, time_steps=time_steps).copy(deep=True)
                 linear_dict = pd.DataFrame.from_dict(linear_dict)
                 linear_dict.columns.name = "carrier"
                 linear_dict = linear_dict.stack()
@@ -544,25 +552,31 @@ class DataInput:
         :param file_type: either breakpointsPWA, linear, or nonlinear
         :return df_input: raw input file"""
         df_input = self.read_input_csv(file_type + variable_type)
+        has_unit = False
         if df_input is not None:
-            if "unit" in df_input.values:
-                columns = df_input.iloc[-1][df_input.iloc[-1] != "unit"].dropna().index
-            else:
-                columns = df_input.columns
-            df_input_units = df_input[columns].iloc[-1]
-            df_input = df_input.iloc[:-1]
-            df_input_multiplier = df_input_units.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit, attribute_name=variable_type))
-            df_input = df_input.apply(lambda column: pd.to_numeric(column, errors='ignore'))
-            df_input[columns] = df_input[columns] * df_input_multiplier
-        return df_input
+            string_row = df_input.applymap(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
+            if string_row.any():
+                unit_row = df_input.loc[string_row]
+                df_input = df_input.loc[~string_row]
+                if isinstance(unit_row, pd.DataFrame):
+                    unit_row = unit_row.squeeze()
+                if isinstance(unit_row, str):
+                    multiplier = self.unit_handling.get_unit_multiplier(unit_row, attribute_name=variable_type)
+                else:
+                    multiplier = unit_row.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit, attribute_name=variable_type))
+                df_input = df_input.astype(float)*multiplier
+                has_unit = True
+        return df_input, has_unit
 
-    def create_default_output(self, index_sets, file_name=None, time_steps=None, manual_default_value=None):
+    def create_default_output(self, index_sets, file_name=None, time_steps=None, manual_default_value=None,subelement=None):
         """ creates default output dataframe
 
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param time_steps: specific time_steps of element
-        :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv"""
+        :param time_steps: specific time_steps of subelement
+        :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv
+        :param subelement: dependent element for which data is extracted
+        """
         # select index
         index_list, index_name_list = self.construct_index_list(index_sets, time_steps)
         # create pd.MultiIndex and select data
@@ -580,7 +594,7 @@ class DataInput:
             default_name = None
         else:
             default_name = file_name
-            default_value = self.extract_attribute(default_name)
+            default_value = self.extract_attribute(default_name,subelement=subelement)
 
         # create output Series filled with default value
         if default_value is None:
@@ -593,14 +607,19 @@ class DataInput:
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit
-        self.save_unit_of_attribute(default_name)
+        self.save_unit_of_attribute(default_name,subelement)
         return df_output, default_value, index_name_list
 
-    def save_unit_of_attribute(self, attribute_name):
-        """ saves the unit of an attribute, converted to the base unit """
+    def save_unit_of_attribute(self, attribute_name,subelement=None):
+        """ saves the unit of an attribute, converted to the base unit
+        :param attribute_name: name of selected attribute
+        :param subelement: dependent element for which data is extracted
+        """
         # if numerics analyzed
-        if self.solver["analyze_numerics"]:
-            input_unit = self.extract_attribute(attribute_name,return_unit=True)
+        if self.solver["analyze_numerics"] and attribute_name is not None:
+            input_unit = self.extract_attribute(attribute_name,subelement=subelement,return_unit=True)
+            if subelement is not None:
+                attribute_name = attribute_name + "_" + subelement
             self.unit_handling.set_base_unit_combination(input_unit=input_unit, attribute=(self.element.name, attribute_name))
 
     def save_values_of_attribute(self, df_output, file_name):
@@ -640,27 +659,6 @@ class DataInput:
             else:
                 raise AttributeError(f"Index '{index}' cannot be found.")
         return index_list, index_name_list
-
-    def exists_attribute(self, file_name, column=None):
-        """ checks if default value or timeseries of an attribute exists in the input data
-
-        :param file_name: name of selected file
-        :param column: select specific column
-        """
-        # check if default value exists
-        if column:
-            default_name = column
-        else:
-            default_name = file_name
-        default_value = self.extract_attribute(default_name,check_if_exists=True)
-
-        if default_value is None or math.isnan(default_value["value"]):  # if no default value exists or default value is nan
-            _dfInput = self.read_input_csv(file_name)
-            return (_dfInput is not None)
-        elif default_value and not math.isnan(default_value["value"]):  # if default value exists and is not nan
-            return True
-        else:
-            return False
 
     def convert_real_to_generic_time_indices(self, df_input, time_steps, file_name, index_name_list):
         """convert yearly time indices to generic time indices
