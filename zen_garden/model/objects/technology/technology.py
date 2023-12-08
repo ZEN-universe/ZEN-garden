@@ -114,8 +114,8 @@ class Technology(Element):
         # reduce lifetime of existing capacities and add new remaining lifetime
         self.lifetime_existing = (self.lifetime_existing - system["interval_between_years"]).clip(lower=0)
         # new capacity
-        new_capacity_addition = capacity_addition[step_horizon].sum(axis=1)
-        new_capex = capex[step_horizon].sum(axis=1)
+        new_capacity_addition = capacity_addition[step_horizon]
+        new_capex = capex[step_horizon]
         # if at least one value unequal to zero
         if not (new_capacity_addition == 0).all():
             # add new index to set_technologies_existing
