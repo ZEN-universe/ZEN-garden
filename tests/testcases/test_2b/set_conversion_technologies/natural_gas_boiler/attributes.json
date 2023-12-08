@@ -7,7 +7,7 @@
   },
   {
     "capacity_addition_max": {
-      "default_value": "inf",
+      "default_value": 200.0,
       "unit": "GW"
     }
   },
@@ -25,7 +25,7 @@
   },
   {
     "min_load": {
-      "default_value": 0.0,
+      "default_value": 0.1,
       "unit": "1"
     }
   },

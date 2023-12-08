@@ -101,32 +101,21 @@ class Technology(Element):
     def calculate_fraction_of_year(self):
         """calculate fraction of year"""
         # only account for fraction of year
-        _fraction_year = self.optimization_setup.system["unaggregated_time_steps_per_year"] / self.optimization_setup.system["total_hours_per_year"]
-        return _fraction_year
+        fraction_year = self.optimization_setup.system["unaggregated_time_steps_per_year"] / self.optimization_setup.system["total_hours_per_year"]
+        return fraction_year
 
-    def overwrite_time_steps(self, base_time_steps: int):
-        """ overwrites set_time_steps_operation
-
-        :param base_time_steps: #TODO describe parameter/return
-        """
-        set_time_steps_operation = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps, time_step_type="operation")
-
-        # copy invest time steps
-        self.set_time_steps_operation = set_time_steps_operation.squeeze().tolist()
-
-    def add_new_capacity_addition_tech(self, capacity_addition: pd.Series, capex: pd.Series, base_time_steps: int):
+    def add_new_capacity_addition_tech(self, capacity_addition: pd.Series, capex: pd.Series, step_horizon: int):
         """ adds the newly built capacity to the existing capacity
 
         :param capacity_addition: pd.Series of newly built capacity of technology
         :param capex: pd.Series of capex of newly built capacity of technology
-        :param base_time_steps: base time steps of current horizon step """
+        :param step_horizon: current horizon step """
         system = self.optimization_setup.system
         # reduce lifetime of existing capacities and add new remaining lifetime
         self.lifetime_existing = (self.lifetime_existing - system["interval_between_years"]).clip(lower=0)
         # new capacity
-        time_step_years = self.energy_system.time_steps.encode_time_step(base_time_steps, time_step_type="yearly")
-        new_capacity_addition = capacity_addition[time_step_years].sum(axis=1)
-        new_capex = capex[time_step_years].sum(axis=1)
+        new_capacity_addition = capacity_addition[step_horizon].sum(axis=1)
+        new_capex = capex[step_horizon].sum(axis=1)
         # if at least one value unequal to zero
         if not (new_capacity_addition == 0).all():
             # add new index to set_technologies_existing
@@ -236,7 +225,7 @@ class Technology(Element):
     def get_start_end_time_of_period(cls, optimization_setup, tech, time_step_year, period_type="lifetime", clip_to_first_time_step=True, id_capacity_existing=None, loc=None):
         """ counts back the period (either lifetime of construction_time) back to get the start invest time step and returns start_time_step_year
 
-        :param energy_system: The Energy system to add everything
+        :param optimization_setup: The optimization setup to add everything
         :param tech: name of technology
         :param time_step_year: current investment time step
         :param period_type: "lifetime" if lifetime is counted backwards, "construction_time" if construction time is counted backwards
@@ -441,8 +430,8 @@ class Technology(Element):
                 else:
                     energy_string = "_energy"
                 capacity_existing = getattr(params, "capacity_existing" + energy_string)
-                _capacity_addition_max = getattr(params, "capacity_addition_max" + energy_string)
-                _capacity_limit = getattr(params, "capacity_limit" + energy_string)
+                capacity_addition_max = getattr(params, "capacity_addition_max" + energy_string)
+                capacity_limit = getattr(params, "capacity_limit" + energy_string)
                 capacities_existing = 0
                 for id_technology_existing in sets["set_technologies_existing"][tech]:
                     if params.lifetime_existing[tech, loc, id_technology_existing] > params.lifetime[tech]:
@@ -451,8 +440,8 @@ class Technology(Element):
                     elif time <= params.lifetime_existing[tech, loc, id_technology_existing] + 1:
                         capacities_existing += capacity_existing[tech, capacity_type, loc, id_technology_existing]
 
-                capacity_addition_max = len(sets["set_time_steps_yearly"]) * _capacity_addition_max[tech, capacity_type]
-                max_capacity_limit = _capacity_limit[tech, capacity_type, loc]
+                capacity_addition_max = len(sets["set_time_steps_yearly"]) * capacity_addition_max[tech, capacity_type]
+                max_capacity_limit = capacity_limit[tech, capacity_type, loc]
                 bound_capacity = min(capacity_addition_max + capacities_existing, max_capacity_limit + capacities_existing)
                 return 0, bound_capacity
             else:
@@ -524,12 +513,12 @@ class Technology(Element):
                                          constraint=rules.constraint_technology_capacity_limit_block(),
                                          doc='limited capacity of  technology depending on loc and time')
         # minimum capacity
-        constraints.add_constraint_block(model, name="constraint_technology_min_capacity",
-                                         constraint=rules.constraint_technology_min_capacity_block(),
+        constraints.add_constraint_block(model, name="constraint_technology_min_capacity_addition",
+                                         constraint=rules.constraint_technology_min_capacity_addition_block(),
                                          doc='min capacity of technology that can be installed')
         # maximum capacity
-        constraints.add_constraint_block(model, name="constraint_technology_max_capacity",
-                                         constraint=rules.constraint_technology_max_capacity_block(),
+        constraints.add_constraint_block(model, name="constraint_technology_max_capacity_addition",
+                                         constraint=rules.constraint_technology_max_capacity_addition_block(),
                                          doc='max capacity of technology that can be installed')
         # construction period
         constraints.add_constraint_block(model, name="constraint_technology_construction_time",
@@ -590,6 +579,7 @@ class Technology(Element):
         model.add_constraints(model.variables["tech_on_var"] + model.variables["tech_off_var"] == 1, name="tech_on_off_cons")
         n_cons = model.constraints.ncons
 
+        # disjunct if technology is on
         constraints.add_constraint_rule(model, name="disjunct_on_technology",
             index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_on_technology_rule,
             doc="disjunct to indicate that technology is on")
@@ -632,10 +622,10 @@ class Technology(Element):
             sub_mask = sub_mask.rename({"set_transport_technologies": "set_technologies", "set_edges": "set_location"})
             mask.loc[:, techs, :, edges] |= sub_mask
 
-        # used in constraint_technology_min_capacity
+        # used in constraint_technology_min_capacity_addition
         mask = mask | (params.capacity_addition_min.notnull() & (params.capacity_addition_min != 0))
 
-        # used in constraint_technology_max_capacity
+        # used in constraint_technology_max_capacity_addition
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup)
         index = ZenIndex(index_values, index_names)
         sub_mask = (params.capacity_addition_max.notnull() & (params.capacity_addition_max != np.inf) & (params.capacity_addition_max != 0))
@@ -818,8 +808,8 @@ class TechnologyRules(GenericRule):
         ### return
         return self.constraints.return_contraints(constraints)
 
-    def constraint_technology_min_capacity_block(self):
-        """ min capacity expansion of technology
+    def constraint_technology_min_capacity_addition_block(self):
+        """ min capacity addition of technology
 
         .. math::
             s^\mathrm{add, min}_{h} B_{i,p,y} \le \Delta S_{h,p,y}
@@ -834,7 +824,7 @@ class TechnologyRules(GenericRule):
 
         ### masks
         # we create a mask here only to avoid having constraints with binary variables when it's not necessary
-        # passing constraints with binary variables to gurobi, even of the type 0 * binray_var, means that no
+        # passing constraints with binary variables to gurobi, even of the type 0 * binary_var, means that no
         # dual variables are returned
         mask = xr.zeros_like(self.parameters.capacity_addition_min, dtype=bool)
         mask.loc[tech_arr, capacity_type_arr] = True
@@ -857,8 +847,8 @@ class TechnologyRules(GenericRule):
         ### return
         return self.constraints.return_contraints(constraints, mask=mask)
 
-    def constraint_technology_max_capacity_block(self):
-        """max capacity expansion of technology
+    def constraint_technology_max_capacity_addition_block(self):
+        """max capacity addition of technology
 
         .. math::
             s^\mathrm{add, max}_{h} B_{i,p,y} \ge \Delta S_{h,p,y}
@@ -1160,28 +1150,6 @@ class TechnologyRules(GenericRule):
                 else:
                     term_total_capacity_all_techs_param = self.parameters.existing_capacities.loc[other_techs, :, set_locations, time].sum(["set_technologies","set_location"])
                     term_total_capacity_all_techs_var = self.variables["capacity"].loc[tech, :, set_locations,time].where(False).sum("set_location")
-                # total_capacity_all_techs_param = sum(self.parameters.existing_capacities.loc[other_tech, :, set_locations, time]
-                #                                      for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier)
-                # lifetime_range = Technology.get_lifetime_range(self.optimization_setup, tech, end_time)
-                # if len(lifetime_range) > 0:
-                #     previous_times = [previous_time for previous_time in lifetime_range]
-                #     other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
-                #     term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[:, :, set_locations, previous_times].sum("set_time_steps_yearly")
-                #     term_total_capacity_all_techs_var = term_total_capacity_all_techs_var[other_techs, :, :].sum("set_technologies")
-                # else:
-                #     # dummy term
-                #     term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False)
-                # total_capacity_all_techs_param = sum(self.parameters.existing_capacities.loc[other_tech, :, set_locations, time]
-                #                                      for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier).sum("set_location")
-                # lifetime_range = Technology.get_lifetime_range(self.optimization_setup, tech, end_time)
-                # if len(lifetime_range) > 0:
-                #     previous_times = [previous_time for previous_time in lifetime_range]
-                #     other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
-                #     term_total_capacity_all_techs_var = self.variables["capacity_addition"].loc[:, :, set_locations, previous_times].sum("set_time_steps_yearly")
-                #     term_total_capacity_all_techs_var = term_total_capacity_all_techs_var.loc[other_techs].sum(["set_technologies", "set_location"])
-                # else:
-                #     # dummy term
-                #     term_total_capacity_all_techs_var = self.variables["capacity_investment"].loc[tech, :, set_locations, time].where(False).sum("set_location")
 
                 ### formulate constraint
                 # build the lhs

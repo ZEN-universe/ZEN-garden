@@ -25,7 +25,7 @@
   },
   {
     "price_carbon_emissions_budget_overshoot": {
-      "default_value": "inf",
+      "default_value": 400.0,
       "unit": "Euro/tons"
     }
   },

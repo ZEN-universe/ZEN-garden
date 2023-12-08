@@ -82,6 +82,11 @@ class DataInput:
 
         assert (df_input is not None or default_value is not None), f"input file for attribute {file_name} could not be imported and no default value is given."
         if df_input is not None and not df_input.empty:
+            # get subelement dataframe
+            if subelement is not None and subelement in df_input.columns:
+                cols = df_input.columns.intersection(index_name_list + [subelement])
+                df_input = df_input[cols]
+            # fill output dataframe
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps)
         # save parameter values for analysis of numerics
         self.save_values_of_attribute(df_output=df_output, file_name=file_name)
@@ -406,27 +411,18 @@ class DataInput:
         # apply scenario factor
         return df_output*scenario_factor
 
-    def extract_pwa_data(self, variable_type):
+    def extract_pwa_capex(self):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
-        :param variable_type: technology approximation type
         :return pwa_dict: dictionary with pwa parameters """
-        # attribute names
-        if variable_type == "capex":
-            attribute_name = "capex_specific"
-            index_sets = ["set_nodes", "set_time_steps_yearly"]
-            time_steps = "set_time_steps_yearly"
-        elif variable_type == "conversion_factor":
-            attribute_name = "conversion_factor"
-            index_sets = ["set_nodes", "set_time_steps"]
-            time_steps = "set_base_time_steps_yearly"
-        else:
-            raise KeyError(f"variable type {variable_type} unknown.")
+        attribute_name = "capex_specific"
+        index_sets = ["set_nodes", "set_time_steps_yearly"]
+        time_steps = "set_time_steps_yearly"
         # import all input data
         default_value = self.extract_attribute(attribute_name)
-        df_input_nonlinear,has_unit_nonlinear = self.read_pwa_files(variable_type, file_type="nonlinear_")
-        df_input_breakpoints,has_unit_breakpoints = self.read_pwa_files(variable_type, file_type="breakpoints_pwa_")
-        df_input_linear,has_unit_linear = self.read_pwa_files(variable_type)
+        df_input_nonlinear,has_unit_nonlinear = self.read_pwa_capex_files(file_type="nonlinear_")
+        df_input_breakpoints,has_unit_breakpoints = self.read_pwa_capex_files(file_type="breakpoints_pwa_")
+        df_input_linear,has_unit_linear = self.read_pwa_capex_files()
         # if nonlinear
         if (df_input_nonlinear is not None and df_input_breakpoints is not None):
             if not has_unit_nonlinear or not has_unit_breakpoints:
@@ -436,9 +432,7 @@ class DataInput:
             # extract all data values
             nonlinear_values = {}
 
-            if variable_type == "capex":
-                # make absolute capex
-                df_input_nonlinear["capex"] = df_input_nonlinear["capex"] * df_input_nonlinear["capacity"]
+            df_input_nonlinear["capex"] = df_input_nonlinear["capex"] * df_input_nonlinear["capacity"]
             for column in df_input_nonlinear.columns:
                 nonlinear_values[column] = df_input_nonlinear[column].to_list()
 
@@ -506,52 +500,21 @@ class DataInput:
                 return None, is_pwa
             else:
                 raise NotImplementedError(
-                    f"There are both linearly and nonlinearly modeled variables in {variable_type} of {self.element.name}. Not yet implemented")
+                    f"There are both linearly and nonlinearly modeled variables in capex of {self.element.name}. Not yet implemented")
         # linear
         else:
             is_pwa = False
             linear_dict = {}
-            if variable_type == "capex":
-                linear_dict["capex"] = self.extract_input_data(attribute_name, index_sets=index_sets,
-                                                               time_steps=time_steps)
-                return linear_dict, is_pwa
-            else:
-                dependent_carrier = list(set(self.element.input_carrier + self.element.output_carrier).difference(
-                    self.element.reference_carrier))
-                if not dependent_carrier:
-                    return None, is_pwa
-                for carrier in dependent_carrier:
-                    if df_input_linear is None:
-                        linear_dict[carrier] = self.extract_input_data(attribute_name, index_sets=index_sets,
-                                                                   time_steps=time_steps, subelement=carrier)
-                    else:
-                        df_output, default_value, index_name_list = self.create_default_output(
-                            index_sets, file_name=attribute_name, time_steps=time_steps,subelement=carrier)
-                        linear_dict[carrier] = df_output.copy()
-                        common_index = list(set(index_name_list).intersection(df_input_linear.columns))
-                        if not common_index:
-                            logging.warning(f"File {attribute_name} has no matching index with {self.element.name}. File is ignored")
-                        else:
-                            df_input_carrier = df_input_linear[common_index + [carrier]]
-                            linear_dict[carrier] = self.extract_general_input_data(df_input_carrier, df_output,
-                                                                                   attribute_name, index_name_list,
-                                                                                   default_value, time_steps=time_steps).copy(deep=True)
-                linear_dict = pd.DataFrame.from_dict(linear_dict)
-                linear_dict.columns.name = "carrier"
-                linear_dict = linear_dict.stack()
-                conversion_factor_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
-                linear_dict = linear_dict.reorder_levels(conversion_factor_levels)
-                # extract yearly variation
-                self.extract_yearly_variation(attribute_name, index_sets)
-                return linear_dict, is_pwa
+            linear_dict["capex"] = self.extract_input_data(attribute_name, index_sets=index_sets,
+                                                           time_steps=time_steps)
+            return linear_dict, is_pwa
 
-    def read_pwa_files(self, variable_type, file_type=str()):
+    def read_pwa_capex_files(self, file_type=str()):
         """ reads pwa files
 
-        :param variable_type: technology approximation type
         :param file_type: either breakpointsPWA, linear, or nonlinear
         :return df_input: raw input file"""
-        df_input = self.read_input_csv(file_type + variable_type)
+        df_input = self.read_input_csv(file_type + "capex")
         has_unit = False
         if df_input is not None:
             string_row = df_input.applymap(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
@@ -561,9 +524,9 @@ class DataInput:
                 if isinstance(unit_row, pd.DataFrame):
                     unit_row = unit_row.squeeze()
                 if isinstance(unit_row, str):
-                    multiplier = self.unit_handling.get_unit_multiplier(unit_row, attribute_name=variable_type)
+                    multiplier = self.unit_handling.get_unit_multiplier(unit_row, attribute_name="capex")
                 else:
-                    multiplier = unit_row.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit, attribute_name=variable_type))
+                    multiplier = unit_row.apply(lambda unit: self.unit_handling.get_unit_multiplier(unit, attribute_name="capex"))
                 df_input = df_input.astype(float)*multiplier
                 has_unit = True
         return df_input, has_unit

@@ -1,7 +1,7 @@
 [
   {
     "capacity_addition_min": {
-      "default_value": 0.0,
+      "default_value": 20.0,
       "unit": "GW"
     }
   },
@@ -25,7 +25,7 @@
   },
   {
     "min_load": {
-      "default_value": 0.1,
+      "default_value": 0.0,
       "unit": "1"
     }
   },

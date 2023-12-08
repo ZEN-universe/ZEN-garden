@@ -532,13 +532,12 @@ class OptimizationSetup(object):
                 capacity_addition[capacity_addition <= rounding_value] = 0
                 invest_capacity[invest_capacity <= rounding_value] = 0
                 cost_capex[cost_capex <= rounding_value] = 0
-                base_time_steps = self.energy_system.time_steps.decode_yearly_time_steps([step_horizon])
                 for tech in self.get_all_elements(Technology):
                     # new capacity
                     capacity_addition_tech = capacity_addition.loc[tech.name].unstack()
                     capacity_investment = invest_capacity.loc[tech.name].unstack()
                     cost_capex_tech = cost_capex.loc[tech.name].unstack()
-                    tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, base_time_steps)
+                    tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, step_horizon)
                     tech.add_new_capacity_investment(capacity_investment, step_horizon)
             else:
                 # TODO clean up
