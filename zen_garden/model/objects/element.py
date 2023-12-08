@@ -215,7 +215,8 @@ class Element:
                         # if index is set_location
                         elif index == "set_location":
                             # if element in set_conversion_technologies or set_storage_technologies, append set_nodes
-                            if element in sets["set_conversion_technologies"] or element in sets["set_storage_technologies"]:
+                            if (element in sets["set_conversion_technologies"] or element in sets["set_storage_technologies"] \
+                                    or element in sets["set_retrofitting_technologies"]):
                                 list_sets.append(sets["set_nodes"])
                             # if element in set_transport_technologies
                             elif element in sets["set_transport_technologies"]:
@@ -244,9 +245,7 @@ class Element:
                                 # TODO for more than one carrier
                                 # _pwa_conversion_factor = cls.get_attribute_of_specific_element(element,"pwa_conversion_factor")
                                 # dependent_carrier_pwa     = _pwa_conversion_factor["pwa_variables"]
-                                if "linear" in index and not _conversion_factor_is_pwa:
-                                    list_sets.append(dependent_carrier)
-                                elif "pwa" in index and _conversion_factor_is_pwa:
+                                if ("linear" in index and not _conversion_factor_is_pwa) or ("pwa" in index and _conversion_factor_is_pwa):
                                     list_sets.append(dependent_carrier)
                                 else:
                                     list_sets.append([])

@@ -29,13 +29,12 @@ class TransportTechnology(Technology):
 
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of """
+
         super().__init__(tech, optimization_setup)
         # dict of reversed edges
         self.dict_reversed_edges = {}
         # store carriers of transport technology
         self.store_carriers()
-        # # store input data
-        # self.store_input_data()
 
     def store_carriers(self):
         """ retrieves and stores information on reference, input and output carriers """
