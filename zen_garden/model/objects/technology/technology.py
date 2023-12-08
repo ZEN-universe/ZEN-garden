@@ -939,7 +939,7 @@ class TechnologyRules(GenericRule):
                 rhs = 0
             elif start_time_step in self.sets["set_time_steps_yearly_entire_horizon"]:
                 lhs = self.variables["capacity_addition"].loc[tech, :, :, time]
-                rhs = self.parameters.existing_invested_capacity.loc[tech, :, :, start_time_step]
+                rhs = self.parameters.capacity_investment_existing.loc[tech, :, :, start_time_step]
             else:
                 lhs = self.variables["capacity_addition"].loc[tech, :, :, time]
                 rhs = 0
