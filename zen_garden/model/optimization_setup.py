@@ -253,18 +253,22 @@ class OptimizationSetup(object):
         :return dict_of_attributes: returns dict of attribute values
         :return attribute_is_series: return information on attribute type """
 
-        _class_elements = self.get_all_elements(cls=cls)
+        class_elements = self.get_all_elements(cls=cls)
         dict_of_attributes = {}
         attribute_is_series = False
-        for _element in _class_elements:
+        for element in class_elements:
             if not capacity_types:
-                dict_of_attributes, attribute_is_series = self.append_attribute_of_element_to_dict(_element, attribute_name, dict_of_attributes)
+                dict_of_attributes, attribute_is_series_temp = self.append_attribute_of_element_to_dict(element, attribute_name, dict_of_attributes)
+                if attribute_is_series_temp:
+                    attribute_is_series = attribute_is_series_temp
             # if extracted for both capacity types
             else:
                 for capacity_type in self.system["set_capacity_types"]:
                     # append energy only for storage technologies
-                    if capacity_type == self.system["set_capacity_types"][0] or _element.name in self.system["set_storage_technologies"]:
-                        dict_of_attributes, attribute_is_series = self.append_attribute_of_element_to_dict(_element, attribute_name, dict_of_attributes, capacity_type)
+                    if capacity_type == self.system["set_capacity_types"][0] or element.name in self.system["set_storage_technologies"]:
+                        dict_of_attributes, attribute_is_series_temp = self.append_attribute_of_element_to_dict(element, attribute_name, dict_of_attributes, capacity_type)
+                        if attribute_is_series_temp:
+                            attribute_is_series = attribute_is_series_temp
         if return_attribute_is_series:
             return dict_of_attributes, attribute_is_series
         else:
@@ -287,7 +291,7 @@ class OptimizationSetup(object):
         if not hasattr(element, attribute_name):
             # if attribute is time series that does not exist
             if attribute_name in element.raw_time_series and element.raw_time_series[attribute_name] is None:
-                return dict_of_attributes, attribute_is_series
+                return dict_of_attributes, None
             else:
                 raise AssertionError(f"Element {element.name} does not have attribute {attribute_name}")
         attribute = getattr(element, attribute_name)
@@ -299,20 +303,20 @@ class OptimizationSetup(object):
             dict_of_attributes.update({(element.name,) + (key,): val for key, val in attribute.items()})
         elif isinstance(attribute, pd.Series) and "pwa" not in attribute_name:
             if capacity_type:
-                _combined_key = (element.name, capacity_type)
+                combined_key = (element.name, capacity_type)
             else:
-                _combined_key = element.name
+                combined_key = element.name
             if len(attribute) > 1:
-                dict_of_attributes[_combined_key] = attribute
+                dict_of_attributes[combined_key] = attribute
                 attribute_is_series = True
             else:
                 if attribute.index == 0:
-                    dict_of_attributes[_combined_key] = attribute.squeeze()
+                    dict_of_attributes[combined_key] = attribute.squeeze()
                     attribute_is_series = False
-                #since single-directed edges are allowed to exist (e.g. CH-DE exists, DE-CH doesn't), TransportTechnology attributes shared with other technologies (such as capacity existing)
+                # since single-directed edges are allowed to exist (e.g. CH-DE exists, DE-CH doesn't), TransportTechnology attributes shared with other technologies (such as capacity existing)
                 # mustn't be squeezed even-though the attributes length is smaller than 1. Otherwise, pd.concat(dict_of_attributes) messes up in initialize_component(), leading to an error further on in the code.
                 else:
-                    dict_of_attributes[_combined_key] = attribute
+                    dict_of_attributes[combined_key] = attribute
                     attribute_is_series = True
         elif isinstance(attribute, int):
             if capacity_type:

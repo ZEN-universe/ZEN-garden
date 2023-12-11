@@ -1041,7 +1041,7 @@ class InputDataChecks:
         Checks selection of different technologies in system.py file
         """
         # Checks if at least one technology is selected in the system.py file
-        assert len(self.system["set_conversion_technologies"] + self.system["set_transport_technologies"] + self.system["set_storage_technologies"]) > 0, f"No technology selected in stystem.py"
+        assert len(self.system["set_conversion_technologies"] + self.system["set_transport_technologies"] + self.system["set_storage_technologies"]) > 0, f"No technology selected in system.py"
         # Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
         for tech_list in ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]:
             techs_selected = self.system[tech_list]
