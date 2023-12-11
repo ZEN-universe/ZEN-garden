@@ -1048,7 +1048,7 @@ class InputDataChecks:
 
     def check_primary_folder_structure(self):
         """
-        Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., system_specification) is provided correctly
+        Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., energy_system) is provided correctly
 
         :param analysis: dictionary defining the analysis framework
         """
@@ -1057,11 +1057,11 @@ class InputDataChecks:
                 raise AssertionError(f"Folder {technology_subset} does not exist!")
         if not os.path.exists(os.path.join(self.analysis["dataset"], "set_carriers")):
             raise AssertionError(f"Folder set_carriers does not exist!")
-        if not os.path.exists(os.path.join(self.analysis["dataset"], "system_specification")):
-            raise AssertionError(f"Folder system_specification does not exist!")
+        if not os.path.exists(os.path.join(self.analysis["dataset"], "energy_system")):
+            raise AssertionError(f"Folder energy_system does not exist!")
         for file_name in ["attributes.json", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
-            if file_name not in os.listdir(os.path.join(self.analysis["dataset"], "system_specification")):
-                raise FileNotFoundError(f"File {file_name} is missing in the system_specification directory")
+            if file_name not in os.listdir(os.path.join(self.analysis["dataset"], "energy_system")):
+                raise FileNotFoundError(f"File {file_name} is missing in the energy_system directory")
 
     def check_existing_technology_data(self):
         """
@@ -1242,6 +1242,7 @@ class StringUtils:
             if config.analysis["overwrite_output"]:
                 logging.warning("Existing files will be overwritten!")
         return model_name,out_folder
+
 class ScenarioUtils:
     """
     This class handles some stuff for scenarios to tidy up scripts

@@ -76,8 +76,8 @@ class Technology(Element):
     def calculate_capex_of_capacities_existing(self, storage_energy=False):
         """ this method calculates the annualized capex of the existing capacities
 
-        :param storage_energy: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param storage_energy: boolean if energy storage
+        :return: capex of existing capacities
         """
         if self.__class__.__name__ == "StorageTechnology":
             if storage_energy:
@@ -94,7 +94,7 @@ class Technology(Element):
     def calculate_capex_of_single_capacity(self, *args):
         """ this method calculates the annualized capex of the existing capacities. Is implemented in child class
 
-        :param args: #TODO describe parameter/return
+        :param args: arguments
         """
         raise NotImplementedError
 
@@ -173,8 +173,8 @@ class Technology(Element):
 
         :param optimization_setup: OptimizationSetup the technology is part of
         :param tech: name of the technology
-        :param time: #TODO describe parameter/return
-        :param time_step_type: #TODO describe parameter/return
+        :param time: operational time step
+        :param time_step_type: type of time step
         :return: lifetime range of technology
         """
         if time_step_type:
@@ -232,7 +232,7 @@ class Technology(Element):
         :param clip_to_first_time_step: boolean to clip the time step to first time step if time step too far in the past
         :param id_capacity_existing: id of existing capacity
         :param loc: location (node or edge) of existing capacity
-        :return beganInPast: boolean if the period began before the first optimization step
+        :return began_in_past: boolean if the period began before the first optimization step
         :return start_time_step_year,end_time_step_year: start and end of period in invest time step domain"""
 
         # get model and system
@@ -298,7 +298,7 @@ class Technology(Element):
     def construct_sets(cls, optimization_setup):
         """ constructs the pe.Sets of the class <Technology>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup """
         # construct the pe.Sets of the class <Technology>
         energy_system = optimization_setup.energy_system
 
@@ -327,7 +327,7 @@ class Technology(Element):
     def construct_params(cls, optimization_setup):
         """ constructs the pe.Params of the class <Technology>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup """
         # construct pe.Param of the class <Technology>
 
         # existing capacity
@@ -406,7 +406,7 @@ class Technology(Element):
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <Technology>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup """
 
         model = optimization_setup.model
         variables = optimization_setup.variables
@@ -502,7 +502,7 @@ class Technology(Element):
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <Technology>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
         sets = optimization_setup.sets
@@ -676,10 +676,10 @@ class TechnologyRules(GenericRule):
         """definition of disjunct constraints if technology is On
         iterate through all subclasses to find corresponding implementation of disjunct constraints
 
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return
-        :param loc: #TODO describe parameter/return
-        :param time:  #TODO describe parameter/return
+        :param tech: technology
+        :param capacity_type: capacity type
+        :param loc: location
+        :param time: time step
         """
         for subclass in Technology.__subclasses__():
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
@@ -692,11 +692,10 @@ class TechnologyRules(GenericRule):
         """definition of disjunct constraints if technology is off
         iterate through all subclasses to find corresponding implementation of disjunct constraints
 
-        :param disjunct: #TODO describe parameter/return
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return
-        :param loc: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
+        :param tech: technology
+        :param capacity_type: capacity type
+        :param loc: location
+        :param time: time step
         """
         for subclass in Technology.__subclasses__():
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
@@ -714,8 +713,8 @@ class TechnologyRules(GenericRule):
         .. math::
             CAPEX_y = \\sum_{h\\in\mathcal{H}}\\sum_{p\\in\mathcal{P}}A_{h,p,y}+\\sum_{k\\in\mathcal{K}}\\sum_{n\\in\mathcal{N}}A^\mathrm{e}_{k,n,y}
 
-        :param year: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param year: yearly time step
+        :return: linopy constraint
         """
 
         ### index sets
@@ -745,8 +744,8 @@ class TechnologyRules(GenericRule):
         .. math::
             OPEX_y = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}} OPEX_{h,p,y}
 
-        :param year: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param year: yearly time step
+        :return: linopy constraint
         """
 
         ### index sets
@@ -781,7 +780,7 @@ class TechnologyRules(GenericRule):
         .. math::
             \mathrm{else}\ \Delta S_{h,p,y} = 0
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -814,7 +813,7 @@ class TechnologyRules(GenericRule):
         .. math::
             s^\mathrm{add, min}_{h} B_{i,p,y} \le \Delta S_{h,p,y}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -853,7 +852,7 @@ class TechnologyRules(GenericRule):
         .. math::
             s^\mathrm{add, max}_{h} B_{i,p,y} \ge \Delta S_{h,p,y}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -903,7 +902,7 @@ class TechnologyRules(GenericRule):
         .. math::
             \mathrm{else}\ \Delta S_{h,p,y} = 0
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -948,7 +947,7 @@ class TechnologyRules(GenericRule):
             S_{h,p,y} = \\sum_{\\tilde{y}=\\max(y_0,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1)}^y \\Delta S_{h,p,\\tilde{y}}
             + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1))}^{\\psi(y_0)} \\Delta s^\mathrm{ex}_{h,p,\\hat{y}}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -990,7 +989,7 @@ class TechnologyRules(GenericRule):
                 \\Delta S_{j,e,y}\\leq ((1+\\vartheta_j)^{\\Delta^\mathrm{y}}-1)K_{j,e,y}
                 +\\Delta^\mathrm{y}(\\xi\\sum_{\\tilde{j}\\in\\tilde{\mathcal{J}}}S_{\\tilde{j},e,y} + \\zeta_j)
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -1086,7 +1085,7 @@ class TechnologyRules(GenericRule):
                 \\Delta S_{j,e,y}\\leq ((1+\\vartheta_j)^{\\Delta^\mathrm{y}}-1)K_{j,e,y}
                 +\\Delta^\mathrm{y}(\\xi\\sum_{\\tilde{j}\\in\\tilde{\mathcal{J}}}S_{\\tilde{j},e,y} + \\zeta_j)
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -1177,7 +1176,7 @@ class TechnologyRules(GenericRule):
             A_{h,p,y} = f_h (\\sum_{\\tilde{y} = \\max(y_0,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1)}^y \\alpha_{h,y}\\Delta S_{h,p,\\tilde{y}}
             + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1))}^{\\psi(y_0)} \\alpha_{h,y_0}\\Delta s^\mathrm{ex}_{h,p,\\hat{y}})
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -1226,7 +1225,7 @@ class TechnologyRules(GenericRule):
         .. math::
             \mathrm{if\ tech\ is\ storage\ tech}\ OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -1282,7 +1281,7 @@ class TechnologyRules(GenericRule):
             + \gamma_{h,y} S_{h,p,y}
             #TODO complete constraint (second summation symbol)
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -1328,7 +1327,7 @@ class TechnologyRules(GenericRule):
         .. math::
             \mathrm{if\ tech\ is\ storage\ tech}\ E_{h,p,t} = \\epsilon_h (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -1384,7 +1383,7 @@ class TechnologyRules(GenericRule):
         .. math::
             E_y^{\mathcal{H}} = \sum_{t\in\mathcal{T}}\sum_{h\in\mathcal{H}} E_{h,p,t} \\tau_{t}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -1430,7 +1429,7 @@ class TechnologyRules(GenericRule):
         .. math::
             \mathrm{if\ tech\ is\ storage\ tech}\ \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq m_{k,n,t,y}S_{k,n,y}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets

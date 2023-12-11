@@ -108,8 +108,6 @@ class Config(object):
         self.analysis["output_format"] = "h5"
         self.analysis["write_results_yml"] = False
         self.analysis["max_output_size_mb"] = 500
-        # name of data folder for energy system specification
-        self.analysis["folder_name_system_specification"] = "system_specification"
         # earliest possible year of input data, needed to differentiate between yearly and generic time indices
         self.analysis["earliest_year_of_data"] = 1900
         self.analysis['use_capacities_existing'] = False

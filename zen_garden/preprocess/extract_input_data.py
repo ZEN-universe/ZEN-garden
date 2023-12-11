@@ -346,7 +346,7 @@ class DataInput:
                 set_edges = set_edges.set_index("edge")
                 return set_edges
             else:
-                return None
+                raise FileNotFoundError(f"Input file set_edges.csv is missing from {self.folder_path}")
 
     def extract_carriers(self, carrier_type):
         """ reads input data and extracts conversion carriers

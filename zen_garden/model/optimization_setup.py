@@ -2,13 +2,13 @@
 :Title:        ZEN-GARDEN
 :Created:      October-2021
 :Authors:      Jacob Mannhardt (jmannhardt@ethz.ch),
-            Alissa Ganter (aganter@ethz.ch)
+               Alissa Ganter (aganter@ethz.ch)
 :Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Class defining the Concrete optimization model.
+Class defining the optimization model.
 The class takes as inputs the properties of the optimization problem. The properties are saved in the
-dictionaries analysis and system which are passed to the class. After initializing the Concrete model, the
-class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
+dictionaries analysis and system which are passed to the class. After initializing the model, the
+class adds carriers and technologies to the model and returns it.
 The class also includes a method to solve the optimization problem.
 """
 import copy
@@ -38,6 +38,7 @@ class OptimizationSetup(object):
 
         :param config: config object used to extract the analysis, system and solver dictionaries
         :param scenario_dict: dictionary defining the scenario
+        :param input_data_checks: input data checks object
         """
         self.analysis = config.analysis
         self.system = config.system
@@ -91,8 +92,6 @@ class OptimizationSetup(object):
         """
         This method creates a dictionary with the paths of the data split
         by carriers, networks, technologies
-
-        :return: dictionary all the paths for reading data
         """
         ## General Paths
         # define path to access dataset related to the current analysis
@@ -129,10 +128,7 @@ class OptimizationSetup(object):
                 self.paths["set_technologies"][technology] = self.paths[technology_subset][technology]
 
     def add_elements(self):
-        """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
-
-        :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system"""
+        """This method sets up the parameters, variables and constraints of the carriers of the optimization problem."""
         logging.info("\n--- Add elements to model--- \n")
         for element_name in self.element_list:
             element_class = self.dict_element_classes[element_name]

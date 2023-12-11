@@ -49,8 +49,8 @@ class EnergySystem:
                 self.indexing_sets.append(key)
 
         # set input path
-        _folder_label = self.optimization_setup.analysis["folder_name_system_specification"]
-        self.input_path = Path(self.optimization_setup.paths[_folder_label]["folder"])
+        folder_label = "energy_system"
+        self.input_path = Path(self.optimization_setup.paths[folder_label]["folder"])
 
         # create UnitHandling object
         self.unit_handling = UnitHandling(self.input_path,
@@ -63,8 +63,6 @@ class EnergySystem:
                                     energy_system=self, unit_handling=self.unit_handling)
         # initialize empty set_carriers list
         self.set_carriers = []
-        # # store input data
-        # self.store_input_data()
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -119,15 +117,8 @@ class EnergySystem:
         set_nodes_on_edges = {}
         # read edge file
         set_edges_input = self.data_input.extract_locations(extract_nodes=False)
-        if set_edges_input is not None:
-            for edge in set_edges_input.index:
-                set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
-        else:
-            logging.warning(f"DeprecationWarning: Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{self.system['''folder_name_system_specification''']}' instead!")
-            for node_from in self.set_nodes:
-                for node_to in self.set_nodes:
-                    if node_from != node_to:
-                        set_nodes_on_edges[node_from + "-" + node_to] = (node_from, node_to)
+        for edge in set_edges_input.index:
+            set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
         return set_nodes_on_edges
 
     def calaculate_haversine_distances_from_nodes(self):

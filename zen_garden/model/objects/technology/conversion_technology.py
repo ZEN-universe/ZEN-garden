@@ -120,7 +120,7 @@ class ConversionTechnology(Technology):
     ### --- getter/setter classmethods
     @classmethod
     def get_capex_all_elements(cls, optimization_setup, index_names=None):
-        """ similar to Element.get_attribute_of_all_elements but only for capex and conversion_factor.
+        """ similar to Element.get_attribute_of_all_elements but only for capex.
         If select_pwa, extract pwa attributes, otherwise linear.
 
         :param optimization_setup: The OptimizationSetup the element is part of
@@ -256,7 +256,7 @@ class ConversionTechnology(Technology):
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <ConversionTechnology>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: optimization setup"""
         model = optimization_setup.model
         constraints = optimization_setup.constraints
         # add pwa constraints
@@ -294,12 +294,12 @@ class ConversionTechnology(Technology):
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is On
 
-        :param optimization_setup: #TODO describe parameter/return
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return
-        :param node: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :param binary_var: #TODO describe parameter/return
+        :param optimization_setup: optimization setup
+        :param tech: technology
+        :param capacity_type: type of capacity (power, energy)
+        :param node: node
+        :param time: yearly time step
+        :param binary_var: binary disjunction variable
         """
         # get parameter object
         model = optimization_setup.model
@@ -315,7 +315,7 @@ class ConversionTechnology(Technology):
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(time)
         # disjunct constraints min load
-        constraints.add_constraint_block(model, name=f"constraint_min_load_{'_'.join([str(tech), str(node), str(time)])}",
+        constraints.add_constraint_block(model, name=f"disjunct_conversion_technology_min_load_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(reference_flow.to_linexpr()
                                                      - model.variables["capacity"][tech, capacity_type, node, time_step_year].to_linexpr(params.min_load.loc[tech, capacity_type, node, time].item())
                                                      >= 0), disjunction_var=binary_var)
@@ -324,12 +324,12 @@ class ConversionTechnology(Technology):
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is off
 
-        :param optimization_setup: #TODO describe parameter/return
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return
-        :param node: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :param binary_var: #TODO describe parameter/return
+        :param optimization_setup: optimization setup
+        :param tech: technology
+        :param capacity_type: type of capacity (power, energy)
+        :param node: node
+        :param time: yearly time step
+        :param binary_var: binary disjunction variable
         """
         sets = optimization_setup.sets
         model = optimization_setup.model
@@ -337,7 +337,7 @@ class ConversionTechnology(Technology):
         lhs = sum(model.variables["flow_conversion_input"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
               + sum(model.variables["flow_conversion_output"][tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
         # add the constraints
-        constraints.add_constraint_block(model, name=f"constraint_off_technology_{'_'.join([str(tech), str(node), str(time)])}",
+        constraints.add_constraint_block(model, name=f"disjunct_conversion_technology_off_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=lhs.to_linexpr() == 0, disjunction_var=binary_var)
 
     @classmethod
@@ -383,16 +383,16 @@ class ConversionTechnologyRules(GenericRule):
     # Rule-based constraints
     # -----------------------
 
-    def constraint_linear_capex_rule(self, tech, node, time):
+    def constraint_linear_capex_rule(self, tech, node, year):
         """ if capacity and capex have a linear relationship
 
         .. math::
             A_{h,p,y}^{approximation} = \\alpha_{h,n,y} S_{h,p,y}^{approximation}
 
-        :param tech: #TODO describe parameter/return
-        :param node: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param tech: technology
+        :param node: node
+        :param year: yearly time step
+        :return: linopy constraints
         """
 
         ### index sets
@@ -408,24 +408,24 @@ class ConversionTechnologyRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        lhs = (self.variables["capex_approximation"][tech, node, time]
-               - self.parameters.capex_specific_conversion.loc[tech, node, time].item() * self.variables["capacity_approximation"][tech, node, time])
+        lhs = (self.variables["capex_approximation"][tech, node, year]
+               - self.parameters.capex_specific_conversion.loc[tech, node, year].item() * self.variables["capacity_approximation"][tech, node, year])
         rhs = 0
         constraints = lhs == rhs
 
         ### return
         return self.constraints.return_contraints(constraints)
 
-    def constraint_capex_coupling_rule(self, tech, node, time):
+    def constraint_capex_coupling_rule(self, tech, node, year):
         """ couples capex variables based on modeling technique
 
         .. math::
             CAPEX_{y,n,i}^\\mathrm{cost, power} = A_{h,p,y}^{approximation}
 
-        :param tech: #TODO describe parameter/return
-        :param node: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param tech: technology
+        :param node: node
+        :param year: yearly time step
+        :return: linopy constraints
         """
 
         ### index sets
@@ -441,24 +441,24 @@ class ConversionTechnologyRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        lhs = (self.variables["cost_capex"][tech, "power", node, time]
-               - self.variables["capex_approximation"][tech, node, time])
+        lhs = (self.variables["cost_capex"][tech, "power", node, year]
+               - self.variables["capex_approximation"][tech, node, year])
         rhs = 0
         constraints = lhs == rhs
 
         ### return
         return self.constraints.return_contraints(constraints)
 
-    def constraint_capacity_coupling_rule(self, tech, node, time):
+    def constraint_capacity_coupling_rule(self, tech, node, year):
         """ couples capacity variables based on modeling technique
 
         .. math::
             \Delta S_{h,p,y}^\mathrm{power} = S_{h,p,y}^\mathrm{approximation}
 
-        :param tech: #TODO describe parameter/return
-        :param node: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param tech: technology
+        :param node: node
+        :param year: yearly time step
+        :return: linopy constraints
         """
 
         ### index sets
@@ -474,8 +474,8 @@ class ConversionTechnologyRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        lhs = (self.variables["capacity_addition"][tech, "power", node, time]
-               - self.variables["capacity_approximation"][tech, node, time])
+        lhs = (self.variables["capacity_addition"][tech, "power", node, year]
+               - self.variables["capacity_approximation"][tech, node, year])
         rhs = 0
         constraints = lhs == rhs
 
@@ -486,14 +486,14 @@ class ConversionTechnologyRules(GenericRule):
     # -----------------------
 
     def constraint_carrier_conversion_block(self, index_values, index_names):
-        """ if reference carrier and dependent carrier have a linear relationship
+        """ conversion factor between reference carrier and dependent carrier
 
         .. math::
-            G^\\mathrm{d,approximation}_{i,n,t} = \\eta_{i,c,n,y}G^\\mathrm{r,approximation}_{i,n,t}
+            G^\\mathrm{d}_{i,n,t} = \\eta_{i,c,n,y}G^\\mathrm{r}_{i,n,t}
 
         :param index_values: index values
         :param index_names: index names
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
