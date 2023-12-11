@@ -1,0 +1,21 @@
+index,value,unit
+capacity_addition_min_default,0,kton/h
+capacity_addition_max_default,inf,kton/h
+min_load_default,0,1
+max_load_default,1,1
+lifetime_default,40,1
+opex_specific_variable_default,0,kiloEuro/kton
+opex_specific_fixed_default,13.14,Euro/(kton/h)
+capex_specific_default,210.24,Euro/(kton/h)
+reference_carrier,carbon,1
+input_carrier,carbon electricity,1
+output_carrier,,1
+conversion_factor_default,37.71,MWh/kton
+capacity_limit_default,inf,kton/h
+capacity_existing_default,0,kton/h
+capacity_investment_existing_default,0,kton/h
+construction_time_default,0,1
+carbon_intensity_default,-1,kton/(kton*hour)
+max_diffusion_rate_default,inf,1
+capacity_addition_unbounded_default,0,kton/h
+capacity_limit_country_default,inf,kton/h

@@ -35,11 +35,10 @@ class ConversionTechnology(Technology):
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+
         super().__init__(tech, optimization_setup)
         # store carriers of conversion technology
         self.store_carriers()
-        # # store input data
-        # self.store_input_data()
 
     def store_carriers(self):
         """ retrieves and stores information on reference, input and output carriers """
@@ -173,7 +172,7 @@ class ConversionTechnology(Technology):
                                         doc="set of carriers that are an output to a specific conversion technology.\n\t Dimensions: set_conversion_technologies",
                                         index_set="set_conversion_technologies")
 
-        # add pe.Sets of the child classes
+        # add sets of the child classes
         for subclass in cls.__subclasses__():
             if np.size(optimization_setup.system[subclass.label]):
                 subclass.construct_sets(optimization_setup)
@@ -192,6 +191,11 @@ class ConversionTechnology(Technology):
                                                                                                                      index_names=["set_conversion_technologies", "set_conversion_factor_linear",
                                                                                                                                   "set_nodes", "set_time_steps_operation"]),
             doc="Parameter which specifies the slope of the conversion efficiency if approximated linearly")
+
+        # add params of the child classes
+        for subclass in cls.__subclasses__():
+            if np.size(optimization_setup.system[subclass.label]):
+                subclass.construct_params(optimization_setup)
 
     @classmethod
     def construct_vars(cls, optimization_setup):
@@ -270,6 +274,7 @@ class ConversionTechnology(Technology):
             index_sets=(index_values, index_names),
             bounds=flow_conversion_bounds(index_values, index_names), doc='pwa of flow of dependent carriers of conversion technologies')
 
+
     @classmethod
     def construct_constraints(cls, optimization_setup):
         """ constructs the pe.Constraints of the class <ConversionTechnology>
@@ -321,6 +326,11 @@ class ConversionTechnology(Technology):
         constraints.add_constraint_block(model, name="constraint_dependent_flow_coupling",
                                          constraint=rules.constraint_dependent_flow_coupling_block(*cls.create_custom_set(["set_conversion_technologies", "set_no_on_off", "set_dependent_carriers", "set_location", "set_time_steps_operation"], optimization_setup)),
                                          doc="couples the real dependent flow variables with the approximated variables")
+
+        # add constraints of the child classes
+        for subclass in cls.__subclasses__():
+           if np.size(optimization_setup.system[subclass.label]):
+                subclass.construct_constraints(optimization_setup)
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -415,6 +425,22 @@ class ConversionTechnology(Technology):
                 pwa_values[index] = pwa_parameter[index[1]]
 
         return pwa_breakpoints, pwa_values
+
+    @classmethod
+    def get_flow_term_reference_carrier(cls, optimization_setup, tech):
+        """ get reference carrier flow term of conversion technology
+
+        :param optimization_setup: The OptimizationSetup the element is part of
+        :param tech: conversion technology
+        :return term_flow: return reference carrier flow term """
+        model = optimization_setup.model
+        sets = optimization_setup.sets
+        reference_carrier = sets["set_reference_carriers"][tech][0]
+        if reference_carrier in sets["set_input_carriers"][tech]:
+            term_flow = model.variables["flow_conversion_input"].loc[tech, reference_carrier]
+        else:
+            term_flow = model.variables["flow_conversion_output"].loc[tech, reference_carrier]
+        return term_flow
 
 
 class ConversionTechnologyRules(GenericRule):
@@ -604,11 +630,7 @@ class ConversionTechnologyRules(GenericRule):
         for tech, dependent_carrier in index.get_unique([0, 1]):
 
             ### auxiliary calculations
-            reference_carrier = self.sets["set_reference_carriers"][tech][0]
-            if reference_carrier in self.sets["set_input_carriers"][tech]:
-                term_flow = self.variables["flow_conversion_input"].loc[tech, reference_carrier]
-            else:
-                term_flow = self.variables["flow_conversion_output"].loc[tech, reference_carrier]
+            term_flow = ConversionTechnology.get_flow_term_reference_carrier(self.optimization_setup, tech)
 
             ### formulate constraint
             lhs = term_flow - self.variables["flow_approximation_reference"].loc[tech, dependent_carrier]

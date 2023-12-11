@@ -366,9 +366,9 @@ def test_4f(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    # # test plot functions
-    # res.standard_plots()
-    # res.plot_energy_balance(node="DE", carrier="natural_gas", year=0)
+    #test plot functions
+    res.standard_plots()
+    res.plot_energy_balance(node="DE", carrier="natural_gas", year=0)
 
 
 def test_4g(config, folder_path):
@@ -500,9 +500,21 @@ def test_7b(config, folder_path):
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
+def test_8a(config, folder_path):
+    # run the test
+    data_set_name = "test_8a"
+    config.analysis["objective"] = "total_carbon_emissions"
+    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
 
 if __name__ == "__main__":
     from config import config
     config.solver["keep_files"] = False
     folder_path = os.path.dirname(__file__)
-    test_4e(config, folder_path)
+    test_5b(config, folder_path)

@@ -226,7 +226,7 @@ class ScenarioDict(dict):
     _param_dict_keys = {"file", "file_op", "default", "default_op"}
     _special_elements = ["system", "analysis", "base_scenario", "sub_folder", "param_map"]
 
-    def __init__(self, init_dict, system, analysis,paths):
+    def __init__(self, init_dict, system, analysis, paths):
         """
         Initializes the dictionary from a normal dictionary
         :param init_dict: The dictionary to initialize from
@@ -252,6 +252,8 @@ class ScenarioDict(dict):
         # finally we update the analysis and system
         self.update_analysis_system()
 
+
+
     def update_analysis_system(self):
         """
         Updates the analysis and system
@@ -268,7 +270,20 @@ class ScenarioDict(dict):
         if "system" in self.dict:
             for key, value in self.dict["system"].items():
                 if type(self.system[key]) == type(value):
-                    self.system[key] = value
+                    # check if key is a subset
+                    stack = [self.analysis["subsets"]]
+                    set_name_list = []
+                    while stack:
+                        cur_dict = stack.pop()
+                        for set_name, subsets in cur_dict.items():
+                            if (isinstance(subsets, dict) and key in subsets.keys()) or (isinstance(subsets, list) and key in subsets):
+                                # remove old subset values from higher level sets and add new values
+                                for _name in [set_name] + set_name_list:
+                                    self.system[_name] = [val for val in self.system[set_name] if not val in self.system[key]]
+                                    self.system[_name].extend(value)
+                            elif isinstance(subsets, dict):
+                                stack.append(subsets)
+                                set_name_list.append(set_name)
                 else:
                     raise ValueError(f"Trying to update system with key {key} and value {value} of type {type(value)}, "
                                      f"but the system has already a value of type {type(self.system[key])}")
@@ -401,8 +416,8 @@ class ScenarioDict(dict):
                         exclude_list = []
 
                     # expand the sets
-                    for element in self.paths[current_set].keys():
-                        if element != "folder" and element not in exclude_list:
+                    for element in self.system[current_set]:
+                        if element not in exclude_list:
                             # create dicts if necessary
                             if element not in new_dict:
                                 new_dict[element] = {}
@@ -1052,13 +1067,19 @@ class InputDataChecks:
 
         :param analysis: dictionary defining the analysis framework
         """
-        for technology_subset in self.analysis["subsets"]["set_technologies"]:
-            if not os.path.exists(os.path.join(self.analysis["dataset"], technology_subset)):
-                raise AssertionError(f"Folder {technology_subset} does not exist!")
-        if not os.path.exists(os.path.join(self.analysis["dataset"], "set_carriers")):
-            raise AssertionError(f"Folder set_carriers does not exist!")
-        if not os.path.exists(os.path.join(self.analysis["dataset"], "system_specification")):
-            raise AssertionError(f"Folder system_specification does not exist!")
+
+        for set_name, subsets in self.analysis["subsets"].items():
+            if not os.path.exists(os.path.join(self.analysis["dataset"], set_name)):
+                raise AssertionError(f"Folder {set_name} does not exist!")
+            if isinstance(subsets, dict):
+                for subset_name, subset in subsets.items():
+                    if not os.path.exists(os.path.join(self.analysis["dataset"], set_name, subset_name)):
+                        raise AssertionError(f"Folder {subset_name} does not exist!")
+                else:
+                    for subset_name in subsets:
+                        if not os.path.exists(os.path.join(self.analysis["dataset"], set_name, subset_name)):
+                            raise AssertionError(f"Folder {subset_name} does not exist!")
+
         for file_name in ["attributes.csv", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
             if file_name not in os.listdir(os.path.join(self.analysis["dataset"], "system_specification")):
                 raise FileNotFoundError(f"File {file_name} is missing in the system_specification directory")
@@ -1067,26 +1088,26 @@ class InputDataChecks:
         """
         This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.csv file exist.
         """
-        self.optimization_setup.system["set_technologies"] = []
-        for technology_subset in self.optimization_setup.analysis["subsets"]["set_technologies"]:
-            for technology in self.optimization_setup.system[technology_subset]:
-                if technology not in self.optimization_setup.paths[technology_subset].keys():
-                    logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
-                    self.optimization_setup.system[technology_subset].remove(technology)
-                elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
-                    raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
-            self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[technology_subset])
-            # check subsets of technology_subset
-            if technology_subset in self.optimization_setup.analysis["subsets"].keys():
-                for subset in self.optimization_setup.analysis["subsets"][technology_subset]:
+        for set_name, subsets in self.optimization_setup.analysis["subsets"]["set_technologies"].items():
+                for technology in self.optimization_setup.system[set_name]:
+                    if technology not in self.optimization_setup.paths[set_name].keys():
+                        logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
+                        self.optimization_setup.system[set_name].remove(technology)
+                    elif "attributes.csv" not in self.optimization_setup.paths[set_name][technology]:
+                        raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
+                self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[set_name])
+                # check subsets of technology_subset
+                assert isinstance(subsets, list), f"Subsets of {set_name} must be a list, dict not implemented"
+                for subset in subsets:
                     for technology in self.optimization_setup.system[subset]:
-                        if technology not in self.optimization_setup.paths[technology_subset].keys():
+                        if technology not in self.optimization_setup.paths[subset].keys():
                             logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
                             self.optimization_setup.system[subset].remove(technology)
-                        elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
+                        elif "attributes.csv" not in self.optimization_setup.paths[subset][technology]:
                             raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
-                    self.optimization_setup.system[technology_subset].extend(self.optimization_setup.system[subset])
-                    self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[subset])
+                        self.optimization_setup.system[set_name].extend(self.optimization_setup.system[subset])
+                        self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[subset])
+        #todo check if technology is added correctly
 
     def check_existing_carrier_data(self):
         """

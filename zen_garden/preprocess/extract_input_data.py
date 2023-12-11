@@ -282,7 +282,7 @@ class DataInput:
         """ reads input data and extracts conversion carriers
 
         :return carrier_list: list with input, output or reference carriers of technology """
-        assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier"], "carrier type must be either input_carrier, output_carrier, or reference_carrier"
+        assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier", "retrofit_reference_carrier"], "carrier type must be either input_carrier, output_carrier, reference_carrier, or retrofit_reference_carrier"
         carrier_string = self.extract_attribute(carrier_type, skip_warning=True)
         if type(carrier_string) == str:
             carrier_list = carrier_string.strip().split(" ")
@@ -290,6 +290,17 @@ class DataInput:
             carrier_list = []
         assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
         return carrier_list
+
+    def extract_technologies(self, technology_type):
+        """ reads input data and extracts conversion carriers
+
+        :return carrier_list: list with input, output or reference carriers of technology """
+        assert technology_type in ["retrofit_base_technology"], "technology type must be retrofit_base_technology"
+        technology_string = self.extract_attribute(technology_type, skip_warning=True)
+        if type(technology_string) == str:
+            technology_list = technology_string.strip().split(" ")
+        assert len(technology_list) == 1, f"retrofit base technology must be a single carrier, but {technology_list} are given for {self.element.name}"
+        return technology_list
 
     def extract_set_technologies_existing(self, storage_energy=False):
         """ reads input data and creates setExistingCapacity for each technology
