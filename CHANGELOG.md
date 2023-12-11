@@ -12,7 +12,8 @@ Beginning of versioning.
 
 ### Fixed
 - Fix unit handling for singular dimensionality matrices
-
+- Smaller fixes
+  
 ### Changed
 - `attributes.json` instead of `attributes.csv` (Issue [#339])
 - `energy_system` instead of `system_specification`
