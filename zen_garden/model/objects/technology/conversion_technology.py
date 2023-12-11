@@ -64,25 +64,25 @@ class ConversionTechnology(Technology):
 
     def get_conversion_factor(self):
         """retrieves and stores conversion_factor """
-        is_pwa = False
-        linear_dict = {}
         # df_input_linear, has_unit_linear = self.data_input.read_pwa_files("conversion_factor")
         dependent_carrier = list(set(self.input_carrier + self.output_carrier).difference(
                 self.reference_carrier))
         if not dependent_carrier:
-            return None, is_pwa
-        index_sets = ["set_nodes", "set_time_steps"]
-        time_steps = "set_base_time_steps_yearly"
-        for carrier in dependent_carrier:
-            linear_dict[carrier] = self.data_input.extract_input_data("conversion_factor", index_sets=index_sets,time_steps=time_steps, subelement=carrier)
-        linear_dict = pd.DataFrame.from_dict(linear_dict)
-        linear_dict.columns.name = "carrier"
-        linear_dict = linear_dict.stack()
-        conversion_factor_levels = [linear_dict.index.names[-1]] + linear_dict.index.names[:-1]
-        linear_dict = linear_dict.reorder_levels(conversion_factor_levels)
-        # extract yearly variation
-        self.data_input.extract_yearly_variation("conversion_factor", index_sets)
-        self.raw_time_series["conversion_factor"] = linear_dict
+            self.raw_time_series["conversion_factor"] = None
+        else:
+            index_sets = ["set_nodes", "set_time_steps"]
+            time_steps = "set_base_time_steps_yearly"
+            cf_dict = {}
+            for carrier in dependent_carrier:
+                cf_dict[carrier] = self.data_input.extract_input_data("conversion_factor", index_sets=index_sets,time_steps=time_steps, subelement=carrier)
+            cf_dict = pd.DataFrame.from_dict(cf_dict)
+            cf_dict.columns.name = "carrier"
+            cf_dict = cf_dict.stack()
+            conversion_factor_levels = [cf_dict.index.names[-1]] + cf_dict.index.names[:-1]
+            cf_dict = cf_dict.reorder_levels(conversion_factor_levels)
+            # extract yearly variation
+            self.data_input.extract_yearly_variation("conversion_factor", index_sets)
+            self.raw_time_series["conversion_factor"] = cf_dict
 
     def convert_to_fraction_of_capex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
