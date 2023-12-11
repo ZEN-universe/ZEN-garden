@@ -92,6 +92,7 @@ class EnergySystem:
         self.set_conversion_technologies = self.system["set_conversion_technologies"]
         self.set_transport_technologies = self.system["set_transport_technologies"]
         self.set_storage_technologies = self.system["set_storage_technologies"]
+        self.set_retrofitting_technologies= self.system["set_retrofitting_technologies"]
         # discount rate
         self.discount_rate = self.data_input.extract_input_data("discount_rate", index_sets=[])
         # carbon emissions limit
@@ -431,7 +432,7 @@ class EnergySystemRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        lhs = self.variables["carbon_emissions_annual"][year]
+        lhs = self.variables["carbon_emissions_annual"][year] - self.variables["carbon_emissions_annual_overshoot"][year]
         rhs = self.parameters.carbon_emissions_annual_limit.loc[year].item()
         constraints = lhs <= rhs
 
@@ -570,7 +571,7 @@ class EnergySystemRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        if self.parameters.price_carbon_emissions_annual_overshoot == np.inf:
+        if self.parameters.price_carbon_emissions_annual_overshoot == np.inf or self.parameters.carbon_emissions_annual_limit.sum() == np.inf:
             lhs = self.variables["carbon_emissions_annual_overshoot"]
             rhs = 0
             constraints = lhs == rhs
@@ -604,8 +605,7 @@ class EnergySystemRules(GenericRule):
         ### formulate constraint
         lhs = (self.variables["carbon_emissions_annual"]
                - self.variables["carbon_emissions_technology_total"]
-               - self.variables["carbon_emissions_carrier_total"]
-               + self.variables["carbon_emissions_annual_overshoot"])
+               - self.variables["carbon_emissions_carrier_total"])
         rhs = 0
         constraints = lhs == rhs
 

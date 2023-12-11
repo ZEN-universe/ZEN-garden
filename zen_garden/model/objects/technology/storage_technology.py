@@ -42,6 +42,7 @@ class StorageTechnology(Technology):
 
     def store_carriers(self):
         """ retrieves and stores information on reference, input and output carriers """
+
         # get reference carrier from class <Technology>
         super().store_carriers()
 

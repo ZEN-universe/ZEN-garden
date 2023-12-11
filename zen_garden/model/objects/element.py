@@ -208,7 +208,8 @@ class Element:
                         # if index is set_location
                         elif index == "set_location":
                             # if element in set_conversion_technologies or set_storage_technologies, append set_nodes
-                            if element in sets["set_conversion_technologies"] or element in sets["set_storage_technologies"]:
+                            if (element in sets["set_conversion_technologies"] or element in sets["set_storage_technologies"] \
+                                    or element in sets["set_retrofitting_technologies"]):
                                 list_sets.append(sets["set_nodes"])
                             # if element in set_transport_technologies
                             elif element in sets["set_transport_technologies"]:

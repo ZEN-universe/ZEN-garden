@@ -37,7 +37,7 @@
   },
   {
     "lifetime": {
-      "default_value": 50.0,
+      "default_value": 25.0,
       "unit": "1"
     }
   },
@@ -50,7 +50,7 @@
   {
     "reference_carrier": {
       "default_value": [
-        "natural_gas"
+        "heat"
       ]
     }
   },
@@ -74,8 +74,8 @@
   },
   {
     "opex_specific_fixed": {
-      "default_value": 0.0,
-      "unit": "Euro/km/MW"
+      "default_value": 87.6,
+      "unit": "Euro/kW"
     }
   },
   {
@@ -85,21 +85,33 @@
     }
   },
   {
-    "transport_loss_factor": {
-      "default_value": 5e-05,
-      "unit": "1/km"
+    "input_carrier": {
+      "default_value": [
+        "natural_gas"
+      ]
     }
   },
   {
-    "capex_per_distance_transport": {
-      "default_value": 265.0,
-      "unit": "Euro/km/MW"
+    "output_carrier": {
+      "default_value": [
+        "heat"
+      ]
     }
   },
   {
-    "distance": {
-      "default_value": "inf",
-      "unit": "km"
+    "conversion_factor": [
+      {
+        "natural_gas": {
+          "default_value": 1.1,
+          "unit": "GWh/GWh"
+        }
+      }
+    ]
+  },
+  {
+    "capex_specific": {
+      "default_value": 876.0,
+      "unit": "Euro/kW"
     }
   },
   {

@@ -305,6 +305,9 @@ class Technology(Element):
         # conversion technologies
         optimization_setup.sets.add_set(name="set_conversion_technologies", data=energy_system.set_conversion_technologies,
                                         doc="Set of conversion technologies. Subset: set_technologies")
+        # retrofitting technologies
+        optimization_setup.sets.add_set(name="set_retrofitting_technologies", data=energy_system.set_retrofitting_technologies,
+                                        doc="Set of retrofitting technologies. Subset: set_conversion_technologies")
         # transport technologies
         optimization_setup.sets.add_set(name="set_transport_technologies", data=energy_system.set_transport_technologies,
                                         doc="Set of transport technologies. Subset: set_technologies")

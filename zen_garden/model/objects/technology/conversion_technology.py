@@ -35,11 +35,10 @@ class ConversionTechnology(Technology):
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+
         super().__init__(tech, optimization_setup)
         # store carriers of conversion technology
         self.store_carriers()
-        # # store input data
-        # self.store_input_data()
 
     def store_carriers(self):
         """ retrieves and stores information on reference, input and output carriers """
@@ -175,7 +174,7 @@ class ConversionTechnology(Technology):
                                         doc="set of carriers that are an output to a specific conversion technology.\n\t Dimensions: set_conversion_technologies",
                                         index_set="set_conversion_technologies")
 
-        # add pe.Sets of the child classes
+        # add sets of the child classes
         for subclass in cls.__subclasses__():
             if np.size(optimization_setup.system[subclass.label]):
                 subclass.construct_sets(optimization_setup)
@@ -193,6 +192,11 @@ class ConversionTechnology(Technology):
         optimization_setup.parameters.add_parameter(name="conversion_factor", data=optimization_setup.initialize_component(cls, "conversion_factor",
             index_names=["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
             doc="Parameter which specifies the conversion factor")
+
+        # add params of the child classes
+        for subclass in cls.__subclasses__():
+            if np.size(optimization_setup.system[subclass.label]):
+                subclass.construct_params(optimization_setup)
 
     @classmethod
     def construct_vars(cls, optimization_setup):
@@ -289,6 +293,11 @@ class ConversionTechnology(Technology):
             rule=rules.constraint_capacity_coupling_rule, doc="couples the real capacity variables with the approximated variables")
 
 
+        # add constraints of the child classes
+        for subclass in cls.__subclasses__():
+           if np.size(optimization_setup.system[subclass.label]):
+                subclass.construct_constraints(optimization_setup)
+
     # defines disjuncts if technology on/off
     @classmethod
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
@@ -364,6 +373,22 @@ class ConversionTechnology(Technology):
             pwa_breakpoints[index] = pwa_parameter["capacity"]
             pwa_values[index] = pwa_parameter["capex"]
         return pwa_breakpoints, pwa_values
+
+    @classmethod
+    def get_flow_term_reference_carrier(cls, optimization_setup, tech):
+        """ get reference carrier flow term of conversion technology
+
+        :param optimization_setup: The OptimizationSetup the element is part of
+        :param tech: conversion technology
+        :return term_flow: return reference carrier flow term """
+        model = optimization_setup.model
+        sets = optimization_setup.sets
+        reference_carrier = sets["set_reference_carriers"][tech][0]
+        if reference_carrier in sets["set_input_carriers"][tech]:
+            term_flow = model.variables["flow_conversion_input"].loc[tech, reference_carrier]
+        else:
+            term_flow = model.variables["flow_conversion_output"].loc[tech, reference_carrier]
+        return term_flow
 
 
 class ConversionTechnologyRules(GenericRule):
