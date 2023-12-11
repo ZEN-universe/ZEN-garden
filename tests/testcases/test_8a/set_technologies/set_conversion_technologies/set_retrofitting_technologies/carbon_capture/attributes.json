@@ -1,0 +1,149 @@
+[
+  {
+    "capacity_addition_min": {
+      "default_value": 0.0,
+      "unit": "kton"
+    }
+  },
+  {
+    "capacity_addition_max": {
+      "default_value": "inf",
+      "unit": "kton"
+    }
+  },
+  {
+    "min_load": {
+      "default_value": 0.0,
+      "unit": "1"
+    }
+  },
+  {
+    "max_load": {
+      "default_value": 0.95,
+      "unit": "1"
+    }
+  },
+  {
+    "lifetime": {
+      "default_value": 25.0,
+      "unit": "1"
+    }
+  },
+  {
+    "opex_specific_variable": {
+      "default_value": 0.0,
+      "unit": "Euro/ktons"
+    }
+  },
+  {
+    "opex_specific_fixed": {
+      "default_value": 0.0,
+      "unit": "Euro/ktons"
+    }
+  },
+  {
+    "capex_specific": {
+      "default_value": 1000.0,
+      "unit": "Euro/ktons"
+    }
+  },
+  {
+    "reference_carrier": {
+      "default_value": [
+        "carbon"
+      ]
+    }
+  },
+  {
+    "input_carrier": {
+      "default_value": [
+        "electricity"
+      ]
+    }
+  },
+  {
+    "output_carrier": {
+      "default_value": [
+        "carbon"
+      ]
+    }
+  },
+  {
+    "conversion_factor": [
+      {
+        "electricity": {
+          "default_value": 11.25,
+          "unit": "GWh/ktons"
+        }
+      }
+    ]
+  },
+  {
+    "capacity_limit": {
+      "default_value": "inf",
+      "unit": "ktons"
+    }
+  },
+  {
+    "capacity_existing": {
+      "default_value": 0.0,
+      "unit": "kton"
+    }
+  },
+  {
+    "capacity_investment_existing": {
+      "default_value": 0.0,
+      "unit": "ktons"
+    }
+  },
+  {
+    "construction_time": {
+      "default_value": 0.0,
+      "unit": "1"
+    }
+  },
+  {
+    "carbon_intensity": {
+      "default_value": 0.0,
+      "unit": "1"
+    }
+  },
+  {
+    "max_diffusion_rate": {
+      "default_value": "inf",
+      "unit": "1"
+    }
+  },
+  {
+    "capacity_limit_country": {
+      "default_value": "inf",
+      "unit": "ktons"
+    }
+  },
+  {
+    "capacity_addition_unbounded": {
+      "default_value": 0.0,
+      "unit": "1"
+    }
+  },
+  {
+    "retrofit_reference_carrier": {
+      "default_value": [
+        "natural_gas"
+      ]
+    }
+  },
+  {
+    "retrofit_base_technology": {
+      "default_value": [
+        "natural_gas_boiler"
+      ]
+    }
+  },
+  {
+    "retrofit_flow_coupling_factor": {
+      "default_value": 0.18,
+      "unit": "kton/GWh"
+    }
+  }
+]

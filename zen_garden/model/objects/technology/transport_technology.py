@@ -29,13 +29,12 @@ class TransportTechnology(Technology):
 
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of """
+
         super().__init__(tech, optimization_setup)
         # dict of reversed edges
         self.dict_reversed_edges = {}
         # store carriers of transport technology
         self.store_carriers()
-        # # store input data
-        # self.store_input_data()
 
     def store_carriers(self):
         """ retrieves and stores information on reference, input and output carriers """
@@ -64,11 +63,11 @@ class TransportTechnology(Technology):
             self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
             self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
         else:  # Here only capex_specific is used, and capex_per_distance_transport is set to Zero.
-            if self.data_input.exists_attribute("capex_per_distance_transport"):
+            if "capex_per_distance_transport" in self.data_input.attribute_dict:
                 self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
                 self.capex_specific = self.capex_per_distance_transport * self.distance
                 self.opex_specific_fixed = self.opex_specific_fixed * self.distance
-            elif self.data_input.exists_attribute("capex_specific"):
+            elif "capex_specific" in self.data_input.attribute_dict:
                 self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
             else:
                 raise AttributeError(f"The transport technology {self.name} has neither capex_per_distance_transport nor capex_specific attribute.")
@@ -82,11 +81,11 @@ class TransportTechnology(Technology):
         self.capex_per_distance_transport = self.capex_per_distance_transport * fraction_year
 
     def calculate_capex_of_single_capacity(self, capacity, index):
-        """ this method calculates the annualized capex of a single existing capacity.
+        """ this method calculates the capex of a single existing capacity.
 
-        :param capacity: #TODO describe parameter/return
-        :param index: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param capacity: capacity of transport technology
+        :param index: index of capacity
+        :return: capex of single capacity
         """
         # TODO check existing capex of transport techs -> Hannes
         if np.isnan(self.capex_specific[index[0]].iloc[0]):
@@ -95,19 +94,19 @@ class TransportTechnology(Technology):
             return self.capex_specific[index[0]].iloc[0] * capacity
 
     ### --- getter/setter classmethods
-    def set_reversed_edge(self, edge, _reversed_edge):
+    def set_reversed_edge(self, edge, reversed_edge):
         """ maps the reversed edge to an edge
 
-        :param edge: #TODO describe parameter/return
-        :param _reversed_edge: #TODO describe parameter/return
+        :param edge: edge
+        :param reversed_edge: reversed edge
         """
-        self.dict_reversed_edges[edge] = _reversed_edge
+        self.dict_reversed_edges[edge] = reversed_edge
 
     def get_reversed_edge(self, edge):
         """ get the reversed edge corresponding to an edge
 
-        :param edge: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param edge: edge
+        :return: reversed edge
         """
         return self.dict_reversed_edges[edge]
 
@@ -195,12 +194,12 @@ class TransportTechnology(Technology):
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
         """definition of disjunct constraints if technology is on
 
-        :param optimization_setup: #TODO describe parameter/return
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return:
-        :param edge: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :param binary_var: #TODO describe parameter/return
+        :param optimization_setup: optimization setup
+        :param tech: technology
+        :param capacity_type: type of capacity (power, energy)
+        :param node: node
+        :param time: yearly time step
+        :param binary_var: binary disjunction variable
         """
         model = optimization_setup.model
         # get parameter object
@@ -220,12 +219,12 @@ class TransportTechnology(Technology):
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
         """definition of disjunct constraints if technology is off
 
-        :param optimization_setup: #TODO describe parameter/return
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return #TODO describe parameter/return
-        :param edge: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :param binary_var: #TODO describe parameter/return
+        :param optimization_setup: optimization setup
+        :param tech: technology
+        :param capacity_type: type of capacity (power, energy)
+        :param node: node
+        :param time: yearly time step
+        :param binary_var: binary disjunction variable
         """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
@@ -265,7 +264,7 @@ class TransportTechnologyRules(GenericRule):
         .. math::
             \mathrm{else}\ F^\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -300,7 +299,7 @@ class TransportTechnologyRules(GenericRule):
         .. math::
             \mathrm{else}\ CAPEX_{y,n,i}^\mathrm{cost, power} = \\Delta S_{h,p,y}^\mathrm{power} \\alpha_{j,n,y} + B_{i,p,y} h_{j,e} \\alpha^\mathrm{d}_{j,y}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets

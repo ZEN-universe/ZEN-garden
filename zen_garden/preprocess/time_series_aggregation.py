@@ -155,7 +155,7 @@ class TimeSeriesAggregation(object):
         """ gets the names of all elements and parameter ts that shall be excluded from the time series aggregation """
         self.excluded_ts = []
         if self.system["exclude_parameters_from_TSA"]:
-            excluded_parameters = self.optimization_setup.energy_system.data_input.read_input_data("exclude_parameter_from_TSA")
+            excluded_parameters = self.optimization_setup.energy_system.data_input.read_input_csv("exclude_parameter_from_TSA")
             # exclude file exists
             if excluded_parameters is not None:
                 for _,vals in excluded_parameters.iterrows():
@@ -379,7 +379,7 @@ class TimeSeriesAggregation(object):
     def unique_time_steps_multiple_indices(self, list_sequence_time_steps):
         """ this method returns the unique time steps of multiple time grids
 
-        :param list_sequence_time_steps: #TODO describe parameter/return
+        :param list_sequence_time_steps: list of operational and investment time steps
         :return (set_time_steps, time_steps_duration, sequence_time_steps): time steps, duration and sequence
         """
         sequence_time_steps = np.zeros(np.size(list_sequence_time_steps, axis=1)).astype(int)
@@ -417,7 +417,6 @@ class TimeSeriesAggregation(object):
 
     def set_time_attributes(self,set_time_steps, time_steps_duration, sequence_time_steps):
         """ this method sets the operational time attributes of an element.
-        #TODO clean up
         :param set_time_steps: set_time_steps of operation
         :param time_steps_duration: time_steps_duration of operation
         :param sequence_time_steps: sequence of operation """

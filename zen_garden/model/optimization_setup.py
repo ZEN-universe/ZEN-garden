@@ -2,13 +2,13 @@
 :Title:        ZEN-GARDEN
 :Created:      October-2021
 :Authors:      Jacob Mannhardt (jmannhardt@ethz.ch),
-            Alissa Ganter (aganter@ethz.ch)
+               Alissa Ganter (aganter@ethz.ch)
 :Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Class defining the Concrete optimization model.
+Class defining the optimization model.
 The class takes as inputs the properties of the optimization problem. The properties are saved in the
-dictionaries analysis and system which are passed to the class. After initializing the Concrete model, the
-class adds carriers and technologies to the Concrete model and returns the Concrete optimization model.
+dictionaries analysis and system which are passed to the class. After initializing the model, the
+class adds carriers and technologies to the model and returns it.
 The class also includes a method to solve the optimization problem.
 """
 import copy
@@ -38,6 +38,7 @@ class OptimizationSetup(object):
 
         :param config: config object used to extract the analysis, system and solver dictionaries
         :param scenario_dict: dictionary defining the scenario
+        :param input_data_checks: input data checks object
         """
         self.analysis = config.analysis
         self.system = config.system
@@ -82,7 +83,7 @@ class OptimizationSetup(object):
         self.set_base_configuration()
 
         # read input data into elements
-        self.read_input_data()
+        self.read_input_csv()
 
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
@@ -91,8 +92,6 @@ class OptimizationSetup(object):
         """
         This method creates a dictionary with the paths of the data split
         by carriers, networks, technologies
-
-        :return: dictionary all the paths for reading data
         """
         ## General Paths
         # define path to access dataset related to the current analysis
@@ -104,35 +103,37 @@ class OptimizationSetup(object):
         for folder_name in next(os.walk(self.path_data))[1]:
             self.paths[folder_name] = dict()
             self.paths[folder_name]["folder"] = os.path.join(self.path_data, folder_name)
-        ## Carrier Paths
-        # add the paths for all the directories in carrier folder
-        path = self.paths["set_carriers"]["folder"]
-        for carrier in next(os.walk(path))[1]:
-            self.paths["set_carriers"][carrier] = dict()
-            self.paths["set_carriers"][carrier]["folder"] = os.path.join(path, carrier)
-            # add paths of files inside the individual carrier directories
-            sub_path = os.path.join(path, carrier)
-            for file in next(os.walk(sub_path))[2]:
-                self.paths["set_carriers"][carrier][file] = os.path.join(sub_path, file)
-        ## Technology Paths
-        self.paths["set_technologies"] = {}
-        # add the paths for all the directories in technologies
-        for technology_subset in self.analysis["subsets"]["set_technologies"]:
-            path = self.paths[technology_subset]["folder"]
-            for technology in next(os.walk(path))[1]:
-                self.paths[technology_subset][technology] = dict()
-                self.paths[technology_subset][technology]["folder"] = os.path.join(path, technology)
-                # add paths of files inside the individual tech directories
-                sub_path = os.path.join(path, technology)
+        # add element paths and their file paths
+        stack = [self.analysis["subsets"]]
+        while stack:
+            cur_dict = stack.pop()
+            for set_name, subsets in cur_dict.items():
+                path = self.paths[set_name]["folder"]
+                if isinstance(subsets, dict):
+                    stack.append(subsets)
+                    self.add_folder_paths(set_name, path, subsets.keys())
+                else:
+                    self.add_folder_paths(set_name, path, subsets)
+                    for element in subsets:
+                        if self.system[element]:
+                            self.add_folder_paths(element, self.paths[element]["folder"])
+
+    def add_folder_paths(self, set_name, path, subsets=[]):
+        """ add file paths of element to paths dictionary"""
+        for element in next(os.walk(path))[1]:
+            if not element in subsets:
+                self.paths[set_name][element] = dict()
+                self.paths[set_name][element]["folder"] = os.path.join(path, element)
+                sub_path = os.path.join(path, element)
                 for file in next(os.walk(sub_path))[2]:
-                    self.paths[technology_subset][technology][file] = os.path.join(sub_path, file)
-                self.paths["set_technologies"][technology] = self.paths[technology_subset][technology]
+                    self.paths[set_name][element][file] = os.path.join(sub_path, file)
+            else:
+                self.paths[element] = dict()
+                self.paths[element]["folder"] = os.path.join(path, element)
+
 
     def add_elements(self):
-        """This method sets up the parameters, variables and constraints of the carriers of the optimization problem.
-
-        :param analysis: dictionary defining the analysis framework
-        :param system: dictionary defining the system"""
+        """This method sets up the parameters, variables and constraints of the carriers of the optimization problem."""
         logging.info("\n--- Add elements to model--- \n")
         for element_name in self.element_list:
             element_class = self.dict_element_classes[element_name]
@@ -147,17 +148,33 @@ class OptimizationSetup(object):
 
             # check if element_set has a subset and remove subset from element_set
             if element_name in self.analysis["subsets"].keys():
-                element_subset = []
-                for subset in self.analysis["subsets"][element_name]:
-                    element_subset += [item for item in self.system[subset]]
-                element_set = list(set(element_set) - set(element_subset))
+                if isinstance(self.analysis["subsets"][element_name], list):
+                    subset_names = self.analysis["subsets"][element_name]
+                elif isinstance(self.analysis["subsets"][element_name], dict):
+                    subset_names = self.analysis["subsets"][element_name].keys()
+                else:
+                    raise ValueError(f"Subset {element_name} has to be either a list or a dict")
+                element_subset = [item for subset in subset_names for item in self.system[subset]]
+            else:
+                stack = [_dict for _dict in copy.deepcopy(self.analysis["subsets"]).values() if isinstance(_dict, dict)]
+                while stack: # check if element_set is a subset of a subset
+                    cur_dict = stack.pop()
+                    element_subset = []
+                    for set_name, subsets in cur_dict.items():
+                        if element_name == set_name:
+                            if isinstance(subsets, list):
+                                element_subset += [item for subset_name in subsets for item in self.system[subset_name]]
+                        if isinstance(subsets, dict):
+                            stack.append(subsets)
+            element_set = list(set(element_set) - set(element_subset))
+
 
             element_set.sort()
             # add element class
             for item in element_set:
                 self.add_element(element_class, item)
 
-    def read_input_data(self):
+    def read_input_csv(self):
         """ reads the input data of the energy system and elements and conducts the time series aggregation """
         logging.info("\n--- Read input data of elements --- \n")
         self.energy_system.store_input_data()
@@ -532,13 +549,12 @@ class OptimizationSetup(object):
                 capacity_addition[capacity_addition <= rounding_value] = 0
                 invest_capacity[invest_capacity <= rounding_value] = 0
                 cost_capex[cost_capex <= rounding_value] = 0
-                base_time_steps = self.energy_system.time_steps.decode_yearly_time_steps([step_horizon])
                 for tech in self.get_all_elements(Technology):
                     # new capacity
                     capacity_addition_tech = capacity_addition.loc[tech.name].unstack()
                     capacity_investment = invest_capacity.loc[tech.name].unstack()
                     cost_capex_tech = cost_capex.loc[tech.name].unstack()
-                    tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, base_time_steps)
+                    tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, step_horizon)
                     tech.add_new_capacity_investment(capacity_investment, step_horizon)
             else:
                 # TODO clean up
