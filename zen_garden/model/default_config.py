@@ -67,7 +67,9 @@ class Config(object):
         # transport distance (euclidean or actual)
         self.analysis["transport_distance"] = "Euclidean"
         # dictionary with subsets related to set
-        self.analysis["subsets"] = {"set_carriers": [], "set_technologies": ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]}
+        self.analysis["subsets"] = {
+            "set_carriers": [],
+            "set_technologies": {"set_conversion_technologies": ["set_retrofitting_technologies"], "set_transport_technologies": [], "set_storage_technologies": []}}
         # headers for the generation of input files
         self.analysis["header_data_inputs"] = {
                 "set_nodes": "node",
@@ -87,6 +89,7 @@ class Config(object):
                 "set_conversion_technologies": "technology",
                 "set_transport_technologies": "technology",
                 "set_storage_technologies": "technology",
+                "set_retrofitting_technologies": "technology",
                 "set_technologies": "technology",
                 "set_technologies_existing": "technology_existing",
                 "set_capacity_types": "capacity_type"}
@@ -108,8 +111,6 @@ class Config(object):
         self.analysis["output_format"] = "h5"
         self.analysis["write_results_yml"] = False
         self.analysis["max_output_size_mb"] = 500
-        # name of data folder for energy system specification
-        self.analysis["folder_name_system_specification"] = "system_specification"
         # earliest possible year of input data, needed to differentiate between yearly and generic time indices
         self.analysis["earliest_year_of_data"] = 1900
         self.analysis['use_capacities_existing'] = False
@@ -119,6 +120,8 @@ class Config(object):
         self.system["set_carriers"] = []
         # set of capacity types: power-rated or energy-rated
         self.system["set_capacity_types"] = ["power", "energy"]
+        # set technologies
+        self.system["set_technologies"] = []
         # set of conversion technologies
         self.system["set_conversion_technologies"] = []
         # set of storage technologies
@@ -128,6 +131,8 @@ class Config(object):
         self.system["set_transport_technologies"] = []
         self.system['double_capex_transport'] = False
         self.system["set_bidirectional_transport_technologies"] = []
+        # set of retrofitting technologies
+        self.system["set_retrofitting_technologies"] = []
         # set of nodes
         self.system["set_nodes"] = []
         # toggle to use time_series_aggregation

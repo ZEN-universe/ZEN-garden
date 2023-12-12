@@ -51,7 +51,7 @@ class UnitHandling:
         if define_ton_as_metric_ton:
             self.define_ton_as_metric()
         # load additional units
-        self.ureg.load_definitions(self.folder_path + "/unit_definitions.txt")
+        self.ureg.load_definitions(self.folder_path / "unit_definitions.txt")
 
         # empty base units and dimensionality matrix
         self.base_units = {}
@@ -109,7 +109,7 @@ class UnitHandling:
         """ extracts base units of energy system
 
         :return list_base_units: list of base units """
-        list_base_units = pd.read_csv(self.folder_path + "/base_units.csv").squeeze().values.tolist()
+        list_base_units = pd.read_csv(self.folder_path / "base_units.csv").squeeze().values.tolist()
         return list_base_units
 
     def calculate_combined_unit(self, input_unit, return_combination=False):
@@ -508,8 +508,8 @@ class UnitHandling:
     def set_base_unit_combination(self, input_unit, attribute):
         """ converts the input unit to the corresponding base unit
 
-        :param input_unit: #TODO describe parameter/return
-        :param attribute: #TODO describe parameter/return
+        :param input_unit: unit of input
+        :param attribute: name of attribute
         """
         # TODO combine overlap with get_unit_multiplier
         # if input unit is already in base units --> the input unit is base unit
@@ -531,8 +531,8 @@ class UnitHandling:
     def set_attribute_values(self, df_output, attribute):
         """ saves the attributes values of an attribute
 
-        :param df_output: #TODO describe parameter/return
-        :param attribute: #TODO describe parameter/return
+        :param df_output: output dataframe
+        :param attribute: attribute name
         """
         if attribute in self.dict_attribute_values.keys():
             self.dict_attribute_values[attribute]["values"] = df_output
@@ -614,7 +614,7 @@ class UnitHandling:
         """ checks if the array has only positive or negative booleans (-1,0,1)
 
         :param array: numeric numpy array
-        :param axis: #TODO describe parameter/return
+        :param axis: axis of dataframe
         :return is_pos_neg_boolean """
         if axis:
             is_pos_neg_boolean = np.apply_along_axis(lambda row: np.array_equal(np.abs(row), np.abs(row).astype(bool)), 1, array).any()

@@ -17,7 +17,7 @@ from zen_garden.model.objects.element import GenericRule
 from zen_garden.preprocess.extract_input_data import DataInput
 from zen_garden.preprocess.unit_handling import UnitHandling
 from .time_steps import TimeStepsDicts
-
+from pathlib import Path
 
 class EnergySystem:
     """
@@ -49,8 +49,8 @@ class EnergySystem:
                 self.indexing_sets.append(key)
 
         # set input path
-        _folder_label = self.optimization_setup.analysis["folder_name_system_specification"]
-        self.input_path = self.optimization_setup.paths[_folder_label]["folder"]
+        folder_label = "energy_system"
+        self.input_path = Path(self.optimization_setup.paths[folder_label]["folder"])
 
         # create UnitHandling object
         self.unit_handling = UnitHandling(self.input_path,
@@ -63,8 +63,6 @@ class EnergySystem:
                                     energy_system=self, unit_handling=self.unit_handling)
         # initialize empty set_carriers list
         self.set_carriers = []
-        # # store input data
-        # self.store_input_data()
         #dict to save the parameter units (and save them in the results later on)
         self.units = {}
 
@@ -91,11 +89,12 @@ class EnergySystem:
         # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_steps_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
-        self.parameters_interpolation_off = self.data_input.read_input_data("parameters_interpolation_off")
+        self.parameters_interpolation_off = self.data_input.read_input_csv("parameters_interpolation_off")
         # technology-specific
         self.set_conversion_technologies = self.system["set_conversion_technologies"]
         self.set_transport_technologies = self.system["set_transport_technologies"]
         self.set_storage_technologies = self.system["set_storage_technologies"]
+        self.set_retrofitting_technologies= self.system["set_retrofitting_technologies"]
         # discount rate
         self.discount_rate = self.data_input.extract_input_data("discount_rate", index_sets=[], unit_category={})
         # carbon emissions limit
@@ -121,15 +120,8 @@ class EnergySystem:
         set_nodes_on_edges = {}
         # read edge file
         set_edges_input = self.data_input.extract_locations(extract_nodes=False)
-        if set_edges_input is not None:
-            for edge in set_edges_input.index:
-                set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
-        else:
-            logging.warning(f"DeprecationWarning: Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{self.system['''folder_name_system_specification''']}' instead!")
-            for node_from in self.set_nodes:
-                for node_to in self.set_nodes:
-                    if node_from != node_to:
-                        set_nodes_on_edges[node_from + "-" + node_to] = (node_from, node_to)
+        for edge in set_edges_input.index:
+            set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
         return set_nodes_on_edges
 
     def calaculate_haversine_distances_from_nodes(self):
@@ -442,7 +434,7 @@ class EnergySystemRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        lhs = self.variables["carbon_emissions_annual"][year]
+        lhs = self.variables["carbon_emissions_annual"][year] - self.variables["carbon_emissions_annual_overshoot"][year]
         rhs = self.parameters.carbon_emissions_annual_limit.loc[year].item()
         constraints = lhs <= rhs
 
@@ -581,7 +573,7 @@ class EnergySystemRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        if self.parameters.price_carbon_emissions_annual_overshoot == np.inf:
+        if self.parameters.price_carbon_emissions_annual_overshoot == np.inf or self.parameters.carbon_emissions_annual_limit.sum() == np.inf:
             lhs = self.variables["carbon_emissions_annual_overshoot"]
             rhs = 0
             constraints = lhs == rhs
@@ -615,8 +607,7 @@ class EnergySystemRules(GenericRule):
         ### formulate constraint
         lhs = (self.variables["carbon_emissions_annual"]
                - self.variables["carbon_emissions_technology_total"]
-               - self.variables["carbon_emissions_carrier_total"]
-               + self.variables["carbon_emissions_annual_overshoot"])
+               - self.variables["carbon_emissions_carrier_total"])
         rhs = 0
         constraints = lhs == rhs
 
