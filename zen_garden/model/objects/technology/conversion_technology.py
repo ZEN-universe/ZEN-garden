@@ -47,8 +47,8 @@ class ConversionTechnology(Technology):
         # get reference carrier from class <Technology>
         super().store_carriers()
         # define input and output carrier
-        self.input_carrier = self.data_input.extract_carriers(carrier_type="input_carrier", unit_category={"energy_quantity": 1, "time": -1})
-        self.output_carrier = self.data_input.extract_carriers(carrier_type="output_carrier", unit_category={"energy_quantity": 1, "time": -1})
+        self.input_carrier = self.data_input.extract_carriers(carrier_type="input_carrier")
+        self.output_carrier = self.data_input.extract_carriers(carrier_type="output_carrier")
         self.energy_system.set_technology_of_carrier(self.name, self.input_carrier + self.output_carrier)
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
         self.optimization_setup.input_data_checks.check_carrier_configuration(input_carrier=self.input_carrier,
@@ -75,16 +75,17 @@ class ConversionTechnology(Technology):
         else:
             index_sets = ["set_nodes", "set_time_steps"]
             time_steps = "set_base_time_steps_yearly"
+            unit_category = {"energy_quantity": 0}
             cf_dict = {}
             for carrier in dependent_carrier:
-                cf_dict[carrier] = self.data_input.extract_input_data("conversion_factor", index_sets=index_sets,time_steps=time_steps, subelement=carrier)
+                cf_dict[carrier] = self.data_input.extract_input_data("conversion_factor", index_sets=index_sets, unit_category=unit_category, time_steps=time_steps, subelement=carrier)
             cf_dict = pd.DataFrame.from_dict(cf_dict)
             cf_dict.columns.name = "carrier"
             cf_dict = cf_dict.stack()
             conversion_factor_levels = [cf_dict.index.names[-1]] + cf_dict.index.names[:-1]
             cf_dict = cf_dict.reorder_levels(conversion_factor_levels)
             # extract yearly variation
-            self.data_input.extract_yearly_variation("conversion_factor", index_sets)
+            self.data_input.extract_yearly_variation("conversion_factor", index_sets, unit_category=unit_category)
             self.raw_time_series["conversion_factor"] = cf_dict
 
     def convert_to_fraction_of_capex(self):

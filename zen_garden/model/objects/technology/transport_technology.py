@@ -66,16 +66,15 @@ class TransportTechnology(Technology):
             if "capex_per_distance_transport" in self.data_input.attribute_dict:
                 self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
                 self.capex_specific = self.capex_per_distance_transport * self.distance
-                self.opex_specific_fixed = self.opex_specific_fixed * self.distance
             elif "capex_specific" in self.data_input.attribute_dict:
                 self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
             else:
                 raise AttributeError(f"The transport technology {self.name} has neither capex_per_distance_transport nor capex_specific attribute.")
             self.capex_per_distance_transport = self.capex_specific * 0.0
-        if self.data_input.exists_attribute("opex_specific_fixed_per_distance", unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1}):
+        if "opex_specific_fixed_per_distance" in self.data_input.attribute_dict:
             self.opex_specific_fixed_per_distance = self.data_input.extract_input_data("opex_specific_fixed_per_distance", index_sets=["set_edges", "set_time_steps_yearly"], unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
             self.opex_specific_fixed = self.opex_specific_fixed_per_distance * self.distance
-        elif self.data_input.exists_attribute("opex_specific_fixed", unit_category={"money": 1, "energy_quantity": -1, "time": 1}):
+        elif "opex_specific_fixed" in self.data_input.attribute_dict:
             self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
         else:
             raise AttributeError(f"The transport technology {self.name} has neither opex_specific_fixed_per_distance nor opex_specific_fixed attribute.")

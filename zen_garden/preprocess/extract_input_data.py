@@ -218,7 +218,7 @@ class DataInput:
     #         }
     #     return attributes_dict
 
-    def extract_attribute(self, attribute_name, unit_category, return_unit=False,subelement=None):
+    def extract_attribute(self, attribute_name, unit_category, return_unit=False, subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param attribute_name: name of selected attribute
@@ -354,12 +354,12 @@ class DataInput:
             else:
                 raise FileNotFoundError(f"Input file set_edges.csv is missing from {self.folder_path}")
 
-    def extract_carriers(self, carrier_type, unit_category):
+    def extract_carriers(self, carrier_type):
         """ reads input data and extracts conversion carriers
 
         :return carrier_list: list with input, output or reference carriers of technology """
         assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier", "retrofit_reference_carrier"], "carrier type must be either input_carrier, output_carrier,retrofit_reference_carrier, or reference_carrier"
-        carrier_list = self.extract_attribute(carrier_type, unit_category)
+        carrier_list = self.extract_attribute(carrier_type, unit_category=None)
         assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"Reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
         return carrier_list
 
@@ -368,7 +368,7 @@ class DataInput:
 
         :return carrier_list: list with input, output or reference carriers of technology """
         assert technology_type in ["retrofit_base_technology"], "technology type must be retrofit_base_technology"
-        technology_list = self.extract_attribute(technology_type)
+        technology_list = self.extract_attribute(technology_type, unit_category=None)
         if type(technology_list) == str:
             technology_list = technology_list.strip().split(" ")
         assert len(technology_list) == 1, f"retrofit base technology must be a single technology, but {technology_list} are given for {self.element.name}"
@@ -435,8 +435,9 @@ class DataInput:
         attribute_name = "capex_specific"
         index_sets = ["set_nodes", "set_time_steps_yearly"]
         time_steps = "set_time_steps_yearly"
+        unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
         # import all input data
-        default_value = self.extract_attribute(attribute_name)
+        default_value = self.extract_attribute(attribute_name, unit_category=unit_category)
         df_input_nonlinear,has_unit_nonlinear = self.read_pwa_capex_files(file_type="nonlinear_")
         df_input_breakpoints,has_unit_breakpoints = self.read_pwa_capex_files(file_type="breakpoints_pwa_")
         df_input_linear,has_unit_linear = self.read_pwa_capex_files()
@@ -523,7 +524,7 @@ class DataInput:
             is_pwa = False
             linear_dict = {}
             linear_dict["capex"] = self.extract_input_data(attribute_name, index_sets=index_sets,
-                                                           time_steps=time_steps)
+                                                           time_steps=time_steps, unit_category=unit_category)
             return linear_dict, is_pwa
 
     def read_pwa_capex_files(self, file_type=str()):
@@ -587,17 +588,17 @@ class DataInput:
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit
-        self.save_unit_of_attribute(default_name,subelement)
+        self.save_unit_of_attribute(default_name, unit_category, subelement)
         return df_output, default_value, index_name_list
 
-    def save_unit_of_attribute(self, attribute_name,subelement=None):
+    def save_unit_of_attribute(self, attribute_name, unit_category, subelement=None):
         """ saves the unit of an attribute, converted to the base unit
         :param attribute_name: name of selected attribute
         :param subelement: dependent element for which data is extracted
         """
         # if numerics analyzed
         if self.solver["analyze_numerics"] and attribute_name is not None:
-            input_unit = self.extract_attribute(attribute_name,subelement=subelement,return_unit=True)
+            input_unit = self.extract_attribute(attribute_name, unit_category, subelement=subelement, return_unit=True)
             if subelement is not None:
                 attribute_name = attribute_name + "_" + subelement
             self.unit_handling.set_base_unit_combination(input_unit=input_unit, attribute=(self.element.name, attribute_name))

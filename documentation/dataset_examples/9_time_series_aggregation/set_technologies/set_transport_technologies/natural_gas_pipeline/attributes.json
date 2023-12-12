@@ -75,7 +75,7 @@
   {
     "opex_specific_fixed": {
       "default_value": 0.0,
-      "unit": "Euro/km/MW"
+      "unit": "Euro/MW"
     }
   },
   {
