@@ -191,7 +191,6 @@ class DataInput:
         file_path = self.folder_path / f"{filename}.json"
         with open(file_path, "r") as file:
             data = json.load(file)
-        # attribute_dict = {k: v for item in data for k, v in item.items()}
         attribute_dict = {}
         for item in data:
             for k, v in item.items():
@@ -355,6 +354,8 @@ class DataInput:
         assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier", "retrofit_reference_carrier"], "carrier type must be either input_carrier, output_carrier,retrofit_reference_carrier, or reference_carrier"
         carrier_list = self.extract_attribute(carrier_type)
         assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"Reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
+        if carrier_list == [""]:
+            carrier_list = []
         return carrier_list
 
     def extract_technologies(self, technology_type):
