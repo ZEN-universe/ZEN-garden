@@ -72,11 +72,11 @@ class Scenario(ABC):
         pass
 
     @abstractproperty
-    def components(self) -> dict[str, Component]:
+    def system(self) -> System:
         pass
 
     @abstractproperty
-    def system(self) -> System:
+    def components(self) -> dict[str, Component]:
         pass
 
     def get_timestep_duration(self, ts_type: TimestepType) -> "pd.Series[Any]":
@@ -87,7 +87,7 @@ class Scenario(ABC):
         else:
             raise ValueError("Timestep duration of yearly component!")
 
-        return relevant_component.get_mf_aggregated_series()
+        return relevant_component.get_mf_aggregated_series().unstack().iloc[0]
 
     def get_mf_aggregated_series(self, component_name: str) -> "pd.Series[Any]":
         return self.components[component_name].get_mf_aggregated_series()
@@ -104,10 +104,9 @@ class SolutionLoader(ABC):
     def __getitem__(self, scenario_name: str) -> Scenario:
         return self.scenarios[scenario_name]
 
-    @property
+    @abstractproperty
     def component_names(self) -> list[str]:
-        first_scenario = next(iter(self.scenarios.values()))
-        return [component for component in first_scenario.components]
+        pass
 
     @abstractmethod
     def get_time_steps_year2operation(self, year: int, is_storage: bool) -> Any:

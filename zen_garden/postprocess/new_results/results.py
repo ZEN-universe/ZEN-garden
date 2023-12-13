@@ -31,15 +31,18 @@ class Results:
             assert scenario_name in scenarios
             scenario_names_to_include = [scenario_name]
 
-        ans: dict[str, pd.Series[Any]] = {}
+        aggregated_scenarios: dict[str, pd.Series[Any]] = {}
 
         for scenario_name in scenario_names_to_include:
             scenario = scenarios[scenario_name]
             component = scenario.components[component_name]
             scenario_series = component.get_mf_aggregated_series()
-            ans[scenario_name] = scenario_series
+            aggregated_scenarios[scenario_name] = scenario_series
 
-        return ans
+        if len(scenario_names_to_include) == 1:
+            return aggregated_scenarios[scenario_names_to_include[0]]
+
+        return aggregated_scenarios
 
     def get_full_ts(self) -> None:
         pass
@@ -68,19 +71,10 @@ class Results:
             else:
                 return series
 
+        timestep_duration = scenario.get_timestep_duration(component.timestep_type)
+
         unstacked_series = series.unstack(component.timestep_name)
-        unstacked_timestep_duration = scenario.get_timestep_duration(
-            component.timestep_type
-        ).unstack()
-
-        row_slice = (
-            0 if isinstance(unstacked_series.index, pd.MultiIndex) else slice(None)
-        )
-
-        total_value = unstacked_series.apply(
-            lambda row: row * unstacked_timestep_duration.loc[row.name[row_slice]],
-            axis=1,
-        )
+        total_value = unstacked_series.multiply(timestep_duration, axis=1)
 
         ans = pd.DataFrame()
 
@@ -110,6 +104,10 @@ class Results:
             scenarios_dict[scenario_name] = self.get_total_from_scenario(
                 scenario, component_name, element_name, year
             )
+
+        if len(scenario_names) == 1:
+            return scenarios_dict[scenario_names[0]]
+
         if isinstance(scenarios_dict[scenario_name], pd.Series):
             total_value = pd.concat(
                 scenarios_dict, keys=scenarios_dict.keys(), axis=1

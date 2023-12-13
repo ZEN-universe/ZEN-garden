@@ -278,3 +278,8 @@ class MultiHdfLoader(AbstractLoader):
             )
 
         return self._time_steps_year2operation_cache[cache_key]
+
+    @property
+    def component_names(self) -> list[str]:
+        first_scenario = next(iter(self.scenarios.values()))
+        return [component for component in first_scenario.components]
