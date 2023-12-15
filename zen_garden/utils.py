@@ -1116,7 +1116,7 @@ class InputDataChecks:
         for carrier in self.optimization_setup.system["set_carriers"]:
             if carrier not in self.optimization_setup.paths["set_carriers"].keys():
                 # raise error if carrier is not in input data
-                raise FileNotFoundError(f"Technology {carrier} selected in config does not exist in input data")
+                raise FileNotFoundError(f"Carrier {carrier} selected in config does not exist in input data")
             elif "attributes.json" not in self.optimization_setup.paths["set_carriers"][carrier]:
                 raise FileNotFoundError(f"The file attributes.json does not exist for the carrier {carrier}")
 
