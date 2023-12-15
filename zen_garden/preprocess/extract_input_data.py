@@ -192,30 +192,21 @@ class DataInput:
         with open(file_path, "r") as file:
             data = json.load(file)
         attribute_dict = {}
-        for item in data:
-            for k, v in item.items():
+        if type(data) == list:
+            logging.warning("DeprecationWarning: The list format attributes.json is deprecated. Use a dict format instead.")
+            for item in data:
+                for k, v in item.items():
+                    if type(v) == list:
+                        attribute_dict[k] = {sk: sv for d in v for sk, sv in d.items()}
+                    else:
+                        attribute_dict[k] = v
+        else:
+            for k, v in data.items():
                 if type(v) == list:
                     attribute_dict[k] = {sk: sv for d in v for sk, sv in d.items()}
                 else:
                     attribute_dict[k] = v
         return attribute_dict
-
-    # def _load_attribute_file_csv(self,filename):
-    #     """
-    #     loads csv attributes file
-    #     :param filename:
-    #     :return: attributes
-    #     """
-    #     df_input = self.read_input_csv(filename)
-    #     df_input = df_input.set_index("index").squeeze(axis=1)
-    #     dict_input = df_input.T.to_dict()
-    #     attributes_dict = {}
-    #     for k, v in dict_input.items():
-    #         attributes_dict[k.replace("_default", "")] = {
-    #             "default_value": v["value"],
-    #             "unit": v["unit"]
-    #         }
-    #     return attributes_dict
 
     def extract_attribute(self, attribute_name, return_unit=False,subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
