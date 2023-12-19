@@ -2,13 +2,13 @@
   {
     "capacity_addition_min": {
       "default_value": 0.0,
-      "unit": "kton"
+      "unit": "kilotons/hour"
     }
   },
   {
     "capacity_addition_max": {
       "default_value": "inf",
-      "unit": "kton"
+      "unit": "kilotons/hour"
     }
   },
   {
@@ -32,19 +32,19 @@
   {
     "opex_specific_variable": {
       "default_value": 0.0,
-      "unit": "Euro/ktons"
+      "unit": "Euro/kilotons"
     }
   },
   {
     "opex_specific_fixed": {
       "default_value": 0.0,
-      "unit": "Euro/ktons"
+      "unit": "Euro/kilotons*hour"
     }
   },
   {
     "capex_specific": {
       "default_value": 1000.0,
-      "unit": "Euro/ktons"
+      "unit": "Euro/kilotons*hour"
     }
   },
   {
@@ -73,7 +73,7 @@
       {
         "electricity": {
           "default_value": 11.25,
-          "unit": "GWh/ktons"
+          "unit": "GWh/kilotons"
         }
       }
     ]
@@ -81,19 +81,19 @@
   {
     "capacity_limit": {
       "default_value": "inf",
-      "unit": "ktons"
+      "unit": "kilotons/hour"
     }
   },
   {
     "capacity_existing": {
       "default_value": 0.0,
-      "unit": "kton"
+      "unit": "kilotons/hour"
     }
   },
   {
     "capacity_investment_existing": {
       "default_value": 0.0,
-      "unit": "ktons"
+      "unit": "kilotons/hour"
     }
   },
   {
@@ -105,7 +105,7 @@
   {
     "carbon_intensity": {
       "default_value": 0.0,
-      "unit": "1"
+      "unit": "kilotons/kilotons"
     }
   },
   {
@@ -117,13 +117,13 @@
   {
     "capacity_limit_country": {
       "default_value": "inf",
-      "unit": "ktons"
+      "unit": "kilotons/hour"
     }
   },
   {
     "capacity_addition_unbounded": {
       "default_value": 0.0,
-      "unit": "1"
+      "unit": "kilotons/hour"
     }
   },
   {
@@ -143,7 +143,7 @@
   {
     "retrofit_flow_coupling_factor": {
       "default_value": 0.18,
-      "unit": "kton/GWh"
+      "unit": "kilotons/GWh"
     }
   }
 ]

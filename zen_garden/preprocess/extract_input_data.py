@@ -46,11 +46,12 @@ class DataInput:
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
 
-    def extract_input_data(self, file_name, index_sets, unit_category, time_steps=None,subelement=None):
+    def extract_input_data(self, file_name, index_sets, unit_category, time_steps=None, subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param unit_category: dict defining the dimensions of the parameter's unit
         :param time_steps: string specifying time_steps
         :param subelement: string specifying dependent element
         :return: dictionary with attribute values """
@@ -62,7 +63,7 @@ class DataInput:
         # if time steps are the yearly base time steps
         elif time_steps == "set_base_time_steps_yearly":
             yearly_variation = True
-            self.extract_yearly_variation(file_name, index_sets, unit_category)
+            self.extract_yearly_variation(file_name, index_sets)
 
         # if existing capacities and existing capacities not used
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
@@ -167,7 +168,7 @@ class DataInput:
         else:
             return None
 
-    def load_attribute_file(self,filename="attributes"):
+    def load_attribute_file(self, filename="attributes"):
         """
         loads attribute file. Either as csv (old version) or json (new version)
         :param filename: name of attributes file, default is 'attributes'
@@ -182,7 +183,7 @@ class DataInput:
             raise FileNotFoundError(f"Attributes file does not exist for {self.element.name}")
         return attribute_dict
 
-    def _load_attribute_file_json(self,filename):
+    def _load_attribute_file_json(self, filename):
         """
         loads json attributes file
         :param filename:
@@ -222,6 +223,7 @@ class DataInput:
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param attribute_name: name of selected attribute
+        :param unit_category: dict defining the dimensions of the parameter's unit
         :param return_unit: only returns unit
         :param subelement: dependent element for which data is extracted
         :return: attribute value and multiplier
@@ -246,12 +248,16 @@ class DataInput:
             return attribute_value
         if attribute_value is not None:
             multiplier, attribute_unit_in_base_units = self.unit_handling.convert_unit_into_base_units(attribute_unit, get_multiplier=True, attribute_name=attribute_name, path=self.folder_path)
-            # don't try to save input-/output carrier if they don't exist for a conversion technology
-            if not (pd.isna(attribute_value) and attribute_name in ["input_carrier", "output_carrier"]):
-                self.element.units[attribute_name] = unit_category, attribute_unit_in_base_units
             # don't convert unit of conversion factor to base units since e.g. kWh/kWh would become 1 (however, conversion factors' unit consistency must be checked with the corresponding carriers)
-            if attribute_name == "conversion_factor_default":
-                self.element.units[attribute_name] = unit_category, attribute_unit
+            if attribute_name == "conversion_factor":
+                if attribute_name not in self.element.units:
+                    self.element.units[attribute_name] = {}
+                self.element.units[attribute_name][subelement] = {"unit_category": unit_category, "unit": attribute_unit}
+            elif attribute_name == "retrofit_flow_coupling_factor":
+                self.element.units[attribute_name] = {str(self.element.reference_carrier[0]): {"unit_category": unit_category, "unit": attribute_unit}}
+            # don't try to save input-/output carrier if they don't exist for a conversion technology
+            elif not (pd.isna(attribute_value) and attribute_name in ["input_carrier", "output_carrier"]):
+                self.element.units[attribute_name] = {"unit_category": unit_category, "unit_in_base_units": attribute_unit_in_base_units}
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -289,7 +295,7 @@ class DataInput:
             attribute_unit = None
         return attribute_value,attribute_unit
 
-    def extract_yearly_variation(self, file_name, index_sets, unit_category):
+    def extract_yearly_variation(self, file_name, index_sets):
         """ reads the yearly variation of a time dependent quantity
 
         :param file_name: name of selected file.
@@ -309,7 +315,7 @@ class DataInput:
             logging.info(f"{f_name} is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_csv(file_name)
         if df_input is not None:
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, file_name=file_name, manual_default_value=1)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category=None, file_name=file_name, manual_default_value=1)
             # set yearly variation attribute to df_output
             name_yearly_variation = file_name
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps="set_time_steps_yearly")
@@ -538,6 +544,11 @@ class DataInput:
             string_row = df_input.applymap(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
             if string_row.any():
                 unit_row = df_input.loc[string_row]
+                #save non-linear capex units for consistency checks
+                if file_type == "nonlinear_":
+                    self.element.units_nonlinear_capex_files = {"nonlinear": unit_row}
+                elif file_type == "breakpoints_pwa_":
+                    self.element.units_nonlinear_capex_files["breakpoints"] = unit_row
                 df_input = df_input.loc[~string_row]
                 if isinstance(unit_row, pd.DataFrame):
                     unit_row = unit_row.squeeze()
@@ -549,11 +560,12 @@ class DataInput:
                 has_unit = True
         return df_input, has_unit
 
-    def create_default_output(self, index_sets, unit_category, file_name=None, time_steps=None, manual_default_value=None,subelement=None):
+    def create_default_output(self, index_sets, unit_category, file_name=None, time_steps=None, manual_default_value=None, subelement=None):
         """ creates default output dataframe
 
-        :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param unit_category: dict defining the dimensions of the parameter's unit
+        :param file_name: name of selected file.
         :param time_steps: specific time_steps of subelement
         :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv
         :param subelement: dependent element for which data is extracted
@@ -588,17 +600,17 @@ class DataInput:
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit
-        self.save_unit_of_attribute(default_name, unit_category, subelement)
+        self.save_unit_of_attribute(default_name, subelement)
         return df_output, default_value, index_name_list
 
-    def save_unit_of_attribute(self, attribute_name, unit_category, subelement=None):
+    def save_unit_of_attribute(self, attribute_name, subelement=None):
         """ saves the unit of an attribute, converted to the base unit
         :param attribute_name: name of selected attribute
         :param subelement: dependent element for which data is extracted
         """
         # if numerics analyzed
         if self.solver["analyze_numerics"] and attribute_name is not None:
-            input_unit = self.extract_attribute(attribute_name, unit_category, subelement=subelement, return_unit=True)
+            input_unit = self.extract_attribute(attribute_name, unit_category=None, subelement=subelement, return_unit=True)
             if subelement is not None:
                 attribute_name = attribute_name + "_" + subelement
             self.unit_handling.set_base_unit_combination(input_unit=input_unit, attribute=(self.element.name, attribute_name))

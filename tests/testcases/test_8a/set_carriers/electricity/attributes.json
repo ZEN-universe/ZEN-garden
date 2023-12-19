@@ -26,13 +26,13 @@
   {
     "availability_import_yearly": {
       "default_value": "inf",
-      "unit": "GW"
+      "unit": "GWh"
     }
   },
   {
     "availability_export_yearly": {
       "default_value": "inf",
-      "unit": "GW"
+      "unit": "GWh"
     }
   },
   {

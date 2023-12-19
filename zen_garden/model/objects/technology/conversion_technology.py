@@ -39,8 +39,6 @@ class ConversionTechnology(Technology):
         super().__init__(tech, optimization_setup)
         # store carriers of conversion technology
         self.store_carriers()
-        #variable to save conversion factor units from (nonlinear-)conversion_factor csv file for unit consistency checks
-        self.units_conversion_factor_files = None
 
     def store_carriers(self):
         """ retrieves and stores information on reference, input and output carriers """
@@ -85,7 +83,7 @@ class ConversionTechnology(Technology):
             conversion_factor_levels = [cf_dict.index.names[-1]] + cf_dict.index.names[:-1]
             cf_dict = cf_dict.reorder_levels(conversion_factor_levels)
             # extract yearly variation
-            self.data_input.extract_yearly_variation("conversion_factor", index_sets, unit_category=unit_category)
+            self.data_input.extract_yearly_variation("conversion_factor", index_sets)
             self.raw_time_series["conversion_factor"] = cf_dict
 
     def convert_to_fraction_of_capex(self):
