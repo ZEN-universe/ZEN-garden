@@ -192,34 +192,24 @@ class DataInput:
         file_path = self.folder_path / f"{filename}.json"
         with open(file_path, "r") as file:
             data = json.load(file)
-        # attribute_dict = {k: v for item in data for k, v in item.items()}
         attribute_dict = {}
-        for item in data:
-            for k, v in item.items():
+        if type(data) == list:
+            logging.warning("DeprecationWarning: The list format attributes.json is deprecated. Use a dict format instead.")
+            for item in data:
+                for k, v in item.items():
+                    if type(v) == list:
+                        attribute_dict[k] = {sk: sv for d in v for sk, sv in d.items()}
+                    else:
+                        attribute_dict[k] = v
+        else:
+            for k, v in data.items():
                 if type(v) == list:
                     attribute_dict[k] = {sk: sv for d in v for sk, sv in d.items()}
                 else:
                     attribute_dict[k] = v
         return attribute_dict
 
-    # def _load_attribute_file_csv(self,filename):
-    #     """
-    #     loads csv attributes file
-    #     :param filename:
-    #     :return: attributes
-    #     """
-    #     df_input = self.read_input_csv(filename)
-    #     df_input = df_input.set_index("index").squeeze(axis=1)
-    #     dict_input = df_input.T.to_dict()
-    #     attributes_dict = {}
-    #     for k, v in dict_input.items():
-    #         attributes_dict[k.replace("_default", "")] = {
-    #             "default_value": v["value"],
-    #             "unit": v["unit"]
-    #         }
-    #     return attributes_dict
-
-    def extract_attribute(self, attribute_name, unit_category, return_unit=False, subelement=None):
+    def extract_attribute(self, attribute_name, unit_category, return_unit=False,subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param attribute_name: name of selected attribute
@@ -367,6 +357,8 @@ class DataInput:
         assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier", "retrofit_reference_carrier"], "carrier type must be either input_carrier, output_carrier,retrofit_reference_carrier, or reference_carrier"
         carrier_list = self.extract_attribute(carrier_type, unit_category=None)
         assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"Reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
+        if carrier_list == [""]:
+            carrier_list = []
         return carrier_list
 
     def extract_technologies(self, technology_type):
