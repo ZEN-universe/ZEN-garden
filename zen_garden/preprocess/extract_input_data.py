@@ -193,7 +193,7 @@ class DataInput:
             data = json.load(file)
         attribute_dict = {}
         if type(data) == list:
-            logging.warning("DeprecationWarning: The list format attributes.json is deprecated. Use a dict format instead.")
+            logging.warning("DeprecationWarning: The list format in attributes.json is deprecated. Use a dict format instead.")
             for item in data:
                 for k, v in item.items():
                     if type(v) == list:
