@@ -65,7 +65,7 @@ class Technology(Element):
         self.raw_time_series["opex_specific_variable"] = self.data_input.extract_input_data("opex_specific_variable", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly")
         # non-time series input data
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location])
+        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
         self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[set_location])
         # extract existing capacity
         self.set_technologies_existing = self.data_input.extract_set_technologies_existing()
@@ -380,7 +380,7 @@ class Technology(Element):
             doc="Parameter which specifies the maximum diffusion rate which is the maximum increase in capacity between investment steps")
         # capacity_limit of technologies
         optimization_setup.parameters.add_parameter(name="capacity_limit",
-            data=optimization_setup.initialize_component(cls, "capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location"], capacity_types=True),
+            data=optimization_setup.initialize_component(cls, "capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], capacity_types=True),
             doc='Parameter which specifies the capacity limit of technologies')
         # minimum load relative to capacity
         optimization_setup.parameters.add_parameter(name="min_load",
@@ -444,7 +444,7 @@ class Technology(Element):
                         capacities_existing += capacity_existing[tech, capacity_type, loc, id_technology_existing]
 
                 capacity_addition_max = len(sets["set_time_steps_yearly"]) * capacity_addition_max[tech, capacity_type]
-                max_capacity_limit = capacity_limit[tech, capacity_type, loc]
+                max_capacity_limit = capacity_limit[tech, capacity_type, loc, time]
                 bound_capacity = min(capacity_addition_max + capacities_existing, max_capacity_limit + capacities_existing)
                 return 0, bound_capacity
             else:
@@ -779,7 +779,7 @@ class TechnologyRules(GenericRule):
         """limited capacity_limit of technology
 
         .. math::
-            \mathrm{if\ existing\ capacities\ < capacity\ limit}\ s^\mathrm{max}_{h,p} \geq S_{h,p,y}
+            \mathrm{if\ existing\ capacities\ < capacity\ limit}\ s^\mathrm{max}_{h,p,y} \geq S_{h,p,y}
         .. math::
             \mathrm{else}\ \Delta S_{h,p,y} = 0
 
@@ -1007,17 +1007,17 @@ class TechnologyRules(GenericRule):
         # we vectorize over locations
         constraints = []
         for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
-
-            ### auxiliary calculations
-            # mask for the capacity types that are not considered
-            capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
-            mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
-            mask.loc[capacity_types] = 1
-
-            interval_between_years = self.system["interval_between_years"]
-            knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
-            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            # skip if max diffusion rate = inf
             if self.parameters.max_diffusion_rate.loc[tech, time] != np.inf:
+                ### auxiliary calculations
+                # mask for the capacity types that are not considered
+                capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
+                mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
+                mask.loc[capacity_types] = 1
+
+                interval_between_years = self.system["interval_between_years"]
+                knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
+                reference_carrier = self.sets["set_reference_carriers"][tech][0]
                 if tech in self.sets["set_transport_technologies"]:
                     set_locations = self.sets["set_edges"]
                     set_technology = self.sets["set_transport_technologies"]
@@ -1103,18 +1103,18 @@ class TechnologyRules(GenericRule):
         # we vectorize over locations
         constraints = []
         for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
-
-            ### auxiliary calculations
-            # mask for the capacity types that are not considered
-            capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
-            mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
-            mask.loc[capacity_types] = 1
-
-            interval_between_years = self.system["interval_between_years"]
-            knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
-
-            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            # skip if max diffusion rate = inf
             if self.parameters.max_diffusion_rate.loc[tech, time] != np.inf:
+                ### auxiliary calculations
+                # mask for the capacity types that are not considered
+                capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
+                mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
+                mask.loc[capacity_types] = 1
+
+                interval_between_years = self.system["interval_between_years"]
+                knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
+
+                reference_carrier = self.sets["set_reference_carriers"][tech][0]
                 if tech in self.sets["set_transport_technologies"]:
                     set_locations = self.sets["set_edges"]
                     set_technology = self.sets["set_transport_technologies"]

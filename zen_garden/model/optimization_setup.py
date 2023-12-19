@@ -625,20 +625,16 @@ class OptimizationSetup(object):
             else:
                 component_data = component.squeeze()
         else:
-            component_data, attribute_is_series = self.get_attribute_of_all_elements(calling_class, component_name, capacity_types=capacity_types, return_attribute_is_series=True)
-            index_list = []
-            if index_names:
-                custom_set, index_list = calling_class.create_custom_set(index_names, self)
-                if np.size(custom_set):
-                    if attribute_is_series:
-                        component_data = pd.concat(component_data, keys=component_data.keys())
-                    else:
-                        component_data = pd.Series(component_data)
-                    component_data = self.check_for_subindex(component_data, custom_set)
-            elif attribute_is_series:
-                component_data = pd.concat(component_data, keys=component_data.keys())
-            if not index_names:
-                logging.warning(f"Initializing a parameter ({component_name}) without the specifying the index names will be deprecated!")
+            if index_names is None:
+                raise ValueError(f"Index names for {component_name} not specified")
+            custom_set, index_list = calling_class.create_custom_set(index_names, self)
+            component_data, attribute_is_series = self.get_attribute_of_all_elements(calling_class, component_name, capacity_types=capacity_types, return_attribute_is_series=True,index_names=index_names)
+            if np.size(custom_set):
+                if attribute_is_series:
+                    component_data = pd.concat(component_data, keys=component_data.keys())
+                else:
+                    component_data = pd.Series(component_data)
+                component_data = self.check_for_subindex(component_data, custom_set)
         if isinstance(component_data,pd.Series) and not isinstance(component_data.index,pd.MultiIndex):
             component_data.index = pd.MultiIndex.from_product([component_data.index.to_list()])
         return component_data, index_list
