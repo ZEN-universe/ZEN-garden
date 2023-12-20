@@ -51,7 +51,7 @@ class RetrofittingTechnology(ConversionTechnology):
         # get retrofit base technology
         self.retrofit_base_technology = self.data_input.extract_technologies(technology_type="retrofit_base_technology")
         # get flow_coupling factor and capex
-        self.retrofit_flow_coupling_factor = self.data_input.extract_input_data("retrofit_flow_coupling_factor", index_sets=["set_nodes", "set_time_steps"]) #same indices as conversion factor?
+        self.retrofit_flow_coupling_factor = self.data_input.extract_input_data("retrofit_flow_coupling_factor", index_sets=["set_nodes", "set_time_steps"], unit_category={"energy_quantity": 0}) #same indices as conversion factor?
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod

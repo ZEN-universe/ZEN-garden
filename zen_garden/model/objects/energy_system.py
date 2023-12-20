@@ -63,6 +63,8 @@ class EnergySystem:
                                     energy_system=self, unit_handling=self.unit_handling)
         # initialize empty set_carriers list
         self.set_carriers = []
+        #dict to save the parameter units (and save them in the results later on)
+        self.units = {}
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -94,21 +96,21 @@ class EnergySystem:
         self.set_storage_technologies = self.system["set_storage_technologies"]
         self.set_retrofitting_technologies= self.system["set_retrofitting_technologies"]
         # discount rate
-        self.discount_rate = self.data_input.extract_input_data("discount_rate", index_sets=[])
+        self.discount_rate = self.data_input.extract_input_data("discount_rate", index_sets=[], unit_category={})
         # carbon emissions limit
-        self.carbon_emissions_annual_limit = self.data_input.extract_input_data("carbon_emissions_annual_limit", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+        self.carbon_emissions_annual_limit = self.data_input.extract_input_data("carbon_emissions_annual_limit", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"emissions": 1})
         _fraction_year = self.system["unaggregated_time_steps_per_year"] / self.system["total_hours_per_year"]
         self.carbon_emissions_annual_limit = self.carbon_emissions_annual_limit * _fraction_year  # reduce to fraction of year
-        self.carbon_emissions_budget = self.data_input.extract_input_data("carbon_emissions_budget", index_sets=[])
-        self.carbon_emissions_cumulative_existing = self.data_input.extract_input_data("carbon_emissions_cumulative_existing", index_sets=[])
+        self.carbon_emissions_budget = self.data_input.extract_input_data("carbon_emissions_budget", index_sets=[], unit_category={"emissions": 1})
+        self.carbon_emissions_cumulative_existing = self.data_input.extract_input_data("carbon_emissions_cumulative_existing", index_sets=[], unit_category={"emissions": 1})
         # price carbon emissions
-        self.price_carbon_emissions = self.data_input.extract_input_data("price_carbon_emissions", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-        self.price_carbon_emissions_budget_overshoot = self.data_input.extract_input_data("price_carbon_emissions_budget_overshoot", index_sets=[])
-        self.price_carbon_emissions_annual_overshoot = self.data_input.extract_input_data("price_carbon_emissions_annual_overshoot", index_sets=[])
+        self.price_carbon_emissions = self.data_input.extract_input_data("price_carbon_emissions", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "emissions": -1})
+        self.price_carbon_emissions_budget_overshoot = self.data_input.extract_input_data("price_carbon_emissions_budget_overshoot", index_sets=[], unit_category={"money": 1, "emissions": -1})
+        self.price_carbon_emissions_annual_overshoot = self.data_input.extract_input_data("price_carbon_emissions_annual_overshoot", index_sets=[], unit_category={"money": 1, "emissions": -1})
         # market share unbounded
-        self.market_share_unbounded = self.data_input.extract_input_data("market_share_unbounded", index_sets=[])
+        self.market_share_unbounded = self.data_input.extract_input_data("market_share_unbounded", index_sets=[], unit_category={})
         # knowledge_spillover_rate
-        self.knowledge_spillover_rate = self.data_input.extract_input_data("knowledge_spillover_rate", index_sets=[])
+        self.knowledge_spillover_rate = self.data_input.extract_input_data("knowledge_spillover_rate", index_sets=[], unit_category={})
 
     def calculate_edges_from_nodes(self):
         """ calculates set_nodes_on_edges from set_nodes

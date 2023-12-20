@@ -50,7 +50,7 @@
   },
   "opex_specific_fixed": {
     "default_value": 0.07,
-    "unit": "Euro/MWh"
+    "unit": "Euro/MW"
   },
   "max_diffusion_rate": {
     "default_value": "inf",
