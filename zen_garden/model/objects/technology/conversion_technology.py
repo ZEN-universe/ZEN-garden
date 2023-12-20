@@ -60,6 +60,7 @@ class ConversionTechnology(Technology):
         super().store_input_data()
         # get conversion efficiency and capex
         self.get_conversion_factor()
+        self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
         self.convert_to_fraction_of_capex()
 
     def get_conversion_factor(self):
@@ -72,9 +73,10 @@ class ConversionTechnology(Technology):
         else:
             index_sets = ["set_nodes", "set_time_steps"]
             time_steps = "set_base_time_steps_yearly"
+            unit_category = {"energy_quantity": 0}
             cf_dict = {}
             for carrier in dependent_carrier:
-                cf_dict[carrier] = self.data_input.extract_input_data("conversion_factor", index_sets=index_sets,time_steps=time_steps, subelement=carrier)
+                cf_dict[carrier] = self.data_input.extract_input_data("conversion_factor", index_sets=index_sets, unit_category=unit_category, time_steps=time_steps, subelement=carrier)
             cf_dict = pd.DataFrame.from_dict(cf_dict)
             cf_dict.columns.name = "carrier"
             cf_dict = cf_dict.stack()

@@ -46,11 +46,12 @@ class DataInput:
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
 
-    def extract_input_data(self, file_name, index_sets, time_steps=None,subelement=None):
+    def extract_input_data(self, file_name, index_sets, unit_category, time_steps=None, subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param unit_category: dict defining the dimensions of the parameter's unit
         :param time_steps: string specifying time_steps
         :param subelement: string specifying dependent element
         :return: dictionary with attribute values """
@@ -66,13 +67,13 @@ class DataInput:
 
         # if existing capacities and existing capacities not used
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
-            df_output, *_ = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=0)
+            df_output, *_ = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps, manual_default_value=0)
             return df_output
         # use distances computed with node coordinates as default values
         elif file_name == "distance":
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps, manual_default_value=self.energy_system.set_haversine_distances_edges)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps, manual_default_value=self.energy_system.set_haversine_distances_edges)
         else:
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, time_steps=time_steps,subelement=subelement)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps,subelement=subelement)
         # read input file
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
         df_input = self.read_input_csv(f_name)
@@ -167,7 +168,7 @@ class DataInput:
         else:
             return None
 
-    def load_attribute_file(self,filename="attributes"):
+    def load_attribute_file(self, filename="attributes"):
         """
         loads attribute file. Either as csv (old version) or json (new version)
         :param filename: name of attributes file, default is 'attributes'
@@ -182,7 +183,7 @@ class DataInput:
             raise FileNotFoundError(f"Attributes file does not exist for {self.element.name}")
         return attribute_dict
 
-    def _load_attribute_file_json(self,filename):
+    def _load_attribute_file_json(self, filename):
         """
         loads json attributes file
         :param filename:
@@ -193,7 +194,7 @@ class DataInput:
             data = json.load(file)
         attribute_dict = {}
         if type(data) == list:
-            logging.warning("DeprecationWarning: The list format in attributes.json is deprecated. Use a dict format instead.")
+            logging.warning("DeprecationWarning: The list format in attributes.json [{...}] is deprecated. Use a dict format instead {...}.")
             for item in data:
                 for k, v in item.items():
                     if type(v) == list:
@@ -208,10 +209,11 @@ class DataInput:
                     attribute_dict[k] = v
         return attribute_dict
 
-    def extract_attribute(self, attribute_name, return_unit=False,subelement=None):
+    def extract_attribute(self, attribute_name, unit_category, return_unit=False,subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :param attribute_name: name of selected attribute
+        :param unit_category: dict defining the dimensions of the parameter's unit
         :param return_unit: only returns unit
         :param subelement: dependent element for which data is extracted
         :return: attribute value and multiplier
@@ -235,7 +237,17 @@ class DataInput:
         if attribute_unit is None:
             return attribute_value
         if attribute_value is not None:
-            multiplier = self.unit_handling.get_unit_multiplier(attribute_unit, attribute_name, path=self.folder_path)
+            multiplier, attribute_unit_in_base_units = self.unit_handling.convert_unit_into_base_units(attribute_unit, get_multiplier=True, attribute_name=attribute_name, path=self.folder_path)
+            # don't convert unit of conversion factor to base units since e.g. kWh/kWh would become 1 (however, conversion factors' unit consistency must be checked with the corresponding carriers)
+            if attribute_name == "conversion_factor":
+                if attribute_name not in self.element.units:
+                    self.element.units[attribute_name] = {}
+                self.element.units[attribute_name][subelement] = {"unit_category": unit_category, "unit": attribute_unit}
+            elif attribute_name == "retrofit_flow_coupling_factor":
+                self.element.units[attribute_name] = {str(self.element.reference_carrier[0]): {"unit_category": unit_category, "unit": attribute_unit}}
+            # don't try to save input-/output carrier if they don't exist for a conversion technology
+            elif not (pd.isna(attribute_value) and attribute_name in ["input_carrier", "output_carrier"]):
+                self.element.units[attribute_name] = {"unit_category": unit_category, "unit_in_base_units": attribute_unit_in_base_units}
             try:
                 attribute = {"value": float(attribute_value) * multiplier * factor, "multiplier": multiplier}
                 return attribute
@@ -293,7 +305,7 @@ class DataInput:
             logging.info(f"{f_name} is missing from {self.folder_path}. {file_name} is used as input file")
             df_input = self.read_input_csv(file_name)
         if df_input is not None:
-            df_output, default_value, index_name_list = self.create_default_output(index_sets, file_name=file_name, manual_default_value=1)
+            df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category=None, file_name=file_name, manual_default_value=1)
             # set yearly variation attribute to df_output
             name_yearly_variation = file_name
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps="set_time_steps_yearly")
@@ -343,7 +355,7 @@ class DataInput:
 
         :return carrier_list: list with input, output or reference carriers of technology """
         assert carrier_type in ["input_carrier", "output_carrier", "reference_carrier", "retrofit_reference_carrier"], "carrier type must be either input_carrier, output_carrier,retrofit_reference_carrier, or reference_carrier"
-        carrier_list = self.extract_attribute(carrier_type)
+        carrier_list = self.extract_attribute(carrier_type, unit_category=None)
         assert carrier_type != "reference_carrier" or len(carrier_list) == 1, f"Reference_carrier must be a single carrier, but {carrier_list} are given for {self.element.name}"
         if carrier_list == [""]:
             carrier_list = []
@@ -354,7 +366,7 @@ class DataInput:
 
         :return carrier_list: list with input, output or reference carriers of technology """
         assert technology_type in ["retrofit_base_technology"], "technology type must be retrofit_base_technology"
-        technology_list = self.extract_attribute(technology_type)
+        technology_list = self.extract_attribute(technology_type, unit_category=None)
         if type(technology_list) == str:
             technology_list = technology_list.strip().split(" ")
         assert len(technology_list) == 1, f"retrofit base technology must be a single technology, but {technology_list} are given for {self.element.name}"
@@ -421,8 +433,9 @@ class DataInput:
         attribute_name = "capex_specific"
         index_sets = ["set_nodes", "set_time_steps_yearly"]
         time_steps = "set_time_steps_yearly"
+        unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
         # import all input data
-        default_value = self.extract_attribute(attribute_name)
+        default_value = self.extract_attribute(attribute_name, unit_category=unit_category)
         df_input_nonlinear,has_unit_nonlinear = self.read_pwa_capex_files(file_type="nonlinear_")
         df_input_breakpoints,has_unit_breakpoints = self.read_pwa_capex_files(file_type="breakpoints_pwa_")
         df_input_linear,has_unit_linear = self.read_pwa_capex_files()
@@ -469,7 +482,7 @@ class DataInput:
                         # model as linear function
                         slope_lin_reg = linear_regress_object.slope
                         linear_dict[value_variable] = \
-                            self.create_default_output(index_sets=index_sets, time_steps=time_steps,
+                            self.create_default_output(index_sets=index_sets, unit_category=unit_category, time_steps=time_steps,
                                                    manual_default_value=slope_lin_reg)[0]
                     else:
                         # model as pwa function
@@ -509,7 +522,7 @@ class DataInput:
             is_pwa = False
             linear_dict = {}
             linear_dict["capex"] = self.extract_input_data(attribute_name, index_sets=index_sets,
-                                                           time_steps=time_steps)
+                                                           time_steps=time_steps, unit_category=unit_category)
             return linear_dict, is_pwa
 
     def read_pwa_capex_files(self, file_type=str()):
@@ -523,6 +536,11 @@ class DataInput:
             string_row = df_input.applymap(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
             if string_row.any():
                 unit_row = df_input.loc[string_row]
+                #save non-linear capex units for consistency checks
+                if file_type == "nonlinear_":
+                    self.element.units_nonlinear_capex_files = {"nonlinear": unit_row}
+                elif file_type == "breakpoints_pwa_":
+                    self.element.units_nonlinear_capex_files["breakpoints"] = unit_row
                 df_input = df_input.loc[~string_row]
                 if isinstance(unit_row, pd.DataFrame):
                     unit_row = unit_row.squeeze()
@@ -534,11 +552,12 @@ class DataInput:
                 has_unit = True
         return df_input, has_unit
 
-    def create_default_output(self, index_sets, file_name=None, time_steps=None, manual_default_value=None,subelement=None):
+    def create_default_output(self, index_sets, unit_category, file_name=None, time_steps=None, manual_default_value=None, subelement=None):
         """ creates default output dataframe
 
-        :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
+        :param unit_category: dict defining the dimensions of the parameter's unit
+        :param file_name: name of selected file.
         :param time_steps: specific time_steps of subelement
         :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv
         :param subelement: dependent element for which data is extracted
@@ -553,14 +572,14 @@ class DataInput:
         # use distances computed with node coordinates as default values
         if file_name == "distance":
             default_name = file_name
-            default_value = self.extract_attribute(default_name)
+            default_value = self.extract_attribute(default_name, unit_category)
             default_value["value"] = manual_default_value
         elif manual_default_value:
             default_value = {"value": manual_default_value, "multiplier": 1}
             default_name = None
         else:
             default_name = file_name
-            default_value = self.extract_attribute(default_name,subelement=subelement)
+            default_value = self.extract_attribute(default_name, unit_category, subelement=subelement)
 
         # create output Series filled with default value
         if default_value is None:
@@ -573,17 +592,17 @@ class DataInput:
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
         # save unit of attribute of element converted to base unit
-        self.save_unit_of_attribute(default_name,subelement)
+        self.save_unit_of_attribute(default_name, subelement)
         return df_output, default_value, index_name_list
 
-    def save_unit_of_attribute(self, attribute_name,subelement=None):
+    def save_unit_of_attribute(self, attribute_name, subelement=None):
         """ saves the unit of an attribute, converted to the base unit
         :param attribute_name: name of selected attribute
         :param subelement: dependent element for which data is extracted
         """
         # if numerics analyzed
         if self.solver["analyze_numerics"] and attribute_name is not None:
-            input_unit = self.extract_attribute(attribute_name,subelement=subelement,return_unit=True)
+            input_unit = self.extract_attribute(attribute_name, unit_category=None, subelement=subelement, return_unit=True)
             if subelement is not None:
                 attribute_name = attribute_name + "_" + subelement
             self.unit_handling.set_base_unit_combination(input_unit=input_unit, attribute=(self.element.name, attribute_name))
