@@ -1,158 +1,33 @@
 21.12.2023
 
 # How to ZEN-garden
-
-Table of Contents
-
-[1. Setup 2](#_Toc149296887)
-
-[1.1. Needed Installations 2](#_Toc149296888)
-
-[1.2. Steps 2](#_Toc149296889)
-
-[2. ZEN-garden configurations 4](#_Toc149296890)
-
-[2.1. Run ZEN-garden module 4](#_Toc149296891)
-
-[2.1.1. Run ZEN-garden using the "Run Module" configuration 4](#_Toc149296892)
-
-[2.1.2. Run ZEN-garden using a terminal 5](#_Toc149296893)
-
-[2.1.3. Run ZEN-garden on EULER 6](#_Toc149296894)
-
-[2.2. Read Results 6](#_Toc149296895)
-
-[2.2.1. How to plot your results 6](#_Toc149296896)
-
-[2.2.2. Accessing your results data 6](#_Toc149296897)
-
-[2.2.2.1. self.get\_df() 7](#_Toc149296898)
-
-[2.2.2.2. self.get\_full\_ts() 7](#_Toc149296899)
-
-[2.2.2.3. self.get\_total() 8](#_Toc149296900)
-
-[2.2.3. Compare two datasets 8](#_Toc149296901)
-
-[2.3. Run Tests 9](#_Toc149296902)
-
-[3. Parameters, variables, and constraints 9](#_Toc149296903)
-
-[4. Input data structure 10](#_Toc149296904)
-
-[4.1. system.py 10](#_Toc149296905)
-
-[4.2. set\_carriers 11](#_Toc149296906)
-
-[4.3. set\_conversion\_technologies 12](#_Toc149296907)
-
-[4.4. set\_transport\_technologies 12](#_Toc149296908)
-
-[4.5. set\_storage\_technologies 12](#_Toc149296909)
-
-[4.6. system\_specification 12](#_Toc149296910)
-
-[4.7. Spreadsheet structure 13](#_Toc149296911)
-
-[4.8. Additional methods to enter input data 14](#_Toc149296912)
-
-[4.8.1. PWA 14](#_Toc149296913)
-
-[4.8.2. Define technology with multiple input/output carriers 14](#_Toc149296914)
-
-[4.8.3. Define input data with yearly variations 15](#_Toc149296915)
-
-[5. Framework structure 17](#_Toc149296916)
-
-[5.1. Preprocess 17](#_Toc149296917)
-
-[5.1.1. Functions 17](#_Toc149296918)
-
-[extract\_input\_data.py 17](#_Toc149296919)
-
-[time\_series\_aggregation.py 17](#_Toc149296920)
-
-[unit\_handling.py 17](#_Toc149296921)
-
-[5.2. Model 18](#_Toc149296922)
-
-[default\_config.py 18](#_Toc149296923)
-
-[optimization\_setup.py 18](#_Toc149296924)
-
-[5.2.1. Objects 19](#_Toc149296925)
-
-[component.py 19](#_Toc149296926)
-
-[element.py 19](#_Toc149296927)
-
-[energy\_system.py 19](#_Toc149296928)
-
-[time\_steps.py 19](#_Toc149296929)
-
-[5.2.1.1. Carrier 19](#_Toc149296930)
-
-[carrier.py 19](#_Toc149296931)
-
-[5.2.1.2. Technology 19](#_Toc149296932)
-
-[technology.py 19](#_Toc149296933)
-
-[conversion\_technology.py 19](#_Toc149296934)
-
-[storage\_technology.py 19](#_Toc149296935)
-
-[transport\_technology.py 19](#_Toc149296936)
-
-[5.3. Postprocess 19](#_Toc149296937)
-
-[5.3.1. postprocess.py 19](#_Toc149296938)
-
-[5.3.2. results.py 20](#_Toc149296939)
-
-[6. Appendices 21](#_Toc149296940)
-
-[6.1. Config Settings 21](#_Toc149296941)
-
-[System 21](#_Toc149296942)
-
-[Analysis 22](#_Toc149296943)
-
-[Solver 22](#_Toc149296944)
-
-[6.2. Parameter, Variable and Constraint Overview 24](#_Toc149296945)
-
-1.
-# Setup
-
-  1.
-## Needed Installations
+## Setup
+### Needed Installations
 
 - PyCharm (IDE, you can use other IDEs as well, but most users of ZEN-garden use PyCharm) [Install PyCharm](https://www.jetbrains.com/pycharm/download/)
 - Anaconda (Needed for ZEN-garden environment creation) [Install Anaconda](https://docs.anaconda.com/anaconda/install/)
 - Gurobi (Optimization Software) [Install Gurobi](https://www.gurobi.com/downloads/)
 - (GitHub Desktop) [Install GitHub Desktop](https://desktop.github.com/)
 
-  1.
-## Steps
+### Steps
 
 1. GitHub registration: If you don't have a GitHub account yet register at: [GitHub](https://github.com/)
 2. Join ZEN-garden repository: If you didn't receive a GitHub invitation, ask your supervisor to invite you to the repository (write them your GitHub email address) [ZEN-Garden Repository](https://github.com/RRE-ETH/ZEN-garden)
 3. Create your own branch: In the ZEN-garden repository click on "branches" and then "new branch", choose "main" as the branch source and "development\_ZENx\_NS" (NS= name, surname) as its name
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/77b44be5-5b11-4c6d-a431-e1a41cb99a14)
 
-![](RackMultipart20231221-1-jtfek3_html_77a30401cc05e06.png)
 
-![](RackMultipart20231221-1-jtfek3_html_d8404e0e17f498.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/59a8ed6f-e97b-4d6e-8826-dc01787216e5)
 
-1. Cloning the repository: To create a local copy of your branch on your computer, you must clone the remote repository from GitHub. It is important that you clone the repository to a path which doesn't contain any spaces! (Don't clone to e.g. ./Users/Name Surname, otherwise you'll have issues while executing the framework)To clone your branch there's a more beginner-friendly way using GitHub Desktop and a more advanced way using Git Bash for example.
+
+4. Cloning the repository: To create a local copy of your branch on your computer, you must clone the remote repository from GitHub. **It is important that you clone the repository to a path which doesn't contain any spaces!** (Don't clone to e.g. ./Users/Name Surname, otherwise you'll have issues while executing the framework). To clone your branch there's a more beginner-friendly way using GitHub Desktop and a more advanced way using Git Bash for example.
 GitHub Desktop: [Clone Reposiotry with GitHub Desktop](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-a-repository-from-github-to-github-desktop)
-
 To clone the repositry by using Git Bash, two methods are available: [HTTPS](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui) or [SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
 
-1. ZEN-garden environment creation: Open PyCharm to view the _zen\_garden\_env.yml_ file (contained in the ZEN-garden folder), copy "_conda env create -f zen\_garden\_env.yml"_ and run the command in your Anaconda prompt (takes several minutes), if the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
-2. Gurobi license: To use all of Gurobi's functionalities, you need to obtain a free academic license: [Get your Gurobi license](https://www.gurobi.com/features/academic-named-user-license/)
+5. ZEN-garden environment creation: Open PyCharm to view the _zen\_garden\_env.yml_ file (contained in the ZEN-garden folder), copy "_conda env create -f zen\_garden\_env.yml"_ and run the command in your Anaconda prompt (takes several minutes), if the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
+6. Gurobi license: To use all of Gurobi's functionalities, you need to obtain a free academic license: [Get your Gurobi license](https://www.gurobi.com/features/academic-named-user-license/)
  Following these instructions, you'll get a Gurobi license key which you have to run in your command prompt to activate the license for your computer
-3. Create PyCharm Configurations: To execute ZEN-garden's different functionalities configurations are used. To add them, follow the steps at "PyCharm Setup": [Create Configurations](https://github.com/RRE-ETH/ZEN-garden/discussions/183)
+7. Create PyCharm Configurations: To execute ZEN-garden's different functionalities configurations are used. To add them, follow the steps at "PyCharm Setup": [Create Configurations](https://github.com/RRE-ETH/ZEN-garden/discussions/183)
 
 1.
 # ZEN-garden configurations
