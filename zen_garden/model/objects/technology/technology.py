@@ -64,7 +64,7 @@ class Technology(Element):
         self.raw_time_series["max_load"] = self.data_input.extract_input_data("max_load", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={})
         self.raw_time_series["opex_specific_variable"] = self.data_input.extract_input_data("opex_specific_variable", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
         # non-time series input data
-        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location], unit_category={"energy_quantity": 1, "time": -1})
+        self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1, "time": -1})
         self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[set_location], unit_category={"emissions": 1, "energy_quantity": -1})
         # extract existing capacity
         self.set_technologies_existing = self.data_input.extract_set_technologies_existing()
@@ -167,25 +167,19 @@ class Technology(Element):
 
     ### --- classmethods
     @classmethod
-    def get_lifetime_range(cls, optimization_setup, tech, time, time_step_type: str = None):
-        """ returns lifetime range of technology. If time_step_type, then converts the yearly time step 'time' to time_step_type
+    def get_lifetime_range(cls, optimization_setup, tech, year):
+        """ returns lifetime range of technology.
 
         :param optimization_setup: OptimizationSetup the technology is part of
         :param tech: name of the technology
-        :param time: operational time step
-        :param time_step_type: type of time step
+        :param year: yearly time step
         :return: lifetime range of technology
         """
-        if time_step_type:
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(time)
-        else:
-            time_step_year = time
-        t_start, t_end = cls.get_start_end_time_of_period(optimization_setup, tech, time_step_year)
-
+        t_start, t_end = cls.get_start_end_time_of_period(optimization_setup, tech, year)
         return range(t_start, t_end + 1)
 
     @classmethod
-    def get_available_existing_quantity(cls, optimization_setup, tech, capacity_type, loc, time, type_existing_quantity, time_step_type: str = None):
+    def get_available_existing_quantity(cls, optimization_setup, tech, capacity_type, loc, year, type_existing_quantity):
         """ returns existing quantity of 'tech', that is still available at invest time step 'time'.
         Either capacity or capex.
 
@@ -193,17 +187,11 @@ class Technology(Element):
         :param tech: name of technology
         :param capacity_type: type of capacity
         :param loc: location (node or edge) of existing capacity
-        :param time: current time
+        :param year: current yearly time step
         :param type_existing_quantity: capex or capacity
-        :param time_step_type: type of time steps
         :return existing_quantity: existing capacity or capex of existing capacity
         """
         params = optimization_setup.parameters.dict_parameters
-        if time_step_type:
-            time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(time)
-        else:
-            time_step_year = time
-
         sets = optimization_setup.sets
         existing_quantity = 0
         if type_existing_quantity == "capacity":
@@ -214,11 +202,36 @@ class Technology(Element):
             raise KeyError(f"Wrong type of existing quantity {type_existing_quantity}")
 
         for id_capacity_existing in sets["set_technologies_existing"][tech]:
-            t_start = cls.get_start_end_time_of_period(optimization_setup, tech, time_step_year, id_capacity_existing=id_capacity_existing, loc=loc)
+            is_existing = cls.get_if_capacity_still_existing(optimization_setup, tech, year, loc=loc, id_capacity_existing=id_capacity_existing)
             # if still available at first base time step, add to list
-            if t_start == sets["set_base_time_steps"][0] or t_start == time_step_year:
+            if is_existing:
                 existing_quantity += existing_variable[tech, capacity_type, loc, id_capacity_existing]
         return existing_quantity
+
+    @classmethod
+    def get_if_capacity_still_existing(cls,optimization_setup, tech, year,loc,id_capacity_existing):
+        """
+        returns boolean if capacity still exists at yearly time step 'year'.
+        :param optimization_setup: The optimization setup to add everything
+        :param tech: name of technology
+        :param year: yearly time step
+        :param loc: location
+        :param id_capacity_existing: id of existing capacity
+        :return: boolean if still existing
+        """
+        # get model and system
+        params = optimization_setup.parameters.dict_parameters
+        system = optimization_setup.system
+        # get lifetime of existing capacity
+        lifetime_existing = params.lifetime_existing[tech, loc, id_capacity_existing]
+        lifetime = params.lifetime[tech]
+        delta_lifetime = lifetime_existing - lifetime
+        if delta_lifetime >= 0:
+            cutoff_year = year*system["interval_between_years"]
+            return cutoff_year >= delta_lifetime
+        else:
+            cutoff_year = (year+1)*system["interval_between_years"]
+            return cutoff_year <= lifetime_existing
 
     @classmethod
     def get_start_end_time_of_period(cls, optimization_setup, tech, time_step_year, period_type="lifetime", clip_to_first_time_step=True, id_capacity_existing=None, loc=None):
@@ -233,7 +246,6 @@ class Technology(Element):
         :param loc: location (node or edge) of existing capacity
         :return began_in_past: boolean if the period began before the first optimization step
         :return start_time_step_year,end_time_step_year: start and end of period in invest time step domain"""
-
         # get model and system
         energy_system = optimization_setup.energy_system
         params = optimization_setup.parameters.dict_parameters
@@ -259,6 +271,7 @@ class Technology(Element):
         if id_capacity_existing is None:
             period_yearly = period_time[tech]
         else:
+            raise NotImplementedError("get_start_end_time_of_period not yet implemented for id_capacity_existing")
             delta_lifetime = params.lifetime_existing[tech, loc, id_capacity_existing] - period_time[tech]
             if delta_lifetime >= 0:
                 if delta_lifetime <= (time_step_year - sets["set_time_steps_yearly"][0]) * system["interval_between_years"]:
@@ -287,6 +300,7 @@ class Technology(Element):
         start_base_time_step = min(start_base_time_step, sets["set_base_time_steps"][-1])
         # if period of existing capacity, then only return the start base time step
         if id_capacity_existing is not None:
+            raise NotImplementedError("get_start_end_time_of_period not yet implemented for id_capacity_existing")
             return start_base_time_step
         start_time_step_year = energy_system.time_steps.encode_time_step(start_base_time_step, time_step_type="yearly")[0]
 
@@ -379,7 +393,7 @@ class Technology(Element):
             doc="Parameter which specifies the maximum diffusion rate which is the maximum increase in capacity between investment steps")
         # capacity_limit of technologies
         optimization_setup.parameters.add_parameter(name="capacity_limit",
-            data=optimization_setup.initialize_component(cls, "capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location"], capacity_types=True),
+            data=optimization_setup.initialize_component(cls, "capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], capacity_types=True),
             doc='Parameter which specifies the capacity limit of technologies')
         # minimum load relative to capacity
         optimization_setup.parameters.add_parameter(name="min_load",
@@ -396,7 +410,7 @@ class Technology(Element):
         # Helper params
         t0 = time.perf_counter()
         optimization_setup.parameters.add_helper_parameter(name="existing_capacities", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="capacity"))
-        optimization_setup.parameters.add_helper_parameter(name="existing_capex", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="cost_capex", time_step_type="yearly"))
+        optimization_setup.parameters.add_helper_parameter(name="existing_capex", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="cost_capex"))
         t1 = time.perf_counter()
         logging.debug(f"Helper Params took {t1 - t0:.4f} seconds")
 
@@ -407,7 +421,6 @@ class Technology(Element):
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <Technology>
-
         :param optimization_setup: The OptimizationSetup """
 
         model = optimization_setup.model
@@ -443,7 +456,7 @@ class Technology(Element):
                         capacities_existing += capacity_existing[tech, capacity_type, loc, id_technology_existing]
 
                 capacity_addition_max = len(sets["set_time_steps_yearly"]) * capacity_addition_max[tech, capacity_type]
-                max_capacity_limit = capacity_limit[tech, capacity_type, loc]
+                max_capacity_limit = capacity_limit[tech, capacity_type, loc, time]
                 bound_capacity = min(capacity_addition_max + capacities_existing, max_capacity_limit + capacities_existing)
                 return 0, bound_capacity
             else:
@@ -638,9 +651,11 @@ class Technology(Element):
         return mask
 
     @classmethod
-    def get_existing_quantity(cls, optimization_setup, type_existing_quantity, time_step_type=None):
+    def get_existing_quantity(cls, optimization_setup, type_existing_quantity):
         """
         get existing capacities of all technologies
+        :param optimization_setup: The OptimizationSetup the element is part of
+        :param type_existing_quantity: capacity or cost_capex
         :return: The existing capacities
         """
 
@@ -652,8 +667,7 @@ class Technology(Element):
         values = np.zeros(len(index_values))
         for i, (tech, capacity_type, loc, time) in enumerate(index_values):
             values[i] = Technology.get_available_existing_quantity(optimization_setup, tech, capacity_type, loc, time,
-                                                                   type_existing_quantity=type_existing_quantity,
-                                                                   time_step_type=time_step_type)
+                                                                   type_existing_quantity=type_existing_quantity)
         existing_quantities.loc[index_arrs] = values
         return existing_quantities
 
@@ -778,7 +792,7 @@ class TechnologyRules(GenericRule):
         """limited capacity_limit of technology
 
         .. math::
-            \mathrm{if\ existing\ capacities\ < capacity\ limit}\ s^\mathrm{max}_{h,p} \geq S_{h,p,y}
+            \mathrm{if\ existing\ capacities\ < capacity\ limit}\ s^\mathrm{max}_{h,p,y} \geq S_{h,p,y}
         .. math::
             \mathrm{else}\ \Delta S_{h,p,y} = 0
 
@@ -964,17 +978,17 @@ class TechnologyRules(GenericRule):
         # we loop over technologies and time steps, because we need to cycle over the lifetime range of the technology
         # which requires the technology and the year, we vectorize over capacity types and locations
         constraints = []
-        for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
+        for tech, year in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
 
             ### auxiliary calculations
             term_neg_previous_capacity_additions = []
-            for previous_time in Technology.get_lifetime_range(self.optimization_setup, tech, time):
-                term_neg_previous_capacity_additions.append(-1.0 * self.variables["capacity_addition"].loc[tech, :, :, previous_time])
+            for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year):
+                term_neg_previous_capacity_additions.append(-1.0 * self.variables["capacity_addition"].loc[tech, :, :, previous_year])
 
             ### formulate constraint
-            lhs = lp_sum([1.0 * self.variables["capacity"].loc[tech, :, :, time],
+            lhs = lp_sum([1.0 * self.variables["capacity"].loc[tech, :, :, year],
                           *term_neg_previous_capacity_additions])
-            rhs = self.parameters.existing_capacities.loc[tech, :, :, time]
+            rhs = self.parameters.existing_capacities.loc[tech, :, :, year]
             constraints.append(lhs == rhs)
 
         ### return
@@ -1006,17 +1020,17 @@ class TechnologyRules(GenericRule):
         # we vectorize over locations
         constraints = []
         for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
-
-            ### auxiliary calculations
-            # mask for the capacity types that are not considered
-            capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
-            mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
-            mask.loc[capacity_types] = 1
-
-            interval_between_years = self.system["interval_between_years"]
-            knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
-            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            # skip if max diffusion rate = inf
             if self.parameters.max_diffusion_rate.loc[tech, time] != np.inf:
+                ### auxiliary calculations
+                # mask for the capacity types that are not considered
+                capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
+                mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
+                mask.loc[capacity_types] = 1
+
+                interval_between_years = self.system["interval_between_years"]
+                knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
+                reference_carrier = self.sets["set_reference_carriers"][tech][0]
                 if tech in self.sets["set_transport_technologies"]:
                     set_locations = self.sets["set_edges"]
                     set_technology = self.sets["set_transport_technologies"]
@@ -1102,18 +1116,18 @@ class TechnologyRules(GenericRule):
         # we vectorize over locations
         constraints = []
         for tech, time in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
-
-            ### auxiliary calculations
-            # mask for the capacity types that are not considered
-            capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
-            mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
-            mask.loc[capacity_types] = 1
-
-            interval_between_years = self.system["interval_between_years"]
-            knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
-
-            reference_carrier = self.sets["set_reference_carriers"][tech][0]
+            # skip if max diffusion rate = inf
             if self.parameters.max_diffusion_rate.loc[tech, time] != np.inf:
+                ### auxiliary calculations
+                # mask for the capacity types that are not considered
+                capacity_types = index.get_values([tech, slice(None), slice(None), time], "set_capacity_types", unique=True)
+                mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
+                mask.loc[capacity_types] = 1
+
+                interval_between_years = self.system["interval_between_years"]
+                knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
+
+                reference_carrier = self.sets["set_reference_carriers"][tech][0]
                 if tech in self.sets["set_transport_technologies"]:
                     set_locations = self.sets["set_edges"]
                     set_technology = self.sets["set_transport_technologies"]
@@ -1202,7 +1216,7 @@ class TechnologyRules(GenericRule):
             else:
                 annuity = 1/lifetime
             term_neg_annuity_cost_capex_previous = []
-            for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year, time_step_type="yearly"):
+            for previous_year in Technology.get_lifetime_range(self.optimization_setup, tech, year):
                 term_neg_annuity_cost_capex_previous.append(-annuity * self.variables["cost_capex"].loc[tech, :, :, previous_year])
 
             ### formulate constraint
