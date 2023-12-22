@@ -1,4 +1,4 @@
-21.12.2023
+22.12.2023
 
 # How to ZEN-garden
 ## Setup
@@ -21,7 +21,9 @@
 
 
 4. Cloning the repository: To create a local copy of your branch on your computer, you must clone the remote repository from GitHub. **It is important that you clone the repository to a path which doesn't contain any spaces!** (Don't clone to e.g. ./Users/Name Surname, otherwise you'll have issues while executing the framework). To clone your branch there's a more beginner-friendly way using GitHub Desktop and a more advanced way using Git Bash for example.
+
 GitHub Desktop: [Clone Reposiotry with GitHub Desktop](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-a-repository-from-github-to-github-desktop)
+
 To clone the repositry by using Git Bash, two methods are available: [HTTPS](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui) or [SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
 
 5. ZEN-garden environment creation: Open PyCharm to view the _zen\_garden\_env.yml_ file (contained in the ZEN-garden folder), copy "_conda env create -f zen\_garden\_env.yml"_ and run the command in your Anaconda prompt (takes several minutes), if the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
@@ -29,11 +31,8 @@ To clone the repositry by using Git Bash, two methods are available: [HTTPS](htt
  Following these instructions, you'll get a Gurobi license key which you have to run in your command prompt to activate the license for your computer
 7. Create PyCharm Configurations: To execute ZEN-garden's different functionalities configurations are used. To add them, follow the steps at "PyCharm Setup": [Create Configurations](https://github.com/RRE-ETH/ZEN-garden/discussions/183)
 
-1.
-# ZEN-garden configurations
-
-  1.
-## Run ZEN-garden module
+## ZEN-garden configurations
+### Run ZEN-garden module
 
 The ZEN-garden module can be executed in several ways as well as on ETH's EULER cluster. To check if the setup was successful, you can run one of the standardized test cases. To do so,
 
@@ -41,10 +40,9 @@ The ZEN-garden module can be executed in several ways as well as on ETH's EULER 
 - copy _config.py_ to the _data_ directory
 - choose "test\_1a" as the dataset and execute it using one of the following methods
 
-    1.
-### Run ZEN-garden using the "Run Module" configuration
+#### Run ZEN-garden using the "Run Module" configuration
 
-Executing ZEN-garden with the created configuration "Run Module" (created in [setup step 7](#_Steps)) is the most forward way if you use PyCharm. Simply adjust the path in the analysis attribute "dataset" in the config.py file to one of the desired datasets and click the green run-button (have a look at the [config options](#_Config_Settings) to get an overview of all the config settings).
+Executing ZEN-garden with the created configuration "Run Module" (created in [setup step 7](#steps)) is the most forward way if you use PyCharm. Simply adjust the path in the analysis attribute "dataset" in the config.py file to one of the desired datasets and click the green run-button (have a look at the [config options](#config-settings) to get an overview of all the config settings).
 
 ![](RackMultipart20231221-1-jtfek3_html_a760bbbf0f960f8b.png)
 
