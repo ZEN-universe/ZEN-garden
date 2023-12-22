@@ -44,45 +44,38 @@ The ZEN-garden module can be executed in several ways as well as on ETH's EULER 
 
 Executing ZEN-garden with the created configuration "Run Module" (created in [setup step 7](#steps)) is the most forward way if you use PyCharm. Simply adjust the path in the analysis attribute "dataset" in the config.py file to one of the desired datasets and click the green run-button (have a look at the [config options](#config-settings) to get an overview of all the config settings).
 
-![](RackMultipart20231221-1-jtfek3_html_a760bbbf0f960f8b.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/86782722-a227-4320-a58a-469b4c1464e3)
 
-    1.
-### Run ZEN-garden using a terminal
+#### Run ZEN-garden using a terminal
+How to run the ZEN-garden package in a terminal is described in [ZEN-garden as a package](https://github.com/RRE-ETH/ZEN-garden/discussions/183). Depending on the terminal you want to use, the procedure differs slightly. Before entering the module's execution command, ensure that the _data_ folder is your working directory. To change the ${\textsf{\color{brown}working directory}}$ from, e.g., _ZEN-garden_ to _ZEN-garden/data_, simply run _cd data_.
 
-How to run the ZEN-garden package in a terminal is described in [ZEN-garden as a package](https://github.com/RRE-ETH/ZEN-garden/discussions/183). Depending on the terminal you want to use, the procedure differs slightly. Before entering the module's execution command, ensure that the _data_ folder is your working directory. To change the working directory from, e.g., _ZEN-garden_ to _ZEN-garden/data_, simply run _cd data_.
+**PyCharm Power Shell (Terminal in PyCharm):** As the ${\textsf{\color{orange}zen-garden conda environment}}$ is activated by default, you can simply enter the following ${\textsf{\color{blue}command}}$ followed by a chosen ${\textsf{\color{green}dataset name}}$:
 
-PyCharm Power Shell (Terminal in PyCharm): As the zen-garden conda environment is activated by default, you can simply enter the following command followed by a chosen dataset name:
+${\textsf{\color{orange}(zen-garden)}}$ PS ${\textsf{\color{brown}C:/Users/Lukas Kunz/ETH/ZEN-garden/ZEN-garden/data/>}}$  ${\textsf{\color{blue}python -m zen-garden --dataset=}}$ ${\textsf{\color{green}"test 1b"}}$
 
-_(zen-garden)_ _PS_ _C:\Users\Lukas Kunz\ETH\ZEN\_garden\ZEN-garden\data\>_ _python -m zen\_garden --dataset=__"test\_1b"_
+To copy: (zen-garden) PS C:\Users\Lukas Kunz\ETH\ZEN_garden\ZEN-garden\data> python -m zen_garden --dataset=“test_1b“
 
-Anaconda Prompt: The only difference when using the Anaconda prompt is that you have to activate the zen-garden environment manually before you can run the package execution command. This can be done by running _conda activate zen-garden._
+**Anaconda Prompt:** The only difference when using the Anaconda prompt is that you have to activate the zen-garden environment manually before you can run the package execution command. This can be done by running _conda activate zen-garden._
 
 If your console looks something like the screenshot below, the ZEN-garden module works fine on your computer, and you can run all the data sets located in the _data_ folder by choosing one of the two methods. Otherwise, revisit the setup steps according to the occurred error.
 
-![](RackMultipart20231221-1-jtfek3_html_6159d98d8d603c1f.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/fd38a757-11bc-4955-8aae-727479a8ed70)
 
-    1.
-### Run ZEN-garden on EULER
+#### Run ZEN-garden on EULER
 
 To run computational more expensive optimization problems, ETH's EULER cluster can be accessed as described at [ZEN-garden on EULER](https://github.com/RRE-ETH/ZEN-garden/discussions/186).
 
-  1.
-## Read Results
-
+### Read Results
 After a dataset's optimization problem has been executed, its results can be accessed and visualized with help of the _results.py_ script. To get a first impression of the available results processing functionalities, the Jupyter Notebook _postprocess\_results.ipynb_ can help a lot. It can be found in ZEN-garden's _notebooks_ directory.
 
  Another way to access your results is to use the "Read Results" configuration. By running the _results.py_ script, the different member functions of the contained "Results" class can be applied to the "Results" object to extract and plot the data of your optimization problem. Since the "Read Results" configuration creates an instance of the "Results" class, the object can be accessed by "self". By setting a break point at the end of the file, the debugger console can be used to apply the class's functions to the "Results" instance.
 
-![](RackMultipart20231221-1-jtfek3_html_a15c9c1bf61ee2f3.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/85764bc6-2999-4f83-91c6-1d49243a1d8d)
 
-    1.
-### How to plot your results
-
+#### How to plot your results
 The class "Results" contains three member functions to plot the simulated data. Please have a look at [the plot discussion entry](https://github.com/RRE-ETH/ZEN-garden/discussions/251) to get further explanations.
 
-    1.
-### Accessing your results data
-
+#### Accessing your results data
 To access the data frames containing the raw optimization results of the variables and parameters, the following member functions of the "Results" class can be used:
 
 1. get\_total(),
@@ -95,30 +88,22 @@ r.get\_full\_ts() returns the hourly evolution of hourly resolved variables. Thi
 
 Under the hood of r.get\_total() and r.get\_full\_ts(), we use the r.get\_df() function to extract the raw variable and parameter values. If these are of interest, you can use r.get\_df(), otherwise r.get\_total() and r.get\_full\_ts() will be more useful.
 
-      1.
-#### self.get\_df()
-
+##### self.get\_df()
 The most fundamental function to access the data of a specific variable such as, e.g., "flow\_conversion\_input" is _self.get\_df("flow\_conversion\_input")_. It returns a Pandas series containing all the "flow\_conversion\_input" values of the different technologies at the individual nodes at every time step.
 
-![](RackMultipart20231221-1-jtfek3_html_8f5c598db33948a4.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/071ac7df-1ba0-42fe-9f2c-89b77a63b30a)
 
-      1.
-#### self.get\_full\_ts()
-
+##### self.get\_full\_ts()
 A more convenient way to access the same data is offered by _self.get\_full\_ts("flow\_conversion\_input")_, a function which creates a data frame of the variable's full time series.
 
-![](RackMultipart20231221-1-jtfek3_html_942c655cff27e9cc.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/71779981-de3b-48cd-855f-4955588a093f)
 
-      1.
-#### self.get\_total()
-
+##### self.get\_total()
 If you're not interested in the hourly resolution of the variable values, _self.get\_total("flow\_conversion\_input")_ can be used to obtain the yearly sums of the hourly data.
 
-![](RackMultipart20231221-1-jtfek3_html_ea854291fb5b9ba0.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/37abaf36-02f3-47e0-9d2b-94f23695d782)
 
-    1.
-### Compare two datasets
-
+#### Compare two datasets
 You can compare two "Results" objects by using the following class methods. They can help you to get a fast overview of two datasets' differences which facilitates spotting the reasons for errors. Again, the Jupyter Notebook shows some practical examples, but the functionalities can be used in the debug console as well by creating the desired "Results" objects the way it is done in the beginning of the notebook. All the functions take a list of two "Results" instances as their input argument.
 
 - relate the configs of two datasets:
@@ -128,17 +113,24 @@ _Results.compare\_model\_parameters([result\_instance\_1, result\_instance\_2])_
 - relate model variables:
 _Results.compare\_model\_variables([result\_instance\_1, result\_instance\_2])_
 
-  1.
-## Run Tests
-
+### Run Tests
 The main purpose of the test files is their usage for the automated testing functionality of ZEN-garden. By comparing the variables' values gathered by simulating the testcases with some reference values, the correctness of the current framework code can be proved. Whenever you adapted some framework code, you can use the run test configuration to ensure that ZEN-garden does still function properly.
 
-1.
-# Parameters, variables, and constraints
 
+## Parameters, variables, and constraints
 An important concept in ZEN-garden, or for optimization problems in general, is the definition of parameters, variables, and constraints. Parameters are used to store data that is immutable, meaning once a parameter's values are specified, they stay the same for the whole optimization (e.g., the hourly electricity demand per country). On the other hand, variables represent quantities whose values are computed by solving the optimization problem (e.g., the hourly electricity output flow of a gas turbine). By defining constraints, the parameters and variables can be related to each other such that they follow the rules of physical properties etc. (e.g., energy conservation at nodes). In the example optimization problem below, is the so-called objective function whose value is optimized (mostly minimizing the net present cost of the entire system), and are vectors containing all the variables and parameters, respectively, which are related by constraints of the form . Additionally, some variables are defined as non-negative numbers, i.e., , as physical metrics like costs, power flows and energy etc. can only be positive.
 
-To get an overview of all the existing parameters, variables and constraints, have a look at these [tables](#_Parameter,_Variable_and).
+$$
+\begin{equation}
+\begin{aligned}
+\min_{x} \quad & c^Tx\\
+\textrm{s.t.} \quad & Ax \leq b\\
+  &x\geq0    \\
+\end{aligned}
+\end{equation}
+$$
+
+To get an overview of all the existing parameters, variables and constraints, have a look at these [tables](#parameter-variable-and-constraint).
 
 To find the definitions of all the parameters, variables and constraints you can look up every appearance of _add\_parameter_/_add\_variable/add\_constraint_ in all of ZEN-garden's files by using CTRL+Shift+F. Assessing the definitions can be quite helpful to get a better understanding as they include the _doc_ strings, a brief explanation of the underlying parameter, variable or constraint. In addition, it can be seen in which file _(technology.py_, _carrier.py_, etc.) the definition is located, revealing some extra information. Since this method takes some time to find the desired doc string, the _Results_ class contains the function _r.get\_doc("component")_ which returns the doc string of the corresponding component.
 
