@@ -347,20 +347,32 @@ class UnitHandling:
                 if wrong_cf_atts:
                     for wrong_cf_att in wrong_cf_atts:
                         names = wrong_cf_att.split("_conversion_factor_")
-                        name_pairs.append(names[1]+" of conversion technology "+names[0])
+                        name_pairs.append(names[1]+" of "+names[0])
                     self._write_inconsistent_units_file(energy_quantity_units, item.name, analysis=optimization_setup.analysis)
                     raise AssertionError(f"Unit inconsistency! Most probably, the {item.name} unit(s) of the conversion factor(s) with dependent carrier{name_pairs} are wrong.")
                 if item.__class__ is Carrier:
                     self._write_inconsistent_units_file(energy_quantity_units, item.name, analysis=optimization_setup.analysis)
-                    raise AssertionError(f"The attribute units of the {item.__class__.__name__} {item.name} are not consistent! Most probably, the unit(s) of the attribute(s) {list(attributes_with_lowest_appearance.keys())} are wrong.")
+                    raise AssertionError(f"The attribute units of the {item.__class__.__name__} {item.name} are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=attributes_with_lowest_appearance, unit_dict=unit_dict)} are wrong.")
                 else:
                     self._write_inconsistent_units_file(energy_quantity_units, item.name, analysis=optimization_setup.analysis, reference_carrier_name=reference_carrier_name)
-                    raise AssertionError(f"The attribute units of the {item.__class__.__name__} {item.name} and its reference carrier {reference_carrier_name} are not consistent! Most propably, the unit(s) of the attribute(s) {list(attributes_with_lowest_appearance.keys())} are wrong.")
+                    raise AssertionError(f"The attribute units of the {item.__class__.__name__} {item.name} and its reference carrier {reference_carrier_name} are not consistent! Most propably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=attributes_with_lowest_appearance, unit_dict=unit_dict)} are wrong.")
             #since energy system doesn't have any attributes with energy dimension, its dict must be empty
             elif item not in elements and len(energy_quantity_units) != 0:
                 self._write_inconsistent_units_file(energy_quantity_units, item.name, analysis=optimization_setup.analysis)
-                raise AssertionError(f"The attribute units defined in the system_specification are not consistent! Most probably, the unit(s) of the attribute(s) {list(attributes_with_lowest_appearance.keys())} are wrong.")
+                raise AssertionError(f"The attribute units defined in the system_specification are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=energy_quantity_units, unit_dict=unit_dict)} are wrong.")
         logging.info(f"Parameter unit consistency is fulfilled!")
+
+    def _get_units_of_wrong_attributes(self, wrong_atts, unit_dict):
+        """Gets units of attributes showing wrong units
+
+        :param wrong_atts: dict containing attribute names along with their energy_quantity part of attributes which have inconsistent units
+        :param unit_dict: dict containing attribute names along with their units in base units
+        :return: dict containing attribute names along with their unit in base unit of attributes which have inconsistent units
+        """
+        wrong_atts_with_units = {}
+        for att in wrong_atts:
+            wrong_atts_with_units[att] = [str(unit_specs["unit_in_base_units"].units) for key, unit_specs in unit_dict.items() if key == att][0]
+        return wrong_atts_with_units
 
     def _write_inconsistent_units_file(self, inconsistent_attributes, item_name, analysis, reference_carrier_name=None):
         """Writes file of attributes and their units which cause unit inconsistency
@@ -385,14 +397,14 @@ class UnitHandling:
         :return: attribute names and energy quantity terms which appear the least often in energy_quantity_units
         """
         min_unit_count = np.inf
-        wrong_value = None
+        attributes_with_lowest_appearance = {}
         # count for all unique units how many times they appear to get an estimate which unit most likely is the wrong one
         for distinct_unit in set(energy_quantity_units.values()):
             unit_count = list(energy_quantity_units.values()).count(distinct_unit)
-            if unit_count < min_unit_count:
+            if unit_count <= min_unit_count and unit_count < len(energy_quantity_units)/2:
                 min_unit_count = unit_count
                 wrong_value = distinct_unit
-        attributes_with_lowest_appearance = {key: value for key, value in energy_quantity_units.items() if value == wrong_value}
+                attributes_with_lowest_appearance.update({key: value for key, value in energy_quantity_units.items() if value == wrong_value})
         return attributes_with_lowest_appearance
 
     def get_most_often_appearing_energy_unit(self, energy_units):
