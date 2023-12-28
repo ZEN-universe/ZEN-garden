@@ -26,7 +26,7 @@ GitHub Desktop: [Clone Reposiotry with GitHub Desktop](https://docs.github.com/e
 
 To clone the repositry by using Git Bash, two methods are available: [HTTPS](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui) or [SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
 
-5. ZEN-garden environment creation: Open PyCharm to view the _zen\_garden\_env.yml_ file (contained in the ZEN-garden folder), copy "_conda env create -f zen\_garden\_env.yml"_ and run the command in your Anaconda prompt (takes several minutes), if the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
+5. ZEN-garden environment creation: Open PyCharm to view the _zen\_garden\_env.yml_ file (contained in the ZEN-garden folder), copy ```conda env create -f zen_garden_env.yml``` and run the command in your Anaconda prompt (takes several minutes), if the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
 6. Gurobi license: To use all of Gurobi's functionalities, you need to obtain a free academic license: [Get your Gurobi license](https://www.gurobi.com/features/academic-named-user-license/)
  Following these instructions, you'll get a Gurobi license key which you have to run in your command prompt to activate the license for your computer
 7. Create PyCharm Configurations: To execute ZEN-garden's different functionalities configurations are used. To add them, follow the steps at "PyCharm Setup": [Create Configurations](https://github.com/RRE-ETH/ZEN-garden/discussions/183)
@@ -36,7 +36,7 @@ To clone the repositry by using Git Bash, two methods are available: [HTTPS](htt
 
 The ZEN-garden module can be executed in several ways as well as on ETH's EULER cluster. To check if the setup was successful, you can run one of the standardized test cases. To do so,
 
-- pen _ZEN-garden\tests\testcases_ and copy paste all the tests to _ZEN-garden\data_
+- open _ZEN-garden\tests\testcases_ and copy paste all the tests to _ZEN-garden\data_
 - copy _config.py_ to the _data_ directory
 - choose "test\_1a" as the dataset and execute it using one of the following methods
 
@@ -47,15 +47,15 @@ Executing ZEN-garden with the created configuration "Run Module" (created in [se
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/86782722-a227-4320-a58a-469b4c1464e3)
 
 #### Run ZEN-garden using a terminal
-How to run the ZEN-garden package in a terminal is described in [ZEN-garden as a package](https://github.com/RRE-ETH/ZEN-garden/discussions/183). Depending on the terminal you want to use, the procedure differs slightly. Before entering the module's execution command, ensure that the _data_ folder is your working directory. To change the ${\textsf{\color{brown}working directory}}$ from, e.g., _ZEN-garden_ to _ZEN-garden/data_, simply run _cd data_.
+How to run the ZEN-garden package in a terminal is described in [ZEN-garden as a package](https://github.com/RRE-ETH/ZEN-garden/discussions/183). Depending on the terminal you want to use, the procedure differs slightly. Before entering the module's execution command, ensure that the _data_ folder is your working directory. To change the ${\textsf{\color{brown}working directory}}$ from, e.g., _ZEN-garden_ to _ZEN-garden/data_, simply run ```cd data```.
 
 **PyCharm Power Shell (Terminal in PyCharm):** As the ${\textsf{\color{orange}zen-garden conda environment}}$ is activated by default, you can simply enter the following ${\textsf{\color{blue}command}}$ followed by a chosen ${\textsf{\color{green}dataset name}}$:
 
 ${\textsf{\color{orange}(zen-garden)}}$ PS ${\textsf{\color{brown}C:/Users/Lukas Kunz/ETH/ZEN-garden/ZEN-garden/data/>}}$  ${\textsf{\color{blue}python -m zen-garden --dataset=}}$ ${\textsf{\color{green}"test 1b"}}$
 
-To copy: (zen-garden) PS C:\Users\Lukas Kunz\ETH\ZEN_garden\ZEN-garden\data> python -m zen_garden --dataset=“test_1b“
+To copy: ```(zen-garden) PS C:\Users\Lukas Kunz\ETH\ZEN_garden\ZEN-garden\data> python -m zen_garden --dataset=“test_1b“```
 
-**Anaconda Prompt:** The only difference when using the Anaconda prompt is that you have to activate the zen-garden environment manually before you can run the package execution command. This can be done by running _conda activate zen-garden._
+**Anaconda Prompt:** The only difference when using the Anaconda prompt is that you have to activate the zen-garden environment manually before you can run the package execution command. This can be done by running ```conda activate zen-garden```.
 
 If your console looks something like the screenshot below, the ZEN-garden module works fine on your computer, and you can run all the data sets located in the _data_ folder by choosing one of the two methods. Otherwise, revisit the setup steps according to the occurred error.
 
@@ -68,57 +68,57 @@ To run computational more expensive optimization problems, ETH's EULER cluster c
 ### Read Results
 After a dataset's optimization problem has been executed, its results can be accessed and visualized with help of the _results.py_ script. To get a first impression of the available results processing functionalities, the Jupyter Notebook _postprocess\_results.ipynb_ can help a lot. It can be found in ZEN-garden's _notebooks_ directory.
 
- Another way to access your results is to use the "Read Results" configuration. By running the _results.py_ script, the different member functions of the contained "Results" class can be applied to the "Results" object to extract and plot the data of your optimization problem. Since the "Read Results" configuration creates an instance of the "Results" class, the object can be accessed by "self". By setting a break point at the end of the file, the debugger console can be used to apply the class's functions to the "Results" instance.
+ Another way to access your results is to use the "Read Results" configuration. By running the _results.py_ script, the different member functions of the contained ```Results``` class can be applied to the ```Results``` object to extract and plot the data of your optimization problem. Since the "Read Results" configuration creates an instance of the ```Results``` class, the object can be accessed by "self". By setting a break point at the end of the file, the debugger console can be used to apply the class's functions to the ```Results``` instance.
 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/85764bc6-2999-4f83-91c6-1d49243a1d8d)
 
 #### How to plot your results
-The class "Results" contains three member functions to plot the simulated data. Please have a look at [the plot discussion entry](https://github.com/RRE-ETH/ZEN-garden/discussions/251) to get further explanations.
+The class ```Results``` contains three member functions to plot the simulated data. Please have a look at [the plot discussion entry](https://github.com/RRE-ETH/ZEN-garden/discussions/251) to get further explanations.
 
 #### Accessing your results data
-To access the data frames containing the raw optimization results of the variables and parameters, the following member functions of the "Results" class can be used:
+To access the data frames containing the raw optimization results of the variables and parameters, the following member functions of the ```Results``` class can be used:
 
-1. get\_total(),
-2. get\_full\_ts(),
-3. get\_df(),
+1. ```r.get_total()```,
+2. ```r.get_full_ts()```,
+3. ```r.get_df()```,
 
-where "r" is an instance of the "Results" class. r.get\_total() returns the aggregated values of the variable and parameter values for each year. For hourly resolved variables, such as "flow\_conversion\_input", this is the sum over all hours of the year for each year. Yearly resolved variables, such as "capacity", remain unaltered because they are already yearly aggregates.
+where "r" is an instance of the ```Results``` class. ```r.get_total()``` returns the aggregated values of the variable and parameter values for each year. For hourly resolved variables, such as "flow\_conversion\_input", this is the sum over all hours of the year for each year. Yearly resolved variables, such as "capacity", remain unaltered because they are already yearly aggregates.
 
-r.get\_full\_ts() returns the hourly evolution of hourly resolved variables. This is especially useful when using the time series aggregation, where the hours of the year are aggregated by representative time steps. r.get\_full\_ts() disaggregates the time series back to full hourly representation. Yearly values remain in yearly resolution, thus for these components r.get\_total() and r.get\_full\_ts() return the same result.
+```r.get_full_ts()``` returns the hourly evolution of hourly resolved variables. This is especially useful when using the time series aggregation, where the hours of the year are aggregated by representative time steps. ```r.get_full_ts()``` disaggregates the time series back to full hourly representation. Yearly values remain in yearly resolution, thus for these components ```r.get_total()``` and ```r.get_full_ts()``` return the same result.
 
-Under the hood of r.get\_total() and r.get\_full\_ts(), we use the r.get\_df() function to extract the raw variable and parameter values. If these are of interest, you can use r.get\_df(), otherwise r.get\_total() and r.get\_full\_ts() will be more useful.
+Under the hood of ```r.get_total()``` and ```r.get_full_ts()```, we use the ```r.get_df()``` function to extract the raw variable and parameter values. If these are of interest, you can use ```r.get_df()```, otherwise ```r.get_total()``` and ```r.get_full_ts()``` will be more useful.
 
-##### self.get\_df()
-The most fundamental function to access the data of a specific variable such as, e.g., "flow\_conversion\_input" is _self.get\_df("flow\_conversion\_input")_. It returns a Pandas series containing all the "flow\_conversion\_input" values of the different technologies at the individual nodes at every time step.
+##### self.get_df()
+The most fundamental function to access the data of a specific variable such as, e.g., "flow_conversion_input" is ```self.get_df("flow_conversion_input")```. It returns a Pandas series containing all the "flow_conversion_input" values of the different technologies at the individual nodes at every time step.
 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/071ac7df-1ba0-42fe-9f2c-89b77a63b30a)
 
-##### self.get\_full\_ts()
-A more convenient way to access the same data is offered by _self.get\_full\_ts("flow\_conversion\_input")_, a function which creates a data frame of the variable's full time series.
+##### self.get_full_ts()
+A more convenient way to access the same data is offered by ```self.get_full_ts("flow_conversion_input")```, a function which creates a data frame of the variable's full time series.
 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/71779981-de3b-48cd-855f-4955588a093f)
 
-##### self.get\_total()
-If you're not interested in the hourly resolution of the variable values, _self.get\_total("flow\_conversion\_input")_ can be used to obtain the yearly sums of the hourly data.
+##### self.get_total()
+If you're not interested in the hourly resolution of the variable values, ```self.get_total("flow_conversion_input")``` can be used to obtain the yearly sums of the hourly data.
 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/37abaf36-02f3-47e0-9d2b-94f23695d782)
 
 #### Compare two datasets
-You can compare two "Results" objects by using the following class methods. They can help you to get a fast overview of two datasets' differences which facilitates spotting the reasons for errors. Again, the Jupyter Notebook shows some practical examples, but the functionalities can be used in the debug console as well by creating the desired "Results" objects the way it is done in the beginning of the notebook. All the functions take a list of two "Results" instances as their input argument.
+You can compare two ```Results``` objects by using the following class methods. They can help you to get a fast overview of two datasets' differences which facilitates spotting the reasons for errors. Again, the Jupyter Notebook shows some practical examples, but the functionalities can be used in the debug console as well by creating the desired ```Results``` objects the way it is done in the beginning of the notebook. All the functions take a list of two ```Results``` instances as their input argument.
 
 - relate the configs of two datasets:
-_Results.compare\_configs([result\_instance\_1, result\_instance\_2])_
+```Results.compare_configs([result_instance_1, result_instance_2])```
 - relate model parameters:
-_Results.compare\_model\_parameters([result\_instance\_1, result\_instance\_2])_
+```Results.compare_model_parameters([result_instance_1, result_instance_2])```
 - relate model variables:
-_Results.compare\_model\_variables([result\_instance\_1, result\_instance\_2])_
+```Results.compare_model_variables([result_instance_1, result_instance_2])```
 
 ### Run Tests
 The main purpose of the test files is their usage for the automated testing functionality of ZEN-garden. By comparing the variables' values gathered by simulating the testcases with some reference values, the correctness of the current framework code can be proved. Whenever you adapted some framework code, you can use the run test configuration to ensure that ZEN-garden does still function properly.
 
 
 ## Parameters, variables, and constraints
-An important concept in ZEN-garden, or for optimization problems in general, is the definition of parameters, variables, and constraints. Parameters are used to store data that is immutable, meaning once a parameter's values are specified, they stay the same for the whole optimization (e.g., the hourly electricity demand per country). On the other hand, variables represent quantities whose values are computed by solving the optimization problem (e.g., the hourly electricity output flow of a gas turbine). By defining constraints, the parameters and variables can be related to each other such that they follow the rules of physical properties etc. (e.g., energy conservation at nodes). In the example optimization problem below, is the so-called objective function whose value is optimized (mostly minimizing the net present cost of the entire system), and are vectors containing all the variables and parameters, respectively, which are related by constraints of the form . Additionally, some variables are defined as non-negative numbers, i.e., , as physical metrics like costs, power flows and energy etc. can only be positive.
+An important concept in ZEN-garden, or for optimization problems in general, is the definition of parameters, variables, and constraints. Parameters are used to store data that is immutable, meaning once a parameter's values are specified, they stay the same for the whole optimization (e.g., the hourly electricity demand per country). On the other hand, variables represent quantities whose values are computed by solving the optimization problem (e.g., the hourly electricity output flow of a gas turbine). By defining constraints, the parameters and variables can be related to each other such that they follow the rules of physical properties etc. (e.g., energy conservation at nodes). In the example optimization problem below, $c^Tx$ is the so-called objective function whose value is optimized (mostly minimizing the net present cost of the entire system), $x$ and $b$ are vectors containing all the variables and parameters, respectively, which are related by constraints of the form $Ax \leq b$. Additionally, some variables are defined as non-negative numbers, i.e., $x \geq 0$, as physical metrics like costs, power flows and energy etc. can only be positive.
 
 $$
 \begin{equation}
@@ -132,95 +132,87 @@ $$
 
 To get an overview of all the existing parameters, variables and constraints, have a look at these [tables](#parameter-variable-and-constraint).
 
-To find the definitions of all the parameters, variables and constraints you can look up every appearance of _add\_parameter_/_add\_variable/add\_constraint_ in all of ZEN-garden's files by using CTRL+Shift+F. Assessing the definitions can be quite helpful to get a better understanding as they include the _doc_ strings, a brief explanation of the underlying parameter, variable or constraint. In addition, it can be seen in which file _(technology.py_, _carrier.py_, etc.) the definition is located, revealing some extra information. Since this method takes some time to find the desired doc string, the _Results_ class contains the function _r.get\_doc("component")_ which returns the doc string of the corresponding component.
+To find the definitions of all the parameters, variables and constraints you can look up every appearance of _add\_parameter_/_add\_variable/add\_constraint_ in all of ZEN-garden's files by using CTRL+Shift+F. Assessing the definitions can be quite helpful to get a better understanding as they include the _doc_ strings, a brief explanation of the underlying parameter, variable or constraint. In addition, it can be seen in which file _(technology.py_, _carrier.py_, etc.) the definition is located, revealing some extra information. Since this method takes some time to find the desired doc string, the ```Results``` class contains the function ```r.get_doc("component")``` which returns the doc string of the corresponding component.
 
-![](RackMultipart20231221-1-jtfek3_html_12fa4c5f1de346ac.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/ca16be5b-4a9f-4fba-ae28-4613c3f7c564)
 
-  1.
-## Unit Consistency
-
+### Unit Consistency
 Since parameters and variables are related by constraints, their units must follow a certain consistency pattern. For example, the constraint _availability\_import_ relates the variable _flow\_import_ with the parameter _availability\_import_ as
+
+$$flow\textunderscore import \leq availability\textunderscore import$$
 
 which implies that the units of the two terms must be identical. Additionally, the constraint _nodal\_energy\_balance_ relates the variable _flow\_import_ with the parameter _demand_ as
 
-which implies that _flow\_import_ and _demand_ must have identical units as well. Therefore, it follows that the two parameters _availability\_import_ and _demand_ of a carrier must have the same units in order to be consistent.
+$$demand = flow\textunderscore import - flow\textunderscore export + flow\textunderscore conversion\textunderscore output + ...$$
 
-More generally, the five unit dimensions _energy\_quantity_, _time_, _money_, _distance_ and _emissions_ are used to define individual unit categories, the parameters and variables can be assigned to. For example, the parameter _demand_ belongs to the group [energy\_quantity]/ [time] since a certain amount of energy is consumed per time step whereas the parameter _availability\_export\_yearly_ is assigned to the group [energy\_quantity] as it represents the total available energy amount per year. Therefore, the energy\_quantity term of the two parameters must not be chosen individually for the same carrier. If e.g. the units of _demand_ are specified as GW (i.e. GWh/hour) for e.g. the carrier heat, the units of _availability\_export\_yearly_ must be defined as GWh for heat automatically. Of course, this unit consistency for the energy\_quantity term must only be fulfilled carrier-wise (for a second carrier the energy term could be deinfed as e.g. ton).
+which implies that _flow\_import_ and _demand_ must have identical units as well. Therefore, it follows that the two parameters _availability_import_ and _demand_ of a carrier must have the same units in order to be consistent.
+
+More generally, the five unit dimensions _energy_quantity_, _time_, _money_, _distance_ and _emissions_ are used to define individual unit categories, the parameters and variables can be assigned to. For example, the parameter _demand_ belongs to the group [energy\_quantity]/ [time] since a certain amount of energy is consumed per time step whereas the parameter _availability\_export\_yearly_ is assigned to the group [energy\_quantity] as it represents the total available energy amount per year. Therefore, the energy\_quantity term of the two parameters must not be chosen individually for the same carrier. If e.g. the units of _demand_ are specified as GW (i.e. GWh/hour) for e.g. the carrier heat, the units of _availability\_export\_yearly_ must be defined as GWh for heat automatically. Of course, this unit consistency for the energy\_quantity term must only be fulfilled carrier-wise (for a second carrier the energy term could be deinfed as e.g. ton).
 
 Equivalently, the energy\_quanity must be consistent per technology element as well.
 
-1.
-# Input data structure
-
+## Input data structure
 The input data of a dataset must be composed of the _system.py_ file and the five folders _set\_carriers_, _set\_conversion\_technologies_, _set\_transport\_technologies_, _set\_storage\_technologies_ and _system\_specification_.
 
-  1.
-## system.py
+### system.py
+The _system.py_ file must contain the sets of technologies that constitute the energy system, i.e. , that take part in supplying the final energy demands. You can have technologies in your input data folder but not list them in the system.py. In this case, they are excluded from the optimization. Additionally, a subset of nodes (from _system\_specification/set\_nodes.csv_), the starting year of the optimization (_reference\_year_) and a lot of other time related specifications can be defined. The time step parameters are discussed [in this Git Discussion](https://github.com/RRE-ETH/ZEN-garden/discussions/143). To get an overview of how to define the different properties, have a look at the [system settings](#system).
 
-The _system.py_ file must contain the sets of technologies that constitute the energy system, i.e. , that take part in supplying the final energy demands. You can have technologies in your input data folder but not list them in the system.py. In this case, they are excluded from the optimization. Additionally, a subset of nodes (from _system\_specification/set\_nodes.csv_), the starting year of the optimization (_reference\_year_) and a lot of other time related specifications can be defined. The time step parameters are discussed [in this Git Discussion](https://github.com/RRE-ETH/ZEN-garden/discussions/143). To get an overview of how to define the different properties, have a look at the [system settings](#_System).
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/0ce6f2e6-646a-42d6-bce9-93cd142f00f2)
 
-![](RackMultipart20231221-1-jtfek3_html_654d12d9d81ce506.png)
-
-  1.
-## set\_carriers
-
+### set\_carriers
 The _set\_carriers_ folder contains the energy carrier types such as electricity, heat, biomass, natural gas, etc. All the carriers that are needed by the technologies specified in the _system.py_ file must be contained in this directory; additional carriers are allowed as well. You do not need to specifically list the carriers in system.py as they are implied by the included technologies.
 
 To define a specific carrier, a folder named after the carrier containing the attributes file must be created.
 
-![](RackMultipart20231221-1-jtfek3_html_6dde4a584479809b.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/1f575676-9a9f-4474-83af-02bc5bed8a28)
 
 The attributes file contains all the default values of the parameters' needed to describe the carrier. As the parameters' values can differ along the energy systems' nodes and the simulated time steps, the variations can be described by creating additional input files having the following name structure (parameter name without the "default" ending):
 
-- **demand.csv:** If there exists a demand for a carrier, it can be described in the demand file.
+- **demand.json:** If there exists a demand for a carrier, it can be described in the demand file.
 - **availability\_import.csv:** This file can be used to specify different values of a carrier's import availability as it may differ for the nodes, time steps etc.
 - **availability\_export.csv:** As for the import availability the export availability can be customised.
 - …
 
-Examples of existing parameters can be assessed in the attribute files of the test datasets (for completion, the whole set of parameters can be found in the appendices). To get a better understanding of how to structure these additional input files, have a look at the "Spreadsheet structure" section.
+Examples of existing parameters can be assessed in the attribute files of the test datasets (for completion, the whole set of parameters can be found in the [appendices](#parameter-variable-and-constraint-overview). To get a better understanding of how to structure these additional input files, have a look at the [spreadsheet structure section](#spreadsheet-structure).
 
-![](RackMultipart20231221-1-jtfek3_html_5318365ea5da93a4.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/42409664-58fc-435f-8a9f-44e682487ce9)
 
-  1.
-## set\_conversion\_technologies
+### set\_conversion\_technologies
 
 The _set\_conversion\_technologies_ folder contains the energy conversion technologies such as boilers, power plants (e.g., lignite coal plants), or renewables. All the conversion technologies that are specified in the system file's technology sets must be contained in this directory; additional conversion technologies are allowed. The procedure of defining a specific conversion technology is the very same as for energy carriers, described in the previous section. Again, a folder with the conversion technology's name must be created, including the attributes file for conversion technologies and variations in space and time can be specified with additional input data files.
 
-![](RackMultipart20231221-1-jtfek3_html_f364f5e00144f520.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/13061320-754a-4107-88a1-c0cb163718c5)
 
-  1.
-## set\_transport\_technologies
-
+### set\_transport\_technologies
 The _set\_transport\_technologies_ folder contains the energy transport technologies such as natural gas pipelines or power lines. All the transport technologies that are specified in the system file's technology sets must be contained in this directory; additional transport technologies are allowed. Once more, the individual transport technologies must be defined the same way as carriers and other technologies.
 
-  1.
-## set\_storage\_technologies
-
+### set\_storage\_technologies
 The _set\_storage\_technologies_ folder contains the energy storage technologies such as pumped hydro, natural gas storages, batteries, etc. All the storage technologies that are specified in the system file's technology sets must be contained in this directory; additional storage technologies are allowed. Again, the procedure of defining them is equivalent as before.
 
-  1.
-## system\_specification
-
+### system\_specification
 The _system\_specification_ folder contains additional input data that is needed to define the energy system as a whole. Other than the carrier and technology folders, this folder must contain more files than just the attributes file:
 
-- attributes.csv: carbon emissions related information etc.
+- attributes.json: carbon emissions related information etc.
 - base\_units.csv: definition of base units to which input data units are converted
 - set\_edges.csv: definition of existing connections (edges) between node pairs
 - set\_nodes.csv: set of all nodes along with its longitude and latitude, which are used to compute the distances between the nodes (=length of edges). These distances are needed to compute distance-dependent variables such as the cost of building transport technologies.
-- unit\_definitions.txt: definition of additional units
+- unit\_definitions.txt: definition of units not contained in the unit handling package
 
-  1.
 ### Spreadsheet structure
+The individual values at different nodes and time steps can be entered into the input files by using the column headers "node" and "time"/"year" as it is done in the pictures.
 
-The individual values at different nodes and time steps can be entered into the input files by using the column headers "node" and "time"/"year" as it is done in the pictures. ![](RackMultipart20231221-1-jtfek3_html_dbda5964d19f602e.png) ![](RackMultipart20231221-1-jtfek3_html_c8926428e3bf023c.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/7939b5bf-fb50-4662-98c1-5b18f8072953)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/658e49ed-ba41-4164-a04a-db2bdfc85fc5)
 
 The header "time" is used to represent hourly time steps, whereas the "year" header serves for yearly time steps ([time step discussion](https://github.com/RRE-ETH/ZEN-garden/discussions/143)). An overview of the parameters' time step types is given in the appendices. In addition to the one-dimensional input structure above, data varying in space (nodes) and time can be structured by stating the nodes and time steps explicitly:
 
-![](RackMultipart20231221-1-jtfek3_html_1923aef806b9ffe3.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/ebd6d909-ed63-4285-9bad-42cc4becbae6)
+
 
 Thanks to ZEN garden's capability of completing required parameter values which are not stated in the input files explicitly, the user doesn't have to specify the values for all indices of the parameter. For example, the parameter _availability\_import_ is defined by the _index\_sets_ "set\_nodes" and "set\_time\_steps", however it is possible to only provide data for the individual nodes and none for the different time steps (see screen shot above). The input data handling will then complete the "missing" values by using the nodes' individual import availabilities for all the time steps (time independent parameter). Therefore, the framework user can choose for each parameter, if the default value (specified in the attributes file) or individual values for the parameter's index sets should be used.
 
-![](RackMultipart20231221-1-jtfek3_html_9e07e324159719c5.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/ff361138-cbef-4200-bab7-3c638bd3fbac)
+
 
   1.
 ## Additional methods to enter input data
@@ -356,7 +348,7 @@ The _Postprocess_ class saves all the information contained in the optimization 
     1.
 ### results.py
 
-The "Results" class can read the files created with the Postprocess class and contains methods to visualize these results.
+The ```Results``` class can read the files created with the Postprocess class and contains methods to visualize these results.
 
 1.
 # Appendices
