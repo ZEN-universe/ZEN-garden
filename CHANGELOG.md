@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.0.1] - 2024-01-02
+### Fixed
+- Bug fix of numerical values regarding construction time:
+1. Sometimes forced the capacity additions in the last and the second last time step to be equal
+2. construction time was one period too short
+- Adapted the tests accordingly
+
+### Changed
+- Simplified calculation of lifetime and construction time (Issue [#257])
+- Sped up parameter and constraint construction by removing time step encoder-decoder (Issue [#362])
+
 ## [v1.0.0] - 2023-12-11
 
 Beginning of versioning.
