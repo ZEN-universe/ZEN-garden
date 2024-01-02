@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file.
 
 ## [v1.0.1] - 2024-01-02
+### Added
+- Unit consistency checks: Check that all units are internally consistent across parameters
+  
 ### Fixed
 - Bug fix of numerical values regarding construction time:
 1. Sometimes forced the capacity additions in the last and the second last time step to be equal
