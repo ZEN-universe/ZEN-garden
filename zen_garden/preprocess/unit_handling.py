@@ -277,6 +277,8 @@ class UnitHandling:
 
         :param optimization_setup: OptimizationSetup object
         """
+        if not optimization_setup.solver["check_unit_consistency"]:
+            return
         elements = optimization_setup.dict_elements["Element"]
         items = elements + [optimization_setup.energy_system]
         conversion_factor_units = {}
@@ -284,13 +286,13 @@ class UnitHandling:
         for item in items:
             energy_quantity_units = {}
             unit_dict = item.units
-            #since technology elements have a lot of parameters related to their reference carrier, their unit consistency must be checked together (second if for retrofit techs)
-            if item.__class__.__base__ is Technology or item.__class__.__base__.__base__ is Technology:
+            # since technology elements have a lot of parameters related to their reference carrier, their unit consistency must be checked together (second if for retrofit techs)
+            if isinstance(item, Technology):
                 reference_carrier_name = item.reference_carrier[0]
                 reference_carrier = [carrier for carrier in elements if carrier.name == reference_carrier_name][0]
                 unit_dict.update(reference_carrier.units)
-            #add units of conversion factors/flow coupling factors to carrier units to perform consistency checks (works only since carriers are located at end of optimization_setup.dict_elements)
-            if item.__class__ is Carrier:
+            # add units of conversion factors/flow coupling factors to carrier units to perform consistency checks (works only since carriers are located at end of optimization_setup.dict_elements)
+            if isinstance(item, Carrier):
                 for tech_name, cf_dict in conversion_factor_units.items():
                     for dependent_carrier, unit_pair in cf_dict.items():
                         units_to_check = [unit for key, unit in unit_pair.items() if key == item.name]
@@ -303,7 +305,7 @@ class UnitHandling:
                         if len(units_to_check) != 0:
                             unit_in_base_units = self.convert_unit_into_base_units(units_to_check[0])
                             energy_quantity_units.update({tech_name+"_retrofit_flow_coupling_factor_"+dependent_carrier: unit_in_base_units})
-            #conduct consistency checks
+            # conduct consistency checks
             for attribute_name, unit_specs in unit_dict.items():
                 if attribute_name == "conversion_factor":
                     conversion_factor_units[item.name] = self._get_conversion_factor_units(item, unit_specs, reference_carrier, elements)
@@ -312,7 +314,7 @@ class UnitHandling:
                     retrofit_flow_coupling_factors[item.name] = self._get_conversion_factor_units(item, unit_specs, reference_carrier, elements)
                 elif unit_specs["unit_category"] == {}:
                     assert unit_specs["unit_in_base_units"] == self.ureg("dimensionless"), f"The attribute {attribute_name} of {item.__class__.__name__} {item.name} is per definition dimensionless. However, its unit was defined as {unit_specs['unit_in_base_units']}."
-                #check if nonlinear capex file exists for conversion technology since the units defined there overwrite the attributes file units
+                # check if nonlinear capex file exists for conversion technology since the units defined there overwrite the attributes file units
                 elif attribute_name == "capex_specific" and hasattr(item, "units_nonlinear_capex_files"):
                     for key, value in item.units_nonlinear_capex_files.items():
                         if "capex" in value:
@@ -323,14 +325,14 @@ class UnitHandling:
                         unit_specs["unit_category"] = [value["unit_category"] for key, value in unit_dict.items() if key == "capacity_limit"][0]
                         unit_specs["unit_in_base_units"] = self.convert_unit_into_base_units(capacity_unit)
                         energy_quantity_units.update(self._remove_non_energy_units(unit_specs, "capacity_"+key))
-                #units of input/output/reference carrier not of interest for consistency
+                # units of input/output/reference carrier not of interest for consistency
                 elif attribute_name not in ["input_carrier", "output_carrier", "reference_carrier"]:
                     energy_quantity_units.update(self._remove_non_energy_units(unit_specs, attribute_name))
 
-            #remove attributes whose units became dimensionless since they don't have an energy quantity
+            # remove attributes whose units became dimensionless since they don't have an energy quantity
             energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if value != self.ureg("dimensionless")}
 
-            #if unit consistency is not fulfilled, try to change "wrong" conversion factor units from power/power to energy/energy (since both is allowed)
+            # if unit consistency is not fulfilled, try to change "wrong" conversion factor units from power/power to energy/energy (since both is allowed)
             if not all(q == energy_quantity_units[next(iter(energy_quantity_units))] for q in energy_quantity_units.values()):
                 attributes_with_lowest_appearance = self._get_attributes_with_least_often_appearing_unit(energy_quantity_units)
                 for key, value in attributes_with_lowest_appearance.items():
@@ -339,9 +341,9 @@ class UnitHandling:
                         energy_quantity_units[key] = value * self.ureg(time_base_unit)
 
             attributes_with_lowest_appearance = self._get_attributes_with_least_often_appearing_unit(energy_quantity_units)
-            #assert unit consistency
+            # assert unit consistency
             if item in elements and not (all(q == energy_quantity_units[next(iter(energy_quantity_units))] for q in energy_quantity_units.values())):
-                #check if there is a conversion factor with wrong units
+                # check if there is a conversion factor with wrong units
                 wrong_cf_atts = {att: unit for att, unit in attributes_with_lowest_appearance.items() if "conversion_factor" in att}
                 name_pairs = []
                 if wrong_cf_atts:
@@ -356,7 +358,7 @@ class UnitHandling:
                 else:
                     self._write_inconsistent_units_file(energy_quantity_units, item.name, analysis=optimization_setup.analysis, reference_carrier_name=reference_carrier_name)
                     raise AssertionError(f"The attribute units of the {item.__class__.__name__} {item.name} and its reference carrier {reference_carrier_name} are not consistent! Most propably, the unit(s) of the attribute(s) {list(attributes_with_lowest_appearance.keys())} are wrong.")
-            #since energy system doesn't have any attributes with energy dimension, its dict must be empty
+            # since energy system doesn't have any attributes with energy dimension, its dict must be empty
             elif item not in elements and len(energy_quantity_units) != 0:
                 self._write_inconsistent_units_file(energy_quantity_units, item.name, analysis=optimization_setup.analysis)
                 raise AssertionError(f"The attribute units defined in the system_specification are not consistent! Most probably, the unit(s) of the attribute(s) {list(attributes_with_lowest_appearance.keys())} are wrong.")
@@ -481,7 +483,7 @@ class UnitHandling:
         :param attribute_name: name of attribute whose unit is reduced to energy unit
         :return: dict with attribute name and reduced unit
         """
-        #dictionary which assigns unit dimensions to corresponding base unit namings
+        # dictionary which assigns unit dimensions to corresponding base unit namings
         distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
         unit = unit_specs["unit_in_base_units"]
         unit_category = unit_specs["unit_category"]
