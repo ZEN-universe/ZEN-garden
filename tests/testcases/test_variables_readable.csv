@@ -386,10 +386,12 @@ test_6c,none,cost_opex,"('natural_gas_boiler', 'CH', 2)",0
 test_6c,none,cost_opex,"('natural_gas_boiler', 'DE', 0)",0
 test_6c,none,cost_opex,"('natural_gas_boiler', 'DE', 1)",0
 test_6c,none,cost_opex,"('natural_gas_boiler', 'DE', 2)",0
-test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'CH', 0)",0
-test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'CH', 1)",1
-test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'DE', 0)",0
-test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'DE', 1)",10
+test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'CH', 1)",0
+test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'CH', 2)",0
+test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'DE', 0)",10
+test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'DE', 1)",0
+test_6c,none,capacity_investment,"('natural_gas_boiler', 'power', 'DE', 2)",0
 test_6c,none,capacity_addition,"('natural_gas_boiler', 'power', 'CH', 0)",0
 test_6c,none,capacity_addition,"('natural_gas_boiler', 'power', 'CH', 1)",0
 test_6c,none,capacity_addition,"('natural_gas_boiler', 'power', 'CH', 2)",1
