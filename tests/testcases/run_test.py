@@ -489,4 +489,4 @@ if __name__ == "__main__":
     from config import config
     config.solver["keep_files"] = False
     folder_path = os.path.dirname(__file__)
-    test_6b(config, folder_path)
+    test_4d(config, folder_path)
