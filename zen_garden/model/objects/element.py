@@ -9,7 +9,6 @@ Class defining a standard Element. Contains methods to add parameters, variables
 optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
 optimization model as an input.
 """
-import cProfile
 import copy
 import itertools
 import logging
@@ -100,11 +99,7 @@ class Element:
         logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
         # construct pe.Constraints
         t0 = time.perf_counter()
-        cp = cProfile.Profile()
-        cp.enable()
         cls.construct_constraints(optimization_setup)
-        cp.disable()
-        cp.print_stats("cumtime")
         t1 = time.perf_counter()
         logging.info(f"Time to construct pe.Constraints: {t1 - t0:0.4f} seconds")
         logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
