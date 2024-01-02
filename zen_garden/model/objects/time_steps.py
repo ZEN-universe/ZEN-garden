@@ -90,38 +90,6 @@ class TimeStepsDicts(object):
                                         "yearly": self.sequence_time_steps_yearly}
         return dict_all_sequence_time_steps
 
-    def encode_time_step(self, base_time_steps: int, time_step_type: str = None):
-        """
-        Encodes baseTimeStep, i.e., retrieves the time step of an element corresponding to baseTimeStep of model.
-        baseTimeStep of model --> timeStep of element
-
-        :param base_time_steps: base time step of model for which the corresponding time index is extracted
-        :param time_step_type: invest or operation. Only relevant for technologies
-        :return outputTimeStep: time step of element
-        """
-        sequence_time_steps = self.get_sequence_time_steps(time_step_type)
-        # get time step duration
-        if np.all(base_time_steps >= 0):
-            element_time_step = np.unique(sequence_time_steps[base_time_steps])
-        else:
-            element_time_step = [-1]
-        return (element_time_step)
-
-    def decode_time_step(self, element_time_step: int, time_step_type: str = None):
-        """
-        Decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variableTimeStep of a element.
-        timeStep of element --> baseTimeStep of model
-
-        :param element: element of model, i.e., carrier or technology
-        :param element_time_step: time step of element
-        :param time_step_type: invest or operation. Only relevant for technologies, None for carrier
-        :return baseTimeStep: baseTimeStep of model
-        """
-        sequence_time_steps = self.get_sequence_time_steps(time_step_type)
-        # find where element_time_step in sequence of element time steps
-        base_time_steps = np.argwhere(sequence_time_steps == element_time_step)
-        return base_time_steps
-
     def calculate_time_step_duration(self, input_time_steps, base_time_steps):
         """ calculates (equidistant) time step durations for input time steps
 
