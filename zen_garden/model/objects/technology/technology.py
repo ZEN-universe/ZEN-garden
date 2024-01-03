@@ -213,11 +213,13 @@ class Technology(Element):
         lifetime_existing = params.lifetime_existing[tech, loc, id_capacity_existing]
         lifetime = params.lifetime[tech]
         delta_lifetime = lifetime_existing - lifetime
+        # reference year of current optimization horizon
+        current_year_horizon = optimization_setup.energy_system.set_time_steps_yearly[0]
         if delta_lifetime >= 0:
-            cutoff_year = year*system["interval_between_years"]
+            cutoff_year = (year-current_year_horizon)*system["interval_between_years"]
             return cutoff_year >= delta_lifetime
         else:
-            cutoff_year = (year+1)*system["interval_between_years"]
+            cutoff_year = (year-current_year_horizon+1)*system["interval_between_years"]
             return cutoff_year <= lifetime_existing
 
     @classmethod
@@ -368,14 +370,11 @@ class Technology(Element):
         # carbon intensity
         optimization_setup.parameters.add_parameter(name="carbon_intensity_technology", data=optimization_setup.initialize_component(cls, "carbon_intensity_technology", index_names=["set_technologies", "set_location"]),
             doc='Parameter which specifies the carbon intensity of each technology')
-
-        # Helper params
-        t0 = time.perf_counter()
-        optimization_setup.parameters.add_helper_parameter(name="existing_capacities", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="capacity"))
-        optimization_setup.parameters.add_helper_parameter(name="existing_capex", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="cost_capex"))
-        t1 = time.perf_counter()
-        logging.debug(f"Helper Params took {t1 - t0:.4f} seconds")
-
+        # calculate additional existing parameters
+        optimization_setup.parameters.add_parameter(name="existing_capacities", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="capacity"),
+                                                    doc="Parameter which specifies the total available capacity of existing technologies at the beginning of the optimization")
+        optimization_setup.parameters.add_parameter(name="existing_capex",data=cls.get_existing_quantity(optimization_setup,type_existing_quantity="cost_capex"),
+                                                    doc="Parameter which specifies the total capex of existing technologies at the beginning of the optimization")
         # add pe.Param of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_params(optimization_setup)
