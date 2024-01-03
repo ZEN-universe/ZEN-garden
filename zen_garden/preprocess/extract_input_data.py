@@ -413,7 +413,6 @@ class DataInput:
         # if no existing capacities
         if not self.analysis["use_capacities_existing"]:
             return df_output
-
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
         if f"{f_name}.csv" in os.listdir(self.folder_path):
             df_input = self.read_input_csv(f_name)

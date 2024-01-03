@@ -213,11 +213,13 @@ class Technology(Element):
         lifetime_existing = params.lifetime_existing[tech, loc, id_capacity_existing]
         lifetime = params.lifetime[tech]
         delta_lifetime = lifetime_existing - lifetime
+        # reference year of current optimization horizon
+        current_year_horizon = optimization_setup.energy_system.set_time_steps_yearly[0]
         if delta_lifetime >= 0:
-            cutoff_year = year*system["interval_between_years"]
+            cutoff_year = (year-current_year_horizon)*system["interval_between_years"]
             return cutoff_year >= delta_lifetime
         else:
-            cutoff_year = (year+1)*system["interval_between_years"]
+            cutoff_year = (year-current_year_horizon+1)*system["interval_between_years"]
             return cutoff_year <= lifetime_existing
 
     @classmethod
