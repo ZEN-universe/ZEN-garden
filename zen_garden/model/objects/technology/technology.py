@@ -312,6 +312,8 @@ class Technology(Element):
         optimization_setup.parameters.add_parameter(name="capacity_existing",
             data=optimization_setup.initialize_component(cls, "capacity_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_technologies_existing"], capacity_types=True),
             doc='Parameter which specifies the existing technology size')
+        optimization_setup.parameters.add_parameter(name="existing_capacities", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="capacity"),
+                                                    doc="Parameter which specifies the total available capacity of existing technologies at the beginning of the optimization")
         # existing capacity
         optimization_setup.parameters.add_parameter(name="capacity_investment_existing",
             data=optimization_setup.initialize_component(cls, "capacity_investment_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly_entire_horizon"],
@@ -336,6 +338,8 @@ class Technology(Element):
         optimization_setup.parameters.add_parameter(name="capex_capacity_existing",
             data=optimization_setup.initialize_component(cls, "capex_capacity_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_technologies_existing"],
                                                    capacity_types=True), doc='Parameter which specifies the total capex of an existing technology which still has to be paid')
+        optimization_setup.parameters.add_parameter(name="existing_capex",data=cls.get_existing_quantity(optimization_setup,type_existing_quantity="cost_capex"),
+                                                    doc="Parameter which specifies the total capex of existing technologies at the beginning of the optimization")
         # variable specific opex
         optimization_setup.parameters.add_parameter(name="opex_specific_variable",
             data=optimization_setup.initialize_component(cls, "opex_specific_variable",index_names=["set_technologies","set_location","set_time_steps_operation"]),
@@ -368,13 +372,6 @@ class Technology(Element):
         # carbon intensity
         optimization_setup.parameters.add_parameter(name="carbon_intensity_technology", data=optimization_setup.initialize_component(cls, "carbon_intensity_technology", index_names=["set_technologies", "set_location"]),
             doc='Parameter which specifies the carbon intensity of each technology')
-
-        # Helper params
-        t0 = time.perf_counter()
-        optimization_setup.parameters.add_helper_parameter(name="existing_capacities", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="capacity"))
-        optimization_setup.parameters.add_helper_parameter(name="existing_capex", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="cost_capex"))
-        t1 = time.perf_counter()
-        logging.debug(f"Helper Params took {t1 - t0:.4f} seconds")
 
         # add pe.Param of the child classes
         for subclass in cls.__subclasses__():
