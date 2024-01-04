@@ -332,17 +332,19 @@ class UnitHandling:
             # remove attributes whose units became dimensionless since they don't have an energy quantity
             energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if value != self.ureg("dimensionless")}
 
-            # if unit consistency is not fulfilled, try to change "wrong" conversion factor units from power/power to energy/energy (since both is allowed)
-            if not all(q == energy_quantity_units[next(iter(energy_quantity_units))] for q in energy_quantity_units.values()):
-                attributes_with_lowest_appearance = self._get_attributes_with_least_often_appearing_unit(energy_quantity_units)
-                for key, value in attributes_with_lowest_appearance.items():
-                    if "conversion_factor" in key:
-                        time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
+            # if unit consistency is not fulfilled because of conversion factor, try to change "wrong" conversion factor units from power/power to energy/energy (since both is allowed)
+            if self._is_inconsistent(energy_quantity_units) and not self._is_inconsistent(energy_quantity_units, exclude_string="conversion_factor"):
+                non_cf_energy_quantity_unit = [value for key, value in energy_quantity_units.items() if "conversion_factor" not in key][0]
+                cf_energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if "conversion_factor" in key}
+                time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
+                for key, value in cf_energy_quantity_units.items():
+                    # if conversion factor unit is in not in energy units, try to convert it to energy units by multiplying with time base unit
+                    if value != non_cf_energy_quantity_unit:
                         energy_quantity_units[key] = value * self.ureg(time_base_unit)
 
             attributes_with_lowest_appearance = self._get_attributes_with_least_often_appearing_unit(energy_quantity_units)
             # assert unit consistency
-            if item in elements and not (all(q == energy_quantity_units[next(iter(energy_quantity_units))] for q in energy_quantity_units.values())):
+            if item in elements and self._is_inconsistent(energy_quantity_units):
                 # check if there is a conversion factor with wrong units
                 wrong_cf_atts = {att: unit for att, unit in attributes_with_lowest_appearance.items() if "conversion_factor" in att}
                 name_pairs = []
@@ -363,6 +365,22 @@ class UnitHandling:
                 self._write_inconsistent_units_file(energy_quantity_units, item.name, analysis=optimization_setup.analysis)
                 raise AssertionError(f"The attribute units defined in the system_specification are not consistent! Most probably, the unit(s) of the attribute(s) {list(attributes_with_lowest_appearance.keys())} are wrong.")
         logging.info(f"Parameter unit consistency is fulfilled!")
+
+    def _is_inconsistent(self, energy_quantity_units,exclude_string=None):
+        """
+        Checks if the units of the attributes of an element are inconsistent
+        :param energy_quantity_units: dict containing attribute names and their energy quantity terms
+        :param exclude_string: string for which consistency is not checked
+        :return: bool whether the units are consistent or not
+        """
+        # exclude attributes which are not of interest for consistency
+        if exclude_string:
+            energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if exclude_string not in key}
+        # check if all energy quantity units are the same
+        if len(set(energy_quantity_units.values())) > 1:
+            return True
+        else:
+            return False
 
     def _write_inconsistent_units_file(self, inconsistent_attributes, item_name, analysis, reference_carrier_name=None):
         """Writes file of attributes and their units which cause unit inconsistency
