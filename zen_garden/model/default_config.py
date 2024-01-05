@@ -172,6 +172,7 @@ class Config(object):
         self.solver["recommend_base_units"] = False
         self.solver["immutable_unit"] = []
         self.solver["range_unit_exponents"]    = {"min": -3, "max": 3}
+        self.solver["check_unit_consistency"] = True
         # assumes "ton" to be metric ton, not imperial ton
         self.solver["define_ton_as_metric_ton"] = True
         # round down to number of decimal points, for new capacity and unit multipliers

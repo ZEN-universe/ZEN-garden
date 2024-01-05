@@ -85,7 +85,7 @@ class OptimizationSetup(object):
         # read input data into elements
         self.read_input_csv()
 
-        #conduct consistency checks of input units
+        # conduct consistency checks of input units
         self.energy_system.unit_handling.consistency_checks_input_units(optimization_setup=self)
 
         # conduct time series aggregation
