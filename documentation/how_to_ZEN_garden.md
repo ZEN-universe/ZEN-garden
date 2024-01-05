@@ -1,5 +1,3 @@
-22.12.2023
-
 # How to ZEN-garden
 ## Setup
 ### Needed Installations
@@ -213,24 +211,19 @@ Thanks to ZEN garden's capability of completing required parameter values which 
 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/ff361138-cbef-4200-bab7-3c638bd3fbac)
 
+### Additional methods to enter input data
+#### PWA
+To approximate the nonlinearities of a technology's capex (capex vs. capacity) the so-called piecewise affine (PWA) approximation can be used. In this method, the nonlinear function is divided into several regions where it can be approximated as a linear function. To specify such PWA input data the following two files are needed (in the folder of the corresponding technology):
 
-  1.
-## Additional methods to enter input data
+- _nonlinear\_capex.csv_ 
+- _breakpoints\_pwa\_capex.csv_ 
 
-    1.
-### PWA
+The "nonlinear" file must thereby contain the values for the nonlinear relation between the two metrics (e.g., heat output vs. natural gas input) followed by a pair of units whereas the "breakpoints" file is used to divide the nonlinear function into several intervals (#intervals = #breakpoints - 1).
 
-To approximate nonlinear functions such as the conversion efficiency of e.g., heat pumps the so-called piecewise affine (PWA) approximation can be used. In this method, the nonlinear function is divided into several regions where it can be approximated as a linear function. To specify such PWA input data a similar combination of the following two files is needed (in the folder of the corresponding technology):
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/d4369f1e-3660-430a-9a74-cbfc141aea62)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/901f72a2-f499-4d0c-9e86-60c6bbdb1c89)
 
-- _breakpoints\_pwa\_conversion\_factor.csv_ and _nonlinear\_conversion\_factor.csv_ to approximate the nonlinear conversion efficiency of e.g., a natural gas boiler
-- _breakpoints\_pwa\_coapex.csv_ and _nonlinear\_capex.csv_ to approximate the nonlinear relation of capex and installed capacity of a technology
-- …
-
-The "nonlinear" file must thereby contain the values for the nonlinear relation between the two metrics (e.g., heat output vs. natural gas input) followed by a pair of units whereas the "breakpoints" file is used to divide the nonlinear function into several intervals (#intervals = #breakpoints - 1). ![](RackMultipart20231221-1-jtfek3_html_760f1f7041c573c9.png) ![](RackMultipart20231221-1-jtfek3_html_28dcbe8bf0ab3f01.png)
-
-    1.
-### Define technology with multiple input/output carriers
-
+#### Define technology with multiple input/output carriers
 To define a conversion technology with multiple input and output carriers, several carrier types can be specified as the technology's input/output carriers in its corresponding attributes file (e.g., heat and carbon as output carrier). Having several input/output carriers requires additional conversion factors, i.e., the factor relating the amount generated/consumed of a carrier with respect to the one's of the reference carrier. Therefore, the _conversion\_factor\_default_ needs to be overwritten by providing the additional _conversion\_factor.csv_ file, where all conversion factors need to be specified with respect to the _reference\_carrier_ (e.g., since the reference carrier in the screenshot is heat and the two other carriers are natural gas and carbon, the conversion factors relating heat with natural gas (1.1 GWh NG/GWh heat) and heat with carbon (0.01 kt carbon/GWh heat) need to be declared).
 
 ![](RackMultipart20231221-1-jtfek3_html_2fd9d37222e19d58.png) ![](RackMultipart20231221-1-jtfek3_html_956aa258b0df009e.png)
