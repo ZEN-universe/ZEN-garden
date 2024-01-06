@@ -128,7 +128,7 @@ $$
 \end{equation}
 $$
 
-To get an overview of all the existing parameters, variables and constraints, have a look at these [tables](#parameter-variable-and-constraint).
+To get an overview of all the existing parameters, variables and constraints, have a look at these [tables](#parameter,-variable-and-constraint-overview).
 
 To find the definitions of all the parameters, variables and constraints you can look up every appearance of _add\_parameter_/_add\_variable/add\_constraint_ in all of ZEN-garden's files by using CTRL+Shift+F. Assessing the definitions can be quite helpful to get a better understanding as they include the _doc_ strings, a brief explanation of the underlying parameter, variable or constraint. In addition, it can be seen in which file _(technology.py_, _carrier.py_, etc.) the definition is located, revealing some extra information. Since this method takes some time to find the desired doc string, the ```Results``` class contains the function ```r.get_doc("component")``` which returns the doc string of the corresponding component.
 
@@ -164,9 +164,9 @@ To define a specific carrier, a folder named after the carrier containing the at
 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/1f575676-9a9f-4474-83af-02bc5bed8a28)
 
-The attributes file contains all the default values of the parameters' needed to describe the carrier. As the parameters' values can differ along the energy systems' nodes and the simulated time steps, the variations can be described by creating additional input files having the following name structure (parameter name without the "default" ending):
+The attributes file contains all the default values of the parameters' needed to describe the carrier([structure attributes file](https://github.com/ZEN-universe/ZEN-garden/discussions/351)). As the parameters' values can differ along the energy systems' nodes and the simulated time steps, the variations can be described by creating additional input files having the following name structure (parameter name without the "default" ending):
 
-- **demand.json:** If there exists a demand for a carrier, it can be described in the demand file.
+- **demand.csv:** If there exists a demand for a carrier, it can be described in the demand file.
 - **availability\_import.csv:** This file can be used to specify different values of a carrier's import availability as it may differ for the nodes, time steps etc.
 - **availability\_export.csv:** As for the import availability the export availability can be customised.
 - …
@@ -176,7 +176,6 @@ Examples of existing parameters can be assessed in the attribute files of the te
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/42409664-58fc-435f-8a9f-44e682487ce9)
 
 ### set\_conversion\_technologies
-
 The _set\_conversion\_technologies_ folder contains the energy conversion technologies such as boilers, power plants (e.g., lignite coal plants), or renewables. All the conversion technologies that are specified in the system file's technology sets must be contained in this directory; additional conversion technologies are allowed. The procedure of defining a specific conversion technology is the very same as for energy carriers, described in the previous section. Again, a folder with the conversion technology's name must be created, including the attributes file for conversion technologies and variations in space and time can be specified with additional input data files.
 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/13061320-754a-4107-88a1-c0cb163718c5)
@@ -224,47 +223,40 @@ The "nonlinear" file must thereby contain the values for the nonlinear relation 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/901f72a2-f499-4d0c-9e86-60c6bbdb1c89)
 
 #### Define technology with multiple input/output carriers
-To define a conversion technology with multiple input and output carriers, several carrier types can be specified as the technology's input/output carriers in its corresponding attributes file (e.g., heat and carbon as output carrier). Having several input/output carriers requires additional conversion factors, i.e., the factor relating the amount generated/consumed of a carrier with respect to the one's of the reference carrier. Therefore, the _conversion\_factor\_default_ needs to be overwritten by providing the additional _conversion\_factor.csv_ file, where all conversion factors need to be specified with respect to the _reference\_carrier_ (e.g., since the reference carrier in the screenshot is heat and the two other carriers are natural gas and carbon, the conversion factors relating heat with natural gas (1.1 GWh NG/GWh heat) and heat with carbon (0.01 kt carbon/GWh heat) need to be declared).
+To define a conversion technology with multiple input and output carriers, several carrier types can be specified as the technology's input/output carriers in its corresponding attributes file (e.g., heat and carbon as output carrier). Having several input/output carriers requires additional conversion factors, i.e., the factor relating the amount generated/consumed of a carrier with respect to the one's of the reference carrier. Therefore, a second conversion factor must be specified in the conversion technolgy's attributes file(e.g., since the reference carrier in the screenshot is heat and the two other carriers are natural gas and carbon, the conversion factors relating heat with natural gas (1.1 GWh NG/GWh heat) and heat with carbon (0.01 kt carbon/GWh heat) need to be declared).
 
-![](RackMultipart20231221-1-jtfek3_html_2fd9d37222e19d58.png) ![](RackMultipart20231221-1-jtfek3_html_956aa258b0df009e.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/9fcb6eae-2303-4e13-81db-71d8c83c39ea)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/dd392616-beeb-4a97-aa33-1c3acfe56663)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/52d92618-4127-4c50-b231-f7e6730cb84e)
 
-    1.
-### Define input data with yearly variations
-
+#### Define input data with yearly variations
 To simplify the hourly dependent input data which varies each year by a specific factor the "yearly\_variation" file can be used. For example, if the heat demand is expected to increase or decrease over the years by a known percentage, the change can be specified as it is done in the following figure instead of defining all the values explicitly in the heat demand file. By doing so, the demand values will be scaled accordingly to the yearly variation factors (e.g., demand CH in year 2022 and time step 0 will be 9).
 
-![](RackMultipart20231221-1-jtfek3_html_ba3972f90ddbde75.png) ![](RackMultipart20231221-1-jtfek3_html_296842a6c9aba43c.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/10a6894b-5bd1-4cbb-b711-b71d6a1916a2)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/874a55b6-35c1-4491-baf6-30d3b9dbf77a)
 
-![](RackMultipart20231221-1-jtfek3_html_624fe4640b1167c8.gif)
-
-1.
-# Framework structure
+## Framework structure
+<object data="https://github.com/ZEN-universe/ZEN-garden/blob/development_ZENx_LK/documentation/ZEN-garden_structure.pdf" type="application/pdf" width="700px" height="700px">
+    <embed src="http://yoursite.com/the.pdf">
+        <p>This browser does not support PDFs. Please download the PDF to view it: <a href="https://github.com/ZEN-universe/ZEN-garden/blob/development_ZENx_LK/documentation/ZEN-garden_structure.pdf">Download PDF</a>.</p>
+    </embed>
+</object>
 
 ZEN-garden is structured into the three building blocks _preprocess_, _model_ and _postprocess_. _model_ is used to describe the optimization problem of the energy system containing the different technologies and carriers, _preprocess_ extracts the provided input data and _postprocess_ saves and visualizes the simulation results. To get a better understanding of the general order of ZEN-gardens execution steps and the package levels, have a look at the flowchart.
 
-  1.
-## Preprocess
-
-    1.
-### Functions
-
-#### extract\_input\_data.py
-
+### Preprocess
+#### Functions
+##### extract\_input\_data.py
 The functions to extract the data from the differently structured spreadsheets and store the information in data frames are in this script. As there are a lot of different ways in which the input data itself or the description of specific parameters can be specified (linear/PWA, from attributes/extra file, etc.), the data extraction process is quite complicated, leading to the large number of functions.
 
-#### time\_series\_aggregation.py
-
+##### time\_series\_aggregation.py
 To reduce the complexity and thus the computational cost of optimizing energy systems with hourly data resolution, the time series of the underlying data can be aggregated to decrease the number of time steps with individual data values. For example, _test\_4b_ aggregates the 8760 hourly time steps of a year to ten representative time steps, thus reducing the computational effort heavily while approximating the original data still well. The time series aggregation parameters are defined in the system file and further details can be found at: [TSA discussion](https://github.com/RRE-ETH/ZEN-garden/discussions/114)
 
-#### unit\_handling.py
-
+##### unit\_handling.py
 To ensure that all the units of the input data are consistent, a unit-handling is implemented. By specifying a set of base units (_system\_specification/base\_units.csv_), the units used in the input data files do not have to be consistent as the unit handling will transform the units according to the chosen base units ([unit handling discussion](https://github.com/RRE-ETH/ZEN-garden/discussions/113)).
 
-  1.
-## Model
-
-### default\_config.py
-
+### Model
+#### default\_config.py
 The default configuration is defined in the _Config_ class which describes all the relevant specifications for ZEN-garden with the four dictionaries:
 
 - **analysis** : describes the desired analysis such as the objective (e.g., total cost), if the problem should be minimized or maximized, the discount rate, etc.
@@ -277,80 +269,53 @@ To specify changes from the default configuration the files _config.py_, _system
 - **config.py:** The config.py file is in the _data_ and the _testcases_ folder. The changes made in these files apply to all the datasets contained in the corresponding folder. For example, if you specify a solver name in the _data_ config, it affects all the datasets located in the _data_ directory. As described in the "Run ZEN-garden module" section, the config can be used to select which dataset should be executed.
 - **system.py:** Parameters that describe the energy system are changed in the system.py file and only apply to the specific dataset in which the system.py file is located. Each dataset must contain its own system file which should look similar as:
 
-![](RackMultipart20231221-1-jtfek3_html_426e94bf6d0a5779.png)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/22268e1c-24f6-4ffe-8890-bb969990ca9e)
 
 - **scenarios.py:** To specify the individual scenarios of a multi-scenario simulation, this file is used similarly as in _test\_6a_. By defining additional input data files, individual parameter values can be modified with respect to the default dataset, thus allowing a more efficient way than running a completely new dataset ([Scenario Analysis](https://github.com/RRE-ETH/ZEN-garden/discussions/294)).
 
-### optimization\_setup.py
-
+#### optimization\_setup.py
 The _OptimizationSetup_ class defines the optimization model by saving the properties of the _analysis_ and _system_ dictionaries. Using this information, the class adds the specified carriers and technologies to the optimization model such that it can be solved with its built-in solving method afterwards.
 
-    1.
-### Objects
-
-#### component.py
-
+#### Objects
+##### component.py
 The _Component_ class is used to add the parameters, variables and constraints to the optimization model represented by a linopy model. Since the linopy modelling language requires specific ways of how these parameters, variables and constraints must be constructed to suit its properties, _component.py_ is needed. Component.py is therefore needed to adapt the parameters constructed via element.py such that they can be added to the linopy optimization model.
 
-#### element.py
-
+##### element.py
 The _Element_ class serves as the incremental building block of all technologies and carriers by defining all the necessary methods to define specific carriers and technologies. Therefore, it is the parent class of the _Carrier_ and the _Technology_ class.
 
-#### energy\_system.py
+##### energy\_system.py
+The ```EnergySystem``` class contains methods to add parameters, variables and constraints, to the optimization problem. In general, these components concern system-wide properties such as carbon or cost metrics. Additionally, the connections between the individual nodes are calculated and the objective function is created and passed to the concrete model.
 
-The _EnergySystem_ class contains methods to add parameters, variables and constraints, to the optimization problem. In general, these components concern system-wide properties such as carbon or cost metrics. Additionally, the connections between the individual nodes are calculated and the objective function is created and passed to the concrete model.
-
-#### time\_steps.py
-
+##### time\_steps.py
 Contains a helper class containing methods to deal with timesteps.
 
-      1.
-#### Carrier
-
-##### carrier.py
-
+##### Carrier
+###### carrier.py
 This script defines the class _Carrier_, which describes the individual energy carriers such as electricity, heat, biomass, etc. By extracting the corresponding input files, the carrier-related parameters, variables, and constraints are created.
 
-      1.
-#### Technology
+##### Technology
+###### technology.py
+Contains the ```Technology``` class which defines all the technology-related parameters, variables and constraints that hold for all the existing technologies.
 
-##### technology.py
-
-Contains the _Technology_ class which defines all the technology-related parameters, variables and constraints that hold for all the existing technologies.
-
-##### conversion\_technology.py
-
+###### conversion\_technology.py
 Creates parameters, variables and constraints specifically needed for conversion technologies (e.g., natural gas boiler).
 
-##### storage\_technology.py
-
+###### storage\_technology.py
 Creates parameters, variables and constraints specifically needed for storage technologies (e.g., pumped hydro storage).
 
-##### transport\_technology.py
-
+###### transport\_technology.py
 Creates parameters, variables and constraints specifically needed for transport technologies (e.g., power lines).
 
-  1.
-## Postprocess
+### Postprocess
+#### postprocess.py
+The ```Postprocess``` class saves all the information contained in the optimization problem and all the system configurations such that the gathered solution and the whole setup can be accessed without running the optimization again.
 
-    1.
-### postprocess.py
-
-The _Postprocess_ class saves all the information contained in the optimization problem and all the system configurations such that the gathered solution and the whole setup can be accessed without running the optimization again.
-
-    1.
-### results.py
-
+#### results.py
 The ```Results``` class can read the files created with the Postprocess class and contains methods to visualize these results.
 
-1.
-# Appendices
-
-  1.
-## Config Settings
-
-### System
-
+## Appendices
+### Config Settings
+#### System
 system[Dictionary Key] = Value Type(Value Options)
  e.g.:
 
@@ -377,7 +342,7 @@ system['set\_transport\_technologies'] = ['power\_line','natural\_gas\_pipeline'
 | "clean\_sub\_scenarios" | Choose if result files of scenarios that are not in the current scenario dict should be deleted | Bool (default: False) |
 | "knowledge\_depreciation\_rate" | Rate at which knowledge stock of existing capacities is depreciated annually | Positive float ϵ [0,1] |
 
-### Analysis
+#### Analysis
 
 | **Dictionary Key:** | **Value Options/Meaning:** | **Value Type:** |
 | --- | --- | --- |
@@ -389,7 +354,7 @@ system['set\_transport\_technologies'] = ['power\_line','natural\_gas\_pipeline'
 | "max\_output\_size\_mb" | Limit the maximum file size of json result files | Positive Integer (default: 500) |
 | "use\_capacities\_existing" | Choose if existing capacity should be considered (brownfield vs. greenfield) | Bool (default: False) |
 
-### Solver
+#### Solver
 
 | **Dictionary Key:** | **Value Options/Meaning:** | **Value Type:** |
 | --- | --- | --- |
@@ -406,12 +371,9 @@ system['set\_transport\_technologies'] = ['power\_line','natural\_gas\_pipeline'
 | "rounding\_decimal\_points\_ts" | Rounding tolerance for time series after TSA | Positive integer (default: 5) |
 | "linear\_regression\_check" | Tolerances to determine if PWA-modelled x-y relationships can be represented by a linear slope while meeting these tolerances | Dictionary (default: {"eps\_intercept": 0.1, "epsRvalue": 1-1E-5} |
 
-  1.
-## Parameter, Variable and Constraint Overview
+### Parameter, Variable and Constraint Overview
 
-| **Parameters** |
-| --- |
-|
+ **Parameters** 
 
 | **Name:** | **Time Step Type:** | **Doc String:** | **Scope** : |
 | --- | --- | --- | --- |
@@ -463,9 +425,7 @@ system['set\_transport\_technologies'] = ['power\_line','natural\_gas\_pipeline'
 
  |
 
-| **Variables** |
-| --- |
-|
+ **Variables** 
 
 | **Name:** | **Time Step Type:** | **Doc String:** | **Scope:** |
 | --- | --- | --- | --- |
@@ -512,9 +472,7 @@ system['set\_transport\_technologies'] = ['power\_line','natural\_gas\_pipeline'
 
  |
 
-| **Constraints** |
-| --- |
-|
+ **Constraints** 
 
 | **Name:** | **Time Step Type:** | **Doc String:** | **Scope:** |
 | --- | --- | --- | --- |
