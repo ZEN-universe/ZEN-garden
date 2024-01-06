@@ -114,7 +114,7 @@ class OptimizationSetup(object):
                 path = self.paths[set_name]["folder"]
                 if isinstance(subsets, dict):
                     stack.append(subsets)
-                    self.add_folder_paths(set_name, path, subsets.keys())
+                    self.add_folder_paths(set_name, path, list(subsets.keys()))
                 else:
                     self.add_folder_paths(set_name, path, subsets)
                     for element in subsets:
@@ -124,16 +124,39 @@ class OptimizationSetup(object):
     def add_folder_paths(self, set_name, path, subsets=[]):
         """ add file paths of element to paths dictionary"""
         for element in next(os.walk(path))[1]:
-            if not element in subsets:
+            if element not in subsets:
                 self.paths[set_name][element] = dict()
                 self.paths[set_name][element]["folder"] = os.path.join(path, element)
                 sub_path = os.path.join(path, element)
                 for file in next(os.walk(sub_path))[2]:
                     self.paths[set_name][element][file] = os.path.join(sub_path, file)
+                # add element paths to parent sets
+                parent_sets = self._find_parent_set(self.analysis["subsets"],set_name)
+                for parent_set in parent_sets:
+                    self.paths[parent_set][element] = self.paths[set_name][element]
             else:
                 self.paths[element] = dict()
                 self.paths[element]["folder"] = os.path.join(path, element)
 
+    def _find_parent_set(self,dictionary,subset,path=None):
+        """
+        This method finds the parent sets of a subset
+        :param dictionary:
+        :param subset:
+        :param path:
+        :return:
+        """
+        if path is None:
+            path = []
+        for key, value in dictionary.items():
+            current_path = path + [key]
+            if subset in dictionary[key]:
+                return current_path
+            elif isinstance(value, dict):
+                result = self._find_parent_set(value, subset, current_path)
+                if result:
+                    return result
+        return []
 
     def add_elements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem."""
@@ -170,7 +193,6 @@ class OptimizationSetup(object):
                         if isinstance(subsets, dict):
                             stack.append(subsets)
             element_set = list(set(element_set) - set(element_subset))
-
 
             element_set.sort()
             # add element class

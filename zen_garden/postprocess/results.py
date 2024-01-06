@@ -641,30 +641,65 @@ class Results(object):
             val_0 = results[0].get_full_ts(component,scenario=scenarios[0])
             val_1 = results[1].get_full_ts(component,scenario=scenarios[1])
         mismatched_index = False
+        mismatched_shape = False
         if isinstance(val_0, pd.DataFrame):
             val_0 = val_0.sort_index(axis=0).sort_index(axis=1)
-            val_1 = val_1.sort_index(axis=0).sort_index(axis=1)
-            if not val_0.index.equals(val_1.index) or not val_0.columns.equals(val_1.columns):
-                mismatched_index = True
         else:
             val_0 = val_0.sort_index()
+        if isinstance(val_1, pd.DataFrame):
+            val_1 = val_1.sort_index(axis=0).sort_index(axis=1)
+        else:
             val_1 = val_1.sort_index()
+        if val_1.shape == val_0.shape:
+            if len(val_0.shape) == 2:
+                if not val_0.index.equals(val_1.index) or not val_0.columns.equals(val_1.columns):
+                    mismatched_index = True
+            elif not val_0.index.equals(val_1.index):
+                mismatched_index = True
+        else:
+            logging.info(f"Component {component} changed shape from {val_0.shape} ({result_names[0]}) to {val_1.shape} ({result_names[1]})")
+            mismatched_shape = True
             if not val_0.index.equals(val_1.index):
                 mismatched_index = True
+
         if mismatched_index:
             logging.info(f"Component {component} does not have matching index or columns")
             comparison_df = pd.concat([val_0,val_1],keys=result_names,axis=1)
             comparison_df = comparison_df.sort_index(axis=1, level=1)
             return comparison_df
-        is_close = np.isclose(val_0,val_1,rtol=rtol,equal_nan=True)
-        if isinstance(val_0,pd.DataFrame):
+        # if not mismatched_shape:
+        if not mismatched_shape:
+            return cls._get_different_vals(val_0,val_1,result_names,rtol)
+        else:
+            # check if the dataframe has only constant values along axis 1
+            if isinstance(val_0, pd.DataFrame) and (val_0.nunique(axis=1) == 1).all():
+                val_0 = val_0.iloc[:,0]
+            elif isinstance(val_1, pd.DataFrame) and (val_1.nunique(axis=1) == 1).all():
+                val_1 = val_1.iloc[:,0]
+            else:
+                logging.info(f"Component {component} has different values")
+                comparison_df = pd.concat([val_0, val_1], keys=result_names, axis=1)
+                comparison_df = comparison_df.sort_index(axis=1, level=1)
+                return comparison_df
+            return cls._get_different_vals(val_0,val_1,result_names,rtol)
+
+    @classmethod
+    def _get_different_vals(cls,val_0,val_1,result_names,rtol):
+        """
+        get the different values of two dataframes or series
+        :param val_0: first dataframe or series
+        :param val_1: second dataframe or series
+        :return: comparison_df
+        """
+        is_close = np.isclose(val_0, val_1, rtol=rtol, equal_nan=True)
+        if isinstance(val_0, pd.DataFrame):
             diff_val_0 = val_0[(~is_close).any(axis=1)]
             diff_val_1 = val_1[(~is_close).any(axis=1)]
         else:
             diff_val_0 = val_0[(~is_close)]
             diff_val_1 = val_1[(~is_close)]
-        comparison_df = pd.concat([diff_val_0,diff_val_1],keys=result_names,axis=1)
-        comparison_df = comparison_df.sort_index(axis=1,level=1)
+        comparison_df = pd.concat([diff_val_0, diff_val_1], keys=result_names, axis=1)
+        comparison_df = comparison_df.sort_index(axis=1, level=1)
         return comparison_df
 
     @classmethod
