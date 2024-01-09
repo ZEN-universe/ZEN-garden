@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict
 from typing import Any, Optional
 
 
-class Subscriptable(BaseModel):
+class Subscriptable(BaseModel, extra="allow"):
     def __getitem__(self, __name) -> Any:
         return getattr(self, __name)
 
@@ -23,7 +23,7 @@ class Subscriptable(BaseModel):
 
     def update(self, new_values: dict):
         for key, val in new_values.items():
-            if type(val) is dict:
+            if isinstance(val, dict):
                 getattr(self, key).update(val)
             else:
                 setattr(self, key, val)
@@ -137,7 +137,7 @@ class System(Subscriptable):
     conduct_time_series_aggregation: bool = True
     optimized_years: int = 3
     interval_between_years: int = 1
-    use_rolling_horizon: int = False
+    use_rolling_horizon: bool = False
     years_in_rolling_horizon: int = 5
 
 
@@ -145,7 +145,7 @@ class SolverOptions(Subscriptable):
     logfile: str = ".//outputs//logs//GurobiLogFile.log"
     MIPGap: Optional[str] = None
     TimeLimit: Optional[int] = None
-    Method: Optional[int] = None,
+    Method: Optional[int] = (None,)
     NodeMethod: Optional[int] = None
     BarHomogeneous: Optional[int] = None
     Threads: Optional[int] = None
@@ -248,41 +248,50 @@ class _Config(object):
         # transport distance (euclidean or actual)
         self.analysis["transport_distance"] = "Euclidean"
         # dictionary with subsets related to set
-        self.analysis["subsets"] = {"set_carriers": [], "set_technologies": ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]}
+        self.analysis["subsets"] = {
+            "set_carriers": [],
+            "set_technologies": [
+                "set_conversion_technologies",
+                "set_transport_technologies",
+                "set_storage_technologies",
+            ],
+        }
         # headers for the generation of input files
         self.analysis["header_data_inputs"] = {
-                "set_nodes": "node",
-                "set_edges": "edge",
-                "set_location": "location",
-                "set_time_steps": "time", # IMPORTANT: time must be unique
-                "set_time_steps_operation": "time_operation",
-                "set_time_steps_storage_level": "time_storage_level",
-                "set_time_steps_storage": "time_storage_level",
-                "set_time_steps_yearly": "year", # IMPORTANT: year must be unique
-                "set_time_steps_yearly_entire_horizon": "year_entire_horizon",
-                "set_carriers": "carrier",
-                "set_input_carriers": "carrier",
-                "set_output_carriers": "carrier",
-                "set_dependent_carriers": "carrier",
-                "set_elements": "element",
-                "set_conversion_technologies": "technology",
-                "set_transport_technologies": "technology",
-                "set_storage_technologies": "technology",
-                "set_technologies": "technology",
-                "set_technologies_existing": "technology_existing",
-                "set_capacity_types": "capacity_type"}
+            "set_nodes": "node",
+            "set_edges": "edge",
+            "set_location": "location",
+            "set_time_steps": "time",  # IMPORTANT: time must be unique
+            "set_time_steps_operation": "time_operation",
+            "set_time_steps_storage_level": "time_storage_level",
+            "set_time_steps_storage": "time_storage_level",
+            "set_time_steps_yearly": "year",  # IMPORTANT: year must be unique
+            "set_time_steps_yearly_entire_horizon": "year_entire_horizon",
+            "set_carriers": "carrier",
+            "set_input_carriers": "carrier",
+            "set_output_carriers": "carrier",
+            "set_dependent_carriers": "carrier",
+            "set_elements": "element",
+            "set_conversion_technologies": "technology",
+            "set_transport_technologies": "technology",
+            "set_storage_technologies": "technology",
+            "set_technologies": "technology",
+            "set_technologies_existing": "technology_existing",
+            "set_capacity_types": "capacity_type",
+        }
         # time series aggregation
         self.analysis["time_series_aggregation"] = {
-            "clusterMethod"         : "k_means",
-            "solver"                : "gurobi",
-            "hoursPerPeriod"        : 1,
-            "extremePeriodMethod"   : "None",
-            "rescaleClusterPeriods" : False,
-            "representationMethod"  : "meanRepresentation",
-            "resolution"            : 1,
-            "segmentation"          : False,
-            "noSegments"            : 12}
-        self.analysis['postprocess'] = False
+            "clusterMethod": "k_means",
+            "solver": "gurobi",
+            "hoursPerPeriod": 1,
+            "extremePeriodMethod": "None",
+            "rescaleClusterPeriods": False,
+            "representationMethod": "meanRepresentation",
+            "resolution": 1,
+            "segmentation": False,
+            "noSegments": 12,
+        }
+        self.analysis["postprocess"] = False
         self.analysis["folder_output"] = "./outputs/"
         self.analysis["overwrite_output"] = True
         # output format, can be h5, json or gzip
@@ -293,7 +302,7 @@ class _Config(object):
         self.analysis["folder_name_system_specification"] = "system_specification"
         # earliest possible year of input data, needed to differentiate between yearly and generic time indices
         self.analysis["earliest_year_of_data"] = 1900
-        self.analysis['use_capacities_existing'] = False
+        self.analysis["use_capacities_existing"] = False
 
         ## System - Items assignment
         # set of energy carriers
@@ -333,10 +342,7 @@ class _Config(object):
         # solver selection (find more solver options for gurobi here: https://www.gurobi.com/documentation/9.1/refman/parameters.html)
         self.solver["name"] = "glpk"
         # gurobi options
-        self.solver["solver_options"] = {
-            "TimeLimit":    None,
-            "Method":       None
-        }
+        self.solver["solver_options"] = {"TimeLimit": None, "Method": None}
         # Directory for solver output
         self.solver["solver_dir"] = ".//outputs//solver_files"
         self.solver["keep_files"] = False
@@ -347,7 +353,7 @@ class _Config(object):
         self.solver["analyze_numerics"] = False
         self.solver["recommend_base_units"] = False
         self.solver["immutable_unit"] = []
-        self.solver["range_unit_exponents"]    = {"min": -3, "max": 3}
+        self.solver["range_unit_exponents"] = {"min": -3, "max": 3}
         # assumes "ton" to be metric ton, not imperial ton
         self.solver["define_ton_as_metric_ton"] = True
         # round down to number of decimal points, for new capacity and unit multipliers
