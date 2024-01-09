@@ -1,8 +1,8 @@
+from pandas.core.api import Series as Series
 from zen_garden.postprocess.new_results.solution_loader import (
-    MF as AbstractMF,
-    SolutionLoader as AbstractLoader,
-    Scenario as AbstractScenario,
     Component as AbstractComponent,
+    Scenario as AbstractScenario,
+    SolutionLoader as AbstractLoader,
     ComponentType,
     TimestepType,
 )
@@ -11,7 +11,7 @@ from zen_garden.model.default_config import Analysis, System
 import json
 import os
 import h5py  # type: ignore
-from typing import Optional, Any
+from typing import Optional
 import pandas as pd
 import numpy as np
 
@@ -29,78 +29,47 @@ time_steps_map = {
 }
 
 
-class MF(AbstractMF):
-    def __init__(
-        self,
-        path: str,
-        component_name: str,
-        component_type: ComponentType,
-        mf_step: int,
-    ) -> None:
-        self.path = path
-        self.component_name: str = component_name
-        self._series_cache: Optional["pd.Series[Any]"] = None
-        self.component_type = component_type
-        self.step = mf_step
+def get_index_names(h5_group: h5py.Group) -> list[str]:
+    ans = []
 
-    def get_series(self) -> "pd.Series[Any]":
-        if self._series_cache is None:
-            pd_read = pd.read_hdf(self.path, self.component_name + "/dataframe")
-            if isinstance(pd_read, pd.DataFrame):
-                self._series_cache = pd_read.squeeze()
-            elif isinstance(pd_read, pd.Series):
-                self._series_cache = pd_read
-            if isinstance(self._series_cache, (np.float_, str)):
-                self._series_cache = pd.Series(
-                    [self._series_cache], index=pd_read.index
-                )
-        assert isinstance(self._series_cache, pd.Series)
-        return self._series_cache
-
-    @classmethod
-    def from_hdf(cls, hdf_path: str) -> "list[MF]":
-        ans: list[MF] = []
-        hdf_path_parts = hdf_path.split("/")
+    for key, val in h5_group.items():
+        if not key.startswith("axis"):
+            continue
         try:
-            mf_step = int(hdf_path_parts[-2].replace("MF_", ""))
-        except ValueError:
-            mf_step = 0
-        component_type = file_names_maps[hdf_path_parts[-1]]
-        for component_name in h5py.File(hdf_path):
-            ans.append(MF(hdf_path, component_name, component_type, mf_step))
-        return ans
+            name = val.attrs["name"].decode()
+        except KeyError:
+            continue
 
-    def get_index_names(self) -> list[str]:
-        h5_file = h5py.File(self.path)[self.component_name + "/dataframe"]
-        ans = []
+        if name != "N.":
+            ans.append(name)
 
-        for key, val in h5_file.items():
-            if not key.startswith("axis"):
-                continue
-            try:
-                name = val.attrs["name"].decode()
-            except KeyError:
-                continue
+    return ans
 
-            if name != "N.":
-                ans.append(name)
 
-        return ans
+def get_df_form_path(path, component_name) -> pd.Series:
+    pd_read = pd.read_hdf(path, component_name + "/dataframe")
+
+    if isinstance(pd_read, pd.DataFrame):
+        ans = pd_read.squeeze()
+    elif isinstance(pd_read, pd.Series):
+        ans = pd_read
+    if isinstance(ans, (np.float_, str)):
+        ans = pd.Series([ans], index=pd_read.index)
+    return ans
 
 
 class Component(AbstractComponent):
     def __init__(
         self,
         name: str,
-        mf_steps: dict[int, MF],
         component_type: ComponentType,
         ts_type: Optional[TimestepType],
+        file_name: str,
     ) -> None:
-        self._series: Optional[pd.Series[Any]] = None
-        self._mf_steps = mf_steps
         self._component_type = component_type
         self.name = name
         self._ts_type = ts_type
+        self.file_name = file_name
 
         if ts_type is None:
             self._ts_name = None
@@ -114,73 +83,8 @@ class Component(AbstractComponent):
         return self._component_type
 
     @property
-    def has_mf(self) -> bool:
-        return len(self._mf_steps) > 1
-
-    @property
-    def mf_steps(self) -> dict[int, MF]:  # type: ignore
-        return self._mf_steps
-
-    def get_levels(self) -> list[str]:
-        return []
-
-    @property
     def timestep_type(self) -> Optional[TimestepType]:
         return self._ts_type
-
-    @property
-    def timestep_name(self) -> Optional[str]:
-        return self._ts_name
-
-    @classmethod
-    def from_scenario_folder(cls, folder_path: str) -> dict[str, "AbstractComponent"]:
-        folder_content = os.listdir(folder_path)
-        has_mf = "MF_1" in folder_content
-
-        if has_mf:
-            mf_folders = [
-                os.path.join(folder_path, i)
-                for i in folder_content
-                if i.startswith("MF_")
-            ]
-        else:
-            mf_folders = [folder_path]
-
-        names_mf_map: dict[str, dict[int, MF]] = {}
-        names_componenttype_map: dict[str, ComponentType] = {}
-        names_tstype_map: dict[str, Optional[TimestepType]] = {}
-
-        for folder in mf_folders:
-            h5_files = [i for i in os.listdir(folder) if i in file_names_maps]
-            for h5_file in h5_files:
-                h5_file_path = os.path.join(folder, h5_file)
-                mfs = MF.from_hdf(h5_file_path)
-
-                for mf in mfs:
-                    if mf.component_name not in names_mf_map:
-                        names_mf_map[mf.component_name] = {}
-
-                    names_mf_map[mf.component_name][mf.step] = mf
-
-        for component_name, mfs_dict in names_mf_map.items():
-            first_mf: MF = mfs_dict[0]
-            names_componenttype_map[component_name] = first_mf.component_type
-            index_names = first_mf.get_index_names()
-
-            time_index = set(index_names).intersection(set(time_steps_map.keys()))
-
-            timestep_name = time_index.pop() if len(time_index) > 0 else ""
-            timestep_type = time_steps_map.get(timestep_name, None)
-            names_tstype_map[component_name] = timestep_type
-
-        ans: dict[str, "AbstractComponent"] = {
-            name: Component(
-                name, mf_steps, names_componenttype_map[name], names_tstype_map[name]
-            )
-            for name, mf_steps in names_mf_map.items()
-        }
-
-        return ans
 
 
 class Scenario(AbstractScenario):
@@ -188,7 +92,6 @@ class Scenario(AbstractScenario):
         self.path = path
         self._analysis: Analysis = self._read_analysis()
         self._system: System = self._read_system()
-        self._components = self._read_components()
 
     def _read_analysis(self) -> Analysis:
         analysis_path = os.path.join(self.path, "analysis.json")
@@ -206,9 +109,6 @@ class Scenario(AbstractScenario):
                 return System(**json.load(f))
         return System()
 
-    def _read_components(self) -> dict[str, AbstractComponent]:
-        return Component.from_scenario_folder(self.path)
-
     @property
     def analysis(self) -> Analysis:
         return self._analysis
@@ -217,69 +117,154 @@ class Scenario(AbstractScenario):
     def system(self) -> System:
         return self._system
 
-    @property
-    def components(self) -> dict[str, AbstractComponent]:
-        return self._components
+    def get_time_steps_of_year(self, ts_type: TimestepType, year: int):
+        tech_proxy = self.system.set_storage_technologies[0]
+        time_step_path = os.path.join(self.path, "dict_all_sequence_time_steps.h5")
+        time_step_file = h5py.File(time_step_path)
+
+        if ts_type is TimestepType.storage:
+            tech_proxy = tech_proxy + "_storage_level"
+            time_step_name = "time_steps_year2operation"
+        elif ts_type is TimestepType.operational:
+            time_step_name = "time_steps_year2operation"
+
+        time_step_yearly = time_step_file[time_step_name]
+
+        if tech_proxy in time_step_yearly:
+            time_step_yearly = time_step_yearly[tech_proxy]
+
+        year_series = time_step_yearly[str(year)]
+
+        return pd.read_hdf(time_step_path, year_series.name)
 
 
 class MultiHdfLoader(AbstractLoader):
     def __init__(self, path: str) -> None:
         self.path = path
-        self._scenarios: dict[str, AbstractScenario] = self._read_scenarios()
-        self._time_steps_year2operation_cache: dict[
-            str, pd.Series[Any] | pd.DataFrame
-        ] = {}
+        self._scenarios: dict[str, Scenario] = self._read_scenarios()
+        self._components: dict[str, AbstractComponent] = self._read_components()
+        self._series_cache: dict[str, pd.Series] = {}
 
     @property
-    def scenarios(self) -> dict[str, AbstractScenario]:
+    def scenarios(self) -> dict[str, Scenario]:
         return self._scenarios
+
+    @property
+    def components(self) -> list[str]:
+        return self._components
+
+    @property
+    def has_rh(self):
+        first_scenario_name = next(iter(self._scenarios.keys()))
+        first_scenario = self._scenarios[first_scenario_name]
+        return first_scenario.system.use_rolling_horizon
+
+    def combine_dataseries(
+        self, component: Component, scenario: Scenario, pd_dict: dict[str, pd.Series]
+    ):
+        series_to_concat = []
+        n_years = len(pd_dict)
+
+        for year in range(n_years):
+            current_mf = pd_dict[f"MF_{year}"]
+            if component.timestep_type is TimestepType.yearly:
+                year_series = current_mf[
+                    current_mf.index.get_level_values("year") == year
+                ]
+                series_to_concat.append(year_series)
+            elif component.timestep_type in [
+                TimestepType.operational,
+                TimestepType.storage,
+            ]:
+                time_level_name = (
+                    "time_operation"
+                    if component.timestep_type is TimestepType.operational
+                    else "time_storage_level"
+                )
+                time_steps = scenario.get_time_steps_of_year(
+                    component.timestep_type, year
+                )
+                time_step_list = {tstep for tstep in time_steps}
+                year_series = current_mf[
+                    [
+                        i in time_step_list
+                        for i in current_mf.index.get_level_values(time_level_name)
+                    ]
+                ]
+                series_to_concat.append(year_series)
+            else:
+                series_to_concat.append(current_mf)
+
+        return pd.concat(series_to_concat)
+
+    def get_component_data(self, scenario: Scenario, component: Component) -> Series:
+        if self.has_rh:
+            subfolder_names = [i for i in os.listdir(scenario.path) if "MF_" in i]
+            pd_series_dict = {}
+
+            for subfolder_name in subfolder_names:
+                file_path = os.path.join(
+                    scenario.path, subfolder_name, component.file_name
+                )
+                pd_series_dict[subfolder_name] = get_df_form_path(
+                    file_path, component.name
+                )
+
+            return self.combine_dataseries(component, scenario, pd_series_dict)
+        else:
+            file_path = os.path.join(scenario.path, component.file_name)
+            return get_df_form_path(file_path, component.name)
 
     def _read_scenarios(self) -> dict[str, AbstractScenario]:
         scenarios_json_path = os.path.join(self.path, "scenarios.json")
         ans: dict[str, AbstractScenario] = {}
 
         with open(scenarios_json_path, "r") as f:
-            scenarios_config = json.load(f)
+            scenario_configs = json.load(f)
 
-        if len(scenarios_config) == 1:
+        if len(scenario_configs) == 1:
             scenario_name = "none"
             scenario_path = self.path
             ans[scenario_name] = Scenario(scenario_path)
         else:
-            for scenario_id in scenarios_config:
-                scenario_name = "scenario_" + scenario_id
-                scenario_path = os.path.join(self.path, scenario_name)
+            for scenario_id, scenario_config in scenario_configs.items():
+                scenario_name = f"scenario_{scenario_id}"
+                scenario_path = os.path.join(
+                    self.path, f"scenario_{scenario_config['base_scenario']}"
+                )
+
+                scenario_subfolder = scenario_config["sub_folder"]
+
+                if scenario_subfolder != "":
+                    scenario_path = os.path.join(
+                        scenario_path, f"scenario_{scenario_subfolder}"
+                    )
+
                 ans[scenario_name] = Scenario(scenario_path)
 
         return ans
 
-    def get_time_steps_year2operation(self, year: int, is_storage: bool) -> Any:
-        cache_key = str(year) + str(is_storage)
+    def _read_components(self) -> dict[str, Component]:
+        ans: dict[str, Component] = {}
+        first_scenario_name = next(iter(self._scenarios.keys()))
+        first_scenario = self._scenarios[first_scenario_name]
 
-        if cache_key in self._time_steps_year2operation_cache:
-            return self._time_steps_year2operation_cache[cache_key]
+        if self.has_rh:
+            mf_name = [i for i in os.listdir(first_scenario.path) if "MF_" in i][0]
+            component_folder = os.path.join(first_scenario.path, mf_name)
+        else:
+            component_folder = first_scenario.path
 
-        file_path = os.path.join(self.path, "dict_all_sequence_time_steps.h5")
-        h5_file = h5py.File(file_path)
+        for file_name, component_type in file_names_maps.items():
+            file_path = os.path.join(component_folder, file_name)
+            h5_file = h5py.File(file_path)
+            for component_name in h5_file.keys():
+                index_names = get_index_names(h5_file[component_name + "/dataframe"])
+                time_index = set(index_names).intersection(set(time_steps_map.keys()))
+                timestep_name = time_index.pop() if len(time_index) > 0 else ""
+                timestep_type = time_steps_map.get(timestep_name, None)
+                ans[component_name] = Component(
+                    component_name, component_type, timestep_type, file_name
+                )
 
-        ts_name = "time_steps_year2operation"
-        if ts_name in h5_file:
-            # select any element for year2operation
-            if is_storage:
-                element = list(
-                    filter(lambda x: "_storage_level" in x, h5_file[ts_name].keys())
-                )[0]
-            else:
-                element = next(iter(h5_file[ts_name].keys()))
-
-            relevant_group = h5_file[ts_name][element][str(year)]
-            self._time_steps_year2operation_cache[cache_key] = pd.read_hdf(
-                relevant_group.file.filename, relevant_group.name
-            )
-
-        return self._time_steps_year2operation_cache[cache_key]
-
-    @property
-    def component_names(self) -> list[str]:
-        first_scenario = next(iter(self.scenarios.values()))
-        return [component for component in first_scenario.components]
+        return ans

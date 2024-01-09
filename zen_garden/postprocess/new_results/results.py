@@ -20,29 +20,24 @@ class Results:
     def compare_config(self, other_results: "Results") -> None:
         pass
 
-    def get_aggregated_ts(
+    def get_component_data(
         self, component_name: str, scenario_name: Optional[str] = None
     ) -> dict[str, "pd.Series[Any]"]:
-        scenarios = self.solution_loader.scenarios
+        component = self.solution_loader.components[component_name]
 
-        if scenario_name is None:
-            scenario_names_to_include = [i for i in scenarios]
-        else:
-            assert scenario_name in scenarios
-            scenario_names_to_include = [scenario_name]
+        scenario_names = (
+            self.solution_loader.scenarios.keys()
+            if scenario_name is None
+            else [scenario_name]
+        )
 
-        aggregated_scenarios: dict[str, pd.Series[Any]] = {}
+        ans = {}
 
-        for scenario_name in scenario_names_to_include:
-            scenario = scenarios[scenario_name]
-            component = scenario.components[component_name]
-            scenario_series = component.get_mf_aggregated_series()
-            aggregated_scenarios[scenario_name] = scenario_series
+        for scenario_name in scenario_names:
+            scenario = self.solution_loader.scenarios[scenario_name]
+            ans[scenario_name] = self.solution_loader.get_component_data(scenario, component)
 
-        if len(scenario_names_to_include) == 1:
-            return aggregated_scenarios[scenario_names_to_include[0]]
-
-        return aggregated_scenarios
+        return ans
 
     def get_full_ts(self) -> None:
         pass
