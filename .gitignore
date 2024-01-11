@@ -185,3 +185,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 elementary_effect/elementary_effect.py
+notebooks/postprocess_results_tutorial.ipynb

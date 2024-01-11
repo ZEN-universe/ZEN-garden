@@ -30,13 +30,12 @@ class TransportTechnology(Technology):
 
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of """
+
         super().__init__(tech, optimization_setup)
         # dict of reversed edges
         self.dict_reversed_edges = {}
         # store carriers of transport technology
         self.store_carriers()
-        # # store input data
-        # self.store_input_data()
 
     def store_carriers(self):
         """ retrieves and stores information on reference, input and output carriers """
@@ -48,8 +47,8 @@ class TransportTechnology(Technology):
         # get attributes from class <Technology>
         super().store_input_data()
         # set attributes for parameters of child class <TransportTechnology>
-        self.distance = self.data_input.extract_input_data("distance", index_sets=["set_edges"])
-        self.transport_loss_factor = self.data_input.extract_input_data("transport_loss_factor", index_sets=[])
+        self.distance = self.data_input.extract_input_data("distance", index_sets=["set_edges"], unit_category={"distance": 1})
+        self.transport_loss_factor = self.data_input.extract_input_data("transport_loss_factor", index_sets=[], unit_category={"distance": -1})
         # get capex of transport technology
         self.get_capex_transport()
         # annualize capex
@@ -62,19 +61,24 @@ class TransportTechnology(Technology):
         # check if there are separate capex for capacity and distance
         if self.optimization_setup.system['double_capex_transport']:
             # both capex terms must be specified
-            self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-            self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+            self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
+            self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
         else:  # Here only capex_specific is used, and capex_per_distance_transport is set to Zero.
-            if self.data_input.exists_attribute("capex_per_distance_transport"):
-                self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+            if "capex_per_distance_transport" in self.data_input.attribute_dict:
+                self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
                 self.capex_specific = self.capex_per_distance_transport * self.distance
-                self.opex_specific_fixed = self.opex_specific_fixed * self.distance
-            elif self.data_input.exists_attribute("capex_specific"):
-                self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+            elif "capex_specific" in self.data_input.attribute_dict:
+                self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
             else:
                 raise AttributeError(f"The transport technology {self.name} has neither capex_per_distance_transport nor capex_specific attribute.")
             self.capex_per_distance_transport = self.capex_specific * 0.0
-
+        if "opex_specific_fixed_per_distance" in self.data_input.attribute_dict:
+            self.opex_specific_fixed_per_distance = self.data_input.extract_input_data("opex_specific_fixed_per_distance", index_sets=["set_edges", "set_time_steps_yearly"], unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
+            self.opex_specific_fixed = self.opex_specific_fixed_per_distance * self.distance
+        elif "opex_specific_fixed" in self.data_input.attribute_dict:
+            self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
+        else:
+            raise AttributeError(f"The transport technology {self.name} has neither opex_specific_fixed_per_distance nor opex_specific_fixed attribute.")
     def convert_to_fraction_of_capex(self):
         """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
         fraction_year = self.calculate_fraction_of_year()
@@ -83,11 +87,11 @@ class TransportTechnology(Technology):
         self.capex_per_distance_transport = self.capex_per_distance_transport * fraction_year
 
     def calculate_capex_of_single_capacity(self, capacity, index):
-        """ this method calculates the annualized capex of a single existing capacity.
+        """ this method calculates the capex of a single existing capacity.
 
-        :param capacity: #TODO describe parameter/return
-        :param index: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param capacity: capacity of transport technology
+        :param index: index of capacity
+        :return: capex of single capacity
         """
         # TODO check existing capex of transport techs -> Hannes
         if np.isnan(self.capex_specific[index[0]].iloc[0]):
@@ -96,19 +100,19 @@ class TransportTechnology(Technology):
             return self.capex_specific[index[0]].iloc[0] * capacity
 
     ### --- getter/setter classmethods
-    def set_reversed_edge(self, edge, _reversed_edge):
+    def set_reversed_edge(self, edge, reversed_edge):
         """ maps the reversed edge to an edge
 
-        :param edge: #TODO describe parameter/return
-        :param _reversed_edge: #TODO describe parameter/return
+        :param edge: edge
+        :param reversed_edge: reversed edge
         """
-        self.dict_reversed_edges[edge] = _reversed_edge
+        self.dict_reversed_edges[edge] = reversed_edge
 
     def get_reversed_edge(self, edge):
         """ get the reversed edge corresponding to an edge
 
-        :param edge: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param edge: edge
+        :return: reversed edge
         """
         return self.dict_reversed_edges[edge]
 
@@ -159,7 +163,7 @@ class TransportTechnology(Technology):
             # get the arrays
             tech_arr, edge_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
             # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
-            time_step_year = xr.DataArray([optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time) for tech, time in zip(tech_arr.data, time_arr.data)])
+            time_step_year = xr.DataArray([optimization_setup.energy_system.time_steps.convert_time_step_operation2year(time) for time in time_arr.data])
 
             lower = model.variables["capacity"].lower.loc[tech_arr, "power", edge_arr, time_step_year].data
             upper = model.variables["capacity"].upper.loc[tech_arr, "power", edge_arr, time_step_year].data
@@ -172,7 +176,7 @@ class TransportTechnology(Technology):
             bounds=bounds, doc='carrier flow through transport technology on edge i and time t')
         # loss of carrier on edge
         variables.add_variable(model, name="flow_transport_loss", index_sets=(index_values, index_names), bounds=(0,np.inf),
-            doc='carrier flow through transport technology on edge i and time t')
+            doc='carrier flow lost due to resistances etc. by transporting carrier through transport technology on edge i and time t')
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
@@ -196,12 +200,12 @@ class TransportTechnology(Technology):
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
         """definition of disjunct constraints if technology is on
 
-        :param optimization_setup: #TODO describe parameter/return
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return:
-        :param edge: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :param binary_var: #TODO describe parameter/return
+        :param optimization_setup: optimization setup
+        :param tech: technology
+        :param capacity_type: type of capacity (power, energy)
+        :param node: node
+        :param time: yearly time step
+        :param binary_var: binary disjunction variable
         """
         model = optimization_setup.model
         # get parameter object
@@ -221,12 +225,12 @@ class TransportTechnology(Technology):
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
         """definition of disjunct constraints if technology is off
 
-        :param optimization_setup: #TODO describe parameter/return
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return #TODO describe parameter/return
-        :param edge: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :param binary_var: #TODO describe parameter/return
+        :param optimization_setup: optimization setup
+        :param tech: technology
+        :param capacity_type: type of capacity (power, energy)
+        :param node: node
+        :param time: yearly time step
+        :param binary_var: binary disjunction variable
         """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
@@ -266,7 +270,7 @@ class TransportTechnologyRules(GenericRule):
         .. math::
             \mathrm{else}\ F^\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -301,7 +305,7 @@ class TransportTechnologyRules(GenericRule):
         .. math::
             \mathrm{else}\ CAPEX_{y,n,i}^\mathrm{cost, power} = \\Delta S_{h,p,y}^\mathrm{power} \\alpha_{j,n,y} + B_{i,p,y} h_{j,e} \\alpha^\mathrm{d}_{j,y}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
