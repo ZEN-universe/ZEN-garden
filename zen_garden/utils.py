@@ -29,7 +29,7 @@ from pathlib import Path
 
 def setup_logger(level=logging.INFO):
     """ set up logger"""
-    logging.basicConfig(level=level,format="%(message)s",datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(stream=sys.stdout, level=level,format="%(message)s",datefmt='%Y-%m-%d %H:%M:%S')
     logging.captureWarnings(True)
 
 def get_inheritors(klass):
