@@ -329,10 +329,10 @@ class DataInput:
             super_loc = self.analysis["header_data_inputs"][set_super_locations]
             loc = self.analysis["header_data_inputs"][set_locations]
             set_super_locations_config = set(self.system[set_super_locations])
-            if self.read_input_data(set_super_locations) is None:
+            if self.read_input_csv(set_super_locations) is None:
                 assert len(set_super_locations_config) == 0, f"File for {set_super_locations} is missing."
                 return dict()
-            set_super_locations_input = self.read_input_data(set_super_locations).set_index(super_loc)
+            set_super_locations_input = self.read_input_csv(set_super_locations).set_index(super_loc)
             super_locations = set(set_super_locations_input.index.unique())
             if len(set_super_locations_config) > 0:
                 super_locations = super_locations.intersection(set_super_locations_config)

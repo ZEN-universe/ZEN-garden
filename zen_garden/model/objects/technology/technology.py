@@ -1165,8 +1165,8 @@ class TechnologyRules(GenericRule):
                 mask = xr.DataArray(np.nan, coords=[self.variables.coords["set_capacity_types"]], dims=["set_capacity_types"])
                 mask.loc[capacity_types] = 1
 
-            interval_between_years = self.system["interval_between_years"]
-            knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
+                interval_between_years = self.system["interval_between_years"]
+                knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
 
                 reference_carrier = self.sets["set_reference_carriers"][tech][0]
                 if tech in self.sets["set_transport_technologies"]:

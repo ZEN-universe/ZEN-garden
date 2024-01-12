@@ -258,14 +258,14 @@ class UnitHandling:
         :param get_multiplier: bool whether multiplier should be returned or not
         :return: multiplier to convert input_unit to base  units, pint Quantity of input_unit converted to base units
         """
-        #convert attribute unit into unit combination of base units
+        # convert attribute unit into unit combination of base units
         combined_unit = None
         attribute_unit_in_base_units = self.ureg("")
         if input_unit != "1" and not pd.isna(input_unit):
             combined_unit, base_combination = self.calculate_combined_unit(input_unit, return_combination=True)
             for unit, power in zip(base_combination.index, base_combination):
                 attribute_unit_in_base_units *= self.ureg(unit) ** power
-        #calculate the multiplier to convert the attribute unit into base units
+        # calculate the multiplier to convert the attribute unit into base units
         if get_multiplier:
             multiplier = self.get_unit_multiplier(input_unit, attribute_name, path, combined_unit=combined_unit)
             return multiplier, attribute_unit_in_base_units
