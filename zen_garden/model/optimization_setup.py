@@ -85,6 +85,9 @@ class OptimizationSetup(object):
         # read input data into elements
         self.read_input_csv()
 
+        # conduct consistency checks of input units
+        self.energy_system.unit_handling.consistency_checks_input_units(optimization_setup=self)
+
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
@@ -111,7 +114,7 @@ class OptimizationSetup(object):
                 path = self.paths[set_name]["folder"]
                 if isinstance(subsets, dict):
                     stack.append(subsets)
-                    self.add_folder_paths(set_name, path, subsets.keys())
+                    self.add_folder_paths(set_name, path, list(subsets.keys()))
                 else:
                     self.add_folder_paths(set_name, path, subsets)
                     for element in subsets:
@@ -121,16 +124,39 @@ class OptimizationSetup(object):
     def add_folder_paths(self, set_name, path, subsets=[]):
         """ add file paths of element to paths dictionary"""
         for element in next(os.walk(path))[1]:
-            if not element in subsets:
+            if element not in subsets:
                 self.paths[set_name][element] = dict()
                 self.paths[set_name][element]["folder"] = os.path.join(path, element)
                 sub_path = os.path.join(path, element)
                 for file in next(os.walk(sub_path))[2]:
                     self.paths[set_name][element][file] = os.path.join(sub_path, file)
+                # add element paths to parent sets
+                parent_sets = self._find_parent_set(self.analysis["subsets"],set_name)
+                for parent_set in parent_sets:
+                    self.paths[parent_set][element] = self.paths[set_name][element]
             else:
                 self.paths[element] = dict()
                 self.paths[element]["folder"] = os.path.join(path, element)
 
+    def _find_parent_set(self,dictionary,subset,path=None):
+        """
+        This method finds the parent sets of a subset
+        :param dictionary:
+        :param subset:
+        :param path:
+        :return:
+        """
+        if path is None:
+            path = []
+        for key, value in dictionary.items():
+            current_path = path + [key]
+            if subset in dictionary[key]:
+                return current_path
+            elif isinstance(value, dict):
+                result = self._find_parent_set(value, subset, current_path)
+                if result:
+                    return result
+        return []
 
     def add_elements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem."""
@@ -167,7 +193,6 @@ class OptimizationSetup(object):
                         if isinstance(subsets, dict):
                             stack.append(subsets)
             element_set = list(set(element_set) - set(element_subset))
-
 
             element_set.sort()
             # add element class
@@ -570,19 +595,19 @@ class OptimizationSetup(object):
                     self.energy_system.set_time_steps_yearly = copy.deepcopy(set_time_steps_yearly)
                     tech.set_technologies_existing = tech.data_input.extract_set_technologies_existing()
                     tech.capacity_existing = tech.data_input.extract_input_data(
-                        "capacity_existing", index_sets=[set_location, "set_technologies_existing"])
+                        "capacity_existing", index_sets=[set_location, "set_technologies_existing"], unit_category={"energy_quantity": 1, "time": -1})
                     tech.capacity_investment_existing = tech.data_input.extract_input_data(
-                        "capacity_investment_existing", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+                        "capacity_investment_existing", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1, "time": -1})
                     tech.lifetime_existing = tech.data_input.extract_lifetime_existing(
                         "capacity_existing", index_sets=[set_location, "set_technologies_existing"])
                     # calculate capex of existing capacity
                     tech.capex_capacity_existing = tech.calculate_capex_of_capacities_existing()
                     if tech.__class__.__name__ == "StorageTechnology":
                         tech.capacity_existing_energy = tech.data_input.extract_input_data(
-                            "capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"])
+                            "capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"], unit_category={"energy_quantity": 1})
                         tech.capacity_investment_existing_energy = tech.data_input.extract_input_data(
                             "capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
-                            time_steps="set_time_steps_yearly")
+                            time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
                         tech.capex_capacity_existing_energy = tech.calculate_capex_of_capacities_existing(storage_energy=True)
 
     def add_carbon_emission_cumulative(self, step_horizon):
@@ -598,7 +623,7 @@ class OptimizationSetup(object):
                 self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + carbon_emissions_annual * (interval_between_years - 1)
             else:
                 self.energy_system.carbon_emissions_cumulative_existing = self.energy_system.data_input.extract_input_data(
-                    "carbon_emissions_cumulative_existing",index_sets=[])
+                    "carbon_emissions_cumulative_existing", index_sets=[], unit_category={"emissions": 1})
 
     def initialize_component(self, calling_class, component_name, index_names=None, set_time_steps=None, capacity_types=False):
         """ this method initializes a modeling component by extracting the stored input data.
@@ -625,20 +650,16 @@ class OptimizationSetup(object):
             else:
                 component_data = component.squeeze()
         else:
+            if index_names is None:
+                raise ValueError(f"Index names for {component_name} not specified")
+            custom_set, index_list = calling_class.create_custom_set(index_names, self)
             component_data, attribute_is_series = self.get_attribute_of_all_elements(calling_class, component_name, capacity_types=capacity_types, return_attribute_is_series=True)
-            index_list = []
-            if index_names:
-                custom_set, index_list = calling_class.create_custom_set(index_names, self)
-                if np.size(custom_set):
-                    if attribute_is_series:
-                        component_data = pd.concat(component_data, keys=component_data.keys())
-                    else:
-                        component_data = pd.Series(component_data)
-                    component_data = self.check_for_subindex(component_data, custom_set)
-            elif attribute_is_series:
-                component_data = pd.concat(component_data, keys=component_data.keys())
-            if not index_names:
-                logging.warning(f"Initializing a parameter ({component_name}) without the specifying the index names will be deprecated!")
+            if np.size(custom_set):
+                if attribute_is_series:
+                    component_data = pd.concat(component_data, keys=component_data.keys())
+                else:
+                    component_data = pd.Series(component_data)
+                component_data = self.check_for_subindex(component_data, custom_set)
         if isinstance(component_data,pd.Series) and not isinstance(component_data.index,pd.MultiIndex):
             component_data.index = pd.MultiIndex.from_product([component_data.index.to_list()])
         return component_data, index_list

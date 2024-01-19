@@ -416,8 +416,8 @@ class ScenarioDict(dict):
                         exclude_list = []
 
                     # expand the sets
-                    for element in self.system[current_set]:
-                        if element not in exclude_list:
+                    for element in self.paths[current_set].keys():
+                        if element != "folder" and element not in exclude_list:
                             # create dicts if necessary
                             if element not in new_dict:
                                 new_dict[element] = {}
@@ -1117,7 +1117,7 @@ class InputDataChecks:
         for carrier in self.optimization_setup.system["set_carriers"]:
             if carrier not in self.optimization_setup.paths["set_carriers"].keys():
                 # raise error if carrier is not in input data
-                raise FileNotFoundError(f"Technology {carrier} selected in config does not exist in input data")
+                raise FileNotFoundError(f"Carrier {carrier} selected in config does not exist in input data")
             elif "attributes.json" not in self.optimization_setup.paths["set_carriers"][carrier]:
                 raise FileNotFoundError(f"The file attributes.json does not exist for the carrier {carrier}")
 

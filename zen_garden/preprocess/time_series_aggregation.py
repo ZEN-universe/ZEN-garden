@@ -115,6 +115,8 @@ class TimeSeriesAggregation(object):
 
     def set_aggregated_ts_all_elements(self):
         """ this method sets the aggregated time series and sets the necessary attributes after the aggregation """
+        # sort typical periods to avoid indexing past lexsort depth
+        self.typical_periods = self.typical_periods.sort_index(axis=1)
         # sets the aggregated time series of each element
         for element in self.optimization_setup.get_all_elements(Element):
             raw_ts = getattr(element, "raw_time_series")
