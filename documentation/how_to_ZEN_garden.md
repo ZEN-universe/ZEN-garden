@@ -150,7 +150,7 @@ More generally, the five unit dimensions _energy_quantity_, _time_, _money_, _di
 Equivalently, the energy\_quanity must be consistent per technology element as well.
 
 ## Input data structure
-The input data of a dataset must be composed of the _system.py_ file and the five folders _set\_carriers_, _set\_conversion\_technologies_, _set\_transport\_technologies_, _set\_storage\_technologies_ and _system\_specification_.
+The input data of a dataset must be composed of the _system.py_ file and the five folders _set\_carriers_, _set\_conversion\_technologies_, _set\_transport\_technologies_, _set\_storage\_technologies_ and _energy\_system_.
 
 ### system.py
 The _system.py_ file must contain the sets of technologies that constitute the energy system, i.e. , that take part in supplying the final energy demands. You can have technologies in your input data folder but not list them in the system.py. In this case, they are excluded from the optimization. Additionally, a subset of nodes (from _system\_specification/set\_nodes.csv_), the starting year of the optimization (_reference\_year_) and a lot of other time related specifications can be defined. The time step parameters are discussed [in this Git Discussion](https://github.com/RRE-ETH/ZEN-garden/discussions/143). To get an overview of how to define the different properties, have a look at the [system settings](#system).
@@ -180,14 +180,23 @@ The _set\_conversion\_technologies_ folder contains the energy conversion techno
 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/13061320-754a-4107-88a1-c0cb163718c5)
 
+#### set_retrofitting_technologies
+The _set_retrofitting_technologies_ folder is mainly designated to defined carbon capture technolgies which can be retrofitted to an existing carbon-emitting technology (e.g. coal fired power plant) in order to capture the emitted carbon. Since carbon most often is emitted when converting energy carriers retrofitting technologies are a sub-class of conversion technologies. To assign a retrofit technology to its parent conversion technology (e.g. carbon capture to a coal fired power plant) the attribute _retrofit_base_technology_ is used. To specify the flow of the retrofit technology's reference carrier (carbon) it is related to the parent's reference carrier flow by the attribute _retrofit_flow_coupling_factor_ (flow of retrofit reference carrier per flow of conversion technology reference carrier).
+
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/9a54ad87-4db8-4c25-86e0-87ec53e959d0)
+
+
 ### set\_transport\_technologies
 The _set\_transport\_technologies_ folder contains the energy transport technologies such as natural gas pipelines or power lines. All the transport technologies that are specified in the system file's technology sets must be contained in this directory; additional transport technologies are allowed. Once more, the individual transport technologies must be defined the same way as carriers and other technologies.
+
+#### opex_specific_fixed vs opex_specific_fixed_per_distance
+The specific opex of transport technologies can either be defined as money per capacity or money per capacity per length, by providing the attribute opex_specific_fixed or opex_specific_fixed_per_distance, respectively. If both attributes are defined, the distance-dependent value is used.
 
 ### set\_storage\_technologies
 The _set\_storage\_technologies_ folder contains the energy storage technologies such as pumped hydro, natural gas storages, batteries, etc. All the storage technologies that are specified in the system file's technology sets must be contained in this directory; additional storage technologies are allowed. Again, the procedure of defining them is equivalent as before.
 
-### system\_specification
-The _system\_specification_ folder contains additional input data that is needed to define the energy system as a whole. Other than the carrier and technology folders, this folder must contain more files than just the attributes file:
+### energy\_system
+The _energy\_system_ folder contains additional input data that is needed to define the energy system as a whole. Other than the carrier and technology folders, this folder must contain more files than just the attributes file:
 
 - attributes.json: carbon emissions related information etc.
 - base\_units.csv: definition of base units to which input data units are converted
