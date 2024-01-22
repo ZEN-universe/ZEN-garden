@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from zen_garden.model.default_config import Analysis, System
 import pandas as pd
-from typing import Optional
+from typing import Optional, Any
 
 
 class ComponentType(Enum):
@@ -50,6 +50,16 @@ class Component(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def file_name(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
 
 class Scenario(ABC):
     def __init__(self) -> None:
@@ -69,6 +79,11 @@ class Scenario(ABC):
         """
         Abstract property that should return the System-Config of a sceanrio.
         """
+        pass
+
+    @property
+    @abstractmethod
+    def path(self) -> str:
         pass
 
 
@@ -117,7 +132,9 @@ class SolutionLoader(ABC):
         pass
 
     @abstractmethod
-    def get_component_data(self, scenario: Scenario, component: Component) -> pd.Series:
+    def get_component_data(
+        self, scenario: Scenario, component: Component
+    ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Abstract method that should return the component values of a given scenario and a
         given component.
@@ -131,7 +148,7 @@ class SolutionLoader(ABC):
     @abstractmethod
     def get_timestep_duration(
         self, scenario: Scenario, component: Component
-    ) -> pd.Series:
+    ) -> "pd.Series[Any]":
         """
         Abstract method that should return the timestep durations given a scenario and a
         component.
@@ -141,7 +158,7 @@ class SolutionLoader(ABC):
     @abstractmethod
     def get_timesteps(
         self, scenario: Scenario, component: Component, year: int
-    ) -> pd.Series:
+    ) -> "pd.Series[Any]":
         """
         Abstract method that should return the timesteps given a scenario and a component.
         """

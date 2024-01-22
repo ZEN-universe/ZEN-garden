@@ -16,7 +16,7 @@ class Results:
 
     def get_component_data(
         self, component_name: str, scenario_name: Optional[str] = None
-    ) -> dict[str, "pd.Series[Any]"]:
+    ) -> dict[str, "pd.DataFrame | pd.Series[Any]"]:
         component = self.solution_loader.components[component_name]
 
         scenario_names = (
@@ -35,7 +35,10 @@ class Results:
 
         return ans
 
-    def get_full_ts(self) -> None:
+    def get_full_ts_per_scenario(self) -> "pd.Series[Any]":
+        return pd.Series()
+
+    def get_full_ts(self, component_name: str) -> None:
         pass
 
     @cache
@@ -45,14 +48,16 @@ class Results:
         component: Component,
         element_name: Optional[str] = None,
         year: Optional[int] = None,
-    ) -> pd.DataFrame:
+    ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Calculates the total values of a component for a specific scenario.
         """
         series = self.solution_loader.get_component_data(scenario, component)
 
-        years = (
-            list(range(0, scenario.system.optimized_years)) if year is None else [year]
+        years: list[str] = (
+            [str(i) for i in range(0, scenario.system.optimized_years)]
+            if year is None
+            else [str(year)]
         )
 
         if component.timestep_type is None:
@@ -73,17 +78,17 @@ class Results:
         )
 
         unstacked_series = series.unstack(component.timestep_name)
-        total_value = unstacked_series.multiply(timestep_duration, axis=1)
+        total_value = unstacked_series.multiply(timestep_duration, axis=1)  # type: ignore
 
         ans = pd.DataFrame(index=unstacked_series.index)
 
-        for year in years:
-            timesteps = self.solution_loader.get_timesteps(scenario, component, year)
+        for y in years:
+            timesteps = self.solution_loader.get_timesteps(scenario, component, int(y))
             try:
-                ans.insert(year, year, total_value[timesteps].sum(axis=1))
+                ans.insert(int(y), y, total_value[timesteps].sum(axis=1))  # type: ignore
             except KeyError:
-                timesteps = [i for i in timesteps if i in total_value]
-                ans.insert(year, year, total_value[timesteps].sum(axis=1))
+                timestep_list = [i for i in timesteps if i in total_value]
+                ans.insert(year, year, total_value[timestep_list].sum(axis=1))  # type: ignore # noqa
 
         return ans
 
@@ -93,8 +98,8 @@ class Results:
         component_name: str,
         element_name: Optional[str] = None,
         year: Optional[int] = None,
-        scenario_name: str = None,
-    ) -> pd.DataFrame:
+        scenario_name: Optional[str] = None,
+    ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Calculates the total values of a component for a all scenarios.
         """
@@ -105,7 +110,7 @@ class Results:
 
         component = self.solution_loader.components[component_name]
 
-        scenarios_dict: dict[str, pd.DataFrame | pd.Series] = {}
+        scenarios_dict: dict[str, "pd.DataFrame | pd.Series[Any]"] = {}
 
         for scenario_name in scenario_names:
             scenario = self.solution_loader.scenarios[scenario_name]
@@ -128,7 +133,7 @@ class Results:
             ).T
         else:
             try:
-                total_value = pd.concat(scenarios_dict, keys=scenarios_dict.keys())
+                total_value = pd.concat(scenarios_dict, keys=scenarios_dict.keys())  # type: ignore # noqa
             except Exception:
                 total_value = pd.concat(
                     scenarios_dict, keys=scenarios_dict.keys(), axis=1
