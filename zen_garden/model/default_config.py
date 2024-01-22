@@ -67,6 +67,7 @@ class HeaderDataInputs(Subscriptable):
     set_carriers: str = "carrier"
     set_input_carriers: str = "carrier"
     set_output_carriers: str = "carrier"
+    set_time_steps_storage: str = "time_storage_level"
     set_dependent_carriers: str = "carrier"
     set_conditioning_carriers: str = "carrier"
     set_conditioning_carrier_parents: str = "carrier"
