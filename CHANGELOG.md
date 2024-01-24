@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Bug fix of numerical values regarding construction time:
 1. Sometimes forced the capacity additions in the last and the second last time step to be equal
 2. construction time was one period too short
+- Bug fix of the lifetime of existing capacities (existed one period longer than desired)
 - Adapted the tests accordingly
 
 ### Changed
