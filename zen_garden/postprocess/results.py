@@ -1363,7 +1363,7 @@ class Results(object):
         """
         system = self.results[scenario]["system"]
         # calculate annuity
-        discount_rate = self.get_df("discount_rate").squeeze()
+        discount_rate = self.get_df("discount_rate",scenario=scenario).squeeze()
         annuity = pd.Series(index=self.get_years(scenario), dtype=float)
         for year in self.get_years(scenario):
             interval_between_years = system["interval_between_years"]
