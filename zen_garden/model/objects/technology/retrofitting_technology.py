@@ -4,9 +4,9 @@
 :Authors:   Alissa Ganter (aganter@ethz.ch), Jacob Mannhardt (jmannhardt@ethz.ch)
 :Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
 
-Class defining the parameters, variables, and constraints of the conversion technologies.
+Class defining the parameters, variables, and constraints of the retrofitting technologies.
 The class takes the abstract optimization model as an input and adds parameters, variables, and
-constraints of the conversion technologies.
+constraints of the retrofitting technologies.
 """
 import logging
 
@@ -56,7 +56,7 @@ class RetrofittingTechnology(ConversionTechnology):
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
     def construct_sets(cls, optimization_setup):
-        """ constructs the pe.Sets of the class <ConversionTechnology>
+        """ constructs the pe.Sets of the class <RetrofittingTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
 
@@ -68,10 +68,9 @@ class RetrofittingTechnology(ConversionTechnology):
                                         doc="set of base technologies for a specific retrofitting technology. Dimensions: set_retrofitting_technologies",
                                         index_set="set_retrofitting_technologies")
 
-
     @classmethod
     def construct_params(cls, optimization_setup):
-        """ constructs the pe.Params of the class <ConversionTechnology>
+        """ constructs the pe.Params of the class <RetrofittingTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
 
@@ -80,10 +79,9 @@ class RetrofittingTechnology(ConversionTechnology):
             data= optimization_setup.initialize_component(cls, "retrofit_flow_coupling_factor", index_names=["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"], capacity_types=False),
             doc="Parameter which specifies the flow coupling between the retrofitting technologies and its base technology")
 
-
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the pe.Constraints of the class <ConversionTechnology>
+        """ constructs the pe.Constraints of the class <RetrofittingTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         model = optimization_setup.model
@@ -97,11 +95,9 @@ class RetrofittingTechnology(ConversionTechnology):
                                              *cls.create_custom_set(["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)),
                                          doc="couples the reference flows of the retrofitting technology and its base technology")
 
-
-
 class RetrofittingTechnologyRules(GenericRule):
     """
-    Rules for the ConversionTechnology class
+    Rules for the RetrofittingTechnology class
     """
 
     def __init__(self, optimization_setup):
