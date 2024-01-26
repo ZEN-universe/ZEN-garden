@@ -53,7 +53,7 @@ class OptimizationSetup(object):
         self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
-        # pe.ConcreteModel
+        # optimization model
         self.model = None
         # the components
         self.variables = None
@@ -122,7 +122,11 @@ class OptimizationSetup(object):
                             self.add_folder_paths(element, self.paths[element]["folder"])
 
     def add_folder_paths(self, set_name, path, subsets=[]):
-        """ add file paths of element to paths dictionary"""
+        """ add file paths of element to paths dictionary
+        :param set_name: name of set
+        :param path: path to folder
+        :param subsets: list of subsets
+        """
         for element in next(os.walk(path))[1]:
             if element not in subsets:
                 self.paths[set_name][element] = dict()
@@ -141,10 +145,10 @@ class OptimizationSetup(object):
     def _find_parent_set(self,dictionary,subset,path=None):
         """
         This method finds the parent sets of a subset
-        :param dictionary:
-        :param subset:
-        :param path:
-        :return:
+        :param dictionary: dictionary of subsets
+        :param subset: subset to find parent sets of
+        :param path: path to subset
+        :return: list of parent sets
         """
         if path is None:
             path = []

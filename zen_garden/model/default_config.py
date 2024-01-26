@@ -137,6 +137,8 @@ class Config(object):
         self.system["set_nodes"] = []
         # toggle to use time_series_aggregation
         self.system["conduct_time_series_aggregation"] = False
+        # unaggregated time steps per year
+        self.system["unaggregated_time_steps_per_year"] = 8760
         # toggle to exclude parameters from TSA, specified in system_specification/exclude_parameter_from_TSA
         self.system["exclude_parameters_from_TSA"] = True
         # toggle to perform analysis for multiple scenarios
