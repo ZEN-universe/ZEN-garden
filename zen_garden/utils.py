@@ -105,24 +105,22 @@ class IISConstraintParser(object):
     def __init__(self, iis_file, model):
         self.iis_file = iis_file
         self.model = model
-
+        # write gurobi IIS to file
+        self.write_gurobi_iis()
+        # get the labels
         self.labels = self.read_labels()
 
-    def write_parsed_output(self, outfile=None, manual_display_max_terms=100):
+    def write_parsed_output(self, outfile=None):
         """
         Writes the parsed output to a file
         :param outfile: The file to write to
-        :param manual_display_max_terms: the max number of terms that are displayed, overwriting the default
         """
         # avoid truncating the expression
-        # default_config_options = lp.config.options
-        # lp.config.options = lp.config.OptionSettings(display_max_terms=manual_display_max_terms)
         # write the outfile
         if outfile is None:
-            fname, _ = os.path.splitext(self.iis_file)
-            outfile = fname + "_linopy.ilp"
+            outfile = self.iis_file
         seen_constraints = []
-        with open(outfile, "w") as f:
+        with open(self.iis_file, "w") as f:
             constraints = self.model.constraints
             for label in self.labels:
                 name, coord = self.get_label_position(constraints, label)
@@ -134,6 +132,14 @@ class IISConstraintParser(object):
                     seen_constraints.append(name)
                     cons_str = f"\n{name}:\n{cons_str}"
                 f.write(cons_str)
+
+    def write_gurobi_iis(self):
+        """ writes IIS to file """
+        # get the gurobi model
+        gurobi_model = self.model.solver_model
+        # write the IIS
+        gurobi_model.computeIIS()
+        gurobi_model.write(self.iis_file)
 
     def read_labels(self):
         """
@@ -1252,19 +1258,34 @@ class StringUtils:
         return scenario_name,subfolder,param_map
 
     @staticmethod
-    def get_model_name(config):
+    def get_model_name(analysis):
         """
         return model name while conducting some tests
-        :param config: config of optimziation
+        :param analysis: analysis of optimziation
         :return: model name
         :return: output folder
         """
-        model_name = os.path.basename(config.analysis["dataset"])
-        if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
-            logging.warning(f"The output folder '{out_folder}' already exists")
-            if config.analysis["overwrite_output"]:
-                logging.warning("Existing files will be overwritten!")
+        model_name = os.path.basename(analysis["dataset"])
+        out_folder = StringUtils.get_output_folder(analysis)
         return model_name,out_folder
+
+    @staticmethod
+    def get_output_folder(analysis):
+        """
+        return model name while conducting some tests
+        :param analysis: analysis of optimziation
+        :return: output folder
+        """
+        model_name = os.path.basename(analysis["dataset"])
+        if not os.path.exists(analysis["folder_output"]):
+            os.mkdir(analysis["folder_output"])
+        if not os.path.exists(out_folder := os.path.join(analysis["folder_output"], model_name)):
+            os.mkdir(out_folder)
+        else:
+            logging.warning(f"The output folder '{out_folder}' already exists")
+            if analysis["overwrite_output"]:
+                logging.warning("Existing files will be overwritten!")
+        return out_folder
 
 class ScenarioUtils:
     """
