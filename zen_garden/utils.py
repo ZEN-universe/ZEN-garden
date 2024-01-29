@@ -1277,6 +1277,8 @@ class StringUtils:
         :return: output folder
         """
         model_name = os.path.basename(analysis["dataset"])
+        if not os.path.exists(analysis["folder_output"]):
+            os.mkdir(analysis["folder_output"])
         if not os.path.exists(out_folder := os.path.join(analysis["folder_output"], model_name)):
             os.mkdir(out_folder)
         else:
