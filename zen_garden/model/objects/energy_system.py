@@ -73,13 +73,12 @@ class EnergySystem:
         # in class <EnergySystem>, all sets are constructed
         self.set_nodes = self.data_input.extract_locations()
         self.set_nodes_on_edges = self.calculate_edges_from_nodes()
-        # self.set_nodes_on_edges = self.data_input.extract_locations(extract_nodes=False)
         self.set_edges = list(self.set_nodes_on_edges.keys())
         self.set_nodes_in_super_nodes = self.data_input.extract_locations(super_locations=True)
         self.set_super_nodes = list(self.set_nodes_in_super_nodes.keys())
         self.set_edges_in_super_edges = self.data_input.extract_locations(extract_nodes=False, super_locations=True)
         self.set_super_edges = list(self.set_edges_in_super_edges.keys())
-        self.set_haversine_distances_edges = self.calaculate_haversine_distances_from_nodes()
+        self.set_haversine_distances_edges = self.calculate_haversine_distances_from_nodes()
         self.set_technologies = self.system["set_technologies"]
         # base time steps
         self.set_base_time_steps = list(range(0, self.system["unaggregated_time_steps_per_year"] * self.system["optimized_years"]))
@@ -132,7 +131,7 @@ class EnergySystem:
             set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
         return set_nodes_on_edges
 
-    def calaculate_haversine_distances_from_nodes(self):
+    def calculate_haversine_distances_from_nodes(self):
         """
         Computes the distance in kilometers between two nodes by using their lon lat coordinates and the Haversine formula
 
