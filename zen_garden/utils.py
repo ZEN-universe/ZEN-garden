@@ -252,7 +252,7 @@ class ScenarioDict(dict):
         self.validate_dict(expanded_dict)
         self.dict = expanded_dict
 
-        # super init
+        # super init TODO adds both system and "system"  (same for analysis) to the dict - necessary?
         super().__init__(self.dict)
 
         # finally we update the analysis and system
