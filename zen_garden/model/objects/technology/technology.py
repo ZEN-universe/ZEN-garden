@@ -764,9 +764,11 @@ class TechnologyRules(GenericRule):
         # not necessary
 
         ### masks
-        # create the masks for the two cases, m1 for capacity_limit not reached, m2 for capacity_limit reached
-        m1 = (self.parameters.capacity_limit != np.inf) & (self.parameters.existing_capacities < self.parameters.capacity_limit)
-        m2 = (self.parameters.capacity_limit != np.inf) & ~(self.parameters.existing_capacities < self.parameters.capacity_limit)
+        # take the maximum of the capacity limit and the existing capacities.
+        # If the capacity limit is 0 (or lower than existing capacities), the maximum is the existing capacity
+        maximum_capacity_limit = np.maximum(self.parameters.existing_capacities,self.parameters.capacity_limit)
+        # create mask so that skipped if capacity_limit is inf
+        m = maximum_capacity_limit != np.inf
 
         ### index loop
         # not necessary
@@ -775,11 +777,9 @@ class TechnologyRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        # Note that this constraint has a different sign for the two cases
-        lhs = self.variables["capacity"].where(m1) + self.variables["capacity_addition"].where(m2)
-        rhs = self.parameters.capacity_limit.where(m1, 0.0)
-        sign = xr.DataArray("<=", coords=self.variables["capacity"].coords).where(m1, "=")
-        constraints = AnonymousConstraint(lhs, sign, rhs)
+        lhs = self.variables["capacity"].where(m)
+        rhs = maximum_capacity_limit.where(m,0.0)
+        constraints = lhs <= rhs
 
         ### return
         return self.constraints.return_contraints(constraints)
