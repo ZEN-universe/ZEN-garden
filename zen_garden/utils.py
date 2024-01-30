@@ -252,7 +252,7 @@ class ScenarioDict(dict):
         self.validate_dict(expanded_dict)
         self.dict = expanded_dict
 
-        # super init
+        # super init TODO adds both system and "system"  (same for analysis) to the dict - necessary?
         super().__init__(self.dict)
 
         # finally we update the analysis and system
@@ -267,6 +267,7 @@ class ScenarioDict(dict):
 
         if "analysis" in self.dict:
             for key, value in self.dict["analysis"].items():
+                assert key in self.analysis, f"Trying to update analysis with key {key} and value {value}, but the analysis does not have this key!"
                 if type(self.analysis[key]) == type(value):
                     self.analysis[key] = value
                 else:
@@ -275,21 +276,24 @@ class ScenarioDict(dict):
                         f"but the analysis has already a value of type {type(self.analysis[key])}")
         if "system" in self.dict:
             for key, value in self.dict["system"].items():
+                assert key in self.system, f"Trying to update system with key {key} and value {value}, but the system does not have this key!"
                 if type(self.system[key]) == type(value):
-                    # check if key is a subset
-                    stack = [self.analysis["subsets"]]
-                    set_name_list = []
-                    while stack:
-                        cur_dict = stack.pop()
-                        for set_name, subsets in cur_dict.items():
-                            if (isinstance(subsets, dict) and key in subsets.keys()) or (isinstance(subsets, list) and key in subsets):
-                                # remove old subset values from higher level sets and add new values
-                                for _name in [set_name] + set_name_list:
-                                    self.system[_name] = [val for val in self.system[set_name] if not val in self.system[key]]
-                                    self.system[_name].extend(value)
-                            elif isinstance(subsets, dict):
-                                stack.append(subsets)
-                                set_name_list.append(set_name)
+                    # overwrite the value
+                    self.system[key] = value
+                    # # check if key is a subset TODO what the hell does this do?
+                    # stack = [self.analysis["subsets"]]
+                    # set_name_list = []
+                    # while stack:
+                    #     cur_dict = stack.pop()
+                    #     for set_name, subsets in cur_dict.items():
+                    #         if (isinstance(subsets, dict) and key in subsets.keys()) or (isinstance(subsets, list) and key in subsets):
+                    #             # remove old subset values from higher level sets and add new values
+                    #             for _name in [set_name] + set_name_list:
+                    #                 self.system[_name] = [val for val in self.system[set_name] if not val in self.system[key]]
+                    #                 self.system[_name].extend(value)
+                    #         elif isinstance(subsets, dict):
+                    #             stack.append(subsets)
+                    #             set_name_list.append(set_name)
                 else:
                     raise ValueError(f"Trying to update system with key {key} and value {value} of type {type(value)}, "
                                      f"but the system has already a value of type {type(self.system[key])}")
@@ -1092,8 +1096,10 @@ class InputDataChecks:
 
     def check_existing_technology_data(self):
         """
-        This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.csv file exist.
+        This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.json file exist.
         """
+        # TODO works for two levels of subsets, but not for more
+        self.optimization_setup.system["set_technologies"] = []
         for set_name, subsets in self.optimization_setup.analysis["subsets"]["set_technologies"].items():
             for technology in self.optimization_setup.system[set_name]:
                 if technology not in self.optimization_setup.paths[set_name].keys():
