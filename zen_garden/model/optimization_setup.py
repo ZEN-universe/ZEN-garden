@@ -579,7 +579,10 @@ class OptimizationSetup(object):
                 capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
                 invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
                 cost_capex = self.model.solution["cost_capex"].to_series().dropna()
-                rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
+                if self.solver["round_parameters"]:
+                    rounding_value = 10 ** (-self.solver["rounding_decimal_points_capacity"])
+                else:
+                    rounding_value = 0
                 capacity_addition[capacity_addition <= rounding_value] = 0
                 invest_capacity[invest_capacity <= rounding_value] = 0
                 cost_capex[cost_capex <= rounding_value] = 0

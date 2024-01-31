@@ -54,7 +54,7 @@ class EnergySystem:
 
         # create UnitHandling object
         self.unit_handling = UnitHandling(self.input_path,
-                                          self.optimization_setup.solver["rounding_decimal_points"],
+                                          self.optimization_setup.solver["rounding_decimal_points_units"],
                                           self.optimization_setup.solver["define_ton_as_metric_ton"])
 
         # create DataInput object
