@@ -169,3 +169,9 @@ class SolutionLoader(ABC):
         self, scenario: Scenario, timestep_type: TimestepType
     ) -> "pd.Series[Any]":
         pass
+
+    @abstractmethod
+    def get_timesteps_of_year(
+        self, scenario: Scenario, ts_type: TimestepType, year: int
+    ) -> "pd.DataFrame | pd.Series[Any]":
+        pass

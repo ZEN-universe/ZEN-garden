@@ -20,6 +20,7 @@ file_names_maps = {
     "param_dict.h5": ComponentType.parameter,
     "var_dict.h5": ComponentType.variable,
     "set_dict.h5": ComponentType.sets,
+    "dual_dict.h5": ComponentType.dual,
 }
 
 time_steps_map: dict[str | None, TimestepType] = {
@@ -308,12 +309,17 @@ class MultiHdfLoader(AbstractLoader):
 
         for file_name, component_type in file_names_maps.items():
             file_path = os.path.join(component_folder, file_name)
+
+            if not os.path.exists(file_path):
+                continue
+
             h5_file = h5py.File(file_path)
             for component_name in h5_file.keys():
                 index_names = get_index_names(h5_file[component_name + "/dataframe"])
                 time_index = set(index_names).intersection(set(time_steps_map.keys()))
                 timestep_name = time_index.pop() if len(time_index) > 0 else None
                 timestep_type = time_steps_map.get(timestep_name, None)
+
                 ans[component_name] = Component(
                     component_name,
                     component_type,

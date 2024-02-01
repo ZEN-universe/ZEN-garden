@@ -15,6 +15,62 @@ class Results:
     def __init__(self, path: str):
         self.solution_loader: SolutionLoader = MultiHdfLoader(path)
 
+    def _get_annuity(self, scenario: Scenario, discount_to_first_step: bool = True):
+        """discounts the duals
+
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
+        :param scenario: scenario name whose results are assessed
+        :return: #TODO describe parameter/return
+        """
+        system = scenario.system
+        discount_rate_component = self.solution_loader.components["discount_rate"]
+        # calculate annuity
+        discount_rate = self.solution_loader.get_component_data(
+            scenario, discount_rate_component
+        ).squeeze()
+
+        years = list(range(0, system["optimized_years"]))
+
+        annuity = pd.Series(index=years, dtype=float)
+        for year in years:
+            interval_between_years = system.interval_between_years
+            if year == years[-1]:
+                interval_between_years_this_year = 1
+            else:
+                interval_between_years_this_year = system.interval_between_years
+            if self.solution_loader.has_rh:
+                if discount_to_first_step:
+                    annuity[year] = interval_between_years_this_year * (
+                        1 / (1 + discount_rate)
+                    )
+                else:
+                    annuity[year] = sum(
+                        ((1 / (1 + discount_rate)) ** (_intermediate_time_step))
+                        for _intermediate_time_step in range(
+                            0, interval_between_years_this_year
+                        )
+                    )
+            else:
+                if discount_to_first_step:
+                    annuity[year] = interval_between_years_this_year * (
+                        (1 / (1 + discount_rate))
+                        ** (interval_between_years * (year - years[0]))
+                    )
+                else:
+                    annuity[year] = sum(
+                        (
+                            (1 / (1 + discount_rate))
+                            ** (
+                                interval_between_years * (year - years[0])
+                                + _intermediate_time_step
+                            )
+                        )
+                        for _intermediate_time_step in range(
+                            0, interval_between_years_this_year
+                        )
+                    )
+        return annuity
+
     def get_component_data(
         self, component_name: str, scenario_name: Optional[str] = None
     ) -> dict[str, "pd.DataFrame | pd.Series[Any]"]:
@@ -42,29 +98,54 @@ class Results:
         component: Component,
         year: Optional[int] = None,
     ) -> "pd.Series[Any]":
+        assert component.timestep_type is not None
         series = self.solution_loader.get_component_data(scenario, component)
-        all_years = list(range(scenario.system.optimized_years))
 
         if year is None:
             years = [i for i in range(0, scenario.system.optimized_years)]
         else:
             years = [year]
 
-        annuity = pd.Series(index=all_years, data=1)
-
         if isinstance(series.index, pd.MultiIndex):
             series = series.unstack(component.timestep_name)
 
         if component.timestep_type is TimestepType.yearly:
-            return (series / annuity)[years]
+            if component.component_type not in [
+                ComponentType.parameter,
+                ComponentType.variable,
+            ]:
+                annuity = self._get_annuity(scenario)
+                ans = series / annuity
+            else:
+                ans = series
 
-        timestep_duration = self.solution_loader.get_timestep_duration(
-            scenario, component
-        )
+            try:
+                ans = ans[years]
+            except KeyError:
+                pass
+
+            return ans
 
         sequence_timesteps = self.solution_loader.get_sequence_time_steps(
             scenario, component.timestep_type
         )
+
+        if (
+            component.component_type is ComponentType.dual
+            and component.timestep_type is not None
+        ):
+            timestep_duration = self.solution_loader.get_timestep_duration(
+                scenario, component
+            )
+
+            annuity = self._get_annuity(scenario)
+
+            series = series.div(timestep_duration, axis=1)
+            for year_temp in annuity.index:
+                time_steps_year = self.solution_loader.get_timesteps_of_year(
+                    scenario, component.timestep_type, year_temp
+                )
+                series[time_steps_year] = series[time_steps_year] / annuity[year_temp]
 
         try:
             output_df = series[sequence_timesteps]
