@@ -163,3 +163,9 @@ class SolutionLoader(ABC):
         Abstract method that should return the timesteps given a scenario and a component.
         """
         pass
+
+    @abstractmethod
+    def get_sequence_time_steps(
+        self, scenario: Scenario, timestep_type: TimestepType
+    ) -> "pd.Series[Any]":
+        pass

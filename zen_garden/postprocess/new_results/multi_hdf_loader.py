@@ -204,7 +204,7 @@ class MultiHdfLoader(AbstractLoader):
             ]:
                 assert component.timestep_name is not None
 
-                time_steps = self.get_time_steps_of_year(
+                time_steps = self.get_timesteps_of_year(
                     scenario, component.timestep_type, year
                 )
                 time_step_list = {tstep for tstep in time_steps}
@@ -218,33 +218,6 @@ class MultiHdfLoader(AbstractLoader):
                 break
 
         return pd.concat(series_to_concat)
-
-    @cache
-    def get_time_steps_of_year(
-        self, scenario: Scenario, ts_type: TimestepType, year: int
-    ) -> "pd.DataFrame | pd.Series[Any]":
-        """
-        Method that returns the timesteps of the scenario for a given year. These
-        timesteps are stored as HDF files that were created by pandas.
-        """
-        tech_proxy = scenario.system.set_storage_technologies[0]
-        time_step_path = os.path.join(self.path, "dict_all_sequence_time_steps.h5")
-        time_step_file = h5py.File(time_step_path)
-
-        if ts_type is TimestepType.storage:
-            tech_proxy = tech_proxy + "_storage_level"
-            time_step_name = "time_steps_year2storage"
-        elif ts_type is TimestepType.operational:
-            time_step_name = "time_steps_year2operation"
-
-        time_step_yearly = time_step_file[time_step_name]
-
-        if tech_proxy in time_step_yearly:
-            time_step_yearly = time_step_yearly[tech_proxy]
-
-        year_series = time_step_yearly[str(year)]
-
-        return pd.read_hdf(time_step_path, year_series.name)
 
     def get_component_data(
         self, scenario: AbstractScenario, component: AbstractComponent
@@ -399,5 +372,57 @@ class MultiHdfLoader(AbstractLoader):
         ans = pd.read_hdf(dict_path, f"{timesteps_name}/{year}")
 
         assert type(ans) is pd.Series
+
+        return ans
+
+    @cache
+    def get_timesteps_of_year(
+        self, scenario: Scenario, ts_type: TimestepType, year: int
+    ) -> "pd.DataFrame | pd.Series[Any]":
+        """
+        Method that returns the timesteps of the scenario for a given year. These
+        timesteps are stored as HDF files that were created by pandas.
+        """
+        tech_proxy = scenario.system.set_storage_technologies[0]
+        time_step_path = os.path.join(self.path, "dict_all_sequence_time_steps.h5")
+        time_step_file = h5py.File(time_step_path)
+
+        if ts_type is TimestepType.storage:
+            tech_proxy = tech_proxy + "_storage_level"
+            time_step_name = "time_steps_year2storage"
+        elif ts_type is TimestepType.operational:
+            time_step_name = "time_steps_year2operation"
+
+        time_step_yearly = time_step_file[time_step_name]
+
+        if tech_proxy in time_step_yearly:
+            time_step_yearly = time_step_yearly[tech_proxy]
+
+        year_series = time_step_yearly[str(year)]
+
+        return pd.read_hdf(time_step_path, year_series.name)
+
+    def get_sequence_time_steps(
+        self, scenario: AbstractScenario, timestep_type: TimestepType
+    ) -> "pd.Series[Any]":
+        time_steps_file_name = [
+            i
+            for i in os.listdir(scenario.path)
+            if "dict_all_sequence_time_steps" in i and ".lock" not in i
+        ][0]
+
+        dict_path = os.path.join(
+            scenario.path,
+            time_steps_file_name,
+        )
+
+        if timestep_type is TimestepType.operational:
+            sequence_timesteps_name = "operation"
+        elif timestep_type is TimestepType.storage:
+            sequence_timesteps_name = "storage"
+        else:
+            sequence_timesteps_name = "yearly"
+
+        ans = pd.read_hdf(dict_path, sequence_timesteps_name)
 
         return ans
