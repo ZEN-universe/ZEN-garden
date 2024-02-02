@@ -559,8 +559,8 @@ class OptimizationSetup(object):
             # ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
             output_folder = StringUtils.get_output_folder(self.analysis)
             ilp_file = os.path.join(output_folder,"infeasible_model_IIS.ilp")
-            parser = IISConstraintParser(ilp_file, self.model)
             logging.info(f"Writing parsed IIS to {ilp_file}")
+            parser = IISConstraintParser(ilp_file, self.model)
             parser.write_parsed_output()
 
     def add_results_of_optimization_step(self, step_horizon):

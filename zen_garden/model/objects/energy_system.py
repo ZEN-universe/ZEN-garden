@@ -13,7 +13,7 @@ import logging
 
 import numpy as np
 
-from zen_garden.model.objects.element import GenericRule
+from zen_garden.model.objects.element import GenericRule,Element
 from zen_garden.preprocess.extract_input_data import DataInput
 from zen_garden.preprocess.unit_handling import UnitHandling
 from .time_steps import TimeStepsDicts
