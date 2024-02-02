@@ -105,24 +105,22 @@ class IISConstraintParser(object):
     def __init__(self, iis_file, model):
         self.iis_file = iis_file
         self.model = model
-
+        # write gurobi IIS to file
+        self.write_gurobi_iis()
+        # get the labels
         self.labels = self.read_labels()
 
-    def write_parsed_output(self, outfile=None, manual_display_max_terms=100):
+    def write_parsed_output(self, outfile=None):
         """
         Writes the parsed output to a file
         :param outfile: The file to write to
-        :param manual_display_max_terms: the max number of terms that are displayed, overwriting the default
         """
         # avoid truncating the expression
-        # default_config_options = lp.config.options
-        # lp.config.options = lp.config.OptionSettings(display_max_terms=manual_display_max_terms)
         # write the outfile
         if outfile is None:
-            fname, _ = os.path.splitext(self.iis_file)
-            outfile = fname + "_linopy.ilp"
+            outfile = self.iis_file
         seen_constraints = []
-        with open(outfile, "w") as f:
+        with open(self.iis_file, "w") as f:
             constraints = self.model.constraints
             for label in self.labels:
                 name, coord = self.get_label_position(constraints, label)
@@ -134,6 +132,14 @@ class IISConstraintParser(object):
                     seen_constraints.append(name)
                     cons_str = f"\n{name}:\n{cons_str}"
                 f.write(cons_str)
+
+    def write_gurobi_iis(self):
+        """ writes IIS to file """
+        # get the gurobi model
+        gurobi_model = self.model.solver_model
+        # write the IIS
+        gurobi_model.computeIIS()
+        gurobi_model.write(self.iis_file)
 
     def read_labels(self):
         """
@@ -226,7 +232,7 @@ class ScenarioDict(dict):
     _param_dict_keys = {"file", "file_op", "default", "default_op"}
     _special_elements = ["system", "analysis", "base_scenario", "sub_folder", "param_map"]
 
-    def __init__(self, init_dict, system, analysis,paths):
+    def __init__(self, init_dict, system, analysis, paths):
         """
         Initializes the dictionary from a normal dictionary
         :param init_dict: The dictionary to initialize from
@@ -246,11 +252,13 @@ class ScenarioDict(dict):
         self.validate_dict(expanded_dict)
         self.dict = expanded_dict
 
-        # super init
+        # super init TODO adds both system and "system"  (same for analysis) to the dict - necessary?
         super().__init__(self.dict)
 
         # finally we update the analysis and system
         self.update_analysis_system()
+
+
 
     def update_analysis_system(self):
         """
@@ -259,6 +267,7 @@ class ScenarioDict(dict):
 
         if "analysis" in self.dict:
             for key, value in self.dict["analysis"].items():
+                assert key in self.analysis, f"Trying to update analysis with key {key} and value {value}, but the analysis does not have this key!"
                 if type(self.analysis[key]) == type(value):
                     self.analysis[key] = value
                 else:
@@ -267,8 +276,24 @@ class ScenarioDict(dict):
                         f"but the analysis has already a value of type {type(self.analysis[key])}")
         if "system" in self.dict:
             for key, value in self.dict["system"].items():
+                assert key in self.system, f"Trying to update system with key {key} and value {value}, but the system does not have this key!"
                 if type(self.system[key]) == type(value):
+                    # overwrite the value
                     self.system[key] = value
+                    # # check if key is a subset TODO what the hell does this do?
+                    # stack = [self.analysis["subsets"]]
+                    # set_name_list = []
+                    # while stack:
+                    #     cur_dict = stack.pop()
+                    #     for set_name, subsets in cur_dict.items():
+                    #         if (isinstance(subsets, dict) and key in subsets.keys()) or (isinstance(subsets, list) and key in subsets):
+                    #             # remove old subset values from higher level sets and add new values
+                    #             for _name in [set_name] + set_name_list:
+                    #                 self.system[_name] = [val for val in self.system[set_name] if not val in self.system[key]]
+                    #                 self.system[_name].extend(value)
+                    #         elif isinstance(subsets, dict):
+                    #             stack.append(subsets)
+                    #             set_name_list.append(set_name)
                 else:
                     raise ValueError(f"Trying to update system with key {key} and value {value} of type {type(value)}, "
                                      f"but the system has already a value of type {type(self.system[key])}")
@@ -1026,7 +1051,7 @@ class InputDataChecks:
         Checks selection of different technologies in system.py file
         """
         # Checks if at least one technology is selected in the system.py file
-        assert len(self.system["set_conversion_technologies"] + self.system["set_transport_technologies"] + self.system["set_storage_technologies"]) > 0, f"No technology selected in stystem.py"
+        assert len(self.system["set_conversion_technologies"] + self.system["set_transport_technologies"] + self.system["set_storage_technologies"]) > 0, f"No technology selected in system.py"
         # Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
         for tech_list in ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]:
             techs_selected = self.system[tech_list]
@@ -1048,44 +1073,51 @@ class InputDataChecks:
 
     def check_primary_folder_structure(self):
         """
-        Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., system_specification) is provided correctly
+        Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., energy_system) is provided correctly
 
         :param analysis: dictionary defining the analysis framework
         """
-        for technology_subset in self.analysis["subsets"]["set_technologies"]:
-            if not os.path.exists(os.path.join(self.analysis["dataset"], technology_subset)):
-                raise AssertionError(f"Folder {technology_subset} does not exist!")
-        if not os.path.exists(os.path.join(self.analysis["dataset"], "set_carriers")):
-            raise AssertionError(f"Folder set_carriers does not exist!")
-        if not os.path.exists(os.path.join(self.analysis["dataset"], "system_specification")):
-            raise AssertionError(f"Folder system_specification does not exist!")
-        for file_name in ["attributes.csv", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
-            if file_name not in os.listdir(os.path.join(self.analysis["dataset"], "system_specification")):
-                raise FileNotFoundError(f"File {file_name} is missing in the system_specification directory")
+
+        for set_name, subsets in self.analysis["subsets"].items():
+            if not os.path.exists(os.path.join(self.analysis["dataset"], set_name)):
+                raise AssertionError(f"Folder {set_name} does not exist!")
+            if isinstance(subsets, dict):
+                for subset_name, subset in subsets.items():
+                    if not os.path.exists(os.path.join(self.analysis["dataset"], set_name, subset_name)):
+                        raise AssertionError(f"Folder {subset_name} does not exist!")
+                else:
+                    for subset_name in subsets:
+                        if not os.path.exists(os.path.join(self.analysis["dataset"], set_name, subset_name)):
+                            raise AssertionError(f"Folder {subset_name} does not exist!")
+
+        for file_name in ["attributes.json", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
+            if file_name not in os.listdir(os.path.join(self.analysis["dataset"], "energy_system")):
+                raise FileNotFoundError(f"File {file_name} is missing in the energy_system directory")
 
     def check_existing_technology_data(self):
         """
-        This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.csv file exist.
+        This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.json file exist.
         """
+        # TODO works for two levels of subsets, but not for more
         self.optimization_setup.system["set_technologies"] = []
-        for technology_subset in self.optimization_setup.analysis["subsets"]["set_technologies"]:
-            for technology in self.optimization_setup.system[technology_subset]:
-                if technology not in self.optimization_setup.paths[technology_subset].keys():
-                    logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
-                    self.optimization_setup.system[technology_subset].remove(technology)
-                elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
-                    raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
-            self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[technology_subset])
+        for set_name, subsets in self.optimization_setup.analysis["subsets"]["set_technologies"].items():
+            for technology in self.optimization_setup.system[set_name]:
+                if technology not in self.optimization_setup.paths[set_name].keys():
+                    # raise error if technology is not in input data
+                    raise FileNotFoundError(f"Technology {technology} selected in config does not exist in input data")
+                elif "attributes.json" not in self.optimization_setup.paths[set_name][technology]:
+                    raise FileNotFoundError(f"The file attributes.json does not exist for the technology {technology}")
+            self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[set_name])
             # check subsets of technology_subset
-            if technology_subset in self.optimization_setup.analysis["subsets"].keys():
-                for subset in self.optimization_setup.analysis["subsets"][technology_subset]:
-                    for technology in self.optimization_setup.system[subset]:
-                        if technology not in self.optimization_setup.paths[technology_subset].keys():
-                            logging.warning(f"Technology {technology} selected in config does not exist in input data, excluded from model.")
-                            self.optimization_setup.system[subset].remove(technology)
-                        elif "attributes.csv" not in self.optimization_setup.paths[technology_subset][technology]:
-                            raise FileNotFoundError(f"The file attributes.csv does not exist for the technology {technology}")
-                    self.optimization_setup.system[technology_subset].extend(self.optimization_setup.system[subset])
+            assert isinstance(subsets, list), f"Subsets of {set_name} must be a list, dict not implemented"
+            for subset in subsets:
+                for technology in self.optimization_setup.system[subset]:
+                    if technology not in self.optimization_setup.paths[subset].keys():
+                        # raise error if technology is not in input data
+                        raise FileNotFoundError(f"Technology {technology} selected in config does not exist in input data")
+                    elif "attributes.json" not in self.optimization_setup.paths[subset][technology]:
+                        raise FileNotFoundError(f"The file attributes.json does not exist for the technology {technology}")
+                    self.optimization_setup.system[set_name].extend(self.optimization_setup.system[subset])
                     self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[subset])
 
     def check_existing_carrier_data(self):
@@ -1094,8 +1126,11 @@ class InputDataChecks:
         """
         # check if carriers exist
         for carrier in self.optimization_setup.system["set_carriers"]:
-            assert carrier in self.optimization_setup.paths["set_carriers"].keys(), f"Carrier {carrier} does not exist in input data."
-            assert "attributes.csv" in self.optimization_setup.paths["set_carriers"][carrier], f"Attributes.csv file does not exist for the carrier {carrier}"
+            if carrier not in self.optimization_setup.paths["set_carriers"].keys():
+                # raise error if carrier is not in input data
+                raise FileNotFoundError(f"Carrier {carrier} selected in config does not exist in input data")
+            elif "attributes.json" not in self.optimization_setup.paths["set_carriers"][carrier]:
+                raise FileNotFoundError(f"The file attributes.json does not exist for the carrier {carrier}")
 
     def check_dataset(self):
         """
@@ -1229,19 +1264,35 @@ class StringUtils:
         return scenario_name,subfolder,param_map
 
     @staticmethod
-    def get_model_name(config):
+    def get_model_name(analysis):
         """
         return model name while conducting some tests
-        :param config: config of optimziation
+        :param analysis: analysis of optimziation
         :return: model name
         :return: output folder
         """
-        model_name = os.path.basename(config.analysis["dataset"])
-        if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
-            logging.warning(f"The output folder '{out_folder}' already exists")
-            if config.analysis["overwrite_output"]:
-                logging.warning("Existing files will be overwritten!")
+        model_name = os.path.basename(analysis["dataset"])
+        out_folder = StringUtils.get_output_folder(analysis)
         return model_name,out_folder
+
+    @staticmethod
+    def get_output_folder(analysis):
+        """
+        return model name while conducting some tests
+        :param analysis: analysis of optimziation
+        :return: output folder
+        """
+        model_name = os.path.basename(analysis["dataset"])
+        if not os.path.exists(analysis["folder_output"]):
+            os.mkdir(analysis["folder_output"])
+        if not os.path.exists(out_folder := os.path.join(analysis["folder_output"], model_name)):
+            os.mkdir(out_folder)
+        else:
+            logging.warning(f"The output folder '{out_folder}' already exists")
+            if analysis["overwrite_output"]:
+                logging.warning("Existing files will be overwritten!")
+        return out_folder
+
 class ScenarioUtils:
     """
     This class handles some stuff for scenarios to tidy up scripts

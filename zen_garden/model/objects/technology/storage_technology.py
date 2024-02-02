@@ -39,11 +39,10 @@ class StorageTechnology(Technology):
         super().__init__(tech, optimization_setup)
         # store carriers of storage technology
         self.store_carriers()
-        # # store input data
-        # self.store_input_data()
 
     def store_carriers(self):
         """ retrieves and stores information on reference, input and output carriers """
+
         # get reference carrier from class <Technology>
         super().store_carriers()
 
@@ -52,26 +51,26 @@ class StorageTechnology(Technology):
         # get attributes from class <Technology>
         super().store_input_data()
         # set attributes for parameters of child class <StorageTechnology>
-        self.efficiency_charge = self.data_input.extract_input_data("efficiency_charge", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-        self.efficiency_discharge = self.data_input.extract_input_data("efficiency_discharge", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-        self.self_discharge = self.data_input.extract_input_data("self_discharge", index_sets=["set_nodes"])
+        self.efficiency_charge = self.data_input.extract_input_data("efficiency_charge", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={})
+        self.efficiency_discharge = self.data_input.extract_input_data("efficiency_discharge", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={})
+        self.self_discharge = self.data_input.extract_input_data("self_discharge", index_sets=["set_nodes"], unit_category={})
         # extract existing energy capacity
-        self.capacity_addition_min_energy = self.data_input.extract_input_data("capacity_addition_min_energy", index_sets=[])
-        self.capacity_addition_max_energy = self.data_input.extract_input_data("capacity_addition_max_energy", index_sets=[])
-        self.capacity_limit_energy = self.data_input.extract_input_data("capacity_limit_energy", index_sets=["set_nodes"])
-        self.capacity_existing_energy = self.data_input.extract_input_data("capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"])
-        self.capacity_investment_existing_energy = self.data_input.extract_input_data("capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-        self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-        self.capex_specific_energy = self.data_input.extract_input_data("capex_specific_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-        self.opex_specific_fixed_energy = self.data_input.extract_input_data("opex_specific_fixed_energy", index_sets=["set_nodes", "set_time_steps_yearly"],
-                                                                            time_steps="set_time_steps_yearly")
+        self.capacity_addition_min_energy = self.data_input.extract_input_data("capacity_addition_min_energy", index_sets=[], unit_category={"energy_quantity": 1})
+        self.capacity_addition_max_energy = self.data_input.extract_input_data("capacity_addition_max_energy", index_sets=[], unit_category={"energy_quantity": 1})
+        self.capacity_limit_energy = self.data_input.extract_input_data("capacity_limit_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
+        self.capacity_existing_energy = self.data_input.extract_input_data("capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"], unit_category={"energy_quantity": 1})
+        self.capacity_investment_existing_energy = self.data_input.extract_input_data("capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
+        self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": -1})
+        self.capex_specific_energy = self.data_input.extract_input_data("capex_specific_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
+        self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
+        self.opex_specific_fixed_energy = self.data_input.extract_input_data("opex_specific_fixed_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
         self.convert_to_fraction_of_capex()
         # calculate capex of existing capacity
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
         self.capex_capacity_existing_energy = self.calculate_capex_of_capacities_existing(storage_energy=True)
         # add min load max load time series for energy
-        self.raw_time_series["min_load_energy"] = self.data_input.extract_input_data("min_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
-        self.raw_time_series["max_load_energy"] = self.data_input.extract_input_data("max_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly")
+        self.raw_time_series["min_load_energy"] = self.data_input.extract_input_data("min_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={})
+        self.raw_time_series["max_load_energy"] = self.data_input.extract_input_data("max_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={})
 
     def convert_to_fraction_of_capex(self):
         """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
@@ -84,25 +83,16 @@ class StorageTechnology(Technology):
     def calculate_capex_of_single_capacity(self, capacity, index, storage_energy=False):
         """ this method calculates the annualized capex of a single existing capacity.
 
-        :param capacity: #TODO describe parameter/return
-        :param index: #TODO describe parameter/return
-        :param storage_energy: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param capacity: capacity of storage technology
+        :param index: index of capacity
+        :param storage_energy: boolean if energy capacity or power capacity
+        :return: capex of single capacity
         """
         if storage_energy:
             absolute_capex = self.capex_specific_energy[index[0]].iloc[0] * capacity
         else:
             absolute_capex = self.capex_specific[index[0]].iloc[0] * capacity
         return absolute_capex
-
-    def overwrite_time_steps(self, base_time_steps):
-        """ overwrites set_time_steps_storage
-
-        :param base_time_steps: #TODO describe parameter/return
-        """
-        super().overwrite_time_steps(base_time_steps)
-        set_time_steps_storage = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps, time_step_type="storage")
-        setattr(self, "set_time_steps_storage", set_time_steps_storage.squeeze().tolist())
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to StorageTechnology --- ###
     @classmethod
@@ -179,7 +169,7 @@ class StorageTechnology(Technology):
         rules = StorageTechnologyRules(optimization_setup)
         # Limit storage level
         constraints.add_constraint_block(model, name="constraint_storage_level_max",
-                                         constraint=rules.get_constraint_storage_level_max(),
+                                         constraint=rules.constraint_storage_level_max_block(),
                                          doc='limit maximum storage level to capacity')
         # couple storage levels
         constraints.add_constraint_block(model, name="constraint_couple_storage_level",
@@ -196,12 +186,12 @@ class StorageTechnology(Technology):
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is on
 
-        :param optimization_setup: #TODO describe parameter/return
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return
-        :param node: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :param binary_var: #TODO describe parameter/return
+        :param optimization_setup: optimization setup
+        :param tech: technology
+        :param capacity_type: type of capacity (power, energy)
+        :param node: node
+        :param time: yearly time step
+        :param binary_var: binary disjunction variable
         """
         params = optimization_setup.parameters
         constraints = optimization_setup.constraints
@@ -210,14 +200,14 @@ class StorageTechnology(Technology):
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech,time)
         # disjunct constraints min load charge
-        constraints.add_constraint_block(model, name=f"constraint_min_load_charge_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_min_load_charge_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(model.variables["flow_storage_charge"][tech, node, time].to_expr()
                                                      - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
                                                      >= 0),
                                          disjunction_var=binary_var)
 
         # disjunct constraints min load discharge
-        constraints.add_constraint_block(model, name=f"constraint_min_load_discharge_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_min_load_discharge_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
                                                      - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
                                                      >= 0),
@@ -227,25 +217,25 @@ class StorageTechnology(Technology):
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is off
 
-        :param optimization_setup: #TODO describe parameter/return
-        :param tech: #TODO describe parameter/return
-        :param capacity_type: #TODO describe parameter/return
-        :param node: #TODO describe parameter/return
-        :param time: #TODO describe parameter/return
-        :param binary_var: #TODO describe parameter/return
+        :param optimization_setup: optimization setup
+        :param tech: technology
+        :param capacity_type: type of capacity (power, energy)
+        :param node: node
+        :param time: yearly time step
+        :param binary_var: binary disjunction variable
         """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
 
         # for equality constraints we need to add upper and lower bounds
         # off charging
-        constraints.add_constraint_block(model, name=f"constraint_off_charging_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_off_charge_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(model.variables["flow_storage_charge"][tech, node, time].to_expr()
                                                      == 0),
                                          disjunction_var=binary_var)
 
         # off discharging
-        constraints.add_constraint_block(model, name=f"constraint_off_discharging_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_off_discharge_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
                                                      == 0),
                                          disjunction_var=binary_var)
@@ -271,13 +261,13 @@ class StorageTechnologyRules(GenericRule):
     # Block-based constraints
     # -----------------------
 
-    def get_constraint_storage_level_max(self):
+    def constraint_storage_level_max_block(self):
         """limit maximum storage level to capacity
 
         .. math::
             L_{k,n,t^\mathrm{k}} \le S^\mathrm{e}_{k,n,y}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -318,7 +308,7 @@ class StorageTechnologyRules(GenericRule):
         .. math::
             L(t) = L_0\\kappa^t + \\Delta H\\frac{1-\\kappa^t}{1-\\kappa} = \\frac{\\Delta H}{1-\\kappa}+(L_0-\\frac{\\Delta H}{1-\\kappa})\\kappa^t
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets
@@ -389,7 +379,7 @@ class StorageTechnologyRules(GenericRule):
         .. math::
             CAPEX_{y,n,i}^\mathrm{cost} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
 
-        :return: #TODO describe parameter/return
+        :return: linopy constraints
         """
 
         ### index sets

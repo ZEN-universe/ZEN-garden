@@ -641,30 +641,65 @@ class Results(object):
             val_0 = results[0].get_full_ts(component,scenario=scenarios[0])
             val_1 = results[1].get_full_ts(component,scenario=scenarios[1])
         mismatched_index = False
+        mismatched_shape = False
         if isinstance(val_0, pd.DataFrame):
             val_0 = val_0.sort_index(axis=0).sort_index(axis=1)
-            val_1 = val_1.sort_index(axis=0).sort_index(axis=1)
-            if not val_0.index.equals(val_1.index) or not val_0.columns.equals(val_1.columns):
-                mismatched_index = True
         else:
             val_0 = val_0.sort_index()
+        if isinstance(val_1, pd.DataFrame):
+            val_1 = val_1.sort_index(axis=0).sort_index(axis=1)
+        else:
             val_1 = val_1.sort_index()
+        if val_1.shape == val_0.shape:
+            if len(val_0.shape) == 2:
+                if not val_0.index.equals(val_1.index) or not val_0.columns.equals(val_1.columns):
+                    mismatched_index = True
+            elif not val_0.index.equals(val_1.index):
+                mismatched_index = True
+        else:
+            logging.info(f"Component {component} changed shape from {val_0.shape} ({result_names[0]}) to {val_1.shape} ({result_names[1]})")
+            mismatched_shape = True
             if not val_0.index.equals(val_1.index):
                 mismatched_index = True
+
         if mismatched_index:
             logging.info(f"Component {component} does not have matching index or columns")
             comparison_df = pd.concat([val_0,val_1],keys=result_names,axis=1)
             comparison_df = comparison_df.sort_index(axis=1, level=1)
             return comparison_df
-        is_close = np.isclose(val_0,val_1,rtol=rtol,equal_nan=True)
-        if isinstance(val_0,pd.DataFrame):
+        # if not mismatched_shape:
+        if not mismatched_shape:
+            return cls._get_different_vals(val_0,val_1,result_names,rtol)
+        else:
+            # check if the dataframe has only constant values along axis 1
+            if isinstance(val_0, pd.DataFrame) and (val_0.nunique(axis=1) == 1).all():
+                val_0 = val_0.iloc[:,0]
+            elif isinstance(val_1, pd.DataFrame) and (val_1.nunique(axis=1) == 1).all():
+                val_1 = val_1.iloc[:,0]
+            else:
+                logging.info(f"Component {component} has different values")
+                comparison_df = pd.concat([val_0, val_1], keys=result_names, axis=1)
+                comparison_df = comparison_df.sort_index(axis=1, level=1)
+                return comparison_df
+            return cls._get_different_vals(val_0,val_1,result_names,rtol)
+
+    @classmethod
+    def _get_different_vals(cls,val_0,val_1,result_names,rtol):
+        """
+        get the different values of two dataframes or series
+        :param val_0: first dataframe or series
+        :param val_1: second dataframe or series
+        :return: comparison_df
+        """
+        is_close = np.isclose(val_0, val_1, rtol=rtol, equal_nan=True)
+        if isinstance(val_0, pd.DataFrame):
             diff_val_0 = val_0[(~is_close).any(axis=1)]
             diff_val_1 = val_1[(~is_close).any(axis=1)]
         else:
             diff_val_0 = val_0[(~is_close)]
             diff_val_1 = val_1[(~is_close)]
-        comparison_df = pd.concat([diff_val_0,diff_val_1],keys=result_names,axis=1)
-        comparison_df = comparison_df.sort_index(axis=1,level=1)
+        comparison_df = pd.concat([diff_val_0, diff_val_1], keys=result_names, axis=1)
+        comparison_df = comparison_df.sort_index(axis=1, level=1)
         return comparison_df
 
     @classmethod
@@ -968,7 +1003,11 @@ class Results(object):
         """
         d = self.get_df("time_steps_operation_duration")
         if not self.new_time_steps:
-            d = d.unstack().iloc[0]
+            if self.has_scenarios:
+                # TODO make time_step_operation_duration scenario-dependent
+                d = d[self.scenarios[0]].unstack().iloc[0]
+            else:
+                d = d.unstack().iloc[0]
         return d
 
     def load_time_step_storage_duration(self):
@@ -977,7 +1016,11 @@ class Results(object):
         """
         if not self.new_time_steps:
             d = self.get_df("time_steps_storage_level_duration")
-            d = d.unstack().iloc[0]
+            if self.has_scenarios:
+                # TODO make time_step_storage_duration scenario-dependent
+                d = d[self.scenarios[0]].unstack().iloc[0]
+            else:
+                d = d.unstack().iloc[0]
         else:
             d = self.get_df("time_steps_storage_duration")
         return d
@@ -1320,7 +1363,7 @@ class Results(object):
         """
         system = self.results[scenario]["system"]
         # calculate annuity
-        discount_rate = self.get_df("discount_rate").squeeze()
+        discount_rate = self.get_df("discount_rate",scenario=scenario).squeeze()
         annuity = pd.Series(index=self.get_years(scenario), dtype=float)
         for year in self.get_years(scenario):
             interval_between_years = system["interval_between_years"]
@@ -1442,7 +1485,10 @@ class Results(object):
             else:
                 time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation(year)
         else:
-            tech_proxy = self.get_system()["set_storage_technologies"][0]
+            if self.has_scenarios:
+                tech_proxy = self.get_system(scenario=self.scenarios[0])["set_storage_technologies"][0]
+            else:
+                tech_proxy = self.get_system()["set_storage_technologies"][0]
             if ts_type == "storage":
                  tech_proxy = tech_proxy + "_storage_level"
             time_steps_year = sequence_time_steps_dicts.get_time_steps_year2operation_old(tech_proxy, year)

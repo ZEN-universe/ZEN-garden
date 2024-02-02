@@ -45,6 +45,8 @@ class Element:
         self.data_input = DataInput(element=self, system=self.optimization_setup.system,
                                     analysis=self.optimization_setup.analysis, solver=self.optimization_setup.solver,
                                     energy_system=self.energy_system, unit_handling=self.energy_system.unit_handling)
+        # dict to save the parameter units element-wise (and save them in the results later on)
+        self.units = {}
 
     def get_input_path(self):
         """ get input path where input data is stored input_path"""
@@ -62,13 +64,6 @@ class Element:
                     break
         # get input path for current class_label
         self.input_path = Path(paths[class_label][self.name]["folder"])
-
-    def overwrite_time_steps(self, base_time_steps):
-        """ overwrites time steps. Must be implemented in child classes
-
-        :param base_time_steps: #TODO describe parameter/return
-        """
-        raise NotImplementedError("overwrite_time_steps must be implemented in child classes!")
 
     def store_scenario_dict(self):
         """ stores scenario dict in each data input object """
@@ -190,7 +185,7 @@ class Element:
             return custom_set, list_index
         # at least one set is not yet defined
         else:
-            # ugly, but if first set is indexingSet
+            # ugly, but if first set is indexing_set
             if list_index[0] in indexing_sets:
                 # empty custom index set
                 custom_set = []
@@ -215,7 +210,8 @@ class Element:
                         # if index is set_location
                         elif index == "set_location":
                             # if element in set_conversion_technologies or set_storage_technologies, append set_nodes
-                            if element in sets["set_conversion_technologies"] or element in sets["set_storage_technologies"]:
+                            if (element in sets["set_conversion_technologies"] or element in sets["set_storage_technologies"] \
+                                    or element in sets["set_retrofitting_technologies"]):
                                 list_sets.append(sets["set_nodes"])
                             # if element in set_transport_technologies
                             elif element in sets["set_transport_technologies"]:
@@ -223,40 +219,21 @@ class Element:
                         # if set is built for pwa capex:
                         elif "set_capex" in index:
                             if element in sets["set_conversion_technologies"]:
-                                _capex_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
+                                capex_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
                                 # if technology is modeled as pwa, break for linear index
-                                if "linear" in index and _capex_is_pwa:
+                                if "linear" in index and capex_is_pwa:
                                     append_element = False
                                     break
                                 # if technology is not modeled as pwa, break for pwa index
-                                elif "pwa" in index and not _capex_is_pwa:
+                                elif "pwa" in index and not capex_is_pwa:
                                     append_element = False
                                     break
-                            # Transport or Storage technology
-                            else:
-                                append_element = False
-                                break
-                        # if set is built for pwa conver_efficiency:
-                        elif "set_conversion_factor" in index:
-                            if element in sets["set_conversion_technologies"]:  # or element in model.set_storage_technologies:
-                                _conversion_factor_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "conversion_factor_is_pwa")
-                                dependent_carrier = list(sets["set_dependent_carriers"][element])
-                                # TODO for more than one carrier
-                                # _pwa_conversion_factor = cls.get_attribute_of_specific_element(element,"pwa_conversion_factor")
-                                # dependent_carrier_pwa     = _pwa_conversion_factor["pwa_variables"]
-                                if "linear" in index and not _conversion_factor_is_pwa:
-                                    list_sets.append(dependent_carrier)
-                                elif "pwa" in index and _conversion_factor_is_pwa:
-                                    list_sets.append(dependent_carrier)
-                                else:
-                                    list_sets.append([])
-                                list_index_overwrite = list(map(lambda x: x.replace(index, 'set_carriers'), list_index))
                             # Transport or Storage technology
                             else:
                                 append_element = False
                                 break
                         # if set is used to determine if on-off behavior is modeled
-                        # exclude technologies which have no min_load and dependentCarrierFlow at reference_carrierFlow = 0 is also equal to 0
+                        # exclude technologies which have no min_load
                         elif "on_off" in index:
                             model_on_off = cls.check_on_off_modeled(element, optimization_setup)
                             if "set_no_on_off" in index:
@@ -298,33 +275,14 @@ class Element:
         :param tech: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
         :return model_on_off: Bool indicating if on-off-behaviour (min load) needs to be modeled"""
-
-        sets = optimization_setup.sets
-
-        model_on_off = True
-        # check if any min
-        _unique_min_load = list(set(optimization_setup.get_attribute_of_specific_element(cls, tech, "min_load").values))
+        # check if any min load
+        unique_min_load = list(set(optimization_setup.get_attribute_of_specific_element(cls, tech, "min_load").values))
         # if only one unique min_load which is zero
-        if len(_unique_min_load) == 1 and _unique_min_load[0] == 0:
-            # if not a conversion technology, break for current technology
-            if tech not in sets["set_conversion_technologies"]:
-                model_on_off = False
-            # if a conversion technology, check if all dependentCarrierFlow at reference_carrierFlow = 0 equal to 0
-            else:
-                # if technology is approximated (by either pwa or linear)
-                _isPWA = optimization_setup.get_attribute_of_specific_element(cls, tech, "conversion_factor_is_pwa")
-                # if not modeled as pwa
-                if not _isPWA:
-                    model_on_off = False
-                else:
-                    _pwa_parameter = optimization_setup.get_attribute_of_specific_element(cls, tech, "pwa_conversion_factor")
-                    # iterate through all dependent carriers and check if all lower bounds are equal to 0
-                    _only_zero_dependent_bound = True
-                    for PWAVariable in _pwa_parameter["pwa_variables"]:
-                        if _pwa_parameter["bounds"][PWAVariable][0] != 0:
-                            _only_zero_dependent_bound = False
-                    if _only_zero_dependent_bound:
-                        model_on_off = False
+        if len(unique_min_load) == 1 and unique_min_load[0] == 0:
+            model_on_off = False
+        # otherwise modeled as on-off
+        else:
+            model_on_off = True
         # return
         return model_on_off
 

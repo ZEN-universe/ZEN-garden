@@ -1,0 +1,8 @@
+[
+  {
+    "carbon_intensity": {
+      "default_value": 5.0,
+      "unit": "kilotons/GWh"
+    }
+  }
+]

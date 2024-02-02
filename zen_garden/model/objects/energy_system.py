@@ -17,7 +17,7 @@ from zen_garden.model.objects.element import GenericRule
 from zen_garden.preprocess.extract_input_data import DataInput
 from zen_garden.preprocess.unit_handling import UnitHandling
 from .time_steps import TimeStepsDicts
-
+from pathlib import Path
 
 class EnergySystem:
     """
@@ -49,8 +49,8 @@ class EnergySystem:
                 self.indexing_sets.append(key)
 
         # set input path
-        _folder_label = self.optimization_setup.analysis["folder_name_system_specification"]
-        self.input_path = self.optimization_setup.paths[_folder_label]["folder"]
+        folder_label = "energy_system"
+        self.input_path = Path(self.optimization_setup.paths[folder_label]["folder"])
 
         # create UnitHandling object
         self.unit_handling = UnitHandling(self.input_path,
@@ -63,8 +63,8 @@ class EnergySystem:
                                     energy_system=self, unit_handling=self.unit_handling)
         # initialize empty set_carriers list
         self.set_carriers = []
-        # # store input data
-        # self.store_input_data()
+        #dict to save the parameter units (and save them in the results later on)
+        self.units = {}
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -74,7 +74,7 @@ class EnergySystem:
         self.set_nodes = self.data_input.extract_locations()
         self.set_nodes_on_edges = self.calculate_edges_from_nodes()
         self.set_edges = list(self.set_nodes_on_edges.keys())
-        self.set_haversine_distances_edges = self.calaculate_haversine_distances_from_nodes()
+        self.set_haversine_distances_edges = self.calculate_haversine_distances_from_nodes()
         self.set_technologies = self.system["set_technologies"]
         # base time steps
         self.set_base_time_steps = list(range(0, self.system["unaggregated_time_steps_per_year"] * self.system["optimized_years"]))
@@ -89,27 +89,28 @@ class EnergySystem:
         # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_steps_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
-        self.parameters_interpolation_off = self.data_input.read_input_data("parameters_interpolation_off")
+        self.parameters_interpolation_off = self.data_input.read_input_csv("parameters_interpolation_off")
         # technology-specific
         self.set_conversion_technologies = self.system["set_conversion_technologies"]
         self.set_transport_technologies = self.system["set_transport_technologies"]
         self.set_storage_technologies = self.system["set_storage_technologies"]
+        self.set_retrofitting_technologies= self.system["set_retrofitting_technologies"]
         # discount rate
-        self.discount_rate = self.data_input.extract_input_data("discount_rate", index_sets=[])
+        self.discount_rate = self.data_input.extract_input_data("discount_rate", index_sets=[], unit_category={})
         # carbon emissions limit
-        self.carbon_emissions_annual_limit = self.data_input.extract_input_data("carbon_emissions_annual_limit", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly")
+        self.carbon_emissions_annual_limit = self.data_input.extract_input_data("carbon_emissions_annual_limit", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"emissions": 1})
         _fraction_year = self.system["unaggregated_time_steps_per_year"] / self.system["total_hours_per_year"]
         self.carbon_emissions_annual_limit = self.carbon_emissions_annual_limit * _fraction_year  # reduce to fraction of year
-        self.carbon_emissions_budget = self.data_input.extract_input_data("carbon_emissions_budget", index_sets=[])
-        self.carbon_emissions_cumulative_existing = self.data_input.extract_input_data("carbon_emissions_cumulative_existing", index_sets=[])
+        self.carbon_emissions_budget = self.data_input.extract_input_data("carbon_emissions_budget", index_sets=[], unit_category={"emissions": 1})
+        self.carbon_emissions_cumulative_existing = self.data_input.extract_input_data("carbon_emissions_cumulative_existing", index_sets=[], unit_category={"emissions": 1})
         # price carbon emissions
-        self.price_carbon_emissions = self.data_input.extract_input_data("price_carbon_emissions", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly")
-        self.price_carbon_emissions_budget_overshoot = self.data_input.extract_input_data("price_carbon_emissions_budget_overshoot", index_sets=[])
-        self.price_carbon_emissions_annual_overshoot = self.data_input.extract_input_data("price_carbon_emissions_annual_overshoot", index_sets=[])
+        self.price_carbon_emissions = self.data_input.extract_input_data("price_carbon_emissions", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "emissions": -1})
+        self.price_carbon_emissions_budget_overshoot = self.data_input.extract_input_data("price_carbon_emissions_budget_overshoot", index_sets=[], unit_category={"money": 1, "emissions": -1})
+        self.price_carbon_emissions_annual_overshoot = self.data_input.extract_input_data("price_carbon_emissions_annual_overshoot", index_sets=[], unit_category={"money": 1, "emissions": -1})
         # market share unbounded
-        self.market_share_unbounded = self.data_input.extract_input_data("market_share_unbounded", index_sets=[])
+        self.market_share_unbounded = self.data_input.extract_input_data("market_share_unbounded", index_sets=[], unit_category={})
         # knowledge_spillover_rate
-        self.knowledge_spillover_rate = self.data_input.extract_input_data("knowledge_spillover_rate", index_sets=[])
+        self.knowledge_spillover_rate = self.data_input.extract_input_data("knowledge_spillover_rate", index_sets=[], unit_category={})
 
     def calculate_edges_from_nodes(self):
         """ calculates set_nodes_on_edges from set_nodes
@@ -119,18 +120,11 @@ class EnergySystem:
         set_nodes_on_edges = {}
         # read edge file
         set_edges_input = self.data_input.extract_locations(extract_nodes=False)
-        if set_edges_input is not None:
-            for edge in set_edges_input.index:
-                set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
-        else:
-            logging.warning(f"DeprecationWarning: Implicit creation of edges will be deprecated. Provide 'set_edges.csv' in folder '{self.system['''folder_name_system_specification''']}' instead!")
-            for node_from in self.set_nodes:
-                for node_to in self.set_nodes:
-                    if node_from != node_to:
-                        set_nodes_on_edges[node_from + "-" + node_to] = (node_from, node_to)
+        for edge in set_edges_input.index:
+            set_nodes_on_edges[edge] = (set_edges_input.loc[edge, "node_from"], set_edges_input.loc[edge, "node_to"])
         return set_nodes_on_edges
 
-    def calaculate_haversine_distances_from_nodes(self):
+    def calculate_haversine_distances_from_nodes(self):
         """
         Computes the distance in kilometers between two nodes by using their lon lat coordinates and the Haversine formula
 
@@ -440,7 +434,7 @@ class EnergySystemRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        lhs = self.variables["carbon_emissions_annual"][year]
+        lhs = self.variables["carbon_emissions_annual"][year] - self.variables["carbon_emissions_annual_overshoot"][year]
         rhs = self.parameters.carbon_emissions_annual_limit.loc[year].item()
         constraints = lhs <= rhs
 
@@ -579,7 +573,7 @@ class EnergySystemRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        if self.parameters.price_carbon_emissions_annual_overshoot == np.inf:
+        if self.parameters.price_carbon_emissions_annual_overshoot == np.inf or self.parameters.carbon_emissions_annual_limit.sum() == np.inf:
             lhs = self.variables["carbon_emissions_annual_overshoot"]
             rhs = 0
             constraints = lhs == rhs
@@ -613,8 +607,7 @@ class EnergySystemRules(GenericRule):
         ### formulate constraint
         lhs = (self.variables["carbon_emissions_annual"]
                - self.variables["carbon_emissions_technology_total"]
-               - self.variables["carbon_emissions_carrier_total"]
-               + self.variables["carbon_emissions_annual_overshoot"])
+               - self.variables["carbon_emissions_carrier_total"])
         rhs = 0
         constraints = lhs == rhs
 
