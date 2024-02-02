@@ -72,7 +72,7 @@ class Results:
         return annuity
 
     def get_df(
-        self, component_name: str, scenario_name: Optional[str] = None
+        self, component_name: str, scenario_name: Optional[str] = None  
     ) -> dict[str, "pd.DataFrame | pd.Series[Any]"]:
         component = self.solution_loader.components[component_name]
 
@@ -219,11 +219,8 @@ class Results:
             return series
 
         if component.timestep_type is TimestepType.yearly:
-            if isinstance(series.index, pd.MultiIndex):
-                ans = series.unstack(component.timestep_name)
-                return ans[years]
-            else:
-                return series
+            ans = series.unstack(component.timestep_name)
+            return ans[years]
 
         timestep_duration = self.solution_loader.get_timestep_duration(
             scenario, component
