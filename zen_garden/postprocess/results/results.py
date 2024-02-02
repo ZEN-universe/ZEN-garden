@@ -1,13 +1,13 @@
 import pandas as pd
 from typing import Optional, Any
-from zen_garden.postprocess.new_results.solution_loader import (
+from zen_garden.postprocess.results.solution_loader import (
     SolutionLoader,
     Scenario,
     Component,
     TimestepType,
     ComponentType,
 )
-from zen_garden.postprocess.new_results.multi_hdf_loader import MultiHdfLoader
+from zen_garden.postprocess.results.multi_hdf_loader import MultiHdfLoader
 from functools import cache
 
 
@@ -71,7 +71,7 @@ class Results:
                     )
         return annuity
 
-    def get_component_data(
+    def get_df(
         self, component_name: str, scenario_name: Optional[str] = None
     ) -> dict[str, "pd.DataFrame | pd.Series[Any]"]:
         component = self.solution_loader.components[component_name]
@@ -97,9 +97,14 @@ class Results:
         scenario: Scenario,
         component: Component,
         year: Optional[int] = None,
+        discount_to_first_step: bool = True,
+        element_name: Optional[str] = None,
     ) -> "pd.Series[Any]":
         assert component.timestep_type is not None
         series = self.solution_loader.get_component_data(scenario, component)
+
+        if element_name is not None:
+            series = series.loc[element_name]
 
         if year is None:
             years = [i for i in range(0, scenario.system.optimized_years)]
@@ -114,7 +119,7 @@ class Results:
                 ComponentType.parameter,
                 ComponentType.variable,
             ]:
-                annuity = self._get_annuity(scenario)
+                annuity = self._get_annuity(scenario, discount_to_first_step)
                 ans = series / annuity
             else:
                 ans = series
@@ -156,7 +161,12 @@ class Results:
         return output_df
 
     def get_full_ts(
-        self, component_name: str, scenario_name: Optional[str] = None
+        self,
+        component_name: str,
+        scenario_name: Optional[str] = None,
+        discount_to_first_step: bool = True,
+        year: Optional[int] = None,
+        element_name: Optional[str] = None,
     ) -> "pd.DataFrame | pd.Series[Any]":
         if scenario_name is None:
             scenario_names = list(self.solution_loader.scenarios)
@@ -171,7 +181,11 @@ class Results:
             scenario = self.solution_loader.scenarios[scenario_name]
 
             scenarios_dict[scenario_name] = self.get_full_ts_per_scenario(
-                scenario, component
+                scenario,
+                component,
+                discount_to_first_step=discount_to_first_step,
+                year=year,
+                element_name=element_name,
             )
 
         return self._concat_scenarios_dict(scenarios_dict)

@@ -1,4 +1,4 @@
-from zen_garden.postprocess.new_results.solution_loader import (
+from zen_garden.postprocess.results.solution_loader import (
     Component as AbstractComponent,
     Scenario as AbstractScenario,
     SolutionLoader as AbstractLoader,
