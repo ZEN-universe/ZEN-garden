@@ -12,31 +12,34 @@ from typing import Any, Optional
 
 
 class Subscriptable(BaseModel, extra="allow"):
-    def __getitem__(self, __name) -> Any:
+    def __getitem__(self, __name: str) -> Any:
         return getattr(self, __name)
 
     def __setitem__(self, __name: str, __value: Any) -> None:
         setattr(self, __name, __value)
 
-    def keys(self):
+    def keys(self) -> Any:
         return self.model_dump().keys()
 
-    def update(self, new_values: dict):
+    def update(self, new_values: dict[Any, Any]) -> None:
         for key, val in new_values.items():
             if isinstance(val, dict):
                 getattr(self, key).update(val)
             else:
                 setattr(self, key, val)
 
-    def items(self):
+    def items(self) -> Any:
         return self.model_dump().items()
+    
+    def values(self) -> Any:
+        return self.model_dump().values()
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         self.fix_keys = list(self.model_dump().keys())
         self.i = 0
         return self
 
-    def __next__(self):
+    def __next__(self) -> Any:
         if self.i < len(self.fix_keys):
             ans = self.fix_keys[self.i]
             self.i += 1
@@ -47,12 +50,11 @@ class Subscriptable(BaseModel, extra="allow"):
 
 class Subsets(Subscriptable):
     set_carriers: list[str] = []
-    set_technologies: list[str] = [
-        "set_conversion_technologies",
-        "set_transport_technologies",
-        "set_storage_technologies",
-    ]
-    set_conversion_technologies: list[str] = ["set_conditioning_technologies"]
+    set_technologies: dict[str, list[str]] = {
+        "set_conversion_technologies": ["set_retrofitting_technologies"],
+        "set_transport_technologies": [],
+        "set_storage_technologies": [],
+    }
 
 
 class HeaderDataInputs(Subscriptable):
@@ -113,18 +115,18 @@ class Analysis(Subscriptable):
 
 class System(Subscriptable):
     model_config = ConfigDict(extra="allow")
-    set_carriers: list = []
-    set_conditioning_carriers: list = []
+    set_carriers: list[str] = []
+    set_conditioning_carriers: list[str] = []
     set_capacity_types: list[str] = ["power", "energy"]
     set_conversion_technologies: list[str] = []
-    set_conditioning_technologies: list = []
-    set_storage_technologies: list = []
+    set_conditioning_technologies: list[str] = []
+    set_storage_technologies: list[str] = []
+    set_retrofitting_technologies: list[str] = []
     storage_periodicity: bool = True
-    set_transport_technologies: list = []
+    set_transport_technologies: list[str] = []
     double_capex_transport: bool = False
-    set_bidirectional_transport_technologies: list = []
+    set_bidirectional_transport_technologies: list[str] = []
     set_nodes: list[str] = []
-    conduct_time_series_aggregation: bool = False
     exclude_parameters_from_TSA: bool = True
     conduct_scenario_analysis: bool = False
     run_default_scenario: bool = True
@@ -146,7 +148,7 @@ class SolverOptions(Subscriptable):
     logfile: str = ".//outputs//logs//GurobiLogFile.log"
     MIPGap: Optional[str] = None
     TimeLimit: Optional[int] = None
-    Method: Optional[int] = (None,)
+    Method: Optional[Any] = (None,)
     NodeMethod: Optional[int] = None
     BarHomogeneous: Optional[int] = None
     Threads: Optional[int] = None
@@ -157,18 +159,18 @@ class SolverOptions(Subscriptable):
 class Solver(Subscriptable):
     name: str = "glpk"
     solver_options: SolverOptions = SolverOptions()
+    check_unit_consistency: bool = True
     solver_dir: str = ".//outputs//solver_files"
     keep_files: bool = False
     io_api: str = "direct"
     add_duals: bool = False
-    analyze_numerics: bool = False
     recommend_base_units: bool = False
-    immutable_unit: list = []
-    range_unit_exponents: dict = {"min": -1, "max": 1, "step_width": 1}
+    immutable_unit: list[str] = []
+    range_unit_exponents: dict[str, int] = {"min": -1, "max": 1, "step_width": 1}
     define_ton_as_metric_ton: bool = True
     rounding_decimal_points: int = 5
     rounding_decimal_points_ts: int = 5
-    linear_regression_check: dict = {
+    linear_regression_check: dict[str, float] = {
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
     }
@@ -183,7 +185,7 @@ class Config(Subscriptable):
     # solver: dict = Solver().model_dump()
     solver: Solver = Solver()
 
-    system: dict = System()
+    system: System = System()
     # system: System = System()
 
-    scenarios: dict = {"": {}}
+    scenarios: dict[str, Any] = {"": {}}
