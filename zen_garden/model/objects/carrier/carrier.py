@@ -563,7 +563,7 @@ class CarrierRules(GenericRule):
             mask = (self.parameters.availability_import.loc[carrier, :, times] != 0) | (self.parameters.availability_export.loc[carrier, :, times] != 0)
             fac = np.where(mask, self.parameters.carbon_intensity_carrier.loc[carrier, :, yearly_time_steps], 0)
             fac = xr.DataArray(fac, coords=[self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]])
-            term_flow_import_export = fac * (self.variables["flow_import"].loc[carrier, :] - self.variables["flow_export"].loc[carrier, :])
+            term_flow_import_export = fac * (self.variables["flow_import"].loc[carrier, :] )
 
             ### formulate constraint
             lhs = (self.variables["carbon_emissions_carrier"].loc[carrier, :]
