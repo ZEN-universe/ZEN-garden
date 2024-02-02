@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.0.2] - 2024-01-29
+### Added
+- compare parameters with different shapes in `r.compare_model_parameters()`
+  
+### Fixed
+- Writing IIS to file
+- set expansion of `set_technologies` in scenario routine
+
+### Changed
+- convert `how_to_zen-garden.pdf` and `dataset_creation_tutorial.pdf` into `.md`
+
 ## [v1.0.1] - 2024-01-02
 ### Added
 - Unit consistency checks: Check that all units are internally consistent across parameters
