@@ -15,6 +15,7 @@ import importlib.util
 from collections import UserDict,defaultdict
 from contextlib import contextmanager
 from datetime import datetime
+import re
 from ordered_set import OrderedSet
 import h5py
 import linopy as lp
@@ -108,7 +109,7 @@ class IISConstraintParser(object):
         # write gurobi IIS to file
         self.write_gurobi_iis()
         # get the labels
-        self.labels = self.read_labels()
+        self.constraint_labels,self.var_labels, self.var_lines = self.read_labels()
 
     def write_parsed_output(self, outfile=None):
         """
@@ -120,9 +121,11 @@ class IISConstraintParser(object):
         if outfile is None:
             outfile = self.iis_file
         seen_constraints = []
-        with open(self.iis_file, "w") as f:
+        seen_variables = []
+        with open(outfile, "w") as f:
+            f.write("Constraints:\n")
             constraints = self.model.constraints
-            for label in self.labels:
+            for label in self.constraint_labels:
                 name, coord = self.get_label_position(constraints, label)
                 constraint = constraints[name]
                 expr_str = self.print_single_constraint(constraint, coord)
@@ -132,6 +135,15 @@ class IISConstraintParser(object):
                     seen_constraints.append(name)
                     cons_str = f"\n{name}:\n{cons_str}"
                 f.write(cons_str)
+            f.write("\n\nVariables:\n")
+            variables = self.model.variables
+            for label in self.var_labels:
+                name, coord = self.get_label_position(variables,label)
+                var_str = f"\t{self.print_coord(coord)}:\t{self.var_lines[label]}\n"
+                if name not in seen_variables:
+                    seen_variables.append(name)
+                    var_str = f"\n{name}:\n{var_str}"
+                f.write(var_str)
 
     def write_gurobi_iis(self):
         """ writes IIS to file """
@@ -147,13 +159,21 @@ class IISConstraintParser(object):
         :return: A list of labels
         """
 
-        labels = []
+        labels_c = []
+        labels_v = []
+        lines_v = {}
         with open(self.iis_file, "rb") as f:
             for line in f.readlines():
                 line = line.decode()
                 if line.startswith(" c"):
-                    labels.append(int(line.split(":")[0][2:]))
-        return labels
+                    labels_c.append(int(line.split(":")[0][2:]))
+                elif line.startswith(" x"):
+                    pattern = r'\sx(\d+)\s(.*)'
+                    match = re.match(pattern, line)
+                    if match:
+                        labels_v.append(int(match.group(1)))
+                        lines_v[int(match.group(1))] = match.group(2).rstrip()
+        return labels_c, labels_v, lines_v
 
     def print_single_constraint(self, constraint, coord):
         coeffs, vars, sign, rhs = xr.broadcast(constraint.coeffs,
