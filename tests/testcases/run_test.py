@@ -158,7 +158,7 @@ def check_get_total_get_full_ts(results: Results, specific_scenario=False, year=
 
 # All the tests
 ###############
-"""
+
 def test_1a(config, folder_path):
     # add duals for this test
     config.solver["add_duals"] = True
@@ -235,7 +235,7 @@ def test_2c(config, folder_path):
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-"""
+
 def test_3a(config, folder_path):
     # run the test
     data_set_name = "test_3a"
@@ -248,7 +248,7 @@ def test_3a(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
-"""
+
 
 def test_3b(config, folder_path):
     # run the test
@@ -421,7 +421,7 @@ def test_6a(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
-"""
+
 
 def test_6b(config, folder_path):
     # run the test
@@ -434,7 +434,7 @@ def test_6b(config, folder_path):
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-"""
+
 def test_6c(config, folder_path):
     # run the test
     data_set_name = "test_6c"
@@ -471,7 +471,7 @@ def test_7b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-"""
+
 def test_8a(config, folder_path):
     # run the test
     data_set_name = "test_8a"
