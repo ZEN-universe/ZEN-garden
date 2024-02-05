@@ -486,13 +486,13 @@ class EnergySystemRules(GenericRule):
         ### formulate constraint
         assert 'co2_stored' in self.optimization_setup.sets['set_carriers'], "carrier 'co2_stored' not found in set_carriers"
         total_co2_stored = (self.variables['flow_export'].loc['co2_stored', :, year] * self.parameters.time_steps_operation_duration.loc[year]).sum()
-        feasibility_tech = (self.variables['flow_conversion_output'].loc['emergency_storage', 'dummy_carrier', :, year] * self.parameters.time_steps_operation_duration.loc[year]).sum()
-        lhs = total_co2_stored + feasibility_tech
+        if 'emergency_storage' not in self.variables['flow_conversion_output'].coords['set_conversion_technologies'].values:
+            lhs = total_co2_stored
+        else:
+            feasibility_tech = (self.variables['flow_conversion_output'].loc['emergency_storage', 'dummy_carrier', :, year] * self.parameters.time_steps_operation_duration.loc[year]).sum()
+            lhs = total_co2_stored + feasibility_tech
         rhs = self.parameters.min_co2_stored.loc[year].item()
         constraints = lhs >= rhs
-
-        # open points:
-        # do I need a time step duration for the flow_export? probabyly yes.
 
         ### return
         return self.constraints.return_contraints(constraints)
