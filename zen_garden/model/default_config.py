@@ -30,7 +30,7 @@ class Subscriptable(BaseModel, extra="allow"):
 
     def items(self) -> Any:
         return self.model_dump().items()
-    
+
     def values(self) -> Any:
         return self.model_dump().values()
 
@@ -50,7 +50,7 @@ class Subscriptable(BaseModel, extra="allow"):
 
 class Subsets(Subscriptable):
     set_carriers: list[str] = []
-    set_technologies: dict[str, list[str]] = {
+    set_technologies: dict[str, list[str]] | list[str] = {
         "set_conversion_technologies": ["set_retrofitting_technologies"],
         "set_transport_technologies": [],
         "set_storage_technologies": [],

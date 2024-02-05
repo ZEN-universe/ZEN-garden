@@ -15,64 +15,8 @@ class Results:
     def __init__(self, path: str):
         self.solution_loader: SolutionLoader = MultiHdfLoader(path)
 
-    def _get_annuity(self, scenario: Scenario, discount_to_first_step: bool = True):
-        """discounts the duals
-
-        :param discount_to_first_step: apply annuity to first year of interval or entire interval
-        :param scenario: scenario name whose results are assessed
-        :return: #TODO describe parameter/return
-        """
-        system = scenario.system
-        discount_rate_component = self.solution_loader.components["discount_rate"]
-        # calculate annuity
-        discount_rate = self.solution_loader.get_component_data(
-            scenario, discount_rate_component
-        ).squeeze()
-
-        years = list(range(0, system["optimized_years"]))
-
-        annuity = pd.Series(index=years, dtype=float)
-        for year in years:
-            interval_between_years = system.interval_between_years
-            if year == years[-1]:
-                interval_between_years_this_year = 1
-            else:
-                interval_between_years_this_year = system.interval_between_years
-            if self.solution_loader.has_rh:
-                if discount_to_first_step:
-                    annuity[year] = interval_between_years_this_year * (
-                        1 / (1 + discount_rate)
-                    )
-                else:
-                    annuity[year] = sum(
-                        ((1 / (1 + discount_rate)) ** (_intermediate_time_step))
-                        for _intermediate_time_step in range(
-                            0, interval_between_years_this_year
-                        )
-                    )
-            else:
-                if discount_to_first_step:
-                    annuity[year] = interval_between_years_this_year * (
-                        (1 / (1 + discount_rate))
-                        ** (interval_between_years * (year - years[0]))
-                    )
-                else:
-                    annuity[year] = sum(
-                        (
-                            (1 / (1 + discount_rate))
-                            ** (
-                                interval_between_years * (year - years[0])
-                                + _intermediate_time_step
-                            )
-                        )
-                        for _intermediate_time_step in range(
-                            0, interval_between_years_this_year
-                        )
-                    )
-        return annuity
-
     def get_df(
-        self, component_name: str, scenario_name: Optional[str] = None  
+        self, component_name: str, scenario_name: Optional[str] = None
     ) -> dict[str, "pd.DataFrame | pd.Series[Any]"]:
         component = self.solution_loader.components[component_name]
 
@@ -295,3 +239,120 @@ class Results:
                     scenarios_dict, keys=scenarios_dict.keys(), axis=1
                 ).T
         return total_value
+
+    def _get_annuity(self, scenario: Scenario, discount_to_first_step: bool = True):
+        """discounts the duals
+
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
+        :param scenario: scenario name whose results are assessed
+        :return: #TODO describe parameter/return
+        """
+        system = scenario.system
+        discount_rate_component = self.solution_loader.components["discount_rate"]
+        # calculate annuity
+        discount_rate = self.solution_loader.get_component_data(
+            scenario, discount_rate_component
+        ).squeeze()
+
+        years = list(range(0, system["optimized_years"]))
+
+        annuity = pd.Series(index=years, dtype=float)
+        for year in years:
+            interval_between_years = system.interval_between_years
+            if year == years[-1]:
+                interval_between_years_this_year = 1
+            else:
+                interval_between_years_this_year = system.interval_between_years
+            if self.solution_loader.has_rh:
+                if discount_to_first_step:
+                    annuity[year] = interval_between_years_this_year * (
+                        1 / (1 + discount_rate)
+                    )
+                else:
+                    annuity[year] = sum(
+                        ((1 / (1 + discount_rate)) ** (_intermediate_time_step))
+                        for _intermediate_time_step in range(
+                            0, interval_between_years_this_year
+                        )
+                    )
+            else:
+                if discount_to_first_step:
+                    annuity[year] = interval_between_years_this_year * (
+                        (1 / (1 + discount_rate))
+                        ** (interval_between_years * (year - years[0]))
+                    )
+                else:
+                    annuity[year] = sum(
+                        (
+                            (1 / (1 + discount_rate))
+                            ** (
+                                interval_between_years * (year - years[0])
+                                + _intermediate_time_step
+                            )
+                        )
+                        for _intermediate_time_step in range(
+                            0, interval_between_years_this_year
+                        )
+                    )
+        return annuity
+
+    def compare_configs(
+        self, other_results: "Results", scenarios: Optional[list[str]] = None
+    ) -> dict[str, Any]:
+        def compare_dicts(
+            dict1: dict[Any, Any],
+            dict2: dict[Any, Any],
+            result_names=["res_1", "res_2"],
+        ):
+            diff_dict = {}
+            for key in dict1.keys() | dict2.keys():
+                if isinstance(dict1.get(key), dict) and isinstance(
+                    dict2.get(key), dict
+                ):
+                    nested_diff = compare_dicts(
+                        dict1.get(key, {}), dict2.get(key, {}), result_names
+                    )
+                    if nested_diff:
+                        diff_dict[key] = nested_diff
+                elif dict1.get(key) != dict2.get(key):
+                    if isinstance(dict1.get(key), list) and isinstance(
+                        dict2.get(key), list
+                    ):
+                        if sorted(dict1.get(key)) != sorted(dict2.get(key)):
+                            diff_dict[key] = {
+                                result_names[0]: sorted(dict1.get(key)),
+                                result_names[1]: sorted(dict2.get(key)),
+                            }
+                    else:
+                        diff_dict[key] = {
+                            result_names[0]: dict1.get(key),
+                            result_names[1]: dict2.get(key),
+                        }
+            return diff_dict if diff_dict else None
+
+        if scenarios is not None:
+            assert set(scenarios).issubset(set(self.solution_loader.scenarios.keys()))
+            assert set(scenarios).issubset(
+                set(other_results.solution_loader.scenarios.keys())
+            )
+        else:
+            assert set(self.solution_loader.scenarios).issubset(
+                other_results.solution_loader.scenarios
+            )
+            scenarios = self.solution_loader.scenarios.keys()
+
+        ans = {}
+        for scenario in scenarios:
+            scenario_1 = self.solution_loader.scenarios[scenario]
+            scenario_2 = other_results.solution_loader.scenarios[scenario]
+
+            ans[scenario] = {
+                "analysis": compare_dicts(
+                    scenario_1.analysis.model_dump(),
+                    scenario_2.analysis.model_dump(),
+                ),
+                "system": compare_dicts(
+                    scenario_1.system.model_dump(), scenario_2.system.model_dump()
+                ),
+            }
+        return ans
