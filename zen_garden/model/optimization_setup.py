@@ -338,7 +338,7 @@ class OptimizationSetup(object):
             else:
                 combined_key = element.name
             if attribute_name in element.units:
-                if attribute_name == "conversion_factor":
+                if attribute_name in ["conversion_factor", "retrofit_flow_coupling_factor"]:
                     dict_of_units[combined_key] = element.units[attribute_name]
                 else:
                     dict_of_units[combined_key] = str(element.units[attribute_name]["unit_in_base_units"].units)

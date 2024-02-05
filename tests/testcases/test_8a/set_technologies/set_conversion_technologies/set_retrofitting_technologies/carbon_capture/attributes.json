@@ -70,7 +70,7 @@
     "default_value": 0.0,
     "unit": "1"
   },
-  "carbon_intensity": {
+  "carbon_intensity_technology": {
     "default_value": 0.0,
     "unit": "kilotons/kilotons"
   },
