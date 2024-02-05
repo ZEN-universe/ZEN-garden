@@ -352,7 +352,7 @@ class DataInput:
             for l in set_super_locations_input.index.unique():
                 if isinstance(set_super_locations_input.loc[l, loc], pd.Series):
                     super_locations_dict[l] = set_super_locations_input.loc[l, loc]
-                elif np.isnan(set_super_locations_input.loc[l, loc]):
+                elif pd.isna(set_super_locations_input.loc[l, loc]):
                     super_locations_dict[l] = []
                 else:
                     super_locations_dict[l] = [set_super_locations_input.loc[l, loc]]
