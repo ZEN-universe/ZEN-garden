@@ -296,8 +296,12 @@ class Results:
                     )
         return annuity
 
+    @classmethod
     def compare_configs(
-        self, other_results: "Results", scenarios: Optional[list[str]] = None
+        cls,
+        results_1: "Results",
+        results_2: "Results",
+        scenarios: Optional[list[str]] = None,
     ) -> dict[str, Any]:
         def compare_dicts(
             dict1: dict[Any, Any],
@@ -331,28 +335,40 @@ class Results:
             return diff_dict if diff_dict else None
 
         if scenarios is not None:
-            assert set(scenarios).issubset(set(self.solution_loader.scenarios.keys()))
             assert set(scenarios).issubset(
-                set(other_results.solution_loader.scenarios.keys())
+                set(results_1.solution_loader.scenarios.keys())
+            )
+            assert set(scenarios).issubset(
+                set(results_2.solution_loader.scenarios.keys())
             )
         else:
-            assert set(self.solution_loader.scenarios).issubset(
-                other_results.solution_loader.scenarios
+            assert set(results_1.solution_loader.scenarios).issubset(
+                results_2.solution_loader.scenarios
             )
-            scenarios = self.solution_loader.scenarios.keys()
+            scenarios = results_1.solution_loader.scenarios.keys()
 
         ans = {}
         for scenario in scenarios:
-            scenario_1 = self.solution_loader.scenarios[scenario]
-            scenario_2 = other_results.solution_loader.scenarios[scenario]
+            ans[scenario] = {}
+            scenario_1 = results_1.solution_loader.scenarios[scenario]
+            scenario_2 = results_2.solution_loader.scenarios[scenario]
+            analysis_diff = compare_dicts(
+                scenario_1.analysis.model_dump(),
+                scenario_2.analysis.model_dump(),
+            )
 
-            ans[scenario] = {
-                "analysis": compare_dicts(
-                    scenario_1.analysis.model_dump(),
-                    scenario_2.analysis.model_dump(),
-                ),
-                "system": compare_dicts(
-                    scenario_1.system.model_dump(), scenario_2.system.model_dump()
-                ),
-            }
+            if analysis_diff is not None:
+                ans[scenario]["analysis"] = analysis_diff
+
+            system_diff = compare_dicts(
+                scenario_1.system.model_dump(),
+                scenario_2.system.model_dump(),
+            )
+
+            if system_diff is not None:
+                ans[scenario]["system"] = system_diff
+
+        if len(ans) == 1:
+            return ans[next(iter(ans.keys()))]
+
         return ans
