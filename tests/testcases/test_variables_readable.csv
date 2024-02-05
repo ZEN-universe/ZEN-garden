@@ -89,12 +89,12 @@ test_3a,none,carbon_emissions_carrier,"('natural_gas', 'CH', 0)",0.0022
 test_3a,none,carbon_emissions_carrier,"('natural_gas', 'DE', 0)",0.022
 test_3a,none,carbon_emissions_carrier,"('heat', 'CH', 0)",0
 test_3a,none,carbon_emissions_carrier,"('heat', 'DE', 0)",0
-test_3a,none,flow_export,"('carbon', 'CH', 0)",0.0001
-test_3a,none,flow_export,"('carbon', 'DE', 0)",0.001
+test_3a,none,flow_export,"('carbon', 'CH', 0)",0.001
+test_3a,none,flow_export,"('carbon', 'DE', 0)",0.01
 test_3a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10
 test_3a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
-test_3a,none,flow_conversion_output,"('natural_gas_boiler', 'carbon', 'CH', 0)",0.0001
-test_3a,none,flow_conversion_output,"('natural_gas_boiler', 'carbon', 'DE', 0)",0.001
+test_3a,none,flow_conversion_output,"('natural_gas_boiler', 'carbon', 'CH', 0)",0.001
+test_3a,none,flow_conversion_output,"('natural_gas_boiler', 'carbon', 'DE', 0)",0.01
 test_3a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_3a,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
 test_3a,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",1

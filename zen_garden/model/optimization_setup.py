@@ -26,7 +26,8 @@ from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 
-from ..utils import ScenarioDict, IISConstraintParser
+from ..utils import ScenarioDict, IISConstraintParser, StringUtils
+
 
 class OptimizationSetup(object):
     """setup optimization setup """
@@ -553,16 +554,16 @@ class OptimizationSetup(object):
             self.optimality = False
 
     def write_IIS(self):
-        """ write an ILP file to print the IIS if infeasible. Only possible for gurobi """
+        """ write an ILP file to print the IIS if infeasible. Only possible for gurobi
+        """
         if self.model.termination_condition == 'infeasible' and self.solver["name"] == "gurobi":
             logging.info("The optimization is infeasible")
             # ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
-            ilp_file = f"//infeasible_model_IIS.ilp"
+            output_folder = StringUtils.get_output_folder(self.analysis)
+            ilp_file = os.path.join(output_folder,"infeasible_model_IIS.ilp")
+            logging.info(f"Writing parsed IIS to {ilp_file}")
             parser = IISConstraintParser(ilp_file, self.model)
-            fname, _ = os.path.splitext(ilp_file)
-            outfile = fname + "_linopy.ilp"
-            logging.info(f"Writing parsed IIS to {outfile}")
-            parser.write_parsed_output(outfile)
+            parser.write_parsed_output()
 
     def add_results_of_optimization_step(self, step_horizon):
         """ adds the new capacity additions and the cumulative carbon emissions for next
@@ -580,7 +581,10 @@ class OptimizationSetup(object):
                 capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
                 invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
                 cost_capex = self.model.solution["cost_capex"].to_series().dropna()
-                rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
+                if self.solver["round_parameters"]:
+                    rounding_value = 10 ** (-self.solver["rounding_decimal_points_capacity"])
+                else:
+                    rounding_value = 0
                 capacity_addition[capacity_addition <= rounding_value] = 0
                 invest_capacity[invest_capacity <= rounding_value] = 0
                 cost_capex[cost_capex <= rounding_value] = 0

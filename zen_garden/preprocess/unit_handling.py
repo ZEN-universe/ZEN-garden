@@ -13,6 +13,7 @@ import scipy as sp
 import warnings
 import json
 import os
+import re
 from pint import UnitRegistry
 from pint.util import column_echelon_form
 from pathlib import Path
@@ -27,7 +28,7 @@ class UnitHandling:
     Class containing the unit handling procedure
     """
 
-    def __init__(self, folder_path, round_decimal_points, define_ton_as_metric_ton=True):
+    def __init__(self, folder_path, rounding_decimal_points_units, define_ton_as_metric_ton=True):
         """ initialization of the unit_handling instance
 
         :param folder_path: The path to the folder containing the system specifications
@@ -35,7 +36,7 @@ class UnitHandling:
         :param define_ton_as_metric_ton: bool to use another definition for tons
         """
         self.folder_path = folder_path
-        self.rounding_decimal_points = round_decimal_points
+        self.rounding_decimal_points_units = rounding_decimal_points_units
         self.get_base_units(define_ton_as_metric_ton)
         # dict of element attribute values
         self.dict_attribute_values = {}
@@ -245,9 +246,9 @@ class UnitHandling:
             # magnitude of combined unit is multiplier
             multiplier = combined_unit.to_base_units().magnitude
             # check that multiplier is larger than rounding tolerance
-            assert multiplier >= 10 ** (-self.rounding_decimal_points), f"Multiplier {multiplier} of unit {input_unit} in parameter {attribute_name} is smaller than rounding tolerance {10 ** (-self.rounding_decimal_points)}"
+            assert multiplier >= 10 ** (-self.rounding_decimal_points_units), f"Multiplier {multiplier} of unit {input_unit} in parameter {attribute_name} is smaller than rounding tolerance {10 ** (-self.rounding_decimal_points_units)}"
             # round to decimal points
-            return round(multiplier, self.rounding_decimal_points)
+            return round(multiplier, self.rounding_decimal_points_units)
 
     def convert_unit_into_base_units(self, input_unit, get_multiplier=False, attribute_name=None, path=None):
         """Converts the input_unit into base units and returns the multiplier such that the combined unit mustn't be computed twice
@@ -498,6 +499,9 @@ class UnitHandling:
         for dependent_carrier_name, cf_unit_specs in unit_specs.items():
             assert cf_unit_specs["unit"] != "1", f"Since there doesn't exist a conversion_factor file for the technology {conversion_element.name}, the attribute conversion_factor_default must be defined with units to ensure unit consistency"
             units = cf_unit_specs["unit"].split("/")
+            # check that no asterisk in unit strings without parentheses
+            correct_unit_string = [("*" in u and u[0] == "(" and u[1] == ")") or ("*" not in u) for u in units]
+            assert all(correct_unit_string), f"The conversion factor string(s) {[u for u,s in zip(units,correct_unit_string) if not s]} of technology {conversion_element.name} must not contain an asterisk '*' unless it is enclosed in parentheses '()'"
 
             #problem: we don't know which parts of cf unit belong to which carrier for units of format different from "unit/unit" (e.g. kg/h/kW)
             #method: compare number of division signs of conversion factor unit with number  of division signs of corresponding carrier element energy/power quantity
