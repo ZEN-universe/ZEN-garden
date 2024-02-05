@@ -108,22 +108,16 @@ class StorageTechnology(Technology):
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         # efficiency charge
-        optimization_setup.parameters.add_parameter(name="efficiency_charge",
-            data=optimization_setup.initialize_component(cls, "efficiency_charge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"]),
-            doc='efficiency during charging for storage technologies')
+        optimization_setup.parameters.add_parameter(name="efficiency_charge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"], doc='efficiency during charging for storage technologies', calling_class=cls)
         # efficiency discharge
-        optimization_setup.parameters.add_parameter(name="efficiency_discharge",
-            data=optimization_setup.initialize_component(cls, "efficiency_discharge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"]),
-            doc='efficiency during discharging for storage technologies')
+        optimization_setup.parameters.add_parameter(name="efficiency_discharge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"], doc='efficiency during discharging for storage technologies', calling_class=cls)
         # self discharge
-        optimization_setup.parameters.add_parameter(name="self_discharge",
-            data=optimization_setup.initialize_component(cls, "self_discharge", index_names=["set_storage_technologies", "set_nodes"]),
-            doc='self discharge of storage technologies')
+        optimization_setup.parameters.add_parameter(name="self_discharge", index_names=["set_storage_technologies", "set_nodes"], doc='self discharge of storage technologies', calling_class=cls)
         # capex specific
-        optimization_setup.parameters.add_parameter(name="capex_specific_storage",
-            data=optimization_setup.initialize_component(cls, "capex_specific", index_names=["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], capacity_types=True),
-            doc='specific capex of storage technologies')
-
+        #TODO call initialize_component in add_parameter as soon as attribute names and component names are harmonised
+        optimization_setup.parameters.add_parameter(name="capex_specific_storage", data=optimization_setup.initialize_component(cls, "capex_specific",
+                                                    index_names=["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"],
+                                                    capacity_types=True)[:2], doc='specific capex of storage technologies')
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <StorageTechnology>

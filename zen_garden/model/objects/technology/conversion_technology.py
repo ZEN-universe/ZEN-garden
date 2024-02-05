@@ -134,7 +134,7 @@ class ConversionTechnology(Technology):
         for element in class_elements:
             # extract for pwa
             if not getattr(element, is_pwa_attribute):
-                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes)
+                dict_of_attributes, _, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes, dict_of_units={})
             if not dict_of_attributes:
                 _, index_names = cls.create_custom_set(index_names, optimization_setup)
                 return (dict_of_attributes, index_names)
@@ -188,11 +188,10 @@ class ConversionTechnology(Technology):
         # slope of linearly modeled capex
         optimization_setup.parameters.add_parameter(name="capex_specific_conversion",
             data=cls.get_capex_all_elements(optimization_setup, index_names=["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"]),
-            doc="Parameter which specifies the slope of the capex if approximated linearly")
+            doc="Parameter which specifies the slope of the capex if approximated linearly", calling_class=cls)
         # slope of linearly modeled conversion efficiencies
-        optimization_setup.parameters.add_parameter(name="conversion_factor", data=optimization_setup.initialize_component(cls, "conversion_factor",
-            index_names=["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
-            doc="Parameter which specifies the conversion factor")
+        optimization_setup.parameters.add_parameter(name="conversion_factor", index_names=["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"],
+            doc="Parameter which specifies the conversion factor", calling_class=cls)
 
         # add params of the child classes
         for subclass in cls.__subclasses__():

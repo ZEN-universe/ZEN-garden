@@ -16,6 +16,7 @@ from itertools import zip_longest
 import linopy as lp
 import numpy as np
 import pandas as pd
+import pint
 import xarray as xr
 from ordered_set import OrderedSet
 
@@ -454,21 +455,32 @@ class DictParameter(object):
 
 
 class Parameter(Component):
-    def __init__(self, index_sets):
+    def __init__(self, optimization_setup):
         """ initialization of the parameter object """
-        self.index_sets = index_sets
+        self.optimization_setup = optimization_setup
+        self.index_sets = optimization_setup.sets
         super().__init__()
         self.min_parameter_value = {"name": None, "value": None}
         self.max_parameter_value = {"name": None, "value": None}
         self.dict_parameters = DictParameter()
+        self.units = {}
 
-    def add_parameter(self, name, data, doc):
+    def add_parameter(self, name, doc, data=None, calling_class=None, index_names=None, set_time_steps=None, capacity_types=False):
         """ initialization of a parameter
 
         :param name: name of parameter
+        :param doc: docstring of parameter
         :param data: non default data of parameter and index_names
-        :param doc: docstring of parameter """
+        :param calling_class: class type of the object add_parameter is called for
+        :param index_names: names of index sets, only if calling_class is not EnergySystem
+        :param set_time_steps: time steps, only if calling_class is EnergySystem
+        :param capacity_types: boolean if extracted for capacities
+        """
 
+        dict_of_units = {}
+        if data is None:
+            component_data, index_list, dict_of_units = self.optimization_setup.initialize_component(calling_class, name, index_names, set_time_steps, capacity_types)
+            data = component_data, index_list
         if name not in self.docs.keys():
             data, index_list = self.get_index_names_data(data)
             # save if highest or lowest value
@@ -482,6 +494,8 @@ class Parameter(Component):
 
             # save additional parameters
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
+            # save parameter units
+            self.units[name] = self.get_param_units(data, dict_of_units)
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")
 
@@ -538,6 +552,24 @@ class Parameter(Component):
             if valmin < self.min_parameter_value["value"]:
                 self.min_parameter_value["name"] = idxmin
                 self.min_parameter_value["value"] = valmin
+
+    @staticmethod
+    def get_param_units(data, dict_of_units):
+        """ creates series of units to identical multi-index as data has
+
+        :param data: non default data of parameter and index_names
+        :param dict_of_units: units of parameter
+        """
+        if dict_of_units:
+            if not isinstance(data, pd.Series):
+                return str(dict_of_units["unit_in_base_units"].units)
+            else:
+                unit_series = pd.Series(index=data.index)
+                if "unit_in_base_units" in dict_of_units:
+                    return str(dict_of_units["unit_in_base_units"].units)
+            for key, value in dict_of_units.items():
+                unit_series.loc[pd.IndexSlice[key]] = value
+            return unit_series
 
     @staticmethod
     def convert_to_dict(data):

@@ -64,7 +64,7 @@ class Technology(Element):
         self.raw_time_series["opex_specific_variable"] = self.data_input.extract_input_data("opex_specific_variable", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
         # non-time series input data
         self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1, "time": -1})
-        self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity", index_sets=[set_location], unit_category={"emissions": 1, "energy_quantity": -1})
+        self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity_technology", index_sets=[set_location], unit_category={"emissions": 1, "energy_quantity": -1})
         # extract existing capacity
         self.set_technologies_existing = self.data_input.extract_set_technologies_existing()
         self.capacity_existing = self.data_input.extract_input_data("capacity_existing", index_sets=[set_location, "set_technologies_existing"], unit_category={"energy_quantity": 1, "time": -1})
@@ -311,70 +311,42 @@ class Technology(Element):
         # construct pe.Param of the class <Technology>
 
         # existing capacity
-        optimization_setup.parameters.add_parameter(name="capacity_existing",
-            data=optimization_setup.initialize_component(cls, "capacity_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_technologies_existing"], capacity_types=True),
-            doc='Parameter which specifies the existing technology size')
+        optimization_setup.parameters.add_parameter(name="capacity_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_technologies_existing"], capacity_types=True, doc='Parameter which specifies the existing technology size', calling_class=cls)
         # existing capacity
-        optimization_setup.parameters.add_parameter(name="capacity_investment_existing",
-            data=optimization_setup.initialize_component(cls, "capacity_investment_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly_entire_horizon"],
-                                                   capacity_types=True), doc='Parameter which specifies the size of the previously invested capacities')
+        optimization_setup.parameters.add_parameter(name="capacity_investment_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly_entire_horizon"], capacity_types=True, doc='Parameter which specifies the size of the previously invested capacities', calling_class=cls)
         # minimum capacity addition
-        optimization_setup.parameters.add_parameter(name="capacity_addition_min",
-            data=optimization_setup.initialize_component(cls, "capacity_addition_min", index_names=["set_technologies", "set_capacity_types"], capacity_types=True),
-            doc='Parameter which specifies the minimum capacity addition that can be installed')
+        optimization_setup.parameters.add_parameter(name="capacity_addition_min", index_names=["set_technologies", "set_capacity_types"], capacity_types=True, doc='Parameter which specifies the minimum capacity addition that can be installed', calling_class=cls)
         # maximum capacity addition
-        optimization_setup.parameters.add_parameter(name="capacity_addition_max",
-            data=optimization_setup.initialize_component(cls, "capacity_addition_max", index_names=["set_technologies", "set_capacity_types"], capacity_types=True),
-            doc='Parameter which specifies the maximum capacity addition that can be installed')
+        optimization_setup.parameters.add_parameter(name="capacity_addition_max", index_names=["set_technologies", "set_capacity_types"], capacity_types=True, doc='Parameter which specifies the maximum capacity addition that can be installed', calling_class=cls)
         # unbounded capacity addition
-        optimization_setup.parameters.add_parameter(name="capacity_addition_unbounded",
-            data=optimization_setup.initialize_component(cls, "capacity_addition_unbounded", index_names=["set_technologies"]),
-            doc='Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment)')
+        optimization_setup.parameters.add_parameter(name="capacity_addition_unbounded", index_names=["set_technologies"], doc='Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment)', calling_class=cls)
         # lifetime existing technologies
-        optimization_setup.parameters.add_parameter(name="lifetime_existing",
-            data=optimization_setup.initialize_component(cls, "lifetime_existing", index_names=["set_technologies", "set_location", "set_technologies_existing"]),
-            doc='Parameter which specifies the remaining lifetime of an existing technology')
+        optimization_setup.parameters.add_parameter(name="lifetime_existing", index_names=["set_technologies", "set_location", "set_technologies_existing"], doc='Parameter which specifies the remaining lifetime of an existing technology', calling_class=cls)
         # lifetime existing technologies
-        optimization_setup.parameters.add_parameter(name="capex_capacity_existing",
-            data=optimization_setup.initialize_component(cls, "capex_capacity_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_technologies_existing"],
-                                                   capacity_types=True), doc='Parameter which specifies the total capex of an existing technology which still has to be paid')
+        optimization_setup.parameters.add_parameter(name="capex_capacity_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_technologies_existing"], capacity_types=True, doc='Parameter which specifies the total capex of an existing technology which still has to be paid', calling_class=cls)
         # variable specific opex
-        optimization_setup.parameters.add_parameter(name="opex_specific_variable",
-            data=optimization_setup.initialize_component(cls, "opex_specific_variable",index_names=["set_technologies","set_location","set_time_steps_operation"]),
-            doc='Parameter which specifies the variable specific opex')
+        optimization_setup.parameters.add_parameter(name="opex_specific_variable", index_names=["set_technologies","set_location","set_time_steps_operation"], doc='Parameter which specifies the variable specific opex', calling_class=cls)
         # fixed specific opex
-        optimization_setup.parameters.add_parameter(name="opex_specific_fixed",
-            data=optimization_setup.initialize_component(cls, "opex_specific_fixed",index_names=["set_technologies", "set_capacity_types","set_location","set_time_steps_yearly"], capacity_types=True),
-            doc='Parameter which specifies the fixed annual specific opex')
+        optimization_setup.parameters.add_parameter(name="opex_specific_fixed", index_names=["set_technologies", "set_capacity_types","set_location","set_time_steps_yearly"], capacity_types=True, doc='Parameter which specifies the fixed annual specific opex', calling_class=cls)
         # lifetime newly built technologies
-        optimization_setup.parameters.add_parameter(name="lifetime", data=optimization_setup.initialize_component(cls, "lifetime", index_names=["set_technologies"]),
-            doc='Parameter which specifies the lifetime of a newly built technology')
+        optimization_setup.parameters.add_parameter(name="lifetime", index_names=["set_technologies"], doc='Parameter which specifies the lifetime of a newly built technology', calling_class=cls)
         # construction_time newly built technologies
-        optimization_setup.parameters.add_parameter(name="construction_time", data=optimization_setup.initialize_component(cls, "construction_time", index_names=["set_technologies"]),
-            doc='Parameter which specifies the construction time of a newly built technology')
+        optimization_setup.parameters.add_parameter(name="construction_time", index_names=["set_technologies"], doc='Parameter which specifies the construction time of a newly built technology', calling_class=cls)
         # maximum diffusion rate, i.e., increase in capacity
-        optimization_setup.parameters.add_parameter(name="max_diffusion_rate", data=optimization_setup.initialize_component(cls, "max_diffusion_rate", index_names=["set_technologies", "set_time_steps_yearly"]),
-            doc="Parameter which specifies the maximum diffusion rate which is the maximum increase in capacity between investment steps")
+        optimization_setup.parameters.add_parameter(name="max_diffusion_rate", index_names=["set_technologies", "set_time_steps_yearly"], doc="Parameter which specifies the maximum diffusion rate which is the maximum increase in capacity between investment steps", calling_class=cls)
         # capacity_limit of technologies
-        optimization_setup.parameters.add_parameter(name="capacity_limit",
-            data=optimization_setup.initialize_component(cls, "capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], capacity_types=True),
-            doc='Parameter which specifies the capacity limit of technologies')
+        optimization_setup.parameters.add_parameter(name="capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], capacity_types=True, doc='Parameter which specifies the capacity limit of technologies', calling_class=cls)
         # minimum load relative to capacity
-        optimization_setup.parameters.add_parameter(name="min_load",
-            data=optimization_setup.initialize_component(cls, "min_load", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], capacity_types=True),
-            doc='Parameter which specifies the minimum load of technology relative to installed capacity')
+        optimization_setup.parameters.add_parameter(name="min_load", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], capacity_types=True, doc='Parameter which specifies the minimum load of technology relative to installed capacity', calling_class=cls)
         # maximum load relative to capacity
-        optimization_setup.parameters.add_parameter(name="max_load",
-            data=optimization_setup.initialize_component(cls, "max_load", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], capacity_types=True),
-            doc='Parameter which specifies the maximum load of technology relative to installed capacity')
+        optimization_setup.parameters.add_parameter(name="max_load", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], capacity_types=True, doc='Parameter which specifies the maximum load of technology relative to installed capacity', calling_class=cls)
         # carbon intensity
-        optimization_setup.parameters.add_parameter(name="carbon_intensity_technology", data=optimization_setup.initialize_component(cls, "carbon_intensity_technology", index_names=["set_technologies", "set_location"]),
-            doc='Parameter which specifies the carbon intensity of each technology')
+        optimization_setup.parameters.add_parameter(name="carbon_intensity_technology", index_names=["set_technologies", "set_location"], doc='Parameter which specifies the carbon intensity of each technology', calling_class=cls)
         # calculate additional existing parameters
         optimization_setup.parameters.add_parameter(name="existing_capacities", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="capacity"),
-                                                    doc="Parameter which specifies the total available capacity of existing technologies at the beginning of the optimization")
-        optimization_setup.parameters.add_parameter(name="existing_capex",data=cls.get_existing_quantity(optimization_setup,type_existing_quantity="cost_capex"),
-                                                    doc="Parameter which specifies the total capex of existing technologies at the beginning of the optimization")
+                                                    doc="Parameter which specifies the total available capacity of existing technologies at the beginning of the optimization", calling_class=cls)
+        optimization_setup.parameters.add_parameter(name="existing_capex", data=cls.get_existing_quantity(optimization_setup,type_existing_quantity="cost_capex"),
+                                                    doc="Parameter which specifies the total capex of existing technologies at the beginning of the optimization", calling_class=cls)
         # add pe.Param of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_params(optimization_setup)
