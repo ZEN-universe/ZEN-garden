@@ -20,7 +20,6 @@ import pint
 import xarray as xr
 from ordered_set import OrderedSet
 
-
 class ZenIndex(object):
     """
     A multiindex class that can be easily used with xarray

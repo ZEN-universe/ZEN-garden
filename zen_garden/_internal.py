@@ -60,7 +60,7 @@ def main(config, dataset_path=None, job_index=None):
     # overwrite default system and scenario dictionaries
     scenarios,elements = ScenarioUtils.get_scenarios(config,job_index)
     # get the name of the dataset
-    model_name, out_folder = StringUtils.get_model_name(config)
+    model_name, out_folder = StringUtils.get_model_name(config.analysis)
     # clean sub-scenarios if necessary
     ScenarioUtils.clean_scenario_folder(config,out_folder)
     ### ITERATE THROUGH SCENARIOS
