@@ -253,6 +253,7 @@ class Postprocess:
         for name, arr in self.model.solution.items():
             if name in self.vars.docs:
                 doc = self.vars.docs[name]
+                units = self.vars.units[name]
                 index_list = self.get_index_list(doc)
             elif name.startswith("sos2_var") or name in ["tech_on_var", "tech_off_var"]:
                 continue
@@ -267,7 +268,7 @@ class Postprocess:
                 df.index.names = index_list
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[name] = self._transform_df(df,doc)
+            data_frames[name] = self._transform_df(df,doc,units)
 
         self.write_file(self.name_dir.joinpath('var_dict'), data_frames)
 

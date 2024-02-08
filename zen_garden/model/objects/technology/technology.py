@@ -400,37 +400,37 @@ class Technology(Element):
         # construct pe.Vars of the class <Technology>
         # capacity technology
         variables.add_variable(model, name="capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=capacity_bounds, doc='size of installed technology at location l and time t')
+            bounds=capacity_bounds, doc='size of installed technology at location l and time t', parent_param="capacity_limit")
         # built_capacity technology
         variables.add_variable(model, name="capacity_addition", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=(0,np.inf), doc='size of built technology (invested capacity after construction) at location l and time t')
+            bounds=(0,np.inf), doc='size of built technology (invested capacity after construction) at location l and time t', parent_param="capacity_limit")
         # invested_capacity technology
         variables.add_variable(model, name="capacity_investment", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=(0,np.inf), doc='size of invested technology at location l and time t')
+            bounds=(0,np.inf), doc='size of invested technology at location l and time t', parent_param="capacity_limit")
         # capex of building capacity
         variables.add_variable(model, name="cost_capex", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=(0,np.inf), doc='capex for building technology at location l and time t')
+            bounds=(0,np.inf), doc='capex for building technology at location l and time t', parent_param="[currency]")
         # annual capex of having capacity
         variables.add_variable(model, name="capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=(0,np.inf), doc='annual capex for having technology at location l')
+            bounds=(0,np.inf), doc='annual capex for having technology at location l', parent_param="[currency]")
         # total capex
         variables.add_variable(model, name="cost_capex_total", index_sets=sets["set_time_steps_yearly"],
-            bounds=(0,np.inf), doc='total capex for installing all technologies in all locations at all times')
+            bounds=(0,np.inf), doc='total capex for installing all technologies in all locations at all times', parent_param="[currency]")
         # opex
         variables.add_variable(model, name="cost_opex", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
             bounds=(0,np.inf), doc="opex for operating technology at location l and time t")
         # total opex
         variables.add_variable(model, name="cost_opex_total", index_sets=sets["set_time_steps_yearly"],
-            bounds=(0,np.inf), doc="total opex all technologies and locations in year y")
+            bounds=(0,np.inf), doc="total opex all technologies and locations in year y", parent_param="[currency]")
         # yearly opex
         variables.add_variable(model, name="opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=(0,np.inf), doc="yearly opex for operating technology at location l and year y")
+            bounds=(0,np.inf), doc="yearly opex for operating technology at location l and year y", parent_param="[currency]")
         # carbon emissions
         variables.add_variable(model, name="carbon_emissions_technology", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
             doc="carbon emissions for operating technology at location l and time t")
         # total carbon emissions technology
         variables.add_variable(model, name="carbon_emissions_technology_total", index_sets=sets["set_time_steps_yearly"],
-            doc="total carbon emissions for operating technology at location l and time t")
+            doc="total carbon emissions for operating technology at location l and time t", parent_param="carbon_emissions_annual_limit")
 
         # install technology
         # Note: binary variables are written into the lp file by linopy even if they are not relevant for the optimization,

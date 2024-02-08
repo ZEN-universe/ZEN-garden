@@ -195,6 +195,7 @@ class Component:
     """
     Class to prepare parameter, variable and constraint data such that it suits the pyomo prerequisites
     """
+    param_units = {}
     def __init__(self):
         """
         instantiate object of Component class
@@ -494,7 +495,8 @@ class Parameter(Component):
             # save additional parameters
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
             # save parameter units
-            self.units[name] = self.get_param_units(data, dict_of_units)
+            self.units[name] = self.get_param_units(data, dict_of_units, index_list)
+            self.param_units[name] = self.units[name]
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")
 
@@ -553,7 +555,7 @@ class Parameter(Component):
                 self.min_parameter_value["value"] = valmin
 
     @staticmethod
-    def get_param_units(data, dict_of_units):
+    def get_param_units(data, dict_of_units, index_list):
         """ creates series of units to identical multi-index as data has
 
         :param data: non default data of parameter and index_names
@@ -564,6 +566,7 @@ class Parameter(Component):
                 return str(dict_of_units["unit_in_base_units"].units)
             else:
                 unit_series = pd.Series(index=data.index)
+                unit_series = unit_series.rename_axis(index=index_list)
                 if "unit_in_base_units" in dict_of_units:
                     return str(dict_of_units["unit_in_base_units"].units)
             for key, value in dict_of_units.items():
@@ -619,15 +622,17 @@ class Parameter(Component):
 
 
 class Variable(Component):
-    def __init__(self, index_sets):
+    def __init__(self, optimization_setup):
         """
         Initialization of a variable
         :param index_sets: A reference to the index sets of the model
         """
-        self.index_sets = index_sets
+        self.index_sets = optimization_setup.sets
+        self.base_units = optimization_setup.energy_system.unit_handling.base_units
+        self.units = {}
         super().__init__()
 
-    def add_variable(self, model: lp.Model, name, index_sets, integer=False, binary=False, bounds=None, doc="", mask=None):
+    def add_variable(self, model: lp.Model, name, index_sets, integer=False, binary=False, bounds=None, doc="", mask=None, parent_param=None):
         """ initialization of a variable
         :param model: parent block component of variable, must be linopy model
         :param name: name of variable
@@ -660,10 +665,31 @@ class Variable(Component):
                 else:
                     domain = "Reals"
             self.docs[name] = self.compile_doc_string(doc, index_list, name, domain)
+            self.units[name] = self.get_var_units(parent_param, index_values, index_list)
         else:
             logging.warning(f"Variable {name} already added. Can only be added once")
 
+    def get_var_units(self, parent_param, index_values, index_list):
+        if len(index_values) > 1:
+            index = pd.MultiIndex.from_tuples(index_values, names=index_list)
+        else:
+            index = pd.Index(index_values)
+        if parent_param in ["[currency]"]:
+            base_unit = [key for key, value in self.base_units.items() if value==parent_param][0]
+            var_units = pd.Series(data=base_unit, index=index)
+            return var_units
 
+        elif parent_param:
+            param_units = self.param_units[parent_param]
+            if isinstance(index, pd.MultiIndex):
+                param_units.name = "param_units"
+                var_indices = pd.Series(index=index, name="var_indices")
+                var_units = pd.merge(var_indices, param_units, left_index=True, right_index=True)
+                var_units = var_units["param_units"]
+                assert var_units.size == var_indices.size
+            else:
+                var_units = pd.Series(param_units, index=index)
+            return var_units
 class Constraint(Component):
     def __init__(self, index_sets):
         """

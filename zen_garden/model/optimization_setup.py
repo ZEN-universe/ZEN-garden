@@ -389,7 +389,7 @@ class OptimizationSetup(object):
         self.model = lp.Model(solver_dir=self.solver["solver_dir"])
         # we need to reset the components to not carry them over
         self.sets = IndexSet()
-        self.variables = Variable(self.sets)
+        self.variables = Variable(self)
         self.parameters = Parameter(self)
         self.constraints = Constraint(self.sets)
         # define and construct components of self.model
