@@ -15,6 +15,7 @@ import importlib.util
 from collections import UserDict,defaultdict
 from contextlib import contextmanager
 from datetime import datetime
+import re
 from ordered_set import OrderedSet
 import h5py
 import linopy as lp
@@ -105,26 +106,26 @@ class IISConstraintParser(object):
     def __init__(self, iis_file, model):
         self.iis_file = iis_file
         self.model = model
+        # write gurobi IIS to file
+        self.write_gurobi_iis()
+        # get the labels
+        self.constraint_labels,self.var_labels, self.var_lines = self.read_labels()
 
-        self.labels = self.read_labels()
-
-    def write_parsed_output(self, outfile=None, manual_display_max_terms=100):
+    def write_parsed_output(self, outfile=None):
         """
         Writes the parsed output to a file
         :param outfile: The file to write to
-        :param manual_display_max_terms: the max number of terms that are displayed, overwriting the default
         """
         # avoid truncating the expression
-        # default_config_options = lp.config.options
-        # lp.config.options = lp.config.OptionSettings(display_max_terms=manual_display_max_terms)
         # write the outfile
         if outfile is None:
-            fname, _ = os.path.splitext(self.iis_file)
-            outfile = fname + "_linopy.ilp"
+            outfile = self.iis_file
         seen_constraints = []
+        seen_variables = []
         with open(outfile, "w") as f:
+            f.write("Constraints:\n")
             constraints = self.model.constraints
-            for label in self.labels:
+            for label in self.constraint_labels:
                 name, coord = self.get_label_position(constraints, label)
                 constraint = constraints[name]
                 expr_str = self.print_single_constraint(constraint, coord)
@@ -134,6 +135,23 @@ class IISConstraintParser(object):
                     seen_constraints.append(name)
                     cons_str = f"\n{name}:\n{cons_str}"
                 f.write(cons_str)
+            f.write("\n\nVariables:\n")
+            variables = self.model.variables
+            for label in self.var_labels:
+                name, coord = self.get_label_position(variables,label)
+                var_str = f"\t{self.print_coord(coord)}:\t{self.var_lines[label]}\n"
+                if name not in seen_variables:
+                    seen_variables.append(name)
+                    var_str = f"\n{name}:\n{var_str}"
+                f.write(var_str)
+
+    def write_gurobi_iis(self):
+        """ writes IIS to file """
+        # get the gurobi model
+        gurobi_model = self.model.solver_model
+        # write the IIS
+        gurobi_model.computeIIS()
+        gurobi_model.write(self.iis_file)
 
     def read_labels(self):
         """
@@ -141,13 +159,21 @@ class IISConstraintParser(object):
         :return: A list of labels
         """
 
-        labels = []
+        labels_c = []
+        labels_v = []
+        lines_v = {}
         with open(self.iis_file, "rb") as f:
             for line in f.readlines():
                 line = line.decode()
                 if line.startswith(" c"):
-                    labels.append(int(line.split(":")[0][2:]))
-        return labels
+                    labels_c.append(int(line.split(":")[0][2:]))
+                elif line.startswith(" x"):
+                    pattern = r'\sx(\d+)\s(.*)'
+                    match = re.match(pattern, line)
+                    if match:
+                        labels_v.append(int(match.group(1)))
+                        lines_v[int(match.group(1))] = match.group(2).rstrip()
+        return labels_c, labels_v, lines_v
 
     def print_single_constraint(self, constraint, coord):
         coeffs, vars, sign, rhs = xr.broadcast(constraint.coeffs,
@@ -246,7 +272,7 @@ class ScenarioDict(dict):
         self.validate_dict(expanded_dict)
         self.dict = expanded_dict
 
-        # super init
+        # super init TODO adds both system and "system"  (same for analysis) to the dict - necessary?
         super().__init__(self.dict)
 
         # finally we update the analysis and system
@@ -261,6 +287,7 @@ class ScenarioDict(dict):
 
         if "analysis" in self.dict:
             for key, value in self.dict["analysis"].items():
+                assert key in self.analysis, f"Trying to update analysis with key {key} and value {value}, but the analysis does not have this key!"
                 if type(self.analysis[key]) == type(value):
                     self.analysis[key] = value
                 else:
@@ -269,21 +296,24 @@ class ScenarioDict(dict):
                         f"but the analysis has already a value of type {type(self.analysis[key])}")
         if "system" in self.dict:
             for key, value in self.dict["system"].items():
+                assert key in self.system, f"Trying to update system with key {key} and value {value}, but the system does not have this key!"
                 if type(self.system[key]) == type(value):
-                    # check if key is a subset
-                    stack = [self.analysis["subsets"]]
-                    set_name_list = []
-                    while stack:
-                        cur_dict = stack.pop()
-                        for set_name, subsets in cur_dict.items():
-                            if (isinstance(subsets, dict) and key in subsets.keys()) or (isinstance(subsets, list) and key in subsets):
-                                # remove old subset values from higher level sets and add new values
-                                for _name in [set_name] + set_name_list:
-                                    self.system[_name] = [val for val in self.system[set_name] if not val in self.system[key]]
-                                    self.system[_name].extend(value)
-                            elif isinstance(subsets, dict):
-                                stack.append(subsets)
-                                set_name_list.append(set_name)
+                    # overwrite the value
+                    self.system[key] = value
+                    # # check if key is a subset TODO what the hell does this do?
+                    # stack = [self.analysis["subsets"]]
+                    # set_name_list = []
+                    # while stack:
+                    #     cur_dict = stack.pop()
+                    #     for set_name, subsets in cur_dict.items():
+                    #         if (isinstance(subsets, dict) and key in subsets.keys()) or (isinstance(subsets, list) and key in subsets):
+                    #             # remove old subset values from higher level sets and add new values
+                    #             for _name in [set_name] + set_name_list:
+                    #                 self.system[_name] = [val for val in self.system[set_name] if not val in self.system[key]]
+                    #                 self.system[_name].extend(value)
+                    #         elif isinstance(subsets, dict):
+                    #             stack.append(subsets)
+                    #             set_name_list.append(set_name)
                 else:
                     raise ValueError(f"Trying to update system with key {key} and value {value} of type {type(value)}, "
                                      f"but the system has already a value of type {type(self.system[key])}")
@@ -1086,8 +1116,10 @@ class InputDataChecks:
 
     def check_existing_technology_data(self):
         """
-        This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.csv file exist.
+        This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.json file exist.
         """
+        # TODO works for two levels of subsets, but not for more
+        self.optimization_setup.system["set_technologies"] = []
         for set_name, subsets in self.optimization_setup.analysis["subsets"]["set_technologies"].items():
             for technology in self.optimization_setup.system[set_name]:
                 if technology not in self.optimization_setup.paths[set_name].keys():
@@ -1253,19 +1285,34 @@ class StringUtils:
         return scenario_name,subfolder,param_map
 
     @staticmethod
-    def get_model_name(config):
+    def get_model_name(analysis):
         """
         return model name while conducting some tests
-        :param config: config of optimziation
+        :param analysis: analysis of optimziation
         :return: model name
         :return: output folder
         """
-        model_name = os.path.basename(config.analysis["dataset"])
-        if os.path.exists(out_folder := os.path.join(config.analysis["folder_output"], model_name)):
-            logging.warning(f"The output folder '{out_folder}' already exists")
-            if config.analysis["overwrite_output"]:
-                logging.warning("Existing files will be overwritten!")
+        model_name = os.path.basename(analysis["dataset"])
+        out_folder = StringUtils.get_output_folder(analysis)
         return model_name,out_folder
+
+    @staticmethod
+    def get_output_folder(analysis):
+        """
+        return model name while conducting some tests
+        :param analysis: analysis of optimziation
+        :return: output folder
+        """
+        model_name = os.path.basename(analysis["dataset"])
+        if not os.path.exists(analysis["folder_output"]):
+            os.mkdir(analysis["folder_output"])
+        if not os.path.exists(out_folder := os.path.join(analysis["folder_output"], model_name)):
+            os.mkdir(out_folder)
+        else:
+            logging.warning(f"The output folder '{out_folder}' already exists")
+            if analysis["overwrite_output"]:
+                logging.warning("Existing files will be overwritten!")
+        return out_folder
 
 class ScenarioUtils:
     """

@@ -73,10 +73,9 @@ class ConversionTechnology(Technology):
         else:
             index_sets = ["set_nodes", "set_time_steps"]
             time_steps = "set_base_time_steps_yearly"
-            unit_category = {"energy_quantity": 0}
             cf_dict = {}
             for carrier in dependent_carrier:
-                cf_dict[carrier] = self.data_input.extract_input_data("conversion_factor", index_sets=index_sets, unit_category=unit_category, time_steps=time_steps, subelement=carrier)
+                cf_dict[carrier] = self.data_input.extract_input_data("conversion_factor", index_sets=index_sets, unit_category=None, time_steps=time_steps, subelement=carrier)
             cf_dict = pd.DataFrame.from_dict(cf_dict)
             cf_dict.columns.name = "carrier"
             cf_dict = cf_dict.stack()
