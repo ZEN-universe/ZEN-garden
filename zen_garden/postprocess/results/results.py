@@ -9,15 +9,33 @@ from zen_garden.postprocess.results.solution_loader import (
 )
 from zen_garden.postprocess.results.multi_hdf_loader import MultiHdfLoader
 from functools import cache
+from zen_garden.model.default_config import Config
+import importlib
+import os
+import logging
+import json
 
 
 class Results:
     def __init__(self, path: str):
         self.solution_loader: SolutionLoader = MultiHdfLoader(path)
+        self.has_scenarios = len(self.solution_loader.scenarios) > 1
+        self.has_rh = self.solution_loader.has_rh
+
+    def __str__(self):
+        first_scenario = next(iter(self.solution_loader.scenarios.values()))
+        return f"Results of '{first_scenario.analysis.dataset}'"
 
     def get_df(
         self, component_name: str, scenario_name: Optional[str] = None
     ) -> dict[str, "pd.DataFrame | pd.Series[Any]"]:
+        """
+        Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
+
+        :component_name string: The string to decode
+        :scenario_name: Which scenario to take. If none is specified, all are returned.
+        :return: The corresponding dataframe
+        """
         component = self.solution_loader.components[component_name]
 
         scenario_names = (
@@ -44,6 +62,14 @@ class Results:
         discount_to_first_step: bool = True,
         element_name: Optional[str] = None,
     ) -> "pd.Series[Any]":
+        """Calculates the full timeseries for a given element per scenario
+
+        :param scenario: The scenario for with the component should be extracted (only if needed)
+        :param component: Component for the Series
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
+        :param year: year of which full time series is selected
+        :param element_name: Filter results by a given element
+        """
         assert component.timestep_type is not None
         series = self.solution_loader.get_component_data(scenario, component)
 
@@ -88,8 +114,8 @@ class Results:
             )
 
             annuity = self._get_annuity(scenario)
-
             series = series.div(timestep_duration, axis=1)
+
             for year_temp in annuity.index:
                 time_steps_year = self.solution_loader.get_timesteps_of_year(
                     scenario, component.timestep_type, year_temp
@@ -102,6 +128,16 @@ class Results:
             output_df = series
 
         output_df = output_df.T.reset_index(drop=True).T
+
+        if year is not None:
+            _total_hours_per_year = scenario.system.unaggregated_time_steps_per_year
+
+            hours_of_year = list(
+                range(year * _total_hours_per_year, (year + 1) * _total_hours_per_year)
+            )
+
+            output_df = output_df[hours_of_year]
+
         return output_df
 
     def get_full_ts(
@@ -112,6 +148,14 @@ class Results:
         year: Optional[int] = None,
         element_name: Optional[str] = None,
     ) -> "pd.DataFrame | pd.Series[Any]":
+        """Calculates the full timeseries for a given element
+
+        :param component_name: Name of the component
+        :param scenario_name: The scenario for with the component should be extracted (only if needed)
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
+        :param year: year of which full time series is selected
+        :param element_name: Filter results by a given element
+        """
         if scenario_name is None:
             scenario_names = list(self.solution_loader.scenarios)
         else:
@@ -144,11 +188,12 @@ class Results:
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Calculates the total values of a component for a specific scenario.
-        """
-        assert (
-            component.component_type is not ComponentType.sets
-        ), "Cannot calculate Total for Sets"
 
+        :param scneario: Scenario
+        :param component: Component
+        :param element_name: Filter results by a given element name
+        :param year: Filter the results by a given year
+        """
         series = self.solution_loader.get_component_data(scenario, component)
 
         if year is None:
@@ -195,6 +240,11 @@ class Results:
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Calculates the total values of a component for a all scenarios.
+
+        :param component_name: Name of the component
+        :param element_name: Filter the results by a given element
+        :param year: Filter the results by a given year
+        :param scenario_name: Filter the results by a given scenario
         """
         if scenario_name is None:
             scenario_names = list(self.solution_loader.scenarios)
@@ -220,7 +270,12 @@ class Results:
 
     def _concat_scenarios_dict(
         self, scenarios_dict: dict[str, "pd.DataFrame | pd.Series[Any]"]
-    ):
+    ) -> pd.DataFrame:
+        """
+        Concatenates a dict of the form str: Data to one dataframe.
+
+        :param scenarios_dict: Dict containing the scenario names as key and the values as values.
+        """
         scenario_names = list(scenarios_dict.keys())
 
         if len(scenario_names) == 1:
@@ -296,79 +351,108 @@ class Results:
                     )
         return annuity
 
-    @classmethod
-    def compare_configs(
-        cls,
-        results_1: "Results",
-        results_2: "Results",
-        scenarios: Optional[list[str]] = None,
-    ) -> dict[str, Any]:
-        def compare_dicts(
-            dict1: dict[Any, Any],
-            dict2: dict[Any, Any],
-            result_names=["res_1", "res_2"],
-        ):
-            diff_dict = {}
-            for key in dict1.keys() | dict2.keys():
-                if isinstance(dict1.get(key), dict) and isinstance(
-                    dict2.get(key), dict
-                ):
-                    nested_diff = compare_dicts(
-                        dict1.get(key, {}), dict2.get(key, {}), result_names
-                    )
-                    if nested_diff:
-                        diff_dict[key] = nested_diff
-                elif dict1.get(key) != dict2.get(key):
-                    if isinstance(dict1.get(key), list) and isinstance(
-                        dict2.get(key), list
-                    ):
-                        if sorted(dict1.get(key)) != sorted(dict2.get(key)):
-                            diff_dict[key] = {
-                                result_names[0]: sorted(dict1.get(key)),
-                                result_names[1]: sorted(dict2.get(key)),
-                            }
-                    else:
-                        diff_dict[key] = {
-                            result_names[0]: dict1.get(key),
-                            result_names[1]: dict2.get(key),
-                        }
-            return diff_dict if diff_dict else None
+    def get_dual(
+        self,
+        constraint: str,
+        scenario_name: str,
+        element_name: Optional[str] = None,
+        year: Optional[int] = None,
+        discount_to_first_step=True,
+    ) -> Optional["pd.DataFrame | pd.Series[Any]"]:
+        """extracts the dual variables of a constraint
 
-        if scenarios is not None:
-            assert set(scenarios).issubset(
-                set(results_1.solution_loader.scenarios.keys())
-            )
-            assert set(scenarios).issubset(
-                set(results_2.solution_loader.scenarios.keys())
-            )
-        else:
-            assert set(results_1.solution_loader.scenarios).issubset(
-                results_2.solution_loader.scenarios
-            )
-            scenarios = results_1.solution_loader.scenarios.keys()
+        :param constraint: Name of dal
+        :param scenario_name: Scenario Name
+        :param element_name: Name of Element
+        :param year: Year
+        :param discount_to_first_step: apply annuity to first year of interval or entire interval
+        """
+        if not self.solution_loader.scenarios[scenario_name].solver.add_duals:
+            logging.warning("Duals are not calculated. Skip.")
+            return None
 
-        ans = {}
-        for scenario in scenarios:
-            ans[scenario] = {}
-            scenario_1 = results_1.solution_loader.scenarios[scenario]
-            scenario_2 = results_2.solution_loader.scenarios[scenario]
-            analysis_diff = compare_dicts(
-                scenario_1.analysis.model_dump(),
-                scenario_2.analysis.model_dump(),
-            )
+        component = self.solution_loader.components[constraint]
+        assert (
+            component.component_type is ComponentType.dual
+        ), "Given constraint name is not of type Dual."
 
-            if analysis_diff is not None:
-                ans[scenario]["analysis"] = analysis_diff
+        _duals = self.get_full_ts(
+            component_name=constraint,
+            scenario_name=scenario_name,
+            element_name=element_name,
+            year=year,
+            discount_to_first_step=discount_to_first_step,
+        )
+        return _duals
 
-            system_diff = compare_dicts(
-                scenario_1.system.model_dump(),
-                scenario_2.system.model_dump(),
-            )
+    def get_system(self, scenario_name: Optional[str] = None) -> dict[Any, Any]:
+        """
+        Extracts the System config of a given Scenario. If no scenario is given, a random one is taken.
 
-            if system_diff is not None:
-                ans[scenario]["system"] = system_diff
+        :param scenario_name: Name of the scenario
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        return self.solution_loader.scenarios[scenario_name].system.model_dump()
 
-        if len(ans) == 1:
-            return ans[next(iter(ans.keys()))]
+    def get_analysis(self, scenario_name: Optional[str] = None) -> dict[Any, Any]:
+        """
+        Extracts the Analysis config of a given Scenario. If no scenario is given, a random one is taken.
 
-        return ans
+        :param scenario_name: Name of the scenario
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        return self.solution_loader.scenarios[scenario_name].analysis.model_dump()
+
+    def get_solver(self, scenario_name: Optional[str] = None) -> dict[Any, Any]:
+        """
+        Extracts the Solver config of a given Scenario. If no scenario is given, a random one is taken.
+
+        :param scenario_name: Name of the scenario
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        return self.solution_loader.scenarios[scenario_name].solver.model_dump()
+
+    def get_years(self, scenario_name: Optional[str] = None) -> dict[Any, Any]:
+        """
+        Extracts the years of a given Scenario. If no scenario is given, a random one is taken.
+
+        :param scenario_name: Name of the scenario
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        system = self.solution_loader.scenarios[scenario_name].system
+        years = list(range(0, system.optimized_years))
+        return years
+
+    def has_MF(self, scenario_name: Optional[str] = None):
+        """
+        Extracts the System config of a given Scenario. If no scenario is given, a random one is taken.
+
+        :param scenario_name: Name of the scenario
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        scenario = self.solution_loader.scenarios[scenario_name]
+        return scenario.system.use_rolling_horizon
+
+
+if __name__ == "__main__":
+    try:
+        spec = importlib.util.spec_from_file_location("module", "config.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        config = module.config
+    except FileNotFoundError:
+        with open("config.json") as f:
+            config = Config(json.load(f))
+
+    model_name = os.path.basename(config.analysis["dataset"])
+    if os.path.exists(
+        out_folder := os.path.join(config.analysis["folder_output"], model_name)
+    ):
+        r = Results(out_folder)
+    else:
+        logging.critical("No results folder found!")

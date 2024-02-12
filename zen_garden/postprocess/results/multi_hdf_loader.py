@@ -6,7 +6,7 @@ from zen_garden.postprocess.results.solution_loader import (
     TimestepType,
 )
 
-from zen_garden.model.default_config import Analysis, System
+from zen_garden.model.default_config import Analysis, System, Solver
 import json
 import os
 import h5py  # type: ignore
@@ -84,12 +84,14 @@ class Component(AbstractComponent):
         ts_type: Optional[TimestepType],
         ts_name: Optional[str],
         file_name: str,
+        doc: str,
     ) -> None:
         self._component_type = component_type
         self._name = name
         self._ts_type = ts_type
         self._file_name = file_name
         self._ts_name = ts_name
+        self._doc = doc
 
     @property
     def component_type(self) -> ComponentType:
@@ -111,6 +113,10 @@ class Component(AbstractComponent):
     def file_name(self) -> str:
         return self._file_name
 
+    @property
+    def doc(self) -> str:
+        return self._doc
+
 
 class Scenario(AbstractScenario):
     """
@@ -119,30 +125,39 @@ class Scenario(AbstractScenario):
     folder.
     """
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, name: str, base_scenario: str) -> None:
         self._path = path
         self._analysis: Analysis = self._read_analysis()
         self._system: System = self._read_system()
+        self._solver: Solver = self._read_solver()
+        self.name = name
+        self.base_name = base_scenario
 
     def _read_analysis(self) -> Analysis:
         analysis_path = os.path.join(self.path, "analysis.json")
 
-        if os.path.exists(analysis_path):
-            with open(analysis_path, "r") as f:
-                return Analysis(**json.load(f))
-        return Analysis()
+        with open(analysis_path, "r") as f:
+            return Analysis(**json.load(f))
 
     def _read_system(self) -> System:
         system_path = os.path.join(self.path, "system.json")
 
-        if os.path.exists(system_path):
-            with open(system_path, "r") as f:
-                return System(**json.load(f))
-        return System()
+        with open(system_path, "r") as f:
+            return System(**json.load(f))
+
+    def _read_solver(self) -> Solver:
+        solver_path = os.path.join(self.path, "solver.json")
+
+        with open(solver_path, "r") as f:
+            return Solver(**json.load(f))
 
     @property
     def analysis(self) -> Analysis:
         return self._analysis
+
+    @property
+    def solver(self) -> Solver:
+        return self._solver
 
     @property
     def path(self) -> str:
@@ -171,6 +186,12 @@ class MultiHdfLoader(AbstractLoader):
     @property
     def components(self) -> dict[str, AbstractComponent]:
         return self._components
+
+    @property
+    def name(self) -> str:
+        scenario = self.scenarios[next(iter(self.scenarios.keys()))]
+        name = scenario.analysis.dataset.split("/")[-1]
+        return name
 
     @property
     def has_rh(self) -> bool:
@@ -267,13 +288,15 @@ class MultiHdfLoader(AbstractLoader):
         if len(scenario_configs) == 1:
             scenario_name = "none"
             scenario_path = self.path
-            ans[scenario_name] = Scenario(scenario_path)
+            ans[scenario_name] = Scenario(scenario_path, scenario_name, "")
         else:
             for scenario_id, scenario_config in scenario_configs.items():
                 scenario_name = f"scenario_{scenario_id}"
                 scenario_path = os.path.join(
                     self.path, f"scenario_{scenario_config['base_scenario']}"
                 )
+
+                base_scenario = scenario_config["base_scenario"]
 
                 # Some scenarios have additional parameter definitions that are stored in
                 # subfolders.
@@ -284,7 +307,9 @@ class MultiHdfLoader(AbstractLoader):
                         scenario_path, f"scenario_{scenario_subfolder}"
                     )
 
-                ans[scenario_name] = Scenario(scenario_path)
+                ans[scenario_name] = Scenario(
+                    scenario_path, scenario_name, base_scenario
+                )
 
         return ans
 
@@ -319,6 +344,12 @@ class MultiHdfLoader(AbstractLoader):
                 time_index = set(index_names).intersection(set(time_steps_map.keys()))
                 timestep_name = time_index.pop() if len(time_index) > 0 else None
                 timestep_type = time_steps_map.get(timestep_name, None)
+                doc = ""
+
+                for key, index in enumerate(
+                    h5_file[component_name + "/docstring"]["index"][:]
+                ):
+                    doc += f"{index}: {h5_file[component_name + '/docstring']['values'][key]} \n"
 
                 ans[component_name] = Component(
                     component_name,
@@ -326,6 +357,7 @@ class MultiHdfLoader(AbstractLoader):
                     timestep_type,
                     timestep_name,
                     file_name,
+                    doc,
                 )
 
         return ans
@@ -390,7 +422,15 @@ class MultiHdfLoader(AbstractLoader):
         timesteps are stored as HDF files that were created by pandas.
         """
         tech_proxy = scenario.system.set_storage_technologies[0]
-        time_step_path = os.path.join(self.path, "dict_all_sequence_time_steps.h5")
+
+        sequence_time_steps_name = [
+            i
+            for i in os.listdir(scenario.path)
+            if "dict_all_sequence_time_steps" in i and ".lock" not in i
+        ][0]
+
+        time_step_path = os.path.join(scenario.path, sequence_time_steps_name)
+
         time_step_file = h5py.File(time_step_path)
 
         if ts_type is TimestepType.storage:

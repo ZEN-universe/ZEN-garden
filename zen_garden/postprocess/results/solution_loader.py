@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from zen_garden.model.default_config import Analysis, System
+from zen_garden.model.default_config import Analysis, System, Solver
 import pandas as pd
 from typing import Optional, Any
 
@@ -60,6 +60,11 @@ class Component(ABC):
     def name(self) -> str:
         pass
 
+    @property
+    @abstractmethod
+    def doc(self) -> str:
+        pass
+
 
 class Scenario(ABC):
     def __init__(self) -> None:
@@ -70,6 +75,14 @@ class Scenario(ABC):
     def analysis(self) -> Analysis:
         """
         Abstract property that should return the Analysis-Config of a sceanrio.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def solver(self) -> Solver:
+        """
+        Abstract property that should return the Solver-Config of a sceanrio.
         """
         pass
 
@@ -103,6 +116,14 @@ class SolutionLoader(ABC):
     """
 
     def __init__(self) -> None:
+        pass
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """
+        Abstract property that should define the name of the solution that is loaded.
+        """
         pass
 
     @property
@@ -175,3 +196,6 @@ class SolutionLoader(ABC):
         self, scenario: Scenario, ts_type: TimestepType, year: int
     ) -> "pd.DataFrame | pd.Series[Any]":
         pass
+
+    def has_scenarios(self) -> bool:
+        return len(self.scenarios) > 1
