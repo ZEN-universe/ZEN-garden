@@ -169,11 +169,14 @@ class Solver(Subscriptable):
     range_unit_exponents: dict[str, int] = {"min": -1, "max": 1, "step_width": 1}
     define_ton_as_metric_ton: bool = True
     rounding_decimal_points: int = 5
-    rounding_decimal_points_ts: int = 5
+    rounding_decimal_points_ts: int = 4
     linear_regression_check: dict[str, float] = {
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
     }
+    rounding_decimal_points_units: int = 4
+    round_parameters: bool = True
+    rounding_decimal_points_capacity: int = 4
     analyze_numerics: bool = True
     use_symbolic_labels: bool = False
 
