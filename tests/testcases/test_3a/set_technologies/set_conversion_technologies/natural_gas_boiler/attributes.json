@@ -76,7 +76,7 @@
     },
     {
       "carbon": {
-        "default_value": 0.01,
+        "default_value": 0.1,
         "unit": "kilotons/GWh"
       }
     }

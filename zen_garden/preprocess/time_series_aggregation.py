@@ -325,8 +325,9 @@ class TimeSeriesAggregation(object):
                         ts_df.loc[:, element_time_steps] = ts_df[element_time_steps].multiply(yearly_variation[year], axis=0).fillna(0)
                 ts = ts_df.stack()
         # round down if lower than decimal points
-        rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_ts"])
-        ts[ts.abs() < rounding_value] = 0
+        if self.optimization_setup.solver["round_parameters"]:
+            rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_ts"])
+            ts[ts.abs() < rounding_value] = 0
         return ts
 
     def repeat_sequence_time_steps_for_all_years(self):

@@ -1010,11 +1010,13 @@ class TechnologyRules(GenericRule):
                 delta_time = interval_between_years * (end_time - self.sets["set_time_steps_yearly"][0])
                 existing_time = self.sets["set_technologies_existing"][tech]
                 # Note: instead of summing over all but one location, we sum over all and then subtract one
-                total_capacity_knowledge_existing = ((self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]  # add spillover from other regions
+                term_total_capacity_knowledge_existing = ((self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]  # add spillover from other regions
                                                       + knowledge_spillover_rate * (self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time].sum("set_location") - self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]))
                                                      * (1 - knowledge_depreciation_rate) ** (delta_time + self.parameters.lifetime.loc[tech].item() - self.parameters.lifetime_existing.loc[tech, set_locations, existing_time])).sum("set_technologies_existing")
-                rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points"])
-                total_capacity_knowledge_existing = total_capacity_knowledge_existing.where(total_capacity_knowledge_existing > rounding_value, 0)
+                # round to avoid numerical errors
+                if self.optimization_setup.solver["round_parameters"]:
+                    rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_capacity"])
+                    term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > rounding_value, 0)
 
                 horizon_time = self.variables.coords["set_time_steps_yearly"][self.sets["set_time_steps_yearly"][0]: end_time + 1]
                 if len(horizon_time) > 1:
@@ -1044,7 +1046,7 @@ class TechnologyRules(GenericRule):
 
                 # build the rhs
                 rhs = xr.zeros_like(self.parameters.existing_capacities).loc[tech, :,:, time]
-                rhs.loc[:, set_locations] += ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * total_capacity_knowledge_existing # add initial market share until which the diffusion rate is unbounded
+                rhs.loc[:, set_locations] += ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_existing # add initial market share until which the diffusion rate is unbounded
                 rhs.loc[:, set_locations] += self.parameters.market_share_unbounded * term_total_capacity_all_techs_param + self.parameters.capacity_addition_unbounded.loc[tech]
                 rhs *= mask
 
@@ -1106,8 +1108,10 @@ class TechnologyRules(GenericRule):
                 existing_time = self.sets["set_technologies_existing"][tech]
                 term_total_capacity_knowledge_existing = (self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]
                                                      * (1 - knowledge_depreciation_rate) ** (delta_time + self.parameters.lifetime.loc[tech].item() - self.parameters.lifetime_existing.loc[tech, set_locations, existing_time])).sum(["set_technologies_existing","set_location"])
-                _rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points"])
-                term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > _rounding_value, 0)
+                # round to avoid numerical errors
+                if self.optimization_setup.solver["round_parameters"]:
+                    rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_capacity"])
+                    term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > rounding_value, 0)
 
                 horizon_time = self.variables.coords["set_time_steps_yearly"][self.sets["set_time_steps_yearly"][0]: end_time + 1]
                 if len(horizon_time) > 1:
