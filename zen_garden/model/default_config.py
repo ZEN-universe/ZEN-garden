@@ -130,7 +130,7 @@ class Config(object):
         # set of transport technologies
         self.system["set_transport_technologies"] = []
         self.system['double_capex_transport'] = False
-        self.system["set_bidirectional_transport_technologies"] = []
+        self.system["set_transport_technologies_loss_exponential"] = []
         # set of retrofitting technologies
         self.system["set_retrofitting_technologies"] = []
         # set of nodes
