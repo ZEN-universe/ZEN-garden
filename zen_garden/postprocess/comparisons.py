@@ -55,6 +55,7 @@ def compare_dicts(
     result_names: list[str] = ["res_1", "res_2"],
 ) -> Optional[dict[Any, Any]]:
     """
+    Compares two dictionaries and returns only the fields with different values. 
 
     :param dict1: first config dict
     :param dict2: second config dict
@@ -325,7 +326,8 @@ def _get_different_vals(
     rtol: float,
 ) -> pd.DataFrame:
     """
-    get the different values of two dataframes or series
+    Get the different values of two dataframes or series
+    
     :param val_0: first dataframe or series
     :param val_1: second dataframe or series
     :return: comparison_df
