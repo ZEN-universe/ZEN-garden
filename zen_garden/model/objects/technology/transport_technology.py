@@ -79,6 +79,7 @@ class TransportTechnology(Technology):
             self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
         else:
             raise AttributeError(f"The transport technology {self.name} has neither opex_specific_fixed_per_distance nor opex_specific_fixed attribute.")
+
     def convert_to_fraction_of_capex(self):
         """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
         fraction_year = self.calculate_fraction_of_year()
@@ -93,9 +94,10 @@ class TransportTechnology(Technology):
         :param index: index of capacity
         :return: capex of single capacity
         """
-        # TODO check existing capex of transport techs -> Hannes
-        if np.isnan(self.capex_specific[index[0]].iloc[0]):
+        if np.isnan(self.capex_specific[index[0]].iloc[0]) and np.isnan(self.capex_per_distance_transport[index[0]].iloc[0]):
             return 0
+        elif self.energy_system.system['double_capex_transport'] and capacity != 0:
+            return self.capex_specific[index[0]].iloc[0] * capacity + self.capex_per_distance_transport[index[0]].iloc[0] * self.distance[index[0]]
         else:
             return self.capex_specific[index[0]].iloc[0] * capacity
 
