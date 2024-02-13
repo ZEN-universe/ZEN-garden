@@ -137,6 +137,8 @@ class Config(object):
         self.system["set_nodes"] = []
         # toggle to use time_series_aggregation
         self.system["conduct_time_series_aggregation"] = False
+        # unaggregated time steps per year
+        self.system["unaggregated_time_steps_per_year"] = 8760
         # toggle to exclude parameters from TSA, specified in system_specification/exclude_parameter_from_TSA
         self.system["exclude_parameters_from_TSA"] = True
         # toggle to perform analysis for multiple scenarios
@@ -172,12 +174,18 @@ class Config(object):
         self.solver["recommend_base_units"] = False
         self.solver["immutable_unit"] = []
         self.solver["range_unit_exponents"]    = {"min": -3, "max": 3}
+        self.solver["check_unit_consistency"] = True
         # assumes "ton" to be metric ton, not imperial ton
         self.solver["define_ton_as_metric_ton"] = True
-        # round down to number of decimal points, for new capacity and unit multipliers
-        self.solver["rounding_decimal_points"] = 5
+        # select if rounded or exact values should be used
+        # when True, then the time series and the new capacities are cut off if they are below the rounding threshold
+        self.solver["round_parameters"] = True
+        # round down to number of decimal points for new capacity
+        self.solver["rounding_decimal_points_capacity"] = 4
+        # round down to number of decimal points for units
+        self.solver["rounding_decimal_points_units"] = 4
         # round down to number of decimal points, for time series after TSA
-        self.solver["rounding_decimal_points_ts"] = 5
+        self.solver["rounding_decimal_points_ts"] = 4
         # settings for selection of x-y relationships, which are modeled as PWA, and which are modeled linearly:
         # linear regression of x-y values: if relative intercept (intercept/slope) below threshold and rvalue above threshold, model linear with slope
         self.solver["linear_regression_check"] = {"eps_intercept":0.1,"epsRvalue":1-(1E-5)}

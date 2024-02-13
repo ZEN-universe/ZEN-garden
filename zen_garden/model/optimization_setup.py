@@ -26,7 +26,8 @@ from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 
-from ..utils import ScenarioDict, IISConstraintParser
+from ..utils import ScenarioDict, IISConstraintParser, StringUtils
+
 
 class OptimizationSetup(object):
     """setup optimization setup """
@@ -53,7 +54,7 @@ class OptimizationSetup(object):
         self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
-        # pe.ConcreteModel
+        # optimization model
         self.model = None
         # the components
         self.variables = None
@@ -85,7 +86,7 @@ class OptimizationSetup(object):
         # read input data into elements
         self.read_input_csv()
 
-        #conduct consistency checks of input units
+        # conduct consistency checks of input units
         self.energy_system.unit_handling.consistency_checks_input_units(optimization_setup=self)
 
         # conduct time series aggregation
@@ -114,7 +115,7 @@ class OptimizationSetup(object):
                 path = self.paths[set_name]["folder"]
                 if isinstance(subsets, dict):
                     stack.append(subsets)
-                    self.add_folder_paths(set_name, path, subsets.keys())
+                    self.add_folder_paths(set_name, path, list(subsets.keys()))
                 else:
                     self.add_folder_paths(set_name, path, subsets)
                     for element in subsets:
@@ -122,18 +123,45 @@ class OptimizationSetup(object):
                             self.add_folder_paths(element, self.paths[element]["folder"])
 
     def add_folder_paths(self, set_name, path, subsets=[]):
-        """ add file paths of element to paths dictionary"""
+        """ add file paths of element to paths dictionary
+        :param set_name: name of set
+        :param path: path to folder
+        :param subsets: list of subsets
+        """
         for element in next(os.walk(path))[1]:
-            if not element in subsets:
+            if element not in subsets:
                 self.paths[set_name][element] = dict()
                 self.paths[set_name][element]["folder"] = os.path.join(path, element)
                 sub_path = os.path.join(path, element)
                 for file in next(os.walk(sub_path))[2]:
                     self.paths[set_name][element][file] = os.path.join(sub_path, file)
+                # add element paths to parent sets
+                parent_sets = self._find_parent_set(self.analysis["subsets"],set_name)
+                for parent_set in parent_sets:
+                    self.paths[parent_set][element] = self.paths[set_name][element]
             else:
                 self.paths[element] = dict()
                 self.paths[element]["folder"] = os.path.join(path, element)
 
+    def _find_parent_set(self,dictionary,subset,path=None):
+        """
+        This method finds the parent sets of a subset
+        :param dictionary: dictionary of subsets
+        :param subset: subset to find parent sets of
+        :param path: path to subset
+        :return: list of parent sets
+        """
+        if path is None:
+            path = []
+        for key, value in dictionary.items():
+            current_path = path + [key]
+            if subset in dictionary[key]:
+                return current_path
+            elif isinstance(value, dict):
+                result = self._find_parent_set(value, subset, current_path)
+                if result:
+                    return result
+        return []
 
     def add_elements(self):
         """This method sets up the parameters, variables and constraints of the carriers of the optimization problem."""
@@ -170,7 +198,6 @@ class OptimizationSetup(object):
                         if isinstance(subsets, dict):
                             stack.append(subsets)
             element_set = list(set(element_set) - set(element_subset))
-
 
             element_set.sort()
             # add element class
@@ -525,16 +552,16 @@ class OptimizationSetup(object):
             self.optimality = False
 
     def write_IIS(self):
-        """ write an ILP file to print the IIS if infeasible. Only possible for gurobi """
+        """ write an ILP file to print the IIS if infeasible. Only possible for gurobi
+        """
         if self.model.termination_condition == 'infeasible' and self.solver["name"] == "gurobi":
             logging.info("The optimization is infeasible")
             # ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
-            ilp_file = f"//infeasible_model_IIS.ilp"
+            output_folder = StringUtils.get_output_folder(self.analysis)
+            ilp_file = os.path.join(output_folder,"infeasible_model_IIS.ilp")
+            logging.info(f"Writing parsed IIS to {ilp_file}")
             parser = IISConstraintParser(ilp_file, self.model)
-            fname, _ = os.path.splitext(ilp_file)
-            outfile = fname + "_linopy.ilp"
-            logging.info(f"Writing parsed IIS to {outfile}")
-            parser.write_parsed_output(outfile)
+            parser.write_parsed_output()
 
     def add_results_of_optimization_step(self, step_horizon):
         """ adds the new capacity additions and the cumulative carbon emissions for next
@@ -552,7 +579,10 @@ class OptimizationSetup(object):
                 capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
                 invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
                 cost_capex = self.model.solution["cost_capex"].to_series().dropna()
-                rounding_value = 10 ** (-self.solver["rounding_decimal_points"])
+                if self.solver["round_parameters"]:
+                    rounding_value = 10 ** (-self.solver["rounding_decimal_points_capacity"])
+                else:
+                    rounding_value = 0
                 capacity_addition[capacity_addition <= rounding_value] = 0
                 invest_capacity[invest_capacity <= rounding_value] = 0
                 cost_capex[cost_capex <= rounding_value] = 0

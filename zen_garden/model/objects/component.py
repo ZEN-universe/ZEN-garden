@@ -19,7 +19,6 @@ import pandas as pd
 import xarray as xr
 from ordered_set import OrderedSet
 
-
 class ZenIndex(object):
     """
     A multiindex class that can be easily used with xarray
@@ -243,6 +242,9 @@ class Component:
         elif isinstance(index_list, list):
             index_values = list(itertools.product(*index_list[0]))
             index_names = index_list[1]
+        elif isinstance(index_list, xr.DataArray):
+            index_values = index_list.to_series().dropna()
+            index_names = list(index_list.coords.dims)
         else:
             raise TypeError(f"Type {type(index_list)} unknown to extract index names.")
         return index_values, index_names
