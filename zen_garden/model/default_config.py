@@ -116,7 +116,7 @@ class Config(object):
         self.analysis["max_output_size_mb"] = 500
         # earliest possible year of input data, needed to differentiate between yearly and generic time indices
         self.analysis["earliest_year_of_data"] = 1900
-        self.analysis['use_capacities_existing'] = False
+        self.system['use_capacities_existing'] = False
 
         ## System - Items assignment
         # set of energy carriers
