@@ -1311,6 +1311,12 @@ class StringUtils:
             logging.warning(f"The output folder '{out_folder}' already exists")
             if analysis["overwrite_output"]:
                 logging.warning("Existing files will be overwritten!")
+                for filename in os.listdir(out_folder):
+                    file_path = os.path.join(out_folder, filename)
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
         return out_folder
 
 class ScenarioUtils:
