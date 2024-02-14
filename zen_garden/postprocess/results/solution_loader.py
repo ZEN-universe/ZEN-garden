@@ -154,7 +154,7 @@ class SolutionLoader(ABC):
 
     @abstractmethod
     def get_component_data(
-        self, scenario: Scenario, component: Component
+        self, scenario: Scenario, component: Component, keep_raw: bool = False
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Abstract method that should return the component values of a given scenario and a
@@ -162,7 +162,7 @@ class SolutionLoader(ABC):
 
         If the solution uses rolling horizon, the returned component values should already
         take into account the limited foresight and therefore should not include all the
-        data of the different foresight years but combine them to one series.
+        data of the different foresight years but combine them to one series, unless explicitly desired (keep_raw = True).
         """
         pass
 

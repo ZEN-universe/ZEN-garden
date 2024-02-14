@@ -203,7 +203,7 @@ class MultiHdfLoader(AbstractLoader):
         self,
         component: AbstractComponent,
         scenario: AbstractScenario,
-        pd_dict: dict[str, "pd.Series[Any]"],
+        pd_dict: dict[int, "pd.Series[Any]"],
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Method that combines the values when a solution is created without perfect
@@ -214,7 +214,7 @@ class MultiHdfLoader(AbstractLoader):
         n_years = len(pd_dict)
 
         for year in range(n_years):
-            current_mf = pd_dict[f"MF_{year}"]
+            current_mf = pd_dict[year]
             if component.timestep_type is TimestepType.yearly:
                 year_series = current_mf[
                     current_mf.index.get_level_values("year") == year
@@ -241,13 +241,29 @@ class MultiHdfLoader(AbstractLoader):
 
         return pd.concat(series_to_concat)
 
+    def _concatenate_raw_dataseries(
+        self,
+        pd_dict: dict[int, "pd.Series[Any]"],
+    ) -> "pd.DataFrame | pd.Series[Any]":
+        """
+        Method that concatenates the raw values when a solution is created without perfect
+        foresight given a component, a scenario and a dictionary containing the name of
+        the MF-data (Format: "MF_{year}"). The raw values are not combined, i.e.,
+        the data is kept for all the foresight steps.
+        """
+        series = pd.concat(pd_dict, keys=pd_dict.keys())
+        index_names = pd_dict[list(pd_dict.keys())[0]].index.names
+        new_index_names = ["mf"] + index_names
+        series.index.names = new_index_names
+        return series
+
     def get_component_data(
-        self, scenario: AbstractScenario, component: AbstractComponent
+        self, scenario: AbstractScenario, component: AbstractComponent, keep_raw: bool = False
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Implementation of the abstract method. Returns the actual component values given
         a component and a scenario. Already combines the yearly data if the solution does
-        not use perfect foresight.
+        not use perfect foresight, unless explicitly desired otherwise (keep_raw = True).
         """
         if self.has_rh:
             # If solution has rolling horizon, load the values for all the foresight
@@ -256,16 +272,21 @@ class MultiHdfLoader(AbstractLoader):
             pd_series_dict = {}
 
             for subfolder_name in subfolder_names:
+                mf_idx = int(subfolder_name.replace("MF_", ""))
                 file_path = os.path.join(
                     scenario.path, subfolder_name, component.file_name
                 )
-                pd_series_dict[subfolder_name] = get_df_form_path(
+                pd_series_dict[mf_idx] = get_df_form_path(
                     file_path, component.name
                 )
-            combined_dataseries = self._combine_dataseries(
-                component, scenario, pd_series_dict
-            )
-
+            if not keep_raw:
+                combined_dataseries = self._combine_dataseries(
+                    component, scenario, pd_series_dict
+                )
+            else:
+                combined_dataseries = self._concatenate_raw_dataseries(
+                    pd_series_dict
+                )
             return combined_dataseries
         else:
             # If solution does not use rolling horizon, simply load the HDF file.

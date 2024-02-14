@@ -9,7 +9,7 @@ from zen_garden.postprocess.results.solution_loader import (
 )
 from zen_garden.postprocess.results.multi_hdf_loader import MultiHdfLoader
 from functools import cache
-from zen_garden.model.default_config import Config
+from zen_garden.model.default_config import Config,Analysis,Solver,System
 import importlib
 import os
 import logging
@@ -185,6 +185,7 @@ class Results:
         component: Component,
         element_name: Optional[str] = None,
         year: Optional[int] = None,
+        keep_raw: Optional[bool] = False,
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Calculates the total values of a component for a specific scenario.
@@ -193,8 +194,9 @@ class Results:
         :param component: Component
         :param element_name: Filter results by a given element name
         :param year: Filter the results by a given year
+        :param keep_raw: Keep the raw values of the rolling horizon optimization
         """
-        series = self.solution_loader.get_component_data(scenario, component)
+        series = self.solution_loader.get_component_data(scenario, component, keep_raw)
 
         if year is None:
             years = [i for i in range(0, scenario.system.optimized_years)]
@@ -223,10 +225,13 @@ class Results:
         for y in years:
             timesteps = self.solution_loader.get_timesteps(scenario, component, int(y))
             try:
-                ans.insert(int(y), y, total_value[timesteps].sum(axis=1))  # type: ignore
+                ans.insert(int(y), y, total_value[timesteps].sum(axis=1,skipna=False))  # type: ignore
             except KeyError:
                 timestep_list = [i for i in timesteps if i in total_value]
-                ans.insert(year, year, total_value[timestep_list].sum(axis=1))  # type: ignore # noqa
+                ans.insert(year, year, total_value[timestep_list].sum(axis=1,skipna=False))  # type: ignore # noqa
+
+        if "mf" in ans.index.names:
+            ans = ans.reorder_levels([i for i in ans.index.names if i != "mf"] + ["mf"]).sort_index(axis=0)
 
         return ans
 
@@ -237,6 +242,7 @@ class Results:
         element_name: Optional[str] = None,
         year: Optional[int] = None,
         scenario_name: Optional[str] = None,
+        keep_raw: Optional[bool] = False,
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Calculates the total values of a component for a all scenarios.
@@ -258,7 +264,7 @@ class Results:
         for scenario_name in scenario_names:
             scenario = self.solution_loader.scenarios[scenario_name]
             current_total = self.get_total_per_scenario(
-                scenario, component, element_name, year
+                scenario, component, element_name, year, keep_raw
             )
 
             if type(current_total) is pd.Series:
@@ -354,7 +360,7 @@ class Results:
     def get_dual(
         self,
         constraint: str,
-        scenario_name: str,
+        scenario_name: Optional[str] = None,
         element_name: Optional[str] = None,
         year: Optional[int] = None,
         discount_to_first_step=True,
@@ -367,7 +373,7 @@ class Results:
         :param year: Year
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
         """
-        if not self.solution_loader.scenarios[scenario_name].solver.add_duals:
+        if not r.get_solver(scenario_name=scenario_name).add_duals:
             logging.warning("Duals are not calculated. Skip.")
             return None
 
@@ -385,7 +391,7 @@ class Results:
         )
         return _duals
 
-    def get_system(self, scenario_name: Optional[str] = None) -> dict[Any, Any]:
+    def get_system(self, scenario_name: Optional[str] = None) -> System:
         """
         Extracts the System config of a given Scenario. If no scenario is given, a random one is taken.
 
@@ -393,9 +399,9 @@ class Results:
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
-        return self.solution_loader.scenarios[scenario_name].system.model_dump()
+        return self.solution_loader.scenarios[scenario_name].system
 
-    def get_analysis(self, scenario_name: Optional[str] = None) -> dict[Any, Any]:
+    def get_analysis(self, scenario_name: Optional[str] = None) -> Analysis:
         """
         Extracts the Analysis config of a given Scenario. If no scenario is given, a random one is taken.
 
@@ -403,9 +409,9 @@ class Results:
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
-        return self.solution_loader.scenarios[scenario_name].analysis.model_dump()
+        return self.solution_loader.scenarios[scenario_name].analysis
 
-    def get_solver(self, scenario_name: Optional[str] = None) -> dict[Any, Any]:
+    def get_solver(self, scenario_name: Optional[str] = None) -> Solver:
         """
         Extracts the Solver config of a given Scenario. If no scenario is given, a random one is taken.
 
@@ -413,9 +419,9 @@ class Results:
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
-        return self.solution_loader.scenarios[scenario_name].solver.model_dump()
+        return self.solution_loader.scenarios[scenario_name].solver
 
-    def get_years(self, scenario_name: Optional[str] = None) -> dict[Any, Any]:
+    def get_years(self, scenario_name: Optional[str] = None) -> list[int]:
         """
         Extracts the years of a given Scenario. If no scenario is given, a random one is taken.
 
