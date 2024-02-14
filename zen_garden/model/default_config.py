@@ -60,6 +60,8 @@ class Subsets(Subscriptable):
 class HeaderDataInputs(Subscriptable):
     set_nodes: str = "node"
     set_edges: str = "edge"
+    set_super_nodes: str = "super_node"
+    set_super_edges: str = "super_edge"
     set_location: str = "location"
     set_time_steps: str = "time"  # IMPORTANT: time must be unique
     set_time_steps_operation: str = "time_operation"
@@ -127,6 +129,8 @@ class System(Subscriptable):
     double_capex_transport: bool = False
     set_bidirectional_transport_technologies: list[str] = []
     set_nodes: list[str] = []
+    set_super_nodes: list[str] = []
+    set_super_edges: list[str] = []
     exclude_parameters_from_TSA: bool = True
     conduct_scenario_analysis: bool = False
     run_default_scenario: bool = True
@@ -144,6 +148,7 @@ class System(Subscriptable):
     years_in_rolling_horizon: int = 5
     load_lca_factors: bool = False
     set_lca_impact_categories: list[str] = []
+    use_capacities_existing: bool = False
 
 
 class SolverOptions(Subscriptable):

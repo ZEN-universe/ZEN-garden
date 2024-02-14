@@ -20,6 +20,7 @@ dependencies:
 #  - h5py
   - pytables
   - pydantic
+  - xarray=2023.8.0
   - pip:
       - tsam
       - h5py
