@@ -147,7 +147,7 @@ class TimeSeriesAggregation(object):
                 # reorder
                 df_aggregated_ts.index.names = [self.header_set_time_steps]
                 df_aggregated_ts.columns.names = index_names
-                df_aggregated_ts = df_aggregated_ts.stack(index_names)
+                df_aggregated_ts = df_aggregated_ts.stack(index_names,future_stack=True)
                 df_aggregated_ts.index = df_aggregated_ts.index.reorder_levels(index_names + [self.header_set_time_steps])
                 setattr(element, ts, df_aggregated_ts)
                 element.aggregated = True

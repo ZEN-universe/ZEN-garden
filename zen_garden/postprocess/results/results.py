@@ -207,6 +207,7 @@ class Results:
             return series
 
         if type(series.index) is not pd.MultiIndex:
+            # TODO still necessary?
             return series
 
         if component.timestep_type is TimestepType.yearly:

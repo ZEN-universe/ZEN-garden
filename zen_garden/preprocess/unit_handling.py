@@ -126,7 +126,8 @@ class UnitHandling:
         dim_vector = pd.Series(index=self.dim_matrix.index, data=0)
         missing_dim = set(dim_input.keys()).difference(dim_vector.keys())
         assert len(missing_dim) == 0, f"No base unit defined for dimensionalities <{missing_dim}>"
-        dim_vector[list(dim_input.keys())] = list(dim_input.values())
+        if len(dim_input) > 0:
+            dim_vector[list(dim_input.keys())] = list(dim_input.values())
         # calculate dimensionless combined unit (e.g., tons and kilotons)
         combined_unit = self.ureg(input_unit).units
         # if unit (with a different multiplier) is already in base units
@@ -259,14 +260,14 @@ class UnitHandling:
         :param get_multiplier: bool whether multiplier should be returned or not
         :return: multiplier to convert input_unit to base  units, pint Quantity of input_unit converted to base units
         """
-        #convert attribute unit into unit combination of base units
+        # convert attribute unit into unit combination of base units
         combined_unit = None
         attribute_unit_in_base_units = self.ureg("")
         if input_unit != "1" and not pd.isna(input_unit):
             combined_unit, base_combination = self.calculate_combined_unit(input_unit, return_combination=True)
             for unit, power in zip(base_combination.index, base_combination):
                 attribute_unit_in_base_units *= self.ureg(unit) ** power
-        #calculate the multiplier to convert the attribute unit into base units
+        # calculate the multiplier to convert the attribute unit into base units
         if get_multiplier:
             multiplier = self.get_unit_multiplier(input_unit, attribute_name, path, combined_unit=combined_unit)
             return multiplier, attribute_unit_in_base_units
