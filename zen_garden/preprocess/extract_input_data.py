@@ -66,7 +66,7 @@ class DataInput:
             self.extract_yearly_variation(file_name, index_sets)
 
         # if existing capacities and existing capacities not used
-        if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.analysis["use_capacities_existing"]:
+        if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.system["use_capacities_existing"]:
             df_output, *_ = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps, manual_default_value=0)
             return df_output
         # use distances computed with node coordinates as default values
@@ -379,7 +379,7 @@ class DataInput:
         :return set_technologies_existing: return set existing technologies"""
         #TODO merge changes in extract input data and optimization setup
         set_technologies_existing = np.array([0])
-        if self.analysis["use_capacities_existing"]:
+        if self.system["use_capacities_existing"]:
             if storage_energy:
                 _energy_string = "_energy"
             else:
@@ -411,7 +411,7 @@ class DataInput:
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multiidx, data=0)
         # if no existing capacities
-        if not self.analysis["use_capacities_existing"]:
+        if not self.system["use_capacities_existing"]:
             return df_output
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
         if f"{f_name}.csv" in os.listdir(self.folder_path):
