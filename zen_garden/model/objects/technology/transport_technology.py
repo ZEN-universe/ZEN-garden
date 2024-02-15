@@ -300,16 +300,15 @@ class TransportTechnologyRules(GenericRule):
         for tech in index_values:
             ### auxiliary calculations
             term_distance_inf = mask.loc[tech] * self.variables["flow_transport_loss"].loc[tech]
+            term_distance_not_inf = (1 - mask.loc[tech]) * self.variables["flow_transport_loss"].loc[tech]
             if tech in self.system["set_transport_technologies_loss_exponential"]:
-                term_distance_not_inf = (1 - mask.loc[tech]) * self.variables["flow_transport_loss"].loc[tech] * np.exp(-self.parameters.transport_loss_factor_exponential.loc[tech]*self.parameters.distance.loc[tech])
+                term_flow_loss =  self.variables["flow_transport"].loc[tech] * np.exp(-self.parameters.transport_loss_factor_exponential.loc[tech]*self.parameters.distance.loc[tech])
             else:
-                term_distance_not_inf = (1 - mask.loc[tech]) * (self.variables["flow_transport_loss"].loc[tech] - self.parameters.transport_loss_factor_linear.loc[tech] * self.variables["flow_transport"].loc[tech])
-
+                term_flow_loss = self.variables["flow_transport"].loc[tech] * self.parameters.transport_loss_factor_linear.loc[tech] *self.parameters.distance.loc[tech]
             ### formulate constraint
-            lhs = term_distance_inf + term_distance_not_inf
+            lhs = term_distance_inf + term_distance_not_inf - term_flow_loss
             rhs = 0
             constraints.append(lhs == rhs)
-
 
         ### return
         return self.constraints.return_contraints(constraints, model=self.model, mask=cons_mask, index_values=index_values, index_names=index_names)

@@ -41,8 +41,6 @@ class RetrofittingTechnology(ConversionTechnology):
         """ retrieves and stores information on reference, input and output carriers """
         # get reference carrier from class <Technology>
         super().store_carriers()
-        # define input and output carrier
-        self.retrofit_reference_carrier = self.data_input.extract_carriers(carrier_type="retrofit_reference_carrier")
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
