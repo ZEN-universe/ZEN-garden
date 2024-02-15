@@ -249,6 +249,7 @@ class Results(object):
         # load the time step duration, these are normal dataframe calls (dicts in case of scenarios)
         self.time_step_operational_duration = self.load_time_step_operation_duration()
         self.time_step_storage_duration = self.load_time_step_storage_duration()
+        self._to_df(self.results[None][None]["pars_and_vars"]["demand"]["units"])
 
     def close(self):
         """

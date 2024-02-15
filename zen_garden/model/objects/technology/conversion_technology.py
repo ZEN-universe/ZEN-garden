@@ -243,18 +243,18 @@ class ConversionTechnology(Technology):
         # input flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_input_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
         variables.add_variable(model, name="flow_conversion_input", index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier input of conversion technologies')
+            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier input of conversion technologies', unit_parent_param="demand")
         # output flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_output_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
         variables.add_variable(model, name="flow_conversion_output", index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier output of conversion technologies')
+            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier output of conversion technologies', unit_parent_param="demand")
         ## pwa Variables - Capex
         # pwa capacity
         variables.add_variable(model, name="capacity_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
-            doc='pwa variable for size of installed technology on edge i and time t')
+            doc='pwa variable for size of installed technology on edge i and time t', unit_parent_param="capacity_limit")
         # pwa capex technology
         variables.add_variable(model, name="capex_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
-            doc='pwa variable for capex for installing technology on edge i and time t')
+            doc='pwa variable for capex for installing technology on edge i and time t', unit_category={"money": 1})
 
     @classmethod
     def construct_constraints(cls, optimization_setup):

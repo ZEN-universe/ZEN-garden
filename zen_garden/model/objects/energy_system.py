@@ -258,25 +258,25 @@ class EnergySystem:
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model
         # carbon emissions
-        variables.add_variable(model, name="carbon_emissions_annual", index_sets=sets["set_time_steps_yearly"], doc="annual carbon emissions of energy system", parent_param="carbon_emissions_annual_limit")
+        variables.add_variable(model, name="carbon_emissions_annual", index_sets=sets["set_time_steps_yearly"], doc="annual carbon emissions of energy system", unit_parent_param="carbon_emissions_annual_limit")
         # cumulative carbon emissions
         variables.add_variable(model, name="carbon_emissions_cumulative", index_sets=sets["set_time_steps_yearly"],
-                               doc="cumulative carbon emissions of energy system over time for each year", parent_param="carbon_emissions_annual_limit")
+                               doc="cumulative carbon emissions of energy system over time for each year", unit_parent_param="carbon_emissions_annual_limit")
         # carbon emission overshoot
         variables.add_variable(model, name="carbon_emissions_budget_overshoot", index_sets=sets["set_time_steps_yearly"], bounds=(0, np.inf),
-                               doc="overshoot carbon emissions of energy system at the end of the time horizon", parent_param="carbon_emissions_annual_limit")
+                               doc="overshoot carbon emissions of energy system at the end of the time horizon", unit_parent_param="carbon_emissions_annual_limit")
         # carbon emission overshoot
         variables.add_variable(model, name="carbon_emissions_annual_overshoot", index_sets=sets["set_time_steps_yearly"], bounds=(0, np.inf),
-                               doc="overshoot of the annual carbon emissions limit of energy system", parent_param="carbon_emissions_annual_limit")
+                               doc="overshoot of the annual carbon emissions limit of energy system", unit_parent_param="carbon_emissions_annual_limit")
         # cost of carbon emissions
         variables.add_variable(model, name="cost_carbon_emissions_total", index_sets=sets["set_time_steps_yearly"],
-                               doc="total cost of carbon emissions of energy system", parent_param="[currency]")
+                               doc="total cost of carbon emissions of energy system", unit_category={"money": 1})
         # costs
         variables.add_variable(model, name="cost_total", index_sets=sets["set_time_steps_yearly"],
-                               doc="total cost of energy system", parent_param="[currency]")
+                               doc="total cost of energy system", unit_category={"money": 1})
         # net_present_cost
         variables.add_variable(model, name="net_present_cost", index_sets=sets["set_time_steps_yearly"],
-                               doc="net_present_cost of energy system", parent_param="[currency]")
+                               doc="net_present_cost of energy system", unit_category={"money": 1})
 
     def construct_constraints(self):
         """ constructs the pe.Constraints of the class <EnergySystem> """

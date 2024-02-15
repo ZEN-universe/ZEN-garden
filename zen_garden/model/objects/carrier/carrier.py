@@ -102,28 +102,28 @@ class Carrier(Element):
 
         # flow of imported carrier
         variables.add_variable(model, name="flow_import", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="node- and time-dependent carrier import from the grid")
+                               doc="node- and time-dependent carrier import from the grid", unit_parent_param="demand")
         # flow of exported carrier
         variables.add_variable(model, name="flow_export", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="node- and time-dependent carrier export from the grid")
+                               doc="node- and time-dependent carrier export from the grid", unit_parent_param="demand")
         # carrier import/export cost
         variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-                               doc="node- and time-dependent carrier cost due to import and export")
+                               doc="node- and time-dependent carrier cost due to import and export", unit_category={"money": 1, "time": -1})
         # total carrier import/export cost
         variables.add_variable(model, name="cost_carrier_total", index_sets=sets["set_time_steps_yearly"],
-                               doc="total carrier cost due to import and export")
+                               doc="total carrier cost due to import and export", unit_category={"money": 1})
         # carbon emissions
         variables.add_variable(model, name="carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-                               doc="carbon emissions of importing and exporting carrier")
+                               doc="carbon emissions of importing and exporting carrier", unit_category={"emissions": 1, "time": -1})
         # carbon emissions carrier
         variables.add_variable(model, name="carbon_emissions_carrier_total", index_sets=sets["set_time_steps_yearly"],
-                               doc="total carbon emissions of importing and exporting carrier")
+                               doc="total carbon emissions of importing and exporting carrier", unit_category={"emissions": 1})
         # shed demand
         variables.add_variable(model, name="shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="shed demand of carrier")
+                               doc="shed demand of carrier", unit_parent_param="demand")
         # cost of shed demand
         variables.add_variable(model, name="cost_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="shed demand of carrier")
+                               doc="shed demand of carrier", unit_category={"money": 1, "time": -1})
 
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
