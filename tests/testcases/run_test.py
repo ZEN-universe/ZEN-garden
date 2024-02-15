@@ -164,7 +164,7 @@ def test_1a(config, folder_path):
     config.solver["add_duals"] = True
 
     # run the test
-    data_set_name = "test_1e"
+    data_set_name = "test_1a"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
     # compare the variables of the optimization setup
@@ -500,4 +500,4 @@ if __name__ == "__main__":
     from config import config
     config.solver["keep_files"] = False
     folder_path = os.path.dirname(__file__)
-    test_1d(config, folder_path)
+    test_1a(config, folder_path)
