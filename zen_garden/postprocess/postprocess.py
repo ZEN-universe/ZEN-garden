@@ -20,6 +20,7 @@ import pandas as pd
 import xarray as xr
 from filelock import FileLock
 import yaml
+from pydantic import BaseModel
 
 from ..utils import HDFPandasSerializer
 from ..model.optimization_setup import OptimizationSetup
@@ -112,6 +113,9 @@ class Postprocess:
         :param format: Force the format to use, if None use output_format attribute of instance
         """
 
+        if isinstance(dictionary, BaseModel):
+            dictionary = dictionary.model_dump()
+
         # set the format
         if format is None:
             format = self.output_format
@@ -132,6 +136,7 @@ class Postprocess:
 
         elif format == "gzip" or format == "json":
             # serialize to string
+            
             serialized_dict = json.dumps(dictionary, indent=2)
 
             # if the string is larger than the max output size we compress anyway

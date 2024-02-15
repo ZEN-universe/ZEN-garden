@@ -20,6 +20,7 @@ from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
 # we setup the logger here
 setup_logger()
 
+
 def main(config, dataset_path=None, job_index=None):
     """
     This function runs ZEN garden,
