@@ -152,7 +152,7 @@ class System(Subscriptable):
 
 
 class SolverOptions(Subscriptable):
-    logfile: str = ".//outputs//logs//GurobiLogFile.log"
+    logfile: str = "./GurobiLogFile.log"
     MIPGap: Optional[str] = None
     TimeLimit: Optional[int] = None
     Method: Optional[Any] = (None,)
