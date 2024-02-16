@@ -8,7 +8,7 @@ dependencies:
   - pytest
   - pip
   - numpy
-  - pandas
+  - pandas=2.0.*
   - geopandas
   - scipy
   - coverage
@@ -16,11 +16,14 @@ dependencies:
   - pint
   - matplotlib
   - entsoe-py
-  - gurobi
+  - gurobi=10.*
 #  - h5py
   - pytables
   - pydantic
   - xarray=2023.8.0
+  - jupyter
+  - utm
+  - grid-strategy
   - pip:
       - tsam
       - h5py
