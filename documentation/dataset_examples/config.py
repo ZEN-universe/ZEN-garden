@@ -19,7 +19,7 @@ analysis = config.analysis
 solver = config.solver
 
 ## Analysis - settings update compared to default values
-analysis["dataset"] = os.path.join(os.path.dirname(__file__), "test_1a")
+analysis["dataset"] = os.path.join(os.path.dirname(__file__), "test_1e")
 analysis["objective"] = "total_cost"
 # use greenfield or brownfield approach
 analysis["use_capacities_existing"] = True
