@@ -110,7 +110,6 @@ class Analysis(Subscriptable):
     max_output_size_mb: int = 500
     folder_name_system_specification: str = "system_specification"
     earliest_year_of_data: int = 1900
-    use_capacities_existing: bool = False
 
 
 class System(Subscriptable):
@@ -142,6 +141,7 @@ class System(Subscriptable):
     interval_between_years: int = 1
     use_rolling_horizon: bool = False
     years_in_rolling_horizon: int = 5
+    use_capacities_existing: bool = True
 
 
 class SolverOptions(Subscriptable):
