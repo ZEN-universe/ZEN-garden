@@ -47,7 +47,8 @@ class TransportTechnology(Technology):
         super().store_input_data()
         # set attributes for parameters of child class <TransportTechnology>
         self.distance = self.data_input.extract_input_data("distance", index_sets=["set_edges"], unit_category={"distance": 1})
-        self.transport_loss_factor = self.data_input.extract_input_data("transport_loss_factor", index_sets=[], unit_category={"distance": -1})
+        # get transport loss factor
+        self.get_transport_loss_factor()
         # get capex of transport technology
         self.get_capex_transport()
         # annualize capex
@@ -55,10 +56,20 @@ class TransportTechnology(Technology):
         # calculate capex of existing capacity
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
 
+    def get_transport_loss_factor(self):
+        """get transport loss factor
+        # check which transport loss factor is used"""
+        self.transport_loss_factor_linear = self.data_input.extract_input_data("transport_loss_factor_linear", index_sets=[], unit_category={"distance": -1})
+        if self.name in self.optimization_setup.system["set_transport_technologies_loss_exponential"]:
+            assert "transport_loss_factor_exponential" in self.data_input.attribute_dict, f"The transport technology {self.name} has no transport_loss_factor_exponential attribute."
+            self.transport_loss_factor_exponential = self.data_input.extract_input_data("transport_loss_factor_exponential", index_sets=[], unit_category={"distance": -1})
+        else:
+            self.transport_loss_factor_exponential = np.nan
+
     def get_capex_transport(self):
         """get capex of transport technology"""
         # check if there are separate capex for capacity and distance
-        if self.optimization_setup.system['double_capex_transport']:
+        if self.optimization_setup.system["double_capex_transport"]:
             # both capex terms must be specified
             self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
             self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
@@ -78,6 +89,7 @@ class TransportTechnology(Technology):
             self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
         else:
             raise AttributeError(f"The transport technology {self.name} has neither opex_specific_fixed_per_distance nor opex_specific_fixed attribute.")
+
     def convert_to_fraction_of_capex(self):
         """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
         fraction_year = self.calculate_fraction_of_year()
@@ -141,8 +153,10 @@ class TransportTechnology(Technology):
             data=optimization_setup.initialize_component(cls, 'capex_per_distance_transport', index_names=['set_transport_technologies', "set_edges", "set_time_steps_yearly"]),
             doc='capex per distance for transport technologies')
         # carrier losses
-        optimization_setup.parameters.add_parameter(name="transport_loss_factor", data=optimization_setup.initialize_component(cls, "transport_loss_factor", index_names=["set_transport_technologies"]),
-            doc='carrier losses due to transport with transport technologies')
+        optimization_setup.parameters.add_parameter(name="transport_loss_factor_linear", data=optimization_setup.initialize_component(cls, "transport_loss_factor_linear", index_names=["set_transport_technologies"]),
+            doc='linear carrier losses due to transport with transport technologies')
+        optimization_setup.parameters.add_parameter(name="transport_loss_factor_exponential", data=optimization_setup.initialize_component(cls, "transport_loss_factor_exponential", index_names=["set_transport_technologies"]),
+                                                    doc='exponential carrier losses due to transport with transport technologies')
 
     @classmethod
     def construct_vars(cls, optimization_setup):
@@ -273,7 +287,7 @@ class TransportTechnologyRules(GenericRule):
         """
 
         ### index sets
-        # not necessary
+        index_values, index_names = Element.create_custom_set(["set_transport_technologies"], self.optimization_setup)
 
         ### masks
         # This mask checks the distance between nodes
@@ -281,20 +295,23 @@ class TransportTechnologyRules(GenericRule):
         # This mask ensure we only get constraints where we want them
         cons_mask = self.variables["flow_transport_loss"].mask
 
-        ### index loop
-        # not necessary
-
-        ### auxiliary calculations
-        term_distance_inf = mask * self.variables["flow_transport_loss"]
-        term_distance_not_inf = (1 - mask) * (self.variables["flow_transport_loss"] - self.parameters.transport_loss_factor * self.parameters.distance * self.variables["flow_transport"])
-
-        ### formulate constraint
-        lhs = term_distance_inf + term_distance_not_inf
-        rhs = 0
-        constraints = lhs == rhs
+        ### index loopmask
+        constraints = []
+        for tech in index_values:
+            ### auxiliary calculations
+            term_distance_inf = mask.loc[tech] * self.variables["flow_transport_loss"].loc[tech]
+            term_distance_not_inf = (1 - mask.loc[tech]) * self.variables["flow_transport_loss"].loc[tech]
+            if tech in self.system["set_transport_technologies_loss_exponential"]:
+                term_flow_loss =  self.variables["flow_transport"].loc[tech] * np.exp(-self.parameters.transport_loss_factor_exponential.loc[tech]*self.parameters.distance.loc[tech])
+            else:
+                term_flow_loss = self.variables["flow_transport"].loc[tech] * self.parameters.transport_loss_factor_linear.loc[tech] *self.parameters.distance.loc[tech]
+            ### formulate constraint
+            lhs = term_distance_inf + term_distance_not_inf - term_flow_loss
+            rhs = 0
+            constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints, mask=cons_mask)
+        return self.constraints.return_contraints(constraints, model=self.model, mask=cons_mask, index_values=index_values, index_names=index_names)
 
     def constraint_transport_technology_capex_block(self):
         """ definition of the capital expenditures for the transport technology
