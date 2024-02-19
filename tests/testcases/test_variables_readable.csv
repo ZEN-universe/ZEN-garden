@@ -21,6 +21,17 @@ test_1a,none,flow_export,"('natural_gas', 'CH', 0)",0
 test_1a,none,flow_export,"('natural_gas', 'DE', 0)",0
 test_1a,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0
 test_1a,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
+test_1d,none,flow_import,"('natural_gas', 'CH', 0)",26.00002
+test_1d,none,flow_import,"('natural_gas', 'DE', 0)",100.00000
+test_1d,none,flow_transport,"('natural_gas_pipeline', 'CH-DE', 0)",5
+test_1d,none,flow_transport,"('natural_gas_pipeline_exp', 'CH-DE', 0)",5
+test_1d,none,flow_transport_loss,"('natural_gas_pipeline', 'CH-DE', 0)",0.01275
+test_1d,none,flow_transport_loss,"('natural_gas_pipeline', 'DE-CH', 0)",0
+test_1d,none,flow_transport_loss,"('natural_gas_pipeline_exp', 'CH-DE', 0)",4.98727
+test_1d,none,flow_transport_loss,"('natural_gas_pipeline_exp', 'DE-CH', 0)",0
+test_1d,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
+test_1d,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",5
+test_1d,none,capacity,"('natural_gas_pipeline_exp', 'power', 'CH-DE', 0)",5
 test_2a,none,flow_import,"('natural_gas', 'CH', 0)",11
 test_2a,none,flow_import,"('natural_gas', 'DE', 0)",110
 test_2a,none,cost_carrier,"('natural_gas', 'CH', 0)",0.253
