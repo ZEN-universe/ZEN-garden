@@ -126,7 +126,8 @@ class UnitHandling:
         dim_vector = pd.Series(index=self.dim_matrix.index, data=0)
         missing_dim = set(dim_input.keys()).difference(dim_vector.keys())
         assert len(missing_dim) == 0, f"No base unit defined for dimensionalities <{missing_dim}>"
-        dim_vector[list(dim_input.keys())] = list(dim_input.values())
+        if len(dim_input) > 0:  # check for content of dim_input to avoid Warning
+            dim_vector[list(dim_input.keys())] = list(dim_input.values())
         # calculate dimensionless combined unit (e.g., tons and kilotons)
         combined_unit = self.ureg(input_unit).units
         # if unit (with a different multiplier) is already in base units

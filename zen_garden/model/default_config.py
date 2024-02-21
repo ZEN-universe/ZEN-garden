@@ -73,11 +73,10 @@ class HeaderDataInputs(Subscriptable):
     set_output_carriers: str = "carrier"
     set_time_steps_storage: str = "time_storage_level"
     set_dependent_carriers: str = "carrier"
-    set_conditioning_carriers: str = "carrier"
-    set_conditioning_carrier_parents: str = "carrier"
     set_elements: str = "element"
     set_conversion_technologies: str = "technology"
     set_transport_technologies: str = "technology"
+    set_transport_technologies_loss_exponential: str = "technology"
     set_storage_technologies: str = "technology"
     set_technologies: str = "technology"
     set_technologies_existing: str = "technology_existing"
@@ -117,16 +116,14 @@ class Analysis(Subscriptable):
 class System(Subscriptable):
     model_config = ConfigDict(extra="allow")
     set_carriers: list[str] = []
-    set_conditioning_carriers: list[str] = []
     set_capacity_types: list[str] = ["power", "energy"]
     set_conversion_technologies: list[str] = []
-    set_conditioning_technologies: list[str] = []
     set_storage_technologies: list[str] = []
     set_retrofitting_technologies: list[str] = []
     storage_periodicity: bool = True
     set_transport_technologies: list[str] = []
+    set_transport_technologies_loss_exponential: list[str] = []
     double_capex_transport: bool = False
-    set_bidirectional_transport_technologies: list[str] = []
     set_nodes: list[str] = []
     set_super_nodes: list[str] = []
     set_super_edges: list[str] = []

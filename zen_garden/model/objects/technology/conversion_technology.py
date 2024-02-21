@@ -269,9 +269,7 @@ class ConversionTechnology(Technology):
         rules = ConversionTechnologyRules(optimization_setup)
         # conversion factor
         constraints.add_constraint_block(model, name="constraint_carrier_conversion",
-                                         constraint=rules.constraint_carrier_conversion_block(*cls.create_custom_set(
-                                             ["set_conversion_technologies", "set_dependent_carriers", "set_nodes",
-                                              "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.constraint_carrier_conversion_block(*cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes","set_time_steps_operation"], optimization_setup)),
                                          doc="Conversion of energy carrier with conversion_factor")
         # capex
         set_pwa_capex = cls.create_custom_set(["set_conversion_technologies", "set_capex_pwa", "set_nodes", "set_time_steps_yearly"], optimization_setup)
