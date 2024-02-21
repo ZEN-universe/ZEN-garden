@@ -1,4 +1,4 @@
-name: zen-garden-linopy
+name: zen-garden-linopy-test
 channels:
   - conda-forge
   - gurobi
@@ -9,6 +9,7 @@ dependencies:
   - pip
   - numpy
   - pandas=2.0.*
+  - pyarrow
   - geopandas
   - scipy
   - coverage
@@ -24,6 +25,7 @@ dependencies:
   - jupyter
   - utm
   - grid-strategy
+  - openpyxl
   - pip:
       - tsam
       - h5py
