@@ -400,13 +400,13 @@ class Technology(Element):
         # construct pe.Vars of the class <Technology>
         # capacity technology
         variables.add_variable(model, name="capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=capacity_bounds, doc='size of installed technology at location l and time t', unit_parent_param="capacity_limit")
+            bounds=capacity_bounds, doc='size of installed technology at location l and time t', unit_category={"energy_quantity": 1, "time": -1})
         # built_capacity technology
         variables.add_variable(model, name="capacity_addition", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=(0,np.inf), doc='size of built technology (invested capacity after construction) at location l and time t', unit_parent_param="capacity_limit")
+            bounds=(0,np.inf), doc='size of built technology (invested capacity after construction) at location l and time t', unit_category={"energy_quantity": 1, "time": -1})
         # invested_capacity technology
         variables.add_variable(model, name="capacity_investment", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=(0,np.inf), doc='size of invested technology at location l and time t', unit_parent_param="capacity_limit")
+            bounds=(0,np.inf), doc='size of invested technology at location l and time t', unit_category={"energy_quantity": 1, "time": -1})
         # capex of building capacity
         variables.add_variable(model, name="cost_capex", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='capex for building technology at location l and time t', unit_category={"money": 1})
@@ -430,7 +430,7 @@ class Technology(Element):
             doc="carbon emissions for operating technology at location l and time t", unit_category={"emissions": 1, "time": -1})
         # total carbon emissions technology
         variables.add_variable(model, name="carbon_emissions_technology_total", index_sets=sets["set_time_steps_yearly"],
-            doc="total carbon emissions for operating technology at location l and time t", unit_parent_param="carbon_emissions_annual_limit", unit_category={"emissions": 1})
+            doc="total carbon emissions for operating technology at location l and time t", unit_category={"emissions": 1})
 
         # install technology
         # Note: binary variables are written into the lp file by linopy even if they are not relevant for the optimization,
@@ -520,10 +520,10 @@ class Technology(Element):
         index_names = ["on_off_technologies", "on_off_capacity_types", "on_off_locations", "on_off_time_steps_operation"]
         variables.add_variable(model, name="tech_on_var",
                                index_sets=(index_vals, index_names),
-                               doc="Binary variable which equals 1 when technology is switched on at location l and time t", binary=True)
+                               doc="Binary variable which equals 1 when technology is switched on at location l and time t", binary=True, unit_category=None)
         variables.add_variable(model, name="tech_off_var",
                                index_sets=(index_vals, index_names),
-                               doc="Binary variable which equals 1 when technology is switched off at location l and time t", binary=True)
+                               doc="Binary variable which equals 1 when technology is switched off at location l and time t", binary=True, unit_category=None)
         model.add_constraints(model.variables["tech_on_var"] + model.variables["tech_off_var"] == 1, name="tech_on_off_cons")
         n_cons = model.constraints.ncons
 

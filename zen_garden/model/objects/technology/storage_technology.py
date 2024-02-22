@@ -145,13 +145,13 @@ class StorageTechnology(Technology):
         index_values, index_names = cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)
         bounds = flow_storage_bounds(index_values, index_names)
         variables.add_variable(model, name="flow_storage_charge", index_sets=(index_values, index_names),
-            bounds=bounds, doc='carrier flow into storage technology on node i and time t', unit_parent_param="demand")
+            bounds=bounds, doc='carrier flow into storage technology on node i and time t', unit_category={"energy_quantity": 1, "time": -1})
         # flow of carrier on node out of storage
         variables.add_variable(model, name="flow_storage_discharge", index_sets=(index_values, index_names),
-            bounds=bounds, doc='carrier flow out of storage technology on node i and time t', unit_parent_param="demand")
+            bounds=bounds, doc='carrier flow out of storage technology on node i and time t', unit_category={"energy_quantity": 1, "time": -1})
         # loss of carrier on node
         variables.add_variable(model, name="storage_level", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage"], optimization_setup), bounds=(0, np.inf),
-            doc='storage level of storage technology ón node in each storage time step', unit_parent_param="capacity_limit")
+            doc='storage level of storage technology ón node in each storage time step', unit_category={"energy_quantity": 1})
 
     @classmethod
     def construct_constraints(cls, optimization_setup):

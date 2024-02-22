@@ -556,7 +556,7 @@ class Parameter(Component):
 
     @staticmethod
     def get_param_units(data, dict_of_units, index_list):
-        """ creates series of units to identical multi-index as data has
+        """ creates series of units with identical multi-index as data has
 
         :param data: non default data of parameter and index_names
         :param dict_of_units: units of parameter
@@ -628,21 +628,25 @@ class Variable(Component):
         Initialization of a variable
         :param index_sets: A reference to the index sets of the model
         """
+        self.optimization_setup = optimization_setup
         self.index_sets = optimization_setup.sets
         self.unit_handling = optimization_setup.energy_system.unit_handling
         self.units = {}
         super().__init__()
 
-    def add_variable(self, model: lp.Model, name, index_sets, integer=False, binary=False, bounds=None, doc="", mask=None, unit_parent_param=None, unit_category=None):
+    def add_variable(self, model: lp.Model, name, index_sets, unit_category, integer=False, binary=False, bounds=None, doc="", mask=None):
         """ initialization of a variable
+
         :param model: parent block component of variable, must be linopy model
         :param name: name of variable
         :param index_sets: Tuple of index values and index names
+        :param unit_category: dict defining the dimensionality of the variable's unit
         :param integer: If it is an integer variable
         :param binary: If it is a binary variable
         :param bounds:  bounds of variable
         :param doc: docstring of variable
-        :param mask: mask of variable"""
+        :param mask: mask of variable
+        """
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
@@ -666,46 +670,49 @@ class Variable(Component):
                 else:
                     domain = "Reals"
             self.docs[name] = self.compile_doc_string(doc, index_list, name, domain)
-            self.units[name] = self.get_var_units(unit_parent_param, unit_category, index_values, index_list, name)
+            self.units[name] = self.get_var_units(unit_category, index_values, index_list)
         else:
             logging.warning(f"Variable {name} already added. Can only be added once")
 
-    def get_var_units(self, unit_parent_param, unit_category, index_values, index_list, name):
-        if len(index_values) > 1:
-            index = pd.MultiIndex.from_tuples(index_values, names=index_list)
+    def get_var_units(self, unit_category, var_index_values, index_list):
+        """
+         creates series of units with identical multi-index as variable has
+
+        :param unit_category: dict defining the dimensionality of the variable's unit
+        :param var_index_values: list of variable index values
+        :param index_list: list of index names
+        :return: series of variable units
+        """
+        #binary variables
+        if not unit_category:
+            return
+        if all(isinstance(item, tuple) for item in var_index_values):
+            index = pd.MultiIndex.from_tuples(var_index_values, names=index_list)
         else:
-            index = pd.Index(index_values)
-        if unit_category:
-            unit = self.unit_handling.ureg("dimensionless")
-            distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
-            for dim, dim_name in distinct_dims.items():
-                if dim in unit_category:
-                    dim_unit = [key for key, value in self.unit_handling.base_units.items() if value == dim_name][0]
-                    unit = unit * self.unit_handling.ureg(dim_unit)**unit_category[dim]
-            var_units = pd.Series(data=unit, index=index)
-            return var_units
-
-        elif unit_parent_param:
-            param_units = self.param_units[unit_parent_param]
-            if isinstance(index, pd.MultiIndex):
-                param_units.name = "param_units"
-                var_indices = pd.Series(index=index, name="var_indices")
-                if name == "storage_level":
-                    energy_param_units = param_units[param_units.index.get_level_values('set_capacity_types') == 'energy']
-                    for ind in var_indices.index:
-                        var_indices.loc[ind] = energy_param_units.loc[ind[0]][0]
-                    var_units = var_indices
-
-                else:
-                    var_units = pd.merge(var_indices, param_units, left_index=True, right_index=True)
-                    var_units = var_units["param_units"]
-                    assert var_units.size >= var_indices.size, f""
+            index = pd.Index(var_index_values)
+        unit = self.unit_handling.ureg("dimensionless")
+        distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
+        for dim, dim_name in distinct_dims.items():
+            if dim in unit_category:
+                dim_unit = [key for key, value in self.unit_handling.base_units.items() if value == dim_name][0]
+                unit = unit * self.unit_handling.ureg(dim_unit)**unit_category[dim]
+        var_units = pd.Series(index=index)
+        #variable can have different units
+        if "energy_quantity" in unit_category:
+            #energy_quantity depends on carrier index level (e.g. flow_import)
+            if any("carrier" in carrier_name for carrier_name in var_units.index.names):
+                for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items():
+                    var_units[var_units.index.map(lambda x: any(carrier in str(level) for level in x))] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+            #energy_quantity depends on technology index level (e.g. capacity)
             else:
-                var_units = pd.Series(param_units, index=index)
-            return var_units
+                for technology in self.optimization_setup.dict_elements["Technology"]:
+                    reference_carrier = technology.reference_carrier[0]
+                    energy_quantity = [energy_quantity for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items() if carrier == reference_carrier][0]
+                    var_units[var_units.index.map(lambda x: any(technology.name in str(level) for level in x))] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+        #variable has constant unit
         else:
-            if name not in ["tech_on_var", "tech_off_var"]:
-                raise AssertionError(f"every variable needs either a unit_parent_param or a unit_category!")
+            var_units[:] = unit.units
+        return var_units
 
 class Constraint(Component):
     def __init__(self, index_sets):

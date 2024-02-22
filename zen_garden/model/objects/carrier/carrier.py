@@ -102,10 +102,10 @@ class Carrier(Element):
 
         # flow of imported carrier
         variables.add_variable(model, name="flow_import", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="node- and time-dependent carrier import from the grid", unit_parent_param="demand")
+                               doc="node- and time-dependent carrier import from the grid", unit_category={"energy_quantity": 1, "time": -1})
         # flow of exported carrier
         variables.add_variable(model, name="flow_export", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="node- and time-dependent carrier export from the grid", unit_parent_param="demand")
+                               doc="node- and time-dependent carrier export from the grid", unit_category={"energy_quantity": 1, "time": -1})
         # carrier import/export cost
         variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
                                doc="node- and time-dependent carrier cost due to import and export", unit_category={"money": 1, "time": -1})
@@ -120,7 +120,7 @@ class Carrier(Element):
                                doc="total carbon emissions of importing and exporting carrier", unit_category={"emissions": 1})
         # shed demand
         variables.add_variable(model, name="shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="shed demand of carrier", unit_parent_param="demand")
+                               doc="shed demand of carrier", unit_category={"energy_quantity": 1, "time": -1})
         # cost of shed demand
         variables.add_variable(model, name="cost_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
                                doc="shed demand of carrier", unit_category={"money": 1, "time": -1})

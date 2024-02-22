@@ -166,10 +166,10 @@ class TransportTechnology(Technology):
         index_values, index_names = cls.create_custom_set(["set_transport_technologies", "set_edges", "set_time_steps_operation"], optimization_setup)
         bounds = flow_transport_bounds(index_values, index_names)
         variables.add_variable(model, name="flow_transport", index_sets=(index_values, index_names),
-            bounds=bounds, doc='carrier flow through transport technology on edge i and time t', unit_parent_param="demand")
+            bounds=bounds, doc='carrier flow through transport technology on edge i and time t', unit_category={"energy_quantity": 1, "time": -1})
         # loss of carrier on edge
         variables.add_variable(model, name="flow_transport_loss", index_sets=(index_values, index_names), bounds=(0,np.inf),
-            doc='carrier flow lost due to resistances etc. by transporting carrier through transport technology on edge i and time t', unit_parent_param="demand")
+            doc='carrier flow lost due to resistances etc. by transporting carrier through transport technology on edge i and time t', unit_category={"energy_quantity": 1, "time": -1})
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
