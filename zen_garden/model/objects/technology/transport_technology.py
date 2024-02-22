@@ -148,10 +148,8 @@ class TransportTechnology(Technology):
         # capital cost per distance
         optimization_setup.parameters.add_parameter(name="capex_per_distance_transport", index_names=['set_transport_technologies', "set_edges", "set_time_steps_yearly"], doc='capex per distance for transport technologies', calling_class=cls)
         # carrier losses
-        optimization_setup.parameters.add_parameter(name="transport_loss_factor_linear", data=optimization_setup.initialize_component(cls, "transport_loss_factor_linear", index_names=["set_transport_technologies"]),
-            doc='linear carrier losses due to transport with transport technologies')
-        optimization_setup.parameters.add_parameter(name="transport_loss_factor_exponential", data=optimization_setup.initialize_component(cls, "transport_loss_factor_exponential", index_names=["set_transport_technologies"]),
-                                                    doc='exponential carrier losses due to transport with transport technologies')
+        optimization_setup.parameters.add_parameter(name="transport_loss_factor_linear", index_names=["set_transport_technologies"], doc='linear carrier losses due to transport with transport technologies', calling_class=cls)
+        optimization_setup.parameters.add_parameter(name="transport_loss_factor_exponential", index_names=["set_transport_technologies"], doc='exponential carrier losses due to transport with transport technologies', calling_class=cls)
 
     @classmethod
     def construct_vars(cls, optimization_setup):

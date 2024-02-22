@@ -440,7 +440,7 @@ class Technology(Element):
         mask = cls._technology_installation_mask(optimization_setup)
         if mask.any():
             variables.add_variable(model, name="technology_installation", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-                                   binary=True, doc='installment of a technology at location l and time t', mask=mask)
+                                   binary=True, doc='installment of a technology at location l and time t', mask=mask, unit_category=None)
 
         # add pe.Vars of the child classes
         for subclass in cls.__subclasses__():
