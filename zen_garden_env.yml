@@ -4,6 +4,7 @@ channels:
   - gurobi
 dependencies:
   - python=3.11
+  - xarray=2023.8.0
   - cython
   - pytest
   - pip

@@ -14,13 +14,15 @@ import importlib
 import os
 import logging
 import json
-
+from pathlib import Path
 
 class Results:
     def __init__(self, path: str):
         self.solution_loader: SolutionLoader = MultiHdfLoader(path)
         self.has_scenarios = len(self.solution_loader.scenarios) > 1
         self.has_rh = self.solution_loader.has_rh
+        first_scenario = next(iter(self.solution_loader.scenarios.values()))
+        self.name = Path(first_scenario.analysis.dataset).name
 
     def __str__(self):
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
@@ -226,10 +228,10 @@ class Results:
         for y in years:
             timesteps = self.solution_loader.get_timesteps(scenario, component, int(y))
             try:
-                ans.insert(int(y), y, total_value[timesteps].sum(axis=1,skipna=False))  # type: ignore
+                ans.insert(len(ans.columns), y, total_value[timesteps].sum(axis=1,skipna=False))  # type: ignore
             except KeyError:
                 timestep_list = [i for i in timesteps if i in total_value]
-                ans.insert(year, year, total_value[timestep_list].sum(axis=1,skipna=False))  # type: ignore # noqa
+                ans.insert(len(ans.columns), year, total_value[timestep_list].sum(axis=1,skipna=False))  # type: ignore # noqa
 
         if "mf" in ans.index.names:
             ans = ans.reorder_levels([i for i in ans.index.names if i != "mf"] + ["mf"]).sort_index(axis=0)
