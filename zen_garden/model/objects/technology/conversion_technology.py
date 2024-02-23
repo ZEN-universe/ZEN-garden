@@ -134,7 +134,7 @@ class ConversionTechnology(Technology):
         for element in class_elements:
             # extract for pwa
             if not getattr(element, is_pwa_attribute):
-                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes)
+                dict_of_attributes, _, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes, dict_of_units={})
             if not dict_of_attributes:
                 _, index_names = cls.create_custom_set(index_names, optimization_setup)
                 return (dict_of_attributes, index_names)
@@ -188,11 +188,10 @@ class ConversionTechnology(Technology):
         # slope of linearly modeled capex
         optimization_setup.parameters.add_parameter(name="capex_specific_conversion",
             data=cls.get_capex_all_elements(optimization_setup, index_names=["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"]),
-            doc="Parameter which specifies the slope of the capex if approximated linearly")
+            doc="Parameter which specifies the slope of the capex if approximated linearly", calling_class=cls)
         # slope of linearly modeled conversion efficiencies
-        optimization_setup.parameters.add_parameter(name="conversion_factor", data=optimization_setup.initialize_component(cls, "conversion_factor",
-            index_names=["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
-            doc="Parameter which specifies the conversion factor")
+        optimization_setup.parameters.add_parameter(name="conversion_factor", index_names=["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"],
+            doc="Parameter which specifies the conversion factor", calling_class=cls)
 
         # add params of the child classes
         for subclass in cls.__subclasses__():
@@ -248,18 +247,18 @@ class ConversionTechnology(Technology):
         # input flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_input_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
         variables.add_variable(model, name="flow_conversion_input", index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier input of conversion technologies')
+            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier input of conversion technologies', unit_category={"energy_quantity": 1, "time": -1})
         # output flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_output_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
         variables.add_variable(model, name="flow_conversion_output", index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier output of conversion technologies')
+            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier output of conversion technologies', unit_category={"energy_quantity": 1, "time": -1})
         ## pwa Variables - Capex
         # pwa capacity
         variables.add_variable(model, name="capacity_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
-            doc='pwa variable for size of installed technology on edge i and time t')
+            doc='pwa variable for size of installed technology on edge i and time t', unit_category={"energy_quantity": 1, "time": -1})
         # pwa capex technology
         variables.add_variable(model, name="capex_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
-            doc='pwa variable for capex for installing technology on edge i and time t')
+            doc='pwa variable for capex for installing technology on edge i and time t', unit_category={"money": 1})
 
     @classmethod
     def construct_constraints(cls, optimization_setup):

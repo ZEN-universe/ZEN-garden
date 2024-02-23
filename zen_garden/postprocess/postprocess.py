@@ -230,6 +230,7 @@ class Postprocess:
             # get the values
             vals = getattr(self.params, param)
             doc = self.params.docs[param]
+            units = self.params.units[param]
             index_list = self.get_index_list(doc)
             # data frame
             if isinstance(vals, xr.DataArray):
@@ -243,7 +244,7 @@ class Postprocess:
                 df.index.names = index_list
 
             # update dict
-            data_frames[param] = self._transform_df(df, doc)
+            data_frames[param] = self._transform_df(df, doc, units)
 
         # write to json
         self.write_file(self.name_dir.joinpath('param_dict'), data_frames)
@@ -257,6 +258,7 @@ class Postprocess:
         for name, arr in self.model.solution.items():
             if name in self.vars.docs:
                 doc = self.vars.docs[name]
+                units = self.vars.units[name]
                 index_list = self.get_index_list(doc)
             elif name.startswith("sos2_var") or name in ["tech_on_var", "tech_off_var"]:
                 continue
@@ -271,7 +273,7 @@ class Postprocess:
                 df.index.names = index_list
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[name] = self._transform_df(df,doc)
+            data_frames[name] = self._transform_df(df,doc,units)
 
         self.write_file(self.name_dir.joinpath('var_dict'), data_frames)
 
@@ -389,7 +391,7 @@ class Postprocess:
             fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
         self.write_file(fname, self.dict_sequence_time_steps)
 
-    def _transform_df(self, df, doc):
+    def _transform_df(self, df, doc, units=None):
         """we transform the dataframe to a json string and load it into the dictionary as dict
 
         :param df: #TODO describe parameter/return
@@ -398,10 +400,17 @@ class Postprocess:
         """
         if self.output_format == "h5":
             # No need to transform the dataframe to json
-            dataframe = {"dataframe": df, "docstring": doc}
+            if units is not None:
+                dataframe = {"dataframe": df, "docstring": doc, "units": units}
+            else:
+                dataframe = {"dataframe": df, "docstring": doc}
         else:
-            dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                            "docstring": doc}
+            if units is not None:
+                dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
+                                                "docstring": doc, "units": units}
+            else:
+                dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
+                             "docstring": doc}
         return dataframe
 
     def flatten_dict(self, dictionary):

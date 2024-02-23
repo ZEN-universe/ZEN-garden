@@ -16,6 +16,7 @@ from itertools import zip_longest
 import linopy as lp
 import numpy as np
 import pandas as pd
+import pint
 import xarray as xr
 from ordered_set import OrderedSet
 
@@ -194,6 +195,7 @@ class Component:
     """
     Class to prepare parameter, variable and constraint data such that it suits the pyomo prerequisites
     """
+    param_units = {}
     def __init__(self):
         """
         instantiate object of Component class
@@ -453,21 +455,32 @@ class DictParameter(object):
 
 
 class Parameter(Component):
-    def __init__(self, index_sets):
+    def __init__(self, optimization_setup):
         """ initialization of the parameter object """
-        self.index_sets = index_sets
+        self.optimization_setup = optimization_setup
+        self.index_sets = optimization_setup.sets
         super().__init__()
         self.min_parameter_value = {"name": None, "value": None}
         self.max_parameter_value = {"name": None, "value": None}
         self.dict_parameters = DictParameter()
+        self.units = {}
 
-    def add_parameter(self, name, data, doc):
+    def add_parameter(self, name, doc, data=None, calling_class=None, index_names=None, set_time_steps=None, capacity_types=False):
         """ initialization of a parameter
 
         :param name: name of parameter
+        :param doc: docstring of parameter
         :param data: non default data of parameter and index_names
-        :param doc: docstring of parameter """
+        :param calling_class: class type of the object add_parameter is called for
+        :param index_names: names of index sets, only if calling_class is not EnergySystem
+        :param set_time_steps: time steps, only if calling_class is EnergySystem
+        :param capacity_types: boolean if extracted for capacities
+        """
 
+        dict_of_units = {}
+        if data is None:
+            component_data, index_list, dict_of_units = self.optimization_setup.initialize_component(calling_class, name, index_names, set_time_steps, capacity_types)
+            data = component_data, index_list
         if name not in self.docs.keys():
             data, index_list = self.get_index_names_data(data)
             # save if highest or lowest value
@@ -481,6 +494,9 @@ class Parameter(Component):
 
             # save additional parameters
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
+            # save parameter units
+            self.units[name] = self.get_param_units(data, dict_of_units, index_list)
+            self.param_units[name] = self.units[name]
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")
 
@@ -539,6 +555,26 @@ class Parameter(Component):
                 self.min_parameter_value["value"] = valmin
 
     @staticmethod
+    def get_param_units(data, dict_of_units, index_list):
+        """ creates series of units with identical multi-index as data has
+
+        :param data: non default data of parameter and index_names
+        :param dict_of_units: units of parameter
+        """
+        if dict_of_units:
+            if not isinstance(data, pd.Series):
+                return str(dict_of_units["unit_in_base_units"].units)
+            else:
+                unit_series = pd.Series(index=data.index)
+                unit_series = unit_series.rename_axis(index=index_list)
+                if "unit_in_base_units" in dict_of_units:
+                    unit_series[:] = dict_of_units["unit_in_base_units"].units
+                    return unit_series
+            for key, value in dict_of_units.items():
+                unit_series.loc[pd.IndexSlice[key]] = value
+            return unit_series
+
+    @staticmethod
     def convert_to_dict(data):
         """ converts the data to a dict if pd.Series
 
@@ -587,24 +623,30 @@ class Parameter(Component):
 
 
 class Variable(Component):
-    def __init__(self, index_sets):
+    def __init__(self, optimization_setup):
         """
         Initialization of a variable
         :param index_sets: A reference to the index sets of the model
         """
-        self.index_sets = index_sets
+        self.optimization_setup = optimization_setup
+        self.index_sets = optimization_setup.sets
+        self.unit_handling = optimization_setup.energy_system.unit_handling
+        self.units = {}
         super().__init__()
 
-    def add_variable(self, model: lp.Model, name, index_sets, integer=False, binary=False, bounds=None, doc="", mask=None):
+    def add_variable(self, model: lp.Model, name, index_sets, unit_category, integer=False, binary=False, bounds=None, doc="", mask=None):
         """ initialization of a variable
+
         :param model: parent block component of variable, must be linopy model
         :param name: name of variable
         :param index_sets: Tuple of index values and index names
+        :param unit_category: dict defining the dimensionality of the variable's unit
         :param integer: If it is an integer variable
         :param binary: If it is a binary variable
         :param bounds:  bounds of variable
         :param doc: docstring of variable
-        :param mask: mask of variable"""
+        :param mask: mask of variable
+        """
 
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
@@ -628,9 +670,49 @@ class Variable(Component):
                 else:
                     domain = "Reals"
             self.docs[name] = self.compile_doc_string(doc, index_list, name, domain)
+            self.units[name] = self.get_var_units(unit_category, index_values, index_list)
         else:
             logging.warning(f"Variable {name} already added. Can only be added once")
 
+    def get_var_units(self, unit_category, var_index_values, index_list):
+        """
+         creates series of units with identical multi-index as variable has
+
+        :param unit_category: dict defining the dimensionality of the variable's unit
+        :param var_index_values: list of variable index values
+        :param index_list: list of index names
+        :return: series of variable units
+        """
+        #binary variables
+        if not unit_category:
+            return
+        if all(isinstance(item, tuple) for item in var_index_values):
+            index = pd.MultiIndex.from_tuples(var_index_values, names=index_list)
+        else:
+            index = pd.Index(var_index_values)
+        unit = self.unit_handling.ureg("dimensionless")
+        distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
+        for dim, dim_name in distinct_dims.items():
+            if dim in unit_category:
+                dim_unit = [key for key, value in self.unit_handling.base_units.items() if value == dim_name][0]
+                unit = unit * self.unit_handling.ureg(dim_unit)**unit_category[dim]
+        var_units = pd.Series(index=index)
+        #variable can have different units
+        if "energy_quantity" in unit_category:
+            #energy_quantity depends on carrier index level (e.g. flow_import)
+            if any("carrier" in carrier_name for carrier_name in var_units.index.names):
+                for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items():
+                    var_units[var_units.index.map(lambda x: any(carrier in str(level) for level in x))] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+            #energy_quantity depends on technology index level (e.g. capacity)
+            else:
+                for technology in self.optimization_setup.dict_elements["Technology"]:
+                    reference_carrier = technology.reference_carrier[0]
+                    energy_quantity = [energy_quantity for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items() if carrier == reference_carrier][0]
+                    var_units[var_units.index.map(lambda x: any(technology.name in str(level) for level in x))] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+        #variable has constant unit
+        else:
+            var_units[:] = unit.units
+        return var_units
 
 class Constraint(Component):
     def __init__(self, index_sets):
