@@ -77,10 +77,10 @@ class TransportTechnology(Technology):
             if "capex_per_distance_transport" in self.data_input.attribute_dict:
                 self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
                 self.capex_specific_transport = self.capex_per_distance_transport * self.distance
-            elif "capex_specific" in self.data_input.attribute_dict:
+            elif "capex_specific_transport" in self.data_input.attribute_dict:
                 self.capex_specific_transport = self.data_input.extract_input_data("capex_specific_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
             else:
-                raise AttributeError(f"The transport technology {self.name} has neither capex_per_distance_transport nor capex_specific attribute.")
+                raise AttributeError(f"The transport technology {self.name} has neither capex_per_distance_transport nor capex_specific_transport attribute.")
             self.capex_per_distance_transport = self.capex_specific_transport * 0.0
         if "opex_specific_fixed_per_distance" in self.data_input.attribute_dict:
             self.opex_specific_fixed_per_distance = self.data_input.extract_input_data("opex_specific_fixed_per_distance", index_sets=["set_edges", "set_time_steps_yearly"], unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
@@ -94,7 +94,7 @@ class TransportTechnology(Technology):
         """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
-        self.capex_specific = self.capex_specific_transport * fraction_year
+        self.capex_specific_transport = self.capex_specific_transport * fraction_year
         self.capex_per_distance_transport = self.capex_per_distance_transport * fraction_year
 
     def calculate_capex_of_single_capacity(self, capacity, index):
@@ -105,10 +105,10 @@ class TransportTechnology(Technology):
         :return: capex of single capacity
         """
         # TODO check existing capex of transport techs -> Hannes
-        if np.isnan(self.capex_specific[index[0]].iloc[0]):
+        if np.isnan(self.capex_specific_transport[index[0]].iloc[0]):
             return 0
         else:
-            return self.capex_specific[index[0]].iloc[0] * capacity
+            return self.capex_specific_transport[index[0]].iloc[0] * capacity
 
     ### --- getter/setter classmethods
     def set_reversed_edge(self, edge, reversed_edge):

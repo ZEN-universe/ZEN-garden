@@ -342,6 +342,17 @@ class OptimizationSetup(object):
                     dict_of_units[combined_key] = element.units[attribute_name]
                 else:
                     dict_of_units[combined_key] = element.units[attribute_name]["unit_in_base_units"].units
+            else:
+                #needed since these
+                if attribute_name == "capex_capacity_existing":
+                    dict_of_units[combined_key] = element.units["opex_specific_fixed"]["unit_in_base_units"].units
+                elif attribute_name == "capex_capacity_existing_energy":
+                    dict_of_units[combined_key] = element.units["opex_specific_fixed_energy"]["unit_in_base_units"].units
+                elif attribute_name == "capex_specific_transport":
+                    dict_of_units[combined_key] = element.units["opex_specific_fixed"]["unit_in_base_units"].units
+                elif attribute_name == "capex_per_distance_transport":
+                    length_base_unit = [key for key, value in self.energy_system.unit_handling.base_units.items() if value == "[length]"][0]
+                    dict_of_units[combined_key] = element.units["opex_specific_fixed"]["unit_in_base_units"].units / self.energy_system.unit_handling.ureg(length_base_unit)
             if len(attribute) > 1:
                 dict_of_attributes[combined_key] = attribute
                 attribute_is_series = True

@@ -60,8 +60,8 @@ class StorageTechnology(Technology):
         self.capacity_limit_energy = self.data_input.extract_input_data("capacity_limit_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
         self.capacity_existing_energy = self.data_input.extract_input_data("capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"], unit_category={"energy_quantity": 1})
         self.capacity_investment_existing_energy = self.data_input.extract_input_data("capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
-        self.capex_specific = self.data_input.extract_input_data("capex_specific", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": -1})
-        self.capex_specific_energy = self.data_input.extract_input_data("capex_specific_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
+        self.capex_specific_storage = self.data_input.extract_input_data("capex_specific_storage", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": -1})
+        self.capex_specific_storage_energy = self.data_input.extract_input_data("capex_specific_storage_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
         self.opex_specific_fixed_energy = self.data_input.extract_input_data("opex_specific_fixed_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
         self.convert_to_fraction_of_capex()
@@ -77,8 +77,8 @@ class StorageTechnology(Technology):
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         self.opex_specific_fixed_energy = self.opex_specific_fixed_energy * fraction_year
-        self.capex_specific = self.capex_specific * fraction_year
-        self.capex_specific_energy = self.capex_specific_energy * fraction_year
+        self.capex_specific_storage = self.capex_specific_storage * fraction_year
+        self.capex_specific_storage_energy = self.capex_specific_storage_energy * fraction_year
 
     def calculate_capex_of_single_capacity(self, capacity, index, storage_energy=False):
         """ this method calculates the annualized capex of a single existing capacity.
@@ -89,9 +89,9 @@ class StorageTechnology(Technology):
         :return: capex of single capacity
         """
         if storage_energy:
-            absolute_capex = self.capex_specific_energy[index[0]].iloc[0] * capacity
+            absolute_capex = self.capex_specific_storage_energy[index[0]].iloc[0] * capacity
         else:
-            absolute_capex = self.capex_specific[index[0]].iloc[0] * capacity
+            absolute_capex = self.capex_specific_storage[index[0]].iloc[0] * capacity
         return absolute_capex
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to StorageTechnology --- ###
@@ -114,10 +114,8 @@ class StorageTechnology(Technology):
         # self discharge
         optimization_setup.parameters.add_parameter(name="self_discharge", index_names=["set_storage_technologies", "set_nodes"], doc='self discharge of storage technologies', calling_class=cls)
         # capex specific
-        #TODO call initialize_component in add_parameter as soon as attribute names and component names are harmonised
-        optimization_setup.parameters.add_parameter(name="capex_specific_storage", data=optimization_setup.initialize_component(cls, "capex_specific",
-                                                    index_names=["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"],
-                                                    capacity_types=True)[:2], doc='specific capex of storage technologies')
+        optimization_setup.parameters.add_parameter(name="capex_specific_storage", index_names=["set_storage_technologies", "set_capacity_types", "set_nodes", "set_time_steps_yearly"], capacity_types=True, doc='specific capex of storage technologies', calling_class=cls)
+
     @classmethod
     def construct_vars(cls, optimization_setup):
         """ constructs the pe.Vars of the class <StorageTechnology>
