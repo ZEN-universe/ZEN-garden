@@ -48,8 +48,7 @@ def run_module(args=None):
 
     # change working directory to the directory of the config file
     config_path, config_file = os.path.split(args.config)
-
-
+    os.chdir(config_path)
     ### import the config
     if config_file.endswith(".py"):
         spec = importlib.util.spec_from_file_location("module", config_file)
@@ -59,15 +58,6 @@ def run_module(args=None):
     else:
         with open(args.config, "r") as f:
             config = default_config.Config(**json.load(f))
-    # change working directory to the directory of the config file
-    config_path, config_file = os.path.split(args.config)
-    os.chdir(config_path)
-
-    ### import the config
-    spec = importlib.util.spec_from_file_location("module", config_file)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    config = module.config
 
     ### get the job index
     job_index = args.job_index
