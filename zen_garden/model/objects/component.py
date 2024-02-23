@@ -195,7 +195,6 @@ class Component:
     """
     Class to prepare parameter, variable and constraint data such that it suits the pyomo prerequisites
     """
-    param_units = {}
     def __init__(self):
         """
         instantiate object of Component class
@@ -478,7 +477,10 @@ class Parameter(Component):
         """
 
         dict_of_units = {}
-        if data is None:
+        if name == "capex_specific_conversion":
+            component_data, index_list, dict_of_units = calling_class.get_capex_all_elements(optimization_setup=self.optimization_setup, index_names=index_names)
+            data = component_data, index_list
+        elif data is None:
             component_data, index_list, dict_of_units = self.optimization_setup.initialize_component(calling_class, name, index_names, set_time_steps, capacity_types)
             data = component_data, index_list
         if name not in self.docs.keys():
@@ -495,8 +497,7 @@ class Parameter(Component):
             # save additional parameters
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
             # save parameter units
-            self.units[name] = self.get_param_units(data, dict_of_units, index_list)
-            self.param_units[name] = self.units[name]
+            self.units[name] = self.get_param_units(data, dict_of_units, index_list, name)
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")
 
@@ -554,17 +555,20 @@ class Parameter(Component):
                 self.min_parameter_value["value"] = valmin
 
     @staticmethod
-    def get_param_units(data, dict_of_units, index_list):
+    def get_param_units(data, dict_of_units, index_list, name):
         """ creates series of units with identical multi-index as data has
 
         :param data: non default data of parameter and index_names
         :param dict_of_units: units of parameter
+        :param index_list: list of index names
         """
         if dict_of_units:
             if not isinstance(data, pd.Series):
                 return str(dict_of_units["unit_in_base_units"].units)
             else:
                 unit_series = pd.Series(index=data.index, dtype=str)
+                if name == "capex_specific_conversion":
+                    index_list = [index_list[0]] + index_list[2:]
                 unit_series = unit_series.rename_axis(index=index_list)
                 unit_series = unit_series.sort_index()
                 if "unit_in_base_units" in dict_of_units:

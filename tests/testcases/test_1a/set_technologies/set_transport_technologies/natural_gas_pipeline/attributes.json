@@ -60,10 +60,6 @@
     "default_value": 5e-05,
     "unit": "1/km"
   },
-  "transport_loss_factor": {
-    "default_value": 5e-05,
-    "unit": "1/km"
-  },
   "capex_per_distance_transport": {
     "default_value": 265.0,
     "unit": "Euro/km/MW"

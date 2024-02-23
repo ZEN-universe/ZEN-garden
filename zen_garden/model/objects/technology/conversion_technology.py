@@ -128,24 +128,25 @@ class ConversionTechnology(Technology):
         :return dict_of_attributes: returns dict of attribute values """
         class_elements = optimization_setup.get_all_elements(cls)
         dict_of_attributes = {}
+        dict_of_units = {}
         is_pwa_attribute = "capex_is_pwa"
         attribute_name_linear = "capex_specific"
 
         for element in class_elements:
             # extract for pwa
             if not getattr(element, is_pwa_attribute):
-                dict_of_attributes, _, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes, dict_of_units={})
+                dict_of_attributes, _, dict_of_units = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes, dict_of_units={})
             if not dict_of_attributes:
                 _, index_names = cls.create_custom_set(index_names, optimization_setup)
-                return (dict_of_attributes, index_names)
+                return dict_of_attributes, index_names, dict_of_units
         dict_of_attributes = pd.concat(dict_of_attributes, keys=dict_of_attributes.keys())
         if not index_names:
             logging.warning(f"Initializing the parameter capex without the specifying the index names will be deprecated!")
-            return dict_of_attributes
+            return dict_of_attributes, dict_of_units
         else:
             custom_set, index_names = cls.create_custom_set(index_names, optimization_setup)
             dict_of_attributes = optimization_setup.check_for_subindex(dict_of_attributes, custom_set)
-            return (dict_of_attributes, index_names)
+            return dict_of_attributes, index_names, dict_of_units
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
@@ -186,8 +187,7 @@ class ConversionTechnology(Technology):
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         # slope of linearly modeled capex
-        optimization_setup.parameters.add_parameter(name="capex_specific_conversion",
-            data=cls.get_capex_all_elements(optimization_setup, index_names=["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"]),
+        optimization_setup.parameters.add_parameter(name="capex_specific_conversion", index_names=["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"],
             doc="Parameter which specifies the slope of the capex if approximated linearly", calling_class=cls)
         # slope of linearly modeled conversion efficiencies
         optimization_setup.parameters.add_parameter(name="conversion_factor", index_names=["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"],
