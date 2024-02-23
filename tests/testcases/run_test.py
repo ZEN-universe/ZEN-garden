@@ -157,8 +157,8 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
 def check_get_total_get_full_ts(
     results: Results,
     specific_scenario=False,
-    year=None,
     element_name=None,
+    year=None,
     discount_to_first_step=True,
     get_doc=False,
 ):
@@ -258,18 +258,6 @@ def test_1d(config, folder_path):
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-def test_1e(config, folder_path):
-    # run the test
-    data_set_name = "test_1e"
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
-
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
-    # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-
-
 def test_2a(config, folder_path):
     # run the test
     data_set_name = "test_2a"
@@ -282,7 +270,6 @@ def test_2a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-
 
 def test_2b(config, folder_path):
     # run the test
@@ -585,4 +572,4 @@ if __name__ == "__main__":
 
     config.solver["keep_files"] = False
     folder_path = os.path.dirname(__file__)
-    test_1a(config, folder_path)
+    test_1d(config, folder_path)

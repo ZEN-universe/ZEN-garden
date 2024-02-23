@@ -188,14 +188,16 @@ class Results:
         self,
         scenario: Scenario,
         component: Component,
+        element_name: Optional[str] = None,
         year: Optional[int] = None,
         keep_raw: Optional[bool] = False,
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Calculates the total values of a component for a specific scenario.
 
-        :param scneario: Scenario
+        :param scenario: Scenario
         :param component: Component
+        :param element_name: Filter the results by a given element
         :param year: Filter the results by a given year
         :param keep_raw: Keep the raw values of the rolling horizon optimization
         """
@@ -206,11 +208,10 @@ class Results:
         else:
             years = [year]
 
-        if component.timestep_type is None:
-            return series
+        if element_name is not None:
+            series = series.loc[element_name]
 
-        if type(series.index) is not pd.MultiIndex:
-            # TODO still necessary?
+        if component.timestep_type is None:
             return series
 
         if component.timestep_type is TimestepType.yearly:
