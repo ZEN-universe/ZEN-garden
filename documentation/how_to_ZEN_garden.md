@@ -114,6 +114,8 @@ You can compare two ```Results``` objects by using the following class methods. 
 ### Run Tests
 The main purpose of the test files is their usage for the automated testing functionality of ZEN-garden. By comparing the variables' values gathered by simulating the testcases with some reference values, the correctness of the current framework code can be proved. Whenever you adapted some framework code, you can use the run test configuration to ensure that ZEN-garden does still function properly.
 
+#### How to define new test cases
+All testcases listed as functions in the run_tests.py script will be executed if a dataset with identical name is provided in the _ZEN-garden/tests/testcases_ directory. Besides the dataset itself, the values which serve as the reference for the variable comparison must be defiend in the _test_variables_readable.csv_ file which is also located in the _testcases_ folder.
 
 ## Parameters, variables, and constraints
 An important concept in ZEN-garden, or for optimization problems in general, is the definition of parameters, variables, and constraints. Parameters are used to store data that is immutable, meaning once a parameter's values are specified, they stay the same for the whole optimization (e.g., the hourly electricity demand per country). On the other hand, variables represent quantities whose values are computed by solving the optimization problem (e.g., the hourly electricity output flow of a gas turbine). By defining constraints, the parameters and variables can be related to each other such that they follow the rules of physical properties etc. (e.g., energy conservation at nodes). In the example optimization problem below, $c^Tx$ is the so-called objective function whose value is optimized (mostly minimizing the net present cost of the entire system), $x$ and $b$ are vectors containing all the variables and parameters, respectively, which are related by constraints of the form $Ax \leq b$. Additionally, some variables are defined as non-negative numbers, i.e., $x \geq 0$, as physical metrics like costs, power flows and energy etc. can only be positive.
@@ -150,6 +152,16 @@ More generally, the five unit dimensions _energy_quantity_, _time_, _money_, _di
 Equivalently, the energy\_quanity must be consistent per technology element as well.
 
 If there are inconsistent units in a dataset, an error is thrown indicating which units most probably are wrong.
+
+### How to define the unit dimensions when adding a new parameter/variable to the framework
+#### Parameters
+The argument ```unit_category``` specifies the unit dimensions of the parameter and must be passed to the ```extrect_input_data``` function, e.g., for _capacity_addition_min_ the ```unit_category``` is defined as ```{"energy_quantity": 1, "time": -1}``` since a technology capacity is per definition given as energy_quantity (e.g. MWh) per time (hour), i.e. e.g. MW
+```self.capacity_addition_min = self.data_input.extract_input_data("capacity_addition_min", index_sets=[], unit_category={"energy_quantity": 1, "time": -1})```
+
+#### Variables
+Since the units of variables are not defined by the user but are a consequence of the parameter units as explained above, their unit dimensions are specified in the ```add_variable``` functions of the class ```Variable```. Again, the argument ```unit_category``` is used to define the unit dimensionality.
+```variables.add_variable(model, name="capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), bounds=capacity_bounds, doc='size of installed technology at location l and time t', unit_category={"energy_quantity": 1, "time": -1})```
+
 ## Input data structure
 The input data of a dataset must be composed of the _system.py_ file and the three folders _set\_carriers_,  _set\_technologies_ and _energy\_system_.
 
