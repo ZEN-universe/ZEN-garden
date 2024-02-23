@@ -1,8 +1,4 @@
 {
-  "carbon_intensity": {
-    "default_value": 0.0,
-    "unit": "kilotons/GWh"
-  },
   "demand": {
     "default_value": 0.0,
     "unit": "GW"
@@ -34,5 +30,9 @@
   "price_import": {
     "default_value": 0.0,
     "unit": "kiloEuro/GWh"
+  },
+  "carbon_intensity_carrier": {
+    "default_value": 0.0,
+    "unit": "kilotons/GWh"
   }
 }

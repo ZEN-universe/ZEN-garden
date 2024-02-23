@@ -164,15 +164,15 @@ class ConversionTechnology(Technology):
             dependent_carriers[tech].remove(reference_carrier[tech][0])
         # input carriers of technology
         optimization_setup.sets.add_set(name="set_input_carriers", data=input_carriers,
-                                        doc="set of carriers that are an input to a specific conversion technology. Dimensions: set_conversion_technologies",
+                                        doc="set of carriers that are an input to a specific conversion technology. Indexed by set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # output carriers of technology
         optimization_setup.sets.add_set(name="set_output_carriers", data=output_carriers,
-                                        doc="set of carriers that are an output to a specific conversion technology. Dimensions: set_conversion_technologies",
+                                        doc="set of carriers that are an output to a specific conversion technology. Indexed by set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # dependent carriers of technology
         optimization_setup.sets.add_set(name="set_dependent_carriers", data=dependent_carriers,
-                                        doc="set of carriers that are an output to a specific conversion technology.\n\t Dimensions: set_conversion_technologies",
+                                        doc="set of carriers that are an output to a specific conversion technology. Indexed by set_conversion_technologies",
                                         index_set="set_conversion_technologies")
 
         # add sets of the child classes

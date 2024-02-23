@@ -36,10 +36,6 @@
       "natural_gas"
     ]
   },
-  "carbon_intensity": {
-    "default_value": 0.0,
-    "unit": "kilotons/GWh"
-  },
   "construction_time": {
     "default_value": 0.0,
     "unit": "1"
@@ -111,5 +107,9 @@
   "capacity_addition_unbounded": {
     "default_value": 0.0,
     "unit": "GW"
+  },
+  "carbon_intensity_technology": {
+    "default_value": 0.0,
+    "unit": "kilotons/GWh"
   }
 }

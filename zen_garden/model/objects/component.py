@@ -273,7 +273,7 @@ class IndexSet(Component):
         Adds a set to the IndexSets (this set it not indexed)
         :param data: The data used for the init
         :param doc: The docstring of the set
-        :param index_set: The name of the index set if the set itself is indexed
+        :param index_set: The name of the index set if the set it self is indexed
         """
 
         if name in self.sets:
@@ -282,7 +282,7 @@ class IndexSet(Component):
         # added data and docs
         self.sets[name] = ZenSet(data=data, name=name, doc=doc, index_set=index_set)
         self.coords_dataset = self.coords_dataset.assign_coords({name: np.array(list(self.sets[name].superset))})
-        self.docs[name] = doc
+        self.docs[name] = self.compile_doc_string(doc,name=name, index_list= [index_set] if index_set is not None else [])
         if index_set is not None:
             self.index_sets[name] = index_set
 
@@ -521,15 +521,14 @@ class Parameter(Component):
         if isinstance(data, pd.Series):
             abs_val = data.abs()
             abs_val = abs_val[(abs_val != 0) & (abs_val != np.inf)]
-            if not abs_val.empty:
+            if not abs_val.empty and not abs_val.isna().all():
                 if isinstance(abs_val.index,pd.MultiIndex):
-                    idxmax = name + "_" + "_".join(map(str, abs_val.index[abs_val.argmax()]))
-                    idxmin = name + "_" + "_".join(map(str, abs_val.index[abs_val.argmin()]))
+                    idxmax = name + "_" + "_".join(map(str, abs_val.index[abs_val.argmax(skipna=True)]))
+                    idxmin = name + "_" + "_".join(map(str, abs_val.index[abs_val.argmin(skipna=True)]))
                 else:
-                    idxmax = f"{name}_{abs_val.index[abs_val.argmax()]}"
-                    idxmin = f"{name}_{abs_val.index[abs_val.argmin()]}"
+                    idxmax = f"{name}_{abs_val.index[abs_val.argmax(skipna=True)]}"
+                    idxmin = f"{name}_{abs_val.index[abs_val.argmin(skipna=True)]}"
                 valmax = abs_val.max()
-
                 valmin = abs_val.min()
             else:
                 return
@@ -565,14 +564,15 @@ class Parameter(Component):
             if not isinstance(data, pd.Series):
                 return str(dict_of_units["unit_in_base_units"].units)
             else:
-                unit_series = pd.Series(index=data.index)
+                unit_series = pd.Series(index=data.index, dtype=str)
                 unit_series = unit_series.rename_axis(index=index_list)
+                unit_series = unit_series.sort_index()
                 if "unit_in_base_units" in dict_of_units:
                     unit_series[:] = dict_of_units["unit_in_base_units"].units
-                    return unit_series
+                    return unit_series.astype(str)
             for key, value in dict_of_units.items():
                 unit_series.loc[pd.IndexSlice[key]] = value
-            return unit_series
+            return unit_series.astype(str)
 
     @staticmethod
     def convert_to_dict(data):
@@ -683,7 +683,7 @@ class Variable(Component):
         :param index_list: list of index names
         :return: series of variable units
         """
-        #binary variables
+        # binary variables
         if not unit_category:
             return
         if all(isinstance(item, tuple) for item in var_index_values):
@@ -696,23 +696,30 @@ class Variable(Component):
             if dim in unit_category:
                 dim_unit = [key for key, value in self.unit_handling.base_units.items() if value == dim_name][0]
                 unit = unit * self.unit_handling.ureg(dim_unit)**unit_category[dim]
-        var_units = pd.Series(index=index)
-        #variable can have different units
+        var_units = pd.Series(index=index,dtype=str)
+        # variable can have different units
         if "energy_quantity" in unit_category:
-            #energy_quantity depends on carrier index level (e.g. flow_import)
+            # energy_quantity depends on carrier index level (e.g. flow_import)
             if any("carrier" in carrier_name for carrier_name in var_units.index.names):
+                carrier_level = [level for level in var_units.index.names if "carrier" in level][0]
                 for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items():
-                    var_units[var_units.index.map(lambda x: any(carrier in str(level) for level in x))] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
-            #energy_quantity depends on technology index level (e.g. capacity)
+                    carrier_idx = var_units.index.get_level_values(carrier_level) == carrier
+                    var_units[carrier_idx] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+            # energy_quantity depends on technology index level (e.g. capacity)
             else:
+                tech_level = [level for level in var_units.index.names if "technologies" in level][0]
                 for technology in self.optimization_setup.dict_elements["Technology"]:
                     reference_carrier = technology.reference_carrier[0]
                     energy_quantity = [energy_quantity for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items() if carrier == reference_carrier][0]
-                    var_units[var_units.index.map(lambda x: any(technology.name in str(level) for level in x))] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
-        #variable has constant unit
+                    tech_idx = var_units.index.get_level_values(tech_level) == technology.name
+                    var_units[tech_idx] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+                if "set_capacity_types" in var_units.index.names:
+                    energy_idx = var_units.index.get_level_values("set_capacity_types") == "energy"
+                    var_units[energy_idx] = var_units[energy_idx].apply(lambda u: (u*self.unit_handling.ureg("hour")).units)
+        # variable has constant unit
         else:
             var_units[:] = unit.units
-        return var_units
+        return var_units.astype(str)
 
 class Constraint(Component):
     def __init__(self, index_sets):
