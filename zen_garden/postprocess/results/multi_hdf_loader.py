@@ -10,11 +10,10 @@ from zen_garden.model.default_config import Analysis, System, Solver
 import json
 import os
 import h5py  # type: ignore
-from typing import Optional, Any
+from typing import Optional, Any,Literal
 import pandas as pd
 import numpy as np
 from functools import cache
-
 
 file_names_maps = {
     "param_dict.h5": ComponentType.parameter,
@@ -50,12 +49,12 @@ def get_index_names(h5_group: h5py.Group) -> list[str]:
 
 
 @cache
-def get_df_form_path(path: str, component_name: str) -> "pd.Series[Any]":
+def get_df_from_path(path: str, component_name: str, data_type: Literal["dataframe","units"] = "dataframe") -> "pd.Series[Any]":
     """
     Helper-function that returns a Pandas series given the path of a file and the
     component name.
     """
-    pd_read = pd.read_hdf(path, component_name + "/dataframe")
+    pd_read = pd.read_hdf(path, component_name + f"/{data_type}")
 
     if isinstance(pd_read, pd.DataFrame):
         ans = pd_read.squeeze()
@@ -85,6 +84,7 @@ class Component(AbstractComponent):
         ts_name: Optional[str],
         file_name: str,
         doc: str,
+        has_units: bool
     ) -> None:
         self._component_type = component_type
         self._name = name
@@ -92,6 +92,7 @@ class Component(AbstractComponent):
         self._file_name = file_name
         self._ts_name = ts_name
         self._doc = doc
+        self._has_units = has_units
 
     @property
     def component_type(self) -> ComponentType:
@@ -117,6 +118,9 @@ class Component(AbstractComponent):
     def doc(self) -> str:
         return self._doc
 
+    @property
+    def has_units(self) -> bool:
+        return self._has_units
 
 class Scenario(AbstractScenario):
     """
@@ -199,6 +203,12 @@ class MultiHdfLoader(AbstractLoader):
         first_scenario = self._scenarios[first_scenario_name]
         return first_scenario.system.use_rolling_horizon
 
+    @property
+    def has_duals(self) -> bool:
+        first_scenario_name = next(iter(self._scenarios.keys()))
+        first_scenario = self._scenarios[first_scenario_name]
+        return first_scenario.system.use_duals
+
     def _combine_dataseries(
         self,
         component: AbstractComponent,
@@ -258,7 +268,11 @@ class MultiHdfLoader(AbstractLoader):
         return series
 
     def get_component_data(
-        self, scenario: AbstractScenario, component: AbstractComponent, keep_raw: bool = False
+        self,
+        scenario: AbstractScenario,
+        component: AbstractComponent,
+        keep_raw: bool = False,
+        data_type: Literal["dataframe","units"] = "dataframe"
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Implementation of the abstract method. Returns the actual component values given
@@ -276,8 +290,8 @@ class MultiHdfLoader(AbstractLoader):
                 file_path = os.path.join(
                     scenario.path, subfolder_name, component.file_name
                 )
-                pd_series_dict[mf_idx] = get_df_form_path(
-                    file_path, component.name
+                pd_series_dict[mf_idx] = get_df_from_path(
+                    file_path, component.name, data_type
                 )
             if not keep_raw:
                 combined_dataseries = self._combine_dataseries(
@@ -291,7 +305,7 @@ class MultiHdfLoader(AbstractLoader):
         else:
             # If solution does not use rolling horizon, simply load the HDF file.
             file_path = os.path.join(scenario.path, component.file_name)
-            ans = get_df_form_path(file_path, component.name)
+            ans = get_df_from_path(file_path, component.name,data_type)
             return ans
 
     def _read_scenarios(self) -> dict[str, AbstractScenario]:
@@ -365,12 +379,11 @@ class MultiHdfLoader(AbstractLoader):
                 time_index = set(index_names).intersection(set(time_steps_map.keys()))
                 timestep_name = time_index.pop() if len(time_index) > 0 else None
                 timestep_type = time_steps_map.get(timestep_name, None)
-                doc = ""
 
-                for key, index in enumerate(
-                    h5_file[component_name + "/docstring"]["index"][:]
-                ):
-                    doc += f"{index}: {h5_file[component_name + '/docstring']['values'][key]} \n"
+                doc = str(np.char.decode(h5_file[component_name + "/docstring"].attrs.get("value")))
+                doc = '\n'.join([f'{v.split(":")[0]}: {v.split(":")[1]}' for v in doc.split(";")])
+
+                has_units = "units" in h5_file[component_name]
 
                 ans[component_name] = Component(
                     component_name,
@@ -379,6 +392,7 @@ class MultiHdfLoader(AbstractLoader):
                     timestep_name,
                     file_name,
                     doc,
+                    has_units
                 )
 
         return ans

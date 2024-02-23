@@ -268,7 +268,7 @@ class DataInput:
         :return: attribute value, attribute unit
         """
         if attribute_name not in attribute_dict:
-            raise AttributeError(f"Attribute {attribute_name} doesn't exist in input data of {self.element.name} and must therefore be defined")
+            raise AttributeError(f"Attribute {attribute_name} does not exist in input data of {self.element.name}")
         try:
             attribute_value = float(attribute_dict[attribute_name]["default_value"])
             attribute_unit = attribute_dict[attribute_name]["unit"]
@@ -409,7 +409,7 @@ class DataInput:
         :return df_output: return existing capacity and existing lifetime """
         index_list, index_name_list = self.construct_index_list(index_sets, None)
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
-        df_output = pd.Series(index=multiidx, data=0)
+        df_output = pd.Series(index=multiidx, data=0,dtype=int)
         # if no existing capacities
         if not self.system["use_capacities_existing"]:
             return df_output
@@ -817,9 +817,26 @@ class DataInput:
         for location in set_location:
             if location in df_output.index.get_level_values(index_name_list[0]):
                 values = df_input[column].loc[location].tolist()
-                if isinstance(values, int) or isinstance(values, float):
+                if isinstance(values, int):
                     index = [0]
+                    is_float = False
+                    int_check = True
+                elif isinstance(values, float):
+                    index = [0]
+                    is_float = True
+                    int_check = values.is_integer()
                 else:
                     index = list(range(len(values)))
+                    is_float = any(isinstance(v, float) for v in values)
+                    int_check = all([float(v).is_integer() for v in values])
+                # check that correct dtype of values
+                if df_output.dtype == int and is_float:
+                    if int_check:
+                        if isinstance(values, list):
+                            values = [int(v) for v in values]
+                        else:
+                            values = int(values)
+                    else:
+                        raise ValueError(f"Values in {column} are not integers, but should be")
                 df_output.loc[location, index] = values
         return df_output

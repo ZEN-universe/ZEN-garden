@@ -40,6 +40,7 @@ class UnitHandling:
         self.get_base_units(define_ton_as_metric_ton)
         # dict of element attribute values
         self.dict_attribute_values = {}
+        self.carrier_energy_quantities = {}
 
     def get_base_units(self, define_ton_as_metric_ton=True):
         """ gets base units of energy system
@@ -260,14 +261,14 @@ class UnitHandling:
         :param get_multiplier: bool whether multiplier should be returned or not
         :return: multiplier to convert input_unit to base  units, pint Quantity of input_unit converted to base units
         """
-        #convert attribute unit into unit combination of base units
+        # convert attribute unit into unit combination of base units
         combined_unit = None
         attribute_unit_in_base_units = self.ureg("")
         if input_unit != "1" and not pd.isna(input_unit):
             combined_unit, base_combination = self.calculate_combined_unit(input_unit, return_combination=True)
             for unit, power in zip(base_combination.index, base_combination):
                 attribute_unit_in_base_units *= self.ureg(unit) ** power
-        #calculate the multiplier to convert the attribute unit into base units
+        # calculate the multiplier to convert the attribute unit into base units
         if get_multiplier:
             multiplier = self.get_unit_multiplier(input_unit, attribute_name, path, combined_unit=combined_unit)
             return multiplier, attribute_unit_in_base_units
@@ -338,6 +339,7 @@ class UnitHandling:
             # check if units are consistent
             self.assert_unit_consistency(elements, energy_quantity_units, item,optimization_setup, reference_carrier.name, unit_dict)
         logging.info(f"Parameter unit consistency is fulfilled!")
+        self.save_carrier_energy_quantities(optimization_setup)
 
     def _check_for_power_power_conversion_factor(self, energy_quantity_units):
         """
@@ -574,6 +576,16 @@ class UnitHandling:
         if "energy_quantity" in unit_category:
             unit = unit ** unit_category["energy_quantity"]
         return {attribute_name: unit}
+
+    def save_carrier_energy_quantities(self, optimization_setup):
+        """
+        saves energy_quantity units of carriers after consistency checks in order to assign units to the variables later on
+
+        :param optimization_setup: optimization setup object
+        :return: dict of carrier units
+        """
+        for carrier in optimization_setup.dict_elements["Carrier"]:
+            self.carrier_energy_quantities[carrier.name] = self._remove_non_energy_units(carrier.units["demand"], attribute_name=None)[None]
 
     def set_base_unit_combination(self, input_unit, attribute):
         """ converts the input unit to the corresponding base unit

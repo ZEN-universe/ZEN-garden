@@ -1020,10 +1020,14 @@ class HDFPandasSerializer(LazyDict):
                 # make a proper multi index to save memory
                 store.put(key, value)
                 store.get_storer(key).attrs.type = "pandas"
-            elif isinstance(value, (float, str, int)):
+            elif isinstance(value, (float,str,int)):
                 store.put(key, pd.Series([], dtype=int))
                 store.get_storer(key).attrs.value = value
                 store.get_storer(key).attrs.type = "scalar"
+            # elif isinstance(value,str):
+            #     # encode string to bytes
+            #     store.put(key, pd.Series([np.char.encode(value)], dtype=type(value)))
+            #     store.get_storer(key).attrs.type = "scalar"
             elif isinstance(value, (list, tuple)) or isinstance(value, np.ndarray) and value.ndim == 1:
                 store.put(key, pd.Series(value))
                 store.get_storer(key).attrs.type = "vector"

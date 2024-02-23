@@ -285,10 +285,11 @@ class OptimizationSetup(object):
 
         class_elements = self.get_all_elements(cls=cls)
         dict_of_attributes = {}
+        dict_of_units = {}
         attribute_is_series = False
         for element in class_elements:
             if not capacity_types:
-                dict_of_attributes, attribute_is_series_temp = self.append_attribute_of_element_to_dict(element, attribute_name, dict_of_attributes)
+                dict_of_attributes, attribute_is_series_temp, dict_of_units = self.append_attribute_of_element_to_dict(element, attribute_name, dict_of_attributes, dict_of_units)
                 if attribute_is_series_temp:
                     attribute_is_series = attribute_is_series_temp
             # if extracted for both capacity types
@@ -296,15 +297,15 @@ class OptimizationSetup(object):
                 for capacity_type in self.system["set_capacity_types"]:
                     # append energy only for storage technologies
                     if capacity_type == self.system["set_capacity_types"][0] or element.name in self.system["set_storage_technologies"]:
-                        dict_of_attributes, attribute_is_series_temp = self.append_attribute_of_element_to_dict(element, attribute_name, dict_of_attributes, capacity_type)
+                        dict_of_attributes, attribute_is_series_temp, dict_of_units = self.append_attribute_of_element_to_dict(element, attribute_name, dict_of_attributes, dict_of_units, capacity_type)
                         if attribute_is_series_temp:
                             attribute_is_series = attribute_is_series_temp
         if return_attribute_is_series:
-            return dict_of_attributes, attribute_is_series
+            return dict_of_attributes, dict_of_units, attribute_is_series
         else:
             return dict_of_attributes
 
-    def append_attribute_of_element_to_dict(self, element, attribute_name, dict_of_attributes, capacity_type=None):
+    def append_attribute_of_element_to_dict(self, element, attribute_name, dict_of_attributes, dict_of_units, capacity_type=None):
         """ get attribute values of all elements in this class
 
         :param element: element of class
@@ -321,14 +322,14 @@ class OptimizationSetup(object):
         if not hasattr(element, attribute_name):
             # if attribute is time series that does not exist
             if attribute_name in element.raw_time_series and element.raw_time_series[attribute_name] is None:
-                return dict_of_attributes, None
+                return dict_of_attributes, None, dict_of_units
             else:
                 raise AssertionError(f"Element {element.name} does not have attribute {attribute_name}")
         attribute = getattr(element, attribute_name)
         assert not isinstance(attribute, pd.DataFrame), f"Not yet implemented for pd.DataFrames. Wrong format for element {element.name}"
         # add attribute to dict_of_attributes
         if attribute is None:
-            return dict_of_attributes, False
+            return dict_of_attributes, False, dict_of_units
         elif isinstance(attribute, dict):
             dict_of_attributes.update({(element.name,) + (key,): val for key, val in attribute.items()})
         elif isinstance(attribute, pd.Series) and "pwa" not in attribute_name:
@@ -336,6 +337,22 @@ class OptimizationSetup(object):
                 combined_key = (element.name, capacity_type)
             else:
                 combined_key = element.name
+            if attribute_name in element.units:
+                if attribute_name in ["conversion_factor", "retrofit_flow_coupling_factor"]:
+                    dict_of_units[combined_key] = element.units[attribute_name]
+                else:
+                    dict_of_units[combined_key] = element.units[attribute_name]["unit_in_base_units"].units
+            else:
+                #needed since these
+                if attribute_name == "capex_capacity_existing":
+                    dict_of_units[combined_key] = element.units["opex_specific_fixed"]["unit_in_base_units"].units
+                elif attribute_name == "capex_capacity_existing_energy":
+                    dict_of_units[combined_key] = element.units["opex_specific_fixed_energy"]["unit_in_base_units"].units
+                elif attribute_name == "capex_specific_transport":
+                    dict_of_units[combined_key] = element.units["opex_specific_fixed"]["unit_in_base_units"].units
+                elif attribute_name == "capex_per_distance_transport":
+                    length_base_unit = [key for key, value in self.energy_system.unit_handling.base_units.items() if value == "[length]"][0]
+                    dict_of_units[combined_key] = element.units["opex_specific_fixed"]["unit_in_base_units"].units / self.energy_system.unit_handling.ureg(length_base_unit)
             if len(attribute) > 1:
                 dict_of_attributes[combined_key] = attribute
                 attribute_is_series = True
@@ -358,7 +375,7 @@ class OptimizationSetup(object):
                 dict_of_attributes[(element.name, capacity_type)] = attribute
             else:
                 dict_of_attributes[element.name] = attribute
-        return dict_of_attributes, attribute_is_series
+        return dict_of_attributes, attribute_is_series, dict_of_units
 
     def get_attribute_of_specific_element(self, cls, element_name: str, attribute_name: str):
         """ get attribute of specific element in class
@@ -383,8 +400,8 @@ class OptimizationSetup(object):
         self.model = lp.Model(solver_dir=self.solver["solver_dir"])
         # we need to reset the components to not carry them over
         self.sets = IndexSet()
-        self.variables = Variable(self.sets)
-        self.parameters = Parameter(self.sets)
+        self.variables = Variable(self)
+        self.parameters = Parameter(self)
         self.constraints = Constraint(self.sets)
         # define and construct components of self.model
         Element.construct_model_components(self)
@@ -645,6 +662,9 @@ class OptimizationSetup(object):
         # if calling class is EnergySystem
         if calling_class == EnergySystem:
             component = getattr(self.energy_system, component_name)
+            dict_of_units = {}
+            if component_name in self.energy_system.units:
+                dict_of_units = self.energy_system.units[component_name]
             if index_names is not None:
                 index_list = index_names
             elif set_time_steps is not None:
@@ -661,7 +681,7 @@ class OptimizationSetup(object):
             if index_names is None:
                 raise ValueError(f"Index names for {component_name} not specified")
             custom_set, index_list = calling_class.create_custom_set(index_names, self)
-            component_data, attribute_is_series = self.get_attribute_of_all_elements(calling_class, component_name, capacity_types=capacity_types, return_attribute_is_series=True)
+            component_data, dict_of_units, attribute_is_series = self.get_attribute_of_all_elements(calling_class, component_name, capacity_types=capacity_types, return_attribute_is_series=True)
             if np.size(custom_set):
                 if attribute_is_series:
                     component_data = pd.concat(component_data, keys=component_data.keys())
@@ -670,7 +690,7 @@ class OptimizationSetup(object):
                 component_data = self.check_for_subindex(component_data, custom_set)
         if isinstance(component_data,pd.Series) and not isinstance(component_data.index,pd.MultiIndex):
             component_data.index = pd.MultiIndex.from_product([component_data.index.to_list()])
-        return component_data, index_list
+        return component_data, index_list, dict_of_units
 
     def check_for_subindex(self, component_data, custom_set):
         """ this method checks if the custom_set can be a subindex of component_data and returns subindexed component_data
