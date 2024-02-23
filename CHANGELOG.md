@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.0.3] - 2024-02-14 ❤️
+### Added
+- Flexible `results.py` structure with abstract solution loader
+- `comparison` module
+
+### Removed
+- standard plots
+  
 ## [v1.0.2] - 2024-01-29
 ### Added
 - compare parameters with different shapes in `r.compare_model_parameters()`
