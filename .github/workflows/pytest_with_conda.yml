@@ -63,7 +63,7 @@ jobs:
         with:
             miniforge-variant: Mambaforge
             miniforge-version: latest
-            activate-environment: zen-garden-linopy
+            activate-environment: zen-garden
             use-mamba: true
 
       # date for the cache
