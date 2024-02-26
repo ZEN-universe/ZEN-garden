@@ -65,8 +65,15 @@ class Technology(Element):
         self.raw_time_series["opex_specific_variable"] = self.data_input.extract_input_data("opex_specific_variable", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
         # non-time series input data
         self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1, "time": -1})
-        self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[set_location_super, "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1, "time": -1})
-        self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity_technology", index_sets=[set_location], unit_category={"emissions": 1, "energy_quantity": -1})
+        self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super",
+                                                                       index_sets=[set_location_super,
+                                                                                   "set_time_steps_yearly"],
+                                                                       time_steps="set_time_steps_yearly",
+                                                                       unit_category={"energy_quantity": 1, "time": -1})
+        self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity_technology",
+                                                                              index_sets=[set_location],
+                                                                              unit_category={"emissions": 1,
+                                                                                             "energy_quantity": -1})
         # LCA parameters
         if self.energy_system.system['load_lca_factors']:
             self.technology_lca_factors = self.data_input.extract_input_data('technology_lca_factors', index_sets=[set_location, 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps="set_time_steps_yearly")

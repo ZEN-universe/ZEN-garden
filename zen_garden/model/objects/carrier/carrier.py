@@ -97,7 +97,13 @@ class Carrier(Element):
         # lca parameters
         if optimization_setup.system['load_lca_factors']:
             optimization_setup.parameters.add_parameter(name='carrier_lca_factors',
-                                                        data=optimization_setup.initialize_component(cls, 'carrier_lca_factors', index_names=['set_carriers', 'set_nodes', 'set_lca_impact_categories', 'set_time_steps_yearly']),
+                                                        data=optimization_setup.initialize_component(cls,
+                                                                                                     'carrier_lca_factors',
+                                                                                                     index_names=[
+                                                                                                         'set_carriers',
+                                                                                                         'set_nodes',
+                                                                                                         'set_lca_impact_categories',
+                                                                                                         'set_time_steps_yearly']),
                                                         doc='Parameters for the environmental impacts of each carrier')
 
     @classmethod
