@@ -149,7 +149,7 @@ class System(Subscriptable):
 
 class SolverOptions(Subscriptable):
     logfile: str = ".//outputs//logs//GurobiLogFile.log"
-    MIPGap: Optional[str] = None
+    MIPGap: Optional[float] = None
     TimeLimit: Optional[int] = None
     Method: Optional[Any] = (None,)
     NodeMethod: Optional[int] = None
@@ -177,7 +177,7 @@ class Solver(Subscriptable):
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
     }
-    rounding_decimal_points_units: int = 4
+    rounding_decimal_points_units: int = 6
     round_parameters: bool = True
     rounding_decimal_points_capacity: int = 4
     analyze_numerics: bool = True

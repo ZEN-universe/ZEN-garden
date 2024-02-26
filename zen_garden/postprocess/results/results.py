@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Optional, Any
+from typing import Optional, Any, Literal
 from zen_garden.postprocess.results.solution_loader import (
     SolutionLoader,
     Scenario,
@@ -14,21 +14,23 @@ import importlib
 import os
 import logging
 import json
-
+from pathlib import Path
 
 class Results:
     def __init__(self, path: str):
         self.solution_loader: SolutionLoader = MultiHdfLoader(path)
         self.has_scenarios = len(self.solution_loader.scenarios) > 1
         self.has_rh = self.solution_loader.has_rh
+        first_scenario = next(iter(self.solution_loader.scenarios.values()))
+        self.name = Path(first_scenario.analysis.dataset).name
 
     def __str__(self):
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         return f"Results of '{first_scenario.analysis.dataset}'"
 
     def get_df(
-        self, component_name: str, scenario_name: Optional[str] = None
-    ) -> dict[str, "pd.DataFrame | pd.Series[Any]"]:
+        self, component_name: str, scenario_name: Optional[str] = None, data_type: Literal["dataframe","units"] = "dataframe"
+    ) -> Optional[dict[str, "pd.DataFrame | pd.Series[Any]"]]:
         """
         Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
 
@@ -37,6 +39,9 @@ class Results:
         :return: The corresponding dataframe
         """
         component = self.solution_loader.components[component_name]
+
+        if data_type == "units" and not component.has_units:
+            return None
 
         scenario_names = (
             self.solution_loader.scenarios.keys()
@@ -49,7 +54,7 @@ class Results:
         for scenario_name in scenario_names:
             scenario = self.solution_loader.scenarios[scenario_name]
             ans[scenario_name] = self.solution_loader.get_component_data(
-                scenario, component
+                scenario, component, data_type=data_type
             )
 
         return ans
@@ -190,9 +195,9 @@ class Results:
         """
         Calculates the total values of a component for a specific scenario.
 
-        :param scneario: Scenario
+        :param scenario: Scenario
         :param component: Component
-        :param element_name: Filter results by a given element name
+        :param element_name: Filter the results by a given element
         :param year: Filter the results by a given year
         :param keep_raw: Keep the raw values of the rolling horizon optimization
         """
@@ -203,10 +208,10 @@ class Results:
         else:
             years = [year]
 
-        if component.timestep_type is None:
-            return series
+        if element_name is not None:
+            series = series.loc[element_name]
 
-        if type(series.index) is not pd.MultiIndex:
+        if component.timestep_type is None or type(series.index) is not pd.MultiIndex:
             return series
 
         if component.timestep_type is TimestepType.yearly:
@@ -225,10 +230,10 @@ class Results:
         for y in years:
             timesteps = self.solution_loader.get_timesteps(scenario, component, int(y))
             try:
-                ans.insert(int(y), y, total_value[timesteps].sum(axis=1,skipna=False))  # type: ignore
+                ans.insert(len(ans.columns), y, total_value[timesteps].sum(axis=1,skipna=False))  # type: ignore
             except KeyError:
                 timestep_list = [i for i in timesteps if i in total_value]
-                ans.insert(year, year, total_value[timestep_list].sum(axis=1,skipna=False))  # type: ignore # noqa
+                ans.insert(len(ans.columns), year, total_value[timestep_list].sum(axis=1,skipna=False))  # type: ignore # noqa
 
         if "mf" in ans.index.names:
             ans = ans.reorder_levels([i for i in ans.index.names if i != "mf"] + ["mf"]).sort_index(axis=0)
@@ -391,6 +396,29 @@ class Results:
         )
         return _duals
 
+    def get_unit(self, component_name: str, scenario_name: Optional[str] = None,droplevel:bool=True) -> Optional[dict[str, "pd.DataFrame | pd.Series[Any]"]]:
+        """
+        Extracts the unit of a given Component. If no scenario is given, a random one is taken.
+
+        :param component_name: Name of the component
+        :param scenario_name: Name of the scenario
+        :param droplevel: Drop the location and time levels of the multiindex
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        res = self.get_df(component_name, scenario_name=scenario_name, data_type="units")
+        if res is None:
+            return None
+        units = res[scenario_name]
+        if droplevel:
+            # TODO make more flexible
+            loc_idx = ["set_nodes","set_location","set_edges"]
+            time_idx = ["set_time_steps_yearly","set_time_steps_operation","set_time_steps_storage"]
+            drop_idx = pd.Index(loc_idx+time_idx).intersection(units.index.names)
+            units.index = units.index.droplevel(drop_idx.to_list())
+            units = units.drop_duplicates()
+        return units
+
     def get_system(self, scenario_name: Optional[str] = None) -> System:
         """
         Extracts the System config of a given Scenario. If no scenario is given, a random one is taken.
@@ -420,6 +448,14 @@ class Results:
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
         return self.solution_loader.scenarios[scenario_name].solver
+
+    def get_doc(self, component: str) -> str:
+        """
+        Extracts the documentation of a given Component.
+
+        :param component: Name of the component
+        """
+        return self.solution_loader.components[component].doc
 
     def get_years(self, scenario_name: Optional[str] = None) -> list[int]:
         """

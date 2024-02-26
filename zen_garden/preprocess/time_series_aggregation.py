@@ -148,7 +148,7 @@ class TimeSeriesAggregation(object):
                 # reorder
                 df_aggregated_ts.index.names = [self.header_set_time_steps]
                 df_aggregated_ts.columns.names = index_names
-                df_aggregated_ts = df_aggregated_ts.stack(index_names)
+                df_aggregated_ts = df_aggregated_ts.stack(index_names,future_stack=True)
                 df_aggregated_ts.index = df_aggregated_ts.index.reorder_levels(index_names + [self.header_set_time_steps])
                 setattr(element, ts, df_aggregated_ts)
                 element.aggregated = True
@@ -234,9 +234,7 @@ class TimeSeriesAggregation(object):
             if raw_ts[ts] is None:
                 continue
             raw_ts[ts].name = ts
-            index_names = list(raw_ts[ts].index.names)
-            index_names.remove(header_set_time_steps)
-            df_ts = raw_ts[ts].unstack(level=index_names)
+            df_ts = raw_ts[ts].unstack(level=header_set_time_steps).T
             # select time series that are not constant (rows have more than 1 unique entries)
             df_ts_non_constant = df_ts[df_ts.columns[df_ts.apply(lambda column: len(np.unique(column)) != 1)]]
             if (element.name,ts) in self.excluded_ts:
@@ -352,7 +350,6 @@ class TimeSeriesAggregation(object):
         if self.conducted_tsa:
             # calculate connected storage levels, i.e., time steps that are constant for
             idx_last_connected_storage_level = np.append(np.flatnonzero(np.diff(sequence_time_steps)), len(sequence_time_steps) - 1)
-            # empty setTimeStep
             time_steps_storage = []
             time_steps_storage_duration = {}
             time_steps_energy2power = {}

@@ -21,6 +21,14 @@ test_1a,none,flow_export,"('natural_gas', 'CH', 0)",0
 test_1a,none,flow_export,"('natural_gas', 'DE', 0)",0
 test_1a,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0
 test_1a,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
+test_1c,none,flow_import,"('natural_gas', 'CH', 0)",21.255
+test_1c,none,flow_import,"('natural_gas', 'DE', 0)",100
+test_1c,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",10
+test_1c,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
+test_1c,none,flow_transport_loss,"('natural_gas_pipeline', 'CH-DE', 0)",0.25496
+test_1c,none,flow_transport_loss,"('natural_gas_pipeline', 'DE-CH', 0)",0
+test_1c,none,cost_capex,"('natural_gas_pipeline','power', 'CH-DE', 0)",0.15426
+test_1c,none,cost_capex,"('natural_gas_pipeline','power', 'DE-CH', 0)",0
 test_1d,none,flow_import,"('natural_gas', 'CH', 0)",26.00002
 test_1d,none,flow_import,"('natural_gas', 'DE', 0)",100.00000
 test_1d,none,flow_transport,"('natural_gas_pipeline', 'CH-DE', 0)",5

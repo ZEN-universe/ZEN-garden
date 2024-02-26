@@ -1,9 +1,10 @@
-name: zen-garden-linopy-test
+name: zen-garden
 channels:
   - conda-forge
   - gurobi
 dependencies:
   - python=3.11
+  - xarray=2023.8.0
   - cython
   - pytest
   - pip
@@ -17,11 +18,10 @@ dependencies:
   - pint
   - matplotlib
   - entsoe-py
-  - gurobi=10.*
+  - gurobi
 #  - h5py
   - pytables
   - pydantic
-  - xarray=2023.8.0
   - jupyter
   - utm
   - grid-strategy
@@ -37,4 +37,4 @@ dependencies:
       - -e .
 
 # conda env create -f zen_garden_env.yml
-# conda remove --name zen-garden-linopy --all
+# conda remove --name zen-garden --all
