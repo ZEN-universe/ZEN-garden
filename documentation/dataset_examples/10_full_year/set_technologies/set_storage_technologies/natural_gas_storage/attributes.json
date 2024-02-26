@@ -36,7 +36,7 @@
       "natural_gas"
     ]
   },
-  "carbon_intensity": {
+  "carbon_intensity_technology": {
     "default_value": 0.0,
     "unit": "kilotons/GWh"
   },
@@ -68,7 +68,7 @@
     "default_value": 0.0,
     "unit": "1"
   },
-  "capex_specific": {
+  "capex_specific_storage": {
     "default_value": 238.68,
     "unit": "Euro/kW"
   },
@@ -104,7 +104,7 @@
     "default_value": 55.54,
     "unit": "Euro/MWh"
   },
-  "capex_specific_energy": {
+  "capex_specific_storage_energy": {
     "default_value": 3.43,
     "unit": "Euro/kWh"
   },

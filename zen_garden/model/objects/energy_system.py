@@ -230,40 +230,27 @@ class EnergySystem:
         cls = self.__class__
         parameters = self.optimization_setup.parameters
         # operational time step duration
-        parameters.add_parameter(name="time_steps_operation_duration",
-                                 data=self.optimization_setup.initialize_component(cls, "time_steps_operation_duration", set_time_steps="set_time_steps_operation"),
-                                 doc="Parameter which specifies the duration of each operational time step")
+        parameters.add_parameter(name="time_steps_operation_duration", set_time_steps="set_time_steps_operation", doc="Parameter which specifies the duration of each operational time step", calling_class=cls)
         # storage time step duration
-        parameters.add_parameter(name="time_steps_storage_duration",
-                                 data=self.optimization_setup.initialize_component(cls, "time_steps_storage_duration", set_time_steps="set_time_steps_storage"),
-                                 doc="Parameter which specifies the duration of each storage time step")
+        parameters.add_parameter(name="time_steps_storage_duration", set_time_steps="set_time_steps_storage", doc="Parameter which specifies the duration of each storage time step", calling_class=cls)
         # discount rate
-        parameters.add_parameter(name="discount_rate",
-             data=self.optimization_setup.initialize_component(cls, "discount_rate"),
-             doc='Parameter which specifies the discount rate of the energy system')
+        parameters.add_parameter(name="discount_rate", doc='Parameter which specifies the discount rate of the energy system', calling_class=cls)
         # carbon emissions limit
-        parameters.add_parameter(name="carbon_emissions_annual_limit", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_annual_limit", set_time_steps="set_time_steps_yearly"),
-            doc='Parameter which specifies the total limit on carbon emissions')
+        parameters.add_parameter(name="carbon_emissions_annual_limit", set_time_steps="set_time_steps_yearly", doc='Parameter which specifies the total limit on carbon emissions', calling_class=cls)
         # carbon emissions budget
-        parameters.add_parameter(name="carbon_emissions_budget", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_budget"),
-            doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon')
+        parameters.add_parameter(name="carbon_emissions_budget", doc='Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon', calling_class=cls)
         # carbon emissions budget
-        parameters.add_parameter(name="carbon_emissions_cumulative_existing", data=self.optimization_setup.initialize_component(cls, "carbon_emissions_cumulative_existing"), doc='Parameter which specifies the total previous carbon emissions')
+        parameters.add_parameter(name="carbon_emissions_cumulative_existing", doc='Parameter which specifies the total previous carbon emissions', calling_class=cls)
         # carbon price
-        parameters.add_parameter(name="price_carbon_emissions", data=self.optimization_setup.initialize_component(cls, "price_carbon_emissions", set_time_steps="set_time_steps_yearly"),
-            doc='Parameter which specifies the yearly carbon price')
+        parameters.add_parameter(name="price_carbon_emissions", set_time_steps="set_time_steps_yearly", doc='Parameter which specifies the yearly carbon price', calling_class=cls)
         # carbon price of budget overshoot
-        parameters.add_parameter(name="price_carbon_emissions_budget_overshoot", data=self.optimization_setup.initialize_component(cls,"price_carbon_emissions_budget_overshoot"),
-                                 doc='Parameter which specifies the carbon price for budget overshoot')
+        parameters.add_parameter(name="price_carbon_emissions_budget_overshoot", doc='Parameter which specifies the carbon price for budget overshoot', calling_class=cls)
         # carbon price of annual overshoot
-        parameters.add_parameter(name="price_carbon_emissions_annual_overshoot", data=self.optimization_setup.initialize_component(cls, "price_carbon_emissions_annual_overshoot"),
-                                 doc='Parameter which specifies the carbon price for annual overshoot')
+        parameters.add_parameter(name="price_carbon_emissions_annual_overshoot", doc='Parameter which specifies the carbon price for annual overshoot', calling_class=cls)
         # carbon price of overshoot
-        parameters.add_parameter(name="market_share_unbounded", data=self.optimization_setup.initialize_component(cls, "market_share_unbounded"),
-                                 doc='Parameter which specifies the unbounded market share')
+        parameters.add_parameter(name="market_share_unbounded", doc='Parameter which specifies the unbounded market share', calling_class=cls)
         # carbon price of overshoot
-        parameters.add_parameter(name="knowledge_spillover_rate", data=self.optimization_setup.initialize_component(cls, "knowledge_spillover_rate"),
-                                 doc='Parameter which specifies the knowledge spillover rate')
+        parameters.add_parameter(name="knowledge_spillover_rate", doc='Parameter which specifies the knowledge spillover rate', calling_class=cls)
 
     def construct_vars(self):
         """ constructs the pe.Vars of the class <EnergySystem> """
@@ -271,25 +258,25 @@ class EnergySystem:
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model
         # carbon emissions
-        variables.add_variable(model, name="carbon_emissions_annual", index_sets=sets["set_time_steps_yearly"], doc="annual carbon emissions of energy system")
+        variables.add_variable(model, name="carbon_emissions_annual", index_sets=sets["set_time_steps_yearly"], doc="annual carbon emissions of energy system", unit_category={"emissions": 1})
         # cumulative carbon emissions
         variables.add_variable(model, name="carbon_emissions_cumulative", index_sets=sets["set_time_steps_yearly"],
-                               doc="cumulative carbon emissions of energy system over time for each year")
+                               doc="cumulative carbon emissions of energy system over time for each year", unit_category={"emissions": 1})
         # carbon emission overshoot
         variables.add_variable(model, name="carbon_emissions_budget_overshoot", index_sets=sets["set_time_steps_yearly"], bounds=(0, np.inf),
-                               doc="overshoot carbon emissions of energy system at the end of the time horizon")
+                               doc="overshoot carbon emissions of energy system at the end of the time horizon", unit_category={"emissions": 1})
         # carbon emission overshoot
         variables.add_variable(model, name="carbon_emissions_annual_overshoot", index_sets=sets["set_time_steps_yearly"], bounds=(0, np.inf),
-                               doc="overshoot of the annual carbon emissions limit of energy system")
+                               doc="overshoot of the annual carbon emissions limit of energy system", unit_category={"emissions": 1})
         # cost of carbon emissions
         variables.add_variable(model, name="cost_carbon_emissions_total", index_sets=sets["set_time_steps_yearly"],
-                               doc="total cost of carbon emissions of energy system")
+                               doc="total cost of carbon emissions of energy system", unit_category={"money": 1})
         # costs
         variables.add_variable(model, name="cost_total", index_sets=sets["set_time_steps_yearly"],
-                               doc="total cost of energy system")
+                               doc="total cost of energy system", unit_category={"money": 1})
         # net_present_cost
         variables.add_variable(model, name="net_present_cost", index_sets=sets["set_time_steps_yearly"],
-                               doc="net_present_cost of energy system")
+                               doc="net_present_cost of energy system", unit_category={"money": 1})
 
     def construct_constraints(self):
         """ constructs the pe.Constraints of the class <EnergySystem> """

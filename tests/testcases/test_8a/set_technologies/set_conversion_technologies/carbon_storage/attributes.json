@@ -69,9 +69,9 @@
     "default_value": 0.0,
     "unit": "1"
   },
-  "carbon_intensity": {
+  "carbon_intensity_technology": {
     "default_value": -1.0,
-    "unit": "kton/(kton*hour)"
+    "unit": "kton/kton"
   },
   "max_diffusion_rate": {
     "default_value": "inf",
