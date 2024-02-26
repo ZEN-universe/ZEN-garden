@@ -211,7 +211,7 @@ class Results:
         if element_name is not None:
             series = series.loc[element_name]
 
-        if component.timestep_type is None:
+        if component.timestep_type is None or type(series.index) is not pd.MultiIndex:
             return series
 
         if component.timestep_type is TimestepType.yearly:
