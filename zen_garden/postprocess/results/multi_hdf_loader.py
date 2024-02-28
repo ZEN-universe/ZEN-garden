@@ -381,7 +381,8 @@ class MultiHdfLoader(AbstractLoader):
                 timestep_type = time_steps_map.get(timestep_name, None)
 
                 doc = str(np.char.decode(h5_file[component_name + "/docstring"].attrs.get("value")))
-                doc = '\n'.join([f'{v.split(":")[0]}: {v.split(":")[1]}' for v in doc.split(";")])
+                if ";" in doc and ":" in doc:
+                    doc = '\n'.join([f'{v.split(":")[0]}: {v.split(":")[1]}' for v in doc.split(";")])
 
                 has_units = "units" in h5_file[component_name]
 
