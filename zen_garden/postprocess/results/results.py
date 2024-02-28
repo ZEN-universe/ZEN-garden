@@ -416,7 +416,7 @@ class Results:
             time_idx = ["set_time_steps_yearly","set_time_steps_operation","set_time_steps_storage"]
             drop_idx = pd.Index(loc_idx+time_idx).intersection(units.index.names)
             units.index = units.index.droplevel(drop_idx.to_list())
-            units = units.drop_duplicates()
+            units = units[~units.index.duplicated()]
         return units
 
     def get_system(self, scenario_name: Optional[str] = None) -> System:
