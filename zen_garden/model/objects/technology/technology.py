@@ -121,7 +121,7 @@ class Technology(Element):
             self.set_technologies_existing = np.append(self.set_technologies_existing, index_new_technology)
             # add new remaining lifetime
             lifetime = self.lifetime_existing.unstack()
-            lifetime[index_new_technology] = self.lifetime[0]
+            lifetime[index_new_technology] = self.lifetime[0] - system["interval_between_years"]
             self.lifetime_existing = lifetime.stack()
 
             for type_capacity in list(set(new_capacity_addition.index.get_level_values(0))):
@@ -985,12 +985,13 @@ class TechnologyRules(GenericRule):
                                                       + knowledge_spillover_rate * (self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time].sum("set_location") - self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]))
                                                      * (1 - knowledge_depreciation_rate) ** (delta_time + self.parameters.lifetime.loc[tech].item() - self.parameters.lifetime_existing.loc[tech, set_locations, existing_time])).sum("set_technologies_existing")
                 # round to avoid numerical errors
-                if self.optimization_setup.solver["round_parameters"]:
-                    rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_capacity"])
-                    term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > rounding_value, 0)
+                # if self.optimization_setup.solver["round_parameters"]:
+                #     rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_capacity"])
+                #     term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > rounding_value, 0)
 
-                horizon_time = self.variables.coords["set_time_steps_yearly"][self.sets["set_time_steps_yearly"][0]: end_time + 1]
-                if len(horizon_time) > 1:
+                horizon_time = np.arange(self.sets["set_time_steps_yearly"][0], end_time + 1)
+                horizon_time = self.variables.coords["set_time_steps_yearly"][self.variables.coords["set_time_steps_yearly"].isin(horizon_time)]
+                if len(horizon_time) >= 1:
                     term_total_capacity_knowledge_addition = ((self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time]  # add spillover from other regions
                                                           + knowledge_spillover_rate * (self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time].sum("set_location") - self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time]))
                                                          * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time))).sum("set_time_steps_yearly")
@@ -1002,7 +1003,7 @@ class TechnologyRules(GenericRule):
                 other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
                 if time != self.optimization_setup.energy_system.set_time_steps_yearly[0]:
                     term_total_capacity_all_techs_var = self.variables["capacity"].loc[other_techs, :, set_locations, time-1].sum("set_technologies")
-                    term_total_capacity_all_techs_param = self.parameters.existing_capacities.loc[tech,:,set_locations,time].where(False)
+                    term_total_capacity_all_techs_param = xr.zeros_like(self.parameters.existing_capacities.loc[tech,:,set_locations,time])
                 else:
                     term_total_capacity_all_techs_param = self.parameters.existing_capacities.loc[other_techs,:,set_locations,time].sum("set_technologies")
                     term_total_capacity_all_techs_var = self.variables["capacity"].loc[tech, :, set_locations, time].where(False)
@@ -1017,7 +1018,8 @@ class TechnologyRules(GenericRule):
 
                 # build the rhs
                 rhs = xr.zeros_like(self.parameters.existing_capacities).loc[tech, :,:, time]
-                rhs.loc[:, set_locations] += ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_existing # add initial market share until which the diffusion rate is unbounded
+                rhs.loc[:, set_locations] += ((1 + self.parameters.max_diffusion_rate.loc[tech, time].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_existing
+                # add initial market share until which the diffusion rate is unbounded
                 rhs.loc[:, set_locations] += self.parameters.market_share_unbounded * term_total_capacity_all_techs_param + self.parameters.capacity_addition_unbounded.loc[tech]
                 rhs *= mask
 
@@ -1080,12 +1082,13 @@ class TechnologyRules(GenericRule):
                 term_total_capacity_knowledge_existing = (self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]
                                                      * (1 - knowledge_depreciation_rate) ** (delta_time + self.parameters.lifetime.loc[tech].item() - self.parameters.lifetime_existing.loc[tech, set_locations, existing_time])).sum(["set_technologies_existing","set_location"])
                 # round to avoid numerical errors
-                if self.optimization_setup.solver["round_parameters"]:
-                    rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_capacity"])
-                    term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > rounding_value, 0)
+                # if self.optimization_setup.solver["round_parameters"]:
+                #     rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_capacity"])
+                #     term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > rounding_value, 0)
 
-                horizon_time = self.variables.coords["set_time_steps_yearly"][self.sets["set_time_steps_yearly"][0]: end_time + 1]
-                if len(horizon_time) > 1:
+                horizon_time = np.arange(self.sets["set_time_steps_yearly"][0], end_time + 1)
+                horizon_time = self.variables.coords["set_time_steps_yearly"][self.variables.coords["set_time_steps_yearly"].isin(horizon_time)]
+                if len(horizon_time) >= 1:
                     term_total_capacity_knowledge_addition = (self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_time]
                         * (1 - knowledge_depreciation_rate) ** (interval_between_years * (end_time - horizon_time))).sum(["set_time_steps_yearly","set_location"])
                 else:
@@ -1096,7 +1099,7 @@ class TechnologyRules(GenericRule):
                 other_techs = [other_tech for other_tech in set_technology if self.sets["set_reference_carriers"][other_tech][0] == reference_carrier]
                 if time != self.optimization_setup.energy_system.set_time_steps_yearly[0]:
                     term_total_capacity_all_techs_var = self.variables["capacity"].loc[other_techs, :,set_locations, time - 1].sum(["set_technologies","set_location"])
-                    term_total_capacity_all_techs_param = self.parameters.existing_capacities.loc[tech, :,set_locations, time].where(False).sum("set_location")
+                    term_total_capacity_all_techs_param = xr.zeros_like(self.parameters.existing_capacities.loc[tech,:,set_locations,time]).sum("set_location")
                 else:
                     term_total_capacity_all_techs_param = self.parameters.existing_capacities.loc[other_techs, :, set_locations, time].sum(["set_technologies","set_location"])
                     term_total_capacity_all_techs_var = self.variables["capacity"].loc[tech, :, set_locations,time].where(False).sum("set_location")
