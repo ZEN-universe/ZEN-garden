@@ -45,6 +45,8 @@ class Subscriptable(BaseModel, extra="allow"):
             self.i += 1
             return ans
         else:
+            del self.i
+            del self.fix_keys
             raise StopIteration
 
 

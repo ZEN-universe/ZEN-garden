@@ -66,6 +66,7 @@ class Results:
         year: Optional[int] = None,
         discount_to_first_step: bool = True,
         element_name: Optional[str] = None,
+        keep_raw: Optional[bool] = False,
     ) -> "pd.Series[Any]":
         """Calculates the full timeseries for a given element per scenario
 
@@ -74,11 +75,12 @@ class Results:
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :param year: year of which full time series is selected
         :param element_name: Filter results by a given element
+        :param keep_raw: Keep the raw values of the rolling horizon optimization
         """
         assert component.timestep_type is not None
-        series = self.solution_loader.get_component_data(scenario, component)
+        series = self.solution_loader.get_component_data(scenario, component, keep_raw=keep_raw)
 
-        if element_name is not None:
+        if element_name is not None and element_name in series.index.get_level_values(0):
             series = series.loc[element_name]
 
         if year is None:
@@ -152,6 +154,7 @@ class Results:
         discount_to_first_step: bool = True,
         year: Optional[int] = None,
         element_name: Optional[str] = None,
+        keep_raw: Optional[bool] = False,
     ) -> "pd.DataFrame | pd.Series[Any]":
         """Calculates the full timeseries for a given element
 
@@ -160,6 +163,7 @@ class Results:
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :param year: year of which full time series is selected
         :param element_name: Filter results by a given element
+        :param keep_raw: Keep the raw values of the rolling horizon optimization
         """
         if scenario_name is None:
             scenario_names = list(self.solution_loader.scenarios)
@@ -179,6 +183,7 @@ class Results:
                 discount_to_first_step=discount_to_first_step,
                 year=year,
                 element_name=element_name,
+                keep_raw=keep_raw,
             )
 
         return self._concat_scenarios_dict(scenarios_dict)
@@ -256,6 +261,7 @@ class Results:
         :param element_name: Filter the results by a given element
         :param year: Filter the results by a given year
         :param scenario_name: Filter the results by a given scenario
+        :param keep_raw: Keep the raw values of the rolling horizon optimization
         """
         if scenario_name is None:
             scenario_names = list(self.solution_loader.scenarios)
@@ -369,6 +375,7 @@ class Results:
         element_name: Optional[str] = None,
         year: Optional[int] = None,
         discount_to_first_step=True,
+        keep_raw: Optional[bool] = False,
     ) -> Optional["pd.DataFrame | pd.Series[Any]"]:
         """extracts the dual variables of a constraint
 
@@ -377,8 +384,9 @@ class Results:
         :param element_name: Name of Element
         :param year: Year
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
+        :param keep_raw: Keep the raw values of the rolling horizon optimization
         """
-        if not r.get_solver(scenario_name=scenario_name).add_duals:
+        if not self.get_solver(scenario_name=scenario_name).add_duals:
             logging.warning("Duals are not calculated. Skip.")
             return None
 
@@ -393,6 +401,7 @@ class Results:
             element_name=element_name,
             year=year,
             discount_to_first_step=discount_to_first_step,
+            keep_raw=keep_raw,
         )
         return _duals
 
