@@ -23,7 +23,7 @@ class Results:
         self.has_rh = self.solution_loader.has_rh
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name
-
+        a = 1
     def __str__(self):
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         return f"Results of '{first_scenario.analysis.dataset}'"
