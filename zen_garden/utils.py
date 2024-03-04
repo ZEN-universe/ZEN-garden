@@ -1288,22 +1288,24 @@ class StringUtils:
         return scenario_name,subfolder,param_map
 
     @staticmethod
-    def get_model_name(analysis):
+    def get_model_name(analysis,system):
         """
         return model name while conducting some tests
-        :param analysis: analysis of optimziation
+        :param analysis: analysis of optimization
+        :param system: system of optimization
         :return: model name
         :return: output folder
         """
         model_name = os.path.basename(analysis["dataset"])
-        out_folder = StringUtils.get_output_folder(analysis)
+        out_folder = StringUtils.get_output_folder(analysis,system)
         return model_name,out_folder
 
     @staticmethod
-    def get_output_folder(analysis):
+    def get_output_folder(analysis,system):
         """
         return model name while conducting some tests
-        :param analysis: analysis of optimziation
+        :param analysis: analysis of optimization
+        :param system: system of optimization
         :return: output folder
         """
         model_name = os.path.basename(analysis["dataset"])
@@ -1315,12 +1317,14 @@ class StringUtils:
             logging.warning(f"The output folder '{out_folder}' already exists")
             if analysis["overwrite_output"]:
                 logging.warning("Existing files will be overwritten!")
-                for filename in os.listdir(out_folder):
-                    file_path = os.path.join(out_folder, filename)
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        os.unlink(file_path)
-                    elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)
+                if not system.conduct_scenario_analysis:
+                    # TODO fix for scenario analysis, shared folder for all scenarios, so not robust for parallel process
+                    for filename in os.listdir(out_folder):
+                        file_path = os.path.join(out_folder, filename)
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
         return out_folder
 
 class ScenarioUtils:
