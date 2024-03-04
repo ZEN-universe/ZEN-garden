@@ -14,17 +14,18 @@ The flow charts describe the energy system setup for each dataset by visualising
 5. [5\_reduced\_import\_availability:](#5_reduced_import_availability) additional example of defining time-/space-dependent parameters, resulting in the need for a transport technology
 6. [6\_PWA\_nonlinear\_capex:](#6_PWA_nonlinear_capex) approximate non-linear capex by piece-wise affine (PWA) approximation
 7. [7\_multiple\_time\_steps\_per\_year:](#7_multiple_time_steps_per_year) optimize multiple time steps per year
-8. [8\_reduced\_import\_availability\_yearly:](#8_reduced_import_availability_yearl) additional example of defining time-/space-dependent parameters, resulting in the need for a storage technology
+8. [8\_reduced\_import\_availability\_yearly:](#8_reduced_import_availability_yearly) additional example of defining time-/space-dependent parameters, resulting in the need for a storage technology
 9. [9\_time\_series\_aggregation:](#9_time_series_aggregation) using time series aggregation (TSA) to reduce computational complexity of optimizing larger multi-time step problems
 10. [10\_full\_year:](#10_full_year) optimization of an hourly resolved full year
 11. [11\_yearly\_variation:](#11_yearly_variation) specifying yearly parameter changes more easily
 12. [12\_myopic\_foresight:](#12_myopic_foresight) optimize using myopic foresight instead of perfect foresight
 13. [13\_brown\_field:](#13_brown_field) include existing capacities from before the start of the optimization
 14. [14\_multi\_scenario:](#14_multi_scenario) optimize several scenarios with differences in parameter values more efficiently
-15. [15\_multiple\_output\_carriers\_conversion\_techs:](#15_multiple_output_carriers_convers) define conversion technologies with multiple output carriers
-16. [16\_multiple\_input\_carriers\_conversion\_techs:](#16_multiple_input_carriers_conversi) define conversion technologies with multiple input carriers
+15. [15\_multiple\_output\_carriers\_conversion\_techs:](#15_multiple_output_carriers_conversion_techs) define conversion technologies with multiple output carriers
+16. [16\_multiple\_input\_carriers\_conversion\_techs:](#16_multiple_input_carriers_conversion_techs) define conversion technologies with multiple input carriers
 17. [17\_yearly\_parameter\_missing\_values:](#17_yearly_parameter_missing_values) define yearly parameter and use interpolation feature to get values at time indices without specified value
 18. [18\_interpolation\_off:](#18_interpolation_off) switch off the interpolation feature in order to use the default values at time indices without specified value
+19. 
 
 ## 1\_base\_case
 In this example, we will investigate a simple energy system to supply the heat demand in Switzerland (CH) and Germany (DE). Only natural gas (NG) boilers are available, which consume natural gas, imported at each node (country). Furthermore, the optimizer can build NG storages and pipelines (Figure 1).
@@ -553,7 +554,7 @@ Similarly, the effect of the introduced carbon emissions limit can be seen in th
 
 _Figure 74: Total yearly output flows of conversion technologies shift from carbon-emitting to carbon-neutral technologies over years._
 
-# 18\_interpolation\_off
+# 18\_interpolation\_offhttps://github.com/ZEN-universe/ZEN-garden/blob/development_ZENx_LK/documentation/dataset_creation_tutorial.md#8_reduced_import_availability_yearl
 
 To switch off the interpolation feature described in the previous example (needed if the years without specified input data should use the default value from the attributes file), the _parameters\_interpolation\_off.csv_ file must be used. By stating the parameter names whose values should not be interpolated at missing years the feature can be turned off (Figure 75).
 
@@ -576,3 +577,8 @@ By comparing the total carbon emissions of this dataset (where the interpolation
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/eb557d1d-7cac-4816-9edc-2d6190486648)
 
 _Figure 77: Total carbon emissions without interpolation (left) in year 1 differ from those with interpolation (right)_
+
+# 19\_retrofitting\_technologies
+
+![19_retrofitting_technologies](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/fc50b6c9-bea6-46c4-b0db-023e8a5f5837)
+
