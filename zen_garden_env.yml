@@ -1,9 +1,10 @@
-name: zen-garden-linopy
+name: zen-garden
 channels:
   - conda-forge
   - gurobi
 dependencies:
   - python=3.11
+  - xarray=2023.8.0
   - cython
   - pytest
   - pip
@@ -31,4 +32,4 @@ dependencies:
       - -e .
 
 # conda env create -f zen_garden_env.yml
-# conda remove --name zen-garden-linopy --all
+# conda remove --name zen-garden --all

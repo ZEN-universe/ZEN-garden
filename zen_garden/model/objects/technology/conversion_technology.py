@@ -165,15 +165,15 @@ class ConversionTechnology(Technology):
             dependent_carriers[tech].remove(reference_carrier[tech][0])
         # input carriers of technology
         optimization_setup.sets.add_set(name="set_input_carriers", data=input_carriers,
-                                        doc="set of carriers that are an input to a specific conversion technology. Dimensions: set_conversion_technologies",
+                                        doc="set of carriers that are an input to a specific conversion technology. Indexed by set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # output carriers of technology
         optimization_setup.sets.add_set(name="set_output_carriers", data=output_carriers,
-                                        doc="set of carriers that are an output to a specific conversion technology. Dimensions: set_conversion_technologies",
+                                        doc="set of carriers that are an output to a specific conversion technology. Indexed by set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # dependent carriers of technology
         optimization_setup.sets.add_set(name="set_dependent_carriers", data=dependent_carriers,
-                                        doc="set of carriers that are an output to a specific conversion technology.\n\t Dimensions: set_conversion_technologies",
+                                        doc="set of carriers that are an output to a specific conversion technology. Indexed by set_conversion_technologies",
                                         index_set="set_conversion_technologies")
 
         # add sets of the child classes
@@ -233,6 +233,10 @@ class ConversionTechnology(Technology):
                     else:
                         conversion_factor_lower = params.conversion_factor.loc[tech, carrier, node_set].min().data
                         conversion_factor_upper = params.conversion_factor.loc[tech, carrier, node_set].max().data
+                        if 0 in conversion_factor_upper:
+                            _rounding_ts = optimization_setup.solver.rounding_decimal_points_ts
+                            raise ValueError(f"Maximum conversion factor of {tech} for carrier {carrier} is 0.\nOne reason might be that the conversion factor is too small (1e-{_rounding_ts}), so that it is rounded to 0 after the time series aggregation.")
+
                     lower.loc[tech, carrier, ...] = model.variables["capacity"].lower.loc[tech, "power", node_set, time_step_year].data * conversion_factor_lower
                     upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data * conversion_factor_upper
 

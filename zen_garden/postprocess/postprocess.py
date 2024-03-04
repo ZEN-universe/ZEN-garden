@@ -215,7 +215,7 @@ class Postprocess:
             # create dataframe
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
             # update dict
-            doc = set.doc
+            doc = self.sets.docs[set.name]
             data_frames[index_name[0]] = self._transform_df(df,doc)
 
         self.write_file(self.name_dir.joinpath('set_dict'), data_frames)
@@ -265,6 +265,7 @@ class Postprocess:
             else:
                 index_list = []
                 doc = None
+                units = None
 
             # create dataframe
             df = arr.to_dataframe("value").dropna()
@@ -330,18 +331,18 @@ class Postprocess:
         """
 
         # This we only need to save once
-        #check if MF within scenario analysis
+        # check if MF within scenario analysis
         if isinstance(self.subfolder, tuple):
-            #check if there are sub_scenarios (parent must then be the name of the parent scenario)
+            # check if there are sub_scenarios (parent must then be the name of the parent scenario)
             if not self.subfolder[0].parent == Path("."):
                 fname = self.name_dir.parent.parent.parent.joinpath('scenarios')
             else:
-                #MF with in scenario analysis without sub-scenarios
+                # MF with in scenario analysis without sub-scenarios
                 fname = self.name_dir.parent.parent.joinpath('scenarios')
-        #only MF or only scenario analysis
+        # only MF or only scenario analysis
         elif self.subfolder != Path(""):
             fname = self.name_dir.parent.joinpath('scenarios')
-        #neither MF nor scenario analysis
+        # neither MF nor scenario analysis
         else:
             fname = self.name_dir.joinpath('scenarios')
         self.write_file(fname, self.scenarios, format="json")
@@ -400,6 +401,7 @@ class Postprocess:
         """
         if self.output_format == "h5":
             # No need to transform the dataframe to json
+            # doc = self._doc_to_df(doc)
             if units is not None:
                 dataframe = {"dataframe": df, "docstring": doc, "units": units}
             else:
@@ -412,6 +414,17 @@ class Postprocess:
                 dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
                              "docstring": doc}
         return dataframe
+
+    def _doc_to_df(self, doc):
+        """Transforms the docstring to a dataframe
+
+        :param doc: doc string
+        :return: pd.Series of the docstring
+        """
+        if doc is not None:
+            return pd.Series(doc.split(";")).str.split(":",expand=True).set_index(0).squeeze()
+        else:
+            return pd.DataFrame()
 
     def flatten_dict(self, dictionary):
         """Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can
