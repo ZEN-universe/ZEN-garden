@@ -45,6 +45,8 @@ class Subscriptable(BaseModel, extra="allow"):
             self.i += 1
             return ans
         else:
+            del self.i
+            del self.fix_keys
             raise StopIteration
 
 
@@ -148,16 +150,7 @@ class System(Subscriptable):
 
 
 class SolverOptions(Subscriptable):
-    logfile: str = ".//outputs//logs//GurobiLogFile.log"
-    MIPGap: Optional[float] = None
-    TimeLimit: Optional[int] = None
-    Method: Optional[Any] = (None,)
-    NodeMethod: Optional[int] = None
-    BarHomogeneous: Optional[int] = None
-    Threads: Optional[int] = None
-    Crossover: Optional[int] = None
-    ScaleFlag: Optional[int] = None
-
+    pass
 
 class Solver(Subscriptable):
     name: str = "glpk"

@@ -1,3 +1,5 @@
+import re
+
 from zen_garden.postprocess.results.solution_loader import (
     Component as AbstractComponent,
     Scenario as AbstractScenario,
@@ -282,7 +284,8 @@ class MultiHdfLoader(AbstractLoader):
         if self.has_rh:
             # If solution has rolling horizon, load the values for all the foresight
             # steps and combine them.
-            subfolder_names = [i for i in os.listdir(scenario.path) if "MF_" in i]
+            pattern = re.compile(r'^MF_\d+$')
+            subfolder_names = list(filter(lambda x: pattern.match(x), os.listdir(scenario.path)))
             pd_series_dict = {}
 
             for subfolder_name in subfolder_names:
@@ -381,7 +384,8 @@ class MultiHdfLoader(AbstractLoader):
                 timestep_type = time_steps_map.get(timestep_name, None)
 
                 doc = str(np.char.decode(h5_file[component_name + "/docstring"].attrs.get("value")))
-                doc = '\n'.join([f'{v.split(":")[0]}: {v.split(":")[1]}' for v in doc.split(";")])
+                if ";" in doc and ":" in doc:
+                    doc = '\n'.join([f'{v.split(":")[0]}: {v.split(":")[1]}' for v in doc.split(";")])
 
                 has_units = "units" in h5_file[component_name]
 

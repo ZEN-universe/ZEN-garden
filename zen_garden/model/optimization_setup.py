@@ -541,7 +541,7 @@ class OptimizationSetup(object):
         """Create model instance by assigning parameter values and instantiating the sets """
         solver_name = self.solver["name"]
         # remove options that are None
-        solver_options = {key: self.solver["solver_options"][key] for key in self.solver["solver_options"] if self.solver["solver_options"][key] is not None}
+        solver_options = {key: self.solver.solver_options[key] for key in self.solver.solver_options if self.solver.solver_options[key] is not None}
 
         logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily
@@ -576,7 +576,7 @@ class OptimizationSetup(object):
         if self.model.termination_condition == 'infeasible' and self.solver["name"] == "gurobi":
             logging.info("The optimization is infeasible")
             # ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
-            output_folder = StringUtils.get_output_folder(self.analysis)
+            output_folder = StringUtils.get_output_folder(self.analysis,self.system)
             ilp_file = os.path.join(output_folder,"infeasible_model_IIS.ilp")
             logging.info(f"Writing parsed IIS to {ilp_file}")
             parser = IISConstraintParser(ilp_file, self.model)
