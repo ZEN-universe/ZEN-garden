@@ -579,6 +579,18 @@ By comparing the total carbon emissions of this dataset (where the interpolation
 _Figure 77: Total carbon emissions without interpolation (left) in year 1 differ from those with interpolation (right)_
 
 # 19\_retrofitting\_technologies
-
+Retrofitting technologies are a child class of the conversion technologies since they can be used to retrofit conversion technologies to account for additional input/output carriers not yet considered. The main purpose is to model carbon caputre units which are retrofitted onto existing carbon-emitting conversion technologies. In this example dataset, a carbon capure (CC) device is retrofitted to absorb the CO2 emitted by the CHP plant. The capured CO2 is then stored in an underground carbon storage (CS) location.
 ![19_retrofitting_technologies](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/fc50b6c9-bea6-46c4-b0db-023e8a5f5837)
 
+The retrofitting technology carbon capture must be defined inside the extra directory _set_retrofitting_technologies_ located in _set_conversion_technologies_. To allow the optimizer to build carbon capture units, the technology must be selected in the _system_ file.
+
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/2ff64af5-2265-446b-b359-5b2f629b5f65)
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/4ff61d21-cc83-451b-8fde-81da23ae3e9a)
+
+Retrofitting technologies have two additional attributes compared to their parent class conversion technologies. For each retrofit technology a retrofit_base_technology has to be specified. Furthermore, the retrofit_flow_coupling_factor links the reference carrier flows of the retrofit technologies to the reference carrier flow of its corresponding base technology (reference carrier flow retrofitting technology over reference carrier flow base technology). In this case, the CHP plant (reference carrier electricity) is retrofitted with a carbon capture unit (reference carrier carbon) and therefore the retrofit_base_technology is the CHP plant and the retrofit_flow_coupling_factor defines how many units of carbon are captured per unit of electricity produced.
+
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/25e3ce3a-48d1-4b23-8357-769688f346b2)
+
+
+# 20\_unit\_consistency
+To get a better feeling for the [unit consistency feature](https://github.com/ZEN-universe/ZEN-garden/blob/main/documentation/how_to_ZEN_garden.md#unit-consistency) of ZEN garden, this dataset contains some inconsistent units which must be corrected by you. In comparison to the previous datasets, the _energy_quantity_ of the carrier _natural_gas_ is now given in kilotons instead of MWh to increase complexity. Subsequently, the _energy_quantity_ units of technologies with _reference_carrier_ natural gas must now be specified in kilotons as well. The goal is to correct the inconsistent units with the help of the error messages thrown while running the dataset. In case you don't manage to find the correct units, the solution is: CHP_plant/conversion_factor/natural_gas: kilotons/GWh, natural_gas_pipeline/capacity_investment_existing: kilotons/hour, natural_gas_storage: change energy_quantity of all attributes to _kilotons_ instead of _MWh_.
