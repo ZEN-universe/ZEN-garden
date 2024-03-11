@@ -1,0 +1,38 @@
+{
+  "carbon_intensity_carrier": {
+    "default_value": 0.127,
+    "unit": "kilotons/GWh"
+  },
+  "demand": {
+    "default_value": 50.0,
+    "unit": "GW"
+  },
+  "price_shed_demand": {
+    "default_value": 1000.0,
+    "unit": "Euro/MWh"
+  },
+  "availability_import": {
+    "default_value": 0.0,
+    "unit": "GW"
+  },
+  "availability_export": {
+    "default_value": 0.0,
+    "unit": "GW"
+  },
+  "availability_import_yearly": {
+    "default_value": "inf",
+    "unit": "GWh"
+  },
+  "availability_export_yearly": {
+    "default_value": "inf",
+    "unit": "GWh"
+  },
+  "price_export": {
+    "default_value": 0.0,
+    "unit": "kiloEuro/GWh"
+  },
+  "price_import": {
+    "default_value": 30.0,
+    "unit": "kiloEuro/GWh"
+  }
+}
