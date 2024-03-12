@@ -477,6 +477,7 @@ class Parameter(Component):
         """
 
         dict_of_units = {}
+        # TODO make more flexible
         if name == "capex_specific_conversion":
             component_data, index_list, dict_of_units = calling_class.get_capex_all_elements(optimization_setup=self.optimization_setup, index_names=index_names)
             data = component_data, index_list
