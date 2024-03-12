@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from zen_garden.model.default_config import Analysis, System, Solver
 import pandas as pd
-from typing import Optional, Any
+from typing import Optional, Any, Literal
 
 
 class ComponentType(Enum):
@@ -65,6 +65,10 @@ class Component(ABC):
     def doc(self) -> str:
         pass
 
+    @property
+    @abstractmethod
+    def has_units(self) -> bool:
+        pass
 
 class Scenario(ABC):
     def __init__(self) -> None:
@@ -152,9 +156,21 @@ class SolutionLoader(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def has_duals(self) -> bool:
+        """
+        Abstract boolean property specifying if a solution has duals or not.
+        """
+        pass
+
     @abstractmethod
     def get_component_data(
-        self, scenario: Scenario, component: Component, keep_raw: bool = False
+        self,
+        scenario: Scenario,
+        component: Component,
+        keep_raw: bool = False,
+        data_type: Literal["dataframe","units"] = "dataframe"
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Abstract method that should return the component values of a given scenario and a

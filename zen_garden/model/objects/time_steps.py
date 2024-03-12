@@ -143,7 +143,7 @@ class TimeStepsDicts(object):
         """
         sequence_operation = self.sequence_time_steps_operation
         sequence_yearly = self.sequence_time_steps_yearly
-        time_steps_combi_operation = np.vstack(pd.unique(list(zip(sequence_operation, sequence_yearly)))).T
+        time_steps_combi_operation = np.vstack(pd.unique(pd.Series(zip(sequence_operation, sequence_yearly)))).T
         # calculate operation2year
         time_steps_operation2year = {key: val for key, val in zip(time_steps_combi_operation[0, :], time_steps_combi_operation[1, :])}
         self.time_steps_operation2year = time_steps_operation2year
@@ -159,7 +159,7 @@ class TimeStepsDicts(object):
         """
         sequence_storage = self.sequence_time_steps_storage
         sequence_yearly = self.sequence_time_steps_yearly
-        time_steps_combi_storage = np.vstack(pd.unique(list(zip(sequence_storage, sequence_yearly)))).T
+        time_steps_combi_storage = np.vstack(pd.unique(pd.Series(zip(sequence_storage, sequence_yearly)))).T
         # calculate storage2year
         time_steps_storage2year = {key: val for key, val in zip(time_steps_combi_storage[0, :], time_steps_combi_storage[1, :])}
         self.time_steps_storage2year = time_steps_storage2year

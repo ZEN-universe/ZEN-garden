@@ -21,6 +21,14 @@ test_1a,none,flow_export,"('natural_gas', 'CH', 0)",0
 test_1a,none,flow_export,"('natural_gas', 'DE', 0)",0
 test_1a,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0
 test_1a,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
+test_1c,none,flow_import,"('natural_gas', 'CH', 0)",21.255
+test_1c,none,flow_import,"('natural_gas', 'DE', 0)",100
+test_1c,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",10
+test_1c,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
+test_1c,none,flow_transport_loss,"('natural_gas_pipeline', 'CH-DE', 0)",0.25496
+test_1c,none,flow_transport_loss,"('natural_gas_pipeline', 'DE-CH', 0)",0
+test_1c,none,cost_capex,"('natural_gas_pipeline','power', 'CH-DE', 0)",0.15426
+test_1c,none,cost_capex,"('natural_gas_pipeline','power', 'DE-CH', 0)",0
 test_1d,none,flow_import,"('natural_gas', 'CH', 0)",26.00002
 test_1d,none,flow_import,"('natural_gas', 'DE', 0)",100.00000
 test_1d,none,flow_transport,"('natural_gas_pipeline', 'CH-DE', 0)",5
@@ -328,15 +336,15 @@ test_6b,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 2)",15
 test_6b,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",15
 test_6b,none,capacity,"('natural_gas_boiler', 'power', 'CH', 1)",15
 test_6b,none,capacity,"('natural_gas_boiler', 'power', 'CH', 2)",15
-test_6b,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",105
-test_6b,none,capacity,"('natural_gas_boiler', 'power', 'DE', 1)",125.201
+test_6b,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",108.309
+test_6b,none,capacity,"('natural_gas_boiler', 'power', 'DE', 1)",127.196
 test_6b,none,capacity,"('natural_gas_boiler', 'power', 'DE', 2)",150
 test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",0
 test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 1)",0
 test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 2)",0
-test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",0
-test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 1)",2.02013
-test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 2)",2.47987
+test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",0.33091
+test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 1)",1.88874
+test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 2)",2.28035
 test_6b,none,cost_opex,"('natural_gas_boiler', 'CH', 0)",0
 test_6b,none,cost_opex,"('natural_gas_boiler', 'CH', 1)",0
 test_6b,none,cost_opex,"('natural_gas_boiler', 'CH', 2)",0

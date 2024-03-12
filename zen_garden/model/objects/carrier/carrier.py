@@ -48,7 +48,7 @@ class Carrier(Element):
         # non-time series input data
         self.availability_import_yearly = self.data_input.extract_input_data("availability_import_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
         self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
-        self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"emissions": 1, "energy_quantity": -1})
+        self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity_carrier", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"emissions": 1, "energy_quantity": -1})
         self.price_shed_demand = self.data_input.extract_input_data("price_shed_demand", index_sets=[], unit_category={"money": 1, "energy_quantity": -1})
 
     def overwrite_time_steps(self, base_time_steps):
@@ -73,37 +73,23 @@ class Carrier(Element):
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         # demand of carrier
-        optimization_setup.parameters.add_parameter(name="demand", data=optimization_setup.initialize_component(cls, "demand", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
-            doc='Parameter which specifies the carrier demand')
+        optimization_setup.parameters.add_parameter(name="demand", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"], doc='Parameter which specifies the carrier demand', calling_class=cls)
         # availability of carrier
-        optimization_setup.parameters.add_parameter(name="availability_import",
-            data=optimization_setup.initialize_component(cls, "availability_import", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
-            doc='Parameter which specifies the maximum energy that can be imported from outside the system boundaries')
+        optimization_setup.parameters.add_parameter(name="availability_import", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"], doc='Parameter which specifies the maximum energy that can be imported from outside the system boundaries', calling_class=cls)
         # availability of carrier
-        optimization_setup.parameters.add_parameter(name="availability_export",
-            data=optimization_setup.initialize_component(cls, "availability_export", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
-            doc='Parameter which specifies the maximum energy that can be exported to outside the system boundaries')
+        optimization_setup.parameters.add_parameter(name="availability_export", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"], doc='Parameter which specifies the maximum energy that can be exported to outside the system boundaries', calling_class=cls)
         # availability of carrier
-        optimization_setup.parameters.add_parameter(name="availability_import_yearly",
-            data=optimization_setup.initialize_component(cls, "availability_import_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
-            doc='Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year')
+        optimization_setup.parameters.add_parameter(name="availability_import_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year', calling_class=cls)
         # availability of carrier
-        optimization_setup.parameters.add_parameter(name="availability_export_yearly",
-            data=optimization_setup.initialize_component(cls, "availability_export_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
-            doc='Parameter which specifies the maximum energy that can be exported to outside the system boundaries for the entire year')
+        optimization_setup.parameters.add_parameter(name="availability_export_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the maximum energy that can be exported to outside the system boundaries for the entire year', calling_class=cls)
         # import price
-        optimization_setup.parameters.add_parameter(name="price_import", data=optimization_setup.initialize_component(cls, "price_import", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
-            doc='Parameter which specifies the import carrier price')
+        optimization_setup.parameters.add_parameter(name="price_import", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"], doc='Parameter which specifies the import carrier price', calling_class=cls)
         # export price
-        optimization_setup.parameters.add_parameter(name="price_export", data=optimization_setup.initialize_component(cls, "price_export", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"]),
-            doc='Parameter which specifies the export carrier price')
+        optimization_setup.parameters.add_parameter(name="price_export", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"], doc='Parameter which specifies the export carrier price', calling_class=cls)
         # demand shedding price
-        optimization_setup.parameters.add_parameter(name="price_shed_demand", data=optimization_setup.initialize_component(cls, "price_shed_demand", index_names=["set_carriers"]),
-            doc='Parameter which specifies the price to shed demand')
+        optimization_setup.parameters.add_parameter(name="price_shed_demand", index_names=["set_carriers"], doc='Parameter which specifies the price to shed demand', calling_class=cls)
         # carbon intensity
-        optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier",
-            data=optimization_setup.initialize_component(cls, "carbon_intensity_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"]),
-            doc='Parameter which specifies the carbon intensity of carrier')
+        optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the carbon intensity of carrier', calling_class=cls)
 
     @classmethod
     def construct_vars(cls, optimization_setup):
@@ -116,28 +102,28 @@ class Carrier(Element):
 
         # flow of imported carrier
         variables.add_variable(model, name="flow_import", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="node- and time-dependent carrier import from the grid")
+                               doc="node- and time-dependent carrier import from the grid", unit_category={"energy_quantity": 1, "time": -1})
         # flow of exported carrier
         variables.add_variable(model, name="flow_export", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="node- and time-dependent carrier export from the grid")
+                               doc="node- and time-dependent carrier export from the grid", unit_category={"energy_quantity": 1, "time": -1})
         # carrier import/export cost
         variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-                               doc="node- and time-dependent carrier cost due to import and export")
+                               doc="node- and time-dependent carrier cost due to import and export", unit_category={"money": 1, "time": -1})
         # total carrier import/export cost
         variables.add_variable(model, name="cost_carrier_total", index_sets=sets["set_time_steps_yearly"],
-                               doc="total carrier cost due to import and export")
+                               doc="total carrier cost due to import and export", unit_category={"money": 1})
         # carbon emissions
         variables.add_variable(model, name="carbon_emissions_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-                               doc="carbon emissions of importing and exporting carrier")
+                               doc="carbon emissions of importing and exporting carrier", unit_category={"emissions": 1, "time": -1})
         # carbon emissions carrier
         variables.add_variable(model, name="carbon_emissions_carrier_total", index_sets=sets["set_time_steps_yearly"],
-                               doc="total carbon emissions of importing and exporting carrier")
+                               doc="total carbon emissions of importing and exporting carrier", unit_category={"emissions": 1})
         # shed demand
         variables.add_variable(model, name="shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="shed demand of carrier")
+                               doc="shed demand of carrier", unit_category={"energy_quantity": 1, "time": -1})
         # cost of shed demand
         variables.add_variable(model, name="cost_shed_demand", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
-                               doc="shed demand of carrier")
+                               doc="shed demand of carrier", unit_category={"money": 1, "time": -1})
 
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
