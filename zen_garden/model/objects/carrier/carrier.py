@@ -464,7 +464,11 @@ class CarrierRules(GenericRule):
             constraints.append(lhs <= rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  mask=mask,
+                                                  index_values=index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]),
+                                                  index_names=["set_carriers", "set_time_steps_yearly"])
 
     def constraint_availability_export_yearly_block(self):
         """node- and year-dependent carrier availability to export to outside the system boundaries
