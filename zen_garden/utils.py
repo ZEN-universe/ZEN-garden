@@ -1225,6 +1225,24 @@ class InputDataChecks:
 
         return df_input
 
+    @staticmethod
+    def read_system_file(config):
+        """
+        Reads the system file and returns the system dictionary
+
+        :param config: config object
+        """
+        # check if system.json file exists
+        # if os.path.exists(os.path.join(config.analysis["dataset"], "system.json")):
+        #     with open(os.path.join(config.analysis["dataset"], "system.json"), "r") as file:
+        #         system = json.load(file)
+        system_path = os.path.join(config.analysis['dataset'], "system.py")
+        spec = importlib.util.spec_from_file_location("module", system_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        system = module.system
+        config.system.update(system)
+
 class StringUtils:
     """
     This class handles some strings for logging and filenames to tidy up scripts
