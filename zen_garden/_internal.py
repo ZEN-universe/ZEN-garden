@@ -16,6 +16,8 @@ import importlib
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
 from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # we setup the logger here
 setup_logger()
