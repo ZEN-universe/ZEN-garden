@@ -150,6 +150,8 @@ class IISConstraintParser(object):
         # get the gurobi model
         gurobi_model = self.model.solver_model
         # write the IIS
+        logger = logging.getLogger("gurobipy")
+        logger.propagate = False
         gurobi_model.computeIIS()
         gurobi_model.write(self.iis_file)
 
