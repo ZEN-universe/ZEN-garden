@@ -99,3 +99,7 @@ def main(config, dataset_path=None, job_index=None):
                             model_name=model_name, scenario_name=scenario_name, param_map=param_map)
     logging.info("--- Optimization finished ---")
     return optimization_setup
+
+
+#from zen_garden.postprocess.results import Results
+#res = Results(os.path.join("outputs", data_set_name))
