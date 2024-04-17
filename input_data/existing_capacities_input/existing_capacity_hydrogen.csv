@@ -1,0 +1,327 @@
+﻿id_eigl;public_data;country;name;location;company;capacity_mwe;start_year;eigl_process;eigl_text_lon;eigl_text_lat;x;y
+11;YES;Austria;H2FUTURE;Linz;voestalpine Giesserei Linz GmbH;6;2018;Proton exchange membrane electrolysis;14.2862;48.3059;1590332.509399999;6157897.417000003
+14;YES;Austria;UpHy;Schwechat Refinery;;6;2022;Proton exchange membrane electrolysis;16.495299999999997;48.1482;1836248.3964999989;6131545.543200001
+15;YES;Austria;DEMO4GRID;Völs;;4;2021;Alkaline electrolysis;11.328699999999998;47.2517;1261105.1152999997;5983255.127800003
+16;YES;Austria;Underground Sun Storage;Pilsbach;;0.6;2018;Alkaline electrolysis;13.676499999999999;48.0405;1522461.0157999992;6113595.238499999
+17;YES;Austria;Fronius Energy Cell, self-sufficient house;Wels;Fronius;0.008;2012;Proton exchange membrane electrolysis;14.049499999999998;48.15489999999999;1563983.185899999;6132663.472400002
+18;YES;Austria;Hydrogen village Burgenland;Neusiedl am See;;2;2006;Proton exchange membrane electrolysis;16.8467;47.94989999999999;1875366.0654999986;6098524.023500003
+19;YES;Austria;Fronius HyLOG-Fleet (Hydrogen powered Logistic System);;;0.006;2006;Proton exchange membrane electrolysis;14.0503;48.087399999999995;1564072.2415000014;6121407.4169000015
+20;YES;Austria;OMV hydrogen filling station;Wiener Neudorf, IZ NÖ Süd Straße 4;OMV;0;2018;Other or unknown;16.3243;48.0763;1817212.7635999992;6119557.836099997
+27;YES;Austria;Biological biogas upgrading in a trickle-bed reactor;Tulln/Donau;;0;2016;Power to Gas;16.059300000000004;48.3629;1787713.0984999985;6167442.218599997
+34;YES;Belgium;Antwerpen;Antwerpen;BASF Antwerpen N.V.;100;1988;Other or unknown;4.2729;51.35490000000001;475657.05220000073;6684313.159000002
+43;YES;Belgium;Hyoffwind Zeebrugge, 3rd phase;Port of Zeebrugge;;975;2030;Other or unknown;3.1941999999999995;51.328;355576.7175000012;6679519.497400001
+44;YES;Belgium;Hyport;Port of Oostende;;50;2025;Other or unknown;2.9218;51.233;325253.28819999844;6662612.674999997
+45;YES;Belgium;Hyoffwind Zeebrugge, 2n phase;Port of Zeebrugge;;24;2023;Other or unknown;3.1941999999999995;51.328;355576.7175000012;6679519.497400001
+46;YES;Belgium;Hyoffwind Zeebrugge, 1st phase;Port of Zeebrugge;;1;2020;Other or unknown;3.1941999999999995;51.328;355576.7175000012;6679519.497400001
+47;YES;Belgium;HRS CMB;Port of Antwerp;;1;2019;Proton exchange membrane electrolysis;4.3974;51.24230000000001;489516.32880000025;6664266.2211000025
+48;YES;Belgium;HRS CMB Port of Antwerp;Port of Antwerp;;1;2018;Proton exchange membrane electrolysis;4.3974;51.24230000000001;489516.32880000025;6664266.2211000025
+49;YES;Belgium;Don Quichote;Logistic Centre of Colruyt Group, Halle;;0.3;2012;Alkaline electrolysis;5.475599999999999;50.6486;609541.003800001;6559368.949699998
+50;YES;Belgium;Green Methanol;Rodenhuize;;5;unknown;Other or unknown;3.7692999999999994;51.1165;419596.5566000007;6641927.153499998
+51;YES;Belgium;;Antwerp, Solvin-Solvay Industrial Center;Solvay;0;2013;Other or unknown;4.2907;51.3236;477638.5390999988;6678735.671700001
+60;YES;Bulgaria;;;;0;unknown;Other or unknown;0;0;0;0
+67;YES;Czechia;Veolia Transport Bus Depot station;Neratovice, 277 11 Neratovice, Ke Spolane 1457, Veolia Transport Bus Yard;Veolia Transport;0;2009;Other or unknown;14.5157;50.2669;1615880.3324999996;6492627.1669000015
+75;YES;Denmark;Fredericia, Denmark, Shell refinery;Fredericia refinery;;20;2022;Proton exchange membrane electrolysis;9.7529;55.5913;1085687.8618;7477481.563900001
+76;YES;Denmark;eSMR Methanol demo plant in Aarhus University;Foulum;Aarhus University, Technical University of Denmark, Aalbord University;0;2022;Other or unknown;10.2028;56.1681;1135770.5007000007;7591952.650300004
+77;YES;Denmark;NEL/Everfuel H2 fuelling station in Copenhagen;Copenhagen;;0;2020;Proton exchange membrane electrolysis;12.5701;55.6867;1399297.1312000006;7496297.6294
+78;YES;Netherlands;Yara's Sluiskil plant;Orsted offshore wind Orsted;Yara's Sluiskil plant;2;2020;Other or unknown;3.850399999999999;51.2723;428624.567400001;6669602.5207
+79;YES;Denmark;HyBALANCE;Hobro;;1.2;2016;Proton exchange membrane electrolysis;9.794;56.6372;1090263.0927999988;7686324.1954
+80;YES;Denmark;P2G-Biocat - Continued;Kopenhagen/Avedore;;0.5;2014;Alkaline electrolysis;12.4625;55.61;1387319.1539999992;7481166.219800003
+81;YES;Denmark;H2 Logic 6 HRS with onsite electrolysis (Aalborg, Holstebro, Vejle, 3 in Copenhagen);Aalborg, Holstebro, Vejle, and 3 in Copenhagen;;0;2013;Alkaline electrolysis;0;0;0;0
+82;YES;Denmark;Nukissiorfiit Nuuk Hydrogen Plant;Greenland;;0;2010;Alkaline electrolysis;-51.72090000000001;64.1826;-5757544.2513999995;9396285.655599996
+83;YES;Denmark;Samsø;Samsø;;0;unknown;Alkaline electrolysis;10.6114;55.8835;1181255.6446000002;7535258.671099998
+84;YES;Denmark;MeGa-stoRE Commercial phase;Heden and Lemvig;;10;unknown;Alkaline electrolysis;10.368800000000002;55.249;1154249.5361000001;7410342.680799998
+85;YES;Denmark;FUTURECEM;Aalborg;Cementir RØrdal plant in Aalborg;100;2030;Other or unknown;9.977099999999998;57.061199999999985;1110645.6915999986;7772637.722499996
+86;YES;Denmark;Electrochaea: Biological methanation in Avedøre;Wastewater treatment plant Avedøre;;1.2;2021;Alkaline electrolysis;12.5065;55.6408;1392217.2115999982;7487238.896899998
+87;YES;Denmark;Copenhagen South / Sydhavnen;Copenhagen, Borgmester christiansens gade 59, DK-2450;"Air Liquide; Copenhagen Hydrogen Network A/S";0;2013;Other or unknown;12.5408;55.647400000000005;1396035.4701000005;7488540.806000002
+100;YES;Denmark;Towards the Methane Society, Phase 1;Midtjylland-Region;;0;2011;Power to Gas;0;0;0;0
+101;YES;Denmark;SYMBIO;Lyngby;;0;2014;Power to Gas;12.526;55.78640000000001;1394387.9417000003;7516010.917800002
+102;YES;Denmark;Agerbæk/Helle-Project;Agerbæk and Helle;Helle M/R station (Energinet.dk) and the Agerbæk M/R station (Dong Gas Distribution).;0.006;2015;Other or unknown;8.7546;55.6216;974557.6141000018;7483452.7717999965
+103;YES;Estonia;H2Nodes, Parnu;Pärnu;;0;2019;Proton exchange membrane electrolysis;0;0;0;0
+104;YES;Estonia;H2Nodes, Parnu;Pärnu;;0;2019;Proton exchange membrane electrolysis;24.4578;58.379;2722629.8418999985;8047358.590400003
+105;YES;Estonia;Parnu refuelling station;Pärnu;;0.93;2019;Alkaline electrolysis;24.4578;58.379;2722629.8418999985;8047358.590400003
+106;YES;Estonia;H2Station;Pärnu,;NT Bene;0;2019;Proton exchange membrane electrolysis;24.4578;58.379;2722629.8418999985;8047358.590400003
+107;YES;Estonia;;Riga, Vienibas gatve 12 1004;;0;unknown;Other or unknown;24.0958;56.9339;2682332.1862999983;7746620.389899999
+127;YES;Finland;Balance project;;;0.006;2019;Solid oxide electrolysis cells;24.8771;60.281;2769306.1044000015;8462566.930100001
+128;YES;Finland;VTT Bio economy+;;;0.025;2018;Proton exchange membrane electrolysis;24.827899999999996;60.186800000000005;2763829.1854999997;8441444.795400001
+129;YES;Finland;Biocatalytic methanation of hydrogen and carbon dioxide in a fixed bed bioreactor;Helsinki;Natural Resources Institute Finland (Luke), Viikinkaari 4, FI-00790 Helsinki, Finland;0;2016;Power to Gas;25.018399999999996;60.22890000000001;2785035.5485000014;8450877.226800002
+168;YES;France;Hygreen Provence 3rd phase;Manosque;;305;2027;Other or unknown;5.7827;43.83379999999999;643727.2193999998;5439758.270800002
+169;YES;France;Hygreen Provence 2nd phase;Manosque;;113;2025;Other or unknown;5.7827;43.83379999999999;643727.2193999998;5439758.270800002
+170;YES;France;Hygreen Provence, 1st Phase;Manosque;;17;2023;Other or unknown;5.7827;43.83379999999999;643727.2193999998;5439758.270800002
+171;YES;France;H2V Normandy, 2nd phase;Port-Jérôme;;100;2023;Alkaline electrolysis;0.5432000000000001;49.482600000000005;60468.74740000069;6357148.801299997
+172;YES;France;H2V59, 2nd phase;Loon-Plage;;100;2023;Alkaline electrolysis;2.2267;50.998000000000005;247875.1101000011;6620939.953500003
+173;YES;France;H2V Normandy, 1st phase;Port-Jérôme;;100;2022;Alkaline electrolysis;0.5432000000000001;49.482600000000005;60468.74740000069;6357148.801299997
+174;YES;France;H2V59, 1st phase;Loon-Plage;;100;2022;Alkaline electrolysis;2.2267;50.998000000000005;247875.1101000011;6620939.953500003
+175;YES;France;METHYCENTRE;47.28284602046364, 1.2181116629639608;;0.25;2021;Proton exchange membrane electrolysis;1.2180999999999997;47.2828;135598.27169999853;5988357.014399998
+176;YES;France;NEL-Lhyfe Agreement - 1st Facility for H2 buses in Bouin;Bouin;;60;2021;Alkaline electrolysis;-2.0698;46.9357;-230409.08199999854;5931584.983999997
+177;YES;France;SMT-AG Artois-Gohelle;Artois-Gohelle;;0.5;2019;Alkaline electrolysis;2.8368;50.4308;315791.1314999983;6521219.796899997
+178;YES;France;SPHYNX, R&D;Paris;Engie;0;2019;Other or unknown;2.3689;48.9594;263704.74170000106;6267975.229199998
+179;YES;France;Jupiter 1000;Fos-sur-Mer;;1;2018;Other or unknown;4.9456;43.4381;550541.6737000011;5378894.6611
+180;YES;France;GNVert H2;;Engie;0;2018;Proton exchange membrane electrolysis;0;0;0;0
+181;YES;France;GRHYD;Dunkirk;;0;2018;Proton exchange membrane electrolysis;2.3245;51.045199999999994;258762.15630000085;6629292.977300003
+182;YES;France;Minatec's semiconductor labs in Grenoble;Grenoble;;13.5;2017;Alkaline electrolysis;5.7087;45.1959;635489.5771000013;5652414.835900001
+183;YES;France;FaHyence;Sarreguemines;;0.0128;2017;Alkaline electrolysis;7.088599999999999;49.1073;789099.3423999995;6293087.609499998
+184;YES;France;Energy observer;;;0;2017;Proton exchange membrane electrolysis;0;0;0;0
+185;YES;France;ElectroHgena;;;0;2016;Proton exchange membrane electrolysis;0;0;0;0
+186;YES;France;Port Jerome;49.48239385029256, 0.5410692835862795;Air Liquide;200;2015;Fossil based hydrogen + CCS;0.5410999999999999;49.48239999999999;60234.976500000805;6357114.532300003
+187;YES;France;Minerve, Nantes;7 Rue Christian Pauc, 44306 NANTES;;0.12;2014;Solid oxide electrolysis cells;-1.5152000000000003;47.2834;-168671.29239999875;5988455.472499996
+188;YES;France;MYRTE;"41° 54' 45.83"""", 8° 39' 13.78""""";;0.11;2012;Proton exchange membrane electrolysis;8.6538;41.9127;963336.6094000004;5147911.284599997
+189;YES;France;AltHytude;Dunkirk;;0.08;2009;Alkaline electrolysis;2.3245;51.045199999999994;258762.15630000085;6629292.977300003
+190;YES;France;Vendée hydrogène;Bouin;;3.425;2021;Other or unknown;-2.0006;46.97439999999999;-222705.77329999954;5937896.501500003
+191;YES;France;NEL-Lhyfe Agreement - Total (from 2021);Nantes;;59.31;2021;Alkaline electrolysis;-1.5152000000000003;47.2834;-168671.29239999875;5988455.472499996
+192;YES;France;;Grenoble, 57 Rue Pierre Semard;Air Liquide;0;2016;Other or unknown;5.7093;45.193299999999994;635556.3687999994;5652004.121799998
+215;YES;France;PUSHY OSSHY;No record;;0.06;2013;Other or unknown;5.2667;45.05259999999999;586286.3621999994;5629806.084200002
+216;YES;France;PUSHY LASHY;No record;;0.065;2015;Other or unknown;1.3878;49.171299999999995;154489.18930000067;6303977.561899997
+297;YES;Germany;Heide, Hemmingstedt;Heide, Hemmingstedt;Raffinerie Heide GmbH;30;2024;Other or unknown;9.075;54.15639999999999;1010224.378899999;7199832.401799999
+304;YES;Germany;H2morrow;North Rhine-Westphalia;Equinor, Open Grid Europe, Thyssenkrupp;1000;2030;Fossil based hydrogen + CCS;0;0;0;0
+305;YES;Germany;GreenHydroChem Central German Chemical Triangle;Leuna and Bad Lauchstädt;Linde;120;2024;Proton exchange membrane electrolysis;12.005699999999997;51.32880000000001;1336468.4105999991;6679662.019299999
+306;YES;Germany;Hybridge;Emsland district;;100;2023;Other or unknown;0;0;0;0
+307;YES;Germany;Element One (Element Eins);Diele;;100;2022;Other or unknown;7.3134;53.12039999999999;814123.9640000015;7005299.7883
+308;YES;Germany;Bad Lauchstädt energy park;Bad Lauchstädt;;35;2022;Other or unknown;11.8605;51.3848;1320304.8205999993;6689644.733800001
+309;YES;Germany;Referenzkraftwerk Lausitz;Lausitz;;10;2022;Proton exchange membrane electrolysis;14.573499999999997;51.41989999999999;1622314.5991000012;6695907.9859
+310;YES;Germany;E-CO2MET Raffinerie Mitteldeutschland;Total Raffinerie Mitteldeutschland;;0.72;2021;Solid oxide electrolysis cells;11.9852;51.2813;1334186.3610999994;6671204.089900002
+311;YES;Germany;Kopernikus 2.0;;;1;2021;Solid oxide electrolysis cells;0;0;0;0
+312;YES;Germany;REFHYNE;Shell Rhineland refinery in Wesseling;;10;2020;Proton exchange membrane electrolysis;7.005799999999999;50.81400000000001;779882.0885999985;6588458.191299997
+313;YES;Germany;Salzgitter Clean Hydrogen project;Salzgitter;;2.2;2020;Proton exchange membrane electrolysis;7.182900000000001;50.7909;799596.7703999989;6584389.368699998
+314;YES;Germany;eFarm;Bosbüll;;1.125;2020;Proton exchange membrane electrolysis;8.9235;54.58559999999999;993359.4761000015;7281851.366899997
+315;YES;Germany;Maximator;Nordhausen;;2.5;2020;Proton exchange membrane electrolysis;10.7925;51.493399999999994;1201415.6044000015;6709038.941600002
+316;YES;Germany;PtG-Fehndorf;Fehndorf/Wesuwe;;2;2020;Other or unknown;7.207900000000001;52.757000000000005;802379.7577;6938175.380199999
+317;YES;Germany;Leuchtturmprojekt Power-to-Gas Baden-Württemberg;Wyhlen hydroelectric power station;;1.3;2020;Proton exchange membrane electrolysis;7.7082;47.538900000000005;858072.8988999985;6030484.192100003
+318;YES;Germany;GrInHy2.0;Salzgitter;;0.72;2020;Solid oxide electrolysis cells;10.3593;52.1504;1153192.0009999983;6827365.5211
+319;YES;Germany;Falkenhagen STORE&GO;Falkenhagen;;0.2;2019;Proton exchange membrane electrolysis;14.317599999999999;52.430800000000005;1593827.941399999;6878397.600699998
+320;YES;Germany;Stromlückenfüller 2nd phase;Reußenköge;;0.2;2019;Proton exchange membrane electrolysis;8.9227;54.599399999999996;993270.4204999991;7284502.801399998
+321;YES;Germany;Kopernikus;;;0.01;2019;Solid oxide electrolysis cells;0;0;0;0
+322;YES;Germany;Hypos - Sunfire;Bitterfeld-Wolfen Chemical Park;;0.18;2019;Solid oxide electrolysis cells;12.3064;51.6249;1369942.181499999;6732584.665299997
+323;YES;Germany;Wind to gas Brunsbüttel;Brunsbüttel;;2.4;2018;Proton exchange membrane electrolysis;9.1734;53.8899;1021178.2168000005;7149332.185500003
+324;YES;Germany;Rostock, Exytron Demonstrationsanlage;Rostock;;0;2018;Alkaline electrolysis;12.1056;54.0981;1347589.2276999988;7188757.194799997
+325;YES;Germany;MicroPyros, Altenstant;Weilheim-Schongau;;0;2018;Other or unknown;12.627299999999998;48.900099999999995;1405664.6061000004;6257927.422700003
+326;YES;Germany;Methanation at Eichhof;Bad Hersfeld;;0.05;2018;Proton exchange membrane electrolysis;9.6757;50.848999999999975;1077093.9970999993;6594626.910400003
+327;YES;Germany;Carbon2Chem;Duisburg;;2;2018;Proton exchange membrane electrolysis;6.7283;51.494699999999995;748990.9299000017;6709271.380199999
+328;YES;Germany;H&R Ölwerke Hamburg-Neuhof;Hamburg-Neuhof;;5;2017;Proton exchange membrane electrolysis;9.9529;53.5148;1107951.7599;7078795.540100001
+329;YES;Germany;Alzey, Exytron Null-E;Alzey;;0.0625;2017;Alkaline electrolysis;8.5687;50.131099999999996;953863.3207999989;6469011.083700001
+330;YES;Germany;Wyhlen hydroelectric power plant;Wyhlen;ENERGIEDIENST, ENBW Group, Center For Solar Energy;1;2017;Alkaline electrolysis;7.708499999999998;47.5391;858106.2947999984;6030517.171300001
+331;YES;Germany;Energy in the Container, Fraunhofer IISB, Erlangen, Leistungszentren Elektroniksysteme (LZE);Erlangen;;0;2017;Proton exchange membrane electrolysis;11.030399999999998;49.57079999999999;1227898.5111999996;6372275.097900003
+332;YES;Germany;Windgas Haurup, 1st phase;Haurup;;0.225;2016;Proton exchange membrane electrolysis;9.347099999999998;54.72659999999999;1040514.4123999998;7308984.530500002
+333;YES;Germany;Hassfurt;Haßfurt;;1.25;2016;Proton exchange membrane electrolysis;10.5168;50.0343;1170724.820799999;6452218.1171
+334;YES;Germany;HPEM2GAS (R&D);Emden;;0.2;2016;Proton exchange membrane electrolysis;7.206600000000001;53.35919999999999;802235.0423999988;7049718.565399997
+335;YES;Germany;Power to flex (several pilot projects);;;0;2016;Other or unknown;0;0;0;0
+336;YES;Germany;H2ORIZON;Lampoldshausen;;1;2015;Proton exchange membrane electrolysis;9.3995;49.2642;1046347.5537;6319810.087399997
+337;YES;Germany;Hamburg - Schnackenburgallee;Schnackenburgallee;;0.185;2015;Proton exchange membrane electrolysis;9.918099999999999;53.57999999999999;1104077.8416000009;7091011.209899999
+338;YES;Germany;Energiepark Mainz;Energiepark Mainz;Mainzer Stadtwerke & Linde Group;6;2015;Proton exchange membrane electrolysis;8.2537;49.9447;918797.6812000014;6436704.3574
+339;YES;Germany;Stromlückenfüller 1st phase;Reußenköge;;0.02;2015;Proton exchange membrane electrolysis;8.919499999999998;54.605399999999996;992914.1981000006;7285655.879299998
+340;YES;Germany;MEFCO2;Niederaussem power plant;;1;2014;Proton exchange membrane electrolysis;6.6737;50.993100000000005;742912.8856999986;6620073.283399999
+341;YES;Germany;H2BER (Berlin airport);Hanau, Wolfgang Industrial Park;;0.5;2014;Alkaline electrolysis;8.966200000000002;50.118900000000004;998112.8183999993;6466892.745899998
+342;YES;Germany;Hanau, Wolfgang Industrial Park;Berlin Airport;;0.03;2014;Proton exchange membrane electrolysis;8.966200000000002;50.118900000000004;998112.8183999993;6466892.745899998
+343;YES;Germany;MicroPyros, Staubing;Staubing;;0;2014;Other or unknown;12.6294;48.9002;1405898.3770000003;6257944.356700003
+344;YES;Germany;HYPOS (Leipzig);Chemiepark Bitterfeld-Wolfen;;1.25;2013;Other or unknown;12.267399999999999;51.655499999999996;1365600.7214000002;6738073.529100001
+345;YES;Germany;Windgas Haurup, 1st phase;Haurup;;1;2013;Proton exchange membrane electrolysis;9.347099999999998;54.72659999999999;1040514.4123999998;7308984.530500002
+346;YES;Germany;RH2 Grapzow, Mecklenburg Vorpommern;Grapzow;;1;2013;Alkaline electrolysis;13.2891;53.712500000000006;1479335.8451000005;7115894.172200002
+347;YES;Germany;RWE PtG plant Ibbenbüren;Ibbenbüren;;0.15;2013;Proton exchange membrane electrolysis;7.749799999999998;52.28600000000001;862703.7897000015;6852004.041699998
+348;YES;Germany;PtG plant Hamburg-Reitbrook;Reitbrook;;1.5;2013;Proton exchange membrane electrolysis;10.138299999999997;53.4668;1128590.3935000002;7069814.416299999
+349;YES;Germany;ETOGAS, Solar Fuel Beta-plant AUDI, Werlte (Audi e-gas);52.87052007173832, 7.674475495643964;;6;2013;Alkaline electrolysis;7.674500000000001;52.87050000000001;854321.4321000017;6959079.757100001
+350;YES;Germany;Uniper/E-ON WindGas Falkenhagen Hydrogen Pilot Project;Falkenhagen;;2;2013;Alkaline electrolysis;12.2346;53.19959999999999;1361949.4420999996;7020004.199000001
+351;YES;Germany;MicrobEnergy GmbH, Schwandorf;49.302709908474895, 12.08200688048149;;0.18;2013;Proton exchange membrane electrolysis;12.082;49.302699999999994;1344962.0877999999;6326380.203299999
+352;YES;Germany;CO2RRECT-Niederaussem;Niederaussem power plant;;0.33;2013;Proton exchange membrane electrolysis;6.6737;50.993100000000005;742912.8856999986;6620073.283399999
+353;YES;Germany;H2Move, Fraunhofer ISE;Freiburg;;0.04;2013;Proton exchange membrane electrolysis;7.835000000000001;48.009299999999996;872188.2104000002;6108402.1630000025
+354;YES;Germany;P2G plant Erdgas Schwaben;Schwaben;;1;2013;Proton exchange membrane electrolysis;10.471299999999998;48.1531;1165659.7839000002;6132363.118900001
+355;YES;Germany;H2Herten;Herten;;0.165;2012;Alkaline electrolysis;7.1351;51.59550000000001;794275.6988000013;6727314.5370000005
+356;YES;Germany;Cotbus;Cottbus;;0.12;2012;Alkaline electrolysis;14.3357;51.756699999999995;1595842.8242000006;6756252.681599997
+357;YES;Germany;H2 research center BTU Cottbus;Cottbus;;0.14;2012;Alkaline electrolysis;14.3357;51.756699999999995;1595842.8242000006;6756252.681599997
+358;YES;Germany;Eucolino Schwandorf;Schwandorf;;0;2012;Other or unknown;12.1093;49.32620000000001;1348001.1099000014;6330393.056900002
+359;YES;Germany;Hamburg Hafen City, CEP;HafenCity;;0.6;2011;Alkaline electrolysis;9.995799999999997;53.54290000000001;1112727.3660999984;7084057.9617
+360;YES;Germany;Hybrid Power Plant Enertrag, Prenzlau;Prenzlau;;0.5;2011;Alkaline electrolysis;13.892899999999997;53.3383;1546550.5535999984;7045821.077
+361;YES;Germany;EnBW H2 station, Stuttgart;Stuttgart;;0.3;2011;Alkaline electrolysis;9.2018;48.79059999999999;1024339.6904000007;6239404.998400003
+362;YES;Germany;Regenerativer Energipark Ostfalia/hybrid renewable energy park (HREP);Salzdahlumer Str. 46/48, 38302 Wolfenbüttel, Alemania;;0.006;2009;Alkaline electrolysis;10.5499;52.1766;1174409.4959000014;6832120.2029
+363;YES;Germany;Etzel, Salt caverns;Etzel;;0;2007;Other or unknown;7.9036;53.45359999999999;879824.7274000011;7067346.387900002
+364;YES;Germany;HyWindBalance, Oldenburg;Oldenburg;;0.006;2006;Alkaline electrolysis;8.2146;53.139;914445.0890999995;7008750.6603000015
+365;YES;Germany;Get H2 Lingen;Emsland;;105;2023;Other or unknown;7.329;52.5403;815860.5480000004;6898414.453199998
+366;YES;Germany;Green Hydro Chem;Leuna;;100;2030;Other or unknown;11.94;51.49489999999999;1329154.7201000005;6709307.140600003
+367;YES;Germany;HySynGas;Brunsbüttel;;50;unknown;Proton exchange membrane electrolysis;9.1882;53.8991;1022825.7452999987;7151070.153700002
+368;YES;Germany;Lingen Green Hydrogen;Lingen;;60;2024;Other or unknown;7.3123;52.5589;814001.5124999993;6901819.534100004
+369;YES;Germany;Bad Rappenau;Bad Rappenau, Buchäckerring 40;Air Liquide;0;2017;Other or unknown;9.0776;49.2119;1010513.8095999993;6310893.1752
+477;YES;Germany;Solar-Wasserstoff-Projekt;Neunburg vorm Wald;;0.3;1996;Other or unknown;12.381999999999998;49.34870000000001;1378357.9349999987;6334236.946000002
+478;YES;Germany;HyFLEET:CUTE;Hamburg;;0.4;2003;Other or unknown;10.0099;53.5438;1114296.9708999991;7084226.566699997
+479;YES;Germany;SolarFuel-Alpha 1st site;Stuttgart;;0.025;2009;Power to Gas;9.179999999999998;48.7784;1021912.9255000018;6237343.817299999
+480;YES;Germany;SolarFuel-Alpha 2nd site;Werlte;;0.025;2010;Power to Gas;7.676399999999998;52.8519;854532.939100001;6955650.275399998
+481;YES;Germany;SolarFuel-Alpha 3rd site;Morbach;;0.025;2011;Power to Gas;7.124199999999999;49.810300000000005;793062.316300001;6413487.727499999
+482;YES;Germany;Hybridkraftwerk Prenzlau;Prenzlau;;0.6;2011;Other or unknown;13.894299999999998;53.3383;1546706.4008999988;7045821.077
+483;YES;Germany;Methanisierung am Eichhof, SolarFuel-Alpha 4th sItalye;Bad Hersfeld;;0.025;2012;Power to Gas;9.706799999999998;50.8681;1080556.0331999995;6597995.220700003
+484;YES;Germany;REG-Technikum;Stuttgart;;0.25;2012;Power to Gas;9.179999999999998;48.7784;1021912.9255000018;6237343.817299999
+485;YES;Germany;Biocatalytic methanation;Cottbus;;0;2013;Power to Gas;14.3357;51.756699999999995;1595842.8242000006;6756252.681599997
+486;YES;Germany;PtG-Etzel;Etzel;;6;2013;Other or unknown;7.8839;53.459;877631.7335000001;7068355.943099998
+487;YES;Germany;RH2-WKA;Grapzow;;1;2013;Other or unknown;13.2891;53.712500000000006;1479335.8451000005;7115894.172200002
+488;YES;Germany;designetz Pilotanlage Ibbenbüren;Ibbenbüren;;0.15;2013;Other or unknown;7.7151;52.2775;858841.0034000017;6850457.379199997
+489;YES;Germany;Forschungsanlage am Technikum Germanys PFI;Pirmasens;;0;2013;Power to Gas;7.6088;49.19969999999999;847007.7415000014;6308814.487999998
+490;YES;Germany;PtG am Eucolino;Schwandorf;;0.108;2013;Power to Gas;12.1093;49.32620000000001;1348001.1099000014;6330393.056900002
+491;YES;Germany;e-Gas-Anlage Werlte;Werlte;;6;2013;Power to Gas;7.676399999999998;52.8519;854532.939100001;6955650.275399998
+492;YES;Germany;PtG Berlin-Schöneberg;Berlin;;0.007;2014;Other or unknown;13.402499999999998;52.50150000000001;1491959.4754000008;6891316.022
+493;YES;Germany;Thüga Strom zu Gas Plattform;Frankfurt;;0.3;2014;Other or unknown;8.6821;50.1106;966486.9510000013;6465451.8901999965
+494;YES;Germany;Forschungsanlage Germanyr DVGW-Forsch.-stelle am EBI;Karlsruhe;;0;2014;Power to Gas;8.4041;49.01059999999999;935540.1325999983;6276660.183700003
+495;YES;Germany;GermanymoSNG (2nd site);Karlsruhe;;0.006;2014;Power to Gas;8.4041;49.01059999999999;935540.1325999983;6276660.183700003
+496;YES;Germany;Energiepark Mainz;Mainz;;6;2014;Other or unknown;8.2522;49.944399999999995;918630.7019000016;6436652.4624999985
+497;YES;Germany;P2G-Elektrolyse zur AEL-Erforschung;Stuttgart;;0.37;2014;Other or unknown;9.179999999999998;48.7784;1021912.9255000018;6237343.817299999
+498;YES;Germany;BioPower2Gas;Allendorf (Eder);;0.3;2015;Power to Gas;8.672300000000002;51.0296;965396.0199999996;6626531.291100003
+499;YES;Germany;GICON-Großtechnikum;Cottbus;;0;2015;Power to Gas;14.3357;51.756699999999995;1595842.8242000006;6756252.681599997
+500;YES;Germany;PtG-Emden;Emden;;0.312;2015;Power to Gas;7.205800000000001;53.36709999999999;802145.9868000001;7051192.276500002
+501;YES;Germany;Power-2-Hydrogen-Tankstelle;Hamburg;;0.18;2015;Other or unknown;10.0099;53.5438;1114296.9708999991;7084226.566699997
+502;YES;Germany;WindGas Hamburg;Hamburg;;1;2015;Other or unknown;10.0099;53.5438;1114296.9708999991;7084226.566699997
+503;YES;Germany;HELMETH;Karlsruhe;;0.008;2015;Power to Gas;8.4041;49.01059999999999;935540.1325999983;6276660.183700003
+504;YES;Germany;Energiepark Pirmasens-Winzeln;Pirmasens;;2.5;2015;Power to Gas;7.6088;49.19969999999999;847007.7415000014;6308814.487999998
+505;YES;Germany;Mikrobielle Methanisierung;Schwandorf;;0.275;2015;Power to Gas;12.1093;49.32620000000001;1348001.1099000014;6330393.056900002
+506;YES;Germany;HYPOS: localhy;Sonneberg;;0.075;2015;Other or unknown;11.169199999999998;50.3575;1243349.6565999985;6508420.288099997
+507;YES;Germany;Komplexlabor FH Stralsund;Stralsund;;0.02;2015;Other or unknown;13.0821;54.3096;1456292.7104999982;7229010.245499998
+508;YES;Germany;Biogasbooster;Straubing;;0;2015;Power to Gas;12.569699999999997;48.882;1399252.6033999994;6254862.929300003
+509;YES;Germany;Wasserstofftankstelle Stuttgart Talstra?e;Stuttgart;;0.4;2015;Other or unknown;9.179999999999998;48.7784;1021912.9255000018;6237343.817299999
+510;YES;Germany;BioPower2Gas-Erweiterung;Allendorf (Eder);;0;2016;Power to Gas;8.672300000000002;51.0296;965396.0199999996;6626531.291100003
+511;YES;Germany;Exytron Zero-Emission-Wohnpark;Alzey;;0.063;2016;Power to Gas;8.1151;49.7456;903368.7996999994;6402334.255000003
+512;YES;Germany;Smart Grid Solar;Arzberg;;0.075;2016;Other or unknown;12.185899999999998;50.0567;1356528.1829000004;6456101.078699999
+513;YES;Germany;Biologische Methanisierung in Rieselbettreaktoren;Garching;;0;2016;Power to Gas;11.650999999999998;48.25139999999999;1296983.3872000016;6148781.210699998
+514;YES;Germany;Einsatz Germanyr biologischen Methanisierung […];Hohenheim;;0;2016;Power to Gas;9.2113;48.7118;1025397.2254999988;6226100.6175
+515;YES;Germany;Laborreaktor am Fraunhofer IWES;Kassel;;0;2016;Other or unknown;9.492399999999998;51.3155;1056689.134399999;6677292.916500002
+516;YES;Germany;bioCONNECT;Lemgo;;0;2016;Other or unknown;8.9013;52.0281;990888.1834000014;6805207.8904
+517;YES;Germany;Direktmethanisierung von Biogas;Bad Hersfeld;;0.05;2017;Power to Gas;9.706799999999998;50.8681;1080556.0331999995;6597995.220700003
+518;YES;Germany;GrInHy;Salzgitter;;0.15;2017;Other or unknown;10.3593;52.1504;1153192.0009999983;6827365.5211
+519;YES;Germany;ORBIT 1st site;Regensburg;;0;2018;Power to Gas;12.0975;49.0195;1346687.5399000011;6278170.784000002
+530;YES;Greece;REMOTE - Greece;Agkistro;;0.025;2020;Proton exchange membrane electrolysis;23.4419;41.375699999999995;2609540.371199999;5067916.2678999975
+531;YES;Greece;Agios Efstratios;Agios Efstratios;;0.1;2012;Other or unknown;24.990399999999998;39.53909999999999;2781918.6026999988;4799189.862499997
+532;YES;Greece;H2SusBuild;Lavrion;;0.022;2009;Other or unknown;24.0559;37.7124;2677890.5386000015;4538876.867299996
+533;YES;Greece;Neo Olvio of Xanthi;Neo Olvio, Xanthi;;0.0042;2009;Proton exchange membrane electrolysis;21.9877;38.9954;2447659.5676999986;4721012.683499999
+534;YES;Greece;Stand-alone power system, Neo Olvio of Xanthi;Neo Olvio, Xanthi;;0;2008;Proton exchange membrane electrolysis;21.9877;38.9954;2447659.5676999986;4721012.683499999
+535;YES;Greece;Demo Plant Agricultural University Athens;Agricultural University Athens;;0;2006;Proton exchange membrane electrolysis;23.704400000000003;37.982499999999995;2638761.7375999987;4576953.944700003
+536;YES;Greece;RES2H2 Greek site;Keratea;;0.025;2005;Other or unknown;23.9773;37.8081;2669140.8266000003;4552352.135399997
+589;YES;Italy;SilverFrog;;;10000;2030;Proton exchange membrane electrolysis;0;0;0;0
+590;YES;Italy;REMOTE - Italy 1;Ginostra;;0.05;2020;Proton exchange membrane electrolysis;15.191099999999999;38.78659999999999;1691065.5166000016;4691149.787900001
+591;YES;Italy;REMOTE - Italy 2;Ambornetti;;0.05;2020;Proton exchange membrane electrolysis;0;0;0;0
+592;YES;Italy;REFLEX;ENVIPARK Turin;;0.04;2018;Solid oxide electrolysis cells;7.671800000000001;45.089;854020.8695;5635543.613700002
+593;YES;Italy;Troia,  STORE&GO;Troia;;0.2;2018;Proton exchange membrane electrolysis;15.3123;41.363099999999996;1704557.4389000013;5066047.257100001
+594;YES;Italy;Bolzano, CHIC;Bolzano;;1;2014;Alkaline electrolysis;11.354799999999997;46.498099999999994;1264010.5540999994;5860532.570699997
+595;YES;Italy;INGRID;Troia;;1.15;2012;Alkaline electrolysis;15.3123;41.363099999999996;1704557.4389000013;5066047.257100001
+596;YES;Italy;H2 from the sun, Brunate;Brunate;;0.0067;2007;Alkaline electrolysis;9.096000000000002;45.8195;1012562.0883000009;5751470.999399997
+597;YES;Italy;CHIC Station;20138 Milano-San Donato;Linde;0;2011;Other or unknown;9.3179;45.563599999999994;1037263.8832999989;5710689.493900001
+602;YES;Italy;PVFCSYS Agrate;Agrate;;0.003;2004;Other or unknown;8.5529;45.6768;952104.4728000015;5728706.604500003
+603;YES;Italy;H2 from the Sun;Brunate;;0.011;2008;Other or unknown;9.096000000000002;45.8195;1012562.0883000009;5751470.999399997
+630;YES;Netherlands;GreenH2UB (9 hubs of 3-10MW);;Brabantse Ontwikkelings Maatschappik, Force Renewable Energy;97;2030;Other or unknown;0;0;0;0
+631;YES;Netherlands;H2GO - 2nd phase;Goeree-Overflakkee;;23.5;2030;Other or unknown;4.1358;51.75129999999999;460395.1499999985;6755281.619800001
+632;YES;Netherlands;HyNetherlands 2nd phase;Eemshaven;Gasunie;650;2028;Other or unknown;6.838;53.4612;761202.6779999994;7068767.280199997
+633;YES;Netherlands;NortH2 green hydrogen;Eemshaven;Shell Nederland, Gasunie, Gronigen Seaports;3000;2027;Other or unknown;6.838;53.4612;761202.6779999994;7068767.280199997
+634;YES;Netherlands;H-Vision;Rotterdam;Gasunie, Port of Rotterdam, EBN, Shell Nederland, ExxonMobil, Air Liquide;750;2025;Fossil based hydrogen + CCS;4.4632;51.9229;496841.15129999816;6786196.773000002
+635;YES;Netherlands;Port of Rotterdam BP refinery;Port of Rotterdam BP refinery;BP, Port of Rotterdam, Nouryon;250;2025;Other or unknown;4.102699999999999;51.9538;456710.4748999998;6791776.208700001
+636;YES;Netherlands;Multhiphly;;Neste, Engie, CEA, Paul Wurth;2.6;2024;Solid oxide electrolysis cells;4.0343;51.9676;449096.2217000015;6794269.237599999
+637;YES;Netherlands;HEAVENN (Hydrogen Energy Applications for Valley Environments in Northern Netherlands);;;1;2024;Other or unknown;0;0;0;0
+638;YES;Netherlands;H2ermes Electrolyzer - Ijmuiden, Port of Amsterdam;Ijmuiden;Nouryon, Tata Steel, Port of Amsterdam;100;2024;Other or unknown;4.5763;52.465;509431.3856999986;6884644.090599999
+639;YES;Netherlands;Magnum, Eemshaven;Eemshaven;Equinor, Gasunie, Vattenfall;0;2025;Fossil based hydrogen + CCS;6.854799999999999;53.448399999999985;763072.8454999998;7066374.344899997
+640;YES;Netherlands;HyNetherlands, 1st phase;Eemshaven;Gasunie, Engie;100;2025;Other or unknown;6.838;53.4612;761202.6779999994;7068767.280199997
+641;YES;Netherlands;Porthos;Port of Rotterdam;Air Liquide, Porthos, Air Products and Chemicals, Shell, ExxonMobil;250;2024;Fossil based hydrogen + CCS;4.429799999999999;51.90429999999999;493123.08029999956;6782840.129199997
+642;YES;Netherlands;Maasvlakte 2 Electrolyzer - Shell Refinery, Rotterdam;Port of Rotterdam;Shell - Port of Rotterdam;200;2023;Other or unknown;4.429799999999999;51.90429999999999;493123.08029999956;6782840.129199997
+643;YES;Netherlands;SkyNRG;Delfzijl;;20;2022;Other or unknown;6.9237;53.3337;770742.7584000006;7044963.512999997
+644;YES;Netherlands;DJEWELS Chemiepark - Delfzijl;Delfzijl;Nouryon, Gasunie, AzkoNobel;20;2022;Alkaline electrolysis;6.9237;53.3337;770742.7584000006;7044963.512999997
+645;YES;Netherlands;GZI Next;Emmen;New Energy Coalition, NAM, Gasunie;10;2021;Other or unknown;6.8938999999999995;52.78889999999999;767425.4376000017;6944045.195299998
+646;YES;Netherlands;Hysolar Green on Road - Nieuwegein;Nieuwegein;Allied Waters, KWR, TU Delft;2;2021;Other or unknown;5.0836;52.036699999999996;565903.7633999996;6806764.007200003
+647;YES;Netherlands;PosHYdon;"52°11'30.8""""N, 4°08'14.7""""E";Neptune Energy, Gasunie;1;2021;Proton exchange membrane electrolysis;4.1374;52.1919;460573.2611999996;6834898.087300003
+648;YES;Netherlands;GreenH2UB (1st hub, Noord Brabant);Bladel;;3;2021;Other or unknown;5.215399999999999;51.3668;580575.6722999997;6686434.673
+649;YES;Netherlands;Hydrogenpilot Oosterwolde;Oosterwolde;;1;2021;Other or unknown;5.8946;52.46329999999998;656183.8704000004;6884333.478
+650;YES;Netherlands;Duwaal;Boekelermeer;HYGRO, Next Energy Coalition, Toyota;2;2020;Proton exchange membrane electrolysis;4.755199999999999;52.5978;529346.4426000006;6908945.582699999
+651;YES;Netherlands;Delfzijl - Hystock;Delfzijl;Gasunie, ITM Power Plc;1;2019;Proton exchange membrane electrolysis;6.9237;53.3337;770742.7584000006;7044963.512999997
+652;YES;Netherlands;Rozenburg Power2Gas Phase 2;Rozenburg;Stedin, Rameha, DNV GL;0.007;2019;Proton exchange membrane electrolysis;4.241499999999999;51.9056;472161.6202000007;6783074.688199997
+653;YES;Netherlands;Zuidwending;Zuidwending;;1;2018;Proton exchange membrane electrolysis;6.951699999999999;53.0954;773859.7041000016;7000663.870899998
+654;YES;Netherlands;DNV Kema/DNV GL;Nijstad-Oost;;0.01;2011;Proton exchange membrane electrolysis;6.422899999999999;52.71070000000001;714993.9574000016;6929663.510700002
+655;YES;Netherlands;OCAP;Botlek;;0;2005;Fossil based hydrogen + CCS;4.291799999999999;51.8858;477760.99060000107;6779502.910400003
+656;YES;Netherlands;Hydrogen Plant for Westereems Wind Farm (RWE Eemshaven);RWE-Eemshaver power plant;RWE, Innogy;100;2030;Other or unknown;6.8637;53.4395;764063.5890000015;7064710.931999996
+657;YES;Netherlands;H2-based residential area in Van der Veen;Nijstad-Oost;;0;2020;Other or unknown;6.422899999999999;52.71070000000001;714993.9574000016;6929663.510700002
+658;YES;Netherlands;Hydrogen Delta - Zeeland;Zeeland Refinery;;1000;2025;Other or unknown;3.7306;51.44489999999999;415288.49240000173;6700371.925099999
+659;YES;Netherlands;Hemweghub Amsterdam;52.404656441270745, 4.852082563520238;Vattenfall, Port of Amsterdam;100;2030;Other or unknown;4.8521;52.4047;540133.3013000004;6873633.8028
+660;YES;Netherlands;Bio Energy Netherlands;52.4011571213937, 4.788646602783333;;0;2018;Other or unknown;4.7886;52.4012;533064.5135999992;6872995.193700001
+661;YES;Netherlands;Producing Hydrogen by Gasification of Biomass in 'het Groene Hart';52.07883140473492, 4.562277796017752;;0;2021;Other or unknown;4.5623;52.078799999999994;507872.9127999991;6814386.064900003
+662;YES;Netherlands;H2GO - 1st phase;Energy Park Oude-Tonge;Goeree Overflakkee Province;2.5;2020;Other or unknown;4.2124;51.691;468922.22300000116;6744445.974100001
+663;YES;Netherlands;Blue Hydrogen Den Helder;Port of Den Helder;NAM, Gasunie, GasTerra, Port of Den Helder, North Holland Development Company, Municipality of Den Helder, Province of North Holland, New Energy Coalition;0;2027;Fossil based hydrogen + CCS;4.7971;52.9584;534010.7292999998;6975306.750299998
+664;YES;Netherlands;GldH2;De Mars, Zutphen;;1;2023;Other or unknown;6.197799999999999;52.1543;689935.9400000013;6828073.101800002
+665;YES;Netherlands;Cyrus Smith;;;0.02;unknown;Other or unknown;0;0;0;0
+666;YES;Netherlands;P2P IPKW;Industriepark Kleefse Waard, Arnhem;;1;2017;Other or unknown;5.9404;51.9702;661282.3031000011;6794739.024700001
+667;YES;Netherlands;H? Air Base Leeuwarden;Air Base Leeuwarden;;5;2022;Other or unknown;5.7566;53.225;640821.7806999981;7024725.760700002
+668;YES;Netherlands;E-Thor;Botlek;Deltalinqs, AVR, Tronox;5;2020;Other or unknown;4.291799999999999;51.8858;477760.99060000107;6779502.910400003
+669;YES;Netherlands;;Pesse ,;Shell;0;2020;Other or unknown;6.445200000000001;52.773900000000005;717476.382100001;6941284.558399998
+679;YES;Netherlands;Ameland;Ameland Island;;0.009;2008;Other or unknown;5.7352;53.446099999999994;638439.5436000004;7065944.440800004
+680;YES;Netherlands;P2G Project;Rozenburg;;0.008;2013;Power to Gas;4.241499999999999;51.9056;472161.6202000007;6783074.688199997
+681;YES;Netherlands;W2P2G;Wijster;;0.4;2014;Power to Gas;6.5165999999999995;52.81510000000001;725424.5936999992;6948869.3917
+682;YES;Netherlands;Power-to-Flex;No record;;0;2018;Power to Gas;0;0;0;0
+687;YES;Norway;HyDEMO;Øygarden;Equinor;0;2025;Fossil based hydrogen + CCS;4.726499999999999;60.4268;526151.5731999986;8495379.421099998
+688;YES;Norway;Pilot-E;Hellesylt;;0;2024;Other or unknown;6.8669;62.0858;764419.8112999983;8879516.1136
+689;YES;Norway;Norsk e-Fuel;Herøya;;22;2023;Solid oxide electrolysis cells;9.6269;59.120999999999995;1071661.6059000008;8206585.715999998
+690;YES;Norway;CRI project in Norway;;Carbon Recycling International?;70;2023;Other or unknown;0;0;0;0
+691;YES;Norway;Kvinnherad Power-to-Gas;Matre;;30;2023;Other or unknown;5.5853;60.8754;621752.7518999986;8597269.1422
+692;YES;Norway;Green fertilizer project Porsgrunn;Porsgrunn;;5;2022;Alkaline electrolysis;9.656199999999998;59.14079999999999;1074923.267000001;8210881.601199999
+693;YES;Norway;Nordic Blue Crude;;;20;2020;Solid oxide electrolysis cells;0;0;0;0
+694;YES;Norway;REMOTE - Norway;Froan Island;;0.05;2020;Proton exchange membrane electrolysis;9.104;63.973299999999995;1013452.6442000009;9342987.241999999
+695;YES;Norway;HAEOLUS;70.76557967070603, 29.087558333792003;;2.5;2019;Proton exchange membrane electrolysis;29.0876;70.7656;3238016.8203999996;11322597.393200003
+696;YES;Norway;ASKO Midt-Norge;Trondheim;;0;2017;Alkaline electrolysis;10.3952;63.43059999999999;1157188.3707000017;9206622.4208
+697;YES;Norway;Laboratory System at IFE Kjeller Pahse 2;;;0.035;2016;Proton exchange membrane electrolysis;11.0455;59.976299999999995;1229579.4356000014;8394463.235100001
+698;YES;Norway;HyNor Lillestrøm, Akershus Energy Park;Lillestrøm, Akershus Energy Park;;0.06;2013;Other or unknown;11.070799999999998;59.9716;1232395.8187000006;8393417.655199997
+699;YES;Norway;Oslo, CHIC;Oslo;;0.6;2012;Alkaline electrolysis;10.738999999999999;59.9133;1195460.011599999;8380460.334399998
+700;YES;Norway;Grimstad Renewable Energy Park;Grimstad Renewable Energy Park;;0.05;2000;Alkaline electrolysis;8.5749;58.3364;954553.501600001;8038319.171300001
+701;YES;Norway;Glomfjord Hydrogen AS;66.81641033698607, 13.94353412158852;;2;2025;Alkaline electrolysis;13.9435;66.81639999999999;1552183.3198999986;10103947.354900002
+702;YES;Norway;Tjeldbergodden Hydrogen;63.40830078246164, 8.696208505533251;;0;unknown;Fossil based hydrogen + CCS;8.6962;63.4083;968056.5557999983;9201074.5515
+703;YES;Norway;Uno-X Norbyveien;Ås/Ski, E18;Uno-X;0;unknown;Other or unknown;0;0;0;0
+729;YES;Poland;PGNiG - INGRID;52.22466050892003, 20.964042435104037;;0;2022;Other or unknown;20.963999999999995;52.22469999999999;2333701.8049999997;6840856.513700001
+730;YES;Poland;Tauron CO2-SNG;?aziska power plant;;0;2017;Other or unknown;18.8409;50.1325;2097359.394099999;6469254.206200004
+731;YES;Poland;;;;0;2016;Other or unknown;0;0;0;0
+742;YES;Portugal;Solar PV Plant port of Sines;Sines Refinery;;1000;2023;Other or unknown;-8.7996;37.9641;-979566.9912;4574355.5874999985
+743;YES;Portugal;Porto, CUTE;Porto;;0.3;2003;Alkaline electrolysis;0;0;0;0
+760;YES;Slovenia;Velenje Station;Velenje, unknown;;0;2015;Other or unknown;15.1048;46.36349999999999;1681458.6444999985;5838792.932099998
+811;YES;Spain;Power to Green H2 Mallorca - Phase 2;Lloseta;Acciona, Enagas, Cemex, Redexis;7.5;2022;Other or unknown;2.8688;39.7031;319353.3552000001;4822890.916599996
+812;YES;Spain;Power to Green H2 Mallorca - Phase 1;Lloseta;Acciona, Enagas, Cemex, Redexis;2.5;2021;Other or unknown;2.8688;39.7031;319353.3552000001;4822890.916599996
+813;YES;Spain;Seafuel project;Granadilla;Enagas;0.035;2020;Proton exchange membrane electrolysis;-16.5111;28.070899999999998;-1838007.2443999983;3257915.6017999984
+814;YES;Spain;ELY4OFF;42.10888131270657, -0.45921908419435303;;0.05;2019;Proton exchange membrane electrolysis;-0.4592;42.10889999999999;-51117.91019999981;5177306.120200001
+815;YES;Spain;CoSin: Synthetic Natural Gas from Sewage, Barcelona;Waste water treatment plant at Sabadell;;0.037;2018;Alkaline electrolysis;2.1378;41.534600000000005;237978.80739999935;5091517.7236
+816;YES;Spain;El Tubo - ACTA EL500;"37°20'19.48""""N,   5°58'40.83""""W";;0.00265;2013;Proton exchange membrane electrolysis;-5.977999999999999;37.338699999999996;-665467.9160000011;4486422.940499999
+817;YES;Spain;ITHER;42.10741800983844, -0.45874411848073376;;0.065;2007;Alkaline electrolysis;-0.4587;42.1074;-51062.25039999932;5177081.044500001
+818;YES;Spain;RES2H2 Gran Canaria;"27°48'58.65""""N, 15°25'24.78""""W";;0.055;2007;Alkaline electrolysis;-15.4234;27.8167;-1716925.0342999995;3225883.4472000003
+819;YES;Spain;Green Spider, Pais Vasco Hub;Muskiz refinery;;150;2030;Other or unknown;-3.1130999999999998;43.3254;-346548.7067999989;5361632.932099998
+820;YES;Spain;Green Spider, Castilla y Leon Hub;42.79409783572956, -5.635104726438802;;100;2030;Other or unknown;-5.6350999999999996;42.7941;-627296.4626000002;5280684.095399998
+821;YES;Spain;Green Spider, Asturias Hub;Avilés and Gijón;;100;2030;Other or unknown;-5.9140999999999995;43.5603;-658354.6004999988;5397647.830899999
+822;YES;Spain;Green Spider, Aragon Hub;42.10888131270657, -0.45921908419435303;;50;2030;Other or unknown;-0.4592;42.10889999999999;-51117.91019999981;5177306.120200001
+823;YES;Spain;H2Gas;;;0;unknown;Other or unknown;0;0;0;0
+824;YES;Spain;Don Qhyxote H2 Station;"Albacete, Ajusa's Hydrogen City; Parque Empresarial Ajusa, Calle 202006";;0;2012;Other or unknown;-1.8187;39.0039;-202456.75789999962;4722230.229500003
+832;YES;Spain;Sotavento experimental wind farm;Sotavento;;0.288;2005;Other or unknown;-7.8809;43.354499999999994;-877297.7749999985;5366086.970700003
+833;YES;Spain;Hidrolica;Tahivilla;;0.041;2008;Other or unknown;-5.782399999999999;36.1799;-643693.8236000016;4325403.6532000005
+834;YES;Spain;RENOVGAS Project;Jerez de la Frontera;;0.015;2015;Power to Gas;-6.127699999999999;36.6859;-682132.4437000006;4395415.263099998
+855;YES;Sweden;HYBRIT demo;SSAB EMEA AB, Aspaleden, Oxelösund;;0;2025;Alkaline electrolysis;17.1203;58.676999999999985;1905823.0782000013;8110899.291699998
+856;YES;Sweden;Preem CCS;Lysekil refinery;Preem, Chalmers University of Technology, Equinor, SINTEF;0;2025;Fossil based hydrogen + CCS;11.4245;58.34980000000001;1271769.5225999989;8041161.381099999
+857;YES;Sweden;Liquid Wind;Örnsköldsvik;;70;2023;Proton exchange membrane electrolysis;18.7448;63.2831;2086661.5909999982;9170006.718999997
+858;YES;Sweden;HYBRIT pilot;Luleå;;4.5;2021;Alkaline electrolysis;18.0562;59.3321;2010006.9897000007;8252515.301600002
+859;YES;Sweden;Oxelösund Forklifts;Oxelösund;;0;2018;Proton exchange membrane electrolysis;17.0775;58.67519999999999;1901058.6039999984;8110513.8627
+860;YES;Sweden;DemoSNG;Köping;;0.06;2015;Proton exchange membrane electrolysis;15.9944;59.513000000000005;1780488.4635000005;8292101.794100001
+861;YES;Sweden;Sandviken station;Sandviken, Göransson ArenaSätragatan 17, 811 61;AGA Linde;0;2017;Other or unknown;16.7687;60.6084;1866683.145300001;8536455.1642
+875;YES;Switzerland;Hydrospider;47.36880299295376, 7.979547378632867;;2;2020;Proton exchange membrane electrolysis;7.9795;47.3688;888273.8768000007;6002480.759199999
+876;YES;Switzerland;Solothurn, STORE&GO;Solothurn/Zuchwil;;0.35;2019;Proton exchange membrane electrolysis;7.557400000000001;47.203599999999994;841285.9197000004;5975370.325199999
+877;YES;Switzerland;Regio Energie Solothurn/Aarmat hybrid plant;Solothurn/Zuchwil;;0.175;2015;Proton exchange membrane electrolysis;7.5417;47.20759999999999;839538.2036999986;5976025.753399998
+878;YES;Switzerland;PtG Switzerland;Dietikon;Limeco;2.5;2021;Proton exchange membrane electrolysis;8.403399999999998;47.416;935462.2089000009;6010242.185099997
+879;YES;Switzerland;Coop Station;Hunzenschwil, Coop Mineraloel AG;Coop;0;2016;Other or unknown;8.1309;47.3859;905127.6477000006;6005291.8288
+888;YES;Switzerland;SolarFuel-Alpha 5th site;Rapperswil;;0.025;2015;Power to Gas;8.8196;47.2267;981793.381000001;5979156.104599997
+889;YES;Switzerland;RENERG2;Villigen;;0.1;2015;Power to Gas;8.2145;47.526199999999996;914433.9571000002;6028390.267700002
+890;YES;Switzerland;Erstes Energieautarkes HaUnited States der Welt;Brütten;;0.015;2016;Other or unknown;8.3671;47.4245;931421.3114;6011640.638599999
+891;YES;Switzerland;COSYMA;Zürich/Werdhölzli;;1.4;2017;Power to Gas;8.473299999999998;47.4022;943243.441300001;6007972.2355
+892;YES;Turkey;Hydrogen Island Bozcaada;Bozcaada;;0.02;2011;Other or unknown;26.070199999999996;39.834799999999994;2902121.3889000006;4841964.825900003
+893;YES;Turkey;Istanbul;;;0.16;2009;Alkaline electrolysis;28.9801;41.00849999999999;3226049.9750999995;5013595.492799997
+894;YES;Turkey;Hydepark;Gebze;;0.007;2008;Proton exchange membrane electrolysis;29.4399;40.8025;3277234.677000001;4983253.959600002
+895;YES;Turkey;CEC Denizli Turkey;Pamukkale University;;0.0024;2007;Proton exchange membrane electrolysis;29.1048;37.7383;3239931.5155999996;4542522.058899999
+896;YES;Turkey;Istanbul Hydrogen Station;Istanbul, Golden Horn;;0;2012;Other or unknown;28.9801;41.00849999999999;3226049.9750999995;5013595.492799997
+920;YES;United Kingdom;Drax Humber cluster completion;Drax Power Station;;600;2040;Fossil based hydrogen + CCS;-1.0001;53.738099999999996;-111330.62269999832;7120710.776900001
+921;YES;United Kingdom;H21 North of England;Leeds;Northern Gas Networks Ltd., Equinor ASA, Cadent Gas Ltd.;12150;2030;Fossil based hydrogen + CCS;-1.5437999999999998;53.797399999999996;-171855.0298999995;7131879.2700999975
+922;YES;United Kingdom;Hynet Northwest;Liverpool;Progressive Energy Ltd, SNC Lavalin, Johnson Matthey, Essar, Eni, Cadent;890;2025;Fossil based hydrogen + CCS;-2.9917;53.4072;-333034.52059999853;7058676.976800002
+923;YES;United Kingdom;Drax Humber cluster demonstrator;Drax Power Station;Equinor, Associated British Ports, BP, British Steel, Centrica, Drax, Mitsubishi Power, National Grid, PX, SSE, Triton Power, Uniper;0;2026;Fossil based hydrogen + CCS;-1.0001;53.738099999999996;-111330.62269999832;7120710.776900001
+924;YES;United Kingdom;Teesside collective;Teesside;BP;1000;2027;Fossil based hydrogen + CCS;-1.2759999999999998;54.5572;-142043.67029999942;7276397.616300002
+925;YES;United Kingdom;Acorn Aberdeenshire;Peterhead, Aberdeenshire;Pale Blue Dot Energy, Chrysaor, Shell;700;2025;Fossil based hydrogen + CCS;-1.7813;57.5053;-198293.40900000185;7864106.662100002
+926;YES;United Kingdom;Hydrogen plant - Orkney Islands - BIG HIT 2n phase;Shapinsay island;;1;2020;Proton exchange membrane electrolysis;-2.8668;59.05249999999999;-319130.71620000154;8191742.813000001
+927;YES;United Kingdom;HyDeploy;Newcastle-u-Lime;;0.5;2019;Proton exchange membrane electrolysis;-2.2271999999999994;53.01319999999999;-247930.7699000016;6985439.936499998
+928;YES;United Kingdom;Hydrogen plant - Orkney Islands - BIG HIT 1st phase;Eday island;;0.5;2017;Proton exchange membrane electrolysis;-2.7699000000000003;59.1944;-308343.8575000018;8222523.346000001
+929;YES;United Kingdom;Fife, Levenmouth Community Energy Project;Methil;;0.37;2016;Alkaline electrolysis;-2.9984;56.1868;-333780.3612000011;7595692.481299996
+930;YES;United Kingdom;Hydrogen mini grid system Yorkshire (Rotherham);Hydrogen Mini Grid, Advanced Manufacturing Park (AMP) Morse Way, off Brunel Way Catcliffe Rotherham S60 5WG;;0.03;2012;Alkaline electrolysis;-1.3774999999999997;53.3869;-153342.59860000014;7054887.082800001
+931;YES;United Kingdom;Baglan Energy Park Wales;51.620534099004885, -3.818982566380325;;0;2008;Alkaline electrolysis;-3.8190000000000004;51.6205;-425129.13529999927;6731795.7214
+932;YES;United Kingdom;PURE Project, Unst;Baltasound;;0.015;2005;Alkaline electrolysis;-0.8335999999999999;60.7689;-92795.92749999836;8572951.194399998
+933;YES;United Kingdom;HARI project, West Beacon Farm;Longhborough;;0.034;2004;Alkaline electrolysis;-1.2573999999999999;52.732899999999994;-139973.127700001;6933743.6677
+934;YES;United Kingdom;Centurion;Runcorn, Cheshire;;100;2030;Proton exchange membrane electrolysis;-2.6991999999999994;53.33870000000001;-300473.5694999993;7045895.652099997
+935;YES;United Kingdom;Submarines;;;0;unknown;Proton exchange membrane electrolysis;0;0;0;0
+936;YES;United Kingdom;Gigastack-Hornsea 2;53.658154421961285, -0.24807514929724633;;100;2030;Proton exchange membrane electrolysis;-0.24809999999999996;53.658199999999994;-27618.365699999034;7105687.395499997
+937;YES;United Kingdom;Hendon;London, Sainsbury's Unit 4, Hyde Estate Road;Air Products;0;2015;Other or unknown;-0.24390000000000003;51.583400000000005;-27150.823800001293;6725146.529600002
+966;YES;United Kingdom;HyFive London 3;London;;0.1;2017;Other or unknown;0;0;0;0
+1049;YES;Germany;Dow Stade;Stade;Dow;450;2005;Alkaline electrolysis;9.496899999999998;53.6397;1057190.0720999986;7102212.951700002
+1050;YES;Germany;Dow DCG;Schkopau;Dow;75;2013;Alkaline electrolysis;11.973899999999999;51.393699999999995;1332928.4508000016;6691232.397100002
