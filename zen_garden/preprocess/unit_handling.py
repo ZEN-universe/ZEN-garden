@@ -6,6 +6,7 @@
 
 Class containing the unit handling procedure.
 """
+import cProfile
 import logging
 import numpy as np
 import pandas as pd
@@ -13,12 +14,14 @@ import scipy as sp
 import warnings
 import json
 import os
+import linopy as lp
 import re
 from pint import UnitRegistry
 from pint.util import column_echelon_form
 from pathlib import Path
 from zen_garden.model.objects.technology.technology import Technology
 from zen_garden.model.objects.carrier.carrier import Carrier
+
 
 # enable Deprecation Warnings
 warnings.simplefilter('always', DeprecationWarning)
@@ -703,3 +706,251 @@ class UnitHandling:
         else:
             is_pos_neg_boolean = np.array_equal(np.abs(array), np.abs(array).astype(bool))
         return is_pos_neg_boolean
+
+class Scaling:
+    """
+    This class scales the optimization model before solving it and rescales the solution
+    """
+
+    def __init__(self, model, iterations=3, algorithm="geom"):
+        #optimization model to perform scaling on
+        self.model = model
+        self.A_matrix = self.model.constraints.to_matrix()
+        self.iterations = iterations
+        self.algorithm = algorithm
+        self.D_r_inv = sp.sparse.diags(np.ones(self.A_matrix.get_shape()[0]), 0, format='csr')
+        self.D_c_inv = sp.sparse.diags(np.ones(self.A_matrix.get_shape()[1]), 0, format='csr')
+
+
+    def run_scaling(self):
+        cp = cProfile.Profile()
+        cp.enable()
+        self.iter_scaling()
+        self.overwrite_problem()
+        cp.disable()
+        cp.print_stats("cumtime")
+
+    def count_nonzero_nonnan_entries(self,list):
+        count = 0
+        for sublist in list:
+            for entry in sublist:
+                if not (np.isnan(entry) or entry == 0):
+                    count += 1
+        return count
+
+    def overwrite_with_data(self, existing_array, data_list, mask_skip_constraints):
+        # Create a flattened mask to identify non-nan coefficients
+        #mask = ~np.isnan(existing_array)
+
+        # Copy the existing array to avoid modifying it in-place
+        #modified_array = np.copy(existing_array)
+
+        #position in new data
+        position = 0
+
+        # Iterate over each coefficient and replace non-nan coefficients with data
+        for index, constraint_mask in np.ndenumerate(mask_skip_constraints):
+            if constraint_mask != -1:
+                for i,data in enumerate(existing_array[index]):
+                    if not np.isnan(data):
+                        existing_array[index][i] = data_list[position]
+                        position += 1
+        return existing_array
+
+
+
+    def overwrite_problem(self):
+        #for name in self.model.constraints:
+        #    print(self.model.constraints[name].coeffs.data)
+
+        #[(i,e) for i,e in np.ndenumerate(self.model.constraints[self.model.constraints.get_name_by_label(100)].labels.data)] -> index of lists and mask
+        # range of labels with first label : label.max
+
+
+        #1. get list of rows and corresponding columns
+        rows = self.model.constraints.ravel('labels',broadcast_like = "vars", filter_missings=True)
+        cols = self.model.constraints.ravel('vars',broadcast_like = "vars", filter_missings=True)
+
+        #2. get list of current data
+        #data = self.model.constraints.ravel('coeffs',broadcast_like = "vars", filter_missings=True)
+
+        #print(data)
+        #print(len(data))
+        #3 overwrite data
+        new_data = [self.A_matrix[r,c] for r,c in zip(rows,cols)]
+
+        #print(new_data)
+        #print(len(new_data))
+
+        index = 0
+        while index < len(rows):
+            start = rows[index]
+            print(start)
+            name_con = self.model.constraints.get_name_by_label(int(start))
+            end = self.model.constraints[name_con].labels.data.max()
+            data_con = []
+            while rows[index] <= end:
+                data_con.append(new_data[index])
+                index += 1
+            #enter here overwriting function of data of constraints
+            if start == 143:
+                print(data_con)
+            self.model.constraints[name_con].coeffs.data = self.overwrite_with_data(self.model.constraints[name_con].coeffs.data, data_con, self.model.constraints[name_con].labels.data)
+
+
+
+        """
+        1. I also need to get the information if a row/constraint is skipped -> use either mask = False or label = -1 
+        def overwrite_with_data(existing_array, data_list):
+            # Create a flattened mask to identify non-nan coefficients
+            mask = ~np.isnan(existing_array)
+            
+            # Copy the existing array to avoid modifying it in-place
+            modified_array = np.copy(existing_array)
+            
+            # Iterate over each coefficient and replace non-nan coefficients with data
+            for index, element in np.ndenumerate(modified_array):
+                if mask[index]:
+                    # Check if there is still data in the list
+                    if len(data_list) > 0:
+                        # Replace the non-nan coefficient with data
+                        modified_array[index] = data_list.pop(0)
+                    else:
+                        # If data list is exhausted, break the loop
+                        break
+                
+    return modified_array
+        def flatten_ndarrays(arrays):
+            flattened_lists = []
+
+            def flatten_recursively(arr):
+                if isinstance(arr, np.ndarray):
+                    if arr.ndim == 1:
+                        flattened_lists.append(arr.tolist())
+                    else:
+                        for sub_arr in arr:
+                            flatten_recursively(sub_arr)
+                else:
+                    flattened_lists.append(arr)
+
+            for arr in arrays:
+                flatten_recursively(arr)
+
+            return flattened_lists
+
+        flatten = flatten_ndarrays([self.model.constraints[name].coeffs.data for name in self.model.constraints])
+        print(len(flatten))
+        print(flatten)
+        print(self.count_nonzero_nonnan_entries(flatten))
+
+        print(len(self.model.constraints.to_matrix().data))
+        print(self.model.constraints.to_matrix().data)
+        #self.model.variables.get_name_by_label(5)
+        #keys = ["coeffs", "labels", "vars"]
+        #data, rows, cols = [
+        #    self.model.constraints.ravel(k, broadcast_like="vars", filter_missings=True) for k in keys
+        #]
+        print(self.model.constraints.ravel('labels', filter_missings=True))
+
+        #print(self.model.constraints.ravel('coeffs', broadcast_like="vars", filter_missings=True))
+        #print(self.model.constraints.ravel('vars', broadcast_like="vars", filter_missings=True))
+        """
+
+    def get_min(self,A_matrix):
+        d = A_matrix.data
+        mins_values = np.minimum.reduceat(np.abs(d), A_matrix.indptr[:-1])
+        return mins_values
+
+    def get_full_geom(self,A_matrix,axis):
+        d = A_matrix.data
+        geom = np.ones(len(A_matrix.indptr)-1)
+        nonzero_entries = np.unique(list(A_matrix.nonzero()[axis]))
+        idx_unique = np.unique(A_matrix.indptr[:-1])
+        d_slices = np.split(d,idx_unique[1:])
+        geom[nonzero_entries] = list(map(lambda x: sp.stats.gmean(np.abs(x)),d_slices))
+        return geom
+
+
+    def update_A(self, vector, axis):
+        if axis == 1:
+            self.A_matrix = sp.sparse.diags(vector, 0, format='csr').dot(self.A_matrix)
+            self.D_r_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_r_inv
+        elif axis == 0:
+            self.A_matrix = self.A_matrix.dot(sp.sparse.diags(vector, 0, format='csr'))
+            self.D_c_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_c_inv
+
+    def iter_scaling(self):
+        #transform A matrix to csr matrix for better computational properties
+        self.A_matrix.eliminate_zeros()
+        self.A_matrix = sp.sparse.csr_matrix(self.A_matrix)
+        #initiate iteration counter
+        i = 0
+        while i<self.iterations:
+            i+=1
+            #update row scaling vector
+            if self.algorithm == "infnorm":
+                #update row scaling vector
+                max_rows = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=1)
+                r_vector = 1 / max_rows
+                #update A and row scaling matrix
+                self.update_A(r_vector,1)
+                #update column scaling vector
+                max_cols = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=0)
+                c_vector = 1/max_cols
+                #update A and column scaling matrix
+                self.update_A(c_vector,0)
+
+                A_abs = np.abs(self.A_matrix[self.A_matrix != 0])
+                print(f"After iteration {i}: min {A_abs.min()}, max {A_abs.max()}")
+
+            elif self.algorithm == "full_geom":
+                #update row scaling vector
+                geom = self.get_full_geom(self.A_matrix, 0)
+                r_vector = 1 / geom
+                #update A and row scaling matrix
+                self.update_A(r_vector,1)
+                #update column scaling vector
+                geom = self.get_full_geom(self.A_matrix.tocsc(), 1)
+                c_vector = 1 / geom
+                #update A and column scaling matrix
+                self.update_A(c_vector,0)
+
+                A_abs = np.abs(self.A_matrix[self.A_matrix != 0])
+                print(f"After iteration {i}: min {A_abs.min()}, max {A_abs.max()}")
+
+            elif self.algorithm == "geom":
+                # update row scaling vector
+                max_rows = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=1)
+                min_rows = self.get_min(self.A_matrix)
+                r_vector = 1 / ((max_rows * min_rows) ** 0.5)
+                # update A and row scaling matrix
+                self.update_A(r_vector,1)
+                # update column scaling vector
+                max_cols = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=0)
+                min_cols = self.get_min(self.A_matrix.tocsc())
+                c_vector = 1 / ((max_cols * min_cols) ** 0.5)
+                # update A and column scaling matrix
+                self.update_A(c_vector,0)
+
+
+                A_abs = np.abs(self.A_matrix[self.A_matrix != 0])
+                print(f"After iteration {i}: min {A_abs.min()}, max {A_abs.max()}")
+
+            elif self.algorithm == "arithm":
+                #update row scaling vector
+                mean_rows = sp.sparse.linalg.norm(self.A_matrix, ord=1, axis=1)/np.diff(self.A_matrix.indptr)
+                c_vector = 1/mean_rows
+                #update A and row scaling matrix
+                self.update_A(c_vector,1)
+                #update column scaling vector
+                mean_cols = sp.sparse.linalg.norm(self.A_matrix, ord=1, axis=0)/np.diff(self.A_matrix.tocsc().indptr)
+                r_vector = 1/mean_cols
+                #update A and column scaling matrix
+                self.update_A(r_vector,0)
+
+                A_abs = np.abs(self.A_matrix[self.A_matrix != 0])
+                print(f"After iteration {i}: min {A_abs.min()}, max {A_abs.max()}")
+
+
+
+

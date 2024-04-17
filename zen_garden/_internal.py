@@ -16,6 +16,7 @@ import importlib
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
 from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
+from .preprocess.unit_handling import Scaling
 
 # we setup the logger here
 setup_logger()
@@ -78,6 +79,10 @@ def main(config, dataset_path=None, job_index=None):
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem
             optimization_setup.construct_optimization_problem()
+            #TODO scaling algorithm
+            #Todo save object then call run + config.solver within scaling object use optimization setup
+            if config.solver["use_scaling"] == True:
+                Scaling(optimization_setup.model, config.solver["scaling_iterations"],config.solver["scaling_algorithm"]).run_scaling()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()
             # break if infeasible

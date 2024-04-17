@@ -146,6 +146,7 @@ class System(Subscriptable):
 class SolverOptions(Subscriptable):
     pass
 
+#ToDO add iterations etc. here
 class Solver(Subscriptable):
     name: str = "glpk"
     solver_options: SolverOptions = SolverOptions()
@@ -169,6 +170,9 @@ class Solver(Subscriptable):
     rounding_decimal_points_capacity: int = 4
     analyze_numerics: bool = True
     use_symbolic_labels: bool = False
+    use_scaling: bool = True
+    scaling_algorithm: str = "geom"
+    scaling_iterations: int = 3
 
 
 class Config(Subscriptable):
