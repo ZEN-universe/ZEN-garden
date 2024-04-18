@@ -25,7 +25,7 @@ zen_garden_env/
 compileAG.py
 postprocess/eth_colorsAG.py
 postprocess/visualizationAG.py
-preprocess_HB
+postprocessing_HB
 
 # pytest monitor
 .pymon

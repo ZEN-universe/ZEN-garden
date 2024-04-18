@@ -28,7 +28,7 @@ jobs:
 
       - name: Check Env File
         id: check-env-file
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v41
         with:
           files: |
             zen_garden_env.yml
@@ -63,7 +63,7 @@ jobs:
         with:
             miniforge-variant: Mambaforge
             miniforge-version: latest
-            activate-environment: zen-garden-linopy
+            activate-environment: zen-garden
             use-mamba: true
 
       # date for the cache

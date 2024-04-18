@@ -30,7 +30,7 @@ from pathlib import Path
 
 def setup_logger(level=logging.INFO):
     """ set up logger"""
-    logging.basicConfig(level=level,format="%(message)s",datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(stream=sys.stdout, level=level,format="%(message)s",datefmt='%Y-%m-%d %H:%M:%S')
     logging.captureWarnings(True)
 
 def get_inheritors(klass):
@@ -1020,10 +1020,14 @@ class HDFPandasSerializer(LazyDict):
                 # make a proper multi index to save memory
                 store.put(key, value)
                 store.get_storer(key).attrs.type = "pandas"
-            elif isinstance(value, (float, str, int)):
+            elif isinstance(value, (float,str,int)):
                 store.put(key, pd.Series([], dtype=int))
                 store.get_storer(key).attrs.value = value
                 store.get_storer(key).attrs.type = "scalar"
+            # elif isinstance(value,str):
+            #     # encode string to bytes
+            #     store.put(key, pd.Series([np.char.encode(value)], dtype=type(value)))
+            #     store.get_storer(key).attrs.type = "scalar"
             elif isinstance(value, (list, tuple)) or isinstance(value, np.ndarray) and value.ndim == 1:
                 store.put(key, pd.Series(value))
                 store.get_storer(key).attrs.type = "vector"
@@ -1284,22 +1288,24 @@ class StringUtils:
         return scenario_name,subfolder,param_map
 
     @staticmethod
-    def get_model_name(analysis):
+    def get_model_name(analysis,system):
         """
         return model name while conducting some tests
-        :param analysis: analysis of optimziation
+        :param analysis: analysis of optimization
+        :param system: system of optimization
         :return: model name
         :return: output folder
         """
         model_name = os.path.basename(analysis["dataset"])
-        out_folder = StringUtils.get_output_folder(analysis)
+        out_folder = StringUtils.get_output_folder(analysis,system)
         return model_name,out_folder
 
     @staticmethod
-    def get_output_folder(analysis):
+    def get_output_folder(analysis,system):
         """
         return model name while conducting some tests
-        :param analysis: analysis of optimziation
+        :param analysis: analysis of optimization
+        :param system: system of optimization
         :return: output folder
         """
         model_name = os.path.basename(analysis["dataset"])
@@ -1311,6 +1317,14 @@ class StringUtils:
             logging.warning(f"The output folder '{out_folder}' already exists")
             if analysis["overwrite_output"]:
                 logging.warning("Existing files will be overwritten!")
+                if not system.conduct_scenario_analysis:
+                    # TODO fix for scenario analysis, shared folder for all scenarios, so not robust for parallel process
+                    for filename in os.listdir(out_folder):
+                        file_path = os.path.join(out_folder, filename)
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
         return out_folder
 
 class ScenarioUtils:

@@ -128,24 +128,25 @@ class ConversionTechnology(Technology):
         :return dict_of_attributes: returns dict of attribute values """
         class_elements = optimization_setup.get_all_elements(cls)
         dict_of_attributes = {}
+        dict_of_units = {}
         is_pwa_attribute = "capex_is_pwa"
         attribute_name_linear = "capex_specific"
 
         for element in class_elements:
             # extract for pwa
             if not getattr(element, is_pwa_attribute):
-                dict_of_attributes, _ = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes)
+                dict_of_attributes, _, dict_of_units = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes, dict_of_units={})
             if not dict_of_attributes:
                 _, index_names = cls.create_custom_set(index_names, optimization_setup)
-                return (dict_of_attributes, index_names)
+                return dict_of_attributes, index_names, dict_of_units
         dict_of_attributes = pd.concat(dict_of_attributes, keys=dict_of_attributes.keys())
         if not index_names:
             logging.warning(f"Initializing the parameter capex without the specifying the index names will be deprecated!")
-            return dict_of_attributes
+            return dict_of_attributes, dict_of_units
         else:
             custom_set, index_names = cls.create_custom_set(index_names, optimization_setup)
             dict_of_attributes = optimization_setup.check_for_subindex(dict_of_attributes, custom_set)
-            return (dict_of_attributes, index_names)
+            return dict_of_attributes, index_names, dict_of_units
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
@@ -164,15 +165,15 @@ class ConversionTechnology(Technology):
             dependent_carriers[tech].remove(reference_carrier[tech][0])
         # input carriers of technology
         optimization_setup.sets.add_set(name="set_input_carriers", data=input_carriers,
-                                        doc="set of carriers that are an input to a specific conversion technology. Dimensions: set_conversion_technologies",
+                                        doc="set of carriers that are an input to a specific conversion technology. Indexed by set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # output carriers of technology
         optimization_setup.sets.add_set(name="set_output_carriers", data=output_carriers,
-                                        doc="set of carriers that are an output to a specific conversion technology. Dimensions: set_conversion_technologies",
+                                        doc="set of carriers that are an output to a specific conversion technology. Indexed by set_conversion_technologies",
                                         index_set="set_conversion_technologies")
         # dependent carriers of technology
         optimization_setup.sets.add_set(name="set_dependent_carriers", data=dependent_carriers,
-                                        doc="set of carriers that are an output to a specific conversion technology.\n\t Dimensions: set_conversion_technologies",
+                                        doc="set of carriers that are an output to a specific conversion technology. Indexed by set_conversion_technologies",
                                         index_set="set_conversion_technologies")
 
         # add sets of the child classes
@@ -186,13 +187,11 @@ class ConversionTechnology(Technology):
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         # slope of linearly modeled capex
-        optimization_setup.parameters.add_parameter(name="capex_specific_conversion",
-            data=cls.get_capex_all_elements(optimization_setup, index_names=["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"]),
-            doc="Parameter which specifies the slope of the capex if approximated linearly")
+        optimization_setup.parameters.add_parameter(name="capex_specific_conversion", index_names=["set_conversion_technologies", "set_capex_linear", "set_nodes", "set_time_steps_yearly"],
+            doc="Parameter which specifies the slope of the capex if approximated linearly", calling_class=cls)
         # slope of linearly modeled conversion efficiencies
-        optimization_setup.parameters.add_parameter(name="conversion_factor", data=optimization_setup.initialize_component(cls, "conversion_factor",
-            index_names=["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"]),
-            doc="Parameter which specifies the conversion factor")
+        optimization_setup.parameters.add_parameter(name="conversion_factor", index_names=["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"],
+            doc="Parameter which specifies the conversion factor", calling_class=cls)
 
         # add params of the child classes
         for subclass in cls.__subclasses__():
@@ -234,6 +233,10 @@ class ConversionTechnology(Technology):
                     else:
                         conversion_factor_lower = params.conversion_factor.loc[tech, carrier, node_set].min().data
                         conversion_factor_upper = params.conversion_factor.loc[tech, carrier, node_set].max().data
+                        if 0 in conversion_factor_upper:
+                            _rounding_ts = optimization_setup.solver.rounding_decimal_points_ts
+                            raise ValueError(f"Maximum conversion factor of {tech} for carrier {carrier} is 0.\nOne reason might be that the conversion factor is too small (1e-{_rounding_ts}), so that it is rounded to 0 after the time series aggregation.")
+
                     lower.loc[tech, carrier, ...] = model.variables["capacity"].lower.loc[tech, "power", node_set, time_step_year].data * conversion_factor_lower
                     upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data * conversion_factor_upper
 
@@ -244,18 +247,18 @@ class ConversionTechnology(Technology):
         # input flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_input_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
         variables.add_variable(model, name="flow_conversion_input", index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier input of conversion technologies')
+            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier input of conversion technologies', unit_category={"energy_quantity": 1, "time": -1})
         # output flow of carrier into technology
         index_values, index_names = cls.create_custom_set(["set_conversion_technologies", "set_output_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup)
         variables.add_variable(model, name="flow_conversion_output", index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier output of conversion technologies')
+            bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier output of conversion technologies', unit_category={"energy_quantity": 1, "time": -1})
         ## pwa Variables - Capex
         # pwa capacity
         variables.add_variable(model, name="capacity_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
-            doc='pwa variable for size of installed technology on edge i and time t')
+            doc='pwa variable for size of installed technology on edge i and time t', unit_category={"energy_quantity": 1, "time": -1})
         # pwa capex technology
         variables.add_variable(model, name="capex_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
-            doc='pwa variable for capex for installing technology on edge i and time t')
+            doc='pwa variable for capex for installing technology on edge i and time t', unit_category={"money": 1})
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
@@ -268,9 +271,7 @@ class ConversionTechnology(Technology):
         rules = ConversionTechnologyRules(optimization_setup)
         # conversion factor
         constraints.add_constraint_block(model, name="constraint_carrier_conversion",
-                                         constraint=rules.constraint_carrier_conversion_block(*cls.create_custom_set(
-                                             ["set_conversion_technologies", "set_dependent_carriers", "set_nodes",
-                                              "set_time_steps_operation"], optimization_setup)),
+                                         constraint=rules.constraint_carrier_conversion_block(*cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes","set_time_steps_operation"], optimization_setup)),
                                          doc="Conversion of energy carrier with conversion_factor")
         # capex
         set_pwa_capex = cls.create_custom_set(["set_conversion_technologies", "set_capex_pwa", "set_nodes", "set_time_steps_yearly"], optimization_setup)

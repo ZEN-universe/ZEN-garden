@@ -41,8 +41,6 @@ class RetrofittingTechnology(ConversionTechnology):
         """ retrieves and stores information on reference, input and output carriers """
         # get reference carrier from class <Technology>
         super().store_carriers()
-        # define input and output carrier
-        self.retrofit_reference_carrier = self.data_input.extract_carriers(carrier_type="retrofit_reference_carrier")
 
     def store_input_data(self):
         """ retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes """
@@ -75,9 +73,7 @@ class RetrofittingTechnology(ConversionTechnology):
         :param optimization_setup: The OptimizationSetup the element is part of """
 
         # slope of linearly modeled capex
-        optimization_setup.parameters.add_parameter(name="retrofit_flow_coupling_factor",
-            data= optimization_setup.initialize_component(cls, "retrofit_flow_coupling_factor", index_names=["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"], capacity_types=False),
-            doc="Parameter which specifies the flow coupling between the retrofitting technologies and its base technology")
+        optimization_setup.parameters.add_parameter(name="retrofit_flow_coupling_factor", index_names=["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"], capacity_types=False, doc="Parameter which specifies the flow coupling between the retrofitting technologies and its base technology", calling_class=cls)
 
     @classmethod
     def construct_constraints(cls, optimization_setup):

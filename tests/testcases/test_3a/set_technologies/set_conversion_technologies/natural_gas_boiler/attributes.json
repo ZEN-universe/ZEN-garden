@@ -36,7 +36,7 @@
       "heat"
     ]
   },
-  "carbon_intensity": {
+  "carbon_intensity_technology": {
     "default_value": 0.0,
     "unit": "kilotons/GWh"
   },
@@ -76,7 +76,7 @@
     },
     {
       "carbon": {
-        "default_value": 0.01,
+        "default_value": 0.1,
         "unit": "kilotons/GWh"
       }
     }

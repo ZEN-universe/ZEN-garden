@@ -40,6 +40,7 @@ class UnitHandling:
         self.get_base_units(define_ton_as_metric_ton)
         # dict of element attribute values
         self.dict_attribute_values = {}
+        self.carrier_energy_quantities = {}
 
     def get_base_units(self, define_ton_as_metric_ton=True):
         """ gets base units of energy system
@@ -126,7 +127,8 @@ class UnitHandling:
         dim_vector = pd.Series(index=self.dim_matrix.index, data=0)
         missing_dim = set(dim_input.keys()).difference(dim_vector.keys())
         assert len(missing_dim) == 0, f"No base unit defined for dimensionalities <{missing_dim}>"
-        dim_vector[list(dim_input.keys())] = list(dim_input.values())
+        if len(dim_input) > 0:  # check for content of dim_input to avoid Warning
+            dim_vector[list(dim_input.keys())] = list(dim_input.values())
         # calculate dimensionless combined unit (e.g., tons and kilotons)
         combined_unit = self.ureg(input_unit).units
         # if unit (with a different multiplier) is already in base units
@@ -259,14 +261,14 @@ class UnitHandling:
         :param get_multiplier: bool whether multiplier should be returned or not
         :return: multiplier to convert input_unit to base  units, pint Quantity of input_unit converted to base units
         """
-        #convert attribute unit into unit combination of base units
+        # convert attribute unit into unit combination of base units
         combined_unit = None
         attribute_unit_in_base_units = self.ureg("")
         if input_unit != "1" and not pd.isna(input_unit):
             combined_unit, base_combination = self.calculate_combined_unit(input_unit, return_combination=True)
             for unit, power in zip(base_combination.index, base_combination):
                 attribute_unit_in_base_units *= self.ureg(unit) ** power
-        #calculate the multiplier to convert the attribute unit into base units
+        # calculate the multiplier to convert the attribute unit into base units
         if get_multiplier:
             multiplier = self.get_unit_multiplier(input_unit, attribute_name, path, combined_unit=combined_unit)
             return multiplier, attribute_unit_in_base_units
@@ -337,6 +339,106 @@ class UnitHandling:
             # check if units are consistent
             self.assert_unit_consistency(elements, energy_quantity_units, item,optimization_setup, reference_carrier.name, unit_dict)
         logging.info(f"Parameter unit consistency is fulfilled!")
+        self.save_carrier_energy_quantities(optimization_setup)
+
+    def _check_for_power_power_conversion_factor(self, energy_quantity_units):
+        """
+        if unit consistency is not fulfilled because of conversion factor, try to change "wrong" conversion factor units from power/power to energy/energy (since both is allowed)
+        :param energy_quantity_units:
+        :return:
+        """
+        if self._is_inconsistent(energy_quantity_units) and not self._is_inconsistent(energy_quantity_units,
+                                                                                      exclude_string="conversion_factor"):
+            non_cf_energy_quantity_unit = \
+            [value for key, value in energy_quantity_units.items() if "conversion_factor" not in key][0]
+            cf_energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if
+                                        "conversion_factor" in key}
+            time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
+            for key, value in cf_energy_quantity_units.items():
+                # if conversion factor unit is in not in energy units, try to convert it to energy units by multiplying with time base unit
+                if value != non_cf_energy_quantity_unit:
+                    energy_quantity_units[key] = value * self.ureg(time_base_unit)
+
+    def assert_unit_consistency(self, elements, energy_quantity_units, item,optimization_setup, reference_carrier_name, unit_dict):
+        """Asserts that the units of the attributes of an element are consistent
+        :param elements: list of all elements
+        :param energy_quantity_units: dict containing attribute names and their energy quantity terms
+        :param item: element or energy system
+        :param optimization_setup: OptimizationSetup object
+        :param reference_carrier_name: name of reference carrier if item is a conversion technology
+        :param unit_dict: dict containing attribute names along with their units in base units
+        """
+        attributes_with_lowest_appearance = self._get_attributes_with_least_often_appearing_unit(energy_quantity_units)
+        # assert unit consistency
+        if item in elements and self._is_inconsistent(energy_quantity_units):
+            # check if there is a conversion factor with wrong units
+            wrong_cf_atts = {att: unit for att, unit in attributes_with_lowest_appearance.items() if
+                             "conversion_factor" in att}
+            name_pairs_cf = []
+            if wrong_cf_atts:
+                for wrong_cf_att in wrong_cf_atts:
+                    names = wrong_cf_att.split("_conversion_factor_")
+                    name_pairs_cf.append(names[1] + " of " + names[0])
+                self._write_inconsistent_units_file(energy_quantity_units, item.name,
+                                                    analysis=optimization_setup.analysis)
+                raise AssertionError(
+                    f"Unit inconsistency! Most probably, the {item.name} unit(s) of the conversion factor(s) with dependent carrier {name_pairs_cf} are wrong.")
+            # check if there is a retrofit flow coupling factor with wrong units
+            wrong_rf_atts = {att: unit for att, unit in attributes_with_lowest_appearance.items() if
+                             "retrofit_flow_coupling_factor" in att}
+            name_pairs_rf = []
+            if wrong_rf_atts:
+                for wrong_rf_att in wrong_rf_atts:
+                    names = wrong_rf_att.split("_retrofit_flow_coupling_factor_")
+                    name_pairs_rf.append(names[1] + " of " + names[0])
+                self._write_inconsistent_units_file(energy_quantity_units, item.name,
+                                                    analysis=optimization_setup.analysis)
+                raise AssertionError(
+                    f"Unit inconsistency! Most probably, the {item.name} unit(s) of the retrofit flow coupling factor(s) with dependent carrier {name_pairs_rf} are wrong.")
+            if item.__class__ is Carrier:
+                self._write_inconsistent_units_file(energy_quantity_units, item.name,
+                                                    analysis=optimization_setup.analysis)
+                raise AssertionError(
+                    f"The attribute units of the {item.__class__.__name__} {item.name} are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=attributes_with_lowest_appearance, unit_dict=unit_dict)} are wrong.")
+            else:
+                self._write_inconsistent_units_file(energy_quantity_units, item.name,
+                                                    analysis=optimization_setup.analysis,
+                                                    reference_carrier_name=reference_carrier_name)
+                raise AssertionError(
+                    f"The attribute units of the {item.__class__.__name__} {item.name} and its reference carrier {reference_carrier_name} are not consistent! Most propably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=attributes_with_lowest_appearance, unit_dict=unit_dict)} are wrong.")
+        # since energy system doesn't have any attributes with energy dimension, its dict must be empty
+        elif item not in elements and len(energy_quantity_units) != 0:
+            self._write_inconsistent_units_file(energy_quantity_units, item.name, analysis=optimization_setup.analysis)
+            raise AssertionError(
+                f"The attribute units defined in the energy_system are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=energy_quantity_units, unit_dict=unit_dict)} are wrong.")
+
+    def _is_inconsistent(self, energy_quantity_units,exclude_string=None):
+        """
+        Checks if the units of the attributes of an element are inconsistent
+        :param energy_quantity_units: dict containing attribute names and their energy quantity terms
+        :param exclude_string: string for which consistency is not checked
+        :return: bool whether the units are consistent or not
+        """
+        # exclude attributes which are not of interest for consistency
+        if exclude_string:
+            energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if exclude_string not in key}
+        # check if all energy quantity units are the same
+        if len(set(energy_quantity_units.values())) > 1:
+            return True
+        else:
+            return False
+
+    def _get_units_of_wrong_attributes(self, wrong_atts, unit_dict):
+        """Gets units of attributes showing wrong units
+
+        :param wrong_atts: dict containing attribute names along with their energy_quantity part of attributes which have inconsistent units
+        :param unit_dict: dict containing attribute names along with their units in base units
+        :return: dict containing attribute names along with their unit in base unit of attributes which have inconsistent units
+        """
+        wrong_atts_with_units = {}
+        for att in wrong_atts:
+            wrong_atts_with_units[att] = [str(unit_specs["unit_in_base_units"].units) for key, unit_specs in unit_dict.items() if key == att][0]
+        return wrong_atts_with_units
 
     def _check_for_power_power_conversion_factor(self, energy_quantity_units):
         """
@@ -573,6 +675,16 @@ class UnitHandling:
         if "energy_quantity" in unit_category:
             unit = unit ** unit_category["energy_quantity"]
         return {attribute_name: unit}
+
+    def save_carrier_energy_quantities(self, optimization_setup):
+        """
+        saves energy_quantity units of carriers after consistency checks in order to assign units to the variables later on
+
+        :param optimization_setup: optimization setup object
+        :return: dict of carrier units
+        """
+        for carrier in optimization_setup.dict_elements["Carrier"]:
+            self.carrier_energy_quantities[carrier.name] = self._remove_non_energy_units(carrier.units["demand"], attribute_name=None)[None]
 
     def set_base_unit_combination(self, input_unit, attribute):
         """ converts the input unit to the corresponding base unit

@@ -20,6 +20,7 @@ import pandas as pd
 import xarray as xr
 from filelock import FileLock
 import yaml
+from pydantic import BaseModel
 
 from ..utils import HDFPandasSerializer
 from ..model.optimization_setup import OptimizationSetup
@@ -112,6 +113,9 @@ class Postprocess:
         :param format: Force the format to use, if None use output_format attribute of instance
         """
 
+        if isinstance(dictionary, BaseModel):
+            dictionary = dictionary.model_dump()
+
         # set the format
         if format is None:
             format = self.output_format
@@ -132,6 +136,7 @@ class Postprocess:
 
         elif format == "gzip" or format == "json":
             # serialize to string
+            
             serialized_dict = json.dumps(dictionary, indent=2)
 
             # if the string is larger than the max output size we compress anyway
@@ -210,7 +215,7 @@ class Postprocess:
             # create dataframe
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
             # update dict
-            doc = set.doc
+            doc = self.sets.docs[set.name]
             data_frames[index_name[0]] = self._transform_df(df,doc)
 
         self.write_file(self.name_dir.joinpath('set_dict'), data_frames)
@@ -225,6 +230,7 @@ class Postprocess:
             # get the values
             vals = getattr(self.params, param)
             doc = self.params.docs[param]
+            units = self.params.units[param]
             index_list = self.get_index_list(doc)
             # data frame
             if isinstance(vals, xr.DataArray):
@@ -238,7 +244,7 @@ class Postprocess:
                 df.index.names = index_list
 
             # update dict
-            data_frames[param] = self._transform_df(df, doc)
+            data_frames[param] = self._transform_df(df, doc, units)
 
         # write to json
         self.write_file(self.name_dir.joinpath('param_dict'), data_frames)
@@ -252,12 +258,14 @@ class Postprocess:
         for name, arr in self.model.solution.items():
             if name in self.vars.docs:
                 doc = self.vars.docs[name]
+                units = self.vars.units[name]
                 index_list = self.get_index_list(doc)
             elif name.startswith("sos2_var") or name in ["tech_on_var", "tech_off_var"]:
                 continue
             else:
                 index_list = []
                 doc = None
+                units = None
 
             # create dataframe
             df = arr.to_dataframe("value").dropna()
@@ -266,7 +274,7 @@ class Postprocess:
                 df.index.names = index_list
 
             # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[name] = self._transform_df(df,doc)
+            data_frames[name] = self._transform_df(df,doc,units)
 
         self.write_file(self.name_dir.joinpath('var_dict'), data_frames)
 
@@ -323,18 +331,18 @@ class Postprocess:
         """
 
         # This we only need to save once
-        #check if MF within scenario analysis
+        # check if MF within scenario analysis
         if isinstance(self.subfolder, tuple):
-            #check if there are sub_scenarios (parent must then be the name of the parent scenario)
+            # check if there are sub_scenarios (parent must then be the name of the parent scenario)
             if not self.subfolder[0].parent == Path("."):
                 fname = self.name_dir.parent.parent.parent.joinpath('scenarios')
             else:
-                #MF with in scenario analysis without sub-scenarios
+                # MF with in scenario analysis without sub-scenarios
                 fname = self.name_dir.parent.parent.joinpath('scenarios')
-        #only MF or only scenario analysis
+        # only MF or only scenario analysis
         elif self.subfolder != Path(""):
             fname = self.name_dir.parent.joinpath('scenarios')
-        #neither MF nor scenario analysis
+        # neither MF nor scenario analysis
         else:
             fname = self.name_dir.joinpath('scenarios')
         self.write_file(fname, self.scenarios, format="json")
@@ -384,7 +392,7 @@ class Postprocess:
             fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
         self.write_file(fname, self.dict_sequence_time_steps)
 
-    def _transform_df(self, df, doc):
+    def _transform_df(self, df, doc, units=None):
         """we transform the dataframe to a json string and load it into the dictionary as dict
 
         :param df: #TODO describe parameter/return
@@ -393,11 +401,30 @@ class Postprocess:
         """
         if self.output_format == "h5":
             # No need to transform the dataframe to json
-            dataframe = {"dataframe": df, "docstring": doc}
+            # doc = self._doc_to_df(doc)
+            if units is not None:
+                dataframe = {"dataframe": df, "docstring": doc, "units": units}
+            else:
+                dataframe = {"dataframe": df, "docstring": doc}
         else:
-            dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                            "docstring": doc}
+            if units is not None:
+                dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
+                                                "docstring": doc, "units": units}
+            else:
+                dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
+                             "docstring": doc}
         return dataframe
+
+    def _doc_to_df(self, doc):
+        """Transforms the docstring to a dataframe
+
+        :param doc: doc string
+        :return: pd.Series of the docstring
+        """
+        if doc is not None:
+            return pd.Series(doc.split(";")).str.split(":",expand=True).set_index(0).squeeze()
+        else:
+            return pd.DataFrame()
 
     def flatten_dict(self, dictionary):
         """Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can

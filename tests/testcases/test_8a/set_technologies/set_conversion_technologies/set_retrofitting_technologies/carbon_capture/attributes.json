@@ -70,7 +70,7 @@
     "default_value": 0.0,
     "unit": "1"
   },
-  "carbon_intensity": {
+  "carbon_intensity_technology": {
     "default_value": 0.0,
     "unit": "kilotons/kilotons"
   },
@@ -78,18 +78,9 @@
     "default_value": "inf",
     "unit": "1"
   },
-  "capacity_limit_country": {
-    "default_value": "inf",
-    "unit": "kilotons/hour"
-  },
   "capacity_addition_unbounded": {
     "default_value": 0.0,
     "unit": "kilotons/hour"
-  },
-  "retrofit_reference_carrier": {
-    "default_value": [
-      "natural_gas"
-    ]
   },
   "retrofit_base_technology": {
     "default_value": [

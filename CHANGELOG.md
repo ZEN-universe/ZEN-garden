@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.0] - 2024-02-28
+### Added
+- Exponential transport loss factor
+  - added test 
+- Saving units of parameters and variables and accessing them in results
+
+### Fixed
+- Docstring reading in results
+- Minor bug fixes
+  
+### Changed
+- Result handling
+- Parameter names:
+  - `set_carriers`:
+    - `carbon_intensity` to `carbon_intensity_carrier`
+  - `set_technologies`:
+    - `carbon_intensity` to `carbon_intensity_technology`
+  - `set_storage_technologies`:
+    - `capex_specific` to `capex_specific_storage`
+    - `capex_specific_energy` to `capex_specific_storage_energy`
+  - `set_transport_technologies`:
+    - `transport_loss_factor` to `transport_loss_factor_linear`
+- Move `use_capacities_existing` to `system`
+      
+### Removed
+- "linopy" name in environment
+- Solver options from default config
+  
+## [v1.0.3] - 2024-02-14 ❤️
+### Added
+- Flexible `results.py` structure with abstract solution loader
+- `comparison` module
+
+### Removed
+- standard plots
+  
 ## [v1.0.2] - 2024-01-29
 ### Added
 - compare parameters with different shapes in `r.compare_model_parameters()`

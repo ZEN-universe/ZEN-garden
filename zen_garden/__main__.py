@@ -13,6 +13,8 @@ import importlib.util
 import argparse
 import sys
 import os
+import zen_garden.model.default_config as default_config
+import json
 
 
 def run_module(args=None):
@@ -40,15 +42,22 @@ def run_module(args=None):
                                                                                                          "If both --job_index and --job_index_var are specified, --job_index will be used.")
     args = parser.parse_args(args)
 
+
+    if not os.path.exists(args.config):
+        args.config = args.config.replace(".py", ".json")
+
     # change working directory to the directory of the config file
     config_path, config_file = os.path.split(args.config)
     os.chdir(config_path)
-
     ### import the config
-    spec = importlib.util.spec_from_file_location("module", config_file)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    config = module.config
+    if config_file.endswith(".py"):
+        spec = importlib.util.spec_from_file_location("module", config_file)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        config = module.config
+    else:
+        with open(args.config, "r") as f:
+            config = default_config.Config(**json.load(f))
 
     ### get the job index
     job_index = args.job_index
