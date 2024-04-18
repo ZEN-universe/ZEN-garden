@@ -727,11 +727,11 @@ class Scaling:
 
     def run_scaling(self):
         self.iter_scaling()
-        #cp = cProfile.Profile()
-        #cp.enable()
+        cp = cProfile.Profile()
+        cp.enable()
         self.overwrite_problem()
-        #cp.disable()
-        #cp.print_stats("cumtime")
+        cp.disable()
+        cp.print_stats("cumtime")
 
     def replace_data(self, name):
         constraint = self.model.constraints[name]
@@ -740,7 +740,7 @@ class Scaling:
         mask_skip_constraints = constraint.labels.data
         mask_variables = constraint.vars.data
         rhs = constraint.rhs.data
-        # Iterate over each coefficient and replace non-nan coefficients with data
+        """# Iterate over each coefficient and replace non-nan coefficients with data
         for index, constraint_mask in np.ndenumerate(mask_skip_constraints):
             if constraint_mask != -1:
                 #rhs
@@ -757,18 +757,18 @@ class Scaling:
         indices = np.where(mask_skip_constraints != -1)
         if indices[0].size > 0:
 
-            # Update rhs using vectorized operation
+            # Update rhs
             try:
                 rhs[indices] = rhs[indices] * self.D_r_inv[mask_skip_constraints[indices]]
             except IndexError:
                 rhs = rhs * self.D_r_inv[mask_skip_constraints]
 
-            # Update lhs using vectorized operation
+            # Update lhs
             non_nan_mask = ~np.isnan(lhs)
             entries_to_overwrite = np.where(non_nan_mask & (mask_variables != -1))
-            lhs[entries_to_overwrite] *= (self.D_r_inv[mask_skip_constraints[indices]] *
+            lhs[entries_to_overwrite] *= (self.D_r_inv[mask_skip_constraints[entries_to_overwrite[:-1]]] *
                                         self.D_c_inv[mask_variables[entries_to_overwrite]])
-        """
+
 
 
     def overwrite_problem(self):
