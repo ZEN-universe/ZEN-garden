@@ -718,143 +718,78 @@ class Scaling:
         self.A_matrix = self.model.constraints.to_matrix()
         self.iterations = iterations
         self.algorithm = algorithm
-        self.D_r_inv = sp.sparse.diags(np.ones(self.A_matrix.get_shape()[0]), 0, format='csr')
-        self.D_c_inv = sp.sparse.diags(np.ones(self.A_matrix.get_shape()[1]), 0, format='csr')
+        #instead of matrices vectors
+        self.D_r_inv = np.ones(self.A_matrix.get_shape()[0])
+        self.D_c_inv = np.ones(self.A_matrix.get_shape()[1])
+        #self.D_r_inv = sp.sparse.diags(np.ones(self.A_matrix.get_shape()[0]), 0, format='csr')
+        #self.D_c_inv = sp.sparse.diags(np.ones(self.A_matrix.get_shape()[1]), 0, format='csr')
 
 
     def run_scaling(self):
-        cp = cProfile.Profile()
-        cp.enable()
         self.iter_scaling()
+        #cp = cProfile.Profile()
+        #cp.enable()
         self.overwrite_problem()
-        cp.disable()
-        cp.print_stats("cumtime")
+        #cp.disable()
+        #cp.print_stats("cumtime")
 
-    def count_nonzero_nonnan_entries(self,list):
-        count = 0
-        for sublist in list:
-            for entry in sublist:
-                if not (np.isnan(entry) or entry == 0):
-                    count += 1
-        return count
-
-    def overwrite_with_data(self, existing_array, data_list, mask_skip_constraints):
-        # Create a flattened mask to identify non-nan coefficients
-        #mask = ~np.isnan(existing_array)
-
-        # Copy the existing array to avoid modifying it in-place
-        #modified_array = np.copy(existing_array)
-
-        #position in new data
-        position = 0
-
+    def replace_data(self, name):
+        constraint = self.model.constraints[name]
+        #Get data
+        lhs = constraint.coeffs.data
+        mask_skip_constraints = constraint.labels.data
+        mask_variables = constraint.vars.data
+        rhs = constraint.rhs.data
         # Iterate over each coefficient and replace non-nan coefficients with data
         for index, constraint_mask in np.ndenumerate(mask_skip_constraints):
             if constraint_mask != -1:
-                for i,data in enumerate(existing_array[index]):
-                    if not np.isnan(data):
-                        existing_array[index][i] = data_list[position]
-                        position += 1
-        return existing_array
+                #rhs
+                try:
+                    rhs[index] = rhs[index] * self.D_r_inv[constraint_mask]
+                except:
+                    rhs = rhs * self.D_r_inv[constraint_mask]
+                #lhs
+                for i,data in enumerate(lhs[index]):
+                    if not np.isnan(data) and mask_variables[index][i] != -1:
+                        lhs[index][i] = lhs[index][i] * self.D_r_inv[constraint_mask] * self.D_c_inv[mask_variables[index][i]]
+        """
+        # Find the indices where constraint_mask is not equal to -1
+        indices = np.where(mask_skip_constraints != -1)
+        if indices[0].size > 0:
 
+            # Update rhs using vectorized operation
+            try:
+                rhs[indices] = rhs[indices] * self.D_r_inv[mask_skip_constraints[indices]]
+            except IndexError:
+                rhs = rhs * self.D_r_inv[mask_skip_constraints]
+
+            # Update lhs using vectorized operation
+            non_nan_mask = ~np.isnan(lhs)
+            entries_to_overwrite = np.where(non_nan_mask & (mask_variables != -1))
+            lhs[entries_to_overwrite] *= (self.D_r_inv[mask_skip_constraints[indices]] *
+                                        self.D_c_inv[mask_variables[entries_to_overwrite]])
+        """
 
 
     def overwrite_problem(self):
-        #for name in self.model.constraints:
-        #    print(self.model.constraints[name].coeffs.data)
-
-        #[(i,e) for i,e in np.ndenumerate(self.model.constraints[self.model.constraints.get_name_by_label(100)].labels.data)] -> index of lists and mask
-        # range of labels with first label : label.max
-
-
-        #1. get list of rows and corresponding columns
-        rows = self.model.constraints.ravel('labels',broadcast_like = "vars", filter_missings=True)
-        cols = self.model.constraints.ravel('vars',broadcast_like = "vars", filter_missings=True)
-
-        #2. get list of current data
-        #data = self.model.constraints.ravel('coeffs',broadcast_like = "vars", filter_missings=True)
-
-        #print(data)
-        #print(len(data))
-        #3 overwrite data
-        new_data = [self.A_matrix[r,c] for r,c in zip(rows,cols)]
-
-        #print(new_data)
-        #print(len(new_data))
-
-        index = 0
-        while index < len(rows):
-            start = rows[index]
-            print(start)
-            name_con = self.model.constraints.get_name_by_label(int(start))
-            end = self.model.constraints[name_con].labels.data.max()
-            data_con = []
-            while rows[index] <= end:
-                data_con.append(new_data[index])
-                index += 1
-            #enter here overwriting function of data of constraints
-            if start == 143:
-                print(data_con)
-            self.model.constraints[name_con].coeffs.data = self.overwrite_with_data(self.model.constraints[name_con].coeffs.data, data_con, self.model.constraints[name_con].labels.data)
+        #overwrite constraints
+        for name_con in self.model.constraints:
+            #overwrite data
+            #check if only integers are allowed in scaling: if yes skip and overwrite scaling vector
+            if self.model.constraints[name_con].coeffs.dtype == int:
+                #self.D_r_inv[start:end+1] = [1 for i in range(start,end+1)]
+                continue
+            else:
+                self.replace_data(name_con)
+        #overwrite objective
+        vars = self.model.objective.vars.data
+        scale_factors = self.D_c_inv[vars]
+        self.model.objective.coeffs.data = self.model.objective.coeffs.data * scale_factors
 
 
 
-        """
-        1. I also need to get the information if a row/constraint is skipped -> use either mask = False or label = -1 
-        def overwrite_with_data(existing_array, data_list):
-            # Create a flattened mask to identify non-nan coefficients
-            mask = ~np.isnan(existing_array)
-            
-            # Copy the existing array to avoid modifying it in-place
-            modified_array = np.copy(existing_array)
-            
-            # Iterate over each coefficient and replace non-nan coefficients with data
-            for index, element in np.ndenumerate(modified_array):
-                if mask[index]:
-                    # Check if there is still data in the list
-                    if len(data_list) > 0:
-                        # Replace the non-nan coefficient with data
-                        modified_array[index] = data_list.pop(0)
-                    else:
-                        # If data list is exhausted, break the loop
-                        break
-                
-    return modified_array
-        def flatten_ndarrays(arrays):
-            flattened_lists = []
 
-            def flatten_recursively(arr):
-                if isinstance(arr, np.ndarray):
-                    if arr.ndim == 1:
-                        flattened_lists.append(arr.tolist())
-                    else:
-                        for sub_arr in arr:
-                            flatten_recursively(sub_arr)
-                else:
-                    flattened_lists.append(arr)
 
-            for arr in arrays:
-                flatten_recursively(arr)
-
-            return flattened_lists
-
-        flatten = flatten_ndarrays([self.model.constraints[name].coeffs.data for name in self.model.constraints])
-        print(len(flatten))
-        print(flatten)
-        print(self.count_nonzero_nonnan_entries(flatten))
-
-        print(len(self.model.constraints.to_matrix().data))
-        print(self.model.constraints.to_matrix().data)
-        #self.model.variables.get_name_by_label(5)
-        #keys = ["coeffs", "labels", "vars"]
-        #data, rows, cols = [
-        #    self.model.constraints.ravel(k, broadcast_like="vars", filter_missings=True) for k in keys
-        #]
-        print(self.model.constraints.ravel('labels', filter_missings=True))
-
-        #print(self.model.constraints.ravel('coeffs', broadcast_like="vars", filter_missings=True))
-        #print(self.model.constraints.ravel('vars', broadcast_like="vars", filter_missings=True))
-        """
 
     def get_min(self,A_matrix):
         d = A_matrix.data
@@ -874,10 +809,12 @@ class Scaling:
     def update_A(self, vector, axis):
         if axis == 1:
             self.A_matrix = sp.sparse.diags(vector, 0, format='csr').dot(self.A_matrix)
-            self.D_r_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_r_inv
+            #self.D_r_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_r_inv
+            self.D_r_inv = self.D_r_inv * vector
         elif axis == 0:
             self.A_matrix = self.A_matrix.dot(sp.sparse.diags(vector, 0, format='csr'))
-            self.D_c_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_c_inv
+            #self.D_c_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_c_inv
+            self.D_c_inv = self.D_c_inv * vector
 
     def iter_scaling(self):
         #transform A matrix to csr matrix for better computational properties
