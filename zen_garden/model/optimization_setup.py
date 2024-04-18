@@ -503,10 +503,10 @@ class OptimizationSetup(object):
                 coords_idx_max = np.where((variables == var_max) & (coeffs == coeff_max))
                 coords_max = [cons.lhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.lhs.coords.dims, coords_idx_max[:-1])]
                 if 0.0 < coeff_min < smallest_coeff[1]:
-                    smallest_coeff[0] = (f"{cons.name}{coords_min}", lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
+                    smallest_coeff[0] = (f"{cons.name}{coords_min}", lp.constraints.print_single_expression([coeff_min], [var_min],0, self.model))
                     smallest_coeff[1] = coeff_min
                 if coeff_max > largest_coeff[1]:
-                    largest_coeff[0] = (f"{cons.name}{coords_max}", lp.constraints.print_single_expression([coeff_max], [var_max], self.model))
+                    largest_coeff[0] = (f"{cons.name}{coords_max}", lp.constraints.print_single_expression([coeff_max], [var_max],0, self.model))
                     largest_coeff[1] = coeff_max
 
                 # smallest and largest rhs

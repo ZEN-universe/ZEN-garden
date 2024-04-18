@@ -203,7 +203,7 @@ class TransportTechnology(Technology):
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
+    def disjunct_on_technology(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
         """definition of disjunct constraints if technology is on
 
         :param optimization_setup: optimization setup
@@ -228,7 +228,7 @@ class TransportTechnology(Technology):
                                          disjunction_var=binary_var)
 
     @classmethod
-    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
+    def disjunct_off_technology(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
         """definition of disjunct constraints if technology is off
 
         :param optimization_setup: optimization setup
@@ -295,7 +295,7 @@ class TransportTechnologyRules(GenericRule):
             term_distance_inf = mask.loc[tech] * self.variables["flow_transport_loss"].loc[tech]
             term_distance_not_inf = (1 - mask.loc[tech]) * self.variables["flow_transport_loss"].loc[tech]
             if tech in self.system["set_transport_technologies_loss_exponential"]:
-                term_flow_loss =  self.variables["flow_transport"].loc[tech] * np.exp(-self.parameters.transport_loss_factor_exponential.loc[tech]*self.parameters.distance.loc[tech])
+                term_flow_loss = self.variables["flow_transport"].loc[tech] * np.exp(-self.parameters.transport_loss_factor_exponential.loc[tech]*self.parameters.distance.loc[tech])
             else:
                 term_flow_loss = self.variables["flow_transport"].loc[tech] * self.parameters.transport_loss_factor_linear.loc[tech] *self.parameters.distance.loc[tech]
             ### formulate constraint
@@ -304,7 +304,7 @@ class TransportTechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints, model=self.model, mask=cons_mask, index_values=index_values, index_names=index_names)
+        return self.constraints.return_constraints(constraints, model=self.model, mask=cons_mask, index_values=index_values, index_names=index_names)
 
     def constraint_transport_technology_capex_block(self):
         """ definition of the capital expenditures for the transport technology
@@ -351,4 +351,4 @@ class TransportTechnologyRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_contraints(constraints, mask=global_mask)
+        return self.constraints.return_constraints(constraints, mask=global_mask)

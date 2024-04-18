@@ -157,6 +157,6 @@ class RetrofittingTechnologyRules(GenericRule):
             constraints.append(lhs <= rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="constraint_retrofit_flow_coupling_dim")
+        return self.constraints.return_constraints(constraints, model=self.model, stack_dim_name="constraint_retrofit_flow_coupling_dim")
 
 

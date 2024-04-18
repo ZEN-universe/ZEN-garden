@@ -17,7 +17,7 @@ import xarray as xr
 from zen_garden.utils import linexpr_from_tuple_np, InputDataChecks
 from .technology import Technology
 from ..component import ZenIndex
-from ..element import GenericRule
+from ..element import GenericRule,Element
 
 
 class ConversionTechnology(Technology):
@@ -283,16 +283,15 @@ class ConversionTechnology(Technology):
                                           break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ", name="constraint_capex_pwa",)
         if set_linear_capex[0]:
             # if set_linear_capex contains technologies: (note we give the coordinates nice names)
-            constraints.add_constraint_rule(model, name="constraint_linear_capex",
-                                            index_sets=(set_linear_capex[0], ["lin_capex_tech", "lin_capex_node", "lin_capex_time_step"]),
-                                            rule=rules.constraint_linear_capex_rule, doc="Linear relationship in capex")
+            constraints.add_constraint_block(model, name="constraint_linear_capex",
+                                            constraint=rules.constraint_linear_capex(), doc="Linear relationship in capex")
         # Coupling constraints
         # couple the real variables with the auxiliary variables
-        constraints.add_constraint_rule(model, name="constraint_capex_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup),
-            rule=rules.constraint_capex_coupling_rule, doc="couples the real capex variables with the approximated variables")
+        constraints.add_constraint_block(model, name="constraint_capex_coupling",
+            constraint=rules.constraint_capex_coupling(), doc="couples the real capex variables with the approximated variables")
         # capacity
-        constraints.add_constraint_rule(model, name="constraint_capacity_coupling", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup),
-            rule=rules.constraint_capacity_coupling_rule, doc="couples the real capacity variables with the approximated variables")
+        constraints.add_constraint_block(model, name="constraint_capacity_coupling",
+            constraint=rules.constraint_capacity_coupling(), doc="couples the real capacity variables with the approximated variables")
 
 
         # add constraints of the child classes
@@ -302,7 +301,7 @@ class ConversionTechnology(Technology):
 
     # defines disjuncts if technology on/off
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
+    def disjunct_on_technology(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is On
 
         :param optimization_setup: optimization setup
@@ -332,7 +331,7 @@ class ConversionTechnology(Technology):
                                                      >= 0), disjunction_var=binary_var)
 
     @classmethod
-    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
+    def disjunct_off_technology(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is off
 
         :param optimization_setup: optimization setup
@@ -410,104 +409,90 @@ class ConversionTechnologyRules(GenericRule):
     # Rule-based constraints
     # -----------------------
 
-    def constraint_linear_capex_rule(self, tech, node, year):
+    def constraint_linear_capex(self):
         """ if capacity and capex have a linear relationship
 
         .. math::
             A_{h,p,y}^{approximation} = \\alpha_{h,n,y} S_{h,p,y}^{approximation}
 
-        :param tech: technology
-        :param node: node
-        :param year: yearly time step
         :return: linopy constraints
         """
 
         ### index sets
-        # skipped because rule-based constraint
 
         ### masks
         # skipped because rule-based constraint
 
-        ### index loop
-        # skipped because rule-based constraint
+        capex_specific_conversion = self.parameters.capex_specific_conversion
+        capex_specific_conversion = capex_specific_conversion.rename({old: new for old, new in zip(list(capex_specific_conversion.dims), ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"])})
 
+        ### index loop
         ### auxiliary calculations
         # not necessary
 
         ### formulate constraint
-        lhs = (self.variables["capex_approximation"][tech, node, year]
-               - self.parameters.capex_specific_conversion.loc[tech, node, year].item() * self.variables["capacity_approximation"][tech, node, year])
+        lhs = (self.variables["capex_approximation"] - capex_specific_conversion * self.variables["capacity_approximation"])
         rhs = 0
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints)
 
-    def constraint_capex_coupling_rule(self, tech, node, year):
+    def constraint_capex_coupling(self):
         """ couples capex variables based on modeling technique
 
         .. math::
             CAPEX_{y,n,i}^\\mathrm{cost, power} = A_{h,p,y}^{approximation}
 
-        :param tech: technology
-        :param node: node
-        :param year: yearly time step
         :return: linopy constraints
         """
 
         ### index sets
-        # skipped because rule-based constraint
 
         ### masks
         # skipped because rule-based constraint
 
         ### index loop
-        # skipped because rule-based constraint
 
         ### auxiliary calculations
-        # not necessary
+        cost_capex = self.variables["cost_capex"].rename(
+            {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
 
         ### formulate constraint
-        lhs = (self.variables["cost_capex"][tech, "power", node, year]
-               - self.variables["capex_approximation"][tech, node, year])
+        lhs = cost_capex.loc[:,"power",:] - self.variables["capex_approximation"]
         rhs = 0
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints)
 
-    def constraint_capacity_coupling_rule(self, tech, node, year):
+    def constraint_capacity_coupling(self):
         """ couples capacity variables based on modeling technique
 
         .. math::
             \Delta S_{h,p,y}^\mathrm{power} = S_{h,p,y}^\mathrm{approximation}
 
-        :param tech: technology
-        :param node: node
-        :param year: yearly time step
         :return: linopy constraints
         """
 
         ### index sets
-        # skipped because rule-based constraint
 
         ### masks
         # skipped because rule-based constraint
 
         ### index loop
-        # skipped because rule-based constraint
 
         ### auxiliary calculations
-        # not necessary
+        capacity_addition = self.variables["capacity_addition"].rename(
+            {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
 
         ### formulate constraint
-        lhs = (self.variables["capacity_addition"][tech, "power", node, year]
-               - self.variables["capacity_approximation"][tech, node, year])
+        lhs = capacity_addition.loc[:,"power",:] - self.variables["capacity_approximation"]
         rhs = 0
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints)
 
     # Block-based constraints
     # -----------------------
@@ -550,6 +535,6 @@ class ConversionTechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,model=self.model,
+        return self.constraints.return_constraints(constraints,model=self.model,
                                                   index_values=index.get_unique(["set_conversion_technologies", "set_dependent_carriers"]),
                                                   index_names=["set_conversion_technologies", "set_dependent_carriers"])

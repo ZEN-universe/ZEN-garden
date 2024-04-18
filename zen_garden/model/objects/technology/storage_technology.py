@@ -175,7 +175,7 @@ class StorageTechnology(Technology):
         # defines disjuncts if technology on/off
 
     @classmethod
-    def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
+    def disjunct_on_technology(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is on
 
         :param optimization_setup: optimization setup
@@ -206,7 +206,7 @@ class StorageTechnology(Technology):
                                          disjunction_var=binary_var)
 
     @classmethod
-    def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
+    def disjunct_off_technology(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
         """definition of disjunct constraints if technology is off
 
         :param optimization_setup: optimization setup
@@ -289,7 +289,7 @@ class StorageTechnologyRules(GenericRule):
             constraints.append(lhs <= rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(levels=["set_storage_technologies"]),
                                                   index_names=["set_storage_technologies"])
@@ -360,7 +360,7 @@ class StorageTechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_storage_technologies"]),
                                                   index_names=["set_storage_technologies"])
@@ -399,4 +399,4 @@ class StorageTechnologyRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints)

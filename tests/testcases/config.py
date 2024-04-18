@@ -20,10 +20,6 @@ solver = config.solver
 
 ## Analysis - settings update compared to default values
 analysis["dataset"] = os.path.join(os.path.dirname(__file__), "test_1a")
-analysis["objective"] = "total_cost"
 
 ## Solver - settings update compared to default values
-solver["name"] = "glpk" # free solver
-solver["analyze_numerics"] = True
-solver["immutable_unit"] = ["hour","km"]
 

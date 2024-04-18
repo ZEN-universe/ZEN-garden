@@ -768,11 +768,17 @@ class Constraint(Component):
                 # drop all unnecessary dimensions
                 # FIXME: we do this via data to avoid the drop deprecation warning, update once lp implements drop_vars
                 # lhs = cons.lhs.drop(list(set(cons.lhs.coords) - set(cons.lhs.dims)))
-                lhs = lp.LinearExpression(cons.lhs.data.drop_vars(list(set(cons.lhs.coords) - set(cons.lhs.dims))), model)
+                if not isinstance(cons, lp.constraints.AnonymousScalarConstraint):
+                    lhs = lp.LinearExpression(cons.lhs.data.drop_vars(list(set(cons.lhs.coords) - set(cons.lhs.dims))), model)
+                else:
+                    lhs = cons.lhs
                 # add constraint
                 self._add_con(model, current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var, mask=mask)
                 # save constraint doc
-                index_list = list(cons.coords.dims)
+                if isinstance(cons, lp.constraints.AnonymousScalarConstraint):
+                    index_list = []
+                else:
+                    index_list = list(cons.coords.dims)
                 self.docs[name] = self.compile_doc_string(doc, index_list, current_name)
             else:
                 logging.warning(f"{name} already added. Can only be added once")
@@ -856,7 +862,9 @@ class Constraint(Component):
             mask = ~np.isnan(rhs) & np.isfinite(rhs) & mask
         else:
             mask = ~np.isnan(rhs) & np.isfinite(rhs)
-
+        # turn scalar masks into bool (otherwise it will use np.bool)
+        if isinstance(mask,np.bool_):
+            mask = bool(mask)
         if disjunction_var is not None:
             # get the bounds
             bounds = self._get_M(model, lhs)
@@ -1036,31 +1044,30 @@ class Constraint(Component):
             return constraints
 
         # get the shape of the constraints
-        max_terms = max([c.lhs.shape[-1] for c in constraints])
+        max_terms = max([c.lhs.shape[-1] if hasattr(c,"shape") else 1 for c in constraints])
         c = constraints[0]
         lhs_shape = c.lhs.shape[:-1] + (max_terms, )
         coords = [xr.DataArray(np.arange(len(constraints)), dims=[stack_dim]), ] + [c.lhs.coords[d] for d in c.lhs.dims][:-1] + [xr.DataArray(np.arange(max_terms), dims=["_term"])]
         coeffs = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=np.nan), coords=coords,
-                              dims=(stack_dim, *constraints[0].lhs.dims.keys()))
+                              dims=(stack_dim, *constraints[0].lhs.dims))
         variables = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=-1), coords=coords,
-                                 dims=(stack_dim, *constraints[0].lhs.dims.keys()))
+                                 dims=(stack_dim, *constraints[0].lhs.dims))
         sign = xr.DataArray("=", coords=coords[:-1]).astype("U2")
         rhs = xr.DataArray(np.nan, coords=coords[:-1])
 
         for num, con in enumerate(constraints):
-            terms = con.lhs.dims["_term"]
-            coeffs[num, ..., :terms] = con.lhs.coeffs.data
-            variables[num, ..., :terms] = con.lhs.vars.data
-            sign[num, ...] = con.sign
-            rhs[num, ...] = con.rhs
+            coeffs[num, ...,con.lhs.coeffs["_term"]] = con.lhs.coeffs.data
+            variables[num, ...,con.lhs.coeffs["_term"]] = con.lhs.vars.data
+            con_sign = xr.align(sign[num, ...],con.sign,join="left")[1]
+            sign[num, ...] = con_sign
+            con_rhs = xr.align(rhs[num, ...],con.rhs,join="left")[1]
+            rhs[num, ...] = con_rhs
             # make sure all dims are in the right order and deal with subsets
-            sign[num, ...] = con.sign
-            rhs[num, ...] = rhs[num].where(~con.rhs.isnull(), con.rhs + rhs[num])
+            rhs[num, ...] = rhs[num].where(~con_rhs.isnull(), con_rhs + rhs[num])
 
-        xr_ds = xr.Dataset({"coeffs": coeffs, "vars": variables})
-        lhs = lp.LinearExpression(xr_ds, model)
+        xr_ds = xr.Dataset({"coeffs": coeffs, "vars": variables, "sign": sign, "rhs": rhs})
 
-        return lp.constraints.AnonymousConstraint(lhs, sign, rhs)
+        return lp.constraints.Constraint(xr_ds, model)
 
     def reorder_group(self, lhs, sign, rhs, index_values, index_names, model, drop=None):
         """
@@ -1111,13 +1118,12 @@ class Constraint(Component):
                 if sign is not None:
                     xr_sign.loc[index_val] = sign.sel(group=num).data
 
-        # to full arrays
-        xr_lhs = lp.LinearExpression(xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}), model)
-
         if rhs is None and sign is None:
-            return xr_lhs
-
-        return lp.constraints.AnonymousConstraint(xr_lhs, xr_sign, xr_rhs)
+            return lp.LinearExpression(xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}), model)
+        else:
+            # to full arrays
+            xr_lhs = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars,"sign": xr_sign, "rhs": xr_rhs})
+            return lp.constraints.Constraint(xr_lhs,model)
 
     def reorder_list(self, constraints, index_values, index_names, model):
         """
@@ -1151,7 +1157,6 @@ class Constraint(Component):
         # we start with the lhs
         vars, _ = xr.align(constraint.lhs.data.vars, self.index_sets.coords_dataset, join="right", fill_value=-1)
         coeffs, _ = xr.align(constraint.lhs.data.coeffs, self.index_sets.coords_dataset, join="right", fill_value=np.nan)
-        lhs = lp.LinearExpression(xr.Dataset({"coeffs": coeffs, "vars": vars}), constraint.lhs.model)
 
         # now the rhs
         rhs, _ = xr.align(constraint.rhs, self.index_sets.coords_dataset, join="right", fill_value=np.nan)
@@ -1163,9 +1168,25 @@ class Constraint(Component):
         if mask is not None:
             mask, _ = xr.align(mask, self.index_sets.coords_dataset, join="right", fill_value=False)
 
-        return lp.constraints.AnonymousConstraint(lhs, sign, rhs), mask
-
-    def return_contraints(self, constraints, model=None, mask=None, index_values=None, index_names=None,
+        xr_ds = xr.Dataset({"coeffs": coeffs, "vars": vars, "sign": sign, "rhs": rhs})
+        return lp.constraints.Constraint(xr_ds,constraint.lhs.model), mask
+    
+    # def return_constraints(self, constraints, mask=None):
+    #     """ This is a high-level function that returns the constraints in the correct format, i.e. with reordering, masks,
+    #     etc.
+    #     :param constraints: A single constraints or a potentially empty list of constraints.
+    #     :param model: The model to which the constraints belong
+    #     :param mask: A mask with the same shape as the constraints
+    #     :param index_values: The index values corresponding to the group numbers, if reorder is necessary
+    #     :param index_names: The names of the indices, if reorder is necessary
+    #     :param stack_dim_name: If a list of constraints is provided along with index_values and index_names, the
+    #                            constraints are reordered with the provided indices, if a stack_dim_name is provided, the
+    #                            constraints are stacked along a single dimension with the provided name.
+    #     :return: Constraints with can be added
+    #     """
+    #     a=1
+        
+    def return_constraints(self, constraints, model=None, mask=None, index_values=None, index_names=None,
                           stack_dim_name=None):
         """
         This is a high-level function that returns the constraints in the correct format, i.e. with reordering, masks,
@@ -1185,6 +1206,8 @@ class Constraint(Component):
         if constraints is None:
             return constraints
 
+        if isinstance(constraints,list) and len(constraints) == 1 and isinstance(constraints[0], lp.constraints.AnonymousScalarConstraint):
+            constraints = constraints[0]
         # no need to do anything special
         if not isinstance(constraints, list):
             # rule based constraints

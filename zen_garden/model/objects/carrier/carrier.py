@@ -168,16 +168,16 @@ class Carrier(Element):
                                          constraint=rules.constraint_limit_shed_demand_block(),
                                          doc="limit of shedding carrier demand")
         # total cost for carriers
-        constraints.add_constraint_rule(model, name="constraint_cost_carrier_total",
-                                        index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_cost_carrier_total_rule,
+        constraints.add_constraint_block(model, name="constraint_cost_carrier_total",
+                                        constraint=rules.constraint_cost_carrier_total(),
                                         doc="total cost of importing and exporting carriers")
         # carbon emissions
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_carrier",
                                          constraint=rules.constraint_carbon_emissions_carrier_block(),
                                          doc="carbon emissions of importing and exporting carrier")
         # carbon emissions carrier
-        constraints.add_constraint_rule(model, name="constraint_carbon_emissions_carrier_total",
-                                        index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_carbon_emissions_carrier_total_rule,
+        constraints.add_constraint_block(model, name="constraint_carbon_emissions_carrier_total",
+                                        constraint=rules.constraint_carbon_emissions_carrier_total(),
             doc="total carbon emissions of importing and exporting carriers")
         # energy balance
         constraints.add_constraint_block(model, name="constraint_nodal_energy_balance",
@@ -207,78 +207,77 @@ class CarrierRules(GenericRule):
     # Rule-based constraints
     # ----------------------
 
-    def constraint_cost_carrier_total_rule(self, year):
+    def constraint_cost_carrier_total(self):
         """ total cost of importing and exporting carrier
 
         .. math::
             C_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t (C_{c,n,t} + C_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}})
 
-        :param year: #TODO describe parameter/return
         :return: #TODO describe parameter/return
         """
 
         ### index sets
-        # skipped because rule-based constraint
 
         ### masks
         # skipped because rule-based constraint
 
         ### index loop
-        # skipped because rule-based constraint
+        # we loop over all years
+        constraints = []
+        for year in self.optimization_setup.sets["set_time_steps_yearly"]:
 
-        ### auxiliary calculations
-        terms = []
-        # This vectorizes over times and locations
-        for carrier in self.sets["set_carriers"]:
-            times = self.energy_system.time_steps.get_time_steps_year2operation(year)
-            expr = (self.variables["cost_carrier"].loc[carrier, :, times]
-                    + self.variables["cost_shed_demand"].loc[carrier, :, times]) * self.parameters.time_steps_operation_duration.loc[times]
-            terms.append(expr.sum())
-        term_summed_carrier_shed_demand_costs = lp_sum(terms)
+            ### auxiliary calculations
+            terms = []
+            # This vectorizes over times and locations
+            for carrier in self.sets["set_carriers"]:
+                times = self.energy_system.time_steps.get_time_steps_year2operation(year)
+                expr = (self.variables["cost_carrier"].loc[carrier, :, times]
+                        + self.variables["cost_shed_demand"].loc[carrier, :, times]) * self.parameters.time_steps_operation_duration.loc[times]
+                terms.append(expr.sum())
+            term_summed_carrier_shed_demand_costs = lp_sum(terms)
 
-        ### formulate constraint
-        lhs = self.variables["cost_carrier_total"].loc[year] - term_summed_carrier_shed_demand_costs
-        rhs = 0
-        constraints = lhs == rhs
+            ### formulate constraint
+            lhs = self.variables["cost_carrier_total"].loc[year] - term_summed_carrier_shed_demand_costs
+            rhs = 0
+            constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints,self.model,stack_dim_name="set_time_steps_yearly")
 
-    def constraint_carbon_emissions_carrier_total_rule(self, year):
+    def constraint_carbon_emissions_carrier_total(self):
         """ total carbon emissions of importing and exporting carrier
 
         .. math::
             E_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t E_{c,n,t}
 
-        :param model: #TODO describe parameter/return
-        :param year: #TODO describe parameter/return
         """
 
         ### index sets
-        # skipped because rule-based constraint
 
         ### masks
         # skipped because rule-based constraint
 
         ### index loop
-        # skipped because rule-based constraint
+        # we loop over all years
+        constraints = []
+        for year in self.optimization_setup.sets["set_time_steps_yearly"]:
 
-        ### auxiliary calculations
-        terms = []
-        # This vectorizes over times and locations
-        for carrier in self.sets["set_carriers"]:
-            times = self.energy_system.time_steps.get_time_steps_year2operation(year)
-            expr = self.variables["carbon_emissions_carrier"].loc[carrier, :, times] * self.parameters.time_steps_operation_duration.loc[times]
-            terms.append(expr.sum())
-        term_summed_carbon_emissions_carrier = lp_sum(terms)
+            ### auxiliary calculations
+            terms = []
+            # This vectorizes over times and locations
+            for carrier in self.sets["set_carriers"]:
+                times = self.energy_system.time_steps.get_time_steps_year2operation(year)
+                expr = self.variables["carbon_emissions_carrier"].loc[carrier, :, times] * self.parameters.time_steps_operation_duration.loc[times]
+                terms.append(expr.sum())
+            term_summed_carbon_emissions_carrier = lp_sum(terms)
 
-        ### formulate constraint
-        lhs = self.variables["carbon_emissions_carrier_total"].loc[year] - term_summed_carbon_emissions_carrier
-        rhs = 0
-        constraints = lhs == rhs
+            ### formulate constraint
+            lhs = self.variables["carbon_emissions_carrier_total"].loc[year] - term_summed_carbon_emissions_carrier
+            rhs = 0
+            constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints,self.model,stack_dim_name="set_time_steps_yearly")
 
     # Block-based constraints
     # -----------------------
@@ -310,7 +309,7 @@ class CarrierRules(GenericRule):
         constraints = lhs <= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints,self.model)
 
     def constraint_availability_export_block(self):
         """node- and time-dependent carrier availability to export to outside the system boundaries
@@ -339,7 +338,7 @@ class CarrierRules(GenericRule):
         constraints = lhs <= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints,self.model)
 
     def constraint_availability_import_yearly_block(self):
         """node- and year-dependent carrier availability to import from outside the system boundaries
@@ -374,7 +373,7 @@ class CarrierRules(GenericRule):
             constraints.append(lhs <= rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   mask=mask,
                                                   index_values=index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]),
@@ -412,7 +411,7 @@ class CarrierRules(GenericRule):
             constraints.append(lhs <= rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   mask=mask,
                                                   index_values=index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]),
@@ -450,7 +449,7 @@ class CarrierRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints,self.model)
 
     def constraint_cost_shed_demand_block(self):
         """ cost of shedding demand of carrier
@@ -487,7 +486,7 @@ class CarrierRules(GenericRule):
                 constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_carriers"]),
                                                   index_names=["set_carriers"])
@@ -519,7 +518,7 @@ class CarrierRules(GenericRule):
         constraints = lhs <= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints,self.model)
 
     def constraint_carbon_emissions_carrier_block(self):
         """ carbon emissions of importing and exporting carrier
@@ -558,7 +557,7 @@ class CarrierRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_carriers"]),
                                                   index_names=["set_carriers"])
@@ -714,7 +713,8 @@ class CarrierRules(GenericRule):
                        term_carrier_shed_demand,
                        compat="broadcast_equals")
         rhs = term_carrier_demand
-        constraints = lhs == rhs
+        aligned_idx = xr.align(lhs.coords,rhs,join="inner")[0]
+        constraints = lhs.loc[aligned_idx] == rhs.loc[aligned_idx]
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints)

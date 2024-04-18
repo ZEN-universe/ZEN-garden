@@ -138,7 +138,7 @@ class IISConstraintParser(object):
             f.write("\n\nVariables:\n")
             variables = self.model.variables
             for label in self.var_labels:
-                name, coord = self.get_label_position(variables,label)
+                name, coord = constraints.get_label_position(label)
                 var_str = f"\t{self.print_coord(coord)}:\t{self.var_lines[label]}\n"
                 if name not in seen_variables:
                     seen_variables.append(name)

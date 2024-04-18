@@ -16,7 +16,6 @@ import linopy as lp
 import numpy as np
 import pandas as pd
 import xarray as xr
-from linopy.constraints import AnonymousConstraint
 
 from zen_garden.utils import lp_sum
 from ..component import ZenIndex, IndexSet
@@ -493,7 +492,7 @@ class Technology(Element):
                                          constraint=rules.constraint_capex_yearly_block(),
                                          doc='annual capex of having capacity of technology.')
         # total capex of all technologies
-        constraints.add_constraint_rule(model, name="constraint_cost_capex_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_cost_capex_total_rule,
+        constraints.add_constraint_block(model, name="constraint_cost_capex_total", constraint=rules.constraint_cost_capex_total(),
             doc='total capex of all technology that can be installed.')
         # calculate opex
         constraints.add_constraint_block(model, name="constraint_opex_technology",
@@ -504,7 +503,7 @@ class Technology(Element):
                                          constraint=rules.constraint_opex_yearly_block(),
                                          doc='total opex of all technology that are operated.')
         # total opex of all technologies
-        constraints.add_constraint_rule(model, name="constraint_cost_opex_total", index_sets=sets["set_time_steps_yearly"], rule=rules.constraint_cost_opex_total_rule, doc='total opex of all technology that are operated.')
+        constraints.add_constraint_block(model, name="constraint_cost_opex_total", constraint=rules.constraint_cost_opex_total(), doc='total opex of all technology that are operated.')
         # carbon emissions of technologies
         constraints.add_constraint_block(model, name="constraint_carbon_emissions_technology",
                                          constraint=rules.constraint_carbon_emissions_technology_block(),
@@ -529,11 +528,11 @@ class Technology(Element):
 
         # disjunct if technology is on
         constraints.add_constraint_rule(model, name="disjunct_on_technology",
-            index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_on_technology_rule,
+            index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_on_technology,
             doc="disjunct to indicate that technology is on")
         # disjunct if technology is off
         constraints.add_constraint_rule(model, name="disjunct_off_technology",
-            index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_off_technology_rule,
+            index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_off_technology,
             doc="disjunct to indicate that technology is off")
 
         # if nothing was added we can remove the tech vars again
@@ -620,7 +619,7 @@ class TechnologyRules(GenericRule):
     # Disjunctive Constraints
     # -----------------------
 
-    def disjunct_on_technology_rule(self, tech, capacity_type, loc, time):
+    def disjunct_on_technology(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is On
         iterate through all subclasses to find corresponding implementation of disjunct constraints
 
@@ -633,10 +632,10 @@ class TechnologyRules(GenericRule):
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
                 # extract the relevant binary variable (not scalar, .loc is necessary)
                 binary_var = self.optimization_setup.model.variables["tech_on_var"].loc[tech, capacity_type, loc, time]
-                subclass.disjunct_on_technology_rule(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
+                subclass.disjunct_on_technology(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
                 return None
 
-    def disjunct_off_technology_rule(self, tech, capacity_type, loc, time):
+    def disjunct_off_technology(self, tech, capacity_type, loc, time):
         """definition of disjunct constraints if technology is off
         iterate through all subclasses to find corresponding implementation of disjunct constraints
 
@@ -649,19 +648,18 @@ class TechnologyRules(GenericRule):
             if tech in self.optimization_setup.get_all_names_of_elements(subclass):
                 # extract the relevant binary variable (not scalar, .loc is necessary)
                 binary_var = self.optimization_setup.model.variables["tech_off_var"].loc[tech, capacity_type, loc, time]
-                subclass.disjunct_off_technology_rule(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
+                subclass.disjunct_off_technology(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
                 return None
 
     # Rule-based constraints
     # -----------------------
 
-    def constraint_cost_capex_total_rule(self, year):
+    def constraint_cost_capex_total(self):
         """ sums over all technologies to calculate total capex
 
         .. math::
             CAPEX_y = \\sum_{h\\in\mathcal{H}}\\sum_{p\\in\mathcal{P}}A_{h,p,y}+\\sum_{k\\in\mathcal{K}}\\sum_{n\\in\mathcal{N}}A^\mathrm{e}_{k,n,y}
 
-        :param year: yearly time step
         :return: linopy constraint
         """
 
@@ -672,27 +670,28 @@ class TechnologyRules(GenericRule):
         # skipped because rule-based constraint
 
         ### index loop
-        # skipped because rule-based constraint
+        # we loop over all years
+        constraints = []
+        for year in self.sets["set_time_steps_yearly"]:
 
-        ### auxiliary calculations
-        term_sum_yearly = self.variables["capex_yearly"].loc[..., year].sum()
+            ### auxiliary calculations
+            term_sum_yearly = self.variables["capex_yearly"].loc[..., year].sum()
 
-        ### formulate constraint
-        lhs = (self.variables["cost_capex_total"].loc[year]
-               - term_sum_yearly)
-        rhs = 0
-        constraints = lhs == rhs
+            ### formulate constraint
+            lhs = (self.variables["cost_capex_total"].loc[year]
+                   - term_sum_yearly)
+            rhs = 0
+            constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints,self.model,stack_dim_name="set_time_steps_yearly")
 
-    def constraint_cost_opex_total_rule(self, year):
+    def constraint_cost_opex_total(self):
         """ sums over all technologies to calculate total opex
 
         .. math::
             OPEX_y = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}} OPEX_{h,p,y}
 
-        :param year: yearly time step
         :return: linopy constraint
         """
 
@@ -703,19 +702,21 @@ class TechnologyRules(GenericRule):
         # skipped because rule-based constraint
 
         ### index loop
-        # skipped because rule-based constraint
+        # we loop over all years
+        constraints = []
+        for year in self.sets["set_time_steps_yearly"]:
 
-        ### auxiliary calculations
-        term_sum_yearly = self.variables["opex_yearly"].loc[..., year].sum()
+            ### auxiliary calculations
+            term_sum_yearly = self.variables["opex_yearly"].loc[..., year].sum()
 
-        ### formulate constraint
-        lhs = (self.variables["cost_opex_total"].loc[year]
-               - term_sum_yearly)
-        rhs = 0
-        constraints = lhs == rhs
+            ### formulate constraint
+            lhs = (self.variables["cost_opex_total"].loc[year]
+                   - term_sum_yearly)
+            rhs = 0
+            constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints,self.model,stack_dim_name="set_time_steps_yearly")
 
     # Block-based constraints
     # -----------------------
@@ -753,7 +754,7 @@ class TechnologyRules(GenericRule):
         constraints = lhs <= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_constraints(constraints)
 
     def constraint_technology_min_capacity_addition_block(self):
         """ min capacity addition of technology
@@ -792,7 +793,7 @@ class TechnologyRules(GenericRule):
         constraints = lhs <= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints, mask=mask)
+        return self.constraints.return_constraints(constraints, mask=mask)
 
     def constraint_technology_max_capacity_addition_block(self):
         """max capacity addition of technology
@@ -835,7 +836,7 @@ class TechnologyRules(GenericRule):
                 constraints.append(np.nan*self.variables["capacity_addition"].loc[tech, capacity_type].where(False) == np.nan)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_technologies", "set_capacity_types"]),
                                                   index_names=["set_technologies", "set_capacity_types"])
@@ -882,7 +883,7 @@ class TechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_technologies", "set_time_steps_yearly"]),
                                                   index_names=["set_technologies", "set_time_steps_yearly"])
@@ -923,7 +924,7 @@ class TechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   mask=mask,
                                                   index_values=index.get_unique(["set_technologies", "set_time_steps_yearly"]),
@@ -1027,7 +1028,7 @@ class TechnologyRules(GenericRule):
                 constraints.append(lhs <= rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="diffusion_limit_dim")
+        return self.constraints.return_constraints(constraints, model=self.model, stack_dim_name="diffusion_limit_dim")
 
     def constraint_technology_diffusion_limit_total_block(self):
         """limited technology diffusion based on the existing capacity in the previous year for the entire energy system
@@ -1121,7 +1122,7 @@ class TechnologyRules(GenericRule):
 
         ### return
         # reording takes too much memory!
-        return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="diffusion_limit_total_dim")
+        return self.constraints.return_constraints(constraints, model=self.model, stack_dim_name="diffusion_limit_total_dim")
 
     def constraint_capex_yearly_block(self):
         """ aggregates the capex of built capacity and of existing capacity
@@ -1164,7 +1165,7 @@ class TechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_technologies", "set_time_steps_yearly"]),
                                                   index_names=["set_technologies", "set_time_steps_yearly"])
@@ -1222,7 +1223,7 @@ class TechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_technologies"]),
                                                   index_names=["set_technologies"])
@@ -1266,7 +1267,7 @@ class TechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_technologies", "set_time_steps_yearly"]),
                                                   index_names=["set_technologies", "set_time_steps_yearly"])
@@ -1326,7 +1327,7 @@ class TechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_technologies"]),
                                                   index_names=["set_technologies"])
@@ -1368,7 +1369,7 @@ class TechnologyRules(GenericRule):
             constraints.append(lhs == rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=years,
                                                   index_names=["set_time_steps_yearly"])
@@ -1439,7 +1440,7 @@ class TechnologyRules(GenericRule):
             constraints.append(lhs >= rhs)
 
         ### return
-        return self.constraints.return_contraints(constraints,
+        return self.constraints.return_constraints(constraints,
                                                   model=self.model,
                                                   index_values=index.get_unique(["set_technologies"]),
                                                   index_names=["set_technologies"])
