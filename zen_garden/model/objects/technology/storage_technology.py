@@ -160,15 +160,15 @@ class StorageTechnology(Technology):
         constraints = optimization_setup.constraints
         rules = StorageTechnologyRules(optimization_setup)
         # Limit storage level
-        constraints.add_constraint_block(model, name="constraint_storage_level_max",
+        constraints.add_constraint(name="constraint_storage_level_max",
                                          constraint=rules.constraint_storage_level_max_block(),
                                          doc='limit maximum storage level to capacity')
         # couple storage levels
-        constraints.add_constraint_block(model, name="constraint_couple_storage_level",
+        constraints.add_constraint(name="constraint_couple_storage_level",
                                          constraint=rules.constraint_couple_storage_level_block(),
                                          doc='couple subsequent storage levels (time coupling constraints)')
         # Linear Capex
-        constraints.add_constraint_block(model, name="constraint_storage_technology_capex",
+        constraints.add_constraint(name="constraint_storage_technology_capex",
                                          constraint=rules.constraint_storage_technology_capex_block(),
                                          doc='Capital expenditures for installing storage technology')
 
@@ -191,6 +191,7 @@ class StorageTechnology(Technology):
         energy_system = optimization_setup.energy_system
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech,time)
+        # TODO make to constraint rule or integrate in new structure!!!
         # disjunct constraints min load charge
         constraints.add_constraint_block(model, name=f"disjunct_storage_technology_min_load_charge_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(model.variables["flow_storage_charge"][tech, node, time].to_expr()
@@ -221,13 +222,13 @@ class StorageTechnology(Technology):
 
         # for equality constraints we need to add upper and lower bounds
         # off charging
-        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_off_charge_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint(name=f"disjunct_storage_technology_off_charge_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(model.variables["flow_storage_charge"][tech, node, time].to_expr()
                                                      == 0),
                                          disjunction_var=binary_var)
 
         # off discharging
-        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_off_discharge_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint(name=f"disjunct_storage_technology_off_discharge_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
                                                      == 0),
                                          disjunction_var=binary_var)
@@ -272,7 +273,7 @@ class StorageTechnologyRules(GenericRule):
         ### index loop
         # we loop over the technologies for the time step conversion
         # we vectorize over the nodes and storage time steps
-        constraints = []
+        constraints = {}
         for tech in index.get_unique(["set_storage_technologies"]):
 
             ### auxiliary calculations
@@ -313,7 +314,7 @@ class StorageTechnologyRules(GenericRule):
         ### index loop
         # we loop over the technologies for the time step conversion
         # we vectorize over the nodes and storage time steps
-        constraints = []
+        constraints = {}
         for tech in index.get_unique(["set_storage_technologies"]):
 
             ### auxiliary calculations

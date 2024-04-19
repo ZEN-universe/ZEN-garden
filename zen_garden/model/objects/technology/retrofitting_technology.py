@@ -86,7 +86,7 @@ class RetrofittingTechnology(ConversionTechnology):
         rules = RetrofittingTechnologyRules(optimization_setup)
 
         # flow coupling of retrofitting technology and its base technology
-        constraints.add_constraint_block(model, name="constraint_retrofit_flow_coupling",
+        constraints.add_constraint(name="constraint_retrofit_flow_coupling",
                                          constraint=rules.constraint_retrofit_flow_coupling_block(
                                              *cls.create_custom_set(["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)),
                                          doc="couples the reference flows of the retrofitting technology and its base technology")
@@ -135,7 +135,7 @@ class RetrofittingTechnologyRules(GenericRule):
 
         ### index loop
         # we loop over all technologies and dependent carriers, mostly to avoid renaming of dimension
-        constraints = []
+        constraints = {}
         for retrofit_tech in index.get_unique([0]):
 
             ### auxiliary calculations

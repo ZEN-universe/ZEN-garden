@@ -270,7 +270,7 @@ class ConversionTechnology(Technology):
         # add pwa constraints
         rules = ConversionTechnologyRules(optimization_setup)
         # conversion factor
-        constraints.add_constraint_block(model, name="constraint_carrier_conversion",
+        constraints.add_constraint(name="constraint_carrier_conversion",
                                          constraint=rules.constraint_carrier_conversion_block(*cls.create_custom_set(["set_conversion_technologies", "set_dependent_carriers", "set_nodes","set_time_steps_operation"], optimization_setup)),
                                          doc="Conversion of energy carrier with conversion_factor")
         # capex
@@ -283,14 +283,14 @@ class ConversionTechnology(Technology):
                                           break_points=pwa_breakpoints, f_vals=pwa_values, cons_type="EQ", name="constraint_capex_pwa",)
         if set_linear_capex[0]:
             # if set_linear_capex contains technologies: (note we give the coordinates nice names)
-            constraints.add_constraint_block(model, name="constraint_linear_capex",
+            constraints.add_constraint(name="constraint_linear_capex",
                                             constraint=rules.constraint_linear_capex(), doc="Linear relationship in capex")
         # Coupling constraints
         # couple the real variables with the auxiliary variables
-        constraints.add_constraint_block(model, name="constraint_capex_coupling",
+        constraints.add_constraint(name="constraint_capex_coupling",
             constraint=rules.constraint_capex_coupling(), doc="couples the real capex variables with the approximated variables")
         # capacity
-        constraints.add_constraint_block(model, name="constraint_capacity_coupling",
+        constraints.add_constraint(name="constraint_capacity_coupling",
             constraint=rules.constraint_capacity_coupling(), doc="couples the real capacity variables with the approximated variables")
 
 
@@ -325,6 +325,7 @@ class ConversionTechnology(Technology):
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(time)
         # disjunct constraints min load
+        # TODO make to constraint rule or integrate in new structure!!!
         constraints.add_constraint_block(model, name=f"disjunct_conversion_technology_min_load_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(reference_flow.to_linexpr()
                                                      - model.variables["capacity"][tech, capacity_type, node, time_step_year].to_linexpr(params.min_load.loc[tech, capacity_type, node, time].item())
@@ -347,7 +348,7 @@ class ConversionTechnology(Technology):
         lhs = sum(model.variables["flow_conversion_input"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
               + sum(model.variables["flow_conversion_output"][tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
         # add the constraints
-        constraints.add_constraint_block(model, name=f"disjunct_conversion_technology_off_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint(name=f"disjunct_conversion_technology_off_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=lhs.to_linexpr() == 0, disjunction_var=binary_var)
 
     @classmethod
@@ -516,7 +517,7 @@ class ConversionTechnologyRules(GenericRule):
 
         ### index loop
         # we loop over all technologies and dependent carriers, mostly to avoid renaming of dimension
-        constraints = []
+        constraints = {}
         for tech, dependent_carrier in index.get_unique(["set_conversion_technologies", "set_dependent_carriers"]):
 
             ### auxiliary calculations

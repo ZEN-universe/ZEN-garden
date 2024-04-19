@@ -402,7 +402,7 @@ class OptimizationSetup(object):
         self.sets = IndexSet()
         self.variables = Variable(self)
         self.parameters = Parameter(self)
-        self.constraints = Constraint(self.sets)
+        self.constraints = Constraint(self.sets,self.model)
         # define and construct components of self.model
         Element.construct_model_components(self)
         # find smallest and largest coefficient and RHS

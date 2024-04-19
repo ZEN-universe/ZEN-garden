@@ -124,7 +124,7 @@ class Solver(Subscriptable):
     check_unit_consistency: bool = True
     solver_dir: str = ".//outputs//solver_files"
     keep_files: bool = False
-    io_api: str = "direct"
+    io_api: str = "lp"
     add_duals: bool = False
     recommend_base_units: bool = False
     immutable_unit: list[str] = []

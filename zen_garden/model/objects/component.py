@@ -727,16 +727,45 @@ class Variable(Component):
         return var_units.astype(str)
 
 class Constraint(Component):
-    def __init__(self, index_sets):
+    def __init__(self, index_sets,model):
         """
         Initialization of a constraint
         :param index_sets: A reference to the index sets of the model
+        :param model: A reference to the linopy model
         """
 
         self.index_sets = index_sets
+        self.model = model
         super().__init__()
         # This is the big-M for the constraints if the variables inside an expression are not bounded
         self.M = np.iinfo(np.int32).max
+
+    def add_constraint(self, name, constraint, doc=""):
+        """ initialization of a constraint
+        :param name: name of variable
+        :param constraint: either a linopy constraint or a dictionary of constraints or None TODO
+        :param doc: docstring of variable"""
+
+        if name not in self.docs.keys():
+            if constraint is None or constraint == []:
+                return
+            elif isinstance(constraint, dict):
+                for key, cons in constraint.items():
+                    if cons is None or cons == []:
+                        return
+                    assert isinstance(cons, lp.constraints.Constraint), f"Constraint {key} has wrong format. Must be a linopy constraint but is {type(cons).__name__}"
+                    if type(key) == tuple:
+                        _key = "_".join([str(k) for k in key])
+                    else:
+                        _key = str(key)
+                    _name = f"{name}_{key}"
+                    self.add_single_constraint(_name, cons)
+            elif isinstance(constraint,lp.constraints.Constraint):
+                self.add_single_constraint(name, constraint)
+            else:
+                raise TypeError(f"Constraint {name} has wrong format. Must be either a linopy constraint or a dictionary of constraints but is {type(constraint).__name__}")
+        else:
+            logging.warning(f"{name} already added. Can only be added once")
 
     def add_constraint_block(self, model: lp.Model, name, constraint, doc="", disjunction_var=None):
         """ initialization of a constraint block (list of constraints)
@@ -845,9 +874,19 @@ class Constraint(Component):
         return xr.DataArray(np.sum(np.array(bounds).reshape(shape) + 1, axis=-1),
                             coords=[lin_expr.vars.coords[d] for d in lin_expr.vars.dims[:-1]])
 
-    def _add_con(self, model, name, lhs, sign, rhs, disjunction_var=None, mask=None):
+    def add_single_constraint(self, name, constraint):
+        """ adds a single constraint to the model
+        :param name: name of variable
+        :param constraint: linopy constraint
+        """
+        lhs = constraint.lhs
+        sign = constraint.sign
+        rhs = constraint.rhs
+        mask = constraint.mask
+        self._add_con(name, lhs, sign, rhs, mask=mask)
+
+    def _add_con(self, name, lhs, sign, rhs, disjunction_var=None, mask=None):
         """ Adds a constraint to the model
-        :param model: The linopy model
         :param name: name of the constraint
         :param lhs: left hand side of the constraint
         :param sign: sign of the constraint
@@ -867,7 +906,7 @@ class Constraint(Component):
             mask = bool(mask)
         if disjunction_var is not None:
             # get the bounds
-            bounds = self._get_M(model, lhs)
+            bounds = self._get_M(self.model, lhs)
             if not np.isfinite(bounds).all():
                 logging.warning(f"Constraint {name} has infinite bounds. Can not extract big-M resorting to default")
                 bounds = self.M
@@ -877,16 +916,16 @@ class Constraint(Component):
                 # the "<=" cons
                 sign_c = sign.where(sign != "=", "<=")
                 m_arr = xr.zeros_like(rhs).where(sign_c != "<=", bounds).where(sign_c != ">=", -bounds)
-                model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + "<=", mask=mask)
+                self.model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + "<=", mask=mask)
                 sign_c = sign.where(sign != "=", ">=")
                 m_arr = xr.zeros_like(rhs).where(sign_c != "<=", bounds).where(sign_c != ">=", -bounds)
-                model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + ">=", mask=mask)
+                self.model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + ">=", mask=mask)
             # create the arr
             else:
                 m_arr = xr.zeros_like(rhs).where(sign != "<=", bounds).where(sign != ">=", -bounds)
-                model.add_constraints(lhs + m_arr * disjunction_var, sign, rhs + m_arr, name=name + ">=", mask=mask)
+                self.model.add_constraints(lhs + m_arr * disjunction_var, sign, rhs + m_arr, name=name + ">=", mask=mask)
         else:
-            model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
+            self.model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
 
     def rule_to_cons(self, model, rule, index_values, index_list, cons=None):
         """
@@ -1044,9 +1083,12 @@ class Constraint(Component):
             return constraints
 
         # get the shape of the constraints
-        max_terms = max([c.lhs.shape[-1] if hasattr(c,"shape") else 1 for c in constraints])
+        max_terms = max([c.lhs.shape[-1] if hasattr(c,"shape") else c.lhs.nterm for c in constraints])
         c = constraints[0]
-        lhs_shape = c.lhs.shape[:-1] + (max_terms, )
+        if hasattr(c,"shape"):
+            lhs_shape = c.lhs.shape[:-1] + (max_terms, )
+        else:
+            lhs_shape = (max_terms, )
         coords = [xr.DataArray(np.arange(len(constraints)), dims=[stack_dim]), ] + [c.lhs.coords[d] for d in c.lhs.dims][:-1] + [xr.DataArray(np.arange(max_terms), dims=["_term"])]
         coeffs = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=np.nan), coords=coords,
                               dims=(stack_dim, *constraints[0].lhs.dims))

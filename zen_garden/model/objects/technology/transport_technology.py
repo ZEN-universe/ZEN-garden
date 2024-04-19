@@ -193,11 +193,11 @@ class TransportTechnology(Technology):
         constraints = optimization_setup.constraints
         rules = TransportTechnologyRules(optimization_setup)
         # Carrier Flow Losses
-        constraints.add_constraint_block(model, name="constraint_transport_technology_losses_flow",
+        constraints.add_constraint(name="constraint_transport_technology_losses_flow",
                                          constraint=rules.constraint_transport_technology_losses_flow_block(),
                                          doc='Carrier loss due to transport with through transport technology')
         # capex of transport technologies
-        constraints.add_constraint_block(model, name="constraint_transport_technology_capex",
+        constraints.add_constraint(name="constraint_transport_technology_capex",
                                          constraint=rules.constraint_transport_technology_capex_block(),
                                          doc='Capital expenditures for installing transport technology')
 
@@ -219,7 +219,7 @@ class TransportTechnology(Technology):
         constraints = optimization_setup.constraints
         # get invest time step
         time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
-
+        # TODO make to constraint rule or integrate in new structure!!
         # disjunct constraints min load
         constraints.add_constraint_block(model, name=f"disjunct_transport_technology_min_load_{tech}_{capacity_type}_{edge}_{time}",
                                          constraint=(model.variables["flow_transport"][tech, edge, time].to_linexpr()
@@ -289,7 +289,7 @@ class TransportTechnologyRules(GenericRule):
         cons_mask = self.variables["flow_transport_loss"].mask
 
         ### index loopmask
-        constraints = []
+        constraints = {}
         for tech in index_values:
             ### auxiliary calculations
             term_distance_inf = mask.loc[tech] * self.variables["flow_transport_loss"].loc[tech]
