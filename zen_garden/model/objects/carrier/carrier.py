@@ -467,7 +467,7 @@ class CarrierRules(GenericRule):
         ### formulate constraint
         lhs = self.variables["flow_import"].sum("set_time_steps_operation") * mask
         rhs = (availability * self.parameters.import_share).fillna(0)
-        constraints = lhs == rhs
+        constraints = lhs >= rhs
 
         ### return
         return self.constraints.return_contraints(constraints, model=self.model)
