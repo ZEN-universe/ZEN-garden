@@ -282,11 +282,9 @@ class EnergySystem:
                                doc="net_present_cost of energy system", unit_category={"money": 1})
 
     def construct_constraints(self):
-        """ constructs the pe.Constraints of the class <EnergySystem> """
-
+        """ constructs the constraints of the class <EnergySystem> """
+        logging.info("Construct Constraints of EnergySystem")
         constraints = self.optimization_setup.constraints
-        sets = self.optimization_setup.sets
-        model = self.optimization_setup.model
 
         # create the rules
         self.rules = EnergySystemRules(self.optimization_setup)

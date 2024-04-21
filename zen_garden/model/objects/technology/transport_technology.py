@@ -301,10 +301,11 @@ class TransportTechnologyRules(GenericRule):
             ### formulate constraint
             lhs = term_distance_inf + term_distance_not_inf - term_flow_loss
             rhs = 0
-            constraints.append(lhs == rhs)
+            constraints[tech] = lhs == rhs
 
         ### return
-        return self.constraints.return_constraints(constraints, model=self.model, mask=cons_mask, index_values=index_values, index_names=index_names)
+        return constraints
+        # return self.constraints.return_constraints(constraints, model=self.model, mask=cons_mask, index_values=index_values, index_names=index_names)
 
     def constraint_transport_technology_capex_block(self):
         """ definition of the capital expenditures for the transport technology
@@ -347,8 +348,9 @@ class TransportTechnologyRules(GenericRule):
 
         ### formulate constraint
         lhs = term_distance_inf + term_distance_not_inf
-        rhs = 0
+        lhs  = lhs.where(global_mask)
+        rhs = xr.zeros_like(global_mask)
         constraints = lhs == rhs
-
         ### return
-        return self.constraints.return_constraints(constraints, mask=global_mask)
+        return constraints
+        # return self.constraints.return_constraints(constraints, mask=global_mask)

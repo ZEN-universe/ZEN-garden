@@ -348,7 +348,7 @@ class ConversionTechnology(Technology):
         lhs = sum(model.variables["flow_conversion_input"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
               + sum(model.variables["flow_conversion_output"][tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
         # add the constraints
-        constraints.add_constraint(name=f"disjunct_conversion_technology_off_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint_block(model,name=f"disjunct_conversion_technology_off_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=lhs.to_linexpr() == 0, disjunction_var=binary_var)
 
     @classmethod
@@ -437,7 +437,7 @@ class ConversionTechnologyRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_constraints(constraints)
+        return constraints
 
     def constraint_capex_coupling(self):
         """ couples capex variables based on modeling technique
@@ -458,14 +458,14 @@ class ConversionTechnologyRules(GenericRule):
         ### auxiliary calculations
         cost_capex = self.variables["cost_capex"].rename(
             {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
-
+        conversion_technologies = self.sets["set_conversion_technologies"]
         ### formulate constraint
-        lhs = cost_capex.loc[:,"power",:] - self.variables["capex_approximation"]
+        lhs = cost_capex.loc[conversion_technologies,"power",:] - self.variables["capex_approximation"]
         rhs = 0
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_constraints(constraints)
+        return constraints
 
     def constraint_capacity_coupling(self):
         """ couples capacity variables based on modeling technique
@@ -486,14 +486,15 @@ class ConversionTechnologyRules(GenericRule):
         ### auxiliary calculations
         capacity_addition = self.variables["capacity_addition"].rename(
             {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
+        conversion_technologies = self.sets["set_conversion_technologies"]
 
         ### formulate constraint
-        lhs = capacity_addition.loc[:,"power",:] - self.variables["capacity_approximation"]
+        lhs = capacity_addition.loc[conversion_technologies,"power",:] - self.variables["capacity_approximation"]
         rhs = 0
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_constraints(constraints)
+        return constraints
 
     # Block-based constraints
     # -----------------------
@@ -533,9 +534,10 @@ class ConversionTechnologyRules(GenericRule):
             ### formulate constraint
             lhs = term_flow_dependent - self.parameters.conversion_factor.loc[tech, dependent_carrier]*term_flow_reference
             rhs = 0
-            constraints.append(lhs == rhs)
+            constraints[(tech,dependent_carrier)] = lhs == rhs
 
         ### return
-        return self.constraints.return_constraints(constraints,model=self.model,
-                                                  index_values=index.get_unique(["set_conversion_technologies", "set_dependent_carriers"]),
-                                                  index_names=["set_conversion_technologies", "set_dependent_carriers"])
+        return constraints
+        # return self.constraints.return_constraints(constraints,model=self.model,
+        #                                           index_values=index.get_unique(["set_conversion_technologies", "set_dependent_carriers"]),
+        #                                           index_names=["set_conversion_technologies", "set_dependent_carriers"])

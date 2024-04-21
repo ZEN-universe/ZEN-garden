@@ -84,7 +84,7 @@ class Postprocess:
         self.save_sets()
         self.save_param()
         self.save_var()
-        self.save_duals()
+        # self.save_duals() TODO enable again
         self.save_system()
         self.save_analysis()
         self.save_scenarios()

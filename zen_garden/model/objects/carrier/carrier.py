@@ -311,7 +311,7 @@ class CarrierRules(GenericRule):
         constraints = lhs <= rhs
 
         ### return
-        return self.constraints.return_constraints(constraints,self.model)
+        return constraints
 
     def constraint_availability_export_block(self):
         """node- and time-dependent carrier availability to export to outside the system boundaries

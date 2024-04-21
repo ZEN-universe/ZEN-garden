@@ -352,20 +352,21 @@ class IndexSet(Component):
         index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
         coords = [self.get_coord(data, name) for data, name in zip(index_arrs, index_list)]
 
-        # init the mask
-        if model is not None:
-            index_names = []
-            for index_name, coord in zip(index_list, coords):
-                # we check if there is already an index with the same name but a different size
-                if index_name in model.variables.coords and coord.size == 0:
-                    index_names.append(index_name + f"_{uuid.uuid4()}")
-                else:
-                    index_names.append(index_name)
-            index_list = index_names
+        index_list, mask = self.create_variable_mask(coords, index_arrs, index_list, model)
 
-        mask = xr.DataArray(False, coords=coords, dims=index_list)
-        mask.loc[index_arrs] = True
+        lower, upper = self.create_variable_bounds(bounds, coords, index_arrs, index_list, index_values)
 
+        return mask, lower, upper
+
+    def create_variable_bounds(self, bounds, coords, index_arrs, index_list, index_values):
+        """ creates the bounds for the variables
+        :param bounds: The bounds of the variable
+        :param coords: The coordinates of the variable
+        :param index_arrs: The index values as xarrays
+        :param index_list: The list of the index names
+        :param index_values: The list of the index values
+        :return: The lower and upper bounds as xarrays
+        """
         # get the bounds
         lower = xr.DataArray(-np.inf, coords=coords, dims=index_list)
         upper = xr.DataArray(np.inf, coords=coords, dims=index_list)
@@ -377,8 +378,8 @@ class IndexSet(Component):
                 lower[...] = bounds[0]
                 upper[...] = bounds[1]
         elif isinstance(bounds, np.ndarray):
-            lower.loc[index_arrs] = bounds[:,0]
-            upper.loc[index_arrs] = bounds[:,1]
+            lower.loc[index_arrs] = bounds[:, 0]
+            upper.loc[index_arrs] = bounds[:, 1]
         elif callable(bounds):
             tmp_low = []
             tmp_up = []
@@ -393,8 +394,30 @@ class IndexSet(Component):
             upper = np.inf
         else:
             raise ValueError(f"bounds should be None, tuple, array or callable, is: {bounds}")
+        return lower, upper
 
-        return mask, lower, upper
+    def create_variable_mask(self, coords, index_arrs, index_list, model):
+        """ creates the mask for the variables
+        :param coords: The coordinates of the variable
+        :param index_arrs: The index values as xarrays
+        :param index_list: The list of the index names
+        :param model: The model to which the mask belongs, note that indices which don't match existing indices are
+                      renamed to match the model
+        :return: The mask as xarray
+        """
+        # init the mask
+        if model is not None:
+            index_names = []
+            for index_name, coord in zip(index_list, coords):
+                # we check if there is already an index with the same name but a different size
+                if index_name in model.variables.coords and coord.size == 0:
+                    index_names.append(index_name + f"_{uuid.uuid4()}")
+                else:
+                    index_names.append(index_name)
+            index_list = index_names
+        mask = xr.DataArray(False, coords=coords, dims=index_list)
+        mask.loc[index_arrs] = True
+        return index_list, mask
 
     def get_coord(self, data, name):
         """
@@ -618,7 +641,7 @@ class Parameter(Component):
                     coords_dict[k] = data.coords[k]
             data = data.assign_coords(coords_dict)
 
-            # now we need to align the coords
+            # now we need to align the coords TODO try to speed up
             data, _ = xr.align(data, self.index_sets.coords_dataset, join="right")
 
         # sometimes we get empty parameters
@@ -802,7 +825,7 @@ class Constraint(Component):
                 else:
                     lhs = cons.lhs
                 # add constraint
-                self._add_con(model, current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var, mask=mask)
+                self._add_con(current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var, mask=mask)
                 # save constraint doc
                 if isinstance(cons, lp.constraints.AnonymousScalarConstraint):
                     index_list = []
@@ -835,7 +858,7 @@ class Constraint(Component):
 
             # eval the rule
             xr_lhs, xr_sign, xr_rhs = self.rule_to_cons(model=model, rule=rule, index_values=index_values, index_list=index_list)
-            self._add_con(model, name, xr_lhs, xr_sign, xr_rhs, disjunction_var=disjunction_var)
+            self._add_con(name, xr_lhs, xr_sign, xr_rhs, disjunction_var=disjunction_var)
         else:
             logging.warning(f"{name} already added. Can only be added once")
 

@@ -154,9 +154,10 @@ class RetrofittingTechnologyRules(GenericRule):
                  (-self.parameters.retrofit_flow_coupling_factor.loc[retrofit_tech, nodes, times],term_flow_base_tech)],
                 coords=coords, model=self.model)
             rhs = 0
-            constraints.append(lhs <= rhs)
+            constraints[retrofit_tech] = lhs <= rhs
 
         ### return
-        return self.constraints.return_constraints(constraints, model=self.model, stack_dim_name="constraint_retrofit_flow_coupling_dim")
+        return constraints
+        # return self.constraints.return_constraints(constraints, model=self.model, stack_dim_name="constraint_retrofit_flow_coupling_dim")
 
 

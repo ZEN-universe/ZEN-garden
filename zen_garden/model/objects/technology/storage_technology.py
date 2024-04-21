@@ -222,13 +222,13 @@ class StorageTechnology(Technology):
 
         # for equality constraints we need to add upper and lower bounds
         # off charging
-        constraints.add_constraint(name=f"disjunct_storage_technology_off_charge_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint_block(name=f"disjunct_storage_technology_off_charge_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(model.variables["flow_storage_charge"][tech, node, time].to_expr()
                                                      == 0),
                                          disjunction_var=binary_var)
 
         # off discharging
-        constraints.add_constraint(name=f"disjunct_storage_technology_off_discharge_{tech}_{capacity_type}_{node}_{time}",
+        constraints.add_constraint_block(name=f"disjunct_storage_technology_off_discharge_{tech}_{capacity_type}_{node}_{time}",
                                          constraint=(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
                                                      == 0),
                                          disjunction_var=binary_var)
@@ -287,13 +287,14 @@ class StorageTechnologyRules(GenericRule):
                                          (-1.0, self.variables["capacity"].loc[tech, "energy", nodes, time_step_year])],
                                         coords, self.model)
             rhs = 0
-            constraints.append(lhs <= rhs)
+            constraints[tech] = lhs <= rhs
 
         ### return
-        return self.constraints.return_constraints(constraints,
-                                                  model=self.model,
-                                                  index_values=index.get_unique(levels=["set_storage_technologies"]),
-                                                  index_names=["set_storage_technologies"])
+        return constraints
+        # return self.constraints.return_constraints(constraints,
+        #                                           model=self.model,
+        #                                           index_values=index.get_unique(levels=["set_storage_technologies"]),
+        #                                           index_names=["set_storage_technologies"])
 
     def constraint_couple_storage_level_block(self):
         """couple subsequent storage levels (time coupling constraints)
@@ -358,13 +359,14 @@ class StorageTechnologyRules(GenericRule):
                                          (after_self_discharge.data/self.parameters.efficiency_discharge.loc[tech, nodes, time_step_year], self.variables["flow_storage_discharge"].loc[tech, nodes, element_time_step])],
                                         coords, self.model)
             rhs = 0
-            constraints.append(lhs == rhs)
+            constraints[tech] = lhs == rhs
 
         ### return
-        return self.constraints.return_constraints(constraints,
-                                                  model=self.model,
-                                                  index_values=index.get_unique(["set_storage_technologies"]),
-                                                  index_names=["set_storage_technologies"])
+        return constraints
+        # return self.constraints.return_constraints(constraints,
+        #                                           model=self.model,
+        #                                           index_values=index.get_unique(["set_storage_technologies"]),
+        #                                           index_names=["set_storage_technologies"])
 
     def constraint_storage_technology_capex_block(self):
         """ definition of the capital expenditures for the storage technology
@@ -400,4 +402,4 @@ class StorageTechnologyRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_constraints(constraints)
+        return constraints
