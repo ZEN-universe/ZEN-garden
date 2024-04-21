@@ -373,7 +373,7 @@ class EnergySystemRules(GenericRule):
         ### index sets
 
         ### masks
-        m = [True if year == self.optimization_setup.sets["set_time_steps_yearly"][0] else False for year in self.optimization_setup.sets["set_time_steps_yearly"]]
+        m = [True if year == self.energy_system.set_time_steps_yearly[0] else False for year in self.energy_system.set_time_steps_yearly]
 
         ### index loop
         lhs = (
@@ -424,7 +424,7 @@ class EnergySystemRules(GenericRule):
         ### index sets
 
         ### masks
-        m = [True if year != self.optimization_setup.sets["set_time_steps_yearly_entire_horizon"][-1] else False for year in self.optimization_setup.sets["set_time_steps_yearly"]]
+        m = [True if year != self.energy_system.set_time_steps_yearly_entire_horizon[-1] else False for year in self.energy_system.set_time_steps_yearly]
 
         ### index loop
         lhs = (
@@ -456,16 +456,16 @@ class EnergySystemRules(GenericRule):
 
         ### index loop
         # we loop over all years
-        factor = pd.Series(index = self.sets["set_time_steps_yearly"])
-        for year in self.sets["set_time_steps_yearly"]:
+        factor = pd.Series(index = self.energy_system.set_time_steps_yearly)
+        for year in self.energy_system.set_time_steps_yearly:
 
             ### auxiliary calculations
-            if year == self.sets["set_time_steps_yearly_entire_horizon"][-1]:
+            if year == self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 interval_between_years = 1
             else:
                 interval_between_years = self.system["interval_between_years"]
             # economic discount
-            factor[year] = sum(((1 / (1 + self.parameters.discount_rate)) ** (self.system["interval_between_years"] * (year - self.sets["set_time_steps_yearly"][0]) + _intermediate_time_step))
+            factor[year] = sum(((1 / (1 + self.parameters.discount_rate)) ** (self.system["interval_between_years"] * (year - self.energy_system.set_time_steps_yearly[0]) + _intermediate_time_step))
                          for _intermediate_time_step in range(0, interval_between_years))
         term_discounted_cost_total = self.variables["cost_total"] * factor
 
@@ -590,7 +590,7 @@ class EnergySystemRules(GenericRule):
         # not necessary
 
         ### masks
-        mask_last_year = [year == self.sets["set_time_steps_yearly"][-1] for year in self.sets["set_time_steps_yearly"]]
+        mask_last_year = [year == self.energy_system.set_time_steps_yearly[-1] for year in self.energy_system.set_time_steps_yearly]
 
         ### index loop
         # not necessary
@@ -659,7 +659,7 @@ class EnergySystemRules(GenericRule):
         :param model: optimization model
         :return: net present cost objective function
         """
-        return sum([model.variables["net_present_cost"][year] for year in self.sets["set_time_steps_yearly"]])
+        return sum([model.variables["net_present_cost"][year] for year in self.energy_system.set_time_steps_yearly])
 
     def objective_total_carbon_emissions(self, model):
         """objective function to minimize total emissions

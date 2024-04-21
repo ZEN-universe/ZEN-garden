@@ -671,18 +671,9 @@ class TechnologyRules(GenericRule):
 
         ### index loop
         # we loop over all years
-        constraints = {}
-        for year in self.sets["set_time_steps_yearly"]:
-
-            ### auxiliary calculations
-            term_sum_yearly = self.variables["capex_yearly"].loc[..., year].sum()
-
-            ### formulate constraint
-            lhs = (self.variables["cost_capex_total"].loc[year]
-                   - term_sum_yearly)
-            rhs = 0
-            constraints[year] = lhs == rhs
-
+        lhs = self.variables["cost_capex_total"] - self.variables["capex_yearly"].sum(["set_technologies","set_capacity_types","set_location"])
+        rhs = 0
+        constraints = lhs == rhs
         ### return
         return constraints
         # return self.constraints.return_constraints(constraints,self.model,stack_dim_name="set_time_steps_yearly")
@@ -704,18 +695,20 @@ class TechnologyRules(GenericRule):
 
         ### index loop
         # we loop over all years
-        constraints = {}
-        for year in self.sets["set_time_steps_yearly"]:
-
-            ### auxiliary calculations
-            term_sum_yearly = self.variables["opex_yearly"].loc[..., year].sum()
-
-            ### formulate constraint
-            lhs = (self.variables["cost_opex_total"].loc[year]
-                   - term_sum_yearly)
-            rhs = 0
-            constraints[year] = lhs == rhs
-
+        # constraints = {}
+        # for year in self.energy_system.set_time_steps_yearly:
+        #
+        #     ### auxiliary calculations
+        #     term_sum_yearly = self.variables["opex_yearly"].loc[..., year].sum()
+        #
+        #     ### formulate constraint
+        #     lhs = (self.variables["cost_opex_total"].loc[year]
+        #            - term_sum_yearly)
+        #     rhs = 0
+        #     constraints[year] = lhs == rhs
+        lhs = self.variables["cost_opex_total"] - self.variables["opex_yearly"].sum(["set_technologies","set_capacity_types","set_location"])
+        rhs = 0
+        constraints = lhs == rhs
         ### return
         return constraints
         # return self.constraints.return_constraints(constraints,self.model,stack_dim_name="set_time_steps_yearly")
@@ -873,11 +866,11 @@ class TechnologyRules(GenericRule):
             ### auxiliary calculations
             investment_time = Technology.get_investment_time_step(self.optimization_setup, tech, year)
             ### formulate constraint
-            if investment_time in self.sets["set_time_steps_yearly"]:
+            if investment_time in self.energy_system.set_time_steps_yearly:
                 lhs = (self.variables["capacity_addition"].loc[tech, :, :, year]
                        - self.variables["capacity_investment"].loc[tech, :, :, investment_time])
                 rhs = 0
-            elif investment_time in self.sets["set_time_steps_yearly_entire_horizon"]:
+            elif investment_time in self.energy_system.set_time_steps_yearly_entire_horizon:
                 lhs = self.variables["capacity_addition"].loc[tech, :, :, year]
                 rhs = self.parameters.capacity_investment_existing.loc[tech, :, :, investment_time]
             else:
@@ -985,7 +978,7 @@ class TechnologyRules(GenericRule):
                 end_year = year - 1
 
                 # actual years between first invest year step and end_year
-                delta_year = interval_between_years * (end_year - self.sets["set_time_steps_yearly"][0])
+                delta_year = interval_between_years * (end_year - self.energy_system.set_time_steps_yearly[0])
                 existing_year = self.sets["set_technologies_existing"][tech]
                 # Note: instead of summing over all but one location, we sum over all and then subtract one
                 term_total_capacity_knowledge_existing = ((self.parameters.capacity_existing.loc[tech, :, set_locations, existing_year]  # add spillover from other regions
@@ -996,7 +989,7 @@ class TechnologyRules(GenericRule):
                 #     rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_capacity"])
                 #     term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > rounding_value, 0)
 
-                horizon_year = np.arange(self.sets["set_time_steps_yearly"][0], end_year + 1)
+                horizon_year = np.arange(self.energy_system.set_time_steps_yearly[0], end_year + 1)
                 horizon_year = self.variables.coords["set_time_steps_yearly"][self.variables.coords["set_time_steps_yearly"].isin(horizon_year)]
                 if len(horizon_year) >= 1:
                     term_total_capacity_knowledge_addition = ((self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_year]  # add spillover from other regions
@@ -1085,7 +1078,7 @@ class TechnologyRules(GenericRule):
                 end_year = year - 1
 
                 # actual years between first invest year step and end_year
-                delta_time = interval_between_years * (end_year - self.sets["set_time_steps_yearly"][0])
+                delta_time = interval_between_years * (end_year - self.energy_system.set_time_steps_yearly[0])
                 existing_time = self.sets["set_technologies_existing"][tech]
                 term_total_capacity_knowledge_existing = (self.parameters.capacity_existing.loc[tech, :, set_locations, existing_time]
                                                      * (1 - knowledge_depreciation_rate) ** (delta_time + self.parameters.lifetime.loc[tech].item() - self.parameters.lifetime_existing.loc[tech, set_locations, existing_time])).sum(["set_technologies_existing","set_location"])
@@ -1094,7 +1087,7 @@ class TechnologyRules(GenericRule):
                 #     rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_capacity"])
                 #     term_total_capacity_knowledge_existing = term_total_capacity_knowledge_existing.where(term_total_capacity_knowledge_existing > rounding_value, 0)
 
-                horizon_year = np.arange(self.sets["set_time_steps_yearly"][0], end_year + 1)
+                horizon_year = np.arange(self.energy_system.set_time_steps_yearly[0], end_year + 1)
                 horizon_year = self.variables.coords["set_time_steps_yearly"][self.variables.coords["set_time_steps_yearly"].isin(horizon_year)]
                 if len(horizon_year) >= 1:
                     term_total_capacity_knowledge_addition = (self.variables["capacity_addition"].loc[tech, :, set_locations, horizon_year]
@@ -1354,7 +1347,7 @@ class TechnologyRules(GenericRule):
         """
 
         ### index sets
-        years = self.sets["set_time_steps_yearly"]
+        years = self.energy_system.set_time_steps_yearly
         # this index is just for the sums in the auxiliary calculations
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_location"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)
@@ -1399,7 +1392,7 @@ class TechnologyRules(GenericRule):
 
         :return: linopy constraints
         """
-
+        # TODO split into tech classes
         ### index sets
         index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], self.optimization_setup)
         index = ZenIndex(index_values, index_names)

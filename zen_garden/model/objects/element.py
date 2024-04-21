@@ -100,7 +100,11 @@ class Element:
         logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
         # construct Constraints
         t0 = time.perf_counter()
+        cp = cProfile.Profile()
+        cp.enable()
         cls.construct_constraints(optimization_setup)
+        cp.disable()
+        cp.print_stats(sort="cumtime")
         t1 = time.perf_counter()
         logging.info(f"Time to construct Constraints: {t1 - t0:0.4f} seconds")
         logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")

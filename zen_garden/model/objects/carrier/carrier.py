@@ -224,7 +224,7 @@ class CarrierRules(GenericRule):
         ### index loop
         # we loop over all years
         constraints = {}
-        for year in self.optimization_setup.sets["set_time_steps_yearly"]:
+        for year in self.energy_system.set_time_steps_yearly:
 
             ### auxiliary calculations
             terms = []
@@ -243,7 +243,7 @@ class CarrierRules(GenericRule):
 
         ### return
         return constraints
-        # return self.constraints.return_constraints(constraints,self.model,index_names=["set_time_steps_yearly"],index_values=self.optimization_setup.sets["set_time_steps_yearly"])
+        # return self.constraints.return_constraints(constraints,self.model,index_names=["set_time_steps_yearly"],index_values=self.energy_system.set_time_steps_yearly)
 
     def constraint_carbon_emissions_carrier_total(self):
         """ total carbon emissions of importing and exporting carrier
@@ -261,7 +261,7 @@ class CarrierRules(GenericRule):
         ### index loop
         # we loop over all years
         constraints = {}
-        for year in self.optimization_setup.sets["set_time_steps_yearly"]:
+        for year in self.energy_system.set_time_steps_yearly:
 
             ### auxiliary calculations
             terms = []
