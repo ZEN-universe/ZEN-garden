@@ -3,6 +3,111 @@ import pandas as pd
 import chardet
 import geopandas as gpd
 from shapely.geometry import Point
+import numpy as np
+
+def generate_existing_capacities(file_demand, lifetime, technology):
+    capacity_existing = pd.read_csv(file_demand)
+
+    capacity_existing['year_construction'] = np.nan
+    capacity_existing['capacity_existing'] = capacity_existing['demand'] / lifetime
+
+    new_rows = []
+
+    for index, row in capacity_existing.iterrows():
+        for year in range(lifetime):
+            new_row = row.copy()
+            new_row['year_construction'] = 2023 - year
+            new_rows.append(new_row)
+
+    expanded_df = pd.DataFrame(new_rows)
+
+    print(expanded_df.head())
+    expanded_df = expanded_df.drop(['demand'], axis=1)
+    expanded_df.to_csv(f'../data/hard_to_abate/set_technologies/set_conversion_technologies/{technology}/capacity_existing.csv', index=False)
+
+    return expanded_df
+
+def generate_existing_capacity_ASU(file_demand, lifetime, technology):
+    capacity_existing = pd.read_csv(file_demand)
+
+    capacity_existing['year_construction'] = np.nan
+    capacity_existing['capacity_existing'] = capacity_existing['demand'] * 0.823 / lifetime
+
+    new_rows = []
+
+    for index, row in capacity_existing.iterrows():
+        for year in range(lifetime):
+            new_row = row.copy()
+            new_row['year_construction'] = 2023 - year
+            new_rows.append(new_row)
+
+    expanded_df = pd.DataFrame(new_rows)
+
+    print(expanded_df.head())
+    expanded_df = expanded_df.drop(['demand'], axis=1)
+    expanded_df.to_csv(f'../data/hard_to_abate/set_technologies/set_conversion_technologies/{technology}/capacity_existing.csv', index=False)
+
+    return expanded_df
+
+def generate_existing_capacities_steel(file_demand, lifetime_BF_BOF, lifetime_EAF, lifetime_DRI):
+    capacity_existing = pd.read_csv(file_demand)
+
+    capacity_existing['year_construction'] = np.nan
+    capacity_existing_BF_BOF = capacity_existing.copy()
+    capacity_existing_BF_BOF['capacity_existing'] = capacity_existing_BF_BOF['demand'] * 0.7 / lifetime_BF_BOF
+
+    new_rows = []
+
+    for index, row in capacity_existing_BF_BOF.iterrows():
+        for year in range(lifetime_BF_BOF):
+            new_row = row.copy()
+            new_row['year_construction'] = 2023 - year
+            new_rows.append(new_row)
+
+    expanded_df_BF_BOF = pd.DataFrame(new_rows)
+    expanded_df_BF_BOF = expanded_df_BF_BOF.drop(['demand'], axis=1)
+    print(expanded_df_BF_BOF.head())
+    expanded_df_BF_BOF.to_csv(
+        f'../data/hard_to_abate/set_technologies/set_conversion_technologies/BF_BOF/capacity_existing.csv',
+        index=False)
+
+    capacity_existing_EAF = capacity_existing.copy()
+    capacity_existing_EAF['capacity_existing'] = capacity_existing_EAF['demand'] * 0.3 / lifetime_EAF
+
+    new_rows = []
+
+    for index, row in capacity_existing_EAF.iterrows():
+        for year in range(lifetime_EAF):
+            new_row = row.copy()
+            new_row['year_construction'] = 2023 - year
+            new_rows.append(new_row)
+
+    expanded_df_EAF = pd.DataFrame(new_rows)
+    expanded_df_EAF = expanded_df_EAF.drop(['demand'], axis=1)
+    print(expanded_df_EAF.head())
+    expanded_df_EAF.to_csv(
+        f'../data/hard_to_abate/set_technologies/set_conversion_technologies/EAF/capacity_existing.csv',
+        index=False)
+
+    capacity_existing_DRI = capacity_existing.copy()
+    capacity_existing_DRI['capacity_existing'] = capacity_existing_EAF['demand'] * 0.22 / lifetime_EAF
+
+    new_rows = []
+
+    for index, row in capacity_existing_DRI.iterrows():
+        for year in range(lifetime_DRI):
+            new_row = row.copy()
+            new_row['year_construction'] = 2023 - year
+            new_rows.append(new_row)
+
+    expanded_df_DRI = pd.DataFrame(new_rows)
+    expanded_df_DRI = expanded_df_DRI.drop(['demand'], axis=1)
+    print(expanded_df_DRI.head())
+    expanded_df_DRI.to_csv(
+        f'../data/hard_to_abate/set_technologies/set_conversion_technologies/DRI/capacity_existing.csv',
+        index=False)
+
+
 
 def adjust_year(year, lifetime):
     if year == 0:
@@ -131,20 +236,42 @@ def existing_capacities_steel(file_path):
     BF_BOF_capacity = BF_BOF_capacity.drop('primary_production_type', axis=1)
     BF_BOF_capacity['year_construction'] = BF_BOF_capacity['year_construction'].apply(lambda year: adjust_year(year, lifetime=40))
     BF_BOF_capacity = BF_BOF_capacity.groupby(['node', 'year_construction'], as_index=False).agg({'capacity_existing': 'sum'})
+    BF_BOF_capacity = BF_BOF_capacity[BF_BOF_capacity['year_construction'] != 0.0]
     BF_BOF_capacity.to_csv('../data/hard_to_abate/set_technologies/set_conversion_technologies/BF_BOF/capacity_existing.csv', index=False)
 
+    demand_steel = pd.read_csv("../data/hard_to_abate/set_carriers/steel/demand.csv")
+    steel_merged = pd.merge(demand_steel, BF_BOF_capacity, how='left', on='node')
+    print('capacity')
+    print(steel_merged['capacity_existing'].sum())
+    print('demand')
+    print(steel_merged['demand'].sum())
+    print('percentage')
+    print(steel_merged['capacity_existing'].sum() / steel_merged['demand'].sum())
+    print(steel_merged)
+
     DRI_capacity = filtered_df[filtered_df['primary_production_type'].str.contains('DRI', case=False, na=False)]
-    print(DRI_capacity)
     DRI_capacity = DRI_capacity.drop('primary_production_type', axis=1)
-    print(DRI_capacity)
     DRI_capacity['year_construction'] = DRI_capacity['year_construction'].apply(lambda year: adjust_year(year, lifetime=25))
     DRI_capacity = DRI_capacity.groupby(['node', 'year_construction'], as_index=False).agg({'capacity_existing': 'sum'})
+    DRI_capacity = DRI_capacity[DRI_capacity['year_construction'] != 0.0]
     DRI_capacity.to_csv('../data/hard_to_abate/set_technologies/set_conversion_technologies/DRI/capacity_existing.csv', index=False)
 
     EAF_capacity = filtered_df[filtered_df['primary_production_type'].str.contains('EAF', case=False, na=False)]
     EAF_capacity = EAF_capacity.drop('primary_production_type', axis=1)
     EAF_capacity['year_construction'] = EAF_capacity['year_construction'].apply(lambda year: adjust_year(year, lifetime=25))
     EAF_capacity = EAF_capacity.groupby(['node', 'year_construction'], as_index=False).agg({'capacity_existing': 'sum'})
+    EAF_capacity = EAF_capacity[EAF_capacity['year_construction'] != 0.0]
+
+    demand_steel = pd.read_csv("../data/hard_to_abate/set_carriers/steel/demand.csv")
+    steel_merged = pd.merge(demand_steel, EAF_capacity, how='left', on='node')
+    print('capacity')
+    print(steel_merged['capacity_existing'].sum())
+    print('demand')
+    print(steel_merged['demand'].sum())
+    print('percentage')
+    print(steel_merged['capacity_existing'].sum()/steel_merged['demand'].sum())
+
+    print(steel_merged)
     EAF_capacity.to_csv('../data/hard_to_abate/set_technologies/set_conversion_technologies/EAF/capacity_existing.csv', index=False)
 
 def existing_capacities_cement(file_path):
@@ -285,6 +412,51 @@ def compare_capa_to_demand(demand_file, capacity_file, capacity_file_steel):
     print(merged_df)
 
 if __name__ == "__main__":
+
+    industries = ['ammonia', 'methanol', 'oil_products', 'cement', #'steel'
+                   ]
+
+    industry_data = {
+        'ammonia': {
+            'lifetime': 30,
+            'technology': 'haber_bosch'
+        },
+        'steel': {
+            'lifetime': 40,
+            'technology': 'BF_BOF'
+        },
+        'methanol': {
+            'lifetime': 25,
+            'technology': 'methanol_synthesis'
+        },
+        'oil_products': {
+            'lifetime': 30,
+            'technology': 'refinery'
+        },
+        'cement': {
+            'lifetime': 25,
+            'technology': 'cement_plant'
+        }
+    }
+
+    for industry in industries:
+        data = industry_data[industry]
+        lifetime = data['lifetime']
+        technology = data['technology']
+        file_demand = f"../data/hard_to_abate/set_carriers/{industry}/demand.csv"
+        #generate_existing_capacities(file_demand, lifetime, technology)
+
+    file_demand = "../data/hard_to_abate/set_carriers/ammonia/demand.csv"
+    lifetime = 30
+    technology = 'ASU'
+    #generate_existing_capacity_ASU(file_demand, lifetime, technology)
+
+    file_demand = "../data/hard_to_abate/set_carriers/steel/demand.csv"
+    lifetime_BF_BOF = 40
+    lifetime_EAF = 25
+    lifetime_DRI = 25
+    generate_existing_capacities_steel(file_demand, lifetime_BF_BOF, lifetime_EAF, lifetime_DRI)
+
     file_path_hydrogen = "existing_capacities_input/existing_capacity_hydrogen.csv"
     #existing_capacities_hydrogen(file_path_hydrogen)
 
@@ -295,15 +467,15 @@ if __name__ == "__main__":
     #existing_capacities_steel(file_path_steel)
 
     file_path_cement = "existing_capacities_input/existing_capacity_cement.csv"
-    existing_capacities_cement(file_path_cement)
+    #existing_capacities_cement(file_path_cement)
 
     file_path_methanol = "existing_capacities_input/existing_capacity_petrochemicals.xlsx"
     sheet_name_methanol = "SFI_ALD_Petrochemicals_EUNA"
-    existing_capacities_methanol(file_path_methanol, sheet_name_methanol)
+    #existing_capacities_methanol(file_path_methanol, sheet_name_methanol)
 
     file_path_ammonia = "existing_capacities_input/existing_capacity_petrochemicals.xlsx"
     sheet_name_ammonia = "SFI_ALD_Petrochemicals_EUNA"
-    existing_capacities_ammonia(file_path_ammonia, sheet_name_ammonia)
+    #existing_capacities_ammonia(file_path_ammonia, sheet_name_ammonia)
 
     industry = "cement"
     demand_file = f"../data/hard_to_abate/set_carriers/{industry}/demand.csv"
