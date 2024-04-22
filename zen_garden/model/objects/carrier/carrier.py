@@ -113,7 +113,10 @@ class Carrier(Element):
         variables.add_variable(model, name="flow_export_avg", index_sets=cls.create_custom_set(["set_carriers", "set_nodes"], optimization_setup), bounds=(0, np.inf),
                                doc="node-dependent average carrier export to the grid",
                                unit_category={"energy_quantity": 1, "time": -1})
-
+        # flow of exported carrier daily
+        variables.add_variable(model, name="flow_export_daily", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_days"], optimization_setup), bounds=(0, np.inf),
+                               doc="node-dependent average carrier export to the grid",
+                               unit_category={"energy_quantity": 1, "time": -1})
         # carrier import/export cost
         variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
                                doc="node- and time-dependent carrier cost due to import and export", unit_category={"money": 1, "time": -1})
@@ -159,16 +162,10 @@ class Carrier(Element):
         constraints.add_constraint_block(model, name="constraint_constant_flow_export",
                                          constraint=rules.constraint_constant_flow_export_block(),
                                          doc='node- and time-dependent carrier export to outside the system boundaries has to be constant')
-        # constraint to determine average export flow for each node
-        # constraints.add_constraint_block(model, name="constraint_flow_export_avg",
-        #                                  constraint=rules.constraint_flow_export_avg_block(),
-        #                                  doc='node-dependent carrier export on average to outside the system boundaries')
-
-        #constraints.add_constraint_rule(model, name="constraint_constant_flow_export",
-        #                                index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
-        #                                rule=rules.constraint_constant_flow_export_rule,
-        #                                doc="node- and time-dependent carrier export to outside the system boundaries has to be constant")
-
+        # compute daily exports
+        constraints.add_constraint_block(model, name="constraint_daily_flow_export",
+                                         constraint=rules.constraint_daily_flow_export_block(),
+                                         doc='node- and time-dependent carrier export to outside the system boundaries summed over entire day')
         # limit import flow by availability for each year
         constraints.add_constraint_block(model, name="constraint_availability_import_yearly",
                                          constraint=rules.constraint_availability_import_yearly_block(),
@@ -368,42 +365,6 @@ class CarrierRules(GenericRule):
         ### return
         return self.constraints.return_contraints(constraints)
 
-    def constraint_constant_flow_export_rule(self, carrier, node, time):
-        """node- and time-dependent carrier export has to be constant over time
-
-        .. math::
-           V_{c,n,t} = 1/T \sum_t V_{c,n,t}
-
-        :return: #TODO describe parameter/return
-        """
-
-        ### index sets
-        # skipped because rule-based constraint
-
-        ### masks
-        # skipped because rule-based constraint
-
-        ### index loop
-        # skipped because rule-based constraint
-
-        ### auxiliary calculations
-        # skipped
-
-        ### formulate constraint
-        if not carrier in self.sets["set_carriers"]:
-            return self.constraints.return_contraints(0==0)
-
-        flow_export = self.variables["flow_export"].loc[carrier,node,time]
-        flow_export_sum = (self.variables["flow_export"].loc[carrier,node,:]\
-                                   * self.parameters.time_steps_operation_duration).sum("set_time_steps_operation") \
-                                   / self.parameters.time_steps_operation_duration.sum("set_time_steps_operation")
-        lhs = flow_export-flow_export_sum
-        rhs = 0
-        constraints = lhs == rhs
-
-        ### return
-        return self.constraints.return_contraints(constraints)
-
     def constraint_constant_flow_export_block(self):
         """node- and time-dependent carrier export has to be constant over time
 
@@ -412,14 +373,27 @@ class CarrierRules(GenericRule):
 
         :return: #TODO describe parameter/return
         """
+        offtake_profile = self.system["offtake_profile"]["type"]
+        offtake_carriers = self.system["offtake_profile"]["carriers"]
+
+        ## skip constriant formulation if offtake carriers empty
+        if not offtake_carriers:
+            return self.constraints.return_contraints([])
 
         ### index sets
         # not necessary
 
         ### masks
         # The constraints is only bounded for the carriers specifed in analysis
-        mask = xr.DataArray(0.0, coords=self.variables["flow_export"].coords)
-        for c in self.analysis["constant_flow_export"]:
+        if offtake_profile == "constant":
+            flow_export = self.variables["flow_export"]
+        elif offtake_profile == "daily":
+            flow_export = self.variables["flow_export_daily"]
+        else:
+            raise ValueError(f"The offtake profile {offtake_profile} is invalid")
+
+        mask = xr.DataArray(0.0, coords=flow_export.coords)
+        for c in offtake_carriers:
             if c in self.sets["set_carriers"]:
                 mask.loc[c, :, :] = 1.0
             else:
@@ -429,12 +403,67 @@ class CarrierRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        lhs = (self.variables["flow_export"] - self.variables["flow_export_avg"])*mask
-        rhs = 0
-        constraints = lhs == rhs
+        if offtake_profile == "constant":
+            lhs = (flow_export - self.variables["flow_export_avg"])*mask
+            rhs = 0
+            constraints = lhs == rhs
+        elif offtake_profile == "daily":
+            lhs = (flow_export - self.variables["flow_export_avg"])*mask
+            rhs = 0
+            constraints = lhs == rhs
+        else:
+            raise ValueError(f"The offtake profile {offtake_profile} is invalid")
 
         ### return
         return self.constraints.return_contraints(constraints)
+
+    def constraint_daily_flow_export_block(self):
+        """node- and time-dependent carrier export has to be constant over time
+
+        .. math::
+           V_{c,n,t} = V^{avg}_{c,n}
+
+        :return: #TODO describe parameter/return
+        """
+        offtake_profile = self.system["offtake_profile"]["type"]
+        offtake_carriers = self.system["offtake_profile"]["carriers"]
+
+        ### index sets
+        # not necessary
+
+        if offtake_profile != "daily":
+            return self.constraints.return_contraints([])
+        if self.system["conduct_time_series_aggregation"]:
+            raise NotImplementedError("Daily offtake profiles are only implemented for unaggregated timeseries")
+
+        ### masks
+        # The constraints is only bounded for the carriers specifed in analysis
+        mask = xr.DataArray(0.0, coords=self.variables["flow_export_daily"].coords)
+        for c in offtake_carriers:
+            if c in self.sets["set_carriers"]:
+                mask.loc[c, :, :] = 1.0
+            else:
+                logging.warning(f"Carrier {c} is not part of the model")
+
+        ### index loop
+        # not necessary
+
+        ### formulate constraint
+        constraints = []
+        flow_export = self.variables["flow_export"]
+        ts_per_day = self.system["unaggregated_time_steps_per_day"]
+        days_per_year = len(self.sets["set_time_steps_days"])
+        ts_days_per_year = np.array(self.sets["set_time_steps_operation"]).reshape(days_per_year, ts_per_day)
+        for day, ts in enumerate(ts_days_per_year):
+            lhs = (flow_export.loc[:,:,ts].sum("set_time_steps_operation") - self.variables["flow_export_daily"].loc[:,:,day])*mask.loc[:,:,day]
+            rhs = 0
+            constraints.append(lhs == rhs)
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=self.sets["set_time_steps_days"],
+                                                  index_names=["set_time_steps_days"])
 
 
     def constraint_import_share_block(self):

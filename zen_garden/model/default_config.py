@@ -111,7 +111,7 @@ class Analysis(Subscriptable):
     max_output_size_mb: int = 500
     folder_name_system_specification: str = "system_specification"
     earliest_year_of_data: int = 1900
-    constant_flow_export: list[str] = []
+
 
 
 class System(Subscriptable):
@@ -135,6 +135,7 @@ class System(Subscriptable):
     enforce_selfish_behavior: bool = False
     reference_year: int = 2023
     unaggregated_time_steps_per_year: int = 8760
+    unaggregated_time_steps_per_day: int = 24
     aggregated_time_steps_per_year: int = 10
     conduct_time_series_aggregation: bool = True
     optimized_years: int = 3
@@ -142,6 +143,7 @@ class System(Subscriptable):
     use_rolling_horizon: bool = False
     years_in_rolling_horizon: int = 5
     use_capacities_existing: bool = True
+    offtake_profile: dict[str, Any] = {"type": None, "carriers": []}
 
 
 class SolverOptions(Subscriptable):
