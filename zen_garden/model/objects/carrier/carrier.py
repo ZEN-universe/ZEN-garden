@@ -375,6 +375,7 @@ class CarrierRules(GenericRule):
         """
         offtake_profile = self.system["offtake_profile"]["type"]
         offtake_carriers = self.system["offtake_profile"]["carriers"]
+        assert offtake_profile in ["constant", "daily"], ValueError(f"Invalid offtake profile: {offtake_profile}")
 
         ## skip constriant formulation if offtake carriers empty
         if not offtake_carriers:
@@ -411,8 +412,6 @@ class CarrierRules(GenericRule):
             lhs = (flow_export - self.variables["flow_export_avg"])*mask
             rhs = 0
             constraints = lhs == rhs
-        else:
-            raise ValueError(f"The offtake profile {offtake_profile} is invalid")
 
         ### return
         return self.constraints.return_contraints(constraints)
