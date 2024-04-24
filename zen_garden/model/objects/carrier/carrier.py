@@ -375,7 +375,7 @@ class CarrierRules(GenericRule):
         """
         offtake_profile = self.system["offtake_profile"]["type"]
         offtake_carriers = self.system["offtake_profile"]["carriers"]
-        assert offtake_profile in ["constant", "daily"], ValueError(f"Invalid offtake profile: {offtake_profile}")
+        assert not offtake_profile or offtake_profile in ["constant", "daily"], ValueError(f"Invalid offtake profile: {offtake_profile}")
 
         ## skip constriant formulation if offtake carriers empty
         if not offtake_carriers:
