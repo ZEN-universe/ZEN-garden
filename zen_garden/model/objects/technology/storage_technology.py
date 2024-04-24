@@ -265,8 +265,7 @@ class StorageTechnologyRules(GenericRule):
         """limit capacity power to energy ratio"""
 
         ### index sets
-        index_values, index_names = Element.create_custom_set(["set_storage_technologies"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
+        # not necessary
 
         ### masks
         # The constraints is only bounded if the availability is finite
@@ -284,7 +283,7 @@ class StorageTechnologyRules(GenericRule):
         return self.constraints.return_contraints(constraints,
                                                     model=self.model,
                                                     mask=mask,
-                                                    index_values=self.optimization_setup.sets.get_unique(["set_storage_technologies"]),
+                                                    index_values=self.sets["set_storage_technologies"],
                                                     index_names=["set_storage_technologies"])
 
     def constraint_storage_level_max_block(self):
