@@ -278,7 +278,7 @@ class StorageTechnologyRules(GenericRule):
         lhs = self.variables["capacity"].loc[:, "power", :, :]\
               - self.variables["capacity"].loc[:, "energy", :, :]*self.parameters.energy_to_power_ratio
         rhs = 0
-        constraints = lhs >= rhs
+        constraints = lhs == rhs
 
         return self.constraints.return_contraints(constraints,
                                                     model=self.model,
