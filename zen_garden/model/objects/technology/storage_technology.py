@@ -268,21 +268,20 @@ class StorageTechnologyRules(GenericRule):
         # not necessary
 
         ### masks
-        # The constraints is only bounded if the availability is finite
-        mask = self.parameters.energy_to_power_ratio != np.inf
+        mask = xr.DataArray(0, coords=self.parameters.energy_to_power_ratio.coords)
+        mask = mask.where(self.parameters.energy_to_power_ratio == np.inf, 1)
 
         ### index loop
         # not necessary
 
         ### formulate constraint
-        lhs = self.variables["capacity"].loc[:, "power", :, :]\
-              - self.variables["capacity"].loc[:, "energy", :, :]*self.parameters.energy_to_power_ratio
+        techs = self.sets["set_storage_technologies"]
+        lhs = (self.variables["capacity"].loc[techs, "power", :, :] - self.variables["capacity"].loc[techs, "energy", :, :] * self.parameters.energy_to_power_ratio)*mask
         rhs = 0
         constraints = lhs == rhs
 
         return self.constraints.return_contraints(constraints,
                                                     model=self.model,
-                                                    mask=mask,
                                                     index_values=self.sets["set_storage_technologies"],
                                                     index_names=["set_storage_technologies"])
 
