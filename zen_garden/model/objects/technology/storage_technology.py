@@ -163,12 +163,12 @@ class StorageTechnology(Technology):
         model = optimization_setup.model
         constraints = optimization_setup.constraints
         rules = StorageTechnologyRules(optimization_setup)
-        # Limit capacity power energy ratio level
+        # limit capacity power energy ratio level
         constraints.add_constraint_block(model, name="constraint_capacity_energy_to_power_ratio",
                                          constraint=rules.constraint_capacity_energy_to_power_ratio_block(),
                                          doc='limit capacity power to energy ratio')
 
-        # Limit storage level
+        # limit storage level
         constraints.add_constraint_block(model, name="constraint_storage_level_max",
                                          constraint=rules.constraint_storage_level_max_block(),
                                          doc='limit maximum storage level to capacity')
@@ -181,7 +181,7 @@ class StorageTechnology(Technology):
                                          constraint=rules.constraint_storage_technology_capex_block(),
                                          doc='Capital expenditures for installing storage technology')
 
-        # defines disjuncts if technology on/off
+    # defines disjuncts if technology on/off
 
     @classmethod
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
@@ -268,20 +268,22 @@ class StorageTechnologyRules(GenericRule):
         # not necessary
 
         ### masks
-        mask = xr.DataArray(0, coords=self.parameters.energy_to_power_ratio.coords)
-        mask = mask.where(self.parameters.energy_to_power_ratio == np.inf, 1)
+        e2p = self.parameters.energy_to_power_ratio.rename({"set_storage_technologies": "set_technologies"})
+        techs = self.sets["set_storage_technologies"]
+        mask = e2p != np.inf
 
         ### index loop
         # not necessary
 
         ### formulate constraint
-        techs = self.sets["set_storage_technologies"]
-        lhs = (self.variables["capacity"].loc[techs, "power", :, :] - self.variables["capacity"].loc[techs, "energy", :, :] * self.parameters.energy_to_power_ratio)*mask
+        lhs = (self.variables["capacity"].loc[techs, "energy", :, :] * e2p \
+               - self.variables["capacity"].loc[techs, "power", :, :])#.where(mask)
         rhs = 0
         constraints = lhs == rhs
 
         return self.constraints.return_contraints(constraints,
                                                     model=self.model,
+                                                    mask = mask,
                                                     index_values=self.sets["set_storage_technologies"],
                                                     index_names=["set_storage_technologies"])
 
