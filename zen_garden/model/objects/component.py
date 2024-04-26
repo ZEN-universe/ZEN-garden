@@ -575,6 +575,8 @@ class Parameter(Component):
                     unit_series[:] = dict_of_units["unit_in_base_units"].units
                     return unit_series.astype(str)
             for key, value in dict_of_units.items():
+                if name=="capex_per_distance_transport":
+                    print(f"{key}:{value}")
                 unit_series.loc[pd.IndexSlice[key]] = value
             return unit_series.astype(str)
 
