@@ -482,13 +482,14 @@ class CarrierRules(GenericRule):
         ### masks
         # The constraints is only bounded if the availability is finite
         mask = self.parameters.import_share != np.inf
+        mask2 = self.parameters.import_share*self.parameters.availability_import.max() <= self.parameters.availability_import
 
         ### index loop
         # not necessary
 
         ### formulate constraint
-        lhs = self.variables["flow_import"].sum("set_time_steps_operation")
-        rhs = (self.parameters.availability_import.sum("set_time_steps_operation") * self.parameters.import_share).fillna(0)
+        lhs = self.variables["flow_import"]
+        rhs = (self.parameters.availability_import * self.parameters.import_share).where(mask2, self.parameters.availability_import)
         constraints = lhs >= rhs
 
         ### return
