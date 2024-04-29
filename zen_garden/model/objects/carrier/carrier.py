@@ -393,10 +393,10 @@ class CarrierRules(GenericRule):
         else:
             raise ValueError(f"The offtake profile {offtake_profile} is invalid")
 
-        mask = xr.DataArray(0.0, coords=flow_export.coords)
+        mask = xr.DataArray(False, coords=flow_export.coords)
         for c in offtake_carriers:
             if c in self.sets["set_carriers"]:
-                mask.loc[c, :, :] = 1.0
+                mask.loc[c, :, :] = True
             else:
                 logging.warning(f"Carrier {c} is not part of the model")
 
@@ -405,16 +405,18 @@ class CarrierRules(GenericRule):
 
         ### formulate constraint
         if offtake_profile == "constant":
-            lhs = (flow_export - self.variables["flow_export_avg"])*mask
+            lhs = (flow_export - self.variables["flow_export_avg"])
             rhs = 0
             constraints = lhs == rhs
         elif offtake_profile == "daily":
-            lhs = (flow_export - self.variables["flow_export_avg"])*mask
+            lhs = (flow_export - self.variables["flow_export_avg"])
             rhs = 0
             constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        return self.constraints.return_contraints(constraints,
+                                                  mask=mask,
+                                                  model=self.model,)
 
     def constraint_daily_flow_export_block(self):
         """node- and time-dependent carrier export has to be constant over time
@@ -437,10 +439,10 @@ class CarrierRules(GenericRule):
 
         ### masks
         # The constraints is only bounded for the carriers specifed in analysis
-        mask = xr.DataArray(0.0, coords=self.variables["flow_export_daily"].coords)
+        mask = xr.DataArray(False, coords=self.variables["flow_export_daily"].coords)
         for c in offtake_carriers:
             if c in self.sets["set_carriers"]:
-                mask.loc[c, :, :] = 1.0
+                mask.loc[c, :, :] = True
             else:
                 logging.warning(f"Carrier {c} is not part of the model")
 
@@ -475,30 +477,24 @@ class CarrierRules(GenericRule):
         """
 
         ### index sets
-        index_values, index_names = Element.create_custom_set(["set_carriers"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
+        # not needed
 
         ### masks
         # The constraints is only bounded if the availability is finite
-        availability = self.parameters.availability_import.sum("set_time_steps_operation")
-        mask = xr.DataArray(0.0, coords=availability.coords)
-        for c in self.sets["set_carriers"]:
-            if self.parameters.import_share.loc[c] != np.inf:
-                if (availability.loc[c] != np.inf).all():
-                    mask.loc[c, :] = 1.0
-                elif (availability.loc[c] != np.inf).any():
-                    raise NotImplementedError
+        mask = self.parameters.import_share != np.inf
 
         ### index loop
         # not necessary
 
         ### formulate constraint
-        lhs = self.variables["flow_import"].sum("set_time_steps_operation") * mask
-        rhs = (availability * self.parameters.import_share).fillna(0)
+        lhs = self.variables["flow_import"].sum("set_time_steps_operation")
+        rhs = (self.parameters.availability_import.sum("set_time_steps_operation") * self.parameters.import_share).fillna(0)
         constraints = lhs >= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints, model=self.model)
+        return self.constraints.return_contraints(constraints,
+                                                  mask= mask,
+                                                  model=self.model)
 
 
     def constraint_availability_import_yearly_block(self):
