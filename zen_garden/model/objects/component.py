@@ -406,15 +406,15 @@ class IndexSet(Component):
         :return: The mask as xarray
         """
         # init the mask
-        if model is not None:
-            index_names = []
-            for index_name, coord in zip(index_list, coords):
-                # we check if there is already an index with the same name but a different size
-                if index_name in model.variables.coords and coord.size == 0:
-                    index_names.append(index_name + f"_{uuid.uuid4()}")
-                else:
-                    index_names.append(index_name)
-            index_list = index_names
+        # if model is not None:
+        #     index_names = []
+        #     for index_name, coord in zip(index_list, coords):
+        #         # we check if there is already an index with the same name but a different size
+        #         # if index_name in model.variables.coords and coord.size == 0:
+        #         #     index_names.append(index_name + f"_{uuid.uuid4()}")
+        #         # else:
+        #         index_names.append(index_name)
+        #     index_list = index_names
         mask = xr.DataArray(False, coords=coords, dims=index_list)
         mask.loc[index_arrs] = True
         return index_list, mask
@@ -732,7 +732,7 @@ class Variable(Component):
                 carrier_level = [level for level in var_units.index.names if "carrier" in level][0]
                 for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items():
                     carrier_idx = var_units.index.get_level_values(carrier_level) == carrier
-                    var_units[carrier_idx] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+                    var_units[carrier_idx] = str((unit * energy_quantity ** unit_category["energy_quantity"]).units)
             # energy_quantity depends on technology index level (e.g. capacity)
             else:
                 tech_level = [level for level in var_units.index.names if "technologies" in level][0]
@@ -740,14 +740,15 @@ class Variable(Component):
                     reference_carrier = technology.reference_carrier[0]
                     energy_quantity = [energy_quantity for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items() if carrier == reference_carrier][0]
                     tech_idx = var_units.index.get_level_values(tech_level) == technology.name
-                    var_units[tech_idx] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+                    var_units[tech_idx] = str((unit * energy_quantity ** unit_category["energy_quantity"]).units)
                 if "set_capacity_types" in var_units.index.names:
                     energy_idx = var_units.index.get_level_values("set_capacity_types") == "energy"
-                    var_units[energy_idx] = var_units[energy_idx].apply(lambda u: (u*self.unit_handling.ureg("hour")).units)
+                    var_units[energy_idx] = var_units[energy_idx].apply(lambda u: str(self.unit_handling.ureg(u+"*hour").units))
+
         # variable has constant unit
         else:
-            var_units[:] = unit.units
-        return var_units.astype(str)
+            var_units[:] = str(unit.units)
+        return var_units
 
 class Constraint(Component):
     def __init__(self, index_sets,model):
@@ -776,14 +777,14 @@ class Constraint(Component):
                 for key, cons in constraint.items():
                     if cons is None or cons == []:
                         return
-                    assert isinstance(cons, lp.constraints.Constraint), f"Constraint {key} has wrong format. Must be a linopy constraint but is {type(cons).__name__}"
+                    assert (isinstance(cons, lp.constraints.Constraint) or isinstance(cons, lp.constraints.AnonymousConstraint)), f"Constraint {key} has wrong format. Must be a linopy constraint but is {type(cons).__name__}"
                     if type(key) == tuple:
                         _key = "_".join([str(k) for k in key])
                     else:
                         _key = str(key)
                     _name = f"{name}_{key}"
                     self.add_single_constraint(_name, cons)
-            elif isinstance(constraint,lp.constraints.Constraint):
+            elif isinstance(constraint,lp.constraints.Constraint) or isinstance(constraint, lp.constraints.AnonymousConstraint):
                 self.add_single_constraint(name, constraint)
             else:
                 raise TypeError(f"Constraint {name} has wrong format. Must be either a linopy constraint or a dictionary of constraints but is {type(constraint).__name__}")

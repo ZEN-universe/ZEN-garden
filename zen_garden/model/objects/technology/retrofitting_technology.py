@@ -80,16 +80,17 @@ class RetrofittingTechnology(ConversionTechnology):
         """ constructs the pe.Constraints of the class <RetrofittingTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
-        model = optimization_setup.model
-        constraints = optimization_setup.constraints
         # add pwa constraints
         rules = RetrofittingTechnologyRules(optimization_setup)
 
         # flow coupling of retrofitting technology and its base technology
-        constraints.add_constraint(name="constraint_retrofit_flow_coupling",
-                                         constraint=rules.constraint_retrofit_flow_coupling_block(
-                                             *cls.create_custom_set(["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)),
-                                         doc="couples the reference flows of the retrofitting technology and its base technology")
+        index_values, index_names = cls.create_custom_set(["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)
+        rules.constraint_retrofit_flow_coupling(index_values, index_names)
+        # doc="couples the reference flows of the retrofitting technology and its base technology")
+        # constraints.add_constraint(name="constraint_retrofit_flow_coupling",
+        #                                  constraint=rules.constraint_retrofit_flow_coupling(
+        #                                      *cls.create_custom_set(["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)),
+        #                                  doc="couples the reference flows of the retrofitting technology and its base technology")
 
 class RetrofittingTechnologyRules(GenericRule):
     """
@@ -111,7 +112,7 @@ class RetrofittingTechnologyRules(GenericRule):
     # Block-based constraints
     # -----------------------
 
-    def constraint_retrofit_flow_coupling_block(self, index_values, index_names):
+    def constraint_retrofit_flow_coupling(self, index_values, index_names):
         """ couples reference flow variables based on modeling technique
 
         .. math::
@@ -157,7 +158,7 @@ class RetrofittingTechnologyRules(GenericRule):
             constraints[retrofit_tech] = lhs <= rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("name",constraints)
         # return self.constraints.return_constraints(constraints, model=self.model, stack_dim_name="constraint_retrofit_flow_coupling_dim")
 
 

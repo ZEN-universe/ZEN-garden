@@ -156,21 +156,29 @@ class StorageTechnology(Technology):
         """ constructs the pe.Constraints of the class <StorageTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
-        model = optimization_setup.model
-        constraints = optimization_setup.constraints
         rules = StorageTechnologyRules(optimization_setup)
+        # limit flow by capacity and max load
+        rules.constraint_capacity_factor_storage()
+        # opex and emissions constraint for storage technologies
+        rules.constraint_opex_emissions_technology_storage()
         # Limit storage level
-        constraints.add_constraint(name="constraint_storage_level_max",
-                                         constraint=rules.constraint_storage_level_max_block(),
-                                         doc='limit maximum storage level to capacity')
+        rules.constraint_storage_level_max()
+        # doc='limit maximum storage level to capacity'
+        # constraints.add_constraint(name="constraint_storage_level_max",
+        #                                  constraint=rules.constraint_storage_level_max(),
+        #                                  doc='limit maximum storage level to capacity')
         # couple storage levels
-        constraints.add_constraint(name="constraint_couple_storage_level",
-                                         constraint=rules.constraint_couple_storage_level_block(),
-                                         doc='couple subsequent storage levels (time coupling constraints)')
+        rules.constraint_couple_storage_level()
+        # doc='couple subsequent storage levels (time coupling constraints)'
+        # constraints.add_constraint(name="constraint_couple_storage_level",
+        #                                  constraint=rules.constraint_couple_storage_level(),
+        #                                  doc='couple subsequent storage levels (time coupling constraints)')
         # Linear Capex
-        constraints.add_constraint(name="constraint_storage_technology_capex",
-                                         constraint=rules.constraint_storage_technology_capex_block(),
-                                         doc='Capital expenditures for installing storage technology')
+        rules.constraint_storage_technology_capex()
+        # doc='Capital expenditures for installing storage technology'
+        # constraints.add_constraint(name="constraint_storage_technology_capex",
+        #                                  constraint=rules.constraint_storage_technology_capex(),
+        #                                  doc='Capital expenditures for installing storage technology')
 
         # defines disjuncts if technology on/off
 
@@ -253,8 +261,60 @@ class StorageTechnologyRules(GenericRule):
 
     # Block-based constraints
     # -----------------------
+    def constraint_capacity_factor_storage(self):
+        """ Load is limited by the installed capacity and the maximum load factor for storage technologies
 
-    def constraint_storage_level_max_block(self):
+        .. math::
+            \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq m_{k,n,t,y}S_{k,n,y}
+
+        :return: linopy constraints
+        """
+        techs = self.sets["set_storage_technologies"]
+        if len(techs) == 0:
+            return
+        nodes = self.sets["set_nodes"]
+        times = self.variables.coords["set_time_steps_operation"]
+        time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
+        term_capacity = (
+                self.parameters.max_load.loc[techs, "power", nodes, :]
+                * self.variables["capacity"].loc[techs, "power", nodes, time_step_year]
+        ).rename({"set_technologies": "set_storage_technologies","set_location":"set_nodes"})
+
+        # TODO integrate level storage here as well
+        lhs = term_capacity - self.get_flow_expression_storage(rename=False)
+        rhs = 0
+        constraints = lhs >= rhs
+        ### return
+        self.constraints.add_constraint("constraint_capacity_factor_storage",constraints)
+
+    def constraint_opex_emissions_technology_storage(self):
+        """ calculate opex of each technology
+
+        .. math::
+            OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
+            E_{h,p,t} = \\epsilon_h (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
+
+        :return: linopy constraints
+        """
+        techs = self.sets["set_storage_technologies"]
+        if len(techs) == 0:
+            return
+        nodes = self.sets["set_nodes"]
+        lhs_opex = (
+                self.variables["cost_opex"] - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
+        ).sel({"set_technologies":techs,"set_location":nodes})
+        lhs_emissions = (self.variables["carbon_emissions_technology"]
+               - (self.parameters.carbon_intensity_technology*self.get_flow_expression_storage())).sel({"set_technologies":techs,"set_location":nodes})
+        lhs_opex = lhs_opex.rename({"set_technologies": "set_storage_technologies","set_location":"set_nodes"})
+        lhs_emissions = lhs_emissions.rename({"set_technologies": "set_storage_technologies","set_location":"set_nodes"})
+        rhs = 0
+        constraints_opex = lhs_opex == rhs
+        constraints_emissions = lhs_emissions == rhs
+        ### return
+        self.constraints.add_constraint("constraint_opex_technology_storage",constraints_opex)
+        self.constraints.add_constraint("constraint_carbon_emissions_technology_storage",constraints_emissions)
+
+    def constraint_storage_level_max(self):
         """limit maximum storage level to capacity
 
         .. math::
@@ -290,13 +350,13 @@ class StorageTechnologyRules(GenericRule):
             constraints[tech] = lhs <= rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_storage_level_max",constraints)
         # return self.constraints.return_constraints(constraints,
         #                                           model=self.model,
         #                                           index_values=index.get_unique(levels=["set_storage_technologies"]),
         #                                           index_names=["set_storage_technologies"])
 
-    def constraint_couple_storage_level_block(self):
+    def constraint_couple_storage_level(self):
         """couple subsequent storage levels (time coupling constraints)
 
         .. math::
@@ -362,13 +422,13 @@ class StorageTechnologyRules(GenericRule):
             constraints[tech] = lhs == rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_couple_storage_level",constraints)
         # return self.constraints.return_constraints(constraints,
         #                                           model=self.model,
         #                                           index_values=index.get_unique(["set_storage_technologies"]),
         #                                           index_names=["set_storage_technologies"])
 
-    def constraint_storage_technology_capex_block(self):
+    def constraint_storage_technology_capex(self):
         """ definition of the capital expenditures for the storage technology
 
         .. math::
@@ -402,4 +462,12 @@ class StorageTechnologyRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_storage_technology_capex",constraints)
+
+    def get_flow_expression_storage(self,rename=True):
+        """ return the flow expression for storage technologies """
+        term = (self.variables["flow_storage_charge"] + self.variables["flow_storage_discharge"])
+        if rename:
+            return term.rename({"set_storage_technologies": "set_technologies","set_nodes":"set_location"})
+        else:
+            return term

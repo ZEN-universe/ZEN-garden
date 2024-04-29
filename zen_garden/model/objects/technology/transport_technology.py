@@ -189,17 +189,23 @@ class TransportTechnology(Technology):
         """ constructs the pe.Constraints of the class <TransportTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
-        model = optimization_setup.model
-        constraints = optimization_setup.constraints
         rules = TransportTechnologyRules(optimization_setup)
+        # limit flow by capacity and max load
+        rules.constraint_capacity_factor_transport()
+        # opex and emissions constraint for transport technologies
+        rules.constraint_opex_emissions_technology_transport()
         # Carrier Flow Losses
-        constraints.add_constraint(name="constraint_transport_technology_losses_flow",
-                                         constraint=rules.constraint_transport_technology_losses_flow_block(),
-                                         doc='Carrier loss due to transport with through transport technology')
+        rules.constraint_transport_technology_losses_flow()
+        # doc='Carrier loss due to transport with through transport technology'
+        # constraints.add_constraint(name="constraint_transport_technology_losses_flow",
+        #                                  constraint=rules.constraint_transport_technology_losses_flow(),
+        #                                  doc='Carrier loss due to transport with through transport technology')
         # capex of transport technologies
-        constraints.add_constraint(name="constraint_transport_technology_capex",
-                                         constraint=rules.constraint_transport_technology_capex_block(),
-                                         doc='Capital expenditures for installing transport technology')
+        rules.constraint_transport_technology_capex()
+        # doc='Capital expenditures for installing transport technology'
+        # constraints.add_constraint(name="constraint_transport_technology_capex",
+        #                                  constraint=rules.constraint_transport_technology_capex(),
+        #                                  doc='Capital expenditures for installing transport technology')
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -267,8 +273,57 @@ class TransportTechnologyRules(GenericRule):
 
     # Block-based constraints
     # -----------------------
+    def constraint_capacity_factor_transport(self):
+        """ Load is limited by the installed capacity and the maximum load factor
 
-    def constraint_transport_technology_losses_flow_block(self):
+        .. math::
+            \ F_{j,e,t,y}^\mathrm{r} \\leq m_{j,e,t,y}S_{j,e,y}
+
+        :return: linopy constraints
+        """
+        techs = self.sets["set_transport_technologies"]
+        if len(techs) == 0:
+            return
+        edges = self.sets["set_edges"]
+        times = self.variables.coords["set_time_steps_operation"]
+        time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
+        term_capacity = (
+                self.parameters.max_load.loc[techs, "power", edges, :]
+                * self.variables["capacity"].loc[techs, "power", edges, time_step_year]
+        ).rename({"set_technologies":"set_transport_technologies","set_location": "set_edges"})
+
+        lhs = term_capacity - self.variables["flow_transport"].loc[techs, edges, :]
+        rhs = 0
+        constraints = lhs >= rhs
+        ### return
+        self.constraints.add_constraint("constraint_capacity_factor_transport", constraints)
+
+    def constraint_opex_emissions_technology_transport(self):
+        """ calculate opex of each technology
+
+        .. math::
+            OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r}
+
+        :return: linopy constraints
+        """
+        techs = self.sets["set_transport_technologies"]
+        if len(techs) == 0:
+            return
+        edges = self.sets["set_edges"]
+        lhs_opex = (self.variables["cost_opex"].loc[techs,edges,:]
+               - (self.parameters.opex_specific_variable*self.variables["flow_transport"].rename({"set_transport_technologies":"set_technologies","set_edges":"set_location"})).sel({"set_technologies":techs,"set_location":edges}))
+        lhs_emissions = (self.variables["carbon_emissions_technology"].loc[techs,edges,:]
+               - (self.parameters.carbon_intensity_technology*self.variables["flow_transport"].rename({"set_transport_technologies":"set_technologies","set_edges":"set_location"})).sel({"set_technologies":techs,"set_location":edges}))
+        lhs_opex = lhs_opex.rename({"set_technologies": "set_transport_technologies", "set_location": "set_edges"})
+        lhs_emissions = lhs_emissions.rename({"set_technologies": "set_transport_technologies", "set_location": "set_edges"})
+        rhs = 0
+        constraints_opex = lhs_opex == rhs
+        constraints_emissions = lhs_emissions == rhs
+        ### return
+        self.constraints.add_constraint("constraint_opex_technology_transport",constraints_opex)
+        self.constraints.add_constraint("constraint_carbon_emissions_technology_transport",constraints_emissions)
+
+    def constraint_transport_technology_losses_flow(self):
         """compute the flow losses for a carrier through a transport technology
 
         .. math::
@@ -304,10 +359,10 @@ class TransportTechnologyRules(GenericRule):
             constraints[tech] = lhs == rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_transport_technology_losses_flow",constraints)
         # return self.constraints.return_constraints(constraints, model=self.model, mask=cons_mask, index_values=index_values, index_names=index_names)
 
-    def constraint_transport_technology_capex_block(self):
+    def constraint_transport_technology_capex(self):
         """ definition of the capital expenditures for the transport technology
 
         .. math::
@@ -352,5 +407,5 @@ class TransportTechnologyRules(GenericRule):
         rhs = xr.zeros_like(global_mask)
         constraints = lhs == rhs
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_transport_technology_capex",constraints)
         # return self.constraints.return_constraints(constraints, mask=global_mask)

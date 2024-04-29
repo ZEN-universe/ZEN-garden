@@ -135,54 +135,73 @@ class Carrier(Element):
         """ constructs the pe.Constraints of the class <Carrier>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
-        model = optimization_setup.model
-        constraints = optimization_setup.constraints
-        sets = optimization_setup.sets
         rules = CarrierRules(optimization_setup)
         # limit import flow by availability
-        constraints.add_constraint(name="constraint_availability_import",
-                                         constraint=rules.constraint_availability_import_block(),
-                                         doc='node- and time-dependent carrier availability to import from outside the system boundaries', )
+        rules.constraint_availability_import()
+        # doc = 'node- and time-dependent carrier availability to import from outside the system boundaries'
+        # constraints.add_constraint(name="constraint_availability_import",
+        #                                  constraint=rules.constraint_availability_import(),
+        #                                  doc='node- and time-dependent carrier availability to import from outside the system boundaries')
         # limit export flow by availability
-        constraints.add_constraint(name="constraint_availability_export",
-                                         constraint=rules.constraint_availability_export_block(),
-                                         doc='node- and time-dependent carrier availability to export to outside the system boundaries')
+        rules.constraint_availability_export()
+        # doc = 'node- and time-dependent carrier availability to export to outside the system boundaries'
+        # constraints.add_constraint(name="constraint_availability_export",
+        #                                  constraint=rules.constraint_availability_export(),
+        #                                  doc='node- and time-dependent carrier availability to export to outside the system boundaries')
         # limit import flow by availability for each year
-        constraints.add_constraint(name="constraint_availability_import_yearly",
-                                         constraint=rules.constraint_availability_import_yearly_block(),
-                                         doc='node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year', )
+        rules.constraint_availability_import_yearly()
+        # doc = 'node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year'
+        # constraints.add_constraint(name="constraint_availability_import_yearly",
+        #                                  constraint=rules.constraint_availability_import_yearly(),
+        #                                  doc='node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year', )
         # limit export flow by availability for each year
-        constraints.add_constraint(name="constraint_availability_export_yearly",
-                                         constraint=rules.constraint_availability_export_yearly_block(),
-                                         doc='node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year', )
+        rules.constraint_availability_export_yearly()
+        # doc = 'node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year'
+        # constraints.add_constraint(name="constraint_availability_export_yearly",
+        #                                  constraint=rules.constraint_availability_export_yearly(),
+        #                                  doc='node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year', )
         # cost for carrier
-        constraints.add_constraint(name="constraint_cost_carrier",
-                                         constraint=rules.constraint_cost_carrier_block(),
-                                         doc="cost of importing and exporting carrier")
+        rules.constraint_cost_carrier()
+        # doc = 'cost of importing and exporting carrier'
+        # constraints.add_constraint(name="constraint_cost_carrier",
+        #                                  constraint=rules.constraint_cost_carrier(),
+        #                                  doc="cost of importing and exporting carrier")
         # cost for shed demand
-        constraints.add_constraint(name="constraint_cost_shed_demand",
-                                         constraint=rules.constraint_cost_shed_demand_block(),
-                                         doc="cost of shedding carrier demand")
+        rules.constraint_cost_shed_demand()
+        # doc = 'cost of shedding carrier demand'
+        # constraints.add_constraint(name="constraint_cost_shed_demand",
+        #                                  constraint=rules.constraint_cost_shed_demand(),
+        #                                  doc="cost of shedding carrier demand")
         # limit of shed demand
-        constraints.add_constraint(name="constraint_limit_shed_demand",
-                                         constraint=rules.constraint_limit_shed_demand_block(),
-                                         doc="limit of shedding carrier demand")
+        rules.constraint_limit_shed_demand()
+        # doc = 'limit of shedding carrier demand'
+        # constraints.add_constraint(name="constraint_limit_shed_demand",
+        #                                  constraint=rules.constraint_limit_shed_demand(),
+        #                                  doc="limit of shedding carrier demand")
         # total cost for carriers
-        constraints.add_constraint(name="constraint_cost_carrier_total",
-                                        constraint=rules.constraint_cost_carrier_total(),
-                                        doc="total cost of importing and exporting carriers")
+        rules.constraint_cost_carrier_total()
+        # doc = 'total cost of importing and exporting carriers'
+        # constraints.add_constraint(name="constraint_cost_carrier_total",
+        #                                 constraint=rules.constraint_cost_carrier_total(),
+        #                                 doc="total cost of importing and exporting carriers")
         # carbon emissions
-        constraints.add_constraint(name="constraint_carbon_emissions_carrier",
-                                         constraint=rules.constraint_carbon_emissions_carrier_block(),
-                                         doc="carbon emissions of importing and exporting carrier")
+        rules.constraint_carbon_emissions_carrier()
+        # doc = 'carbon emissions of importing and exporting carrier'
+        # constraints.add_constraint(name="constraint_carbon_emissions_carrier",
+        #                                  constraint=rules.constraint_carbon_emissions_carrier(),
+        #                                  doc="carbon emissions of importing and exporting carrier")
         # carbon emissions carrier
-        constraints.add_constraint(name="constraint_carbon_emissions_carrier_total",
-                                        constraint=rules.constraint_carbon_emissions_carrier_total(),
-            doc="total carbon emissions of importing and exporting carriers")
+        rules.constraint_carbon_emissions_carrier_total()
+        # doc = 'total carbon emissions of importing and exporting carriers'
+        # constraints.add_constraint(name="constraint_carbon_emissions_carrier_total",
+        #                                 constraint=rules.constraint_carbon_emissions_carrier_total(),
+        #     doc="total carbon emissions of importing and exporting carriers")
         # energy balance
-        constraints.add_constraint(name="constraint_nodal_energy_balance",
-                                         constraint=rules.constraint_nodal_energy_balance_block(),
-                                         doc='node- and time-dependent energy balance for each carrier', )
+        rules.constraint_nodal_energy_balance()
+        # doc = 'node- and time-dependent energy balance for each carrier'
+        # constraints.add_constraint(name="constraint_nodal_energy_balance",
+        #                                  constraint=rules.constraint_nodal_energy_balance(),
+        #                                  doc='node- and time-dependent energy balance for each carrier', )
 
         # add pe.Sets of the child classes
         for subclass in cls.__subclasses__():
@@ -242,7 +261,7 @@ class CarrierRules(GenericRule):
             constraints[year] = lhs == rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_cost_carrier_total",constraints)
         # return self.constraints.return_constraints(constraints,self.model,index_names=["set_time_steps_yearly"],index_values=self.energy_system.set_time_steps_yearly)
 
     def constraint_carbon_emissions_carrier_total(self):
@@ -278,13 +297,13 @@ class CarrierRules(GenericRule):
             constraints[year] = lhs == rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_carbon_emissions_carrier_total",constraints)
         # return self.constraints.return_constraints(constraints,self.model,stack_dim_name="set_time_steps_yearly")
 
     # Block-based constraints
     # -----------------------
 
-    def constraint_availability_import_block(self):
+    def constraint_availability_import(self):
         """node- and time-dependent carrier availability to import from outside the system boundaries
 
         .. math::
@@ -311,9 +330,9 @@ class CarrierRules(GenericRule):
         constraints = lhs <= rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_availability_import",constraints)
 
-    def constraint_availability_export_block(self):
+    def constraint_availability_export(self):
         """node- and time-dependent carrier availability to export to outside the system boundaries
 
         .. math::
@@ -341,9 +360,9 @@ class CarrierRules(GenericRule):
 
         ### return
         # return self.constraints.return_constraints(constraints,self.model)
-        return constraints
+        self.constraints.add_constraint("constraint_availability_export",constraints)
 
-    def constraint_availability_import_yearly_block(self):
+    def constraint_availability_import_yearly(self):
         """node- and year-dependent carrier availability to import from outside the system boundaries
 
          .. math::
@@ -376,14 +395,14 @@ class CarrierRules(GenericRule):
             constraints[(carrier, year)] = lhs <= rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_availability_import_yearly",constraints)
         # return self.constraints.return_constraints(constraints,
         #                                           model=self.model,
         #                                           mask=mask,
         #                                           index_values=index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]),
         #                                           index_names=["set_carriers", "set_time_steps_yearly"])
 
-    def constraint_availability_export_yearly_block(self):
+    def constraint_availability_export_yearly(self):
         """node- and year-dependent carrier availability to export to outside the system boundaries
 
         .. math::
@@ -415,14 +434,14 @@ class CarrierRules(GenericRule):
             constraints[(carrier,year)] = lhs <= rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_availability_export_yearly",constraints)
         # return self.constraints.return_constraints(constraints,
         #                                           model=self.model,
         #                                           mask=mask,
         #                                           index_values=index.get_unique(levels=["set_carriers", "set_time_steps_yearly"]),
         #                                           index_names=["set_carriers", "set_time_steps_yearly"])
 
-    def constraint_cost_carrier_block(self):
+    def constraint_cost_carrier(self):
         """ cost of importing and exporting carrier
 
         .. math::
@@ -454,10 +473,10 @@ class CarrierRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_cost_carrier",constraints)
         # return self.constraints.return_constraints(constraints,self.model)
 
-    def constraint_cost_shed_demand_block(self):
+    def constraint_cost_shed_demand(self):
         """ cost of shedding demand of carrier
 
         .. math::
@@ -490,13 +509,13 @@ class CarrierRules(GenericRule):
             constraints[carrier] = lhs == rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_cost_shed_demand",constraints)
         # return self.constraints.return_constraints(constraints,
         #                                           model=self.model,
         #                                           index_values=index.get_unique(["set_carriers"]),
         #                                           index_names=["set_carriers"])
 
-    def constraint_limit_shed_demand_block(self):
+    def constraint_limit_shed_demand(self):
         """ limit demand shedding
 
         .. math::
@@ -523,9 +542,9 @@ class CarrierRules(GenericRule):
         constraints = lhs <= rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_limit_shed_demand",constraints)
 
-    def constraint_carbon_emissions_carrier_block(self):
+    def constraint_carbon_emissions_carrier(self):
         """ carbon emissions of importing and exporting carrier
 
         .. math::
@@ -562,14 +581,14 @@ class CarrierRules(GenericRule):
             constraints[carrier] = lhs == rhs
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_carbon_emissions_carrier",constraints)
         # return self.constraints.return_constraints(constraints,
         #                                           model=self.model,
         #                                           index_values=index.get_unique(["set_carriers"]),
         #                                           index_names=["set_carriers"])
 
 
-    def constraint_nodal_energy_balance_block(self):
+    def constraint_nodal_energy_balance(self):
         """
         nodal energy balance for each time step
 
@@ -720,7 +739,7 @@ class CarrierRules(GenericRule):
                        compat="broadcast_equals")
         rhs = term_carrier_demand
         aligned_idx = xr.align(lhs.coords,rhs,join="inner")[0]
-        constraints = lhs.loc[aligned_idx] == rhs.loc[aligned_idx]
+        constraints = lhs.sel(aligned_idx) == rhs.sel(aligned_idx)
 
         ### return
-        return constraints
+        self.constraints.add_constraint("constraint_nodal_energy_balance",constraints)

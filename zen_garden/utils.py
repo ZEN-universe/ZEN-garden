@@ -138,11 +138,15 @@ class IISConstraintParser(object):
             f.write("\n\nVariables:\n")
             variables = self.model.variables
             for label in self.var_labels:
-                name, coord = constraints.get_label_position(label)
-                var_str = f"\t{self.print_coord(coord)}:\t{self.var_lines[label]}\n"
-                if name not in seen_variables:
-                    seen_variables.append(name)
-                    var_str = f"\n{name}:\n{var_str}"
+                pos = constraints.get_label_position(label)
+                if pos is not None:
+                    name, coord = pos
+                    var_str = f"\t{self.print_coord(coord)}:\t{self.var_lines[label]}\n"
+                    if name not in seen_variables:
+                        seen_variables.append(name)
+                        var_str = f"\n{name}:\n{var_str}"
+                else:
+                    var_str = f"\t{label}:\t{self.var_lines[label]}\n"
                 f.write(var_str)
 
     def write_gurobi_iis(self):
