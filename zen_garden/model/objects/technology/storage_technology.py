@@ -276,8 +276,8 @@ class StorageTechnologyRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        lhs = (self.variables["capacity"].loc[techs, "energy", :, :] * e2p \
-               - self.variables["capacity"].loc[techs, "power", :, :])#.where(mask)
+        lhs = (self.variables["capacity_addition"].loc[techs, "energy", :, :] * e2p \
+               - self.variables["capacity_addition"].loc[techs, "power", :, :])#.where(mask)
         rhs = 0
         constraints = lhs == rhs
 
