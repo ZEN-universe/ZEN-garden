@@ -13,6 +13,7 @@ import logging
 
 import linopy as lp
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from zen_garden.utils import lp_sum
@@ -554,39 +555,31 @@ class CarrierRules(GenericRule):
         """
 
         ### index sets
-        index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
-        times = index.get_unique(["set_time_steps_operation"])
 
         ### masks
         # not necessary
 
         ### index loop
         # we loop over the carriers and vectorize over the nodes and over the times after converting them from operation to yearly time steps
-        constraints = {}
-        for carrier in index.get_unique(["set_carriers"]):
-            ### auxiliary calculations
-            yearly_time_steps = [self.time_steps.convert_time_step_operation2year(t) for t in times]
+        # create times xarray with 1 where the operation time step is in the year
+        times = [(y, t) for y in self.sets["set_time_steps_yearly"] for t in
+                 self.time_steps.get_time_steps_year2operation(y)]
+        times = pd.MultiIndex.from_tuples(times)
+        times.names = ["set_time_steps_yearly", "set_time_steps_operation"]
+        times = pd.Series(index=times, data=1)
+        times = times.to_xarray().broadcast_like(self.variables["flow_import"].mask)
+        times = times.fillna(0)
+        # convert the carbon intensity carrier from yearly to operation time steps
+        carbon_intensity_carrier = (self.parameters.carbon_intensity_carrier.broadcast_like(times) * times).sum("set_time_steps_yearly")
+        lhs = (self.variables["carbon_emissions_carrier"]
+               - (self.variables["flow_import"] - self.variables["flow_export"])
+               * carbon_intensity_carrier)
+        rhs = 0
 
-            # get the time-dependent factor
-            mask = (self.parameters.availability_import.loc[carrier, :, times] != 0) | (self.parameters.availability_export.loc[carrier, :, times] != 0)
-            fac = np.where(mask, self.parameters.carbon_intensity_carrier.loc[carrier, :, yearly_time_steps], 0)
-            fac = xr.DataArray(fac, coords=[self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]])
-            term_flow_import_export = fac * (self.variables["flow_import"].loc[carrier, :] - self.variables["flow_export"].loc[carrier, :])
-
-            ### formulate constraint
-            lhs = (self.variables["carbon_emissions_carrier"].loc[carrier, :]
-                   - term_flow_import_export)
-            rhs = 0
-            constraints[carrier] = lhs == rhs
+        constraints = lhs == rhs
 
         ### return
         self.constraints.add_constraint("constraint_carbon_emissions_carrier",constraints)
-        # return self.constraints.return_constraints(constraints,
-        #                                           model=self.model,
-        #                                           index_values=index.get_unique(["set_carriers"]),
-        #                                           index_names=["set_carriers"])
-
 
     def constraint_nodal_energy_balance(self):
         """

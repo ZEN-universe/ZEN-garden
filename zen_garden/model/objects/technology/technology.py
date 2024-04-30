@@ -10,6 +10,7 @@ The class takes the abstract optimization model as an input, and returns the par
 constraints that hold for all technologies.
 """
 import cProfile
+import itertools
 import logging
 
 import linopy as lp
@@ -888,29 +889,34 @@ class TechnologyRules(GenericRule):
         ### index loop
         # we loop over technologies and years, because the conditions depend on the year and the technology
         # we vectorize over capacity types and locations
-        # investment_time = pd.Series(
-        #     {(t, y): Technology.get_investment_time_step(self.optimization_setup, t, y) for t, y in
-        #      index.get_unique(["set_technologies", "set_time_steps_yearly"])})
-        # investment_time.index.names = ["set_technologies", "set_time_steps_yearly"]
-        # investment_time = investment_time.to_xarray().broadcast_like(self.variables["capacity_addition"].mask).fillna(-1)
-        # TODO
-        constraints = {}
-        for tech, year in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
+        # get investment time step
+        investment_time = pd.Series(
+            {(t, y,Technology.get_investment_time_step(self.optimization_setup, t, y)): 1 for t, y in
+             index.get_unique(["set_technologies", "set_time_steps_yearly"])})
+        investment_time.index.names = ["set_technologies", "set_time_steps_yearly","set_time_steps_construction"]
 
-            ### auxiliary calculations
-            investment_time = Technology.get_investment_time_step(self.optimization_setup, tech, year)
-            ### formulate constraint
-            if investment_time in self.energy_system.set_time_steps_yearly:
-                lhs = (self.variables["capacity_addition"].loc[tech, :, :, year]
-                       - self.variables["capacity_investment"].loc[tech, :, :, investment_time])
-                rhs = 0
-            elif investment_time in self.energy_system.set_time_steps_yearly_entire_horizon:
-                lhs = self.variables["capacity_addition"].loc[tech, :, :, year]
-                rhs = self.parameters.capacity_investment_existing.loc[tech, :, :, investment_time]
-            else:
-                lhs = self.variables["capacity_addition"].loc[tech, :, :, year]
-                rhs = 0
-            constraints[(tech,year)] = lhs == rhs
+        # select masks
+        mask_current_time_steps = investment_time.index.get_level_values("set_time_steps_construction").isin(self.sets["set_time_steps_yearly"])
+        mask_other_time_steps = investment_time.isin(self.sets["set_time_steps_yearly_entire_horizon"]) & ~mask_current_time_steps
+        mask_outside_time_steps = ~(mask_other_time_steps | mask_current_time_steps)
+        investment_time = investment_time
+        # broadcast capacity investment and capacity investment existing
+        capacity_investment = self.variables["capacity_investment"]
+        investment_time_current = investment_time[mask_current_time_steps].dropna().to_xarray().broadcast_like(capacity_investment.mask).fillna(0)
+        investment_time_other = investment_time[mask_other_time_steps].dropna().to_xarray().broadcast_like(capacity_investment.mask).fillna(0)
+
+        capacity_investment = capacity_investment.rename({"set_time_steps_yearly": "set_time_steps_construction"}).broadcast_like(investment_time_current)
+        capacity_investment_existing = self.parameters.capacity_investment_existing
+        capacity_investment_existing = capacity_investment_existing.rename({"set_time_steps_yearly_entire_horizon": "set_time_steps_construction"}).broadcast_like(investment_time_other)
+
+        ### formulate constraint
+        lhs = lp.merge(
+            1 * self.variables["capacity_addition"],
+            - (investment_time_current*capacity_investment).sum("set_time_steps_construction")
+            , compat="broadcast_equals")
+        rhs = (investment_time_other*capacity_investment_existing).sum("set_time_steps_construction")
+        rhs = xr.align(lhs.const,rhs,join="left")[1]
+        constraints = lhs == rhs
 
         ### return
         self.constraints.add_constraint("constraint_technology_construction_time",constraints)
@@ -971,6 +977,38 @@ class TechnologyRules(GenericRule):
 
         ### masks
         # not necessary
+        capacity_addition = self.variables["capacity_addition"]
+        # create mask for knowledge spillover rate (sr) to exclude transport technologies
+        mask_technology_type = pd.Series(index=xr.DataArray(self.sets["set_technologies"]), data=1)
+        mask_technology_type.index.name = "set_technologies"
+        mask_technology_type[mask_technology_type.index.isin(self.sets["set_transport_technologies"])] = 0
+        mask_technology_type = mask_technology_type.to_xarray()
+        # create mask for knowledge spillover rate (sr) to exclude edges
+        mask_location = pd.Series(index=capacity_addition.coords["set_location"], data=1)
+        mask_location.index.name = "set_location"
+        mask_location[mask_location.index.isin(self.sets["set_edges"])] = 0
+        mask_location = mask_location.to_xarray()
+        # create xarray for previous years
+        years = pd.MultiIndex.from_tuples(
+            [(y, py) for y, py in
+             itertools.product(self.sets["set_time_steps_yearly"], self.sets["set_time_steps_yearly"])
+             if py <= y],
+            names=["set_time_steps_yearly", "set_time_steps_yearly_prev"])
+        years = pd.Series(index=years, data=1)
+        years = years.to_xarray().fillna(0)
+        years = years.broadcast_like(capacity_addition.lower)
+        # expand and sum capacity addition over all nodes for spillover
+        location_index = pd.Series(index=pd.MultiIndex.from_product(
+            [capacity_addition.coords["set_location"].values, capacity_addition.coords["set_location"].values],
+            names=["set_location", "set_location_temp"])).to_xarray()
+        capacity_addition_location = capacity_addition.rename({"set_location": "set_location_temp"}).broadcast_like(
+            location_index).sel({"set_location_temp": self.sets["set_nodes"]}).sum("set_location_temp")
+        # calculate term spillover
+        term_spillover = capacity_addition_location - capacity_addition
+        sr = xr.full_like(term_spillover.const, self.parameters.knowledge_spillover_rate)
+        sr = sr.where(mask_technology_type, 0).where(mask_location, 0)
+        # annual knowledge addition
+        term_knowledge = capacity_addition + sr * term_spillover
 
         ### index loop
         # we loop over technologies, capacity types and time steps, to accurately capture the conditions in the constraint
@@ -1005,7 +1043,6 @@ class TechnologyRules(GenericRule):
 
                 # actual years between first invest year step and end_year
                 delta_year = interval_between_years * (year - 1 - self.energy_system.set_time_steps_yearly[0])
-                existing_year = self.sets["set_technologies_existing"][tech]
                 horizon_year = np.arange(self.energy_system.set_time_steps_yearly[0], year)
                 horizon_year = self.sets["set_time_steps_yearly"].intersection(horizon_year)
                 if len(horizon_year) >= 1:
@@ -1024,8 +1061,11 @@ class TechnologyRules(GenericRule):
                        - ((1 + self.parameters.max_diffusion_rate.loc[tech, year].item()) ** interval_between_years - 1) * term_total_capacity_knowledge_addition
                        - self.parameters.market_share_unbounded * self.variables["capacity_previous"].loc[other_techs, :,set_locations, year].sum("set_technologies"))
                 lhs_an *= mask
+                # TODo THIS DOES NOT WORK PROPERLY AS IT DOES NOT EXCLUDE THE SPILLOVER
                 lhs_sn = lhs_an.sum("set_location")
                 # build the rhs todo a small delay
+
+                existing_year = self.sets["set_technologies_existing"][tech]
                 # Note: instead of summing over all but one location, we sum over all and then subtract one todo outsource
                 term_total_capacity_knowledge_existing = (
                         (self.parameters.capacity_existing.loc[tech, :, set_locations,existing_year]  # add spillover from other regions
@@ -1164,8 +1204,6 @@ class TechnologyRules(GenericRule):
         """
 
         ### index sets
-        index_values, index_names = Element.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
 
         ### masks
         # not necessary
