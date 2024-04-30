@@ -23,35 +23,31 @@ from zen_garden.model.objects.carrier.carrier import Carrier
 # enable Deprecation Warnings
 warnings.simplefilter('always', DeprecationWarning)
 
+
 class UnitHandling:
     """
     Class containing the unit handling procedure
     """
 
-    def __init__(self, folder_path, rounding_decimal_points_units, define_ton_as_metric_ton=True):
+    def __init__(self, folder_path, rounding_decimal_points_units):
         """ initialization of the unit_handling instance
 
         :param folder_path: The path to the folder containing the system specifications
         :param round_decimal_points: rounding tolerance
-        :param define_ton_as_metric_ton: bool to use another definition for tons
         """
         self.folder_path = folder_path
         self.rounding_decimal_points_units = rounding_decimal_points_units
-        self.get_base_units(define_ton_as_metric_ton)
+        self.get_base_units()
         # dict of element attribute values
         self.dict_attribute_values = {}
         self.carrier_energy_quantities = {}
 
-    def get_base_units(self, define_ton_as_metric_ton=True):
-        """ gets base units of energy system
-
-        :param define_ton_as_metric_ton: bool to use another definition for tons
-        """
+    def get_base_units(self):
+        """ gets base units of energy system """
         _list_base_unit = self.extract_base_units()
         self.ureg = UnitRegistry()
 
-        if define_ton_as_metric_ton:
-            self.define_ton_as_metric()
+        self.redefine_standard_units()
         # load additional units
         self.ureg.load_definitions(self.folder_path / "unit_definitions.txt")
 
@@ -689,6 +685,12 @@ class UnitHandling:
 
     def define_ton_as_metric(self):
         """ redefines the "ton" as a metric ton """
+        self.ureg.define("ton = metric_ton")
+
+    def redefine_standard_units(self):
+        """ defines the standard units always required in ZEN and removes the rounding error for leap years."""
+        self.ureg.define("Euro = [currency] = EURO = Eur = €")
+        self.ureg.define("year = 365 * day = a = yr = julian_year")
         self.ureg.define("ton = metric_ton")
 
     @staticmethod
