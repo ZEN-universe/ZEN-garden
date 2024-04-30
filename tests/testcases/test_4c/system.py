@@ -19,7 +19,7 @@ system['set_nodes'] = ["DE", "CH"]
 
 # time steps
 system["reference_year"] = 2022
-system["unaggregated_time_steps_per_year"] = 8760
+system["unaggregated_time_steps_per_year"] = 1
 system["aggregated_time_steps_per_year"] = 1
 system["conduct_time_series_aggregation"] = False
 
