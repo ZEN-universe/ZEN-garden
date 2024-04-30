@@ -373,12 +373,12 @@ class CarrierRules(GenericRule):
 
         :return: #TODO describe parameter/return
         """
-        offtake_profile = self.system["offtake_profile"]["type"]
-        offtake_carriers = self.system["offtake_profile"]["carriers"]
-        assert not offtake_profile or offtake_profile in ["constant", "daily"], ValueError(f"Invalid offtake profile: {offtake_profile}")
+        balancing = self.system["balancing"]["type"]
+        balancing_carriers = self.system["balancing"]["carriers"]
+        assert not balancing or balancing in ["constant", "daily"], ValueError(f"Invalid offtake profile: {balancing}")
 
         ## skip constriant formulation if offtake carriers empty
-        if not offtake_carriers:
+        if not balancing_carriers:
             return self.constraints.return_contraints([])
 
         ### index sets
@@ -386,15 +386,15 @@ class CarrierRules(GenericRule):
 
         ### masks
         # The constraints is only bounded for the carriers specifed in analysis
-        if offtake_profile == "constant":
+        if balancing == "constant":
             flow_export = self.variables["flow_export"]
-        elif offtake_profile == "daily":
+        elif balancing == "daily":
             flow_export = self.variables["flow_export_daily"]
         else:
-            raise ValueError(f"The offtake profile {offtake_profile} is invalid")
+            raise ValueError(f"The offtake profile {balancing} is invalid")
 
         mask = xr.DataArray(False, coords=flow_export.coords)
-        for c in offtake_carriers:
+        for c in balancing_carriers:
             if c in self.sets["set_carriers"]:
                 mask.loc[c, :, :] = True
             else:
@@ -404,11 +404,11 @@ class CarrierRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        if offtake_profile == "constant":
+        if balancing == "constant":
             lhs = (flow_export - self.variables["flow_export_avg"])
             rhs = 0
             constraints = lhs == rhs
-        elif offtake_profile == "daily":
+        elif balancing == "daily":
             lhs = (flow_export - self.variables["flow_export_avg"])
             rhs = 0
             constraints = lhs == rhs
@@ -426,13 +426,13 @@ class CarrierRules(GenericRule):
 
         :return: #TODO describe parameter/return
         """
-        offtake_profile = self.system["offtake_profile"]["type"]
-        offtake_carriers = self.system["offtake_profile"]["carriers"]
+        balancing = self.system["balancing"]["type"]
+        balancing_carriers = self.system["balancing"]["carriers"]
 
         ### index sets
         # not necessary
 
-        if offtake_profile != "daily":
+        if balancing != "daily":
             return self.constraints.return_contraints([])
         if self.system["conduct_time_series_aggregation"]:
             raise NotImplementedError("Daily offtake profiles are only implemented for unaggregated timeseries")
@@ -440,7 +440,7 @@ class CarrierRules(GenericRule):
         ### masks
         # The constraints is only bounded for the carriers specifed in analysis
         mask = xr.DataArray(False, coords=self.variables["flow_export_daily"].coords)
-        for c in offtake_carriers:
+        for c in balancing_carriers:
             if c in self.sets["set_carriers"]:
                 mask.loc[c, :, :] = True
             else:

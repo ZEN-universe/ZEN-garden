@@ -143,7 +143,7 @@ class System(Subscriptable):
     use_rolling_horizon: bool = False
     years_in_rolling_horizon: int = 5
     use_capacities_existing: bool = True
-    offtake_profile: dict[str, Any] = {"type": None, "carriers": []}
+    balancing: dict[str, Any] = {"type": None, "carriers": []}
 
 
 class SolverOptions(Subscriptable):
