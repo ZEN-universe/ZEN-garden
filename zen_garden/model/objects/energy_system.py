@@ -79,7 +79,6 @@ class EnergySystem:
         # base time steps
         self.set_base_time_steps = list(range(0, self.system["unaggregated_time_steps_per_year"] * self.system["optimized_years"]))
         self.set_base_time_steps_yearly = list(range(0, self.system["unaggregated_time_steps_per_year"]))
-        self.set_base_time_steps_daily = list(range(0, self.system["unaggregated_time_steps_per_day"]))
 
         # yearly time steps
         self.set_time_steps_yearly = list(range(self.system["optimized_years"]))
@@ -87,9 +86,6 @@ class EnergySystem:
         time_steps_yearly_duration = self.time_steps.calculate_time_step_duration(self.set_time_steps_yearly, self.set_base_time_steps)
         self.sequence_time_steps_yearly = np.concatenate([[time_step] * time_steps_yearly_duration[time_step] for time_step in time_steps_yearly_duration])
         self.time_steps.sequence_time_steps_yearly = self.sequence_time_steps_yearly
-        # daily time steps
-        days_per_year = int(self.system["unaggregated_time_steps_per_year"] / self.system["unaggregated_time_steps_per_day"])
-        self.set_time_steps_days = list(range(days_per_year*self.system["optimized_years"])) #TODO add to self.time_steps and add time_step_dict
         # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_steps_years = list(range(self.system["reference_year"],self.system["reference_year"] + self.system["optimized_years"]*self.system["interval_between_years"],self.system["interval_between_years"]))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
@@ -223,9 +219,7 @@ class EnergySystem:
         self.optimization_setup.sets.add_set(name="set_time_steps_yearly", data=self.set_time_steps_yearly, doc="Set of yearly time-steps")
         # yearly time steps of entire optimization horizon
         self.optimization_setup.sets.add_set(name="set_time_steps_yearly_entire_horizon", data=self.set_time_steps_yearly_entire_horizon, doc="Set of yearly time-steps of entire optimization horizon")
-        # daily time steps
-        self.optimization_setup.sets.add_set(name="set_time_steps_days", data=self.set_time_steps_days, doc="Set of daily time-steps")
-        # operational time steps
+         # operational time steps
         self.optimization_setup.sets.add_set(name="set_time_steps_operation",data=self.time_steps.time_steps_operation,doc="Set of operational time steps")
         # storage time steps
         self.optimization_setup.sets.add_set(name="set_time_steps_storage",data=self.time_steps.time_steps_storage,doc="Set of storage level time steps")
