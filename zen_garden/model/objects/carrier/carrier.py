@@ -394,10 +394,15 @@ class CarrierRules(GenericRule):
         ### formulate constraint
         flow_export = self.variables["flow_export"]
         ts_per_balancing_period = self.system["balancing_period"]
-        ts_set = "set_time_steps_operation"
-        ts_operation = np.array(self.sets[ts_set].data)
-        group_key = xr.DataArray(ts_operation // ts_per_balancing_period, coords=[ts_operation], dims=ts_set)
-        lhs = (flow_export.groupby(group_key).sum() - self.variables["flow_export_balancing"]).where(mask)
+        if ts_per_balancing_period==1:
+            lhs = (flow_export - self.variables["flow_export_balancing"]).where(mask)            # special case hourly balancing
+        elif ts_per_balancing_period>1:
+            ts_set = "set_time_steps_operation"
+            ts_operation = np.array(self.sets[ts_set].data)
+            group_key = xr.DataArray(ts_operation // ts_per_balancing_period, coords=[ts_operation], dims=ts_set)
+            lhs = (flow_export.groupby(group_key).sum() - self.variables["flow_export_balancing"]).where(mask)
+        else:
+            raise ValueError("Balancing period must be at least 1")
         rhs = 0
         constraints = lhs == rhs
 
