@@ -135,7 +135,7 @@ class System(Subscriptable):
     enforce_selfish_behavior: bool = False
     reference_year: int = 2023
     unaggregated_time_steps_per_year: int = 8760
-    balancing_period: int = 24
+    balancing_period: int = 8760
     aggregated_time_steps_per_year: int = 10
     conduct_time_series_aggregation: bool = True
     optimized_years: int = 3
