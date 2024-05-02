@@ -479,7 +479,7 @@ class CarrierRules(GenericRule):
         ### formulate constraint
         lhs = self.variables["flow_import"]
         rhs = (self.parameters.availability_import * self.parameters.import_share).where(mask2, self.parameters.availability_import)
-        constraints = lhs >= rhs
+        constraints = lhs == rhs
 
         ### return
         return self.constraints.return_contraints(constraints,
