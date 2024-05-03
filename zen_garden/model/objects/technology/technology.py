@@ -971,10 +971,6 @@ class TechnologyRules(GenericRule):
         :return: linopy constraints
         """
 
-        ### index sets
-        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
-
         ### masks
         # not necessary
         capacity_addition = self.variables["capacity_addition"]
@@ -1050,8 +1046,8 @@ class TechnologyRules(GenericRule):
         constraints_sn = lhs_sn <= rhs_sn
         constraints_an = lhs_an <= rhs_an
         # ### index loop
-        # # we loop over technologies, capacity types and time steps, to accurately capture the conditions in the constraint
-        # # we vectorize over locations
+        # we loop over technologies, capacity types and time steps, to accurately capture the conditions in the constraint
+        # we vectorize over locations
         # constraints_sn = {} # single node
         # constraints_an = {} # all nodes
         # for tech, year in index.get_unique(["set_technologies", "set_time_steps_yearly"]):
