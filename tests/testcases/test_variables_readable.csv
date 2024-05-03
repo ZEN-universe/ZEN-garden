@@ -466,6 +466,19 @@ test_6c,none,capacity_addition,"('natural_gas_boiler', 'power', 'CH', 2)",1
 test_6c,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 0)",0
 test_6c,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 1)",0
 test_6c,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 2)",10
+test_6d,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
+test_6d,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",90
+test_6d,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",44
+test_6d,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
+test_6d,none,flow_import,"('natural_gas', 'CH', 0)",55
+test_6d,none,flow_import,"('natural_gas', 'DE', 0)",55
+test_6d,none,flow_transport,"('natural_gas_pipeline', 'CH-DE', 0)",44
+test_6d,none,flow_transport,"('natural_gas_pipeline', 'DE-CH', 0)",0
+test_6d,none,shed_demand,"('heat', 'CH', 0)",0
+test_6d,none,shed_demand,"('heat', 'DE', 0)",10
+test_6d,none,cost_shed_demand,"('heat', 'CH', 0)",0
+test_6d,none,cost_shed_demand,"('heat', 'DE', 0)",1
+test_6d,none,cost_total,"(0)",5.355329
 test_7a,none,flow_import,"('natural_gas', 'CH', 0)",4.155251
 test_7a,none,flow_import,"('natural_gas', 'CH', 1)",0
 test_7a,none,flow_import,"('natural_gas', 'CH', 2)",0
