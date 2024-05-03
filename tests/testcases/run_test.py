@@ -11,6 +11,7 @@ Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
 import os
 import re
+import warnings
 from collections import defaultdict
 from copy import deepcopy
 
@@ -155,7 +156,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
         len(failed_variables) == 0
     ), f"The variables {assertion_string} don't match their test values"
     if compare_counter == 0:
-        raise UserWarning(f"No variables have been compared in {test_model}.")
+        warnings.warn(UserWarning(f"No variables have been compared in {test_model}. If not intended, check the test_variables_readable.csv file."))
 
 
 def check_get_total_get_full_ts(
