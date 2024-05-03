@@ -427,7 +427,7 @@ class ConversionTechnologyRules(GenericRule):
         if len(techs) == 0:
             return
         nodes = self.sets["set_nodes"]
-        times = self.variables.coords["set_time_steps_operation"]
+        times = self.parameters.max_load.coords["set_time_steps_operation"]
         time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
         term_capacity = (
                 self.parameters.max_load.loc[techs, "power", nodes, :]

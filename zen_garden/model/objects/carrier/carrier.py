@@ -615,9 +615,9 @@ class CarrierRules(GenericRule):
                                                                                    self.sets["set_nodes"]])
 
             # create the variables
-            flow_transport_in_vars = xr.DataArray(-1, coords=[self.variables.coords["set_carriers"],
-                                                              self.variables.coords["set_nodes"],
-                                                              self.variables.coords["set_time_steps_operation"],
+            flow_transport_in_vars = xr.DataArray(-1, coords=[self.parameters.demand.coords["set_carriers"],
+                                                              self.parameters.demand.coords["set_nodes"],
+                                                              self.parameters.demand.coords["set_time_steps_operation"],
                                                               xr.DataArray(np.arange(
                                                                   len(self.sets["set_transport_technologies"]) * (
                                                                           2 * max_edges + 1)), dims=["_term"])])

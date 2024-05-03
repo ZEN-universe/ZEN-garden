@@ -285,7 +285,7 @@ class TransportTechnologyRules(GenericRule):
         if len(techs) == 0:
             return
         edges = self.sets["set_edges"]
-        times = self.variables.coords["set_time_steps_operation"]
+        times = self.variables["flow_transport"].coords["set_time_steps_operation"]
         time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
         term_capacity = (
                 self.parameters.max_load.loc[techs, "power", edges, :]
@@ -379,7 +379,10 @@ class TransportTechnologyRules(GenericRule):
         if len(index_values) == 0:
             return []
         # get the coords
-        coords = [self.variables.coords["set_transport_technologies"], self.variables.coords["set_edges"], self.variables.coords["set_time_steps_yearly"]]
+        coords = [
+            self.parameters.capex_per_distance_transport.coords["set_transport_technologies"],
+            self.parameters.capex_per_distance_transport.coords["set_edges"],
+            self.parameters.capex_per_distance_transport.coords["set_time_steps_yearly"]]
 
         ### masks
         # This mask checks the distance between nodes for the condition
@@ -393,7 +396,7 @@ class TransportTechnologyRules(GenericRule):
         ### index loop
         # not necessary
 
-        ### auxiliary calculations
+        ### auxiliary calculations TODO improve
         term_distance_inf = mask * self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
         term_distance_not_inf = (1 - mask) * (self.variables["cost_capex"].loc[coords[0], "power", coords[1], coords[2]]
                                               - self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]] * self.parameters.capex_specific_transport.loc[coords[0], coords[1]])
