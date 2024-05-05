@@ -707,6 +707,8 @@ class UnitHandling:
             is_pos_neg_boolean = np.array_equal(np.abs(array), np.abs(array).astype(bool))
         return is_pos_neg_boolean
 
+
+#todo self Amatrix into seperate function before run to assign sclaing to optimization class
 class Scaling:
     """
     This class scales the optimization model before solving it and rescales the solution
@@ -715,14 +717,28 @@ class Scaling:
     def __init__(self, model, iterations=3, algorithm="geom"):
         #optimization model to perform scaling on
         self.model = model
-        self.A_matrix = self.model.constraints.to_matrix()
         self.iterations = iterations
         self.algorithm = algorithm
-        #instead of matrices vectors
+
+
+#ToDo somehow pointer of model instance doesnt work
+    def initiate_A_matrix(self, model):
+        self.model = model
+        self.A_matrix = self.model.constraints.to_matrix()
         self.D_r_inv = np.ones(self.A_matrix.get_shape()[0])
         self.D_c_inv = np.ones(self.A_matrix.get_shape()[1])
-        #self.D_r_inv = sp.sparse.diags(np.ones(self.A_matrix.get_shape()[0]), 0, format='csr')
-        #self.D_c_inv = sp.sparse.diags(np.ones(self.A_matrix.get_shape()[1]), 0, format='csr')
+
+    def re_scale(self):
+        model = self.model
+        sol = model.solution
+        output = []
+        print(self.D_c_inv)
+        for name_var in model.variables:
+            var = model.variables[name_var]
+            mask = np.where(var.labels.data != -1)
+            output += list(sol[name_var].data[mask] * (self.D_c_inv[var.labels.data[mask]]))
+        print(output)
+
 
 
     def run_scaling(self):
@@ -733,6 +749,8 @@ class Scaling:
         cp.disable()
         cp.print_stats("cumtime")
 
+#Todo add rhs to row scaling
+#ToDO unable column scaling for binary and integer variables objective and consraints
     def replace_data(self, name):
         constraint = self.model.constraints[name]
         #Get data
@@ -769,15 +787,31 @@ class Scaling:
             lhs[entries_to_overwrite] *= (self.D_r_inv[mask_skip_constraints[entries_to_overwrite[:-1]]] *
                                         self.D_c_inv[mask_variables[entries_to_overwrite]])
 
+    def adjust_scaling_factors_of_skipped_rows(self, name):
+        constraint = self.model.constraints[name]
+        #rows
+        mask_skip_constraints = constraint.labels.data
+        indices = np.where(mask_skip_constraints != -1)
+        self.D_r_inv[mask_skip_constraints[indices]] = 1
+        #cols
+        mask_variables = constraint.vars.data
+        indices = np.where(mask_variables != -1)
+        self.D_c_inv[mask_variables[indices]] = 1
+
+
 
 
     def overwrite_problem(self):
+        #pre-check rows -> otherwise inconsistency in scaling
+        for name_con in self.model.constraints:
+            #check if only integers are allowed in scaling: if yes skip and overwrite scaling vector
+            if self.model.constraints[name_con].coeffs.dtype == int:
+                self.adjust_scaling_factors_of_skipped_rows(name_con)
         #overwrite constraints
         for name_con in self.model.constraints:
             #overwrite data
             #check if only integers are allowed in scaling: if yes skip and overwrite scaling vector
             if self.model.constraints[name_con].coeffs.dtype == int:
-                #self.D_r_inv[start:end+1] = [1 for i in range(start,end+1)]
                 continue
             else:
                 self.replace_data(name_con)

@@ -25,6 +25,7 @@ from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
+from zen_garden.preprocess.unit_handling import Scaling
 
 from ..utils import ScenarioDict, IISConstraintParser, StringUtils
 
@@ -62,6 +63,7 @@ class OptimizationSetup(object):
         self.constraints = None
         self.sets = None
 
+
         # sorted list of class names
         element_classes = self.dict_element_classes.keys()
         carrier_classes = [element_name for element_name in element_classes if "Carrier" in element_name]
@@ -91,6 +93,12 @@ class OptimizationSetup(object):
 
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
+
+        # Scaling
+        self.scaling = Scaling(self.model, config.solver["scaling_iterations"],config.solver["scaling_algorithm"])
+
+
+
 
     def create_paths(self):
         """

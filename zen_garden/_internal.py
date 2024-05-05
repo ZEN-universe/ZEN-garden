@@ -81,8 +81,9 @@ def main(config, dataset_path=None, job_index=None):
             optimization_setup.construct_optimization_problem()
             #TODO scaling algorithm
             #Todo save object then call run + config.solver within scaling object use optimization setup
-            if config.solver["use_scaling"] == True:
-                Scaling(optimization_setup.model, config.solver["scaling_iterations"],config.solver["scaling_algorithm"]).run_scaling()
+            if config.solver["use_scaling"]:
+                optimization_setup.scaling.initiate_A_matrix(optimization_setup.model)
+                optimization_setup.scaling.run_scaling()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()
             # break if infeasible
@@ -90,6 +91,8 @@ def main(config, dataset_path=None, job_index=None):
                 # write IIS
                 optimization_setup.write_IIS()
                 break
+            if config.solver["use_scaling"]:
+                optimization_setup.scaling.re_scale()
             # save new capacity additions and cumulative carbon emissions for next time step
             optimization_setup.add_results_of_optimization_step(step)
             # EVALUATE RESULTS
