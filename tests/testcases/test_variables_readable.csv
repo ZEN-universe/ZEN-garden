@@ -448,90 +448,27 @@ test_5d,none,shed_demand,"('heat', 'DE', 0)",10
 test_5d,none,cost_shed_demand,"('heat', 'CH', 0)",0
 test_5d,none,cost_shed_demand,"('heat', 'DE', 0)",1
 test_5d,none,cost_total,"(0)",5.355329
-test_6a,none,flow_import,"('natural_gas', 'CH', 0)",4.155251
-test_6a,none,flow_import,"('natural_gas', 'CH', 1)",0
-test_6a,none,flow_import,"('natural_gas', 'CH', 2)",0
-test_6a,none,flow_import,"('natural_gas', 'DE', 0)",110
-test_6a,none,flow_import,"('natural_gas', 'DE', 1)",68.493151
-test_6a,none,flow_import,"('natural_gas', 'DE', 2)",22.83105
-test_6a,none,cost_carrier,"('natural_gas', 'CH', 0)",0.070639
-test_6a,none,cost_carrier,"('natural_gas', 'CH', 1)",0
-test_6a,none,cost_carrier,"('natural_gas', 'CH', 2)",0
-test_6a,none,cost_carrier,"('natural_gas', 'DE', 0)",1.76
-test_6a,none,cost_carrier,"('natural_gas', 'DE', 1)",1.09589
-test_6a,none,cost_carrier,"('natural_gas', 'DE', 2)",0.365297
-test_6a,none,carbon_emissions_carrier,"('natural_gas', 'CH', 0)",0.000831
-test_6a,none,carbon_emissions_carrier,"('natural_gas', 'CH', 1)",0
-test_6a,none,carbon_emissions_carrier,"('natural_gas', 'CH', 2)",0
-test_6a,none,carbon_emissions_carrier,"('natural_gas', 'DE', 0)",0.022
-test_6a,none,carbon_emissions_carrier,"('natural_gas', 'DE', 1)",0.013699
-test_6a,none,carbon_emissions_carrier,"('natural_gas', 'DE', 2)",0.004566
-test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",3.777501
-test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 1)",0
-test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 2)",0
-test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
-test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 1)",62.266501
-test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 2)",20.7555
-test_6a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",3.777501
-test_6a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 1)",3.777501
-test_6a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 2)",3.777501
+test_6a,none,carbon_emissions_annual,"(0)",0.0242
+test_6a,none,carbon_emissions_annual,"(1)",0.0198
+test_6a,none,carbon_emissions_annual,"(2)",0.01142
+test_6a,none,shed_demand,"('heat', 'DE', 0)",0
+test_6a,none,shed_demand,"('heat', 'DE', 1)",0
+test_6a,none,shed_demand,"('heat', 'DE', 2)",13.11125
+test_6a,none,shed_demand,"('heat', 'CH', 0)",0
+test_6a,none,shed_demand,"('heat', 'CH', 1)",0
+test_6a,none,shed_demand,"('heat', 'CH', 2)",5
+test_6a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
+test_6a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 1)",15
+test_6a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 2)",15
 test_6a,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
 test_6a,none,capacity,"('natural_gas_boiler', 'power', 'DE', 1)",100
 test_6a,none,capacity,"('natural_gas_boiler', 'power', 'DE', 2)",100
-test_6a,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.37775
-test_6a,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 1)",0
-test_6a,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 2)",0
-test_6a,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
-test_6a,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 1)",0
-test_6a,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 2)",0
-test_6a,none,cost_opex,"('natural_gas_boiler', 'CH', 0)",0
-test_6a,none,cost_opex,"('natural_gas_boiler', 'CH', 1)",0
-test_6a,none,cost_opex,"('natural_gas_boiler', 'CH', 2)",0
-test_6a,none,cost_opex,"('natural_gas_boiler', 'DE', 0)",0
-test_6a,none,cost_opex,"('natural_gas_boiler', 'DE', 1)",0
-test_6a,none,cost_opex,"('natural_gas_boiler', 'DE', 2)",0
-test_6b,none,flow_import,"('natural_gas', 'CH', 0)",4.155251
-test_6b,none,flow_import,"('natural_gas', 'CH', 1)",11
-test_6b,none,flow_import,"('natural_gas', 'CH', 2)",0
-test_6b,none,flow_import,"('natural_gas', 'DE', 0)",110
-test_6b,none,flow_import,"('natural_gas', 'DE', 1)",110
-test_6b,none,flow_import,"('natural_gas', 'DE', 2)",22.83105
-test_6b,none,cost_carrier,"('natural_gas', 'CH', 0)",0.070639
-test_6b,none,cost_carrier,"('natural_gas', 'CH', 1)",0.187
-test_6b,none,cost_carrier,"('natural_gas', 'CH', 2)",0
-test_6b,none,cost_carrier,"('natural_gas', 'DE', 0)",1.76
-test_6b,none,cost_carrier,"('natural_gas', 'DE', 1)",1.76
-test_6b,none,cost_carrier,"('natural_gas', 'DE', 2)",0.365297
-test_6b,none,carbon_emissions_carrier,"('natural_gas', 'CH', 0)",0.000831
-test_6b,none,carbon_emissions_carrier,"('natural_gas', 'CH', 1)",0.0022
-test_6b,none,carbon_emissions_carrier,"('natural_gas', 'CH', 2)",0
-test_6b,none,carbon_emissions_carrier,"('natural_gas', 'DE', 0)",0.022
-test_6b,none,carbon_emissions_carrier,"('natural_gas', 'DE', 1)",0.022
-test_6b,none,carbon_emissions_carrier,"('natural_gas', 'DE', 2)",0.004566
-test_6b,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",3.777501
-test_6b,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 1)",10
-test_6b,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 2)",0
-test_6b,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
-test_6b,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 1)",100
-test_6b,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 2)",20.7555
-test_6b,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",3.777501
-test_6b,none,capacity,"('natural_gas_boiler', 'power', 'CH', 1)",10
-test_6b,none,capacity,"('natural_gas_boiler', 'power', 'CH', 2)",10
-test_6b,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_6b,none,capacity,"('natural_gas_boiler', 'power', 'DE', 1)",100
-test_6b,none,capacity,"('natural_gas_boiler', 'power', 'DE', 2)",100
-test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",0.37775
-test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 1)",0.62225
-test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 2)",0
-test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
-test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 1)",0
-test_6b,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 2)",0
-test_6b,none,cost_opex,"('natural_gas_boiler', 'CH', 0)",0
-test_6b,none,cost_opex,"('natural_gas_boiler', 'CH', 1)",0
-test_6b,none,cost_opex,"('natural_gas_boiler', 'CH', 2)",0
-test_6b,none,cost_opex,"('natural_gas_boiler', 'DE', 0)",0
-test_6b,none,cost_opex,"('natural_gas_boiler', 'DE', 1)",0
-test_6b,none,cost_opex,"('natural_gas_boiler', 'DE', 2)",0
+test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
+test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 1)",75
+test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 2)",36.88875
+test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10
+test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 1)",15
+test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 2)",15
 test_7a,none,flow_import,"('natural_gas', 'CH', 0)",11
 test_7a,none,flow_import,"('natural_gas', 'DE', 0)",110
 test_7a,none,flow_import,"('electricity', 'CH', 0)",20.31788
