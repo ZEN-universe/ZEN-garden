@@ -559,7 +559,9 @@ class EnergySystemRules(GenericRule):
         # not necessary
 
         ### formulate constraint
-        if self.parameters.price_carbon_emissions_annual_overshoot == np.inf or self.parameters.carbon_emissions_annual_limit.sum() == np.inf:
+        no_price = self.parameters.price_carbon_emissions_annual_overshoot == np.inf
+        no_limit = (self.parameters.carbon_emissions_annual_limit == np.inf).all()
+        if (no_price or no_limit) and not (no_price and no_limit):
             lhs = self.variables["carbon_emissions_annual_overshoot"]
             rhs = 0
             constraints = lhs == rhs

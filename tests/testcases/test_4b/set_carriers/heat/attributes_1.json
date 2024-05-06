@@ -1,8 +1,10 @@
-[
-  {
-    "carbon_intensity_carrier": {
-      "default_value": 5.0,
-      "unit": "kilotons/GWh"
-    }
+{
+  "carbon_intensity_carrier_import": {
+    "default_value": 5.0,
+    "unit": "kilotons/GWh"
+  },
+  "carbon_intensity_carrier_export": {
+    "default_value": 5.0,
+    "unit": "kilotons/GWh"
   }
-]
+}
