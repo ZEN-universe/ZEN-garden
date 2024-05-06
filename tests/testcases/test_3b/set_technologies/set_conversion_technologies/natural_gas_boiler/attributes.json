@@ -3,7 +3,7 @@
     "default_value": 0.0,
     "unit": "GW"
   },
-  "capacity_addition_max": {
+"capacity_addition_max": {
     "default_value": "inf",
     "unit": "GW"
   },
@@ -58,8 +58,7 @@
   },
   "input_carrier": {
     "default_value": [
-      "natural_gas",
-      "oxygen"
+      "natural_gas"
     ]
   },
   "output_carrier": {
@@ -68,12 +67,6 @@
     ]
   },
   "conversion_factor": [
-    {
-      "oxygen": {
-        "default_value": 0.8,
-        "unit": "GWh/GWh"
-      }
-    },
     {
       "natural_gas": {
         "default_value": 1.1,

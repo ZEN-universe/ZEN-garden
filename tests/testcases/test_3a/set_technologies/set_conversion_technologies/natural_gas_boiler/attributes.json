@@ -3,7 +3,7 @@
     "default_value": 0.0,
     "unit": "GW"
   },
-  "capacity_addition_max": {
+"capacity_addition_max": {
     "default_value": "inf",
     "unit": "GW"
   },
@@ -63,8 +63,7 @@
   },
   "output_carrier": {
     "default_value": [
-      "heat",
-      "carbon"
+      "heat"
     ]
   },
   "conversion_factor": [
@@ -72,12 +71,6 @@
       "natural_gas": {
         "default_value": 1.1,
         "unit": "GWh/GWh"
-      }
-    },
-    {
-      "carbon": {
-        "default_value": 0.1,
-        "unit": "kilotons/GWh"
       }
     }
   ],

@@ -23,9 +23,6 @@ system["unaggregated_time_steps_per_year"]  = 1
 system["aggregated_time_steps_per_year"]    = 1
 system["conduct_time_series_aggregation"]  = False
 
-# scenario analysis:
-system['conduct_scenario_analysis'] = True
-
 system["optimized_years"]                = 1
 system["interval_between_years"]          = 1
 system["use_rolling_horizon"]             = False
