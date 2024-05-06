@@ -11,10 +11,9 @@ Description:  Model settings. Overwrite default values defined in default_config
 system = dict()
 
 ## System - settings update compared to default values
-system['set_conversion_technologies'] = ["natural_gas_boiler"]
-system['set_storage_technologies'] = []
-system['set_transport_technologies'] = ["natural_gas_pipeline"]
-system['set_transport_technologies_loss_exponential'] = ["natural_gas_pipeline"]
+system['set_conversion_technologies']     = ["natural_gas_boiler"]
+system['set_storage_technologies']        = []
+system['set_transport_technologies']      = []
 
 system['set_nodes']                      = ["DE", "CH"]
 

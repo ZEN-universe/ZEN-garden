@@ -3,7 +3,7 @@
     "default_value": 0.0,
     "unit": "GW"
   },
-  "capacity_addition_max": {
+"capacity_addition_max": {
     "default_value": "inf",
     "unit": "GW"
   },
@@ -12,7 +12,7 @@
     "unit": "GW"
   },
   "capacity_limit": {
-    "default_value": 5,
+    "default_value": "inf",
     "unit": "GW"
   },
   "min_load": {
@@ -57,6 +57,10 @@
     "unit": "1"
   },
   "transport_loss_factor_linear": {
+    "default_value": 0,
+    "unit": "1/km"
+  },
+  "transport_loss_factor_exponential": {
     "default_value": 5e-06,
     "unit": "1/km"
   },

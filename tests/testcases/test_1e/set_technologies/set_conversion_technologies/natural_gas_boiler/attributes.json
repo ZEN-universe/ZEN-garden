@@ -24,7 +24,7 @@
     "unit": "1"
   },
   "lifetime": {
-    "default_value": 50.0,
+    "default_value": 25.0,
     "unit": "1"
   },
   "opex_specific_variable": {
@@ -33,7 +33,7 @@
   },
   "reference_carrier": {
     "default_value": [
-      "natural_gas"
+      "heat"
     ]
   },
   "carbon_intensity_technology": {
@@ -49,24 +49,44 @@
     "unit": "GW"
   },
   "opex_specific_fixed": {
-    "default_value": 0.0,
-    "unit": "Euro/MW"
+    "default_value": 87.6,
+    "unit": "Euro/kW"
   },
   "max_diffusion_rate": {
     "default_value": "inf",
     "unit": "1"
   },
-  "transport_loss_factor_linear": {
-    "default_value": 0,
-    "unit": "1/km"
+  "input_carrier": {
+    "default_value": [
+      "natural_gas",
+      "oxygen"
+    ]
   },
-  "capex_per_distance_transport": {
-    "default_value": 265.0,
-    "unit": "Euro/km/MW"
+  "output_carrier": {
+    "default_value": [
+      "heat",
+      "carbon"
+    ]
   },
-  "distance": {
-    "default_value": "inf",
-    "unit": "km"
+  "conversion_factor":
+    {
+      "oxygen": {
+        "default_value": 0.8,
+        "unit": "GWh/GWh"
+      },
+      "natural_gas": {
+        "default_value": 1.1,
+        "unit": "GWh/GWh"
+      },
+      "carbon": {
+        "default_value": 0.1,
+        "unit": "kilotons/GWh"
+      }
+    }
+  ,
+  "capex_specific": {
+    "default_value": 876.0,
+    "unit": "Euro/kW"
   },
   "capacity_addition_unbounded": {
     "default_value": 0.0,
