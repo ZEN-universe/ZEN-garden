@@ -63,6 +63,10 @@ class ConversionTechnology(Technology):
         self.get_conversion_factor()
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
         self.convert_to_fraction_of_capex()
+        # LCA parameters
+        if self.energy_system.system['load_lca_factors']:
+            self.technology_lca_factors = self.data_input.extract_input_data('technology_lca_factors', index_sets=[self.location_type, 'set_lca_impact_categories', 'set_time_steps_yearly'],
+                                                                             time_steps="set_time_steps_yearly", unit_category={"energy_quantity": -1})
 
     def get_conversion_factor(self):
         """retrieves and stores conversion_factor """
@@ -93,7 +97,7 @@ class ConversionTechnology(Technology):
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         if not self.capex_is_pwa:
-            self.capex_specific = pwa_capex["capex"] * fraction_year
+            self.capex_specific_conversion = pwa_capex["capex"] * fraction_year
         else:
             self.pwa_capex = pwa_capex
             self.pwa_capex["capex"] = [value * fraction_year for value in self.pwa_capex["capex"]]
@@ -113,7 +117,7 @@ class ConversionTechnology(Technology):
             return 0
         # linear
         if not self.capex_is_pwa:
-            capex = self.capex_specific[index[0]].iloc[0] * capacity
+            capex = self.capex_specific_conversion[index[0]].iloc[0] * capacity
         else:
             capex = np.interp(capacity, self.pwa_capex["capacity"], self.pwa_capex["capex"])
         return capex
@@ -131,7 +135,7 @@ class ConversionTechnology(Technology):
         dict_of_attributes = {}
         dict_of_units = {}
         is_pwa_attribute = "capex_is_pwa"
-        attribute_name_linear = "capex_specific"
+        attribute_name_linear = "capex_specific_conversion"
 
         for element in class_elements:
             # extract for pwa

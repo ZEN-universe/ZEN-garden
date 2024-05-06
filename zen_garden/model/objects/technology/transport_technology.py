@@ -56,6 +56,9 @@ class TransportTechnology(Technology):
         self.convert_to_fraction_of_capex()
         # calculate capex of existing capacity
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
+        if self.energy_system.system['load_lca_factors']:
+            self.technology_lca_factors = self.data_input.extract_input_data('technology_lca_factors', index_sets=[self.location_type, 'set_lca_impact_categories', 'set_time_steps_yearly'], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": -1, 'distance': -1})
+            self.technology_lca_factors = self.technology_lca_factors * self.distance
 
     def get_transport_loss_factor(self):
         """get transport loss factor
