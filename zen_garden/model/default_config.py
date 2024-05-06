@@ -152,6 +152,7 @@ class System(Subscriptable):
 class SolverOptions(Subscriptable):
     pass
 
+
 class Solver(Subscriptable):
     name: str = "glpk"
     solver_options: SolverOptions = SolverOptions()
@@ -163,7 +164,6 @@ class Solver(Subscriptable):
     recommend_base_units: bool = False
     immutable_unit: list[str] = []
     range_unit_exponents: dict[str, int] = {"min": -1, "max": 1, "step_width": 1}
-    define_ton_as_metric_ton: bool = True
     rounding_decimal_points: int = 5
     rounding_decimal_points_ts: int = 4
     linear_regression_check: dict[str, float] = {

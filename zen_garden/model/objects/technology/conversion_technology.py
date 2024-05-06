@@ -137,9 +137,9 @@ class ConversionTechnology(Technology):
             # extract for pwa
             if not getattr(element, is_pwa_attribute):
                 dict_of_attributes, _, dict_of_units = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes, dict_of_units={})
-            if not dict_of_attributes:
-                _, index_names = cls.create_custom_set(index_names, optimization_setup)
-                return dict_of_attributes, index_names, dict_of_units
+        if not dict_of_attributes:
+            _, index_names = cls.create_custom_set(index_names, optimization_setup)
+            return dict_of_attributes, index_names, dict_of_units
         dict_of_attributes = pd.concat(dict_of_attributes, keys=dict_of_attributes.keys())
         if not index_names:
             logging.warning(f"Initializing the parameter capex without the specifying the index names will be deprecated!")
