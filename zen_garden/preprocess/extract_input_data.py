@@ -532,7 +532,7 @@ class DataInput:
         df_input = self.read_input_csv(file_type + "capex")
         has_unit = False
         if df_input is not None:
-            string_row = df_input.applymap(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
+            string_row = df_input.map(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
             if string_row.any():
                 unit_row = df_input.loc[string_row]
                 #save non-linear capex units for consistency checks
