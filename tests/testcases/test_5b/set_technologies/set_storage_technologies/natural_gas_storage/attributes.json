@@ -53,7 +53,7 @@
     "unit": "kiloEuro/GW"
   },
   "max_diffusion_rate": {
-    "default_value": "inf",
+    "default_value": 0.15,
     "unit": "1"
   },
   "efficiency_charge": {

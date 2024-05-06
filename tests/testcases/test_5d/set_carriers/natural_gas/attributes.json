@@ -12,7 +12,7 @@
     "unit": "kiloEuro/GWh"
   },
   "availability_import": {
-    "default_value": "inf",
+    "default_value": 55,
     "unit": "GW"
   },
   "availability_export": {
