@@ -417,7 +417,7 @@ test_5c,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_5c,none,capacity,"('natural_gas_boiler', 'power', 'CH', 1)",10
 test_5c,none,capacity,"('natural_gas_boiler', 'power', 'CH', 2)",11
 test_5c,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_5c,none,capacity,"('natural_gas_boiler', 'power', 'DE', 1)",100
+test_5c,none,capacity,"('natural_gas_boiler', 'power', 'DE', 1)",110
 test_5c,none,capacity,"('natural_gas_boiler', 'power', 'DE', 2)",110
 test_5c,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
 test_5c,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 1)",0
