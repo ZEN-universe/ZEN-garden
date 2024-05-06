@@ -4,7 +4,7 @@
     "unit": "GW"
   },
   "capacity_addition_max": {
-    "default_value": 0.0,
+    "default_value": "inf",
     "unit": "GW"
   },
   "capacity_existing": {
@@ -77,7 +77,7 @@
     "unit": "GWh"
   },
   "capacity_addition_max_energy": {
-    "default_value": 0.0,
+    "default_value": "inf",
     "unit": "GWh"
   },
   "capacity_existing_energy": {

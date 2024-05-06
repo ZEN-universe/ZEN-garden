@@ -41,7 +41,7 @@
     "unit": "kilotons/GWh"
   },
   "construction_time": {
-    "default_value": 0.0,
+    "default_value": 2.0,
     "unit": "1"
   },
   "capacity_investment_existing": {
