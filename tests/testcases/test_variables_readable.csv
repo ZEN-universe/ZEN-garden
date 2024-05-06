@@ -113,24 +113,31 @@ test_2b,none,flow_storage_discharge,"('natural_gas_storage', 'DE', 0)",6.29025
 test_2b,none,flow_storage_discharge,"('natural_gas_storage', 'DE', 1)",16.29025
 test_2b,none,flow_transport,"('natural_gas_pipeline', 'DE-CH', 0)",1.1
 test_2b,none,flow_transport,"('natural_gas_pipeline', 'DE-CH', 2)",5.5
-test_2b,none,flow_export,"('natural_gas', 'DE', 0)",0
-test_2b,none,flow_export,"('natural_gas', 'DE', 1)",0
-test_2b,none,flow_export,"('natural_gas', 'DE', 2)",0
-
+test_2b,none,flow_export,"('natural_gas', 'DE', 0)",121.62812
+test_2b,none,flow_export,"('natural_gas', 'DE', 1)",100
+test_2b,none,flow_export,"('natural_gas', 'CH', 0)",10
+test_2b,none,flow_export,"('natural_gas', 'CH', 1)",11
 test_2c,none,flow_import,"('natural_gas', 'CH', 0)",11
 test_2c,none,flow_import,"('natural_gas', 'DE', 0)",110
+test_2c,none,flow_import,"('natural_gas', 'CH', 1)",11
+test_2c,none,flow_import,"('natural_gas', 'DE', 1)",110
+test_2c,none,flow_import,"('natural_gas', 'CH', 2)",11
+test_2c,none,flow_import,"('natural_gas', 'DE', 2)",110
+test_2c,non,shed_demand,"('heat', 'DE', 0)",0
+test_2c,non,shed_demand,"('heat', 'DE', 1)",5
+test_2c,non,shed_demand,"('heat', 'CH', 0)",0
+test_2c,non,shed_demand,"('heat', 'CH', 1)",0
 test_2c,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10
 test_2c,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
-test_2c,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",20
+test_2c,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",15
 test_2c,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_2c,none,cost_capex,"('natural_gas_boiler', 'power', 'CH', 0)",2
-test_2c,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",10
-test_2c,none,cost_opex,"('natural_gas_boiler', 'CH', 0)",0
-test_2c,none,cost_opex,"('natural_gas_boiler', 'DE', 0)",0
-test_2c,none,flow_export,"('natural_gas', 'CH', 0)",0
-test_2c,none,flow_export,"('natural_gas', 'DE', 0)",0
-test_2c,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",0
-test_2c,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
+test_2c,none,capacity,"('natural_gas_storage', 'power', 'DE', 0)",6.18557
+test_2c,none,capacity,"('natural_gas_storage', 'power', 'CH', 0)",4.44256
+test_2c,none,capacity,"('natural_gas_storage', 'energy', 'DE', 0)",6
+test_2c,none,capacity,"('natural_gas_storage', 'energy', 'CH', 0)",4.30928
+test_2c,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",5
+test_2c,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",5.44256
+
 test_3a,none,flow_import,"('natural_gas', 'CH', 0)",11
 test_3a,none,flow_import,"('natural_gas', 'DE', 0)",110
 test_3a,none,cost_carrier,"('natural_gas', 'CH', 0)",0.253
