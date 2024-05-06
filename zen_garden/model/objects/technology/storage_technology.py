@@ -60,6 +60,7 @@ class StorageTechnology(Technology):
         self.capacity_limit_energy = self.data_input.extract_input_data("capacity_limit_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
         self.capacity_existing_energy = self.data_input.extract_input_data("capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"], unit_category={"energy_quantity": 1})
         self.capacity_investment_existing_energy = self.data_input.extract_input_data("capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
+        self.energy_to_power_ratio = self.data_input.extract_input_data("energy_to_power_ratio", index_sets=[], unit_category={"time": 1})
         self.capex_specific_storage = self.data_input.extract_input_data("capex_specific_storage", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": -1})
         self.capex_specific_storage_energy = self.data_input.extract_input_data("capex_specific_storage_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
@@ -107,6 +108,9 @@ class StorageTechnology(Technology):
         """ constructs the pe.Params of the class <StorageTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
+        # power energy ratio
+        optimization_setup.parameters.add_parameter(name="energy_to_power_ratio", index_names=["set_storage_technologies"],
+                                                    doc='power to energy ratio for storage technologies',  calling_class=cls)
         # efficiency charge
         optimization_setup.parameters.add_parameter(name="efficiency_charge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"], doc='efficiency during charging for storage technologies', calling_class=cls)
         # efficiency discharge
@@ -159,7 +163,12 @@ class StorageTechnology(Technology):
         model = optimization_setup.model
         constraints = optimization_setup.constraints
         rules = StorageTechnologyRules(optimization_setup)
-        # Limit storage level
+        # limit capacity power energy ratio level
+        constraints.add_constraint_block(model, name="constraint_capacity_energy_to_power_ratio",
+                                         constraint=rules.constraint_capacity_energy_to_power_ratio_block(),
+                                         doc='limit capacity power to energy ratio')
+
+        # limit storage level
         constraints.add_constraint_block(model, name="constraint_storage_level_max",
                                          constraint=rules.constraint_storage_level_max_block(),
                                          doc='limit maximum storage level to capacity')
@@ -172,7 +181,7 @@ class StorageTechnology(Technology):
                                          constraint=rules.constraint_storage_technology_capex_block(),
                                          doc='Capital expenditures for installing storage technology')
 
-        # defines disjuncts if technology on/off
+    # defines disjuncts if technology on/off
 
     @classmethod
     def disjunct_on_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
@@ -252,6 +261,31 @@ class StorageTechnologyRules(GenericRule):
 
     # Block-based constraints
     # -----------------------
+    def constraint_capacity_energy_to_power_ratio_block(self):
+        """limit capacity power to energy ratio"""
+
+        ### index sets
+        # not necessary
+
+        ### masks
+        e2p = self.parameters.energy_to_power_ratio.rename({"set_storage_technologies": "set_technologies"})
+        techs = self.sets["set_storage_technologies"]
+        mask = e2p != np.inf
+
+        ### index loop
+        # not necessary
+
+        ### formulate constraint
+        lhs = (self.variables["capacity_addition"].loc[techs, "energy", :, :] * e2p \
+               - self.variables["capacity_addition"].loc[techs, "power", :, :])#.where(mask)
+        rhs = 0
+        constraints = lhs == rhs
+
+        return self.constraints.return_contraints(constraints,
+                                                    model=self.model,
+                                                    mask = mask,
+                                                    index_values=self.sets["set_storage_technologies"],
+                                                    index_names=["set_storage_technologies"])
 
     def constraint_storage_level_max_block(self):
         """limit maximum storage level to capacity

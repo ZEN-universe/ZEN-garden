@@ -218,7 +218,7 @@ class EnergySystem:
         self.optimization_setup.sets.add_set(name="set_time_steps_yearly", data=self.set_time_steps_yearly, doc="Set of yearly time-steps")
         # yearly time steps of entire optimization horizon
         self.optimization_setup.sets.add_set(name="set_time_steps_yearly_entire_horizon", data=self.set_time_steps_yearly_entire_horizon, doc="Set of yearly time-steps of entire optimization horizon")
-        # operational time steps
+         # operational time steps
         self.optimization_setup.sets.add_set(name="set_time_steps_operation",data=self.time_steps.time_steps_operation,doc="Set of operational time steps")
         # storage time steps
         self.optimization_setup.sets.add_set(name="set_time_steps_storage",data=self.time_steps.time_steps_storage,doc="Set of storage level time steps")

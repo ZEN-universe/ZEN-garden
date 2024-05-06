@@ -18,6 +18,7 @@ import xarray as xr
 from zen_garden.utils import lp_sum
 from ..component import ZenIndex
 from ..element import Element, GenericRule
+import pandas as pd
 
 
 class Carrier(Element):
@@ -50,6 +51,7 @@ class Carrier(Element):
         self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
         self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity_carrier", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"emissions": 1, "energy_quantity": -1})
         self.price_shed_demand = self.data_input.extract_input_data("price_shed_demand", index_sets=[], unit_category={"money": 1, "energy_quantity": -1})
+        self.import_share = self.data_input.extract_input_data("import_share", index_sets=[], unit_category={})
 
     def overwrite_time_steps(self, base_time_steps):
         """ overwrites set_time_steps_operation
@@ -82,6 +84,8 @@ class Carrier(Element):
         optimization_setup.parameters.add_parameter(name="availability_import_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year', calling_class=cls)
         # availability of carrier
         optimization_setup.parameters.add_parameter(name="availability_export_yearly", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the maximum energy that can be exported to outside the system boundaries for the entire year', calling_class=cls)
+        # availability of carrier
+        optimization_setup.parameters.add_parameter(name="import_share", index_names=["set_carriers"], doc='Parameter which specifies minimum carrier import per year relative to max. availability', calling_class=cls)
         # import price
         optimization_setup.parameters.add_parameter(name="price_import", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"], doc='Parameter which specifies the import carrier price', calling_class=cls)
         # export price
@@ -106,6 +110,10 @@ class Carrier(Element):
         # flow of exported carrier
         variables.add_variable(model, name="flow_export", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
                                doc="node- and time-dependent carrier export from the grid", unit_category={"energy_quantity": 1, "time": -1})
+        # flow of exported carrier on average
+        variables.add_variable(model, name="flow_export_balancing", index_sets=cls.create_custom_set(["set_carriers", "set_nodes"], optimization_setup), bounds=(0, np.inf),
+                               doc="node-dependent carrier export per balancing period to the grid",
+                               unit_category={"energy_quantity": 1, "time": -1})
         # carrier import/export cost
         variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
                                doc="node- and time-dependent carrier cost due to import and export", unit_category={"money": 1, "time": -1})
@@ -147,6 +155,14 @@ class Carrier(Element):
         constraints.add_constraint_block(model, name="constraint_availability_export",
                                          constraint=rules.constraint_availability_export_block(),
                                          doc='node- and time-dependent carrier availability to export to outside the system boundaries')
+        # limit export flow to constant export flow over time
+        constraints.add_constraint_block(model, name="constraint_flow_export_balancing",
+                                         constraint=rules.constraint_flow_export_balancing_block(),
+                                         doc='node- and time-dependent carrier export to outside the system boundaries has to be constant')
+        # compute daily exports
+        #constraints.add_constraint_block(model, name="constraint_flow_export_balancing_period",
+        #                                 constraint=rules.constraint_flow_export_balancing_period_block(),
+        #                                 doc='node- and time-dependent carrier export to outside the system boundaries summed over entire day')
         # limit import flow by availability for each year
         constraints.add_constraint_block(model, name="constraint_availability_import_yearly",
                                          constraint=rules.constraint_availability_import_yearly_block(),
@@ -155,6 +171,11 @@ class Carrier(Element):
         constraints.add_constraint_block(model, name="constraint_availability_export_yearly",
                                          constraint=rules.constraint_availability_export_yearly_block(),
                                          doc='node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year', )
+        # minimum share of availability import used
+        constraints.add_constraint_block(model, name="constraint_import_share",
+                                         constraint=rules.constraint_import_share_block(),
+                                         doc='minimum share of carrier availability import consumed', )
+
         # cost for carrier
         constraints.add_constraint_block(model, name="constraint_cost_carrier",
                                          constraint=rules.constraint_cost_carrier_block(),
@@ -340,6 +361,131 @@ class CarrierRules(GenericRule):
 
         ### return
         return self.constraints.return_contraints(constraints)
+
+    def constraint_flow_export_balancing_block(self):
+        """node- and time-dependent carrier export has to be constant over time
+
+        .. math::
+           V_{c,n,t} = V^{avg}_{c,n}
+
+        :return: #TODO describe parameter/return
+        """
+        ## skip constriant formulation if offtake carriers empty
+        balancing_carriers = self.system["balancing_carriers"]
+        skip_balancing = self.system["balancing_period"] == self.system["unaggregated_time_steps_per_year"]
+        if not balancing_carriers or skip_balancing:
+            return self.constraints.return_contraints([])
+
+        ### index sets
+        # not necessary
+
+        ### masks
+        # The constraints is only bounded for the carriers specifed in analysis
+        mask = xr.DataArray(0, coords=[self.sets["set_carriers"]], dims=["set_carriers"])
+        for c in balancing_carriers:
+            if c in self.sets["set_carriers"]:
+                mask.loc[c] = 1
+            else:
+                logging.warning(f"Carrier {c} is not part of the model")
+
+        ### index loop
+        # not necessary
+
+        ### formulate constraint
+        flow_export = self.variables["flow_export"]
+        ts_per_balancing_period = self.system["balancing_period"]
+        if ts_per_balancing_period==1:
+            lhs = (flow_export - self.variables["flow_export_balancing"]).where(mask)            # special case hourly balancing
+        elif ts_per_balancing_period>1:
+            ts_set = "set_time_steps_operation"
+            ts_operation = np.array(self.sets[ts_set].data)
+            group_key = xr.DataArray(ts_operation // ts_per_balancing_period, coords=[ts_operation], dims=ts_set)
+            lhs = (flow_export.groupby(group_key).sum() - self.variables["flow_export_balancing"]).where(mask)
+        else:
+            raise ValueError("Balancing period must be at least 1")
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints)
+
+    def constraint_flow_export_balancing_period_block(self):
+        """node- and time-dependent carrier export has to be constant over time
+
+        .. math::
+           V_{c,n,t} = V^{avg}_{c,n}
+
+        :return: #TODO describe parameter/return
+        """
+        balancing_carriers = self.system["balancing_carriers"]
+
+        ### index sets
+        # not necessary
+
+        if not balancing_carriers:
+            return self.constraints.return_contraints([])
+        if self.system["conduct_time_series_aggregation"]:
+            raise NotImplementedError("Balancing only implemented for unaggregated timeseries")
+
+        ### masks
+        # The constraints is only bounded for the carriers specifed in analysis
+        mask = xr.DataArray(0, coords=self.variables["flow_export_balancing_period"].coords)
+        for c in balancing_carriers:
+            if c in self.sets["set_carriers"]:
+                mask.loc[c, :, :] = 1
+            else:
+                logging.warning(f"Carrier {c} is not part of the model")
+
+        ### index loop
+        # not necessary
+
+        ### formulate constraint
+        flow_export = self.variables["flow_export"]
+        ts_per_balancing_period = self.system["balancing_period"]
+        ts_set = "set_time_steps_operation"
+        ts_operation = np.array(self.sets[ts_set].data)
+        group_key = xr.DataArray(ts_operation // ts_per_balancing_period, coords=[ts_operation], dims=ts_set)
+
+        lhs = (flow_export.groupby(group_key).sum() - self.variables["flow_export_balancing_period"])*mask
+        rhs = 0
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  model=self.model,
+                                                  index_values=self.sets["set_time_steps_balancing_period"],
+                                                  index_names=["set_time_steps_balancing_period"])
+
+    def constraint_import_share_block(self):
+        """node- and year-dependent carrier availability to import from outside the system boundaries
+
+         .. math::
+            a_{c,n,y}^\mathrm{import} \geq \\sum_{t\\in\mathcal{T}}\\tau_t U_{c,n,t}
+
+        :return: #TODO describe parameter/return
+        """
+
+        ### index sets
+        # not needed
+
+        ### masks
+        # The constraints is only bounded if the availability is finite
+        mask = self.parameters.import_share != np.inf
+        mask2 = self.parameters.import_share*self.parameters.availability_import.max() <= self.parameters.availability_import
+
+        ### index loop
+        # not necessary
+
+        ### formulate constraint
+        lhs = self.variables["flow_import"]
+        rhs = (self.parameters.availability_import * self.parameters.import_share).where(mask2, self.parameters.availability_import)
+        constraints = lhs == rhs
+
+        ### return
+        return self.constraints.return_contraints(constraints,
+                                                  mask= mask,
+                                                  model=self.model)
+
 
     def constraint_availability_import_yearly_block(self):
         """node- and year-dependent carrier availability to import from outside the system boundaries
@@ -549,7 +695,7 @@ class CarrierRules(GenericRule):
             mask = (self.parameters.availability_import.loc[carrier, :, times] != 0) | (self.parameters.availability_export.loc[carrier, :, times] != 0)
             fac = np.where(mask, self.parameters.carbon_intensity_carrier.loc[carrier, :, yearly_time_steps], 0)
             fac = xr.DataArray(fac, coords=[self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]])
-            term_flow_import_export = fac * (self.variables["flow_import"].loc[carrier, :] - self.variables["flow_export"].loc[carrier, :])
+            term_flow_import_export = fac * (self.variables["flow_import"].loc[carrier, :]) #- self.variables["flow_export"].loc[carrier, :]
 
             ### formulate constraint
             lhs = (self.variables["carbon_emissions_carrier"].loc[carrier, :]

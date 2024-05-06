@@ -480,7 +480,7 @@ class ScenarioDict(dict):
     def validate_file_name(fname):
         """
         Checks if the file name has an extension, it is expected to not have an extension
-        :param fname: The file name to validte
+        :param fname: The file name to validate
         :return: The validated file name
         """
 
@@ -1132,6 +1132,7 @@ class InputDataChecks:
                 elif "attributes.json" not in self.optimization_setup.paths[set_name][technology]:
                     raise FileNotFoundError(f"The file attributes.json does not exist for the technology {technology}")
             self.optimization_setup.system["set_technologies"].extend(self.optimization_setup.system[set_name])
+            self.optimization_setup.system["set_technologies"] = list(np.unique(self.optimization_setup.system["set_technologies"]))
             # check subsets of technology_subset
             assert isinstance(subsets, list), f"Subsets of {set_name} must be a list, dict not implemented"
             for subset in subsets:
