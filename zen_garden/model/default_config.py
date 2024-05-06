@@ -66,6 +66,7 @@ class HeaderDataInputs(Subscriptable):
     set_time_steps: str = "time"  # IMPORTANT: time must be unique
     set_time_steps_operation: str = "time_operation"
     set_time_steps_storage_level: str = "time_storage_level"
+    set_time_steps_balancing_period: str = "time_balancing"
     set_time_steps_yearly: str = "year"  # IMPORTANT: year must be unique
     set_time_steps_yearly_entire_horizon: str = "year_entire_horizon"
     set_carriers: str = "carrier"
