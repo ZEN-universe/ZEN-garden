@@ -71,16 +71,20 @@ test_1d,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",10
 test_1d,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
 test_1e,none,flow_import,"('natural_gas', 'CH', 0)",11
 test_1e,none,flow_import,"('natural_gas', 'DE', 0)",110
+test_1e,none,flow_import,"('oxygen', 'CH', 0)",8
+test_1e,none,flow_import,"('oxygen', 'DE', 0)",80
 test_1e,none,flow_export,"('carbon', 'CH', 0)",0.001
 test_1e,none,flow_export,"('carbon', 'DE', 0)",0.01
 test_1e,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10
 test_1e,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
 test_1e,none,flow_conversion_output,"('natural_gas_boiler', 'carbon', 'CH', 0)",0.001
 test_1e,none,flow_conversion_output,"('natural_gas_boiler', 'carbon', 'DE', 0)",0.01
+test_1e,none,flow_conversion_input,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
+test_1e,none,flow_conversion_input,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
+test_1e,none,flow_conversion_input,"('natural_gas_boiler', 'oxygen', 'CH', 0)",8
+test_1e,none,flow_conversion_input,"('natural_gas_boiler', 'oxygen', 'DE', 0)",80
 test_1e,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_1e,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_1e,none,flow_import,"('oxygen', 'CH', 0)",8
-test_1e,none,flow_import,"('oxygen', 'DE', 0)",80
 test_2a,none,flow_import,"('natural_gas', 'CH', 0)",11
 test_2a,none,flow_import,"('natural_gas', 'DE', 0)",110
 test_2a,none,cost_carrier,"('natural_gas', 'CH', 0)",0.253
