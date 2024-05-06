@@ -451,12 +451,7 @@ test_5d,none,cost_total,"(0)",5.355329
 test_6a,none,carbon_emissions_annual,"(0)",0.0242
 test_6a,none,carbon_emissions_annual,"(1)",0.0198
 test_6a,none,carbon_emissions_annual,"(2)",0.01142
-test_6a,none,demand,"('heat', 'DE', 0)",100
-test_6a,none,demand,"('heat', 'DE', 1)",75
-test_6a,none,demand,"('heat', 'DE', 2)",50
-test_6a,none,demand,"('heat', 'CH', 0)",10
-test_6a,none,demand,"('heat', 'CH', 1)",15
-test_6a,none,demand,"('heat', 'CH', 2)",20
+test_6a,none,carbon_emissions_annual_overshoot,"(2)",0.00398
 test_6a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_6a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 1)",15
 test_6a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 2)",15
@@ -465,7 +460,7 @@ test_6a,none,capacity,"('natural_gas_boiler', 'power', 'DE', 1)",100
 test_6a,none,capacity,"('natural_gas_boiler', 'power', 'DE', 2)",100
 test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
 test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 1)",75
-test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 2)",36.88875
+test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 2)",50
 test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10
 test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 1)",15
 test_6a,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 2)",15
