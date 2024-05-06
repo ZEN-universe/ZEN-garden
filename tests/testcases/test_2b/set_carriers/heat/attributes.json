@@ -16,7 +16,7 @@
     "unit": "GW"
   },
   "availability_export": {
-    "default_value": 0.0,
+    "default_value": "inf",
     "unit": "GW"
   },
   "availability_import_yearly": {
