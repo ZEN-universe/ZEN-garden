@@ -1,8 +1,0 @@
-[
-  {
-    "price_import": {
-      "default_value": 31.0,
-      "unit": "kiloEuro/GWh"
-    }
-  }
-]
