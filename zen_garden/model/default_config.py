@@ -66,7 +66,6 @@ class HeaderDataInputs(Subscriptable):
     set_time_steps: str = "time"  # IMPORTANT: time must be unique
     set_time_steps_operation: str = "time_operation"
     set_time_steps_storage_level: str = "time_storage_level"
-    set_time_steps_balancing_period: str = "time_balancing"
     set_time_steps_yearly: str = "year"  # IMPORTANT: year must be unique
     set_time_steps_yearly_entire_horizon: str = "year_entire_horizon"
     set_carriers: str = "carrier"
@@ -114,7 +113,6 @@ class Analysis(Subscriptable):
     earliest_year_of_data: int = 1900
 
 
-
 class System(Subscriptable):
     model_config = ConfigDict(extra="allow")
     set_carriers: list[str] = []
@@ -136,7 +134,6 @@ class System(Subscriptable):
     enforce_selfish_behavior: bool = False
     reference_year: int = 2023
     unaggregated_time_steps_per_year: int = 8760
-    balancing_period: int = 8760
     aggregated_time_steps_per_year: int = 10
     conduct_time_series_aggregation: bool = True
     optimized_years: int = 3
@@ -144,7 +141,6 @@ class System(Subscriptable):
     use_rolling_horizon: bool = False
     years_in_rolling_horizon: int = 5
     use_capacities_existing: bool = True
-    balancing_carriers: list[str] = []
 
 
 class SolverOptions(Subscriptable):

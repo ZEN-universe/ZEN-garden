@@ -1048,16 +1048,8 @@ class Constraint(Component):
 
         for num, con in enumerate(constraints):
             terms = con.lhs.dims["_term"]
-            # check dimensions
-            try:
-                coeffs[num, ..., :terms] = con.lhs.coeffs.data
-                variables[num, ..., :terms] = con.lhs.vars.data
-            except:
-                logging.warning(f"Constraint dimensions do not match. Manually reordering constraint dimensions.")
-                dims = [d for d in coeffs.dims if d in list(con.lhs.coeffs.dims)]
-                coeffs[num, ..., :terms] = con.lhs.coeffs.transpose(*dims).data
-                variables[num, ..., :terms] = con.lhs.vars.transpose(*dims).data
-
+            coeffs[num, ..., :terms] = con.lhs.coeffs.data
+            variables[num, ..., :terms] = con.lhs.vars.data
             sign[num, ...] = con.sign
             rhs[num, ...] = con.rhs
             # make sure all dims are in the right order and deal with subsets

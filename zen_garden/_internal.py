@@ -16,8 +16,6 @@ import importlib
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
 from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # we setup the logger here
 setup_logger()
@@ -99,7 +97,3 @@ def main(config, dataset_path=None, job_index=None):
                             model_name=model_name, scenario_name=scenario_name, param_map=param_map)
     logging.info("--- Optimization finished ---")
     return optimization_setup
-
-
-#from zen_garden.postprocess.results import Results
-#res = Results(os.path.join("outputs", data_set_name))

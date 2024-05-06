@@ -18,7 +18,6 @@ import xarray as xr
 from zen_garden.utils import lp_sum
 from ..component import ZenIndex
 from ..element import Element, GenericRule
-import pandas as pd
 
 
 class Carrier(Element):
@@ -107,10 +106,6 @@ class Carrier(Element):
         # flow of exported carrier
         variables.add_variable(model, name="flow_export", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup), bounds=(0,np.inf),
                                doc="node- and time-dependent carrier export from the grid", unit_category={"energy_quantity": 1, "time": -1})
-        # flow of exported carrier on average
-        variables.add_variable(model, name="flow_export_balancing", index_sets=cls.create_custom_set(["set_carriers", "set_nodes"], optimization_setup), bounds=(0, np.inf),
-                               doc="node-dependent carrier export per balancing period to the grid",
-                               unit_category={"energy_quantity": 1, "time": -1})
         # carrier import/export cost
         variables.add_variable(model, name="cost_carrier", index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
                                doc="node- and time-dependent carrier cost due to import and export", unit_category={"money": 1, "time": -1})
@@ -152,14 +147,6 @@ class Carrier(Element):
         constraints.add_constraint_block(model, name="constraint_availability_export",
                                          constraint=rules.constraint_availability_export_block(),
                                          doc='node- and time-dependent carrier availability to export to outside the system boundaries')
-        # limit export flow to constant export flow over time
-        constraints.add_constraint_block(model, name="constraint_flow_export_balancing",
-                                         constraint=rules.constraint_flow_export_balancing_block(),
-                                         doc='node- and time-dependent carrier export to outside the system boundaries has to be constant')
-        # compute daily exports
-        #constraints.add_constraint_block(model, name="constraint_flow_export_balancing_period",
-        #                                 constraint=rules.constraint_flow_export_balancing_period_block(),
-        #                                 doc='node- and time-dependent carrier export to outside the system boundaries summed over entire day')
         # limit import flow by availability for each year
         constraints.add_constraint_block(model, name="constraint_availability_import_yearly",
                                          constraint=rules.constraint_availability_import_yearly_block(),
@@ -353,100 +340,6 @@ class CarrierRules(GenericRule):
 
         ### return
         return self.constraints.return_contraints(constraints)
-
-    def constraint_flow_export_balancing_block(self):
-        """node- and time-dependent carrier export has to be constant over time
-
-        .. math::
-           V_{c,n,t} = V^{avg}_{c,n}
-
-        :return: #TODO describe parameter/return
-        """
-        ## skip constriant formulation if offtake carriers empty
-        balancing_carriers = self.system["balancing_carriers"]
-        skip_balancing = self.system["balancing_period"] == self.system["unaggregated_time_steps_per_year"]
-        if not balancing_carriers or skip_balancing:
-            return self.constraints.return_contraints([])
-
-        ### index sets
-        # not necessary
-
-        ### masks
-        # The constraints is only bounded for the carriers specifed in analysis
-        mask = xr.DataArray(0, coords=[self.sets["set_carriers"]], dims=["set_carriers"])
-        for c in balancing_carriers:
-            if c in self.sets["set_carriers"]:
-                mask.loc[c] = 1
-            else:
-                logging.warning(f"Carrier {c} is not part of the model")
-
-        ### index loop
-        # not necessary
-
-        ### formulate constraint
-        flow_export = self.variables["flow_export"]
-        ts_per_balancing_period = self.system["balancing_period"]
-        if ts_per_balancing_period==1:
-            lhs = (flow_export - self.variables["flow_export_balancing"]).where(mask)            # special case hourly balancing
-        elif ts_per_balancing_period>1:
-            ts_set = "set_time_steps_operation"
-            ts_operation = np.array(self.sets[ts_set].data)
-            group_key = xr.DataArray(ts_operation // ts_per_balancing_period, coords=[ts_operation], dims=ts_set)
-            lhs = (flow_export.groupby(group_key).sum() - self.variables["flow_export_balancing"]).where(mask)
-        else:
-            raise ValueError("Balancing period must be at least 1")
-        rhs = 0
-        constraints = lhs == rhs
-
-        ### return
-        return self.constraints.return_contraints(constraints)
-
-    def constraint_flow_export_balancing_period_block(self):
-        """node- and time-dependent carrier export has to be constant over time
-
-        .. math::
-           V_{c,n,t} = V^{avg}_{c,n}
-
-        :return: #TODO describe parameter/return
-        """
-        balancing_carriers = self.system["balancing_carriers"]
-
-        ### index sets
-        # not necessary
-
-        if not balancing_carriers:
-            return self.constraints.return_contraints([])
-        if self.system["conduct_time_series_aggregation"]:
-            raise NotImplementedError("Balancing only implemented for unaggregated timeseries")
-
-        ### masks
-        # The constraints is only bounded for the carriers specifed in analysis
-        mask = xr.DataArray(0, coords=self.variables["flow_export_balancing_period"].coords)
-        for c in balancing_carriers:
-            if c in self.sets["set_carriers"]:
-                mask.loc[c, :, :] = 1
-            else:
-                logging.warning(f"Carrier {c} is not part of the model")
-
-        ### index loop
-        # not necessary
-
-        ### formulate constraint
-        flow_export = self.variables["flow_export"]
-        ts_per_balancing_period = self.system["balancing_period"]
-        ts_set = "set_time_steps_operation"
-        ts_operation = np.array(self.sets[ts_set].data)
-        group_key = xr.DataArray(ts_operation // ts_per_balancing_period, coords=[ts_operation], dims=ts_set)
-
-        lhs = (flow_export.groupby(group_key).sum() - self.variables["flow_export_balancing_period"])*mask
-        rhs = 0
-        constraints = lhs == rhs
-
-        ### return
-        return self.constraints.return_contraints(constraints,
-                                                  model=self.model,
-                                                  index_values=self.sets["set_time_steps_balancing_period"],
-                                                  index_names=["set_time_steps_balancing_period"])
 
     def constraint_availability_import_yearly_block(self):
         """node- and year-dependent carrier availability to import from outside the system boundaries
@@ -656,7 +549,7 @@ class CarrierRules(GenericRule):
             mask = (self.parameters.availability_import.loc[carrier, :, times] != 0) | (self.parameters.availability_export.loc[carrier, :, times] != 0)
             fac = np.where(mask, self.parameters.carbon_intensity_carrier.loc[carrier, :, yearly_time_steps], 0)
             fac = xr.DataArray(fac, coords=[self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]])
-            term_flow_import_export = fac * (self.variables["flow_import"].loc[carrier, :]) - self.variables["flow_export"].loc[carrier, :]
+            term_flow_import_export = fac * (self.variables["flow_import"].loc[carrier, :] - self.variables["flow_export"].loc[carrier, :])
 
             ### formulate constraint
             lhs = (self.variables["carbon_emissions_carrier"].loc[carrier, :]
