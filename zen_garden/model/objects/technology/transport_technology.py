@@ -1,3 +1,4 @@
+
 """
 :Title:          ZEN-GARDEN
 :Created:        October-2021
@@ -218,13 +219,17 @@ class TransportTechnology(Technology):
         params = optimization_setup.parameters
         constraints = optimization_setup.constraints
         # get invest time step
-        time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(tech, time)
+        time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(time)
+
+        # formulate constraint
+        lhs = model.variables["flow_transport"].loc[tech, edge, time]\
+                - params.min_load.loc[tech, capacity_type, edge, time] * model.variables["capacity"].loc[tech, capacity_type, edge, time_step_year]
+        rhs = 0
+        constraint = lhs >= rhs
 
         # disjunct constraints min load
         constraints.add_constraint_block(model, name=f"disjunct_transport_technology_min_load_{tech}_{capacity_type}_{edge}_{time}",
-                                         constraint=(model.variables["flow_transport"][tech, edge, time].to_linexpr()
-                                                     - params.min_load.loc[tech, capacity_type, edge, time].item() * model.variables["capacity"][tech, capacity_type, edge, time_step_year]
-                                                     >= 0),
+                                         constraint=constraint,
                                          disjunction_var=binary_var)
 
     @classmethod

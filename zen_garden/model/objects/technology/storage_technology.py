@@ -197,20 +197,23 @@ class StorageTechnology(Technology):
         model = optimization_setup.model
         energy_system = optimization_setup.energy_system
         # get invest time step
-        time_step_year = energy_system.time_steps.convert_time_step_operation2year(tech,time)
+        time_step_year = energy_system.time_steps.convert_time_step_operation2year(time)
+        # get min load limit
+        min_load = params.min_load.loc[tech, capacity_type, node, time] * model.variables["capacity"].loc[tech, capacity_type, node, time_step_year]
+        # formulate constraint
+        lhs = model.variables["flow_storage_charge"].loc[tech, node, time] - min_load
+        rhs = 0
+        constraint = lhs >= rhs
         # disjunct constraints min load charge
         constraints.add_constraint_block(model, name=f"disjunct_storage_technology_min_load_charge_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=(model.variables["flow_storage_charge"][tech, node, time].to_expr()
-                                                     - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
-                                                     >= 0),
-                                         disjunction_var=binary_var)
-
+                                         constraint= constraint, disjunction_var=binary_var)
+        # formulate constraint
+        lhs =  model.variables["flow_storage_discharge"].loc[tech, node, time] - min_load
+        rhs = 0
+        constraint = lhs >= rhs
         # disjunct constraints min load discharge
         constraints.add_constraint_block(model, name=f"disjunct_storage_technology_min_load_discharge_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
-                                                     - params.min_load.loc[tech, capacity_type, node, time].item() * model.variables["capacity"][tech, capacity_type, node, time_step_year]
-                                                     >= 0),
-                                         disjunction_var=binary_var)
+                                         constraint=constraint, disjunction_var=binary_var)
 
     @classmethod
     def disjunct_off_technology_rule(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
@@ -229,13 +232,13 @@ class StorageTechnology(Technology):
         # for equality constraints we need to add upper and lower bounds
         # off charging
         constraints.add_constraint_block(model, name=f"disjunct_storage_technology_off_charge_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=(model.variables["flow_storage_charge"][tech, node, time].to_expr()
+                                         constraint=(model.variables["flow_storage_charge"].loc[tech, node, time]
                                                      == 0),
                                          disjunction_var=binary_var)
 
         # off discharging
         constraints.add_constraint_block(model, name=f"disjunct_storage_technology_off_discharge_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=(model.variables["flow_storage_discharge"][tech, node, time].to_expr()
+                                         constraint=(model.variables["flow_storage_discharge"].loc[tech, node, time]
                                                      == 0),
                                          disjunction_var=binary_var)
 
