@@ -8,7 +8,7 @@
     "unit": "GW"
   },
   "price_shed_demand": {
-    "default_value": "inf",
+    "default_value": 1000,
     "unit": "kiloEuro/GWh"
   },
   "availability_import": {
@@ -32,7 +32,7 @@
     "unit": "kiloEuro/GWh"
   },
   "price_import": {
-    "default_value": 10.0,
+    "default_value": 0.0,
     "unit": "kiloEuro/GWh"
   }
 }
