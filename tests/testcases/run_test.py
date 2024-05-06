@@ -11,6 +11,7 @@ Description:  Compilation  of the optimization problem.
 ==========================================================================================================================================================================="""
 import os
 import re
+import warnings
 from collections import defaultdict
 from copy import deepcopy
 
@@ -121,16 +122,17 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     )
     # dictionary to store variable names, indices, values and test values of variables which don't match the test values
     failed_variables = defaultdict(dict)
+    compare_counter = 0
     # iterate through dataframe rows
     for _, data_row in test_variables[test_variables["test"] == test_model].iterrows():
         # get the corresponding data frame from the results
         if len(results.solution_loader.scenarios) == 1:
-            variable_df = results.get_df(data_row["variable_name"])
+            variable_df = results.get_df(data_row["variable_name"])['none']
             added_str = ""
         else:
             variable_df = results.get_df(
                 data_row["variable_name"], scenario_name=data_row["scenario"]
-            )
+            )[data_row["scenario"]]
             added_str = f" ({data_row['scenario']})"
         # iterate through indices of current variable
         for variable_index, variable_value in variable_df.items():
@@ -144,6 +146,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
                         "computed_values": variable_value,
                         "test_value": data_row["value"],
                     }
+                compare_counter += 1
     # create the string of all failed variables
     assertion_string = ""
     for failed_var, failed_value in failed_variables.items():
@@ -152,6 +155,8 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     assert (
         len(failed_variables) == 0
     ), f"The variables {assertion_string} don't match their test values"
+    if compare_counter == 0:
+        warnings.warn(UserWarning(f"No variables have been compared in {test_model}. If not intended, check the test_variables_readable.csv file."))
 
 
 def check_get_total_get_full_ts(
@@ -247,6 +252,7 @@ def test_1c(config, folder_path):
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
+
 def test_1d(config, folder_path):
     # run the test
     data_set_name = "test_1d"
@@ -257,6 +263,7 @@ def test_1d(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+
 
 def test_2a(config, folder_path):
     # run the test
@@ -270,6 +277,7 @@ def test_2a(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+
 
 def test_2b(config, folder_path):
     # run the test
@@ -382,8 +390,8 @@ def test_4d(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
+    # compare the variables of the optimization setup ## disabled for myopic foresight tests!
+    # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -398,8 +406,8 @@ def test_4e(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
+    # compare the variables of the optimization setup ## disabled for myopic foresight tests!
+    # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -408,6 +416,22 @@ def test_4e(config, folder_path):
 def test_4g(config, folder_path):
     # run the test
     data_set_name = "test_4g"
+    optimization_setup = main(
+        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    )
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    # test functions get_total() and get_full_ts()
+    check_get_total_get_full_ts(res)
+
+
+def test_4h(config, folder_path):
+    # run the test
+    data_set_name = "test_4h"
     optimization_setup = main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
@@ -525,6 +549,20 @@ def test_6c(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
+def test_6d(config, folder_path):
+    # run the test
+    data_set_name = "test_6d"
+    optimization_setup = main(
+        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    )
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+
 def test_7a(config, folder_path):
     # run the test
     data_set_name = "test_7a"
@@ -553,6 +591,7 @@ def test_7b(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+
 
 def test_8a(config, folder_path):
     # run the test
