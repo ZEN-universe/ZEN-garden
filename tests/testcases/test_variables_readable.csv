@@ -411,7 +411,7 @@ test_5c,none,flow_import,"('natural_gas', 'CH', 0)",0
 test_5c,none,flow_import,"('natural_gas', 'CH', 1)",0
 test_5c,none,flow_import,"('natural_gas', 'CH', 2)",0
 test_5c,none,flow_import,"('natural_gas', 'DE', 0)",110
-test_5c,none,flow_import,"('natural_gas', 'DE', 1)",110
+test_5c,none,flow_import,"('natural_gas', 'DE', 1)",121
 test_5c,none,flow_import,"('natural_gas', 'DE', 2)",133.4085
 test_5c,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_5c,none,capacity,"('natural_gas_boiler', 'power', 'CH', 1)",10
@@ -426,8 +426,8 @@ test_5c,none,capacity_addition,"('natural_gas_boiler', 'power', 'CH', 0)",0
 test_5c,none,capacity_addition,"('natural_gas_boiler', 'power', 'CH', 1)",0
 test_5c,none,capacity_addition,"('natural_gas_boiler', 'power', 'CH', 2)",1
 test_5c,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 0)",0
-test_5c,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 1)",0
-test_5c,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 2)",10
+test_5c,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 1)",10
+test_5c,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 2)",0
 test_5c,none,capacity_addition,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
 test_5c,none,capacity_addition,"('natural_gas_pipeline', 'power', 'DE-CH', 1)",0
 test_5c,none,capacity_addition,"('natural_gas_pipeline', 'power', 'DE-CH', 2)",12.1
