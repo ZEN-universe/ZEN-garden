@@ -185,3 +185,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 notebooks/postprocess_results_tutorial.ipynb
+/ZENx_AG/

@@ -57,8 +57,7 @@ class EnergySystem:
 
         # create UnitHandling object
         self.unit_handling = UnitHandling(self.input_path,
-                                          self.optimization_setup.solver["rounding_decimal_points_units"],
-                                          self.optimization_setup.solver["define_ton_as_metric_ton"])
+                                          self.optimization_setup.solver["rounding_decimal_points_units"])
 
         # create DataInput object
         self.data_input = DataInput(element=self, system=self.system,
@@ -465,8 +464,9 @@ class EnergySystemRules(GenericRule):
             E_y^\mathrm{o}
 
         """
-
-        if self.parameters.price_carbon_emissions_annual_overshoot == np.inf or self.parameters.carbon_emissions_annual_limit.sum() == np.inf:
+        no_price = self.parameters.price_carbon_emissions_annual_overshoot == np.inf
+        no_limit = (self.parameters.carbon_emissions_annual_limit == np.inf).all()
+        if (no_price or no_limit) and not (no_price and no_limit):
             lhs = self.variables["carbon_emissions_annual_overshoot"]
             rhs = 0
             constraints = lhs == rhs

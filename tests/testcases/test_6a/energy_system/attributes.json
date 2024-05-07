@@ -4,7 +4,7 @@
     "unit": "gigatons"
   },
   "carbon_emissions_budget": {
-    "default_value": 4.2749370139006455,
+    "default_value": "inf",
     "unit": "gigatons"
   },
   "carbon_emissions_cumulative_existing": {
@@ -20,7 +20,7 @@
     "unit": "Euro/tons"
   },
   "price_carbon_emissions_annual_overshoot": {
-    "default_value": 400.0,
+    "default_value": 1000,
     "unit": "Euro/tons"
   },
   "knowledge_spillover_rate": {

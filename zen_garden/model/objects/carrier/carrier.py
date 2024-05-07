@@ -49,7 +49,8 @@ class Carrier(Element):
         # non-time series input data
         self.availability_import_yearly = self.data_input.extract_input_data("availability_import_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
         self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
-        self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity_carrier", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"emissions": 1, "energy_quantity": -1})
+        self.carbon_intensity_carrier_import = self.data_input.extract_input_data("carbon_intensity_carrier_import", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"emissions": 1, "energy_quantity": -1})
+        self.carbon_intensity_carrier_export = self.data_input.extract_input_data("carbon_intensity_carrier_export", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly",  unit_category={"emissions": 1, "energy_quantity": -1})
         self.price_shed_demand = self.data_input.extract_input_data("price_shed_demand", index_sets=[], unit_category={"money": 1, "energy_quantity": -1})
 
     def overwrite_time_steps(self, base_time_steps):
@@ -89,8 +90,10 @@ class Carrier(Element):
         optimization_setup.parameters.add_parameter(name="price_export", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"], doc='Parameter which specifies the export carrier price', calling_class=cls)
         # demand shedding price
         optimization_setup.parameters.add_parameter(name="price_shed_demand", index_names=["set_carriers"], doc='Parameter which specifies the price to shed demand', calling_class=cls)
-        # carbon intensity
-        optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the carbon intensity of carrier', calling_class=cls)
+        # carbon intensity carrier import
+        optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier_import", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the carbon intensity of carrier import', calling_class=cls)
+        # carbon intensity carrier exmport
+        optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier_export", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the carbon intensity of carrier export', calling_class=cls)
 
     @classmethod
     def construct_vars(cls, optimization_setup):

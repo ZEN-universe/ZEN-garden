@@ -13,7 +13,6 @@ system = dict()
 ## System - settings update compared to default values
 system['set_conversion_technologies']     = ["natural_gas_boiler"]
 system['set_transport_technologies']      = ["natural_gas_pipeline"]
-
 system['set_nodes']                      = ["DE", "CH"]
 
 # time steps

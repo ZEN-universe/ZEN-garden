@@ -12,8 +12,8 @@ system = dict()
 
 ## System - settings update compared to default values
 system['set_conversion_technologies']     = ["natural_gas_boiler"]
-system['set_storage_technologies']        = ["natural_gas_storage"]
-system['set_transport_technologies']      = ["natural_gas_pipeline"]
+system['set_storage_technologies']        = []
+system['set_transport_technologies']      = []
 
 system['set_nodes']                      = ["DE", "CH"]
 
@@ -23,7 +23,7 @@ system["unaggregated_time_steps_per_year"]  = 1
 system["aggregated_time_steps_per_year"]    = 1
 system["conduct_time_series_aggregation"]  = False
 
-system["optimized_years"]                = 1
+system["optimized_years"]                = 3
 system["interval_between_years"]          = 1
 system["use_rolling_horizon"]             = False
 system["years_in_rolling_horizon"]         = 1

@@ -137,9 +137,9 @@ class ConversionTechnology(Technology):
             # extract for pwa
             if not getattr(element, is_pwa_attribute):
                 dict_of_attributes, _, dict_of_units = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes, dict_of_units={})
-            if not dict_of_attributes:
-                _, index_names = cls.create_custom_set(index_names, optimization_setup)
-                return dict_of_attributes, index_names, dict_of_units
+        if not dict_of_attributes:
+            _, index_names = cls.create_custom_set(index_names, optimization_setup)
+            return dict_of_attributes, index_names, dict_of_units
         dict_of_attributes = pd.concat(dict_of_attributes, keys=dict_of_attributes.keys())
         if not index_names:
             logging.warning(f"Initializing the parameter capex without the specifying the index names will be deprecated!")
@@ -316,17 +316,19 @@ class ConversionTechnology(Technology):
         energy_system = optimization_setup.energy_system
         reference_carrier = sets["set_reference_carriers"][tech][0]
         if reference_carrier in sets["set_input_carriers"][tech]:
-            reference_flow = model.variables["flow_conversion_input"][tech, reference_carrier, node, time]
+            reference_flow = model.variables["flow_conversion_input"].loc[tech, reference_carrier, node, time]
         else:
-            reference_flow = model.variables["flow_conversion_output"][tech, reference_carrier, node, time]
+            reference_flow = model.variables["flow_conversion_output"].loc[tech, reference_carrier, node, time]
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(time)
+        # formulate constraint
+        lhs = reference_flow - params.min_load.loc[tech, capacity_type, node, time]* model.variables["capacity"].loc[tech, capacity_type, node, time_step_year]
+        rhs = 0
+        constraint = lhs >= rhs
         # disjunct constraints min load
         # TODO make to constraint rule or integrate in new structure!!!
         constraints.add_constraint_block(model, name=f"disjunct_conversion_technology_min_load_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=(reference_flow.to_linexpr()
-                                                     - model.variables["capacity"][tech, capacity_type, node, time_step_year].to_linexpr(params.min_load.loc[tech, capacity_type, node, time].item())
-                                                     >= 0), disjunction_var=binary_var)
+                                         constraint=constraint, disjunction_var=binary_var)
 
     @classmethod
     def disjunct_off_technology(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
@@ -342,11 +344,11 @@ class ConversionTechnology(Technology):
         sets = optimization_setup.sets
         model = optimization_setup.model
         constraints = optimization_setup.constraints
-        lhs = sum(model.variables["flow_conversion_input"][tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
-              + sum(model.variables["flow_conversion_output"][tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
+        lhs = sum(model.variables["flow_conversion_input"].loc[tech, input_carrier, node, time] for input_carrier in sets["set_input_carriers"][tech]) \
+              + sum(model.variables["flow_conversion_output"].loc[tech, output_carrier, node, time] for output_carrier in sets["set_output_carriers"][tech])
         # add the constraints
-        constraints.add_constraint_block(model,name=f"disjunct_conversion_technology_off_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=lhs.to_linexpr() == 0, disjunction_var=binary_var)
+        constraints.add_constraint_block(model, name=f"disjunct_conversion_technology_off_{tech}_{capacity_type}_{node}_{time}",
+                                         constraint=lhs == 0, disjunction_var=binary_var)
 
     @classmethod
     def calculate_capex_pwa_breakpoints_values(cls, optimization_setup, set_pwa):

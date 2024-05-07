@@ -85,7 +85,7 @@
     }
   },
   {
-    "transport_loss_factor_linear_linear": {
+    "transport_loss_factor_linear": {
       "default_value": 5e-05,
       "unit": "1/km"
     }
