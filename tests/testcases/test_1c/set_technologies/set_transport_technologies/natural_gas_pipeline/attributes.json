@@ -3,7 +3,7 @@
     "default_value": 0.0,
     "unit": "GW"
   },
-  "capacity_addition_max": {
+"capacity_addition_max": {
     "default_value": "inf",
     "unit": "GW"
   },
@@ -57,7 +57,7 @@
     "unit": "1"
   },
   "transport_loss_factor_linear": {
-    "default_value": 5e-05,
+    "default_value": 0,
     "unit": "1/km"
   },
   "capex_per_distance_transport": {

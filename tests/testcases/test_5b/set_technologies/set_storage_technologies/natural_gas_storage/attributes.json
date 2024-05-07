@@ -4,7 +4,7 @@
     "unit": "GW"
   },
   "capacity_addition_max": {
-    "default_value": 0.0,
+    "default_value": "inf",
     "unit": "GW"
   },
   "capacity_existing": {
@@ -53,7 +53,7 @@
     "unit": "kiloEuro/GW"
   },
   "max_diffusion_rate": {
-    "default_value": "inf",
+    "default_value": 0.15,
     "unit": "1"
   },
   "efficiency_charge": {
@@ -77,7 +77,7 @@
     "unit": "GWh"
   },
   "capacity_addition_max_energy": {
-    "default_value": 0.0,
+    "default_value": "inf",
     "unit": "GWh"
   },
   "capacity_existing_energy": {

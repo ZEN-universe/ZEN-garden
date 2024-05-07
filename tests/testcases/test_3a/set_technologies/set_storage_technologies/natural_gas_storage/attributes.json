@@ -76,6 +76,10 @@
     "default_value": 0.0,
     "unit": "GWh"
   },
+  "energy_to_power_ratio": {
+    "default_value": "inf",
+    "unit": "h"
+  },
   "capacity_addition_max_energy": {
     "default_value": 0.0,
     "unit": "GWh"

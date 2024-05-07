@@ -209,15 +209,12 @@ class DataInput:
                     attribute_dict[k] = v
         return attribute_dict
 
-    def extract_attribute(self, attribute_name, unit_category, return_unit=False,subelement=None):
-        """ reads input data and restructures the dataframe to return (multi)indexed dict
+    def get_attribute_dict(self, attribute_name):
+        """ get attribute dict and factor for attribute
 
         :param attribute_name: name of selected attribute
-        :param unit_category: dict defining the dimensions of the parameter's unit
-        :param return_unit: only returns unit
-        :param subelement: dependent element for which data is extracted
-        :return: attribute value and multiplier
-        :return: unit of attribute """
+        :return attribute_dict: attribute dict
+        :return factor: factor for attribute """
         if self.scenario_dict is not None:
             filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
         else:
@@ -227,6 +224,18 @@ class DataInput:
             attribute_dict = self.load_attribute_file(filename)
         else:
             attribute_dict = self.attribute_dict
+        return attribute_dict, factor
+
+    def extract_attribute(self, attribute_name, unit_category, return_unit=False,subelement=None):
+        """ reads input data and restructures the dataframe to return (multi)indexed dict
+
+        :param attribute_name: name of selected attribute
+        :param unit_category: dict defining the dimensions of the parameter's unit
+        :param return_unit: only returns unit
+        :param subelement: dependent element for which data is extracted
+        :return: attribute value and multiplier
+        :return: unit of attribute """
+        attribute_dict, factor = self.get_attribute_dict(attribute_name)
         attribute_value, attribute_unit = self._extract_attribute_value(attribute_name,attribute_dict)
         if subelement is not None:
             assert subelement in attribute_value.keys(), f"{subelement} not in {attribute_name} of {self.element.name}"
@@ -361,16 +370,18 @@ class DataInput:
             carrier_list = []
         return carrier_list
 
-    def extract_technologies(self, technology_type):
-        """ reads input data and extracts conversion carriers
+    def extract_retrofit_base_technology(self):
+        """ extract base technologies for retrofitting technology
 
-        :return carrier_list: list with input, output or reference carriers of technology """
-        assert technology_type in ["retrofit_base_technology"], "technology type must be retrofit_base_technology"
-        technology_list = self.extract_attribute(technology_type, unit_category=None)
-        if type(technology_list) == str:
-            technology_list = technology_list.strip().split(" ")
-        assert len(technology_list) == 1, f"retrofit base technology must be a single technology, but {technology_list} are given for {self.element.name}"
-        return technology_list
+        :return base_technology: return base technology of retrofit technology """
+        attribute_name = "retrofit_flow_coupling_factor"
+        technology_type = "base_technology"
+        attribute_dict, _ = self.get_attribute_dict(attribute_name)
+        base_technology = attribute_dict[attribute_name][technology_type]
+        if type(base_technology) == str:
+            base_technology = base_technology.strip().split(" ")
+        assert len(base_technology) == 1, f"retrofit base technology must be a single technology, but {base_technology} are given for {self.element.name}"
+        return base_technology
 
     def extract_set_technologies_existing(self, storage_energy=False):
         """ reads input data and creates setExistingCapacity for each technology
@@ -532,7 +543,7 @@ class DataInput:
         df_input = self.read_input_csv(file_type + "capex")
         has_unit = False
         if df_input is not None:
-            string_row = df_input.applymap(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
+            string_row = df_input.map(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
             if string_row.any():
                 unit_row = df_input.loc[string_row]
                 #save non-linear capex units for consistency checks

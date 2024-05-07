@@ -3,7 +3,7 @@
     "default_value": 0.0,
     "unit": "GW"
   },
-  "capacity_addition_max": {
+"capacity_addition_max": {
     "default_value": "inf",
     "unit": "GW"
   },
@@ -53,7 +53,7 @@
     "unit": "Euro/MW"
   },
   "max_diffusion_rate": {
-    "default_value": "inf",
+    "default_value": 0.15,
     "unit": "1"
   },
   "transport_loss_factor_linear": {

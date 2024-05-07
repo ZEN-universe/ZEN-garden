@@ -520,9 +520,9 @@ class OptimizationSetup(object):
                 rhs_max = rhs_sorted[-1]
 
                 # get coords for rhs_min and rhs_max
-                coords_idx_min = np.where(cons.rhs.data == rhs_min)
+                coords_idx_min = np.atleast_1d(cons.rhs.data == rhs_min).nonzero()
                 coords_min = [cons.rhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.rhs.coords.dims, coords_idx_min)]
-                coords_idx_max = np.where(cons.rhs.data == rhs_max)
+                coords_idx_max = np.atleast_1d(cons.rhs.data == rhs_max).nonzero()
                 coords_max = [cons.rhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.rhs.coords.dims, coords_idx_max)]
 
                 if 0.0 < rhs_min < smallest_rhs[1]:
