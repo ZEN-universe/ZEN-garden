@@ -445,13 +445,10 @@ class DataInput:
         time_steps = "set_time_steps_yearly"
         unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
         # import all input data
-        default_value = self.extract_attribute(attribute_name, unit_category=unit_category)
-        df_input_nonlinear,has_unit_nonlinear = self.read_pwa_capex_files(file_type="nonlinear_")
-        df_input_breakpoints,has_unit_breakpoints = self.read_pwa_capex_files(file_type="breakpoints_pwa_")
-        df_input_linear,has_unit_linear = self.read_pwa_capex_files()
+        df_input_nonlinear, has_unit_nonlinear = self.read_pwa_capex_files(file_type="nonlinear_")
         # if nonlinear
-        if (df_input_nonlinear is not None and df_input_breakpoints is not None):
-            if not has_unit_nonlinear or not has_unit_breakpoints:
+        if df_input_nonlinear is not None:
+            if not has_unit_nonlinear:
                 raise NotImplementedError("Nonlinear pwa files must have units")
             # select data
             pwa_dict = {}
@@ -462,11 +459,8 @@ class DataInput:
             for column in df_input_nonlinear.columns:
                 nonlinear_values[column] = df_input_nonlinear[column].to_list()
 
-            # assert that breakpoint variable (x variable in nonlinear input)
-            assert df_input_breakpoints.columns[0] in df_input_nonlinear.columns, \
-                f"breakpoint variable for pwa '{df_input_breakpoints.columns[0]}' is not in nonlinear variables [{df_input_nonlinear.columns}]"
-            breakpoint_variable = df_input_breakpoints.columns[0]
-            breakpoints = df_input_breakpoints[breakpoint_variable].to_list()
+            breakpoint_variable = df_input_nonlinear.columns[0]
+            breakpoints = df_input_nonlinear[breakpoint_variable].to_list()
 
             pwa_dict[breakpoint_variable] = breakpoints
             pwa_dict["pwa_variables"] = []  # select only those variables that are modeled as pwa
@@ -502,8 +496,8 @@ class DataInput:
                         # save bounds
                         values_between_bounds = [pwa_dict
                              [value_variable][idx_breakpoint] for idx_breakpoint, breakpoint in enumerate(breakpoints)
-                                if breakpoint >= min_capacity_tech and breakpoint <= max_capacity_tech
-                        ]
+                                                 if min_capacity_tech <= breakpoint <= max_capacity_tech
+                                                 ]
                         values_between_bounds.extend(list(
                             np.interp([min_capacity_tech, max_capacity_tech], breakpoints, pwa_dict[value_variable])))
                         pwa_dict["bounds"][value_variable] = (min(values_between_bounds), max(values_between_bounds))
@@ -549,8 +543,8 @@ class DataInput:
                 #save non-linear capex units for consistency checks
                 if file_type == "nonlinear_":
                     self.element.units_nonlinear_capex_files = {"nonlinear": unit_row}
-                elif file_type == "breakpoints_pwa_":
-                    self.element.units_nonlinear_capex_files["breakpoints"] = unit_row
+                # elif file_type == "breakpoints_pwa_":
+                #     self.element.units_nonlinear_capex_files["breakpoints"] = unit_row
                 df_input = df_input.loc[~string_row]
                 if isinstance(unit_row, pd.DataFrame):
                     unit_row = unit_row.squeeze()
