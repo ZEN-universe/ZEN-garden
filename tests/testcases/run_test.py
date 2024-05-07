@@ -572,4 +572,4 @@ if __name__ == "__main__":
 
     config.solver["keep_files"] = False
     folder_path = os.path.dirname(__file__)
-    test_6b(config, folder_path)
+    test_8a(config, folder_path)

@@ -14,6 +14,9 @@ import copy
 import itertools
 import logging
 import os
+
+import pandas as pd
+import xarray as xr
 import psutil
 import time
 from pathlib import Path
@@ -314,3 +317,71 @@ class GenericRule(object):
         self.constraints = self.optimization_setup.constraints
         self.energy_system = self.optimization_setup.energy_system
         self.time_steps = self.energy_system.time_steps
+
+    def get_year_time_step_array(self,storage = False):
+        """ returns array with year and time steps of each year """
+        # create times xarray with 1 where the operation time step is in the year
+        if storage:
+            meth = self.time_steps.get_time_steps_year2storage
+            time_step_name = "set_time_steps_storage"
+        else:
+            meth = self.time_steps.get_time_steps_year2operation
+            time_step_name = "set_time_steps_operation"
+        times = [(y, t) for y in self.sets["set_time_steps_yearly"] for t in meth(y)]
+        times = pd.MultiIndex.from_tuples(times)
+        times.names = ["set_time_steps_yearly", time_step_name]
+        times = pd.Series(index=times, data=1)
+        times = times.to_xarray()
+        times = times.fillna(0.0)
+        return times
+
+    def get_year_time_step_duration_array(self):
+        """ returns array with year and duration of time steps of each year """
+        times = self.get_year_time_step_array()
+        times = times * self.parameters.time_steps_operation_duration
+        return times
+
+    def get_previous_storage_time_step_array(self):
+        """ returns array with storage time steps and previous storage time steps """
+        times_prev = []
+        mask = []
+        for ts in self.sets["set_time_steps_storage"]:
+            ts_end = self.energy_system.time_steps.get_time_steps_storage_startend(ts)
+            if ts_end is not None:
+                if self.system["storage_periodicity"]:
+                    times_prev.append(ts_end)
+                    mask.append(True)
+                else:
+                    times_prev.append(ts)
+                    mask.append(False)
+            else:
+                ts_prev = self.energy_system.time_steps.get_previous_storage_time_step(ts)
+                times_prev.append(ts_prev)
+                mask.append(True)
+        mask = xr.DataArray(mask, dims="set_time_steps_storage", coords={"set_time_steps_storage": self.sets["set_time_steps_storage"]})
+        return times_prev, mask
+
+    def get_power2energy_time_step_array(self):
+        """ returns array with power2energy time steps """
+        times = {st: self.energy_system.time_steps.convert_time_step_energy2power(st) for st in self.sets["set_time_steps_storage"]}
+        times = pd.Series(times,name="set_time_steps_operation")
+        times.index.name = "set_time_steps_storage"
+        return times
+
+    def get_storage2year_time_step_array(self):
+        """ returns array with storage2year time steps """
+        times = {st: y for y in self.sets["set_time_steps_yearly"] for st in self.energy_system.time_steps.get_time_steps_year2storage(y)}
+        times = pd.Series(times,name="set_time_steps_yearly")
+        times.index.name = "set_time_steps_storage"
+        return times
+
+    def map_and_expand(self, array, mapping):
+        """ maps and expands array """
+        assert (isinstance(mapping, pd.Series) or isinstance(mapping.index, pd.Index)), "Mapping must be a pd.Series or with a single-level pd.Index"
+        # get mapping values
+        array = array.sel({mapping.name: mapping.values})
+        # rename
+        array = array.rename({mapping.name: mapping.index.name})
+        # assign coordinates
+        array = array.assign_coords({mapping.index.name: mapping.index})
+        return array

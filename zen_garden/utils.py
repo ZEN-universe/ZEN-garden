@@ -556,6 +556,28 @@ def lp_sum(exprs, dim='_term'):
     # normal sum
     return lp.expressions.merge(exprs, dim=dim)
 
+def align_like(da, other,fillna=0.0,astype=None):
+    """
+    Aligns a data array like another data array
+    :param da: The data array to align
+    :param other: The data array to align to
+    :return: The aligned data array
+    """
+    if isinstance(other,lp.Variable):
+        other = other.lower
+    elif isinstance(other,lp.LinearExpression):
+        other = other.const
+    elif isinstance(other,xr.DataArray):
+        other = other
+    else:
+        raise TypeError(f"other must be a Variable, LinearExpression or DataArray, not {type(other)}")
+    da = xr.align(da, other,join="right")[0]
+    da = da.broadcast_like(other)
+    if fillna is not None:
+        da = da.fillna(fillna)
+    if astype is not None:
+        da = da.astype(astype)
+    return da
 
 def linexpr_from_tuple_np(tuples, coords, model):
     """

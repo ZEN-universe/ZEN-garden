@@ -12,6 +12,7 @@ constraints that hold for the transport technologies.
 import logging
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from .technology import Technology
@@ -190,22 +191,18 @@ class TransportTechnology(Technology):
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         rules = TransportTechnologyRules(optimization_setup)
+
         # limit flow by capacity and max load
         rules.constraint_capacity_factor_transport()
+
         # opex and emissions constraint for transport technologies
         rules.constraint_opex_emissions_technology_transport()
-        # Carrier Flow Losses
+
+        # carrier flow Losses
         rules.constraint_transport_technology_losses_flow()
-        # doc='Carrier loss due to transport with through transport technology'
-        # constraints.add_constraint(name="constraint_transport_technology_losses_flow",
-        #                                  constraint=rules.constraint_transport_technology_losses_flow(),
-        #                                  doc='Carrier loss due to transport with through transport technology')
+
         # capex of transport technologies
         rules.constraint_transport_technology_capex()
-        # doc='Capital expenditures for installing transport technology'
-        # constraints.add_constraint(name="constraint_transport_technology_capex",
-        #                                  constraint=rules.constraint_transport_technology_capex(),
-        #                                  doc='Capital expenditures for installing transport technology')
 
     # defines disjuncts if technology on/off
     @classmethod
@@ -268,18 +265,12 @@ class TransportTechnologyRules(GenericRule):
 
         super().__init__(optimization_setup)
 
-    # Rule-based constraints
-    # ----------------------
-
-    # Block-based constraints
-    # -----------------------
     def constraint_capacity_factor_transport(self):
         """ Load is limited by the installed capacity and the maximum load factor
 
         .. math::
             \ F_{j,e,t,y}^\mathrm{r} \\leq m_{j,e,t,y}S_{j,e,y}
 
-        :return: linopy constraints
         """
         techs = self.sets["set_transport_technologies"]
         if len(techs) == 0:
@@ -304,7 +295,6 @@ class TransportTechnologyRules(GenericRule):
         .. math::
             OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r}
 
-        :return: linopy constraints
         """
         techs = self.sets["set_transport_technologies"]
         if len(techs) == 0:
@@ -331,36 +321,28 @@ class TransportTechnologyRules(GenericRule):
         .. math::
             \mathrm{else}\ F^\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
 
-        :return: linopy constraints
         """
 
-        ### index sets
-        index_values, index_names = Element.create_custom_set(["set_transport_technologies"], self.optimization_setup)
-
-        ### masks
+        flow_transport = self.variables["flow_transport"]
+        flow_transport_loss = self.variables["flow_transport_loss"]
         # This mask checks the distance between nodes
-        mask = np.isinf(self.parameters.distance).astype(float)
-        # This mask ensure we only get constraints where we want them
-        cons_mask = self.variables["flow_transport_loss"].mask
+        mask = (~np.isinf(self.parameters.distance)).broadcast_like(flow_transport.lower)
+        # select the technologies with exponential and linear losses
+        exp_techs = pd.Series(
+            {t: True if t in self.system["set_transport_technologies_loss_exponential"] else False for t in
+             self.sets["set_transport_technologies"]})
+        exp_techs.index.name = "set_transport_technologies"
+        exp_techs = exp_techs.to_xarray().broadcast_like(flow_transport.lower)
+        if len(exp_techs) == 0:
+            return None
+        exp_loss_factor = (np.exp(-self.parameters.transport_loss_factor_exponential * self.parameters.distance)).broadcast_like(flow_transport.lower)
+        lin_loss_factor = (self.parameters.transport_loss_factor_linear * self.parameters.distance).broadcast_like(flow_transport.lower)
+        loss_factor = exp_loss_factor.where(exp_techs, 0.0) + lin_loss_factor.where(~exp_techs, 0.0)
+        lhs = (flow_transport_loss - loss_factor * flow_transport).where(mask, 0.0)
+        rhs = 0
+        constraints = lhs == rhs
 
-        ### index loopmask
-        constraints = {}
-        for tech in index_values:
-            ### auxiliary calculations
-            term_distance_inf = mask.loc[tech] * self.variables["flow_transport_loss"].loc[tech]
-            term_distance_not_inf = (1 - mask.loc[tech]) * self.variables["flow_transport_loss"].loc[tech]
-            if tech in self.system["set_transport_technologies_loss_exponential"]:
-                term_flow_loss = self.variables["flow_transport"].loc[tech] * np.exp(-self.parameters.transport_loss_factor_exponential.loc[tech]*self.parameters.distance.loc[tech])
-            else:
-                term_flow_loss = self.variables["flow_transport"].loc[tech] * self.parameters.transport_loss_factor_linear.loc[tech] *self.parameters.distance.loc[tech]
-            ### formulate constraint
-            lhs = term_distance_inf + term_distance_not_inf - term_flow_loss
-            rhs = 0
-            constraints[tech] = lhs == rhs
-
-        ### return
         self.constraints.add_constraint("constraint_transport_technology_losses_flow",constraints)
-        # return self.constraints.return_constraints(constraints, model=self.model, mask=cons_mask, index_values=index_values, index_names=index_names)
 
     def constraint_transport_technology_capex(self):
         """ definition of the capital expenditures for the transport technology
@@ -370,7 +352,6 @@ class TransportTechnologyRules(GenericRule):
         .. math::
             \mathrm{else}\ CAPEX_{y,n,i}^\mathrm{cost, power} = \\Delta S_{h,p,y}^\mathrm{power} \\alpha_{j,n,y} + B_{i,p,y} h_{j,e} \\alpha^\mathrm{d}_{j,y}
 
-        :return: linopy constraints
         """
 
         ### index sets
@@ -393,9 +374,6 @@ class TransportTechnologyRules(GenericRule):
         global_mask = xr.DataArray(False, coords=coords)
         global_mask.loc[index_arrs] = True
 
-        ### index loop
-        # not necessary
-
         ### auxiliary calculations TODO improve
         term_distance_inf = mask * self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
         term_distance_not_inf = (1 - mask) * (self.variables["cost_capex"].loc[coords[0], "power", coords[1], coords[2]]
@@ -409,6 +387,5 @@ class TransportTechnologyRules(GenericRule):
         lhs  = lhs.where(global_mask)
         rhs = xr.zeros_like(global_mask)
         constraints = lhs == rhs
-        ### return
         self.constraints.add_constraint("constraint_transport_technology_capex",constraints)
-        # return self.constraints.return_constraints(constraints, mask=global_mask)
+

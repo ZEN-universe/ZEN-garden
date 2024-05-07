@@ -289,46 +289,31 @@ class EnergySystem:
         self.rules = EnergySystemRules(self.optimization_setup)
         # cumulative carbon emissions
         self.rules.constraint_carbon_emissions_cumulative()
-        # doc="cumulative carbon emissions of energy system over time")
 
         # annual limit carbon emissions
         self.rules.constraint_carbon_emissions_annual_limit()
-        # doc="limit of total annual carbon emissions of energy system")
 
         # carbon emission budget limit
         self.rules.constraint_carbon_emissions_budget()
-        # doc="Budget of total carbon emissions of energy system")
-        # constraints.add_constraint(name="constraint_carbon_emissions_budget", constraint=self.rules.constraint_carbon_emissions_budget(),
-        #                            doc="Budget of total carbon emissions of energy system")
+
         # net_present_cost
         self.rules.constraint_net_present_cost()
-        # doc="net_present_cost of energy system")
-        # constraints.add_constraint(name="constraint_net_present_cost", constraint=self.rules.constraint_net_present_cost(), doc="net_present_cost of energy system")
+
         # total carbon emissions
         self.rules.constraint_carbon_emissions_annual()
-        # doc="total annual carbon emissions of energy system")
-        # constraints.add_constraint(name="constraint_carbon_emissions_annual", constraint=self.rules.constraint_carbon_emissions_annual(),
-        #                                  doc="total annual carbon emissions of energy system")
+
         # cost of carbon emissions
         self.rules.constraint_cost_carbon_emissions_total()
-        # doc="total carbon emissions cost of energy system")
-        # constraints.add_constraint(name="constraint_cost_carbon_emissions_total", constraint=self.rules.constraint_cost_carbon_emissions_total(),
-        #                                  doc="total carbon emissions cost of energy system")
+
         # costs
         self.rules.constraint_cost_total()
-        # doc="total cost of energy system")
-        # constraints.add_constraint(name="constraint_cost_total", constraint=self.rules.constraint_cost_total(),
-        #                                  doc="total cost of energy system")
+
         # disable carbon emissions budget overshoot
         self.rules.constraint_carbon_emissions_budget_overshoot()
-        # doc="disable carbon emissions budget overshoot if carbon emissions budget overshoot price is inf")
-        # constraints.add_constraint(name="constraint_carbon_emissions_budget_overshoot", constraint=self.rules.constraint_carbon_emissions_budget_overshoot(),
-        #                                 doc="disable carbon emissions budget overshoot if carbon emissions budget overshoot price is inf")
+
         # disable annual carbon emissions overshoot
         self.rules.constraint_carbon_emissions_annual_overshoot()
-        # doc="disable annual carbon emissions overshoot if annual carbon emissions overshoot price is inf")
-        # constraints.add_constraint(name="constraint_carbon_emissions_annual_overshoot", constraint=self.rules.constraint_carbon_emissions_annual_overshoot(),
-        #                                 doc="disable annual carbon emissions overshoot if annual carbon emissions overshoot price is inf")
+
 
     def construct_objective(self):
         """ constructs the pe.Objective of the class <EnergySystem> """
@@ -371,8 +356,6 @@ class EnergySystemRules(GenericRule):
 
         super().__init__(optimization_setup)
 
-    # Rule-based constraints
-    # ----------------------
 
     def constraint_carbon_emissions_cumulative(self):
         """ cumulative carbon emissions over time
@@ -382,15 +365,10 @@ class EnergySystemRules(GenericRule):
         .. math::
             \mathrm{Subsequent\ periods}\ y > y_0, \quad E_y^c = E_{y-1}^c + (\Delta^y-1)E_{y-1}+E_y
 
-        :return: cumulative carbon emissions constraint for specified year
         """
 
-        ### index sets
-
-        ### masks
         m = [True if year == self.energy_system.set_time_steps_yearly[0] else False for year in self.energy_system.set_time_steps_yearly]
 
-        ### index loop
         lhs = (
                 self.variables["carbon_emissions_cumulative"]
                 - self.variables["carbon_emissions_cumulative"].shift(set_time_steps_yearly=1)
@@ -399,8 +377,7 @@ class EnergySystemRules(GenericRule):
         )
         rhs = (xr.ones_like(self.variables["carbon_emissions_cumulative"].mask) * self.parameters.carbon_emissions_cumulative_existing).where(m,0)
         constraints = lhs == rhs
-        ### return
-        # return self.constraints.return_constraints(constraints,self.model)
+
         self.constraints.add_constraint("constraint_carbon_emissions_cumulative",constraints)
 
     def constraint_carbon_emissions_annual_limit(self):
@@ -409,22 +386,12 @@ class EnergySystemRules(GenericRule):
         .. math::
             E_y\leq e_y
 
-        :return: carbon emissions limit constraint for specified year
         """
 
-        ### index sets
-
-        ### masks
-        # skipped because rule-based constraint
-
-        ### index loop
-        # we loop over all years
         lhs = self.variables["carbon_emissions_annual"] - self.variables["carbon_emissions_annual_overshoot"]
         rhs = self.parameters.carbon_emissions_annual_limit
         constraints = lhs <= rhs
 
-        ### return
-        # return self.constraints.return_constraints(constraints,self.model)
         self.constraints.add_constraint("constraint_carbon_emissions_annual_limit",constraints)
 
     def constraint_carbon_emissions_budget(self):
@@ -434,14 +401,10 @@ class EnergySystemRules(GenericRule):
 
         #TODO constraint doesn't match model formulation definition
 
-        :return: carbon emissions budget constraint for specified year"""
+        """
 
-        ### index sets
-
-        ### masks
         m = [True if year != self.energy_system.set_time_steps_yearly_entire_horizon[-1] else False for year in self.energy_system.set_time_steps_yearly]
 
-        ### index loop
         lhs = (
                 self.variables["carbon_emissions_cumulative"]
                 - self.variables["carbon_emissions_budget_overshoot"]
@@ -449,8 +412,7 @@ class EnergySystemRules(GenericRule):
         )
         rhs = self.parameters.carbon_emissions_budget
         constraints = lhs <= rhs
-        ### return
-        # return self.constraints.return_constraints(constraints,self.model)
+
         self.constraints.add_constraint("constraint_carbon_emissions_budget",constraints)
 
     def constraint_net_present_cost(self):
@@ -459,18 +421,9 @@ class EnergySystemRules(GenericRule):
         .. math::
             NPC_y = C_y \sum_{\\tilde{y} = 1}^{\Delta^\mathrm{y}-1}(\\frac{1}{1+r})^{\Delta^\mathrm{y}(y-y_0)+\\tilde{y}}
 
-        :param year: year of interest
-        :return: net present cost constraint for specified year
        """
 
-        ### index sets
-        # skipped because rule-based constraint
 
-        ### masks
-        # skipped because rule-based constraint
-
-        ### index loop
-        # we loop over all years
         factor = pd.Series(index = self.energy_system.set_time_steps_yearly)
         for year in self.energy_system.set_time_steps_yearly:
 
@@ -484,17 +437,11 @@ class EnergySystemRules(GenericRule):
                          for _intermediate_time_step in range(0, interval_between_years))
         term_discounted_cost_total = self.variables["cost_total"] * factor
 
-        ### formulate constraint
         lhs = self.variables["net_present_cost"] - term_discounted_cost_total
         rhs = 0
         constraints = lhs == rhs
 
-        ### return
-        # return self.constraints.return_constraints(constraints,self.model)
         self.constraints.add_constraint("constraint_net_present_cost",constraints)
-
-    # Block-based constraints
-    # -----------------------
 
     def constraint_carbon_emissions_budget_overshoot(self):
         """ ensures carbon emissions overshoot of carbon budget is zero when carbon emissions price for budget overshoot is inf
@@ -502,22 +449,8 @@ class EnergySystemRules(GenericRule):
         .. math::
             E_y^\mathrm{o} = 0
 
-        :return: carbon emissions budget overshoot
         """
 
-        ### index sets
-        # not necessary
-
-        ### masks
-        # not necessary
-
-        ### index loop
-        # not necessary
-
-        ### auxiliary calculations
-        # not necessary
-
-        ### formulate constraint
         if self.parameters.price_carbon_emissions_budget_overshoot == np.inf:
             lhs = self.variables["carbon_emissions_budget_overshoot"]
             rhs = 0
@@ -533,22 +466,8 @@ class EnergySystemRules(GenericRule):
         .. math::
             E_y^\mathrm{o}
 
-        :return: annual carbon emissions overshoot
         """
 
-        ### index sets
-        # not necessary
-
-        ### masks
-        # not necessary
-
-        ### index loop
-        # not necessary
-
-        ### auxiliary calculations
-        # not necessary
-
-        ### formulate constraint
         if self.parameters.price_carbon_emissions_annual_overshoot == np.inf or self.parameters.carbon_emissions_annual_limit.sum() == np.inf:
             lhs = self.variables["carbon_emissions_annual_overshoot"]
             rhs = 0
@@ -556,7 +475,6 @@ class EnergySystemRules(GenericRule):
         else:
             constraints = None
 
-        # return self.constraints.return_constraints(constraints)
         self.constraints.add_constraint("constraint_carbon_emissions_annual_overshoot",constraints)
 
 
@@ -566,30 +484,14 @@ class EnergySystemRules(GenericRule):
         .. math::
             E_y = E_{y,\mathcal{H}} + E_{y,\mathcal{C}}
 
-        :return: total carbon emissions constraint for specified year
         """
 
-        ### index sets
-        # not necessary
-
-        ### masks
-        # not necessary
-
-        ### index loop
-        # not necessary
-
-        ### auxiliary calculations
-        # not necessary
-
-        ### formulate constraint
         lhs = (self.variables["carbon_emissions_annual"]
                - self.variables["carbon_emissions_technology_total"]
                - self.variables["carbon_emissions_carrier_total"])
         rhs = 0
         constraints = lhs == rhs
 
-        ### return
-        # return self.constraints.return_constraints(constraints)
         self.constraints.add_constraint("constraint_carbon_emissions_annual",constraints)
 
     def constraint_cost_carbon_emissions_total(self):
@@ -598,19 +500,9 @@ class EnergySystemRules(GenericRule):
         .. math::
             OPEX_y^\mathrm{c} = E_y\mu + E_y^\mathrm{o}\mu^\mathrm{o}
 
-        :return: total cost carbon emissions constraint for specified year
         """
-
-        ### index sets
-        # not necessary
-
-        ### masks
         mask_last_year = [year == self.energy_system.set_time_steps_yearly[-1] for year in self.energy_system.set_time_steps_yearly]
 
-        ### index loop
-        # not necessary
-
-        ### auxiliary calculations
         lhs = (self.variables["cost_carbon_emissions_total"]
                    - self.variables["carbon_emissions_annual"] * self.parameters.price_carbon_emissions)
         # add cost for overshooting carbon emissions budget
@@ -620,12 +512,9 @@ class EnergySystemRules(GenericRule):
         if self.parameters.price_carbon_emissions_annual_overshoot != np.inf:
             lhs -= self.variables["carbon_emissions_annual_overshoot"] * self.parameters.price_carbon_emissions_annual_overshoot
 
-        ### formulate constraint
         rhs = 0
         constraints = lhs == rhs
 
-        ### return
-        # return self.constraints.return_constraints(constraints)
         self.constraints.add_constraint("constraint_cost_carbon_emissions_total",constraints)
 
     def constraint_cost_total(self):
@@ -634,22 +523,8 @@ class EnergySystemRules(GenericRule):
         .. math::
             OPEX_y^\mathrm{c} = E_y\mu + E_y^\mathrm{o}\mu^\mathrm{o}
 
-        :return: total cost carbon emissions constraint for specified year
         """
 
-        ### index sets
-        # skipped because rule-based constraint
-
-        ### masks
-        # skipped because rule-based constraint
-
-        ### index loop
-        # skipped because rule-based constraint
-
-        ### auxiliary calculations
-        # not necessary
-
-        ### formulate constraint
         lhs = (self.variables["cost_total"]
                - self.variables["cost_capex_total"]
                - self.variables["cost_opex_total"]
@@ -658,8 +533,6 @@ class EnergySystemRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        ### return
-        # return self.constraints.return_constraints(constraints)
         self.constraints.add_constraint("constraint_cost_total",constraints)
 
     # Objective rules
