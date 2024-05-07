@@ -390,13 +390,9 @@ class Technology(Element):
             if tech in techs_on_off:
                 system = optimization_setup.system
                 params = optimization_setup.parameters.dict_parameters
-                if capacity_type == system["set_capacity_types"][0]:
-                    energy_string = ""
-                else:
-                    energy_string = "_energy"
-                capacity_existing = getattr(params, "capacity_existing" + energy_string)
-                capacity_addition_max = getattr(params, "capacity_addition_max" + energy_string)
-                capacity_limit = getattr(params, "capacity_limit" + energy_string)
+                capacity_existing = params.capacity_existing
+                capacity_addition_max = params.capacity_addition_max
+                capacity_limit = params.capacity_limit
                 capacities_existing = 0
                 for id_technology_existing in sets["set_technologies_existing"][tech]:
                     if params.lifetime_existing[tech, loc, id_technology_existing] > params.lifetime[tech]:

@@ -51,7 +51,8 @@ class Carrier(Element):
         self.availability_export_yearly = self.data_input.extract_input_data("availability_export_yearly", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
         self.availability_import_total = self.data_input.extract_input_data("availability_import_total", index_sets=["set_nodes"], unit_category={"energy_quantity": 1})
         self.availability_export_total = self.data_input.extract_input_data("availability_export_total", index_sets=["set_nodes"], unit_category={"energy_quantity": 1})
-        self.carbon_intensity_carrier = self.data_input.extract_input_data("carbon_intensity_carrier", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"emissions": 1, "energy_quantity": -1})
+        self.carbon_intensity_carrier_import = self.data_input.extract_input_data("carbon_intensity_carrier_import", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"emissions": 1, "energy_quantity": -1})
+        self.carbon_intensity_carrier_export = self.data_input.extract_input_data("carbon_intensity_carrier_export", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly",  unit_category={"emissions": 1, "energy_quantity": -1})
         self.price_shed_demand = self.data_input.extract_input_data("price_shed_demand", index_sets=[], unit_category={"money": 1, "energy_quantity": -1})
         # LCA factors
         if self.energy_system.system['load_lca_factors']:
@@ -98,8 +99,10 @@ class Carrier(Element):
         optimization_setup.parameters.add_parameter(name="price_export", index_names=["set_carriers", "set_nodes", "set_time_steps_operation"], doc='Parameter which specifies the export carrier price', calling_class=cls)
         # demand shedding price
         optimization_setup.parameters.add_parameter(name="price_shed_demand", index_names=["set_carriers"], doc='Parameter which specifies the price to shed demand', calling_class=cls)
-        # carbon intensity
-        optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the carbon intensity of carrier', calling_class=cls)
+        # carbon intensity carrier import
+        optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier_import", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the carbon intensity of carrier import', calling_class=cls)
+        # carbon intensity carrier exmport
+        optimization_setup.parameters.add_parameter(name="carbon_intensity_carrier_export", index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"], doc='Parameter which specifies the carbon intensity of carrier export', calling_class=cls)
         # lca parameters
         if optimization_setup.system['load_lca_factors']:
             optimization_setup.parameters.add_parameter(name='carrier_lca_factors', index_names=['set_carriers', 'set_nodes', 'set_lca_impact_categories', 'set_time_steps_yearly'],
@@ -690,13 +693,15 @@ class CarrierRules(GenericRule):
 
             # get the time-dependent factor
             mask = (self.parameters.availability_import.loc[carrier, :, times] != 0) | (self.parameters.availability_export.loc[carrier, :, times] != 0)
-            fac = np.where(mask, self.parameters.carbon_intensity_carrier.loc[carrier, :, yearly_time_steps], 0)
-            fac = xr.DataArray(fac, coords=[self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]])
-            term_flow_import_export = fac * (self.variables["flow_import"].loc[carrier, :] - self.variables["flow_export"].loc[carrier, :])
+            fac_import = np.where(mask, self.parameters.carbon_intensity_carrier_import.loc[carrier, :, yearly_time_steps], 0)
+            fac_import = xr.DataArray(fac_import, coords=[self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]])
+            term_flow_import = fac_import * self.variables["flow_import"].loc[carrier, :]
+            fac_export = np.where(mask, self.parameters.carbon_intensity_carrier_export.loc[carrier, :, yearly_time_steps], 0)
+            fac_export = xr.DataArray(fac_export, coords=[self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]])
+            term_flow_export = fac_export * self.variables["flow_export"].loc[carrier, :]
 
             ### formulate constraint
-            lhs = (self.variables["carbon_emissions_carrier"].loc[carrier, :]
-                   - term_flow_import_export)
+            lhs =  term_flow_export - term_flow_import + self.variables["carbon_emissions_carrier"].loc[carrier, :]
             rhs = 0
             constraints.append(lhs == rhs)
 
