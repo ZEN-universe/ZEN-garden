@@ -104,12 +104,16 @@ class IISConstraintParser(object):
     SIGNS_pretty = {EQUAL: "=", GREATER_EQUAL: "≥", LESS_EQUAL: "≤"}
 
     def __init__(self, iis_file, model):
+        # disable logger temporarily
+        logging.disable(logging.WARNING)
         self.iis_file = iis_file
         self.model = model
         # write gurobi IIS to file
         self.write_gurobi_iis()
         # get the labels
         self.constraint_labels,self.var_labels, self.var_lines = self.read_labels()
+        # enable logger again
+        logging.disable(logging.NOTSET)
 
     def write_parsed_output(self, outfile=None):
         """
@@ -138,7 +142,7 @@ class IISConstraintParser(object):
             f.write("\n\nVariables:\n")
             variables = self.model.variables
             for label in self.var_labels:
-                pos = constraints.get_label_position(label)
+                pos = variables.get_label_position(label)
                 if pos is not None:
                     name, coord = pos
                     var_str = f"\t{self.print_coord(coord)}:\t{self.var_lines[label]}\n"

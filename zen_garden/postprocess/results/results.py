@@ -23,7 +23,7 @@ class Results:
         self.has_rh = self.solution_loader.has_rh
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name
-        a = 1
+
     def __str__(self):
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         return f"Results of '{first_scenario.analysis.dataset}'"
@@ -77,7 +77,7 @@ class Results:
         :param element_name: Filter results by a given element
         :param keep_raw: Keep the raw values of the rolling horizon optimization
         """
-        assert component.timestep_type is not None
+        assert component.timestep_type is not None, "Component has no timestep type."
         series = self.solution_loader.get_component_data(scenario, component, keep_raw=keep_raw)
 
         if element_name is not None and element_name in series.index.get_level_values(0):

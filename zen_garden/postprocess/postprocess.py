@@ -84,7 +84,7 @@ class Postprocess:
         self.save_sets()
         self.save_param()
         self.save_var()
-        # self.save_duals() TODO enable again
+        self.save_duals()
         self.save_system()
         self.save_analysis()
         self.save_scenarios()
@@ -296,7 +296,7 @@ class Postprocess:
 
             # create dataframe
             if len(arr.shape) > 0:
-                df = arr.to_dataframe("value").dropna()
+                df = arr.to_series().dropna()
             else:
                 df = pd.DataFrame(data=[arr.values], columns=["value"])
 

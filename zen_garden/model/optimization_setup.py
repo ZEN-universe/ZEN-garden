@@ -406,7 +406,7 @@ class OptimizationSetup(object):
         # define and construct components of self.model
         Element.construct_model_components(self)
         # find smallest and largest coefficient and RHS
-        self.analyze_numerics()
+        self.analyze_numerics() # TODO slow!
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
@@ -561,7 +561,6 @@ class OptimizationSetup(object):
                              keep_files=self.solver["keep_files"], sanitize_zeros=True)
         # enable logger
         logging.disable(logging.NOTSET)
-        # write IIS
         if self.model.termination_condition == 'optimal':
             self.optimality = True
         elif self.model.termination_condition == "suboptimal":
@@ -578,8 +577,7 @@ class OptimizationSetup(object):
         """ write an ILP file to print the IIS if infeasible. Only possible for gurobi
         """
         if self.model.termination_condition == 'infeasible' and self.solver["name"] == "gurobi":
-            logging.info("The optimization is infeasible")
-            # ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
+
             output_folder = StringUtils.get_output_folder(self.analysis,self.system)
             ilp_file = os.path.join(output_folder,"infeasible_model_IIS.ilp")
             logging.info(f"Writing parsed IIS to {ilp_file}")

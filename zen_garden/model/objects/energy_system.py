@@ -422,8 +422,6 @@ class EnergySystemRules(GenericRule):
             NPC_y = C_y \sum_{\\tilde{y} = 1}^{\Delta^\mathrm{y}-1}(\\frac{1}{1+r})^{\Delta^\mathrm{y}(y-y_0)+\\tilde{y}}
 
        """
-
-
         factor = pd.Series(index = self.energy_system.set_time_steps_yearly)
         for year in self.energy_system.set_time_steps_yearly:
 

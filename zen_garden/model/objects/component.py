@@ -780,15 +780,18 @@ class Constraint(Component):
                         return
                     assert (isinstance(cons, lp.constraints.Constraint) or isinstance(cons, lp.constraints.AnonymousConstraint)), f"Constraint {key} has wrong format. Must be a linopy constraint but is {type(cons).__name__}"
                     if type(key) == tuple:
-                        _key = "_".join([str(k) for k in key])
+                        _key = "-".join([str(k) for k in key])
                     else:
                         _key = str(key)
-                    _name = f"{name}_{key}"
+                    _name = f"{name}--{key}"
                     self.add_single_constraint(_name, cons)
+                    self.docs[name] = self.compile_doc_string(doc, index_list=list(constraint.indexes), name= _name)
             elif isinstance(constraint,lp.constraints.Constraint) or isinstance(constraint, lp.constraints.AnonymousConstraint):
                 self.add_single_constraint(name, constraint)
+                self.docs[name] = self.compile_doc_string(doc, index_list=list(constraint.indexes), name= name)
             else:
                 raise TypeError(f"Constraint {name} has wrong format. Must be either a linopy constraint or a dictionary of constraints but is {type(constraint).__name__}")
+
         else:
             logging.warning(f"{name} already added. Can only be added once")
 
