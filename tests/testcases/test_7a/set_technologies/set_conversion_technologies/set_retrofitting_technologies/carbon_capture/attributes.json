@@ -46,14 +46,12 @@
       "carbon"
     ]
   },
-  "conversion_factor": [
-    {
+  "conversion_factor": {
       "electricity": {
         "default_value": 11.25,
         "unit": "GWh/kilotons"
       }
-    }
-  ],
+    },
   "capacity_limit": {
     "default_value": "inf",
     "unit": "kilotons/hour"
@@ -82,13 +80,9 @@
     "default_value": 0.0,
     "unit": "kilotons/hour"
   },
-  "retrofit_base_technology": {
-    "default_value": [
-      "natural_gas_boiler"
-    ]
-  },
   "retrofit_flow_coupling_factor": {
-    "default_value": 0.18,
-    "unit": "kilotons/GWh"
+    "base_technology": "natural_gas_boiler",
+      "default_value": 0.18,
+      "unit": "kilotons/GWh"
   }
 }

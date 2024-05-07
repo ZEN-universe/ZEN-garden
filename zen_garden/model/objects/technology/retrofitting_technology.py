@@ -47,7 +47,7 @@ class RetrofittingTechnology(ConversionTechnology):
         # get attributes from class <Technology>
         super().store_input_data()
         # get retrofit base technology
-        self.retrofit_base_technology = self.data_input.extract_technologies(technology_type="retrofit_base_technology")
+        self.retrofit_base_technology = self.data_input.extract_retrofit_base_technology()
         # get flow_coupling factor and capex
         self.retrofit_flow_coupling_factor = self.data_input.extract_input_data("retrofit_flow_coupling_factor", index_sets=["set_nodes", "set_time_steps"], unit_category={})
 
