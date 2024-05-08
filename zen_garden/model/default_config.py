@@ -83,34 +83,6 @@ class HeaderDataInputs(Subscriptable):
     set_capacity_types: str = "capacity_type"
 
 
-class TimeSeriesAggregation(Subscriptable):
-    clusterMethod: str = "hierarchical"
-    solver: str = "gurobi"
-    hoursPerPeriod: int = 1
-    extremePeriodMethod: Optional[str] = "None"
-    rescaleClusterPeriods: bool = False
-    representationMethod: str = "meanRepresentation"
-    resolution: int = 1
-    segmentation: bool = False
-    noSegments: int = 12
-
-
-class Analysis(Subscriptable):
-    dataset: str = ""
-    objective: str = "total_cost"
-    sense: str = "minimize"
-    transport_distance: str = "Euclidean"
-    subsets: Subsets = Subsets()
-    header_data_inputs: HeaderDataInputs = HeaderDataInputs()
-    time_series_aggregation: TimeSeriesAggregation = TimeSeriesAggregation()
-    postprocess: bool = False
-    folder_output: str = "./outputs/"
-    overwrite_output: bool = True
-    output_format: str = "h5"
-    write_results_yml: bool = False
-    max_output_size_mb: int = 500
-    folder_name_system_specification: str = "system_specification"
-    earliest_year_of_data: int = 1900
 
 
 class System(Subscriptable):
@@ -148,12 +120,12 @@ class SolverOptions(Subscriptable):
 
 
 class Solver(Subscriptable):
-    name: str = "glpk"
+    name: str = "highs"
     solver_options: SolverOptions = SolverOptions()
     check_unit_consistency: bool = True
     solver_dir: str = ".//outputs//solver_files"
     keep_files: bool = False
-    io_api: str = "direct"
+    io_api: str = "lp"
     add_duals: bool = False
     recommend_base_units: bool = False
     immutable_unit: list[str] = []
@@ -167,9 +139,39 @@ class Solver(Subscriptable):
     rounding_decimal_points_units: int = 6
     round_parameters: bool = True
     rounding_decimal_points_capacity: int = 4
-    analyze_numerics: bool = True
+    analyze_numerics: bool = False
     use_symbolic_labels: bool = False
 
+
+class TimeSeriesAggregation(Subscriptable):
+    slv: Solver = Solver()
+    clusterMethod: str = "hierarchical"
+    solver: str = slv.name
+    hoursPerPeriod: int = 1
+    extremePeriodMethod: Optional[str] = "None"
+    rescaleClusterPeriods: bool = False
+    representationMethod: str = "meanRepresentation"
+    resolution: int = 1
+    segmentation: bool = False
+    noSegments: int = 12
+
+
+class Analysis(Subscriptable):
+    dataset: str = ""
+    objective: str = "total_cost"
+    sense: str = "minimize"
+    transport_distance: str = "Euclidean"
+    subsets: Subsets = Subsets()
+    header_data_inputs: HeaderDataInputs = HeaderDataInputs()
+    time_series_aggregation: TimeSeriesAggregation = TimeSeriesAggregation()
+    postprocess: bool = False
+    folder_output: str = "./outputs/"
+    overwrite_output: bool = True
+    output_format: str = "h5"
+    write_results_yml: bool = False
+    max_output_size_mb: int = 500
+    folder_name_system_specification: str = "system_specification"
+    earliest_year_of_data: int = 1900
 
 class Config(Subscriptable):
     # analysis: dict = Analysis().model_dump()
