@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - `return_constraints` statement for all continuous constraints
 - rule-based and block-based constraint distinction
+- `breakpoints_pwa_capex.csv` file no longer used
   
 ## [v1.1.0] - 2024-02-28
 ### Added
