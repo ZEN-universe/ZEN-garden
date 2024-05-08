@@ -24,6 +24,5 @@ analysis["objective"] = "total_cost"
 
 ## Solver - settings update compared to default values
 solver["name"] = "highs" # free solver
-solver["analyze_numerics"] = True
-solver["immutable_unit"] = ["hour","km"]
+
 

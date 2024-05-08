@@ -6,8 +6,8 @@ hdfdict
 pandas
 pip
 ordered-set
-xarray==2023.8.0
-linopy==0.1.5
+xarray
+linopy==0.3
 coverage
 pytest
 scipy

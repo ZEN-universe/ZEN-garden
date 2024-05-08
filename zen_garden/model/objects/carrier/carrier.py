@@ -316,10 +316,13 @@ class CarrierRules(GenericRule):
         # create times xarray with 1 where the operation time step is in the year
         times = self.get_year_time_step_array()
         # convert the carbon intensity carrier from yearly to operation time steps
-        carbon_intensity_carrier = (self.parameters.carbon_intensity_carrier.broadcast_like(times) * times).sum("set_time_steps_yearly")
+        # TODO map and expand
+        carbon_intensity_carrier_import = (self.parameters.carbon_intensity_carrier_import.broadcast_like(times) * times).sum("set_time_steps_yearly")
+        carbon_intensity_carrier_export = (self.parameters.carbon_intensity_carrier_export.broadcast_like(times) * times).sum("set_time_steps_yearly")
         lhs = (self.variables["carbon_emissions_carrier"]
-               - (self.variables["flow_import"] - self.variables["flow_export"])
-               * carbon_intensity_carrier)
+               - (self.variables["flow_import"]*carbon_intensity_carrier_import
+               - self.variables["flow_export"]*carbon_intensity_carrier_export))
+
         rhs = 0
 
         constraints = lhs == rhs

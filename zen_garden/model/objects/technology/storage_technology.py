@@ -173,9 +173,7 @@ class StorageTechnology(Technology):
         rules.constraint_couple_storage_level()
 
         # limit energy to power ratios of capacity additions
-        constraints.add_constraint_block(model, name="constraint_capacity_energy_to_power_ratio",
-                                         constraint=rules.constraint_capacity_energy_to_power_ratio_block(),
-                                         doc='limit energy to power ration of capacity additions')
+        rules.constraint_capacity_energy_to_power_ratio()
 
         # Linear Capex
         rules.constraint_storage_technology_capex()
@@ -333,32 +331,23 @@ class StorageTechnologyRules(GenericRule):
 
         self.constraints.add_constraint("constraint_storage_level_max",constraints)
 
-    def constraint_capacity_energy_to_power_ratio_block(self):
+    def constraint_capacity_energy_to_power_ratio(self):
         """limit capacity power to energy ratio"""
 
-        ### index sets
-        # not necessary
-
-        ### masks
         techs = self.sets["set_storage_technologies"]
         if len(techs) == 0:
-            return self.constraints.return_contraints([])
+            return None
         e2p = self.parameters.energy_to_power_ratio.rename({"set_storage_technologies": "set_technologies"})
         mask = e2p != np.inf
 
-        ### index loop
-        # not necessary
-
-        ### formulate constraint
-        lhs = (self.variables["capacity_addition"].loc[techs, "energy", :, :] * e2p
-               - self.variables["capacity_addition"].loc[techs, "power", :, :]).where(mask)
+        capacity_addition = self.variables["capacity_addition"]
+        capacity_addition_power = capacity_addition.sel({"set_technologies":techs,"set_capacity_types": "power"})
+        capacity_addition_energy = capacity_addition.sel({"set_technologies":techs,"set_capacity_types": "energy"})
+        lhs = (capacity_addition_energy * e2p - capacity_addition_power).where(mask)
         rhs = 0
         constraints = lhs == rhs
 
-        return self.constraints.return_contraints(constraints,
-                                                    model=self.model,
-                                                    index_values=self.sets["set_storage_technologies"],
-                                                    index_names=["set_storage_technologies"])
+        self.constraints.add_constraint("constraint_capacity_energy_to_power_ratio", constraints)
 
     def constraint_couple_storage_level(self):
         """couple subsequent storage levels (time coupling constraints)
