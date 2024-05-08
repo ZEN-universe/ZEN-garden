@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.0] - 2024-05-08
+### Added
+- new dataset creation tutorials and updated `dataset_creation_tutorial.md`
+
+### Fixed
+- IIS calculation and printing
+- Fix technology diffusion constraints 
+  
+### Changed
+- Upgraded to `linopy>=0.3.8`
+- Vectorized all continuous constraints
+
+### Removed
+- `return_constraints` statement for all continuous constraints
+- rule-based and block-based constraint distinction
+  
 ## [v1.1.0] - 2024-02-28
 ### Added
 - Exponential transport loss factor
