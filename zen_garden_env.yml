@@ -27,7 +27,7 @@ dependencies:
       - ordered-set
       - pyogrio
       - psutil
-      - linopy==0.3
+      - linopy>=0.3.8
       - -e .
 
 # conda env create -f zen_garden_env.yml
