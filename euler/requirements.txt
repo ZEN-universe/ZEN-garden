@@ -14,7 +14,7 @@ scipy
 sympy
 ipython
 jupyter
-pint<0.20
+pint>=0.23
 entsoe-py
 matplotlib
 mpmath
