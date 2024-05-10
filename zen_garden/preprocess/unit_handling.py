@@ -49,7 +49,8 @@ class UnitHandling:
 
         self.redefine_standard_units()
         # load additional units
-        self.ureg.load_definitions(self.folder_path / "unit_definitions.txt")
+        if os.path.exists(os.path.join(self.folder_path, "unit_definitions.txt")):
+            self.ureg.load_definitions(self.folder_path / "unit_definitions.txt")
 
         # empty base units and dimensionality matrix
         self.base_units = {}

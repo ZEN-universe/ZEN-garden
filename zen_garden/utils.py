@@ -1116,7 +1116,7 @@ class InputDataChecks:
                         if not os.path.exists(os.path.join(self.analysis["dataset"], set_name, subset_name)):
                             raise AssertionError(f"Folder {subset_name} does not exist!")
 
-        for file_name in ["attributes.json", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
+        for file_name in ["attributes.json", "base_units.csv", "set_edges.csv", "set_nodes.csv"]:
             if file_name not in os.listdir(os.path.join(self.analysis["dataset"], "energy_system")):
                 raise FileNotFoundError(f"File {file_name} is missing in the energy_system directory")
 
