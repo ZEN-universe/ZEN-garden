@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Upgraded to `linopy>=0.3.8`
 - Vectorized all continuous constraints
+- ´carbon_intensity_carrier´ is split in´carbon_intensity_carrier_import´ and ´carbon_intensity_carrier_export´
+- attributes of retrofitting technologies are combined in one
+- test 3a and 3b are replaced by test 1e
+- test 5a and 5b were combined 
 
 ### Removed
 - `return_constraints` statement for all continuous constraints
