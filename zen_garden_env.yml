@@ -23,7 +23,7 @@ dependencies:
   - pip:
       - tsam
       - h5py
-      - filelocksp
+      - filelock
       - ordered-set
       - pyogrio
       - psutil
