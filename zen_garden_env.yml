@@ -28,6 +28,8 @@ dependencies:
       - pyogrio
       - psutil
       - linopy>=0.3.8
+      - sphinx
+      - myst-parser
       - -e .
 
 # conda env create -f zen_garden_env.yml
