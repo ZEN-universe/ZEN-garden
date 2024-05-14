@@ -447,7 +447,7 @@ class Technology(Element):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the pe.Constraints of the class <Technology>
+        """ constructs the Constraints of the class <Technology>
 
         :param optimization_setup: The OptimizationSetup """
         model = optimization_setup.model
@@ -518,7 +518,7 @@ class Technology(Element):
 
         # add pe.Constraints of the child classes
         for subclass in cls.__subclasses__():
-            logging.info(f"Construct pe.Constraints of {subclass.__name__}")
+            logging.info(f"Construct Constraints of {subclass.__name__}")
             subclass.construct_constraints(optimization_setup)
 
     @classmethod
@@ -776,16 +776,13 @@ class TechnologyRules(GenericRule):
             + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1))}^{\\psi(y_0)} \\Delta s^\mathrm{ex}_{h,p,\\hat{y}}
         """
 
-        ### index sets
-        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
-
-        lt_range = pd.Series({(t, y): list(Technology.get_lifetime_range(self.optimization_setup, t, y))
-                              for t, y in itertools.product(self.sets["set_technologies"], self.sets["set_time_steps_yearly"])})
-        lt_range = pd.DataFrame(lt_range.to_list(), index=lt_range.index).stack()
-        lt_range[:] = -1
-        lt_range.index.names = ["set_technologies", "set_time_steps_yearly", "set_time_steps_yearly_prev"]
-        lt_range = lt_range.to_xarray().broadcast_like(self.variables["capacity"].mask).fillna(0)
+        lt_range = pd.MultiIndex.from_tuples(
+            [(t, y, py)
+             for t, y in itertools.product(self.sets["set_technologies"], self.sets["set_time_steps_yearly"])
+             for py in list(Technology.get_lifetime_range(self.optimization_setup, t, y))]
+            ,names = ["set_technologies", "set_time_steps_yearly", "set_time_steps_yearly_prev"])
+        lt_range = pd.Series(index=lt_range, data=-1)
+        lt_range = lt_range.to_xarray().broadcast_like(self.variables["capacity"].lower).fillna(0)
         capacity_addition = self.variables["capacity_addition"].rename({"set_time_steps_yearly": "set_time_steps_yearly_prev"})
         capacity_addition = capacity_addition.broadcast_like(lt_range)
         expr = (lt_range * capacity_addition).sum("set_time_steps_yearly_prev")

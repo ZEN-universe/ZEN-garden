@@ -156,7 +156,7 @@ class StorageTechnology(Technology):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the pe.Constraints of the class <StorageTechnology>
+        """ constructs the Constraints of the class <StorageTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         rules = StorageTechnologyRules(optimization_setup)
@@ -337,12 +337,12 @@ class StorageTechnologyRules(GenericRule):
         techs = self.sets["set_storage_technologies"]
         if len(techs) == 0:
             return None
-        e2p = self.parameters.energy_to_power_ratio.rename({"set_storage_technologies": "set_technologies"})
+        e2p = self.parameters.energy_to_power_ratio
         mask = e2p != np.inf
 
-        capacity_addition = self.variables["capacity_addition"]
-        capacity_addition_power = capacity_addition.sel({"set_technologies":techs,"set_capacity_types": "power"})
-        capacity_addition_energy = capacity_addition.sel({"set_technologies":techs,"set_capacity_types": "energy"})
+        capacity_addition = self.variables["capacity_addition"].rename({"set_technologies": "set_storage_technologies"})
+        capacity_addition_power = capacity_addition.sel({"set_storage_technologies":techs,"set_capacity_types": "power"})
+        capacity_addition_energy = capacity_addition.sel({"set_storage_technologies":techs,"set_capacity_types": "energy"})
         lhs = (capacity_addition_energy * e2p - capacity_addition_power).where(mask)
         rhs = 0
         constraints = lhs == rhs

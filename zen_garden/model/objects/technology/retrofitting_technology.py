@@ -78,7 +78,7 @@ class RetrofittingTechnology(ConversionTechnology):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the pe.Constraints of the class <RetrofittingTechnology>
+        """ constructs the Constraints of the class <RetrofittingTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         # add pwa constraints

@@ -188,7 +188,7 @@ class TransportTechnology(Technology):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the pe.Constraints of the class <TransportTechnology>
+        """ constructs the Constraints of the class <TransportTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         rules = TransportTechnologyRules(optimization_setup)
