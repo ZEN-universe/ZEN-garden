@@ -295,7 +295,11 @@ class Postprocess:
                 doc = None
 
             # create dataframe
-            df = arr.to_dataframe("value").dropna()
+            if len(arr.shape) > 0:
+                df = arr.to_series().dropna()
+            else:
+                df = pd.DataFrame(data=[arr.values], columns=["value"])
+
             # rename the index
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list

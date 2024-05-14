@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.0] - 2024-05-08
+### Added
+- new dataset creation tutorials and updated `dataset_creation_tutorial.md`
+
+### Fixed
+- IIS calculation and printing
+- Fix technology diffusion constraints 
+  
+### Changed
+- Upgraded to `linopy>=0.3.8`
+- Vectorized all continuous constraints
+- ´carbon_intensity_carrier´ is split in´carbon_intensity_carrier_import´ and ´carbon_intensity_carrier_export´
+- attributes of retrofitting technologies are combined in one
+- test 3a and 3b are replaced by test 1e
+- test 5a and 5b were combined 
+
+### Removed
+- `return_constraints` statement for all continuous constraints
+- rule-based and block-based constraint distinction
+- `breakpoints_pwa_capex.csv` file no longer used
+  
 ## [v1.1.0] - 2024-02-28
 ### Added
 - Exponential transport loss factor

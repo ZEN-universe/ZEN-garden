@@ -352,20 +352,21 @@ class IndexSet(Component):
         index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
         coords = [self.get_coord(data, name) for data, name in zip(index_arrs, index_list)]
 
-        # init the mask
-        if model is not None:
-            index_names = []
-            for index_name, coord in zip(index_list, coords):
-                # we check if there is already an index with the same name but a different size
-                if index_name in model.variables.coords and coord.size == 0:
-                    index_names.append(index_name + f"_{uuid.uuid4()}")
-                else:
-                    index_names.append(index_name)
-            index_list = index_names
+        index_list, mask = self.create_variable_mask(coords, index_arrs, index_list, model)
 
-        mask = xr.DataArray(False, coords=coords, dims=index_list)
-        mask.loc[index_arrs] = True
+        lower, upper = self.create_variable_bounds(bounds, coords, index_arrs, index_list, index_values)
 
+        return mask, lower, upper
+
+    def create_variable_bounds(self, bounds, coords, index_arrs, index_list, index_values):
+        """ creates the bounds for the variables
+        :param bounds: The bounds of the variable
+        :param coords: The coordinates of the variable
+        :param index_arrs: The index values as xarrays
+        :param index_list: The list of the index names
+        :param index_values: The list of the index values
+        :return: The lower and upper bounds as xarrays
+        """
         # get the bounds
         lower = xr.DataArray(-np.inf, coords=coords, dims=index_list)
         upper = xr.DataArray(np.inf, coords=coords, dims=index_list)
@@ -377,8 +378,8 @@ class IndexSet(Component):
                 lower[...] = bounds[0]
                 upper[...] = bounds[1]
         elif isinstance(bounds, np.ndarray):
-            lower.loc[index_arrs] = bounds[:,0]
-            upper.loc[index_arrs] = bounds[:,1]
+            lower.loc[index_arrs] = bounds[:, 0]
+            upper.loc[index_arrs] = bounds[:, 1]
         elif callable(bounds):
             tmp_low = []
             tmp_up = []
@@ -393,8 +394,31 @@ class IndexSet(Component):
             upper = np.inf
         else:
             raise ValueError(f"bounds should be None, tuple, array or callable, is: {bounds}")
+        return lower, upper
 
-        return mask, lower, upper
+    def create_variable_mask(self, coords, index_arrs, index_list, model):
+        """ creates the mask for the variables
+        :param coords: The coordinates of the variable
+        :param index_arrs: The index values as xarrays
+        :param index_list: The list of the index names
+        :param model: The model to which the mask belongs, note that indices which don't match existing indices are
+                      renamed to match the model
+        :return: The mask as xarray
+        """
+        # save the index names under different names if they are empty
+        if model is not None:
+            index_names = []
+            for index_name, coord in zip(index_list, coords):
+                # we check if there is already an index with the same name but a different size
+                if coord.size == 0 and index_name in model.variables.coords:
+                    index_names.append(index_name + f"_{uuid.uuid4()}")
+                else:
+                    index_names.append(index_name)
+            index_list = index_names
+        # init the mask
+        mask = xr.DataArray(False, coords=coords, dims=index_list)
+        mask.loc[index_arrs] = True
+        return index_list, mask
 
     def get_coord(self, data, name):
         """
@@ -477,6 +501,7 @@ class Parameter(Component):
         """
 
         dict_of_units = {}
+        # TODO make more flexible
         if name == "capex_specific_conversion":
             component_data, index_list, dict_of_units = calling_class.get_capex_all_elements(optimization_setup=self.optimization_setup, index_names=index_names)
             data = component_data, index_list
@@ -618,7 +643,7 @@ class Parameter(Component):
                     coords_dict[k] = data.coords[k]
             data = data.assign_coords(coords_dict)
 
-            # now we need to align the coords
+            # now we need to align the coords TODO try to speed up
             data, _ = xr.align(data, self.index_sets.coords_dataset, join="right")
 
         # sometimes we get empty parameters
@@ -709,7 +734,7 @@ class Variable(Component):
                 carrier_level = [level for level in var_units.index.names if "carrier" in level][0]
                 for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items():
                     carrier_idx = var_units.index.get_level_values(carrier_level) == carrier
-                    var_units[carrier_idx] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+                    var_units[carrier_idx] = str((unit * energy_quantity ** unit_category["energy_quantity"]).units)
             # energy_quantity depends on technology index level (e.g. capacity)
             else:
                 tech_level = [level for level in var_units.index.names if "technologies" in level][0]
@@ -717,26 +742,59 @@ class Variable(Component):
                     reference_carrier = technology.reference_carrier[0]
                     energy_quantity = [energy_quantity for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items() if carrier == reference_carrier][0]
                     tech_idx = var_units.index.get_level_values(tech_level) == technology.name
-                    var_units[tech_idx] = (unit * energy_quantity ** unit_category["energy_quantity"]).units
+                    var_units[tech_idx] = str((unit * energy_quantity ** unit_category["energy_quantity"]).units)
                 if "set_capacity_types" in var_units.index.names:
                     energy_idx = var_units.index.get_level_values("set_capacity_types") == "energy"
-                    var_units[energy_idx] = var_units[energy_idx].apply(lambda u: (u*self.unit_handling.ureg("hour")).units)
+                    var_units[energy_idx] = var_units[energy_idx].apply(lambda u: str(self.unit_handling.ureg(u+"*hour").units))
+
         # variable has constant unit
         else:
-            var_units[:] = unit.units
-        return var_units.astype(str)
+            var_units[:] = str(unit.units)
+        return var_units
 
 class Constraint(Component):
-    def __init__(self, index_sets):
+    def __init__(self, index_sets,model):
         """
         Initialization of a constraint
         :param index_sets: A reference to the index sets of the model
+        :param model: A reference to the linopy model
         """
 
         self.index_sets = index_sets
+        self.model = model
         super().__init__()
         # This is the big-M for the constraints if the variables inside an expression are not bounded
         self.M = np.iinfo(np.int32).max
+
+    def add_constraint(self, name, constraint, doc=""):
+        """ initialization of a constraint
+        :param name: name of variable
+        :param constraint: either a linopy constraint or a dictionary of constraints or None TODO
+        :param doc: docstring of variable"""
+
+        if name not in self.docs.keys():
+            if constraint is None or constraint == []:
+                return
+            elif isinstance(constraint, dict):
+                for key, cons in constraint.items():
+                    if cons is None or cons == []:
+                        return
+                    assert (isinstance(cons, lp.constraints.Constraint) or isinstance(cons, lp.constraints.AnonymousConstraint)), f"Constraint {key} has wrong format. Must be a linopy constraint but is {type(cons).__name__}"
+                    if type(key) == tuple:
+                        _key = "-".join([str(k) for k in key])
+                    else:
+                        _key = str(key)
+                    _name = f"{name}--{key}"
+                    self.add_single_constraint(_name, cons)
+                    self.docs[name] = self.compile_doc_string(doc, index_list=list(constraint.indexes), name= _name)
+            elif isinstance(constraint,lp.constraints.Constraint) or isinstance(constraint, lp.constraints.AnonymousConstraint):
+                self.add_single_constraint(name, constraint)
+                self.docs[name] = self.compile_doc_string(doc, index_list=list(constraint.indexes), name= name)
+            else:
+                raise TypeError(f"Constraint {name} has wrong format. Must be either a linopy constraint or a dictionary of constraints but is {type(constraint).__name__}")
+
+        else:
+            logging.warning(f"{name} already added. Can only be added once")
 
     def add_constraint_block(self, model: lp.Model, name, constraint, doc="", disjunction_var=None):
         """ initialization of a constraint block (list of constraints)
@@ -768,11 +826,17 @@ class Constraint(Component):
                 # drop all unnecessary dimensions
                 # FIXME: we do this via data to avoid the drop deprecation warning, update once lp implements drop_vars
                 # lhs = cons.lhs.drop(list(set(cons.lhs.coords) - set(cons.lhs.dims)))
-                lhs = lp.LinearExpression(cons.lhs.data.drop_vars(list(set(cons.lhs.coords) - set(cons.lhs.dims))), model)
+                if not isinstance(cons, lp.constraints.AnonymousScalarConstraint):
+                    lhs = lp.LinearExpression(cons.lhs.data.drop_vars(list(set(cons.lhs.coords) - set(cons.lhs.dims))), model)
+                else:
+                    lhs = cons.lhs
                 # add constraint
-                self._add_con(model, current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var, mask=mask)
+                self._add_con(current_name, lhs, cons.sign, cons.rhs, disjunction_var=disjunction_var, mask=mask)
                 # save constraint doc
-                index_list = list(cons.coords.dims)
+                if isinstance(cons, lp.constraints.AnonymousScalarConstraint):
+                    index_list = []
+                else:
+                    index_list = list(cons.coords.dims)
                 self.docs[name] = self.compile_doc_string(doc, index_list, current_name)
             else:
                 logging.warning(f"{name} already added. Can only be added once")
@@ -800,7 +864,7 @@ class Constraint(Component):
 
             # eval the rule
             xr_lhs, xr_sign, xr_rhs = self.rule_to_cons(model=model, rule=rule, index_values=index_values, index_list=index_list)
-            self._add_con(model, name, xr_lhs, xr_sign, xr_rhs, disjunction_var=disjunction_var)
+            self._add_con(name, xr_lhs, xr_sign, xr_rhs, disjunction_var=disjunction_var)
         else:
             logging.warning(f"{name} already added. Can only be added once")
 
@@ -839,9 +903,19 @@ class Constraint(Component):
         return xr.DataArray(np.sum(np.array(bounds).reshape(shape) + 1, axis=-1),
                             coords=[lin_expr.vars.coords[d] for d in lin_expr.vars.dims[:-1]])
 
-    def _add_con(self, model, name, lhs, sign, rhs, disjunction_var=None, mask=None):
+    def add_single_constraint(self, name, constraint):
+        """ adds a single constraint to the model
+        :param name: name of variable
+        :param constraint: linopy constraint
+        """
+        lhs = constraint.lhs
+        sign = constraint.sign
+        rhs = constraint.rhs
+        mask = constraint.mask
+        self._add_con(name, lhs, sign, rhs, mask=mask)
+
+    def _add_con(self, name, lhs, sign, rhs, disjunction_var=None, mask=None):
         """ Adds a constraint to the model
-        :param model: The linopy model
         :param name: name of the constraint
         :param lhs: left hand side of the constraint
         :param sign: sign of the constraint
@@ -856,10 +930,12 @@ class Constraint(Component):
             mask = ~np.isnan(rhs) & np.isfinite(rhs) & mask
         else:
             mask = ~np.isnan(rhs) & np.isfinite(rhs)
-
+        # turn scalar masks into bool (otherwise it will use np.bool)
+        if isinstance(mask,np.bool_):
+            mask = bool(mask)
         if disjunction_var is not None:
             # get the bounds
-            bounds = self._get_M(model, lhs)
+            bounds = self._get_M(self.model, lhs)
             if not np.isfinite(bounds).all():
                 logging.warning(f"Constraint {name} has infinite bounds. Can not extract big-M resorting to default")
                 bounds = self.M
@@ -869,16 +945,16 @@ class Constraint(Component):
                 # the "<=" cons
                 sign_c = sign.where(sign != "=", "<=")
                 m_arr = xr.zeros_like(rhs).where(sign_c != "<=", bounds).where(sign_c != ">=", -bounds)
-                model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + "<=", mask=mask)
+                self.model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + "<=", mask=mask)
                 sign_c = sign.where(sign != "=", ">=")
                 m_arr = xr.zeros_like(rhs).where(sign_c != "<=", bounds).where(sign_c != ">=", -bounds)
-                model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + ">=", mask=mask)
+                self.model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + ">=", mask=mask)
             # create the arr
             else:
                 m_arr = xr.zeros_like(rhs).where(sign != "<=", bounds).where(sign != ">=", -bounds)
-                model.add_constraints(lhs + m_arr * disjunction_var, sign, rhs + m_arr, name=name + ">=", mask=mask)
+                self.model.add_constraints(lhs + m_arr * disjunction_var, sign, rhs + m_arr, name=name + ">=", mask=mask)
         else:
-            model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
+            self.model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
 
     def rule_to_cons(self, model, rule, index_values, index_list, cons=None):
         """
@@ -1035,41 +1111,34 @@ class Constraint(Component):
         if len(constraints) == 0:
             return constraints
 
-        # combine the different terms
-        stack_dim = xr.DataArray(np.arange(len(constraints)), dims=stack_dim)
+        # get the shape of the constraints
+        max_terms = max([c.lhs.shape[-1] if hasattr(c,"shape") else c.lhs.nterm for c in constraints])
+        c = constraints[0]
+        if hasattr(c,"shape"):
+            lhs_shape = c.lhs.shape[:-1] + (max_terms, )
+        else:
+            lhs_shape = (max_terms, )
+        coords = [xr.DataArray(np.arange(len(constraints)), dims=[stack_dim]), ] + [c.lhs.coords[d] for d in c.lhs.dims][:-1] + [xr.DataArray(np.arange(max_terms), dims=["_term"])]
+        coeffs = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=np.nan), coords=coords,
+                              dims=(stack_dim, *constraints[0].lhs.dims))
+        variables = xr.DataArray(np.full((len(constraints), ) + lhs_shape, fill_value=-1), coords=coords,
+                                 dims=(stack_dim, *constraints[0].lhs.dims))
+        sign = xr.DataArray("=", coords=coords[:-1]).astype("U2")
+        rhs = xr.DataArray(np.nan, coords=coords[:-1])
 
-        # here we need to take care of the term dimension
-        vars = []
-        coeffs = []
-        for c in constraints:
-            var = c.vars
-            var.coords["_term"] = np.arange(var.sizes["_term"])
-            vars.append(var)
-            coeff = c.coeffs
-            coeff.coords["_term"] = np.arange(coeff.sizes["_term"])
-            coeffs.append(coeff)
-        combined_vars = xr.concat(vars, dim=stack_dim, coords="minimal", fill_value=-1, join="outer",
-                                  compat="override", combine_attrs="drop")
-        combined_vars = combined_vars.drop_vars("_term")
-        combined_coeffs = xr.concat(coeffs, dim=stack_dim, coords="minimal", fill_value=np.nan, join="outer",
-                                    compat="override", combine_attrs="drop")
-        combined_coeffs = combined_coeffs.drop_vars("_term")
-        signs = [c.sign for c in constraints]
-        combined_signs = xr.concat(signs, dim=stack_dim, coords="minimal", fill_value=-1, join="outer",
-                                   compat="override", combine_attrs="drop")
-        rhs = [c.rhs for c in constraints]
-        combined_rhs = xr.concat(rhs, dim=stack_dim, coords="minimal", fill_value=np.nan, join="outer",
-                                 compat="override", combine_attrs="drop")
+        for num, con in enumerate(constraints):
+            coeffs[num, ...,con.lhs.coeffs["_term"]] = con.lhs.coeffs.data
+            variables[num, ...,con.lhs.coeffs["_term"]] = con.lhs.vars.data
+            con_sign = xr.align(sign[num, ...],con.sign,join="left")[1]
+            sign[num, ...] = con_sign
+            con_rhs = xr.align(rhs[num, ...],con.rhs,join="left")[1]
+            rhs[num, ...] = con_rhs
+            # make sure all dims are in the right order and deal with subsets
+            rhs[num, ...] = rhs[num].where(~con_rhs.isnull(), con_rhs + rhs[num])
 
-        # fill all the dimensions
-        vars, coeffs, sign, rhs = xr.align(combined_vars, combined_coeffs, combined_signs, combined_rhs, join="outer",
-                                           fill_value={"combined_vars": -1, "combined_coeffs": np.nan,
-                                                       "combined_signs": "=", "combined_rhs": np.nan})
+        xr_ds = xr.Dataset({"coeffs": coeffs, "vars": variables, "sign": sign, "rhs": rhs})
 
-        xr_ds = xr.Dataset({"coeffs": coeffs, "vars": vars})
-        lhs = lp.LinearExpression(xr_ds, model)
-
-        return lp.constraints.AnonymousConstraint(lhs, sign, rhs)
+        return lp.constraints.Constraint(xr_ds, model)
 
     def reorder_group(self, lhs, sign, rhs, index_values, index_names, model, drop=None):
         """
@@ -1120,13 +1189,12 @@ class Constraint(Component):
                 if sign is not None:
                     xr_sign.loc[index_val] = sign.sel(group=num).data
 
-        # to full arrays
-        xr_lhs = lp.LinearExpression(xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}), model)
-
         if rhs is None and sign is None:
-            return xr_lhs
-
-        return lp.constraints.AnonymousConstraint(xr_lhs, xr_sign, xr_rhs)
+            return lp.LinearExpression(xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}), model)
+        else:
+            # to full arrays
+            xr_lhs = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars,"sign": xr_sign, "rhs": xr_rhs})
+            return lp.constraints.Constraint(xr_lhs,model)
 
     def reorder_list(self, constraints, index_values, index_names, model):
         """
@@ -1160,7 +1228,6 @@ class Constraint(Component):
         # we start with the lhs
         vars, _ = xr.align(constraint.lhs.data.vars, self.index_sets.coords_dataset, join="right", fill_value=-1)
         coeffs, _ = xr.align(constraint.lhs.data.coeffs, self.index_sets.coords_dataset, join="right", fill_value=np.nan)
-        lhs = lp.LinearExpression(xr.Dataset({"coeffs": coeffs, "vars": vars}), constraint.lhs.model)
 
         # now the rhs
         rhs, _ = xr.align(constraint.rhs, self.index_sets.coords_dataset, join="right", fill_value=np.nan)
@@ -1172,9 +1239,25 @@ class Constraint(Component):
         if mask is not None:
             mask, _ = xr.align(mask, self.index_sets.coords_dataset, join="right", fill_value=False)
 
-        return lp.constraints.AnonymousConstraint(lhs, sign, rhs), mask
+        xr_ds = xr.Dataset({"coeffs": coeffs, "vars": vars, "sign": sign, "rhs": rhs})
+        return lp.constraints.Constraint(xr_ds,constraint.lhs.model), mask
 
-    def return_contraints(self, constraints, model=None, mask=None, index_values=None, index_names=None,
+    # def return_constraints(self, constraints, mask=None):
+    #     """ This is a high-level function that returns the constraints in the correct format, i.e. with reordering, masks,
+    #     etc.
+    #     :param constraints: A single constraints or a potentially empty list of constraints.
+    #     :param model: The model to which the constraints belong
+    #     :param mask: A mask with the same shape as the constraints
+    #     :param index_values: The index values corresponding to the group numbers, if reorder is necessary
+    #     :param index_names: The names of the indices, if reorder is necessary
+    #     :param stack_dim_name: If a list of constraints is provided along with index_values and index_names, the
+    #                            constraints are reordered with the provided indices, if a stack_dim_name is provided, the
+    #                            constraints are stacked along a single dimension with the provided name.
+    #     :return: Constraints with can be added
+    #     """
+    #     a=1
+
+    def return_constraints(self, constraints, model=None, mask=None, index_values=None, index_names=None,
                           stack_dim_name=None):
         """
         This is a high-level function that returns the constraints in the correct format, i.e. with reordering, masks,
@@ -1194,6 +1277,8 @@ class Constraint(Component):
         if constraints is None:
             return constraints
 
+        if isinstance(constraints,list) and len(constraints) == 1 and isinstance(constraints[0], lp.constraints.AnonymousScalarConstraint):
+            constraints = constraints[0]
         # no need to do anything special
         if not isinstance(constraints, list):
             # rule based constraints
