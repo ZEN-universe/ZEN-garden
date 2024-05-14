@@ -136,7 +136,7 @@ class Carrier(Element):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the pe.Constraints of the class <Carrier>
+        """ constructs the Constraints of the class <Carrier>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         rules = CarrierRules(optimization_setup)

@@ -263,7 +263,7 @@ class ConversionTechnology(Technology):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the pe.Constraints of the class <ConversionTechnology>
+        """ constructs the Constraints of the class <ConversionTechnology>
 
         :param optimization_setup: optimization setup"""
         model = optimization_setup.model
