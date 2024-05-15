@@ -813,7 +813,9 @@ class TechnologyRules(GenericRule):
         # technology diffusion rate per investment period
         tdr = (1 + self.parameters.max_diffusion_rate) ** interval_between_years - 1
         tdr = tdr.broadcast_like(capacity_addition.lower)
+        tdr_sum = tdr.sum("set_location")
         mask_inf_tdr = ~(tdr == np.inf)
+        mask_inf_tdr_sum = ~(tdr_sum == np.inf)
         # if all tdr are inf, we can skip the constraint
         if (~mask_inf_tdr).all():
             return
@@ -863,19 +865,21 @@ class TechnologyRules(GenericRule):
         else:
             term_knowledge = capacity_addition.where(False)
             term_knowledge_no_spillover = capacity_addition.where(False)
-        # unbounded market share
+        # unbounded market share --> only for same technology class
         capacity_previous = self.variables["capacity_previous"]
         market_share_unbounded = {
-            (t,ot): self.parameters.market_share_unbounded if self.sets["set_reference_carriers"][t][0] == self.sets["set_reference_carriers"][ot][0] else 0 for t,ot in itertools.product(self.sets["set_technologies"], self.sets["set_technologies"])
-             }
+            (t,ot): self.parameters.market_share_unbounded if self.sets["set_reference_carriers"][t][0] == self.sets["set_reference_carriers"][ot][0] else 0
+            for t in self.sets["set_technologies"]
+            for ot in self.optimization_setup.get_class_set_of_element(t,Technology)
+        }
         market_share_unbounded = pd.Series(market_share_unbounded)
         market_share_unbounded.index.names = ["set_technologies", "set_other_technologies"]
-        market_share_unbounded = market_share_unbounded.to_xarray().broadcast_like(capacity_previous.lower)
-        term_unbounded_addition = (market_share_unbounded * capacity_previous.rename({"set_technologies":"set_other_technologies"})).sum("set_other_technologies")
+        market_share_unbounded = market_share_unbounded.to_xarray().broadcast_like(capacity_previous.lower).fillna(0)
+        mask_market_share_unbounded = market_share_unbounded != 0
+        term_unbounded_addition = (market_share_unbounded * capacity_previous.rename({"set_technologies":"set_other_technologies"})).where(mask_market_share_unbounded).sum("set_other_technologies")
         # build lhs
-        lhs_an = (capacity_addition - term_knowledge - term_unbounded_addition)
-        lhs_sn = ((capacity_addition - term_knowledge_no_spillover - term_unbounded_addition).sum("set_location"))
-
+        lhs_an = lp.merge(1*capacity_addition,-1*term_knowledge,-1*term_unbounded_addition, compat="broadcast_equals")
+        lhs_sn = lp.merge(1*capacity_addition,-1*term_knowledge_no_spillover,-1*term_unbounded_addition, compat="broadcast_equals").sum("set_location")
         # build rhs
         delta_years = interval_between_years*(capacity_addition.coords["set_time_steps_yearly"]-1-self.energy_system.set_time_steps_yearly[0])
         lifetime_existing = self.parameters.lifetime_existing
@@ -886,10 +890,16 @@ class TechnologyRules(GenericRule):
         rhs_an = tdr * (capacity_existing_total * kdr_existing).sum("set_technologies_existing") + self.parameters.capacity_addition_unbounded
         rhs_sn = (tdr * (capacity_existing_total_nosr * kdr_existing).sum("set_technologies_existing") + self.parameters.capacity_addition_unbounded).sum("set_location")
         # mask for tdr == inf
-        lhs_an = lhs_an.where(mask_inf_tdr)
-        lhs_sn = lhs_sn.where(mask_inf_tdr)
-        rhs_an = rhs_an.where(mask_inf_tdr)
-        rhs_sn = rhs_sn.where(mask_inf_tdr)
+        rhs_an = rhs_an.broadcast_like(lhs_an.const)
+        rhs_sn = rhs_sn.broadcast_like(lhs_sn.const)
+        lhs_an = self.align_and_mask(lhs_an, mask_inf_tdr)
+        rhs_an = self.align_and_mask(rhs_an, mask_inf_tdr)
+        lhs_sn = self.align_and_mask(lhs_sn, mask_inf_tdr_sum)
+        rhs_sn = self.align_and_mask(rhs_sn, mask_inf_tdr_sum)
+        # lhs_an = lhs_an.where(mask_inf_tdr)
+        # rhs_an = rhs_an.where(mask_inf_tdr)
+        # lhs_sn = lhs_sn.where(mask_inf_tdr_sum)
+        # rhs_sn = rhs_sn.where(mask_inf_tdr_sum)
         # combine
         constraints_sn = lhs_sn <= rhs_sn
         constraints_an = lhs_an <= rhs_an

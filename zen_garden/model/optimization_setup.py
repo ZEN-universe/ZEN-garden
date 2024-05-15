@@ -272,6 +272,16 @@ class OptimizationSetup(object):
         else:
             return None
 
+    def get_class_set_of_element(self, element_name: str, klass):
+        """ returns the set of all elements in the class of the element
+
+        :param element_name: name of element
+        :param klass: class of the elements to return
+        :return class_set: set of all elements in the class of the element """
+        class_name = self.get_element(klass,element_name).__class__.label
+        class_set = self.sets[class_name]
+        return class_set
+
     def get_attribute_of_all_elements(self, cls, attribute_name: str, capacity_types=False,
                                       return_attribute_is_series=False):
         """ get attribute values of all elements in a class
