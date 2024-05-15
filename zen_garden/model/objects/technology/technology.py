@@ -930,19 +930,19 @@ class TechnologyRules(GenericRule):
             a = ((1 + dr) ** lt * dr) / ((1 + dr) ** lt - 1)
         else:
             a = 1 / lt
-        lt_range = pd.Series({(t, y): list(Technology.get_lifetime_range(self.optimization_setup, t, y)) for t, y in
-                              index.get_unique(["set_technologies", "set_time_steps_yearly"])})
-        lt_range = pd.DataFrame(lt_range.to_list(), index=lt_range.index).stack()
-        lt_range[:] = -1
+        lt_range = pd.MultiIndex.from_tuples([(t, y, py) for t, y in
+                                              index.get_unique(["set_technologies", "set_time_steps_yearly"]) for py in
+                                              list(Technology.get_lifetime_range(self.optimization_setup, t, y))])
+        lt_range = pd.Series(index=lt_range, data=-1)
         lt_range.index.names = ["set_technologies", "set_time_steps_yearly", "set_time_steps_yearly_prev"]
-        lt_range = lt_range.to_xarray().broadcast_like(self.variables["capacity"].mask).fillna(0)
+        lt_range = lt_range.to_xarray().broadcast_like(self.variables["capacity"].lower).fillna(0)
 
         cost_capex = self.variables["cost_capex"].rename(
             {"set_time_steps_yearly": "set_time_steps_yearly_prev"})
         cost_capex = cost_capex.broadcast_like(lt_range)
         expr = (lt_range * a * cost_capex).sum("set_time_steps_yearly_prev")
         lhs = lp.merge(1 * self.variables["capex_yearly"], expr, compat="broadcast_equals")
-        rhs = a * self.parameters.existing_capex
+        rhs = (a * self.parameters.existing_capex).broadcast_like(lhs.const)
         constraints = lhs == rhs
 
         ### return
