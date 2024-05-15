@@ -285,7 +285,8 @@ class EnergySystem:
         variables.add_variable(model, name="carbon_emissions_annual", index_sets=sets["set_time_steps_yearly"], doc="annual carbon emissions of energy system", unit_category={"emissions": 1})
         # cumulative carbon emissions
         variables.add_variable(model, name="carbon_emissions_cumulative", index_sets=sets["set_time_steps_yearly"],
-                               doc="cumulative carbon emissions of energy system over time for each year", unit_category={"emissions": 1})
+                               doc="cumulative carbon emissions of energy system over time for each year",
+                               unit_category={"emissions": 1})
         # carbon emission overshoot
         variables.add_variable(model, name="carbon_emissions_budget_overshoot", index_sets=sets["set_time_steps_yearly"], bounds=(0, np.inf),
                                doc="overshoot carbon emissions of energy system at the end of the time horizon", unit_category={"emissions": 1})
@@ -317,8 +318,8 @@ class EnergySystem:
         # annual limit carbon emissions
         self.rules.constraint_carbon_emissions_annual_limit()
         # minimum CO2 stored
-        constraints.add_constraint_rule(model, name="constraint_min_co2_stored", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_min_co2_stored_rule,
-                                        doc="minimum CO2 stored")
+        # constraints.add_constraint_rule(model, name="constraint_min_co2_stored", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_min_co2_stored_rule,
+        #                                 doc="minimum CO2 stored")
         # carbon emission budget limit
         self.rules.constraint_carbon_emissions_budget()
 
@@ -422,19 +423,15 @@ class EnergySystemRules(GenericRule):
 
     def constraint_min_co2_stored_rule(self, year):
         """ semi-hardcoded minimum boundary on CO2 stored in the system.
-        The emergency_storage technology is used as option for the optimizer to breach the limit at a high cost. """
+        The emergency_storage technology is used as option for the optimizer to breach the limit at a high cost.
+        .. math::
+            \\sum_{t\\in\mathcal{T}} \\sum_{n\\in\\mathcal{N}} \\tau_t a_{c,n,y}^\mathrm{export} \\geq a_{y}^\mathrm{min_{CO2}}, c=CO2-stored
 
-        ### index sets
-        # skipped because rule-based constraint
-
-        ### masks
-        # skipped because rule-based constraint
-
-        ### index loop
-        # skipped because rule-based constraint
-
-        ### auxiliary calculations
-        # not necessary
+        """
+        min_co2_stored = self.parameters.min_co2_stored
+        mask = min_co2_stored != 0
+        if not mask.any():
+            return None
 
         ### formulate constraint
         assert 'co2_stored' in self.optimization_setup.sets['set_carriers'], "carrier 'co2_stored' not found in set_carriers"
@@ -448,7 +445,7 @@ class EnergySystemRules(GenericRule):
         constraints = lhs >= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        self.constraints.add_constraints("constraint_min_co2_stored", constraints)
 
     def constraint_carbon_emissions_budget(self):
         """ carbon emissions budget of entire time horizon from technologies and carriers.

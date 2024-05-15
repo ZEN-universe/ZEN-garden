@@ -65,9 +65,15 @@ class Technology(Element):
         self.raw_time_series["opex_specific_variable"] = self.data_input.extract_input_data("opex_specific_variable", index_sets=[set_location, "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
         # non-time series input data
         self.capacity_limit = self.data_input.extract_input_data("capacity_limit", index_sets=[set_location, "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1, "time": -1})
-        self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super", index_sets=[set_location_super, "set_time_steps_yearly"],
-                                                                       time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1, "time": -1})
-        self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity_technology", index_sets=[set_location], unit_category={"emissions": 1, "energy_quantity": -1})
+        self.capacity_limit_super = self.data_input.extract_input_data("capacity_limit_super",
+                                                                       index_sets=[set_location_super,
+                                                                                   "set_time_steps_yearly"],
+                                                                       time_steps="set_time_steps_yearly",
+                                                                       unit_category={"energy_quantity": 1, "time": -1})
+        self.carbon_intensity_technology = self.data_input.extract_input_data("carbon_intensity_technology",
+                                                                              index_sets=[set_location],
+                                                                              unit_category={"emissions": 1,
+                                                                                             "energy_quantity": -1})
         # extract existing capacity
         self.set_technologies_existing = self.data_input.extract_set_technologies_existing()
         self.capacity_existing = self.data_input.extract_input_data("capacity_existing", index_sets=[set_location, "set_technologies_existing"], unit_category={"energy_quantity": 1, "time": -1})
@@ -440,10 +446,12 @@ class Technology(Element):
             doc="carbon emissions for operating technology at location l and time t", unit_category={"emissions": 1, "time": -1})
         # total carbon emissions technology
         variables.add_variable(model, name="carbon_emissions_technology_total", index_sets=sets["set_time_steps_yearly"],
-            doc="total carbon emissions for operating technology at location l and time t", unit_category={"emissions": 1})
+            doc="total carbon emissions for operating technology at location l and time t",
+                               unit_category={"emissions": 1})
         # LCA impacts of each technology
         if optimization_setup.system['load_lca_factors']:
-            variables.add_variable(model, name="technology_lca_impacts", index_sets=cls.create_custom_set(['set_technologies', 'set_location', 'set_lca_impact_categories', 'set_time_steps_operation'], optimization_setup),
+            variables.add_variable(model, name="technology_lca_impacts", index_sets=cls.create_custom_set(
+                ['set_technologies', 'set_location', 'set_lca_impact_categories', 'set_time_steps_operation'], optimization_setup),
                                    doc='LCA impacts for operating technology at location l and time t', unit_category={"time": -1})
             variables.add_variable(model, name='technology_lca_impacts_total', index_sets=cls.create_custom_set(['set_lca_impact_categories', 'set_time_steps_yearly'], optimization_setup),
                                                       doc='Total LCA impacts in year y', unit_category={})
@@ -519,13 +527,16 @@ class Technology(Element):
         # the disjunction variables
         variables = optimization_setup.variables
         index_vals, _ = cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup)
-        index_names = ["on_off_technologies", "on_off_capacity_types", "on_off_locations", "on_off_time_steps_operation"]
+        index_names = ["on_off_technologies", "on_off_capacity_types", "on_off_locations",
+                       "on_off_time_steps_operation"]
         variables.add_variable(model, name="tech_on_var",
                                index_sets=(index_vals, index_names),
-                               doc="Binary variable which equals 1 when technology is switched on at location l and time t", binary=True, unit_category=None)
+                               doc="Binary variable which equals 1 when technology is switched on at location l and time t",
+                               binary=True, unit_category=None)
         variables.add_variable(model, name="tech_off_var",
                                index_sets=(index_vals, index_names),
-                               doc="Binary variable which equals 1 when technology is switched off at location l and time t", binary=True, unit_category=None)
+                               doc="Binary variable which equals 1 when technology is switched off at location l and time t",
+                               binary=True, unit_category=None)
         model.add_constraints(model.variables["tech_on_var"] + model.variables["tech_off_var"] == 1, name="tech_on_off_cons")
         n_cons = len(model.constraints.items())
 

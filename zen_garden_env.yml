@@ -1,4 +1,4 @@
-name: zen-garden
+name: zen-garden_new_linopy
 channels:
   - conda-forge
   - gurobi

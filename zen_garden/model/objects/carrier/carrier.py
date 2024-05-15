@@ -267,15 +267,6 @@ class CarrierRules(GenericRule):
     def constraint_carrier_lca_impacts_total_rule(self, lca_category, year):
         """ total lca impacts of all carriers """
 
-        ### index sets
-        # skipped because rule-based constraint
-
-        ### masks
-        # skipped because rule-based constraint
-
-        ### index loop
-        # skipped because rule-based constraint
-
         ### auxiliary calculations
         terms = []
         # This vectorizes over times and locations
@@ -291,7 +282,7 @@ class CarrierRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        return self.constraints.return_contraints(constraints)
+        self.constraints.add_constraint("constraint_carrier_lca_impacts_total", constraints)
 
     def constraint_availability_import_export(self):
         """node- and time-dependent carrier availability to import/export from outside the system boundaries
@@ -355,23 +346,25 @@ class CarrierRules(GenericRule):
 
         ### index loop
         # this loop vectorizes over the nodes
-        constraints = []
+        constraints = {}
         for carrier in index.get_unique(["set_carriers"]):
             ### auxiliary calculations
             term_summed_import_flow = (self.variables["flow_import"].loc[carrier, :, :]
-                                       * self.parameters.time_steps_operation_duration.loc[:]).sum("set_time_steps_operation")
+                                       * self.parameters.time_steps_operation_duration.loc[:]).sum(
+                "set_time_steps_operation")
 
             ### formulate constraint
             lhs = term_summed_import_flow
             rhs = self.parameters.availability_import_total.loc[carrier, :]
-            constraints.append(lhs <= rhs)
+            constraints[carrier] = lhs <= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints,
-                                                  model=self.model,
-                                                  mask=mask,
-                                                  index_values=index.get_unique(["set_carriers"]),
-                                                  index_names=["set_carriers"])
+        self.constraints.add_constraint("constraint_availability_import_total", constraints)
+        # return self.constraints.return_constraints(constraints,
+        #                                           model=self.model,
+        #                                           mask=mask,
+        #                                           index_values=index.get_unique(["set_carriers"]),
+        #                                           index_names=["set_carriers"])
 
     def constraint_availability_export_total_block(self):
         """node-dependent carrier availability to export to outside the system boundaries summed over entire optimization horizon
@@ -392,23 +385,25 @@ class CarrierRules(GenericRule):
 
         ### index loop
         # this loop vectorizes over the nodes
-        constraints = []
+        constraints = {}
         for carrier in index.get_unique(["set_carriers"]):
             ### auxiliary calculations
             term_summed_export_flow = (self.variables["flow_export"].loc[carrier, :, :]
-                                       * self.parameters.time_steps_operation_duration.loc[:]).sum("set_time_steps_operation")
+                                       * self.parameters.time_steps_operation_duration.loc[:]).sum(
+                "set_time_steps_operation")
 
             ### formulate constraint
             lhs = term_summed_export_flow
             rhs = self.parameters.availability_export_total.loc[carrier, :]
-            constraints.append(lhs <= rhs)
+            constraints[carrier] = lhs <= rhs
 
         ### return
-        return self.constraints.return_contraints(constraints,
-                                                  model=self.model,
-                                                  mask=mask,
-                                                  index_values=index.get_unique(["set_carriers"]),
-                                                  index_names=["set_carriers"])
+        self.constraints.add_constraint("constraint_availability_export_total", constraints)
+        # return self.constraints.return_constraints(constraints,
+        #                                           model=self.model,
+        #                                           mask=mask,
+        #                                           index_values=index.get_unique(["set_carriers"]),
+        #                                           index_names=["set_carriers"])
 
     def constraint_cost_carrier(self):
         """ cost of importing and exporting carrier
@@ -473,7 +468,7 @@ class CarrierRules(GenericRule):
 
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_carbon_emissions_carrier",constraints)
+        self.constraints.add_constraint("constraint_carbon_emissions_carrier", constraints)
 
     def constraint_carrier_lca_impacts_block(self):
         """ lca impacts of importing and exporting carrier"""
@@ -488,7 +483,7 @@ class CarrierRules(GenericRule):
 
         ### index loop
         # we loop over the carriers and vectorize over the nodes, lca categories, and over the times after converting them from operation to yearly time steps
-        constraints = []
+        constraints = {}
         for carrier in index.get_unique(["set_carriers"]):
             ### auxiliary calculations
             yearly_time_steps = [self.time_steps.convert_time_step_operation2year(t) for t in times]
@@ -502,12 +497,13 @@ class CarrierRules(GenericRule):
             ### formulate constraint
             lhs = (self.variables["carrier_lca_impacts"].loc[carrier, :, :, times] - term_flow_import_export)
             rhs = 0
-            constraints.append(lhs == rhs)
+            constraints[carrier] = lhs == rhs
 
         ### return
-        return self.constraints.return_contraints(constraints, model=self.model,
-                                                  index_values=index.get_unique(["set_carriers"]),
-                                                  index_names=["set_carriers"])
+        self.constraints.add_constraint("constraint_carrier_lca_impacts",constraints)
+        # return self.constraints.return_constraints(constraints, model=self.model,
+        #                                           index_values=index.get_unique(["set_carriers"]),
+        #                                           index_names=["set_carriers"])
 
     def constraint_nodal_energy_balance(self):
         """
