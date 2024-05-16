@@ -315,6 +315,7 @@ class GenericRule(object):
         self.energy_system = self.optimization_setup.energy_system
         self.time_steps = self.energy_system.time_steps
 
+    # helper methods for constraint rules
     def get_year_time_step_array(self,storage = False):
         """ returns array with year and time steps of each year """
         # create times xarray with 1 where the operation time step is in the year
