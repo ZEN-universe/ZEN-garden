@@ -19,9 +19,12 @@ system['set_nodes']                      = ["DE", "CH"]
 
 # time steps
 system["reference_year"]                 = 2022
-system["unaggregated_time_steps_per_year"]  = 8760
-system["aggregated_time_steps_per_year"]    = 10
-system["conduct_time_series_aggregation"]  = True
+system["unaggregated_time_steps_per_year"]  = 1
+system["aggregated_time_steps_per_year"]    = 1
+system["conduct_time_series_aggregation"]  = False
+
+# scenario analysis:
+system['conduct_scenario_analysis'] = True
 
 system["optimized_years"]                = 1
 system["interval_between_years"]          = 1

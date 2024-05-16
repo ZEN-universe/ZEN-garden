@@ -8,13 +8,14 @@ Class defining the parameters, variables, and constraints of the retrofitting te
 The class takes the abstract optimization model as an input and adds parameters, variables, and
 constraints of the retrofitting technologies.
 """
+import itertools
 import logging
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from zen_garden.utils import linexpr_from_tuple_np, InputDataChecks
+from zen_garden.utils import linexpr_from_tuple_np, InputDataChecks, align_like
 from .conversion_technology import ConversionTechnology
 from ..component import ZenIndex
 from ..element import GenericRule
@@ -47,7 +48,7 @@ class RetrofittingTechnology(ConversionTechnology):
         # get attributes from class <Technology>
         super().store_input_data()
         # get retrofit base technology
-        self.retrofit_base_technology = self.data_input.extract_technologies(technology_type="retrofit_base_technology")
+        self.retrofit_base_technology = self.data_input.extract_retrofit_base_technology()
         # get flow_coupling factor and capex
         self.retrofit_flow_coupling_factor = self.data_input.extract_input_data("retrofit_flow_coupling_factor", index_sets=["set_nodes", "set_time_steps"], unit_category={})
 
@@ -77,19 +78,14 @@ class RetrofittingTechnology(ConversionTechnology):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the pe.Constraints of the class <RetrofittingTechnology>
+        """ constructs the Constraints of the class <RetrofittingTechnology>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
-        model = optimization_setup.model
-        constraints = optimization_setup.constraints
         # add pwa constraints
         rules = RetrofittingTechnologyRules(optimization_setup)
 
         # flow coupling of retrofitting technology and its base technology
-        constraints.add_constraint_block(model, name="constraint_retrofit_flow_coupling",
-                                         constraint=rules.constraint_retrofit_flow_coupling_block(
-                                             *cls.create_custom_set(["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"], optimization_setup)),
-                                         doc="couples the reference flows of the retrofitting technology and its base technology")
+        rules.constraint_retrofit_flow_coupling()
 
 class RetrofittingTechnologyRules(GenericRule):
     """
@@ -104,14 +100,7 @@ class RetrofittingTechnologyRules(GenericRule):
 
         super().__init__(optimization_setup)
 
-
-    # Rule-based constraints
-    # -----------------------
-
-    # Block-based constraints
-    # -----------------------
-
-    def constraint_retrofit_flow_coupling_block(self, index_values, index_names):
+    def constraint_retrofit_flow_coupling(self):
         """ couples reference flow variables based on modeling technique
 
         .. math::
@@ -119,44 +108,34 @@ class RetrofittingTechnologyRules(GenericRule):
         .. math::
             \mathrm{if\ reference\ carrier\ in\ output\ carriers}\ \\overline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}
 
-        :param index_values: index values
-        :param index_names: index names
-        :return: linopy constraints
         """
+        flow_conversion_input = self.variables["flow_conversion_input"]
+        flow_conversion_output = self.variables["flow_conversion_output"]
+        rc_in = pd.Series(
+            {(t, c): True if c in self.sets["set_reference_carriers"][t] else False for t, c in
+             itertools.product(self.sets["set_conversion_technologies"],
+                               self.sets["set_input_carriers"].superset)})
+        rc_out = pd.Series(
+            {(t, c): True if c in self.sets["set_reference_carriers"][t] else False for t, c in
+             itertools.product(self.sets["set_conversion_technologies"],
+                               self.sets["set_output_carriers"].superset)})
+        rc_in.index.names = ["set_conversion_technologies", "set_input_carriers"]
+        rc_out.index.names = ["set_conversion_technologies", "set_output_carriers"]
+        rc_in = align_like(rc_in.to_xarray(), flow_conversion_input)
+        rc_out = align_like(rc_out.to_xarray(), flow_conversion_output)
+        term_flow_reference = (
+                flow_conversion_input.where(rc_in).sum("set_input_carriers")
+                + flow_conversion_output.where(rc_out).sum("set_output_carriers"))
+        retrofit_base_technologies = pd.Series(
+            {t: rt for t in self.sets["set_conversion_technologies"] if
+             t in self.sets["set_retrofitting_base_technologies"] for rt in
+             self.sets["set_retrofitting_base_technologies"][t]},
+            name="set_conversion_technologies")
+        retrofit_base_technologies.index.name = "set_conversion_technologies"
+        term_flow_retrofit = self.map_and_expand(term_flow_reference, retrofit_base_technologies)
+        term_flow_base = term_flow_reference.sel({"set_conversion_technologies": self.sets["set_retrofitting_technologies"]})
+        lhs = term_flow_base - self.parameters.retrofit_flow_coupling_factor * term_flow_retrofit
+        rhs = 0
+        constraints = lhs <= rhs
 
-        ### index sets
-        # check if we even have something
-        if len(index_values) == 0:
-            return []
-        index = ZenIndex(index_values, index_names)
-
-        ### masks
-        # note necessary
-
-        ### index loop
-        # we loop over all technologies and dependent carriers, mostly to avoid renaming of dimension
-        constraints = []
-        for retrofit_tech in index.get_unique([0]):
-
-            ### auxiliary calculations
-            # get coords
-            coords = [self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_operation"]]
-            nodes = index.get_values([retrofit_tech], 1, dtype=list, unique=True)
-            times = index.get_values([retrofit_tech], 2, dtype=list, unique=True)
-            # get flow term retrofit technology and base technology
-            term_flow_retrofit_tech = ConversionTechnology.get_flow_term_reference_carrier(self.optimization_setup, tech=retrofit_tech)
-            base_tech = self.sets["set_retrofitting_base_technologies"][retrofit_tech][0]
-            term_flow_base_tech = ConversionTechnology.get_flow_term_reference_carrier(self.optimization_setup, tech=base_tech)
-
-            ### formulate constraint
-            lhs = linexpr_from_tuple_np(
-                [(1.0, term_flow_retrofit_tech),
-                 (-self.parameters.retrofit_flow_coupling_factor.loc[retrofit_tech, nodes, times],term_flow_base_tech)],
-                coords=coords, model=self.model)
-            rhs = 0
-            constraints.append(lhs <= rhs)
-
-        ### return
-        return self.constraints.return_contraints(constraints, model=self.model, stack_dim_name="constraint_retrofit_flow_coupling_dim")
-
-
+        self.constraints.add_constraint("name",constraints)

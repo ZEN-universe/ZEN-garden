@@ -1,0 +1,38 @@
+{
+  "carbon_intensity_carrier": {
+    "default_value": 0.0,
+    "unit": "kilotons/kilotons"
+  },
+  "demand": {
+    "default_value": 0.0,
+    "unit": "kilotons/hour"
+  },
+  "price_shed_demand": {
+    "default_value": "inf",
+    "unit": "kiloEuro/kilotons"
+  },
+  "availability_import": {
+    "default_value": 0.0,
+    "unit": "kilotons/hour"
+  },
+  "availability_export": {
+    "default_value": 0.0,
+    "unit": "kilotons/hour"
+  },
+  "availability_import_yearly": {
+    "default_value": "inf",
+    "unit": "kilotons"
+  },
+  "availability_export_yearly": {
+    "default_value": "inf",
+    "unit": "kilotons"
+  },
+  "price_export": {
+    "default_value": 0.0,
+    "unit": "kiloEuro/kilotons"
+  },
+  "price_import": {
+    "default_value": 0.0,
+    "unit": "kiloEuro/kilotons"
+  }
+}

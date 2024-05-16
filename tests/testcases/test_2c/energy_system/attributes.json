@@ -20,7 +20,7 @@
     "unit": "Euro/tons"
   },
   "price_carbon_emissions_annual_overshoot": {
-    "default_value": 400.0,
+    "default_value": "inf",
     "unit": "Euro/tons"
   },
   "knowledge_spillover_rate": {

@@ -4,7 +4,7 @@ channels:
   - gurobi
 dependencies:
   - python=3.11
-  - xarray=2023.8.0
+  - xarray
   - cython
   - pytest
   - pip
@@ -18,7 +18,6 @@ dependencies:
   - matplotlib
   - entsoe-py
   - gurobi
-#  - h5py
   - pytables
   - pydantic
   - pip:
@@ -28,7 +27,9 @@ dependencies:
       - ordered-set
       - pyogrio
       - psutil
-      - linopy==0.1.5
+      - linopy>=0.3.8
+      - sphinx
+      - myst-parser
       - -e .
 
 # conda env create -f zen_garden_env.yml
