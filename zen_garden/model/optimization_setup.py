@@ -474,6 +474,8 @@ class OptimizationSetup(object):
     def analyze_numerics(self):
         """ get largest and smallest matrix coefficients and RHS """
         if self.solver["analyze_numerics"]:
+            logging.warning("Analyzing numerics is currently disabled due to performance reasons.")
+            return
             largest_rhs = [None, 0]
             smallest_rhs = [None, np.inf]
             largest_coeff = [None, 0]
