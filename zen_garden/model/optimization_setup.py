@@ -94,8 +94,7 @@ class OptimizationSetup(object):
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
-        # Scaling
-        self.scaling = Scaling(self.model, config.solver["scaling_iterations"],config.solver["scaling_algorithm"])
+
 
 
 
@@ -413,6 +412,8 @@ class OptimizationSetup(object):
         self.constraints = Constraint(self.sets)
         # define and construct components of self.model
         Element.construct_model_components(self)
+        # Initiate scaling object
+        self.scaling = Scaling(self.model, self.solver['scaling_iterations'], self.solver['scaling_algorithm'])
         # find smallest and largest coefficient and RHS
         self.analyze_numerics()
 

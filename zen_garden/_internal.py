@@ -7,6 +7,7 @@
 
 Compilation  of the optimization problem.
 """
+import cProfile
 import importlib.util
 import logging
 import os
@@ -80,9 +81,7 @@ def main(config, dataset_path=None, job_index=None):
             # create optimization problem
             optimization_setup.construct_optimization_problem()
             #TODO scaling algorithm
-            #Todo save object then call run + config.solver within scaling object use optimization setup
             if config.solver["use_scaling"]:
-                optimization_setup.scaling.initiate_A_matrix(optimization_setup.model)
                 optimization_setup.scaling.run_scaling()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()

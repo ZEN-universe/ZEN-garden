@@ -147,6 +147,7 @@ class SolverOptions(Subscriptable):
     pass
 
 #ToDO add iterations etc. here
+#Todo add sclaing precision here
 class Solver(Subscriptable):
     name: str = "glpk"
     solver_options: SolverOptions = SolverOptions()

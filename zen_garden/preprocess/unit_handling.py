@@ -708,7 +708,7 @@ class UnitHandling:
         return is_pos_neg_boolean
 
 
-#todo self Amatrix into seperate function before run to assign sclaing to optimization class
+#ToDo get rid of A matrix dependency -> for big models slowest part; can we use the data structure of linopy directly to determine column and row scaling factors
 class Scaling:
     """
     This class scales the optimization model before solving it and rescales the solution
@@ -721,36 +721,36 @@ class Scaling:
         self.algorithm = algorithm
 
 
-#ToDo somehow pointer of model instance doesnt work
-    def initiate_A_matrix(self, model):
-        self.model = model
+#ToDO check if construct A matrix faster with newer version and them maybe rewrite scaling if not
+    def initiate_A_matrix(self):
         self.A_matrix = self.model.constraints.to_matrix()
         self.D_r_inv = np.ones(self.A_matrix.get_shape()[0])
         self.D_c_inv = np.ones(self.A_matrix.get_shape()[1])
+        self.rhs = np.abs(self.model.constraints.ravel("rhs",broadcast_like = "labels"))
 
     def re_scale(self):
         model = self.model
         sol = model.solution
-        output = []
-        print(self.D_c_inv)
         for name_var in model.variables:
             var = model.variables[name_var]
             mask = np.where(var.labels.data != -1)
-            output += list(sol[name_var].data[mask] * (self.D_c_inv[var.labels.data[mask]]))
-        print(output)
-
-
+            sol[name_var].data[mask] = sol[name_var].data[mask] * (self.D_c_inv[var.labels.data[mask]])
+            #necessary due to eliminiation of explicit zeros in the A matrix -> otherwise NaNs in the solution
+            if any(np.isnan(sol[name_var].data[mask])):
+                sol[name_var].data[mask] = np.nan_to_num(sol[name_var].data[mask])
+        self.model.solution = sol
 
     def run_scaling(self):
+        #cp = cProfile.Profile()
+        #cp.enable()
+        self.initiate_A_matrix()
         self.iter_scaling()
-        cp = cProfile.Profile()
-        cp.enable()
         self.overwrite_problem()
-        cp.disable()
-        cp.print_stats("cumtime")
+        #cp.disable()
+        #cp.print_stats("cumtime")
 
 #Todo add rhs to row scaling
-#ToDO unable column scaling for binary and integer variables objective and consraints
+#ToDO replace np.inf in column scaling with 1
     def replace_data(self, name):
         constraint = self.model.constraints[name]
         #Get data
@@ -758,23 +758,9 @@ class Scaling:
         mask_skip_constraints = constraint.labels.data
         mask_variables = constraint.vars.data
         rhs = constraint.rhs.data
-        """# Iterate over each coefficient and replace non-nan coefficients with data
-        for index, constraint_mask in np.ndenumerate(mask_skip_constraints):
-            if constraint_mask != -1:
-                #rhs
-                try:
-                    rhs[index] = rhs[index] * self.D_r_inv[constraint_mask]
-                except:
-                    rhs = rhs * self.D_r_inv[constraint_mask]
-                #lhs
-                for i,data in enumerate(lhs[index]):
-                    if not np.isnan(data) and mask_variables[index][i] != -1:
-                        lhs[index][i] = lhs[index][i] * self.D_r_inv[constraint_mask] * self.D_c_inv[mask_variables[index][i]]
-        """
         # Find the indices where constraint_mask is not equal to -1
         indices = np.where(mask_skip_constraints != -1)
         if indices[0].size > 0:
-
             # Update rhs
             try:
                 rhs[indices] = rhs[indices] * self.D_r_inv[mask_skip_constraints[indices]]
@@ -789,22 +775,29 @@ class Scaling:
 
     def adjust_scaling_factors_of_skipped_rows(self, name):
         constraint = self.model.constraints[name]
-        #rows
-        mask_skip_constraints = constraint.labels.data
-        indices = np.where(mask_skip_constraints != -1)
-        self.D_r_inv[mask_skip_constraints[indices]] = 1
+        #rows -> unnecessary to scale rows with binary and integer variables as skipped anyways
+        #mask_skip_constraints = constraint.labels.data
+        #indices = np.where(mask_skip_constraints != -1)
+        #self.D_r_inv[mask_skip_constraints[indices]] = 1
         #cols
         mask_variables = constraint.vars.data
         indices = np.where(mask_variables != -1)
         self.D_c_inv[mask_variables[indices]] = 1
 
-
-
+    def adjust_int_variables(self):
+        vars = self.model.variables
+        for var in vars:
+            if any(vars[var].attrs.values()):
+                mask = np.where(vars[var].labels.data != -1)
+                self.D_c_inv[vars[var].labels.data[mask]] = 1
 
     def overwrite_problem(self):
+        #pre-check variables -> skip binary and integer variables
+        self.adjust_int_variables()
+        #adjust column scaling factors to be of the power of two -> otherwise numerical errors
+        self.D_c_inv = np.power(2, np.round(np.emath.logn(2, self.D_c_inv)))
         #pre-check rows -> otherwise inconsistency in scaling
         for name_con in self.model.constraints:
-            #check if only integers are allowed in scaling: if yes skip and overwrite scaling vector
             if self.model.constraints[name_con].coeffs.dtype == int:
                 self.adjust_scaling_factors_of_skipped_rows(name_con)
         #overwrite constraints
@@ -819,11 +812,6 @@ class Scaling:
         vars = self.model.objective.vars.data
         scale_factors = self.D_c_inv[vars]
         self.model.objective.coeffs.data = self.model.objective.coeffs.data * scale_factors
-
-
-
-
-
 
     def get_min(self,A_matrix):
         d = A_matrix.data
@@ -845,10 +833,12 @@ class Scaling:
             self.A_matrix = sp.sparse.diags(vector, 0, format='csr').dot(self.A_matrix)
             #self.D_r_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_r_inv
             self.D_r_inv = self.D_r_inv * vector
+            self.rhs = self.rhs * vector
         elif axis == 0:
             self.A_matrix = self.A_matrix.dot(sp.sparse.diags(vector, 0, format='csr'))
             #self.D_c_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_c_inv
             self.D_c_inv = self.D_c_inv * vector
+
 
     def iter_scaling(self):
         #transform A matrix to csr matrix for better computational properties
@@ -892,7 +882,9 @@ class Scaling:
             elif self.algorithm == "geom":
                 # update row scaling vector
                 max_rows = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=1)
+                max_rows = np.maximum(max_rows,self.rhs,out =max_rows, where= self.rhs != np.inf)
                 min_rows = self.get_min(self.A_matrix)
+                min_rows = np.minimum(min_rows,self.rhs,out =min_rows, where=self.rhs>0)
                 r_vector = 1 / ((max_rows * min_rows) ** 0.5)
                 # update A and row scaling matrix
                 self.update_A(r_vector,1)
