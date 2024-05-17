@@ -317,9 +317,10 @@ class EnergySystem:
 
         # annual limit carbon emissions
         self.rules.constraint_carbon_emissions_annual_limit()
+
         # minimum CO2 stored
-        # constraints.add_constraint_rule(model, name="constraint_min_co2_stored", index_sets=sets["set_time_steps_yearly"], rule=self.rules.constraint_min_co2_stored_rule,
-        #                                 doc="minimum CO2 stored")
+        self.rules.constraint_min_co2_stored()
+
         # carbon emission budget limit
         self.rules.constraint_carbon_emissions_budget()
 
@@ -421,31 +422,36 @@ class EnergySystemRules(GenericRule):
 
         self.constraints.add_constraint("constraint_carbon_emissions_annual_limit",constraints)
 
-    def constraint_min_co2_stored_rule(self, year):
+    def constraint_min_co2_stored(self):
         """ semi-hardcoded minimum boundary on CO2 stored in the system.
         The emergency_storage technology is used as option for the optimizer to breach the limit at a high cost.
         .. math::
             \\sum_{t\\in\mathcal{T}} \\sum_{n\\in\\mathcal{N}} \\tau_t a_{c,n,y}^\mathrm{export} \\geq a_{y}^\mathrm{min_{CO2}}, c=CO2-stored
 
         """
-        min_co2_stored = self.parameters.min_co2_stored
-        mask = min_co2_stored != 0
-        if not mask.any():
-            return None
+        m = xr.DataArray([carrier == 'co2_stored' for carrier in self.energy_system.set_carriers],
+                          dims=['set_carriers']).broadcast_like(self.variables['flow_export'].lower)
 
-        ### formulate constraint
-        assert 'co2_stored' in self.optimization_setup.sets['set_carriers'], "carrier 'co2_stored' not found in set_carriers"
-        total_co2_stored = (self.variables['flow_export'].loc['co2_stored', :, year] * self.parameters.time_steps_operation_duration.loc[year]).sum()
-        if 'emergency_storage' not in self.variables['flow_conversion_output'].coords['set_conversion_technologies'].values:
-            lhs = total_co2_stored
-        else:
-            feasibility_tech = (self.variables['flow_conversion_output'].loc['emergency_storage', 'dummy_carrier', :, year] * self.parameters.time_steps_operation_duration.loc[year]).sum()
-            lhs = total_co2_stored + feasibility_tech
-        rhs = self.parameters.min_co2_stored.loc[year].item()
+        lhs = (self.variables['flow_export'] * self.get_year_time_step_duration_array()).where(m).sum(
+            ['set_time_steps_operation', 'set_nodes'])
+        rhs = self.parameters.min_co2_stored.broadcast_like(lhs.const)
         constraints = lhs >= rhs
+        self.constraints.add_constraint("constraint_min_co2_stored", constraints)
 
-        ### return
-        self.constraints.add_constraints("constraint_min_co2_stored", constraints)
+        # old stuff:
+        # year = 0
+        # min_co2_stored = self.parameters.min_co2_stored
+        # mask = min_co2_stored != 0
+        # if not mask.any():
+        #     return None
+        #
+        # ### formulate constraint
+        # assert 'co2_stored' in self.optimization_setup.sets['set_carriers'], "carrier 'co2_stored' not found in set_carriers"
+        # total_co2_stored = (self.variables['flow_export'].loc['co2_stored', :, year] * self.parameters.time_steps_operation_duration.loc[year]).sum()
+        # lhs = total_co2_stored
+        # rhs = self.parameters.min_co2_stored.loc[year].item()
+        # constraints = lhs >= rhs
+
 
     def constraint_carbon_emissions_budget(self):
         """ carbon emissions budget of entire time horizon from technologies and carriers.

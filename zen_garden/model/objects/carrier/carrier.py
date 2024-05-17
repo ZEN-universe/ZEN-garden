@@ -171,13 +171,8 @@ class Carrier(Element):
         # limit import/export flow by availability for each year
         rules.constraint_availability_import_export_yearly()
         # limit import flow by availability for the entire optimization horizon
-        constraints.add_constraint_block(model, name="constraint_availability_import_total",
-                                         constraint=rules.constraint_availability_import_total_block(),
-                                         doc='node-dependent carrier availability to import from outside the system boundaries summed over entire optimization horizon')
-        # limit export flow by availability for the entire optimization horizon
-        constraints.add_constraint_block(model, name="constraint_availability_export_total",
-                                         constraint=rules.constraint_availability_export_total_block(),
-                                         doc='node-dependent carrier availability to export to outside the system boundaries summed over entire optimization horizon')
+        rules.constraint_availability_import_export_total()
+
         # cost for carrier
         rules.constraint_cost_carrier()
 
@@ -327,44 +322,58 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_availability_import_yearly",constraints_imp)
         self.constraints.add_constraint("constraint_availability_export_yearly",constraints_exp)
 
-    def constraint_availability_import_total_block(self):
+    def constraint_availability_import_export_total(self):
         """node-dependent carrier availability to import from outside the system boundaries summed over entire optimization horizon
 
         .. math::
-           a_{c,n}^\mathrm{import} \geq \\sum_{y\\in\mathcal{Y}} \\sum_{t\\in\mathcal{T_y}}\\tau_t U_{c,n,t}
+           a_{c,n}^\\mathrm{import} \\geq \\sum_{y\\in\\mathcal{Y}} \\sum_{t\\in\\mathcal{T_y}}\\tau_t U_{c,n,t} \\\\
+           a_{c,n}^\\mathrm{export} \\geq \\sum_{y\\in\\mathcal{Y}} \\sum_{t\\in\\mathcal{T_y}}\\tau_t V_{c,n,t}
 
         :return: constraints
         """
+        m_imp = self.parameters.availability_import_total != np.inf
+        lhs_imp = (self.variables['flow_import'] * self.get_year_time_step_duration_array()).sum(
+            ["set_time_steps_operation", "set_time_steps_yearly"]).where(m_imp)
+        rhs_imp = self.parameters.availability_import_total.where(m_imp)
+        constraints_imp = lhs_imp <= rhs_imp
 
-        ### index sets
-        index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
+        m_exp = self.parameters.availability_export_total != np.inf
+        lhs_exp = (self.variables['flow_export'] * self.get_year_time_step_duration_array()).sum(
+            ["set_time_steps_operation", "set_time_steps_yearly"]).where(m_exp)
+        rhs_exp = self.parameters.availability_export_total.where(m_exp)
+        constraints_exp = lhs_exp <= rhs_exp
 
-        ### masks
-        # The constraint is only bounded if the availability is finite
-        mask = self.parameters.availability_import_total != np.inf
-
-        ### index loop
-        # this loop vectorizes over the nodes
-        constraints = {}
-        for carrier in index.get_unique(["set_carriers"]):
-            ### auxiliary calculations
-            term_summed_import_flow = (self.variables["flow_import"].loc[carrier, :, :]
-                                       * self.parameters.time_steps_operation_duration.loc[:]).sum(
-                "set_time_steps_operation")
-
-            ### formulate constraint
-            lhs = term_summed_import_flow
-            rhs = self.parameters.availability_import_total.loc[carrier, :]
-            constraints[carrier] = lhs <= rhs
-
-        ### return
-        self.constraints.add_constraint("constraint_availability_import_total", constraints)
-        # return self.constraints.return_constraints(constraints,
-        #                                           model=self.model,
-        #                                           mask=mask,
-        #                                           index_values=index.get_unique(["set_carriers"]),
-        #                                           index_names=["set_carriers"])
+        self.constraints.add_constraint("constraint_availability_import_total", constraints_imp)
+        self.constraints.add_constraint("constraint_availability_export_total", constraints_exp)
+        # old stuff:
+        # ### index sets
+        # index_values, index_names = Element.create_custom_set(["set_carriers", "set_nodes"], self.optimization_setup)
+        # index = ZenIndex(index_values, index_names)
+        #
+        # ### masks
+        # # The constraint is only bounded if the availability is finite
+        # mask = self.parameters.availability_import_total != np.inf
+        #
+        # ### index loop
+        # # this loop vectorizes over the nodes
+        # constraints = {}
+        # for carrier in index.get_unique(["set_carriers"]):
+        #     ### auxiliary calculations
+        #     term_summed_import_flow = (self.variables["flow_import"].loc[carrier, :, :]
+        #                                * self.parameters.time_steps_operation_duration.loc[:]).sum(
+        #         "set_time_steps_operation")
+        #
+        #     ### formulate constraint
+        #     lhs = term_summed_import_flow
+        #     rhs = self.parameters.availability_import_total.loc[carrier, :]
+        #     constraints[carrier] = lhs <= rhs
+        #
+        # ### return
+        # # return self.constraints.return_constraints(constraints,
+        # #                                           model=self.model,
+        # #                                           mask=mask,
+        # #                                           index_values=index.get_unique(["set_carriers"]),
+        # #                                           index_names=["set_carriers"])
 
     def constraint_availability_export_total_block(self):
         """node-dependent carrier availability to export to outside the system boundaries summed over entire optimization horizon

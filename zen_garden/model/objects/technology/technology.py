@@ -482,9 +482,8 @@ class Technology(Element):
         #  technology capacity_limit
         rules.constraint_technology_capacity_limit()
         #  technology capacity_limit super
-        constraints.add_constraint_block(model, name="constraint_technology_capacity_limit_super",
-                                         constraint=rules.constraint_technology_capacity_limit_super_block(),
-                                         doc='limited capacity of technology depending on super loc and time')
+        rules.constraint_technology_capacity_limit_super()
+
         # minimum capacity
         rules.constraint_technology_min_capacity_addition()
 
@@ -717,7 +716,7 @@ class TechnologyRules(GenericRule):
 
         self.constraints.add_constraint("constraint_technology_capacity_limit",constraints)
 
-    def constraint_technology_capacity_limit_super_block(self):
+    def constraint_technology_capacity_limit_super(self):
         """limited capacity_limit of technology for super locations
 
         .. math::
@@ -728,6 +727,19 @@ class TechnologyRules(GenericRule):
         :return: #TODO describe parameter/return
         """
 
+        # existing_capacities = self.parameters.existing_capacities
+        # m1 = (self.parameters.capacity_limit_super != np.inf)
+        # # mask for matching nodes with super_nodes:
+        # m_node = xr.DataArray(
+        #     [[node in self.sets['set_nodes_in_super_nodes'][s_node] for node in self.sets["set_nodes"]] for s_node in
+        #      self.sets["set_super_nodes"]],
+        #     dims=["set_super_nodes", "set_nodes"], coords=[self.sets["set_super_nodes"], self.sets["set_nodes"]])
+        #
+        # # idea: expand on the set super_locations by additionally indexing everything with the set_locations
+        # rhs = self.parameters.capacity_limit_super
+        # constraints = lhs <= rhs
+        # self.constraints.return_contraints("constraint_technology_capacity_limit_super", constraints)
+
         ### index sets
         index_names = ["set_technologies", "set_capacity_types", "set_super_location", "set_time_steps_yearly"]
         index_values, index_names = Element.create_custom_set(index_names, self.optimization_setup)
@@ -737,7 +749,7 @@ class TechnologyRules(GenericRule):
         # used within index loop
 
         ### index loop
-        constraints = []
+        constraints = {}
         capacity_limit_super = self.parameters.capacity_limit_super
         for super_loc in index.get_unique(levels=["set_super_location"]):
             ## auxiliary calculations
@@ -760,11 +772,12 @@ class TechnologyRules(GenericRule):
                            compat="broadcast_equals").sum('set_location')
             # sum(self.variables["capacity"].loc[:,:,loc,:].where(m1) + self.variables["capacity_addition"].loc[:,:,loc,:].where(m2) for loc in set_loc_in_super_loc)
             rhs = capacity_limit_super.loc[:, :, super_loc, :].where(m1, 0.0) # .expand_dims(dim={'set_location': set_loc_in_super_loc})
-            rhs = rhs.transpose(*list(lhs.dims.keys())[:-1])  # does not work yet..
-            constraints.append(lhs<=rhs)
+            # rhs = rhs.transpose(*list(lhs.dims.keys())[:-1])  # does not work yet..
+            constraints[super_loc] = lhs<=rhs
 
         ### return
-        return self.constraints.return_contraints(constraints, model=self.model, index_values=index.get_unique(["set_super_location"]), index_names=["set_super_location"])
+        self.constraints.add_constraint("constraint_technology_capacity_limit_super", constraints)
+        # return self.constraints.return_contraints(constraints, model=self.model, index_values=index.get_unique(["set_super_location"]), index_names=["set_super_location"])
 
     def constraint_technology_min_capacity_addition(self):
         """ min capacity addition of technology
@@ -1078,7 +1091,7 @@ class TechnologyRules(GenericRule):
 
         ### index loop
         # we loop over the technologies and vectorize over the locations, lca categories, and over the times after converting them from operation to yearly time steps
-        constraints = []
+        constraints = {}
         for tech in index.get_unique(['set_technologies']):
             ### auxiliary calculations
             yearly_time_steps = [self.time_steps.convert_time_step_operation2year(t) for t in times]
@@ -1111,12 +1124,13 @@ class TechnologyRules(GenericRule):
                            term_reference_flow,
                            compat="broadcast_equals")
             rhs = 0
-            constraints.append(lhs == rhs)
+            constraints[tech] = lhs == rhs
 
+        self.constraints.return_contraints('constraint_technology_lca_impacts', constraints)
         ### return
-        return self.constraints.return_contraints(constraints, model=self.model,
-                                                  index_values=index.get_unique(["set_technologies"]),
-                                                  index_names=["set_technologies"])
+        # return self.constraints.return_contraints(constraints, model=self.model,
+        #                                           index_values=index.get_unique(["set_technologies"]),
+        #                                           index_names=["set_technologies"])
 
     def constraint_technology_lca_impacts_total_block(self):
         """ calculate total lca impacts of each technology """
@@ -1133,7 +1147,7 @@ class TechnologyRules(GenericRule):
 
         ### index loop
         # we cycle over the years, because the sum of the operational time steps depends on the year
-        constraints = []
+        constraints = {}
         for year in years:
 
             ### auxiliary calculations
@@ -1148,10 +1162,11 @@ class TechnologyRules(GenericRule):
             ### formulate constraint
             lhs = self.variables["technology_lca_impacts_total"].loc[:, year] - term_summed_lca_impacts_technology
             rhs = 0
-            constraints.append(lhs == rhs)
+            constraints[year] = lhs == rhs
 
+        self.constraints.return_contraints('constraint_technology_lca_impacts_total', constraints)
         ### return
-        return self.constraints.return_contraints(constraints,
-                                                  model=self.model,
-                                                  index_values=years,
-                                                  index_names=["set_time_steps_yearly"])
+        # return self.constraints.return_contraints(constraints,
+        #                                           model=self.model,
+        #                                           index_values=years,
+        #                                           index_names=["set_time_steps_yearly"])
