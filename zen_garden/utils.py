@@ -1052,7 +1052,7 @@ class HDFPandasSerializer(LazyDict):
                 # make a proper multi index to save memory
                 store.put(key, value)
                 store.get_storer(key).attrs.type = "pandas"
-            elif isinstance(value, (float,str,int)):
+            elif isinstance(value, (float,str,int)) or value is None:
                 store.put(key, pd.Series([], dtype=int))
                 store.get_storer(key).attrs.value = value
                 store.get_storer(key).attrs.type = "scalar"
