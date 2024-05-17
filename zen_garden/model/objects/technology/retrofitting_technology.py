@@ -64,7 +64,7 @@ class RetrofittingTechnology(ConversionTechnology):
 
         # retrofitting base technologies
         optimization_setup.sets.add_set(name="set_retrofitting_base_technologies", data=retrofit_base_technology,
-                                        doc="set of base technologies for a specific retrofitting technology. Dimensions: set_retrofitting_technologies",
+                                        doc="set of base technologies for a specific retrofitting technology. Indexed by set_retrofitting_technologies",
                                         index_set="set_retrofitting_technologies")
 
     @classmethod
