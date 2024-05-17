@@ -515,13 +515,13 @@ class OptimizationSetup(object):
                 coords_idx_max = np.where((variables == var_max) & (coeffs == coeff_max))
                 coords_max = [cons.lhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.lhs.coords.dims, coords_idx_max[:-1])]
                 if 0.0 < coeff_min < smallest_coeff[1]:
-                    if int(lp.__version__.split('.')[1]) <= 1: # check if linopy version is lower than 0.2.0
+                    if lp.version.version_tuple[1] <= 1: # check if linopy version is lower than 0.2.0
                         smallest_coeff[0] = (f"{cons.name}{coords_min}", lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
                     else:
                         smallest_coeff[0] = (f"{cons.name}{coords_min}", lp.constraints.print_single_expression([coeff_min], [var_min],0, self.model))
                     smallest_coeff[1] = coeff_min
                 if coeff_max > largest_coeff[1]:
-                    if int(lp.__version__.split('.')[1]) <= 1: # check if linopy version is lower than 0.2.0
+                    if lp.version.version_tuple[1] <= 1: # check if linopy version is lower than 0.2.0
                         largest_coeff[0] = (f"{cons.name}{coords_max}", lp.constraints.print_single_expression([coeff_max], [var_max], self.model))
                     else:
                         largest_coeff[0] = (f"{cons.name}{coords_max}", lp.constraints.print_single_expression([coeff_max], [var_max],0, self.model))

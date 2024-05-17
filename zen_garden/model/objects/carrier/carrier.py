@@ -249,17 +249,16 @@ class CarrierRules(GenericRule):
 
         """
         # The constraint is only constrained if the availability is finite
-        mask_imp = self.parameters.availability_import_yearly != np.inf
-        mask_exp = self.parameters.availability_export_yearly != np.inf
+        mask = self.parameters.availability_import_yearly != np.inf
 
         # import
-        lhs_imp = (self.variables["flow_import"] * self.get_year_time_step_duration_array()).sum("set_time_steps_operation").where(mask_imp)
-        rhs_imp = self.parameters.availability_import_yearly.where(mask_imp)
+        lhs_imp = (self.variables["flow_import"] * self.get_year_time_step_duration_array()).sum("set_time_steps_operation").where(mask)
+        rhs_imp = self.parameters.availability_import_yearly.where(mask)
         constraints_imp = lhs_imp <= rhs_imp
 
         # export
-        lhs_exp = (self.variables["flow_export"] * self.get_year_time_step_duration_array()).sum("set_time_steps_operation").where(mask_exp)
-        rhs_exp = self.parameters.availability_export_yearly.where(mask_exp)
+        lhs_exp = (self.variables["flow_export"] * self.get_year_time_step_duration_array()).sum("set_time_steps_operation").where(mask)
+        rhs_exp = self.parameters.availability_export_yearly.where(mask)
         constraints_exp = lhs_exp <= rhs_exp
 
         self.constraints.add_constraint("constraint_availability_import_yearly",constraints_imp)
