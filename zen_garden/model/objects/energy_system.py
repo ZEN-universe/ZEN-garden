@@ -431,26 +431,11 @@ class EnergySystemRules(GenericRule):
         """
         m = xr.DataArray([carrier == 'co2_stored' for carrier in self.energy_system.set_carriers],
                           dims=['set_carriers']).broadcast_like(self.variables['flow_export'].lower)
-
         lhs = (self.variables['flow_export'] * self.get_year_time_step_duration_array()).where(m).sum(
             ['set_time_steps_operation', 'set_nodes'])
         rhs = self.parameters.min_co2_stored.broadcast_like(lhs.const)
         constraints = lhs >= rhs
         self.constraints.add_constraint("constraint_min_co2_stored", constraints)
-
-        # old stuff:
-        # year = 0
-        # min_co2_stored = self.parameters.min_co2_stored
-        # mask = min_co2_stored != 0
-        # if not mask.any():
-        #     return None
-        #
-        # ### formulate constraint
-        # assert 'co2_stored' in self.optimization_setup.sets['set_carriers'], "carrier 'co2_stored' not found in set_carriers"
-        # total_co2_stored = (self.variables['flow_export'].loc['co2_stored', :, year] * self.parameters.time_steps_operation_duration.loc[year]).sum()
-        # lhs = total_co2_stored
-        # rhs = self.parameters.min_co2_stored.loc[year].item()
-        # constraints = lhs >= rhs
 
 
     def constraint_carbon_emissions_budget(self):
