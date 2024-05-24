@@ -132,10 +132,11 @@ class RetrofittingTechnologyRules(GenericRule):
              self.sets["set_retrofitting_base_technologies"][t]},
             name="set_conversion_technologies")
         retrofit_base_technologies.index.name = "set_conversion_technologies"
+        retrofit_flow_coupling =  self.parameters.retrofit_flow_coupling_factor.rename({"set_retrofitting_technologies": "set_conversion_technologies"})
         term_flow_retrofit = self.map_and_expand(term_flow_reference, retrofit_base_technologies)
         term_flow_base = term_flow_reference.sel({"set_conversion_technologies": self.sets["set_retrofitting_technologies"]})
-        lhs = term_flow_base - self.parameters.retrofit_flow_coupling_factor * term_flow_retrofit
+        lhs = term_flow_base - retrofit_flow_coupling * term_flow_retrofit
         rhs = 0
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint("name",constraints)
+        self.constraints.add_constraint("retrofit_flow_coupling", constraints)
