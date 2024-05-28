@@ -139,7 +139,7 @@ class Solver(Subscriptable):
     rounding_decimal_points_units: int = 6
     round_parameters: bool = True
     rounding_decimal_points_capacity: int = 4
-    analyze_numerics: bool = False
+    analyze_numerics: bool = True
 
 class TimeSeriesAggregation(Subscriptable):
     slv: Solver = Solver()

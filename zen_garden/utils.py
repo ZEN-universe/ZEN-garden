@@ -1226,7 +1226,8 @@ class InputDataChecks:
         set_input_carrier = set(input_carrier)
         set_output_carrier = set(output_carrier)
         # assert that input and output carrier of conversion tech are different
-        assert not set_input_carrier & set_output_carrier, f"The conversion technology {name} has the same input ({input_carrier[0]}) and output ({output_carrier[0]}) carrier!"
+        common_carriers = set_input_carrier & set_output_carrier
+        assert not common_carriers, f"The conversion technology {name} has the same input and output carrier(s) ({list(common_carriers)})!"
 
     @staticmethod
     def check_duplicate_indices(df_input, file_name, folder_path):
