@@ -725,22 +725,19 @@ class Scaling:
 
 #ToDO check if construct A matrix faster with newer version and them maybe rewrite scaling if not
     def initiate_A_matrix(self):
-        self.A_matrix = self.model.constraints.to_matrix()
+        self.A_matrix = self.model.constraints.to_matrix(filter_missings=False)
         self.D_r_inv = np.ones(self.A_matrix.get_shape()[0])
         self.D_c_inv = np.ones(self.A_matrix.get_shape()[1])
-        self.rhs = np.abs(self.model.constraints.ravel("rhs",broadcast_like = "labels"))
+        #self.rhs = np.abs(self.model.constraints.rhs)
 
     def re_scale(self):
         model = self.model
-        sol = model.solution
         for name_var in model.variables:
             var = model.variables[name_var]
             mask = np.where(var.labels.data != -1)
-            sol[name_var].data[mask] = sol[name_var].data[mask] * (self.D_c_inv[var.labels.data[mask]])
-            #necessary due to eliminiation of explicit zeros in the A matrix -> otherwise NaNs in the solution
-            if any(np.isnan(sol[name_var].data[mask])):
-                sol[name_var].data[mask] = np.nan_to_num(sol[name_var].data[mask])
-        self.model.solution = sol
+            var.solution.data[mask] = var.solution.data[mask] * (self.D_c_inv[var.labels.data[mask]])
+
+
 
     def run_scaling(self):
         #cp = cProfile.Profile()
@@ -752,7 +749,6 @@ class Scaling:
         #cp.print_stats("cumtime")
 
 #Todo add rhs to row scaling
-#ToDO replace np.inf in column scaling with 1
     def replace_data(self, name):
         constraint = self.model.constraints[name]
         #Get data
@@ -767,13 +763,21 @@ class Scaling:
             try:
                 rhs[indices] = rhs[indices] * self.D_r_inv[mask_skip_constraints[indices]]
             except IndexError:
-                rhs = rhs * self.D_r_inv[mask_skip_constraints]
+                constraint.rhs.data = rhs * self.D_r_inv[mask_skip_constraints]
 
             # Update lhs
             non_nan_mask = ~np.isnan(lhs)
             entries_to_overwrite = np.where(non_nan_mask & (mask_variables != -1))
             lhs[entries_to_overwrite] *= (self.D_r_inv[mask_skip_constraints[entries_to_overwrite[:-1]]] *
                                         self.D_c_inv[mask_variables[entries_to_overwrite]])
+
+    def adjust_upper_lower_bounds_variables(self):
+        vars = self.model.variables
+        for var in vars:
+            mask = np.where(vars[var].labels.data != -1)
+            scaling_factors = self.D_c_inv[vars[var].labels.data[mask]]
+            vars[var].upper.data[mask] = vars[var].upper.data[mask] * scaling_factors**(-1)
+            vars[var].lower.data[mask] = vars[var].lower.data[mask] * scaling_factors**(-1)
 
     def adjust_scaling_factors_of_skipped_rows(self, name):
         constraint = self.model.constraints[name]
@@ -789,19 +793,27 @@ class Scaling:
     def adjust_int_variables(self):
         vars = self.model.variables
         for var in vars:
-            if any(vars[var].attrs.values()):
+            if vars[var].attrs['binary'] or vars[var].attrs['integer']:
                 mask = np.where(vars[var].labels.data != -1)
                 self.D_c_inv[vars[var].labels.data[mask]] = 1
+
+
+
 
     def overwrite_problem(self):
         #pre-check variables -> skip binary and integer variables
         self.adjust_int_variables()
         #adjust column scaling factors to be of the power of two -> otherwise numerical errors
+        self.D_c_inv[self.D_c_inv == np.inf] = 1
+        self.D_r_inv[self.D_r_inv == np.inf] = 1
         self.D_c_inv = np.power(2, np.round(np.emath.logn(2, self.D_c_inv)))
+        self.D_r_inv = np.power(2, np.round(np.emath.logn(2, self.D_r_inv)))
         #pre-check rows -> otherwise inconsistency in scaling
         for name_con in self.model.constraints:
             if self.model.constraints[name_con].coeffs.dtype == int:
                 self.adjust_scaling_factors_of_skipped_rows(name_con)
+        #Include adjust upper/lower bounds of variables that are scaled
+        self.adjust_upper_lower_bounds_variables()
         #overwrite constraints
         for name_con in self.model.constraints:
             #overwrite data
@@ -815,9 +827,15 @@ class Scaling:
         scale_factors = self.D_c_inv[vars]
         self.model.objective.coeffs.data = self.model.objective.coeffs.data * scale_factors
 
+    #ToDo fix this so that it always works -> also for the case where multiple rows and columns are zero at the end
     def get_min(self,A_matrix):
         d = A_matrix.data
-        mins_values = np.minimum.reduceat(np.abs(d), A_matrix.indptr[:-1])
+        try:
+            mins_values = np.minimum.reduceat(np.abs(d), A_matrix.indptr[:-1])
+        except: #necessary if multiple columns and rows at the end of the matrix without entries -> if not only last entry of indptr is len(data) and therefore out of range
+            #A_matrix.indptr[A_matrix.indptr == len(d)] = len(d)-1
+            #mins_values = np.minimum.reduceat(np.abs(d), A_matrix.indptr[:-1])
+            mins_values = np.ones(len(A_matrix.indptr)-1)
         return mins_values
 
     def get_full_geom(self,A_matrix,axis):
@@ -833,12 +851,10 @@ class Scaling:
     def update_A(self, vector, axis):
         if axis == 1:
             self.A_matrix = sp.sparse.diags(vector, 0, format='csr').dot(self.A_matrix)
-            #self.D_r_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_r_inv
             self.D_r_inv = self.D_r_inv * vector
-            self.rhs = self.rhs * vector
+            #self.rhs = self.rhs * vector
         elif axis == 0:
             self.A_matrix = self.A_matrix.dot(sp.sparse.diags(vector, 0, format='csr'))
-            #self.D_c_inv = sp.sparse.diags(vector, 0, format='csr') * self.D_c_inv
             self.D_c_inv = self.D_c_inv * vector
 
 
@@ -884,9 +900,9 @@ class Scaling:
             elif self.algorithm == "geom":
                 # update row scaling vector
                 max_rows = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=1)
-                max_rows = np.maximum(max_rows,self.rhs,out =max_rows, where= self.rhs != np.inf)
+                #max_rows = np.maximum(max_rows,self.rhs,out =max_rows, where= self.rhs != np.inf)
                 min_rows = self.get_min(self.A_matrix)
-                min_rows = np.minimum(min_rows,self.rhs,out =min_rows, where=self.rhs>0)
+                #min_rows = np.minimum(min_rows,self.rhs,out =min_rows, where=self.rhs>0)
                 r_vector = 1 / ((max_rows * min_rows) ** 0.5)
                 # update A and row scaling matrix
                 self.update_A(r_vector,1)
