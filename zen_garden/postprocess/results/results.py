@@ -310,6 +310,7 @@ class Results:
                 total_value = pd.concat(
                     scenarios_dict, keys=scenarios_dict.keys(), axis=1
                 ).T
+        total_value.index.names = ["scenario"] + scenarios_dict[scenario_names[0]].index.names
         return total_value
 
     def _get_annuity(self, scenario: Scenario, discount_to_first_step: bool = True):
