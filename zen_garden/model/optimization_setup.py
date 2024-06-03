@@ -94,6 +94,9 @@ class OptimizationSetup(object):
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
+        # initialize Scaling object
+        self.scaling = Scaling(self.model, self.solver['scaling_iterations'], self.solver['scaling_algorithm'])
+
 
 
 
