@@ -711,24 +711,32 @@ class UnitHandling:
 
 
 #ToDo get rid of A matrix dependency -> for big models slowest part; can we use the data structure of linopy directly to determine column and row scaling factors
+#ToDo slight numerical errors after rescaling -> dependent on solver -> for gurobi very accurate
 class Scaling:
     """
     This class scales the optimization model before solving it and rescales the solution
     """
-
     def __init__(self, model, iterations=3, algorithm="geom"):
         #optimization model to perform scaling on
         self.model = model
         self.iterations = iterations
         self.algorithm = algorithm
 
-
-#ToDO check if construct A matrix faster with newer version and them maybe rewrite scaling if not
     def initiate_A_matrix(self):
         self.A_matrix = self.model.constraints.to_matrix(filter_missings=False)
         self.D_r_inv = np.ones(self.A_matrix.get_shape()[0])
         self.D_c_inv = np.ones(self.A_matrix.get_shape()[1])
-        #self.rhs = np.abs(self.model.constraints.rhs)
+        #self.rhs = np.abs(self.model.constraints.rhs) -> does not work after update anymore
+        self.rhs = []
+        for name in self.model.constraints:
+            constraint = self.model.constraints[name]
+            labels = constraint.labels.data
+            mask = np.where(labels != -2) #some arbitrary value to get all entries
+            try:
+                self.rhs += constraint.rhs.data[mask].tolist()
+            except:
+                self.rhs += [constraint.rhs.data]
+        self.rhs = np.abs(np.array(self.rhs))
 
     def re_scale(self):
         model = self.model
@@ -736,8 +744,6 @@ class Scaling:
             var = model.variables[name_var]
             mask = np.where(var.labels.data != -1)
             var.solution.data[mask] = var.solution.data[mask] * (self.D_c_inv[var.labels.data[mask]])
-
-
 
     def run_scaling(self):
         #cp = cProfile.Profile()
@@ -748,7 +754,6 @@ class Scaling:
         #cp.disable()
         #cp.print_stats("cumtime")
 
-#Todo add rhs to row scaling
     def replace_data(self, name):
         constraint = self.model.constraints[name]
         #Get data
@@ -764,7 +769,6 @@ class Scaling:
                 rhs[indices] = rhs[indices] * self.D_r_inv[mask_skip_constraints[indices]]
             except IndexError:
                 constraint.rhs.data = rhs * self.D_r_inv[mask_skip_constraints]
-
             # Update lhs
             non_nan_mask = ~np.isnan(lhs)
             entries_to_overwrite = np.where(non_nan_mask & (mask_variables != -1))
@@ -781,10 +785,7 @@ class Scaling:
 
     def adjust_scaling_factors_of_skipped_rows(self, name):
         constraint = self.model.constraints[name]
-        #rows -> unnecessary to scale rows with binary and integer variables as skipped anyways
-        #mask_skip_constraints = constraint.labels.data
-        #indices = np.where(mask_skip_constraints != -1)
-        #self.D_r_inv[mask_skip_constraints[indices]] = 1
+        #rows -> unnecessary to adjust scaling factor of rows with binary and integer variables as skipped anyways
         #cols
         mask_variables = constraint.vars.data
         indices = np.where(mask_variables != -1)
@@ -797,15 +798,15 @@ class Scaling:
                 mask = np.where(vars[var].labels.data != -1)
                 self.D_c_inv[vars[var].labels.data[mask]] = 1
 
-
-
-
     def overwrite_problem(self):
         #pre-check variables -> skip binary and integer variables
         self.adjust_int_variables()
-        #adjust column scaling factors to be of the power of two -> otherwise numerical errors
+        #adjust scaling factors that have inf or nan values
         self.D_c_inv[self.D_c_inv == np.inf] = 1
         self.D_r_inv[self.D_r_inv == np.inf] = 1
+        self.D_c_inv = np.nan_to_num(self.D_c_inv, nan=1)
+        self.D_r_inv = np.nan_to_num(self.D_r_inv, nan=1)
+        # adjust column scaling factors to be of the power of two -> otherwise numerical errors
         self.D_c_inv = np.power(2, np.round(np.emath.logn(2, self.D_c_inv)))
         self.D_r_inv = np.power(2, np.round(np.emath.logn(2, self.D_r_inv)))
         #pre-check rows -> otherwise inconsistency in scaling
@@ -827,18 +828,18 @@ class Scaling:
         scale_factors = self.D_c_inv[vars]
         self.model.objective.coeffs.data = self.model.objective.coeffs.data * scale_factors
 
-    #ToDo fix this so that it always works -> also for the case where multiple rows and columns are zero at the end
     def get_min(self,A_matrix):
         d = A_matrix.data
         try:
             mins_values = np.minimum.reduceat(np.abs(d), A_matrix.indptr[:-1])
         except: #necessary if multiple columns and rows at the end of the matrix without entries -> if not only last entry of indptr is len(data) and therefore out of range
-            #A_matrix.indptr[A_matrix.indptr == len(d)] = len(d)-1
-            #mins_values = np.minimum.reduceat(np.abs(d), A_matrix.indptr[:-1])
-            mins_values = np.ones(len(A_matrix.indptr)-1)
+            last_empty_entries = A_matrix.indptr[A_matrix.indptr == len(d)]
+            non_empty_entries = A_matrix.indptr[A_matrix.indptr < len(d)]
+            mins_values = np.minimum.reduceat(np.abs(d), non_empty_entries)
+            mins_values = np.hstack((mins_values,np.ones((len(last_empty_entries)-1,))))
         return mins_values
 
-    def get_full_geom(self,A_matrix,axis):
+    def get_full_geom(self,A_matrix,axis): #Very slow and less effective than simplified geom norm
         d = A_matrix.data
         geom = np.ones(len(A_matrix.indptr)-1)
         nonzero_entries = np.unique(list(A_matrix.nonzero()[axis]))
@@ -852,7 +853,7 @@ class Scaling:
         if axis == 1:
             self.A_matrix = sp.sparse.diags(vector, 0, format='csr').dot(self.A_matrix)
             self.D_r_inv = self.D_r_inv * vector
-            #self.rhs = self.rhs * vector
+            self.rhs = self.rhs * vector
         elif axis == 0:
             self.A_matrix = self.A_matrix.dot(sp.sparse.diags(vector, 0, format='csr'))
             self.D_c_inv = self.D_c_inv * vector
@@ -870,6 +871,7 @@ class Scaling:
             if self.algorithm == "infnorm":
                 #update row scaling vector
                 max_rows = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=1)
+                max_rows = np.maximum(max_rows, self.rhs, out=max_rows, where=self.rhs != np.inf)
                 r_vector = 1 / max_rows
                 #update A and row scaling matrix
                 self.update_A(r_vector,1)
@@ -882,6 +884,7 @@ class Scaling:
                 A_abs = np.abs(self.A_matrix[self.A_matrix != 0])
                 print(f"After iteration {i}: min {A_abs.min()}, max {A_abs.max()}")
 
+            #ToDo add rhs to row scaling
             elif self.algorithm == "full_geom":
                 #update row scaling vector
                 geom = self.get_full_geom(self.A_matrix, 0)
@@ -900,9 +903,9 @@ class Scaling:
             elif self.algorithm == "geom":
                 # update row scaling vector
                 max_rows = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=1)
-                #max_rows = np.maximum(max_rows,self.rhs,out =max_rows, where= self.rhs != np.inf)
+                max_rows = np.maximum(max_rows,self.rhs,out =max_rows, where= self.rhs != np.inf)
                 min_rows = self.get_min(self.A_matrix)
-                #min_rows = np.minimum(min_rows,self.rhs,out =min_rows, where=self.rhs>0)
+                min_rows = np.minimum(min_rows,self.rhs,out =min_rows, where=self.rhs>0)
                 r_vector = 1 / ((max_rows * min_rows) ** 0.5)
                 # update A and row scaling matrix
                 self.update_A(r_vector,1)
@@ -919,7 +922,8 @@ class Scaling:
 
             elif self.algorithm == "arithm":
                 #update row scaling vector
-                mean_rows = sp.sparse.linalg.norm(self.A_matrix, ord=1, axis=1)/np.diff(self.A_matrix.indptr)
+                mean_rows = sp.sparse.linalg.norm(self.A_matrix, ord=1, axis=1)/(np.diff(self.A_matrix.indptr)+np.ones(self.A_matrix.get_shape()[0]))
+                mean_rows = mean_rows + self.rhs/(np.diff(self.A_matrix.indptr)+np.ones(self.A_matrix.get_shape()[0]))
                 c_vector = 1/mean_rows
                 #update A and row scaling matrix
                 self.update_A(c_vector,1)
