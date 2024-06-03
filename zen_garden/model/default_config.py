@@ -118,6 +118,7 @@ class System(Subscriptable):
 class SolverOptions(Subscriptable):
     pass
 
+
 class Solver(Subscriptable):
     name: str = "highs"
     solver_options: SolverOptions = SolverOptions()
@@ -138,12 +139,7 @@ class Solver(Subscriptable):
     rounding_decimal_points_units: int = 6
     round_parameters: bool = True
     rounding_decimal_points_capacity: int = 4
-    analyze_numerics: bool = False
-    use_symbolic_labels: bool = False
-    use_scaling: bool = True
-    scaling_algorithm: str = "geom"
-    scaling_iterations: int = 3
-
+    analyze_numerics: bool = True
 
 class TimeSeriesAggregation(Subscriptable):
     slv: Solver = Solver()

@@ -136,7 +136,7 @@ class ConversionTechnology(Technology):
         for element in class_elements:
             # extract for pwa
             if not getattr(element, is_pwa_attribute):
-                dict_of_attributes, _, dict_of_units = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes, dict_of_units={})
+                dict_of_attributes, _, dict_of_units = optimization_setup.append_attribute_of_element_to_dict(element, attribute_name_linear, dict_of_attributes, dict_of_units=dict_of_units)
         if not dict_of_attributes:
             _, index_names = cls.create_custom_set(index_names, optimization_setup)
             return dict_of_attributes, index_names, dict_of_units
@@ -460,12 +460,16 @@ class ConversionTechnologyRules(GenericRule):
             A_{h,p,y}^{approximation} = \\alpha_{h,n,y} S_{h,p,y}^{approximation}
 
         """
-
         capex_specific_conversion = self.parameters.capex_specific_conversion
-        capex_specific_conversion = capex_specific_conversion.rename({old: new for old, new in zip(list(capex_specific_conversion.dims), ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"])})
-        capex_specific_conversion = capex_specific_conversion.broadcast_like(self.variables["capex_approximation"].lower)
+        capex_specific_conversion = capex_specific_conversion.rename({old: new for old, new in zip(list(capex_specific_conversion.dims),
+                                          ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"])})
+        capex_specific_conversion = capex_specific_conversion.broadcast_like(self.variables["capacity_approximation"].lower)
         mask = ~np.isnan(capex_specific_conversion)
-        lhs = (self.variables["capex_approximation"] - capex_specific_conversion * self.variables["capacity_approximation"]).where(mask)
+        lhs = lp.merge(
+            [1 * self.variables["capex_approximation"],
+             - capex_specific_conversion * self.variables["capacity_approximation"]],
+            compat="broadcast_equals")
+        lhs = self.align_and_mask(lhs, mask)
         rhs = 0
         constraints = lhs == rhs
 

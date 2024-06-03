@@ -597,11 +597,11 @@ class Parameter(Component):
                 unit_series = unit_series.rename_axis(index=index_list)
                 unit_series = unit_series.sort_index()
                 if "unit_in_base_units" in dict_of_units:
-                    unit_series[:] = dict_of_units["unit_in_base_units"].units
-                    return unit_series.astype(str)
+                    unit_series[:] = str(dict_of_units["unit_in_base_units"].units)
+                    return unit_series
             for key, value in dict_of_units.items():
-                unit_series.loc[pd.IndexSlice[key]] = value
-            return unit_series.astype(str)
+                unit_series.loc[pd.IndexSlice[key]] = str(value)
+            return unit_series
 
     @staticmethod
     def convert_to_dict(data):
@@ -785,7 +785,7 @@ class Constraint(Component):
                         _key = str(key)
                     _name = f"{name}--{key}"
                     self.add_single_constraint(_name, cons)
-                    self.docs[name] = self.compile_doc_string(doc, index_list=list(constraint.indexes), name= _name)
+                    self.docs[name] = self.compile_doc_string(doc, index_list=list(cons.indexes), name=_name)
             elif isinstance(constraint,lp.constraints.Constraint) or isinstance(constraint, lp.constraints.AnonymousConstraint):
                 self.add_single_constraint(name, constraint)
                 self.docs[name] = self.compile_doc_string(doc, index_list=list(constraint.indexes), name= name)

@@ -402,12 +402,12 @@ class EnergySystemRules(GenericRule):
 
         """
 
-        m = [True if year != self.energy_system.set_time_steps_yearly_entire_horizon[-1] else False for year in self.energy_system.set_time_steps_yearly]
+        m = [year != self.energy_system.set_time_steps_yearly_entire_horizon[-1] for year in self.energy_system.set_time_steps_yearly]
 
         lhs = (
                 self.variables["carbon_emissions_cumulative"]
                 - self.variables["carbon_emissions_budget_overshoot"]
-                - (self.variables["carbon_emissions_annual"].where(m) * (self.system["interval_between_years"] - 1))
+                + (self.variables["carbon_emissions_annual"].where(m) * (self.system["interval_between_years"] - 1))
         )
         rhs = self.parameters.carbon_emissions_budget
         constraints = lhs <= rhs
