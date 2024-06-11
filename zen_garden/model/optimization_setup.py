@@ -428,7 +428,7 @@ class OptimizationSetup(object):
         # Initiate scaling object
         self.scaling = Scaling(self.model, self.solver['scaling_iterations'], self.solver['scaling_algorithm'])
         # find smallest and largest coefficient and RHS
-        self.analyze_numerics()
+        #self.analyze_numerics() -> Replaced through scaling
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """

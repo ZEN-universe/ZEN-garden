@@ -78,8 +78,8 @@ def main(config, dataset_path=None, job_index=None):
             #TODO scaling algorithm
             if config.solver["use_scaling"]:
                 optimization_setup.scaling.run_scaling()
-                logging.info(f"\n--- Numerics after scaling ---\n")
-                optimization_setup.analyze_numerics()
+                #logging.info(f"\n--- Numerics after scaling ---\n")
+                #optimization_setup.analyze_numerics()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()
             # break if infeasible
