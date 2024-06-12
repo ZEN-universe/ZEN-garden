@@ -367,7 +367,7 @@ class StorageTechnologyRules(GenericRule):
         time_steps_storage_duration = self.parameters.time_steps_storage_duration
         # reformulate self discharge multiplier as partial geometric series
         multiplier_w_discharge = (
-                    1 - (1 - self_discharge) ** (time_steps_storage_duration) / (1 - (1 - self_discharge)))
+                    (1 - (1 - self_discharge) ** (time_steps_storage_duration)) / (1 - (1 - self_discharge)))
         multiplier_wo_discharge = time_steps_storage_duration
         multiplier = (
                 multiplier_w_discharge.where(self_discharge != 0, 0.0) +
@@ -427,7 +427,6 @@ class StorageTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        ### return
         self.constraints.add_constraint("constraint_storage_technology_capex",constraints)
 
     def get_flow_expression_storage(self,rename=True):
