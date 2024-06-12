@@ -109,6 +109,7 @@ class EnergySystem:
         self.carbon_emissions_annual_limit = self.carbon_emissions_annual_limit * _fraction_year  # reduce to fraction of year
         self.carbon_emissions_budget = self.data_input.extract_input_data("carbon_emissions_budget", index_sets=[], unit_category={"emissions": 1})
         self.min_co2_stored = self.data_input.extract_input_data("min_co2_stored", index_sets=['set_time_steps_yearly'], time_steps='set_time_steps_yearly', unit_category={"emissions": 1})
+        self.min_co2_stored = self.min_co2_stored * _fraction_year  # reduce to fraction of year
         self.carbon_emissions_cumulative_existing = self.data_input.extract_input_data("carbon_emissions_cumulative_existing", index_sets=[], unit_category={"emissions": 1})
         # price carbon emissions
         self.price_carbon_emissions = self.data_input.extract_input_data("price_carbon_emissions", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "emissions": -1})
