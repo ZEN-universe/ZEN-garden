@@ -64,7 +64,7 @@ class Postprocess:
         self.subfolder = subfolder
         # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
         if subfolder != Path(""):
-            #check if mf within scenario analysis
+            # check if mf within scenario analysis
             if isinstance(self.subfolder, tuple):
                 scenario_dir = self.name_dir.joinpath(self.subfolder[0])
                 os.makedirs(scenario_dir, exist_ok=True)
@@ -93,16 +93,12 @@ class Postprocess:
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
-
+        self.dict_sequence_time_steps["optimized_time_steps"] = model.optimized_time_steps
         if include_year2operation:
             self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
             self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
 
         self.save_sequence_time_steps(scenario=scenario_name)
-
-        # case where we should run the post-process as normal
-        if model.analysis['postprocess']:
-            pass  # TODO: implement this...  # self.process()
 
     def write_file(self, name, dictionary, format=None):
         """Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed

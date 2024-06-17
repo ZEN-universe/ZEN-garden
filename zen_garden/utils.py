@@ -1283,18 +1283,21 @@ class StringUtils:
         pass
 
     @classmethod
-    def print_optimization_progress(cls,scenario, steps_horizon,step):
+    def print_optimization_progress(cls,scenario, steps_horizon,step,system):
         """ prints the current optimization progress
 
         :param scenario: string of scenario name
         :param steps_horizon: all steps of horizon
-        :param step: current step of horizon """
+        :param step: current step of horizon
+        :param system: system of optimization
+        """
         scenario_string = ScenarioUtils.scenario_string(scenario)
         if len(steps_horizon) == 1:
             logging.info(f"\n--- Conduct optimization for perfect foresight {scenario_string}--- \n")
         else:
+            corresponding_year = system.reference_year + step * system.interval_between_years
             logging.info(
-                f"\n--- Conduct optimization for rolling horizon step {step} of {max(steps_horizon)} {scenario_string}--- \n")
+                f"\n--- Conduct optimization for rolling horizon step for {corresponding_year} ({steps_horizon.index(step) + 1} of {len(steps_horizon)}) {scenario_string}--- \n")
 
     @classmethod
     def generate_folder_path(cls,config,scenario,scenario_dict,steps_horizon, step):

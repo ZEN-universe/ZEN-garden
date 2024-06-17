@@ -68,7 +68,7 @@ def main(config, dataset_path=None, job_index=None):
         steps_horizon = optimization_setup.get_optimization_horizon()
         # iterate through horizon steps
         for step in steps_horizon:
-            StringUtils.print_optimization_progress(scenario,steps_horizon,step)
+            StringUtils.print_optimization_progress(scenario,steps_horizon,step,system=config.system)
             # overwrite time indices
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem

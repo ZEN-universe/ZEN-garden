@@ -102,7 +102,7 @@ class Technology(Element):
         fraction_year = self.optimization_setup.system["unaggregated_time_steps_per_year"] / self.optimization_setup.system["total_hours_per_year"]
         return fraction_year
 
-    def add_new_capacity_addition_tech(self, capacity_addition: pd.Series, capex: pd.Series, step_horizon: int):
+    def add_new_capacity_addition_tech(self, capacity_addition: pd.Series, capex: pd.Series, step_horizon: list):
         """ adds the newly built capacity to the existing capacity
 
         :param capacity_addition: pd.Series of newly built capacity of technology
@@ -110,18 +110,20 @@ class Technology(Element):
         :param step_horizon: current horizon step """
         system = self.optimization_setup.system
         # reduce lifetime of existing capacities and add new remaining lifetime
-        self.lifetime_existing = (self.lifetime_existing - system["interval_between_years"]).clip(lower=0)
+        delta_lifetime = step_horizon[-1] - step_horizon[0]
+        self.lifetime_existing = (self.lifetime_existing - system["interval_between_years"] * (delta_lifetime + 1)).clip(lower=0)
         # new capacity
         new_capacity_addition = capacity_addition[step_horizon]
         new_capex = capex[step_horizon]
         # if at least one value unequal to zero
-        if not (new_capacity_addition == 0).all():
+        if not (new_capacity_addition.stack() == 0).all():
             # add new index to set_technologies_existing
-            index_new_technology = max(self.set_technologies_existing) + 1
+            index_step_horizon = list(range(len(step_horizon)))
+            index_new_technology = [max(self.set_technologies_existing) + 1 + idx for idx in index_step_horizon]
             self.set_technologies_existing = np.append(self.set_technologies_existing, index_new_technology)
             # add new remaining lifetime
             lifetime = self.lifetime_existing.unstack()
-            lifetime[index_new_technology] = self.lifetime[0] - system["interval_between_years"]
+            lifetime[index_new_technology] = [self.lifetime[0] - system["interval_between_years"]*(delta_lifetime - idx + 1) for idx in index_step_horizon]
             self.lifetime_existing = lifetime.stack()
 
             for type_capacity in list(set(new_capacity_addition.index.get_level_values(0))):
@@ -142,7 +144,7 @@ class Technology(Element):
                 capex_capacity_existing[index_new_technology] = new_capex.loc[type_capacity]
                 setattr(self, "capex_capacity_existing" + energy_string, capex_capacity_existing.stack())
 
-    def add_new_capacity_investment(self, capacity_investment: pd.Series, step_horizon):
+    def add_new_capacity_investment(self, capacity_investment: pd.Series, step_horizon:list):
         """ adds the newly invested capacity to the list of invested capacity
 
         :param capacity_investment: pd.Series of newly built capacity of technology
@@ -150,7 +152,7 @@ class Technology(Element):
         system = self.optimization_setup.system
         new_capacity_investment = capacity_investment[step_horizon]
         new_capacity_investment = new_capacity_investment.fillna(0)
-        if not (new_capacity_investment == 0).all():
+        if not (new_capacity_investment.stack() == 0).all():
             for type_capacity in list(set(new_capacity_investment.index.get_level_values(0))):
                 # if power
                 if type_capacity == system["set_capacity_types"][0]:
