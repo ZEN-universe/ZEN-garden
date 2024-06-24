@@ -731,13 +731,6 @@ class TechnologyRules(GenericRule):
             \mathrm{else}\ \Delta S_{h,p,y} = 0
         """
 
-        ### index sets
-        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
-
-        ### index loop
-        # we loop over technologies and years, because the conditions depend on the year and the technology
-        # we vectorize over capacity types and locations
         # get investment time step
         investment_time = pd.Series(
             {(t, y,Technology.get_investment_time_step(self.optimization_setup, t, y)): 1 for t, y in itertools.product(self.sets["set_technologies"], self.sets["set_time_steps_yearly"])})
@@ -745,29 +738,35 @@ class TechnologyRules(GenericRule):
 
         # select masks
         mask_current_time_steps = investment_time.index.get_level_values("set_time_steps_construction").isin(self.sets["set_time_steps_yearly"])
-        mask_other_time_steps = investment_time.isin(self.sets["set_time_steps_yearly_entire_horizon"]) & ~mask_current_time_steps
-        mask_outside_time_steps = ~(mask_other_time_steps | mask_current_time_steps)
+        mask_existing_time_steps = investment_time.isin(self.sets["set_time_steps_yearly_entire_horizon"]) & ~mask_current_time_steps
         investment_time = investment_time
         # broadcast capacity investment and capacity investment existing
         capacity_investment = self.variables["capacity_investment"]
         investment_time_current = investment_time[mask_current_time_steps].dropna().to_xarray().broadcast_like(capacity_investment.mask).fillna(0)
-        investment_time_other = investment_time[mask_other_time_steps].dropna().to_xarray().broadcast_like(capacity_investment.mask).fillna(0)
+        investment_time_existing = investment_time[mask_existing_time_steps].dropna().to_xarray().broadcast_like(capacity_investment.mask).fillna(0)
+        # gets the time steps where no investment can be made without the addition exceeding the horizon
+        investment_time_outside = (1-investment_time_current).min("set_time_steps_yearly")
 
-        capacity_investment = capacity_investment.rename({"set_time_steps_yearly": "set_time_steps_construction"}).broadcast_like(investment_time_current)
+        capacity_investment = capacity_investment.rename({"set_time_steps_yearly": "set_time_steps_construction"})
+        capacity_investment_addition = capacity_investment.broadcast_like(investment_time_current)
         capacity_investment_existing = self.parameters.capacity_investment_existing
-        capacity_investment_existing = capacity_investment_existing.rename({"set_time_steps_yearly_entire_horizon": "set_time_steps_construction"}).broadcast_like(investment_time_other)
+        capacity_investment_existing = capacity_investment_existing.rename({"set_time_steps_yearly_entire_horizon": "set_time_steps_construction"}).broadcast_like(investment_time_existing)
 
         ### formulate constraint
         lhs = lp.merge(
             1 * self.variables["capacity_addition"],
-            - (investment_time_current*capacity_investment).sum("set_time_steps_construction")
+            - (investment_time_current*capacity_investment_addition).sum("set_time_steps_construction")
             , compat="broadcast_equals")
-        rhs = (investment_time_other*capacity_investment_existing).sum("set_time_steps_construction")
+        rhs = (investment_time_existing*capacity_investment_existing).sum("set_time_steps_construction")
         rhs = xr.align(lhs.const,rhs,join="left")[1]
         constraints = lhs == rhs
+        # constrain capacity_investment where no investment can be made without the addition exceeding the horizon
+        lhs_outside = self.align_and_mask(capacity_investment, investment_time_outside)
+        rhs_outside = 0
+        constraints_outside = lhs_outside == rhs_outside
 
-        ### return
         self.constraints.add_constraint("constraint_technology_construction_time",constraints)
+        self.constraints.add_constraint("constraint_technology_construction_time_outside",constraints_outside)
 
     def constraint_technology_lifetime(self):
         """ limited lifetime of the technologies. calculates 'capacity', i.e., the capacity at the end of the year and
