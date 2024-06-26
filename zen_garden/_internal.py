@@ -7,6 +7,7 @@
 
 Compilation  of the optimization problem.
 """
+import cProfile
 import importlib.util
 import logging
 import os
@@ -16,6 +17,7 @@ import importlib
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
 from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
+from .preprocess.unit_handling import Scaling
 
 # we setup the logger here
 setup_logger()
@@ -73,6 +75,11 @@ def main(config, dataset_path=None, job_index=None):
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem
             optimization_setup.construct_optimization_problem()
+            #TODO scaling algorithm
+            if config.solver["use_scaling"]:
+                optimization_setup.scaling.run_scaling()
+                #logging.info(f"\n--- Numerics after scaling ---\n")
+                #optimization_setup.analyze_numerics()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()
             # break if infeasible
@@ -80,6 +87,8 @@ def main(config, dataset_path=None, job_index=None):
                 # write IIS
                 optimization_setup.write_IIS()
                 break
+            if config.solver["use_scaling"]:
+                optimization_setup.scaling.re_scale()
             # save new capacity additions and cumulative carbon emissions for next time step
             optimization_setup.add_results_of_optimization_step(step)
             # EVALUATE RESULTS

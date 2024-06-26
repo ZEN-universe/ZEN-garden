@@ -25,6 +25,7 @@ from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
+from zen_garden.preprocess.unit_handling import Scaling
 
 from ..utils import ScenarioDict, IISConstraintParser, StringUtils
 
@@ -62,6 +63,7 @@ class OptimizationSetup(object):
         self.constraints = None
         self.sets = None
 
+
         # sorted list of class names
         element_classes = self.dict_element_classes.keys()
         carrier_classes = [element_name for element_name in element_classes if "Carrier" in element_name]
@@ -91,6 +93,14 @@ class OptimizationSetup(object):
 
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
+
+        # initialize Scaling object
+        self.scaling = Scaling(self.model, self.solver['scaling_iterations'], self.solver['scaling_algorithm'], self.solver['scaling_include_rhs'])
+
+
+
+
+
 
     def create_paths(self):
         """
@@ -415,8 +425,10 @@ class OptimizationSetup(object):
         self.constraints = Constraint(self.sets,self.model)
         # define and construct components of self.model
         Element.construct_model_components(self)
+        # Initiate scaling object
+        self.scaling = Scaling(self.model, self.solver['scaling_iterations'], self.solver['scaling_algorithm'])
         # find smallest and largest coefficient and RHS
-        self.analyze_numerics()
+        #self.analyze_numerics() -> Replaced through scaling
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
