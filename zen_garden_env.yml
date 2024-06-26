@@ -1,10 +1,10 @@
-name: zen-garden
+name: zen-garden-test
 channels:
   - conda-forge
   - gurobi
 dependencies:
   - python=3.11
-  - xarray
+  - xarray<=2024.5.0
   - cython
   - pytest
   - pip
@@ -17,7 +17,7 @@ dependencies:
   - pint
   - matplotlib
   - entsoe-py
-  - gurobi
+  - gurobi==10.0.3
   - pytables
   - pydantic
   - pip:
@@ -27,7 +27,8 @@ dependencies:
       - ordered-set
       - pyogrio
       - psutil
-      - linopy<=0.3.9
+      - linopy
+      - highspy
       - sphinx
       - myst-parser
       - -e .
