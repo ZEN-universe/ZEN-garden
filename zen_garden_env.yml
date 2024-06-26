@@ -17,7 +17,7 @@ dependencies:
   - pint
   - matplotlib
   - entsoe-py
-  - gurobi==10.0.3
+  - gurobi
   - pytables
   - pydantic
   - pip:
