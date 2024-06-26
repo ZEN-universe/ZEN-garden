@@ -15,6 +15,6 @@
         "os":"macos-13",
         "label":"osx-64",
         "prefix":"/Users/runner/miniconda3/envs/zen-garden",
-        "runs_when":"always"
+        "runs_when":"schedule"
     }
 ]
