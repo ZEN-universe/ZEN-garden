@@ -269,6 +269,7 @@ class MultiHdfLoader(AbstractLoader):
         the data is kept for all the foresight steps.
         """
         series = pd.concat(pd_dict, keys=pd_dict.keys())
+        series = series.sort_index(level=0)
         index_names = pd_dict[list(pd_dict.keys())[0]].index.names
         new_index_names = ["mf"] + index_names
         series.index.names = new_index_names

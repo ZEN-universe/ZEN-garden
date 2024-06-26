@@ -440,8 +440,11 @@ class OptimizationSetup(object):
 
         :param step_horizon: step of the rolling horizon
         :return decision_horizon: list of time steps in the decision horizon """
-        next_optimization_step = self.optimized_time_steps[self.optimized_time_steps.index(step_horizon) + 1]
-        decision_horizon = list(range(step_horizon, next_optimization_step))
+        if step_horizon == self.optimized_time_steps[-1]:
+            decision_horizon = [step_horizon]
+        else:
+            next_optimization_step = self.optimized_time_steps[self.optimized_time_steps.index(step_horizon) + 1]
+            decision_horizon = list(range(step_horizon, next_optimization_step))
         return decision_horizon
 
     def set_base_configuration(self, scenario="", elements={}):
@@ -458,6 +461,7 @@ class OptimizationSetup(object):
         :param step_horizon: step of the rolling horizon """
 
         if self.system["use_rolling_horizon"]:
+            self.step_horizon = step_horizon
             time_steps_yearly_horizon = self.steps_horizon[step_horizon]
             base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(time_steps_yearly_horizon)
             # overwrite aggregated time steps - operation
@@ -504,13 +508,9 @@ class OptimizationSetup(object):
         if self.model.termination_condition == 'optimal':
             self.optimality = True
         elif self.model.termination_condition == "suboptimal":
-            logging.info("The optimization is suboptimal")
+            logging.warning("The optimization is suboptimal")
             self.optimality = True
-        elif self.model.termination_condition == "infeasible":
-            logging.info("The optimization is infeasible")
-            self.optimality = False
         else:
-            logging.info("The optimization is infeasible or unbounded, or finished with an error")
             self.optimality = False
 
     def write_IIS(self):

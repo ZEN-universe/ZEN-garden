@@ -739,7 +739,6 @@ class TechnologyRules(GenericRule):
         # select masks
         mask_current_time_steps = investment_time.index.get_level_values("set_time_steps_construction").isin(self.sets["set_time_steps_yearly"])
         mask_existing_time_steps = investment_time.isin(self.sets["set_time_steps_yearly_entire_horizon"]) & ~mask_current_time_steps
-        investment_time = investment_time
         # broadcast capacity investment and capacity investment existing
         capacity_investment = self.variables["capacity_investment"]
         investment_time_current = investment_time[mask_current_time_steps].dropna().to_xarray().broadcast_like(capacity_investment.mask).fillna(0)

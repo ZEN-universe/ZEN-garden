@@ -15,7 +15,7 @@ import importlib
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
-from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
+from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils, OptimizationError
 
 # we setup the logger here
 setup_logger()
@@ -79,7 +79,7 @@ def main(config, dataset_path=None, job_index=None):
             if not optimization_setup.optimality:
                 # write IIS
                 optimization_setup.write_IIS()
-                break
+                raise OptimizationError(optimization_setup.model.termination_condition)
             # save new capacity additions and cumulative carbon emissions for next time step
             optimization_setup.add_results_of_optimization_step(step)
             # EVALUATE RESULTS
