@@ -27,7 +27,7 @@ dependencies:
       - ordered-set
       - pyogrio
       - psutil
-      - linopy>=0.3.8
+      - linopy<=0.3.10
       - sphinx
       - myst-parser
       - -e .
