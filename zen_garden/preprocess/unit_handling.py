@@ -47,6 +47,9 @@ class UnitHandling:
         _list_base_unit = self.extract_base_units()
         self.ureg = UnitRegistry()
 
+        # disable pint logger
+        logging.getLogger("pint").setLevel(logging.CRITICAL)
+        # redefine standard units
         self.redefine_standard_units()
         # load additional units
         if os.path.exists(os.path.join(self.folder_path, "unit_definitions.txt")):

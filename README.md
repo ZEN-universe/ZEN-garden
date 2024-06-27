@@ -31,6 +31,7 @@ ZEN-garden is written in Python and is available as a package. To install the pa
 ```
 pip install -e
 ```
+When installing the virtual environment, this is done automatically.
 
 See the [how to ZEN-garden documentation](https://github.com/ZEN-universe/ZEN-garden/blob/main/documentation/how_to_ZEN_garden.md#needed-installations) for more information on installing.
 

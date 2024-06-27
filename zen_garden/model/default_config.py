@@ -118,10 +118,10 @@ class System(Subscriptable):
     interval_between_years: int = 1
     use_rolling_horizon: bool = False
     years_in_rolling_horizon: int = 5
+    interval_between_optimizations: int = 1
     use_capacities_existing: bool = True
     load_lca_factors: bool = False
     set_lca_impact_categories: list[str] = []
-
 
 class SolverOptions(Subscriptable):
     pass
@@ -170,7 +170,6 @@ class Analysis(Subscriptable):
     subsets: Subsets = Subsets()
     header_data_inputs: HeaderDataInputs = HeaderDataInputs()
     time_series_aggregation: TimeSeriesAggregation = TimeSeriesAggregation()
-    postprocess: bool = False
     folder_output: str = "./outputs/"
     overwrite_output: bool = True
     output_format: str = "h5"

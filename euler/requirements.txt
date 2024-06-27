@@ -1,4 +1,4 @@
-numpy
+numpy<=1.26.4
 glpk
 geopandas
 gurobipy
@@ -7,7 +7,7 @@ pandas
 pip
 ordered-set
 xarray
-linopy>=0.3.8
+linopy<=0.3.10
 coverage
 pytest
 scipy

@@ -423,15 +423,31 @@ class OptimizationSetup(object):
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
         # if using rolling horizon
-        if self.system["use_rolling_horizon"]:
-            self.years_in_horizon = self.system["years_in_rolling_horizon"]
+        if self.system.use_rolling_horizon:
+            assert self.system.years_in_rolling_horizon >= self.system.interval_between_optimizations, f"There must be more years in the rolling horizon than the interval between optimizations. years_in_rolling_horizon ({self.system.years_in_rolling_horizon}) < interval_between_optimizations ({self.system.interval_between_optimizations})"
+            self.years_in_horizon = self.system.years_in_rolling_horizon
             time_steps_yearly = self.energy_system.set_time_steps_yearly
-            self.steps_horizon = {year: list(range(year, min(year + self.years_in_horizon, max(time_steps_yearly) + 1))) for year in time_steps_yearly}
+            # skip interval_between_optimizations years
+            self.optimized_time_steps = [year for year in time_steps_yearly if (year % self.system.interval_between_optimizations == 0 or year == time_steps_yearly[-1])]
+            self.steps_horizon = {year: list(range(year, min(year + self.years_in_horizon, max(time_steps_yearly) + 1))) for year in self.optimized_time_steps}
         # if no rolling horizon
         else:
             self.years_in_horizon = len(self.energy_system.set_time_steps_yearly)
+            self.optimized_time_steps = [0]
             self.steps_horizon = {0: self.energy_system.set_time_steps_yearly}
         return list(self.steps_horizon.keys())
+
+    def get_decision_horizon(self,step_horizon):
+        """ returns the decision horizon for the optimization step, i.e., the time steps for which the decisions are saved
+
+        :param step_horizon: step of the rolling horizon
+        :return decision_horizon: list of time steps in the decision horizon """
+        if step_horizon == self.optimized_time_steps[-1]:
+            decision_horizon = [step_horizon]
+        else:
+            next_optimization_step = self.optimized_time_steps[self.optimized_time_steps.index(step_horizon) + 1]
+            decision_horizon = list(range(step_horizon, next_optimization_step))
+        return decision_horizon
 
     def set_base_configuration(self, scenario="", elements={}):
         """set base configuration
@@ -447,11 +463,9 @@ class OptimizationSetup(object):
         :param step_horizon: step of the rolling horizon """
 
         if self.system["use_rolling_horizon"]:
+            self.step_horizon = step_horizon
             time_steps_yearly_horizon = self.steps_horizon[step_horizon]
             base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(time_steps_yearly_horizon)
-            # # overwrite time steps of each element
-            # for element in self.get_all_elements(Element):
-            #     element.overwrite_time_steps(base_time_steps_horizon)
             # overwrite aggregated time steps - operation
             set_time_steps_operation = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps_horizon,
                                                                                       time_step_type="operation")
@@ -496,13 +510,9 @@ class OptimizationSetup(object):
         if self.model.termination_condition == 'optimal':
             self.optimality = True
         elif self.model.termination_condition == "suboptimal":
-            logging.info("The optimization is suboptimal")
+            logging.warning("The optimization is suboptimal")
             self.optimality = True
-        elif self.model.termination_condition == "infeasible":
-            logging.info("The optimization is infeasible")
-            self.optimality = False
         else:
-            logging.info("The optimization is infeasible or unbounded, or finished with an error")
             self.optimality = False
 
     def write_IIS(self):
@@ -539,13 +549,14 @@ class OptimizationSetup(object):
                 capacity_addition[capacity_addition <= rounding_value] = 0
                 invest_capacity[invest_capacity <= rounding_value] = 0
                 cost_capex[cost_capex <= rounding_value] = 0
+                decision_horizon = self.get_decision_horizon(step_horizon)
                 for tech in self.get_all_elements(Technology):
                     # new capacity
                     capacity_addition_tech = capacity_addition.loc[tech.name].unstack()
                     capacity_investment = invest_capacity.loc[tech.name].unstack()
                     cost_capex_tech = cost_capex.loc[tech.name].unstack()
-                    tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, step_horizon)
-                    tech.add_new_capacity_investment(capacity_investment, step_horizon)
+                    tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, decision_horizon)
+                    tech.add_new_capacity_investment(capacity_investment, decision_horizon)
             else:
                 # TODO clean up
                 # reset to initial values
@@ -578,10 +589,11 @@ class OptimizationSetup(object):
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 interval_between_years = self.energy_system.system["interval_between_years"]
-                _carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[step_horizon].item()
-                carbon_emissions_annual = self.model.solution["carbon_emissions_annual"].loc[step_horizon].item()
-                # carbon_emissions_overshoot = self.model.solution["carbon_emissions_overshoot"].loc[step_horizon].item()
-                self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + carbon_emissions_annual * (interval_between_years - 1)
+                decision_horizon = self.get_decision_horizon(step_horizon)
+                last_year = decision_horizon[-1]
+                carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[last_year].item()
+                carbon_emissions_annual = self.model.solution["carbon_emissions_annual"].loc[last_year].item()
+                self.energy_system.carbon_emissions_cumulative_existing = carbon_emissions_cumulative + carbon_emissions_annual * (interval_between_years - 1)
             else:
                 self.energy_system.carbon_emissions_cumulative_existing = self.energy_system.data_input.extract_input_data(
                     "carbon_emissions_cumulative_existing", index_sets=[], unit_category={"emissions": 1})
