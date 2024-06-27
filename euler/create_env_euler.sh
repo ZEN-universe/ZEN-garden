@@ -11,10 +11,10 @@ module load glpk
 module load gurobi/10.0.3
 
 # create the env
-python -m venv zen_garden_ubuntu
+python -m venv zen_garden_env
 
 # activate the env
-source zen_garden_ubuntu/bin/activate
+source zen_garden_env/bin/activate
 
 # install the requirements
 pip install -U pip
