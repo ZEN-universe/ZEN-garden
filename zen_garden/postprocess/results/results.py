@@ -124,8 +124,8 @@ class Results:
             series = series.div(timestep_duration, axis=1)
 
             for year_temp in annuity.index:
-                time_steps_year = self.solution_loader.get_timesteps_of_year(
-                    scenario, component.timestep_type, year_temp
+                time_steps_year = self.solution_loader.get_timesteps_of_years(
+                    scenario, component.timestep_type, (year_temp,)
                 )
                 series[time_steps_year] = series[time_steps_year] / annuity[year_temp]
 
@@ -327,45 +327,47 @@ class Results:
         ).squeeze()
 
         years = list(range(0, system["optimized_years"]))
-
+        optimized_years = self.solution_loader.get_optimized_years(scenario)
         annuity = pd.Series(index=years, dtype=float)
         for year in years:
+            # closest year in optimized years that is smaller than year
+            start_year = [y for y in optimized_years if y <= year][-1]
             interval_between_years = system.interval_between_years
             if year == years[-1]:
                 interval_between_years_this_year = 1
             else:
                 interval_between_years_this_year = system.interval_between_years
-            if self.solution_loader.has_rh:
-                if discount_to_first_step:
-                    annuity[year] = interval_between_years_this_year * (
-                        1 / (1 + discount_rate)
-                    )
-                else:
-                    annuity[year] = sum(
-                        ((1 / (1 + discount_rate)) ** (_intermediate_time_step))
-                        for _intermediate_time_step in range(
-                            0, interval_between_years_this_year
-                        )
-                    )
+            # if self.solution_loader.has_rh:
+            #     if discount_to_first_step:
+            #         annuity[year] = interval_between_years_this_year * (
+            #             1 / (1 + discount_rate)
+            #         )
+            #     else:
+            #         annuity[year] = sum(
+            #             ((1 / (1 + discount_rate)) ** (_intermediate_time_step))
+            #             for _intermediate_time_step in range(
+            #                 0, interval_between_years_this_year
+            #             )
+            #         )
+            # else:
+            if discount_to_first_step:
+                annuity[year] = interval_between_years_this_year * (
+                    (1 / (1 + discount_rate))
+                    ** (interval_between_years * (year - start_year))
+                )
             else:
-                if discount_to_first_step:
-                    annuity[year] = interval_between_years_this_year * (
+                annuity[year] = sum(
+                    (
                         (1 / (1 + discount_rate))
-                        ** (interval_between_years * (year - years[0]))
-                    )
-                else:
-                    annuity[year] = sum(
-                        (
-                            (1 / (1 + discount_rate))
-                            ** (
-                                interval_between_years * (year - years[0])
-                                + _intermediate_time_step
-                            )
-                        )
-                        for _intermediate_time_step in range(
-                            0, interval_between_years_this_year
+                        ** (
+                            interval_between_years * (year - start_year)
+                            + _intermediate_time_step
                         )
                     )
+                    for _intermediate_time_step in range(
+                        0, interval_between_years_this_year
+                    )
+                )
         return annuity
 
     def get_dual(

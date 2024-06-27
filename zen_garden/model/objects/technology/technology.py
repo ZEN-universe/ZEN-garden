@@ -102,7 +102,7 @@ class Technology(Element):
         fraction_year = self.optimization_setup.system["unaggregated_time_steps_per_year"] / self.optimization_setup.system["total_hours_per_year"]
         return fraction_year
 
-    def add_new_capacity_addition_tech(self, capacity_addition: pd.Series, capex: pd.Series, step_horizon: int):
+    def add_new_capacity_addition_tech(self, capacity_addition: pd.Series, capex: pd.Series, step_horizon: list):
         """ adds the newly built capacity to the existing capacity
 
         :param capacity_addition: pd.Series of newly built capacity of technology
@@ -110,18 +110,20 @@ class Technology(Element):
         :param step_horizon: current horizon step """
         system = self.optimization_setup.system
         # reduce lifetime of existing capacities and add new remaining lifetime
-        self.lifetime_existing = (self.lifetime_existing - system["interval_between_years"]).clip(lower=0)
+        delta_lifetime = step_horizon[-1] - step_horizon[0]
+        self.lifetime_existing = (self.lifetime_existing - system["interval_between_years"] * (delta_lifetime + 1)).clip(lower=0)
         # new capacity
         new_capacity_addition = capacity_addition[step_horizon]
         new_capex = capex[step_horizon]
         # if at least one value unequal to zero
-        if not (new_capacity_addition == 0).all():
+        if not (new_capacity_addition.stack() == 0).all():
             # add new index to set_technologies_existing
-            index_new_technology = max(self.set_technologies_existing) + 1
+            index_step_horizon = list(range(len(step_horizon)))
+            index_new_technology = [max(self.set_technologies_existing) + 1 + idx for idx in index_step_horizon]
             self.set_technologies_existing = np.append(self.set_technologies_existing, index_new_technology)
             # add new remaining lifetime
             lifetime = self.lifetime_existing.unstack()
-            lifetime[index_new_technology] = self.lifetime[0] - system["interval_between_years"]
+            lifetime[index_new_technology] = [self.lifetime[0] - system["interval_between_years"]*(delta_lifetime - idx + 1) for idx in index_step_horizon]
             self.lifetime_existing = lifetime.stack()
 
             for type_capacity in list(set(new_capacity_addition.index.get_level_values(0))):
@@ -142,7 +144,7 @@ class Technology(Element):
                 capex_capacity_existing[index_new_technology] = new_capex.loc[type_capacity]
                 setattr(self, "capex_capacity_existing" + energy_string, capex_capacity_existing.stack())
 
-    def add_new_capacity_investment(self, capacity_investment: pd.Series, step_horizon):
+    def add_new_capacity_investment(self, capacity_investment: pd.Series, step_horizon:list):
         """ adds the newly invested capacity to the list of invested capacity
 
         :param capacity_investment: pd.Series of newly built capacity of technology
@@ -150,7 +152,7 @@ class Technology(Element):
         system = self.optimization_setup.system
         new_capacity_investment = capacity_investment[step_horizon]
         new_capacity_investment = new_capacity_investment.fillna(0)
-        if not (new_capacity_investment == 0).all():
+        if not (new_capacity_investment.stack() == 0).all():
             for type_capacity in list(set(new_capacity_investment.index.get_level_values(0))):
                 # if power
                 if type_capacity == system["set_capacity_types"][0]:
@@ -729,13 +731,6 @@ class TechnologyRules(GenericRule):
             \mathrm{else}\ \Delta S_{h,p,y} = 0
         """
 
-        ### index sets
-        index_values, index_names = Element.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], self.optimization_setup)
-        index = ZenIndex(index_values, index_names)
-
-        ### index loop
-        # we loop over technologies and years, because the conditions depend on the year and the technology
-        # we vectorize over capacity types and locations
         # get investment time step
         investment_time = pd.Series(
             {(t, y,Technology.get_investment_time_step(self.optimization_setup, t, y)): 1 for t, y in itertools.product(self.sets["set_technologies"], self.sets["set_time_steps_yearly"])})
@@ -743,29 +738,34 @@ class TechnologyRules(GenericRule):
 
         # select masks
         mask_current_time_steps = investment_time.index.get_level_values("set_time_steps_construction").isin(self.sets["set_time_steps_yearly"])
-        mask_other_time_steps = investment_time.isin(self.sets["set_time_steps_yearly_entire_horizon"]) & ~mask_current_time_steps
-        mask_outside_time_steps = ~(mask_other_time_steps | mask_current_time_steps)
-        investment_time = investment_time
+        mask_existing_time_steps = investment_time.isin(self.sets["set_time_steps_yearly_entire_horizon"]) & ~mask_current_time_steps
         # broadcast capacity investment and capacity investment existing
         capacity_investment = self.variables["capacity_investment"]
         investment_time_current = investment_time[mask_current_time_steps].dropna().to_xarray().broadcast_like(capacity_investment.mask).fillna(0)
-        investment_time_other = investment_time[mask_other_time_steps].dropna().to_xarray().broadcast_like(capacity_investment.mask).fillna(0)
+        investment_time_existing = investment_time[mask_existing_time_steps].dropna().to_xarray().broadcast_like(capacity_investment.mask).fillna(0)
+        # gets the time steps where no investment can be made without the addition exceeding the horizon
+        investment_time_outside = (1-investment_time_current).min("set_time_steps_yearly")
 
-        capacity_investment = capacity_investment.rename({"set_time_steps_yearly": "set_time_steps_construction"}).broadcast_like(investment_time_current)
+        capacity_investment = capacity_investment.rename({"set_time_steps_yearly": "set_time_steps_construction"})
+        capacity_investment_addition = capacity_investment.broadcast_like(investment_time_current)
         capacity_investment_existing = self.parameters.capacity_investment_existing
-        capacity_investment_existing = capacity_investment_existing.rename({"set_time_steps_yearly_entire_horizon": "set_time_steps_construction"}).broadcast_like(investment_time_other)
+        capacity_investment_existing = capacity_investment_existing.rename({"set_time_steps_yearly_entire_horizon": "set_time_steps_construction"}).broadcast_like(investment_time_existing)
 
         ### formulate constraint
         lhs = lp.merge(
             1 * self.variables["capacity_addition"],
-            - (investment_time_current*capacity_investment).sum("set_time_steps_construction")
+            - (investment_time_current*capacity_investment_addition).sum("set_time_steps_construction")
             , compat="broadcast_equals")
-        rhs = (investment_time_other*capacity_investment_existing).sum("set_time_steps_construction")
+        rhs = (investment_time_existing*capacity_investment_existing).sum("set_time_steps_construction")
         rhs = xr.align(lhs.const,rhs,join="left")[1]
         constraints = lhs == rhs
+        # constrain capacity_investment where no investment can be made without the addition exceeding the horizon
+        lhs_outside = self.align_and_mask(capacity_investment, investment_time_outside)
+        rhs_outside = 0
+        constraints_outside = lhs_outside == rhs_outside
 
-        ### return
         self.constraints.add_constraint("constraint_technology_construction_time",constraints)
+        self.constraints.add_constraint("constraint_technology_construction_time_outside",constraints_outside)
 
     def constraint_technology_lifetime(self):
         """ limited lifetime of the technologies. calculates 'capacity', i.e., the capacity at the end of the year and
