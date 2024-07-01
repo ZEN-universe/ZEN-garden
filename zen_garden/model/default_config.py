@@ -141,9 +141,8 @@ class Solver(Subscriptable):
     rounding_decimal_points_capacity: int = 4
     analyze_numerics: bool = True
     use_scaling: bool = True
-    scaling_include_rhs: bool = True
-    scaling_iterations: int = 3
-    scaling_algorithm: str = "geom"
+    scaling_include_rhs: bool = False
+    scaling_algorithm: list[str] = ["geom","geom","geom"]
 
 
 

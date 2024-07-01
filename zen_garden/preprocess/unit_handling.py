@@ -22,7 +22,7 @@ from pathlib import Path
 from zen_garden.model.objects.technology.technology import Technology
 from zen_garden.model.objects.carrier.carrier import Carrier
 
-import bisect
+import time
 
 
 # enable Deprecation Warnings
@@ -718,10 +718,9 @@ class Scaling:
     """
     This class scales the optimization model before solving it and rescales the solution
     """
-    def __init__(self, model, iterations=3, algorithm="geom", include_rhs = True):
+    def __init__(self, model, algorithm=["geom"], include_rhs = True):
         #optimization model to perform scaling on
         self.model = model
-        self.iterations = iterations
         self.algorithm = algorithm
         self.include_rhs = include_rhs
 
@@ -750,12 +749,21 @@ class Scaling:
             mask = np.where(var.labels.data != -1)
             var.solution.data[mask] = var.solution.data[mask] * (self.D_c_inv[var.labels.data[mask]])
 
+    def analyze_numerics(self):
+        #print numerics if no scaling is activated
+        self.initiate_A_matrix()
+        self.print_numerics(0,True)
+
     def run_scaling(self):
         #cp = cProfile.Profile()
         #cp.enable()
+        logging.info(f"\n--- Start Scaling ---\n")
+        t0 = time.perf_counter()
         self.initiate_A_matrix()
         self.iter_scaling()
         self.overwrite_problem()
+        t1 = time.perf_counter()
+        logging.info(f"\nTime to Scale Problem: {t1 - t0:0.1f} seconds\n")
         #cp.disable()
         #cp.print_stats("cumtime")
 
@@ -863,7 +871,7 @@ class Scaling:
     def print_numerics_of_last_iteration(self):
         self.A_matrix =  sp.sparse.diags(self.D_r_inv, 0, format='csr').dot(self.A_matrix_copy).dot(sp.sparse.diags(self.D_c_inv, 0, format='csr'))
         self.rhs = self.rhs_copy * self.D_r_inv
-        self.print_numerics(self.iterations)
+        self.print_numerics(len(self.algorithm))
 
     def generate_numerics_string(self,label,index=None,A_matrix=None,var=None, is_rhs=False):
         if is_rhs:
@@ -877,7 +885,7 @@ class Scaling:
             var_str = var_str[0] + str(list(var_str[1].values()))
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
-    def print_numerics(self,i):
+    def print_numerics(self,i,no_scaling = False):
         data_coo = self.A_matrix.tocoo()
         A_abs = np.abs(data_coo.data)
         index_max = np.argmax(A_abs)
@@ -896,7 +904,10 @@ class Scaling:
         cons_rhs_max = self.generate_numerics_string(rhs_max_index, is_rhs=True)
         cons_rhs_min = self.generate_numerics_string(rhs_min_index, is_rhs=True)
         #Prints
-        logging.info(f"\n--- Numerics at iteration {i} ---\n")
+        if no_scaling:
+            logging.info(f"\n--- Analyze Numerics ---\n")
+        else:
+            logging.info(f"\n--- Numerics at iteration {i} ---\n")
         print("Max value of A matrix: " + cons_str_max)
         print("Min value of A matrix: " + cons_str_min)
         print("Max value of RHS: " + cons_rhs_max)
@@ -914,30 +925,32 @@ class Scaling:
         #initiate iteration counter
         i = 0
         self.print_numerics(i)
-        while i<self.iterations:
+        for algo in self.algorithm:
             i+=1
             #update row scaling vector
-            if self.algorithm == "infnorm":
+            if algo == "infnorm":
                 #update row scaling vector
                 max_rows = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=1)
                 if self.include_rhs:
                     max_rows = np.maximum(max_rows, np.abs(self.rhs), out=max_rows, where=self.rhs != np.inf)
+                max_rows[max_rows == 0] = 1 #to avoid warning outputs
                 r_vector = 1 / max_rows
                 r_vector = np.power(2, np.round(np.emath.logn(2, r_vector)))
                 #update A and row scaling matrix
                 self.update_A(r_vector,1)
                 #update column scaling vector
                 max_cols = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=0)
+                max_cols[max_cols == 0] = 1 #to avoid warning outputs
                 c_vector = 1/max_cols
                 c_vector = np.power(2, np.round(np.emath.logn(2, c_vector)))
                 #update A and column scaling matrix
                 self.update_A(c_vector,0)
                 # Print Numerics
-                if i < self.iterations:
+                if i < len(self.algorithm):
                     self.print_numerics(i)
 
             #ToDo add rhs to row scaling
-            elif self.algorithm == "full_geom":
+            elif algo == "full_geom":
                 #update row scaling vector
                 geom = self.get_full_geom(self.A_matrix, 0)
                 r_vector = 1 / geom
@@ -951,10 +964,10 @@ class Scaling:
                 #update A and column scaling matrix
                 self.update_A(c_vector,0)
                 # Print Numerics
-                if i < self.iterations:
+                if i < len(self.algorithm):
                     self.print_numerics(i)
 
-            elif self.algorithm == "geom":
+            elif algo == "geom":
                 # update row scaling vector
                 max_rows = sp.sparse.linalg.norm(self.A_matrix, ord=np.inf, axis=1)
                 min_rows = self.get_min(self.A_matrix)
@@ -977,10 +990,10 @@ class Scaling:
                 # update A and column scaling matrix
                 self.update_A(c_vector,0)
                 #Print Numerics
-                if i<self.iterations:
+                if i < len(self.algorithm):
                     self.print_numerics(i)
 
-            elif self.algorithm == "arithm":
+            elif algo == "arithm":
                 #update row scaling vector
                 mean_rows = sp.sparse.linalg.norm(self.A_matrix, ord=1, axis=1)/(np.diff(self.A_matrix.indptr)+np.ones(self.A_matrix.get_shape()[0]))
                 if self.include_rhs:
@@ -996,7 +1009,7 @@ class Scaling:
                 #update A and column scaling matrix
                 self.update_A(r_vector,0)
                 # Print Numerics
-                if i < self.iterations:
+                if i < len(self.algorithm):
                     self.print_numerics(i)
 
 
