@@ -258,9 +258,9 @@ class ScenarioDict(dict):
     """
 
     _param_dict_keys = {"file", "file_op", "default", "default_op"}
-    _special_elements = ["system", "analysis", "base_scenario", "sub_folder", "param_map"]
+    _special_elements = ["system", "analysis","solver","base_scenario", "sub_folder", "param_map"]
 
-    def __init__(self, init_dict, system, analysis, paths):
+    def __init__(self, init_dict, system, analysis,solver,paths):
         """
         Initializes the dictionary from a normal dictionary
         :param init_dict: The dictionary to initialize from
@@ -274,6 +274,7 @@ class ScenarioDict(dict):
         # set the attributes and expand the dict
         self.system = system
         self.analysis = analysis
+        self.solver = solver
         self.init_dict = init_dict
         self.paths = paths
         expanded_dict = self.expand_subsets(init_dict)
@@ -326,6 +327,17 @@ class ScenarioDict(dict):
                     raise ValueError(f"Trying to update system with key {key} and value {value} of type {type(value)}, "
                                      f"but the system has already a value of type {type(self.system[key])}")
 
+        if "solver" in self.dict:
+            for key, value in self.dict["solver"].items():
+                assert key in self.solver, f"Trying to update solver with key {key} and value {value}, but the solver does not have this key!"
+                if key == "solver_options":
+                    self.solver[key] = value
+                elif type(self.solver[key]) == type(value):
+                    self.solver[key] = value
+                else:
+                    raise ValueError(
+                        f"Trying to update solver with key {key} and value {value} of type {type(value)}, "
+                        f"but the solver has already a value of type {type(self.solver[key])}")
     @staticmethod
     def expand_lists(scenarios: dict):
         """

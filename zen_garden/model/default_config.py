@@ -98,7 +98,7 @@ class System(Subscriptable):
     double_capex_transport: bool = False
     set_nodes: list[str] = []
     exclude_parameters_from_TSA: bool = True
-    conduct_scenario_analysis: bool = False
+    conduct_scenario_analysis: bool = True
     run_default_scenario: bool = True
     clean_sub_scenarios: bool = False
     total_hours_per_year: int = 8760
@@ -175,6 +175,7 @@ class Analysis(Subscriptable):
     max_output_size_mb: int = 500
     folder_name_system_specification: str = "system_specification"
     earliest_year_of_data: int = 1900
+    benchmarking: bool = True
 
 class Config(Subscriptable):
     # analysis: dict = Analysis().model_dump()

@@ -723,6 +723,8 @@ class Scaling:
         self.model = model
         self.algorithm = algorithm
         self.include_rhs = include_rhs
+        #For benchmarking
+        self.scaling_time = 0
 
     def initiate_A_matrix(self):
         self.A_matrix = self.model.constraints.to_matrix(filter_missings=False)
@@ -752,6 +754,7 @@ class Scaling:
     def analyze_numerics(self):
         #print numerics if no scaling is activated
         self.initiate_A_matrix()
+        self.A_matrix.eliminate_zeros()
         self.print_numerics(0,True)
 
     def run_scaling(self):
@@ -763,6 +766,7 @@ class Scaling:
         self.iter_scaling()
         self.overwrite_problem()
         t1 = time.perf_counter()
+        self.scaling_time = t1 - t0 #for benchmarking
         logging.info(f"\nTime to Scale Problem: {t1 - t0:0.1f} seconds\n")
         #cp.disable()
         #cp.print_stats("cumtime")
@@ -885,7 +889,7 @@ class Scaling:
             var_str = var_str[0] + str(list(var_str[1].values()))
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
-    def print_numerics(self,i,no_scaling = False):
+    def print_numerics(self,i,no_scaling = False, benchmarking_output = False):
         data_coo = self.A_matrix.tocoo()
         A_abs = np.abs(data_coo.data)
         index_max = np.argmax(A_abs)
@@ -903,18 +907,31 @@ class Scaling:
         #RHS values
         cons_rhs_max = self.generate_numerics_string(rhs_max_index, is_rhs=True)
         cons_rhs_min = self.generate_numerics_string(rhs_min_index, is_rhs=True)
-        #Prints
-        if no_scaling:
-            logging.info(f"\n--- Analyze Numerics ---\n")
+        if benchmarking_output: #for postprocessing
+            #LHS
+            range_lhs = A_abs[index_max]/A_abs[index_min]
+            exponent = np.floor(np.log10(range_lhs))
+            coefficient = int(range_lhs/10**exponent)
+            range_lhs = coefficient * 10**exponent
+            #RHS
+            range_rhs = np.abs(self.rhs[rhs_max_index])/np.abs(self.rhs[rhs_min_index])
+            exponent = np.floor(np.log10(range_rhs))
+            coefficient = int(range_rhs/10**exponent)
+            range_rhs = coefficient * 10**exponent
+            return range_lhs, range_rhs
         else:
-            logging.info(f"\n--- Numerics at iteration {i} ---\n")
-        print("Max value of A matrix: " + cons_str_max)
-        print("Min value of A matrix: " + cons_str_min)
-        print("Max value of RHS: " + cons_rhs_max)
-        print("Min value of RHS: " + cons_rhs_min)
-        print("Numerical Range:")
-        print("LHS : {}".format([format(A_abs[index_min],".1e"),format(A_abs[index_max],".1e")]))
-        print("RHS : {}".format([format(np.abs(self.rhs[rhs_min_index]),".1e"),format(np.abs(self.rhs[rhs_max_index]),".1e")]))
+            #Prints
+            if no_scaling:
+                logging.info(f"\n--- Analyze Numerics ---\n")
+            else:
+                logging.info(f"\n--- Numerics at iteration {i} ---\n")
+            print("Max value of A matrix: " + cons_str_max)
+            print("Min value of A matrix: " + cons_str_min)
+            print("Max value of RHS: " + cons_rhs_max)
+            print("Min value of RHS: " + cons_rhs_min)
+            print("Numerical Range:")
+            print("LHS : {}".format([format(A_abs[index_min],".1e"),format(A_abs[index_max],".1e")]))
+            print("RHS : {}".format([format(np.abs(self.rhs[rhs_min_index]),".1e"),format(np.abs(self.rhs[rhs_max_index]),".1e")]))
 
 
 
