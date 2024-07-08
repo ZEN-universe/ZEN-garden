@@ -1,4 +1,4 @@
-name: zen-garden
+name: zen-garden-fork
 channels:
   - conda-forge
   - gurobi
@@ -33,4 +33,4 @@ dependencies:
       - -e .
 
 # conda env create -f zen_garden_env.yml
-# conda remove --name zen-garden --all
+# conda remove --name zen-garden-fork --all
