@@ -98,7 +98,7 @@ class System(Subscriptable):
     double_capex_transport: bool = False
     set_nodes: list[str] = []
     exclude_parameters_from_TSA: bool = True
-    conduct_scenario_analysis: bool = True
+    conduct_scenario_analysis: bool = False
     run_default_scenario: bool = True
     clean_sub_scenarios: bool = False
     total_hours_per_year: int = 8760
