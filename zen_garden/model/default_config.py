@@ -136,6 +136,11 @@ class Solver(Subscriptable):
     round_parameters: bool = True
     rounding_decimal_points_capacity: int = 4
     analyze_numerics: bool = True
+    use_scaling: bool = True
+    scaling_include_rhs: bool = False
+    scaling_algorithm: list[str] = ["geom","geom","geom"]
+
+
 
 class TimeSeriesAggregation(Subscriptable):
     slv: Solver = Solver()
