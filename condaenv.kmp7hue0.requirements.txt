@@ -1,0 +1,10 @@
+tsam
+h5py
+filelock
+ordered-set
+pyogrio
+psutil
+linopy>=0.3.8
+sphinx
+myst-parser
+-e .

@@ -13,4 +13,4 @@ scenarios["1"] = {"system": {'reference_year': 2023,
                              'unaggregated_time_steps_per_year': 8760,
                              'aggregated_time_steps_per_year': 1},
                   'analysis': {"objective": "total_carbon_emissions"},
-                  'solver': {'check_unit_consistency': False, 'recommend_base_units': True}}
+                  'solver': {'check_unit_consistency': False, 'use_scaling': True}}
