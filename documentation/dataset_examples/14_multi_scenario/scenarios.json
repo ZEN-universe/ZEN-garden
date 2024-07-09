@@ -1,0 +1,4 @@
+{
+  "1": {"EnergySystem": {"price_carbon_emissions": {"file": "price_carbon_emissions_1"}}},
+  "2": {"EnergySystem": {"price_carbon_emissions": {"file": "price_carbon_emissions_2"}}}
+}

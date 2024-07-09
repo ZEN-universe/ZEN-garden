@@ -1,0 +1,23 @@
+{
+    "set_conversion_technologies": [
+        "natural_gas_boiler"
+    ],
+    "set_storage_technologies": [
+        "natural_gas_storage"
+    ],
+    "set_transport_technologies": [
+        "natural_gas_pipeline"
+    ],
+    "set_nodes": [
+        "DE",
+        "CH"
+    ],
+    "reference_year": 2022,
+    "unaggregated_time_steps_per_year": 8760,
+    "aggregated_time_steps_per_year": 10,
+    "conduct_time_series_aggregation": true,
+    "optimized_years": 3,
+    "interval_between_years": 1,
+    "use_rolling_horizon": true,
+    "years_in_rolling_horizon": 2
+}

@@ -6,26 +6,12 @@
 /data/*
 !/data/.gitkeep
 outputs*/
-/data_generation/
-/postprocessing_JM/results_JM.py
-/postprocessing_JM/results_MH.py
-/postprocessing_JM/read_result.py
-/postprocessing_JM/visualization_JM.py
-/postprocessing_JM/visualization_JM_maps.py
-/postprocessing_JM/visualization_MH.py
-/postprocess/visualization_AG.py
-*AG.py
-*JM.py
 zen_garden_env/
 *.swp
 *~
 *.pyc
 *.DS_Store
 .coverage
-compileAG.py
-postprocess/eth_colorsAG.py
-postprocess/visualizationAG.py
-postprocessing_HB
 
 # pytest monitor
 .pymon
