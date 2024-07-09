@@ -1,5 +1,9 @@
 {
-  "carbon_intensity_carrier": {
+  "carbon_intensity_carrier_import": {
+    "default_value": 0.2,
+    "unit": "kilotons/kilotons"
+  },
+  "carbon_intensity_carrier_export": {
     "default_value": 0.2,
     "unit": "kilotons/kilotons"
   },

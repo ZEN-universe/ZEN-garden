@@ -42,7 +42,6 @@ def run_module(args=None):
                                                                                                          "If both --job_index and --job_index_var are specified, --job_index will be used.")
     args = parser.parse_args(args)
 
-
     if not os.path.exists(args.config):
         args.config = args.config.replace(".py", ".json")
 
