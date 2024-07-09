@@ -6,7 +6,7 @@
 
 Class is defining to read in the results of an Optimization problem.
 """
-
+import json
 import logging
 import os
 import sys
@@ -1173,8 +1173,9 @@ class InputDataChecks:
         assert os.path.exists(dirname),f"Requested folder {dirname} is not a valid path"
         assert os.path.exists(self.analysis["dataset"]),f"The chosen dataset {dataset} does not exist at {self.analysis['dataset']} as it is specified in the config"
         # check if chosen dataset contains a system.py file
-        if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")):
-            raise FileNotFoundError(f"system.py not found in dataset: {self.analysis['dataset']}")
+
+        if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")) and not os.path.exists(os.path.join(self.analysis['dataset'], "system.json")):
+            raise FileNotFoundError(f"Neither system.json nor system.py not found in dataset: {self.analysis['dataset']}")
 
     def check_single_directed_edges(self, set_edges_input):
         """
@@ -1242,14 +1243,16 @@ class InputDataChecks:
         :param config: config object
         """
         # check if system.json file exists
-        # if os.path.exists(os.path.join(config.analysis["dataset"], "system.json")):
-        #     with open(os.path.join(config.analysis["dataset"], "system.json"), "r") as file:
-        #         system = json.load(file)
-        system_path = os.path.join(config.analysis['dataset'], "system.py")
-        spec = importlib.util.spec_from_file_location("module", system_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        system = module.system
+        if os.path.exists(os.path.join(config.analysis["dataset"], "system.json")):
+            with open(os.path.join(config.analysis["dataset"], "system.json"), "r") as file:
+                system = json.load(file)
+        # otherwise read system.py file
+        else:
+            system_path = os.path.join(config.analysis['dataset'], "system.py")
+            spec = importlib.util.spec_from_file_location("module", system_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            system = module.system
         config.system.update(system)
 
 class StringUtils:
@@ -1415,13 +1418,18 @@ class ScenarioUtils:
         :return: elements in scenario
         """
         if config.system["conduct_scenario_analysis"]:
-            scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
-            if not os.path.exists(scenarios_path):
-                raise FileNotFoundError(f"scenarios.py not found in dataset: {config.analysis['dataset']}")
-            spec = importlib.util.spec_from_file_location("module", scenarios_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            scenarios = module.scenarios
+            scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.json"))
+            if os.path.exists(scenarios_path):
+                with open(scenarios_path, "r") as file:
+                    scenarios = json.load(file)
+            else:
+                scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
+                if not os.path.exists(scenarios_path):
+                    raise FileNotFoundError(f"Neither scenarios.json nor scenarios.py not found in dataset: {config.analysis['dataset']}")
+                spec = importlib.util.spec_from_file_location("module", scenarios_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                scenarios = module.scenarios
             config.scenarios.update(scenarios)
             # remove the default scenario if necessary
             if not config.system["run_default_scenario"] and "" in config.scenarios:

@@ -88,6 +88,7 @@
     ]
   },
   "retrofit_flow_coupling_factor": {
+    "base_technology": "CHP_plant",
     "default_value": 0.18,
     "unit": "kilotons/GWh"
   }
