@@ -18,11 +18,16 @@ Example mappings:
 """
 
 import json
+<<<<<<< HEAD
 import os
 
 DIRECTORY = '../zen_garden/postprocess/results/'
 FILENAME = 'state_mappings_JS.json'
 FILE_DIR = os.path.join(DIRECTORY, FILENAME)
+=======
+
+
+>>>>>>> 14e32f15 (Add postprocess results and unit handling scripts)
 def print_unmapped_states(df, column_name, column_name_mapped):
     """
     Print out the states that were not successfully mapped.
@@ -44,7 +49,11 @@ def get_state_mappings(mapping_direction):
     :return: Dictionary containing the state mappings
     :raises ValueError: If mapping_direction is not available
     """
+<<<<<<< HEAD
     with open(FILE_DIR, 'r') as file:
+=======
+    with open('state_mappings.json', 'r') as file:
+>>>>>>> 14e32f15 (Add postprocess results and unit handling scripts)
         state_mappings = json.load(file)
 
     available_mappings = ['full_to_abbr', 'full_to_number', 'number_to_abbr']
@@ -63,7 +72,11 @@ def mapping(df, column_name, mapping_direction):
     :return: DataFrame with mapped states
     :raises ValueError: If mapping_direction is not available
     """
+<<<<<<< HEAD
     with open(FILE_DIR, 'r') as file:
+=======
+    with open('state_mappings.json', 'r') as file:
+>>>>>>> 14e32f15 (Add postprocess results and unit handling scripts)
         state_mappings = json.load(file)
 
     available_mappings = ['full_to_abbr', 'full_to_number', 'number_to_abbr']
@@ -91,7 +104,11 @@ def reverse_mapping(df, column_in, column_out, mapping_direction):
     return: DataFrame with mapped states
     """
     # get current directory
+<<<<<<< HEAD
     with open(FILE_DIR, 'r') as file:
+=======
+    with open('results_models/state_mappings.json', 'r') as file:
+>>>>>>> 14e32f15 (Add postprocess results and unit handling scripts)
         state_mappings = json.load(file)
 
     available_mappings = ['full_to_abbr', 'full_to_number', 'number_to_abbr']
