@@ -840,3 +840,105 @@ def plot_comparison_PV_in_out(df_PV_max_load, node, start_hour, duration):
     plt.tight_layout()
 
     plt.show()
+
+
+def plot_boxplot_capacities_states(scenarios, df_filtered, output_path, folder):
+    """
+    Plot boxplots of capacity additions for different states and scenarios.
+
+    Parameters:
+    scenarios (list of str): List of scenario names to plot.
+    df_filtered (DataFrame): Filtered DataFrame containing the data to plot.
+    output_path (str): The base directory where the plots will be saved.
+    folder (str): The subdirectory within the output_path to save the plots.
+
+    Returns:
+    None
+    """
+    # Ensure the output folder exists
+    os.makedirs(os.path.join(output_path, folder), exist_ok=True)
+
+    for scenario in scenarios:
+        scenario_col = f'capacity_addition_{scenario}'
+        df_scenario = df_filtered[['state_full', 'tech_cap', scenario_col]].copy()
+        df_scenario.rename(columns={scenario_col: 'capacity_addition'}, inplace=True)
+
+        # Plot using FacetGrid
+        g = sns.FacetGrid(df_scenario, col='state_full', col_wrap=3, sharey=False)
+        g.map_dataframe(sns.barplot, x='tech_cap', y='capacity_addition', hue='tech_cap', palette='Set2')
+
+        # Add legend and adjust the layout
+        g.add_legend()
+        g.set_axis_labels("Technology", "Capacity Addition")
+        g.set_titles("{col_name}")
+        g.set_xticklabels(rotation=90)
+        max_capacity = df_filtered[[f'capacity_addition_{scen}' for scen in scenarios]].max().max()
+        g.set(ylim=(0, max_capacity))
+
+        # Set x labels
+        tech_labels = [label if label else '' for label in df_scenario['tech_cap'].unique()]
+        for ax in g.axes.flat:
+            ax.set_xticklabels(labels=tech_labels, rotation=90)
+
+        plt.subplots_adjust(top=0.9)
+        g.fig.suptitle(f"Capacity Addition for {scenario}", y=1.02)
+
+        # Save the plot
+        save_file = f"capacity_addition_{scenario}.png"
+        save_path = os.path.join(output_path, folder, save_file)
+        plt.savefig(save_path, bbox_inches='tight')
+        plt.close()  # Close the figure to avoid overlapping
+
+        print(f"Saved plot for {scenario} at {save_path}")
+
+
+def plot_boxplot_energy_states(scenarios, filtered_data, parent_folder, output_folder, target_column):
+    """
+    Plots boxplots of energy data for various states and scenarios.
+
+    Args:
+        scenarios (list): List of scenario names to plot.
+        filtered_data (DataFrame): DataFrame containing the filtered data to plot.
+        output_folder (str): Parent folder where the plots will be saved.
+        target_column (str): The column name to be plotted.
+
+    Returns:
+        None
+    """
+
+    for scenario in scenarios:
+        # Inform what is being plotted
+        print(f"Plotting {target_column} for {scenario}")
+        scenario_column = f'{target_column}_{scenario}'
+        scenario_data = filtered_data[['state_full', 'carrier', scenario_column]].copy()
+        scenario_data.rename(columns={scenario_column: 'flow_import'}, inplace=True)
+
+        # Plot using FacetGrid
+        g = sns.FacetGrid(scenario_data, col='state_full', col_wrap=3, sharey=False)
+        g.map_dataframe(sns.barplot, x='carrier', y='flow_import', hue='carrier', legend=False, palette='Set2')
+        g.add_legend()
+
+        # Create the y label from the column name
+        y_label = target_column.replace('_', ' ').capitalize()
+        g.set_axis_labels("Carrier", y_label)
+        g.set_titles("{col_name}")
+        plt.subplots_adjust(top=0.9)
+        g.set_xticklabels(rotation=90)
+
+        # Set x labels
+        x_labels = [label if label else '' for label in scenario_data['carrier'].unique()]
+        for ax in g.axes.flat:
+            ax.set_xticklabels(labels=x_labels, rotation=90)
+
+        # Set plot title and y-axis limit
+        g.fig.suptitle(f"{y_label} for {scenario}", y=1.02)
+        max_flow_import = filtered_data[[f'{target_column}_{scn}' for scn in scenarios]].max().max()
+        g.set(ylim=(0, max_flow_import))
+
+        # Save the plot
+        save_file = f"{target_column}_{scenario}.png"
+        save_path = os.path.join(output_folder, parent_folder, save_file)
+        plt.savefig(save_path, bbox_inches='tight')
+        plt.close()  # Close the figure to avoid overlapping
+        print(f"Saved plot to {save_path}")
+        # plt.show()

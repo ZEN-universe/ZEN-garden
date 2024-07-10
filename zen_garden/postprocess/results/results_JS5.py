@@ -847,7 +847,7 @@ def get_info_system(res, scenario, print_system=False, print_nodes=False):
     print("\nConduct scenario analysis setting:")
     pprint(system.conduct_scenario_analysis)
 
-def filter_boxplot_no_parent_folder(folder, specific_scenario_name, filter_component, df_tech_cap=None):
+def filter_boxplot_no_parent_folder(folder, output_path, specific_scenario_name, filter_component, df_tech_cap=None):
     dfs = pd.DataFrame()
     is_scenario = True
 
@@ -865,7 +865,7 @@ def filter_boxplot_no_parent_folder(folder, specific_scenario_name, filter_compo
             return filter_capacities_state(res_basic, folder, df_tech_cap)
 
 
-    directory = os.path.join("../../../outputs", folder)
+    directory = os.path.join(output_path, folder)
     res_basic = Results(directory)
 
     filter_df = get_filter_df(res_basic, folder, directory)
@@ -914,7 +914,7 @@ def filter_boxplot_no_parent_folder(folder, specific_scenario_name, filter_compo
     dfs = dfs[column_order + [col for col in dfs.columns if col not in column_order]]
 
     return dfs
-    
+
 def filter_boxplot(parent_folder, folders, specific_scenario_name, filter_component, df_tech_cap=None):
     dfs = pd.DataFrame()
     is_scenario = True
@@ -1066,13 +1066,13 @@ def get_df_variables(res_basic, scenario, scenario_name):
 
 
 
-def import_flow_data(parent_folder, scenarios, column_name):
+def import_flow_data(parent_folder, output_path, scenarios, column_name, filter_carriers):
     # Create and prepare the US counties data
     us_counties = gdf_US_JS.create_county_US()
     us_counties.rename(columns={'county_code': 'node'}, inplace=True)
 
     # List all subfolders in the specified parent folder
-    subfolders = os.listdir(os.path.join("../outputs", parent_folder))
+    subfolders = os.listdir(os.path.join(output_path, parent_folder))
 
     # Exclude unwanted files and folders
     subfolders = [folder for folder in subfolders if folder not in ['Figures'] and not folder.endswith(('.csv', '.png'))]
@@ -1080,7 +1080,7 @@ def import_flow_data(parent_folder, scenarios, column_name):
     combined_data = pd.DataFrame()
 
     for folder in subfolders:
-        directory = os.path.join("../outputs", parent_folder, folder)
+        directory = os.path.join(output_path, parent_folder, folder)
         res = Results(directory)
         df = res.get_full_ts(column_name)
 
@@ -1112,9 +1112,120 @@ def import_flow_data(parent_folder, scenarios, column_name):
     grouped_data.drop(columns=['index'], inplace=True)
 
     # Filter for specific carriers
-    filtered_grouped_data = grouped_data[grouped_data['carrier'].isin(['electricity', 'diesel'])]
+    filtered_grouped_data = grouped_data[grouped_data['carrier'].isin(filter_carriers)]
 
     # Map state abbreviations to full names
     filtered_grouped_data = state_mapping_JS.reverse_mapping(filtered_grouped_data, 'state', 'state_full', 'full_to_abbr')
 
     return grouped_data, filtered_grouped_data
+
+
+def merge_data_folders(parent_folder, output_path, column_name, scenarios):
+    """
+    Merge data from multiple folders within the parent folder.
+
+    Parameters:
+    parent_folder (str): The parent directory containing subfolders with data.
+    column_name (str): The name of the column to be extracted and merged.
+    scenarios (list of str): List of scenario names to process.
+
+    Returns:
+    DataFrame: A DataFrame containing the merged data from all folders.
+    """
+    # List all subfolders in the parent folder, excluding certain files and folders
+    subfolders = [folder for folder in os.listdir(os.path.join(output_path, parent_folder))
+                  if folder != 'Figures' and not folder.endswith('.csv') and not folder.endswith('.png')]
+
+    # Initialize an empty DataFrame to hold all merged data
+    merged_data = pd.DataFrame()
+
+    # If there are folders, which named 'scenario_' we will use them
+    if 'scenario_' in subfolders:
+        directory = os.path.join(output_path, parent_folder)
+        results = Results(directory)
+        scenario_data = pd.DataFrame()
+        for scenario in scenarios:
+
+
+            scenario_df = results.get_df(column_name, scenario=scenario).to_frame()
+            scenario_df.rename(columns={column_name: f'{column_name}_{scenario}'}, inplace=True)
+            scenario_data = pd.concat([scenario_data, scenario_df], axis=1)
+
+        merged_data = pd.concat([merged_data, scenario_data], axis=0)
+    else:
+        for subfolder in subfolders:
+            directory = os.path.join(output_path, parent_folder, subfolder)
+            results = Results(directory)
+            scenario_data = pd.DataFrame()
+
+            for scenario in scenarios:
+                scenario_df = results.get_df(column_name, scenario=scenario).to_frame()
+                scenario_df.rename(columns={column_name: f'{column_name}_{scenario}'}, inplace=True)
+                scenario_data = pd.concat([scenario_data, scenario_df], axis=1)
+
+            merged_data = pd.concat([merged_data, scenario_data], axis=0)
+
+    return merged_data
+
+
+def aggregate_data(df_merged, us_counties):
+    """
+    Aggregate the merged data by state, technology, and capacity type.
+
+    Parameters:
+    df_merged (DataFrame): The merged data DataFrame.
+    us_counties (DataFrame): DataFrame containing county information including 'node' and 'state'.
+
+    Returns:
+    DataFrame: A DataFrame containing the aggregated data filtered by specific technology and capacity types.
+    """
+    # Reset index and merge with county information
+    df_merged_reset = df_merged.reset_index()
+    df_merged_reset.rename(columns={'location': 'node'}, inplace=True)
+    df_merged_reset = pd.merge(df_merged_reset, us_counties[['node', 'state']], on='node', how='left')
+
+    # Group by state, technology, and capacity type, then sum the capacity additions
+    df_grouped = df_merged_reset.groupby(['state', 'technology', 'capacity_type']).sum().reset_index()
+
+    # Define a dictionary for filtering specific technology and capacity type combinations
+    tech_cap_filter = {'water_storage': 'energy', 'battery': 'energy', 'PV': 'power', 'diesel_WP': 'power', 'el_WP': 'power'}
+    tech_cap_tuples = list(tech_cap_filter.items())
+
+    # Filter the DataFrame based on the defined technology and capacity type combinations
+    filtered_df = df_grouped[df_grouped[['technology', 'capacity_type']].apply(tuple, axis=1).isin(tech_cap_tuples)]
+
+    return filtered_df
+
+def aggregate_to_states(data_folder, result_path, target_column, scenario_list):
+    """
+    Aggregates data from counties to states based on provided scenarios and merges with US county geometries.
+
+    Args:
+        data_folder (str): Path to the parent folder containing scenario data.
+        result_path (str): Path to save the output results.
+        target_column (str): The column name to be aggregated.
+        scenario_list (list): List of scenarios to be processed.
+
+    Returns:
+        DataFrame: Aggregated data at the state level with relevant columns.
+    """
+    # Load US counties geometries and rename 'county_code' to 'node'
+    us_counties = gdf_US_JS.create_county_US()
+    us_counties.rename(columns={'county_code': 'node'}, inplace=True)
+
+    # Merge data from multiple scenarios
+    merged_data = merge_data_folders(data_folder, result_path, target_column, scenario_list)
+
+    # Aggregate data based on US counties
+    aggregated_data = aggregate_data(merged_data, us_counties)
+
+    # Create a new column combining technology and capacity type
+    aggregated_data['tech_cap'] = aggregated_data['technology'] + ', ' + aggregated_data['capacity_type']
+
+    # Reverse map state abbreviations to full state names
+    state_mapping_JS.reverse_mapping(aggregated_data, 'state', 'state_full', 'full_to_abbr')
+
+    # Drop unnecessary columns
+    aggregated_data.drop(columns=['technology', 'capacity_type'], inplace=True)
+
+    return aggregated_data
