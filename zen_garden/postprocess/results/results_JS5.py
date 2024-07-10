@@ -585,7 +585,7 @@ def create_vmax_scenarios(filename, carriers, path_energy_system, county):
     """
 
     # Load the results object
-    directory = os.path.join("../data/outputs", filename)
+    directory = os.path.join("../outputs", filename)
     res_basic = Results(directory)
     # Get the scenarios
     scenarios = [scenario for scenario in os.listdir(directory) if scenario.startswith('scenario_')]
@@ -865,7 +865,7 @@ def filter_boxplot(parent_folder, folders, specific_scenario_name, filter_compon
             return filter_capacities_state(res_basic, folder, df_tech_cap)
 
     for folder in folders:
-        directory = os.path.join("../../../data/outputs", parent_folder, folder)
+        directory = os.path.join("../../../outputs", parent_folder)
         res_basic = Results(directory)
 
         filter_df = get_filter_df(res_basic, folder, directory)
@@ -1004,7 +1004,7 @@ def import_flow_data(parent_folder, scenarios, column_name):
     us_counties.rename(columns={'county_code': 'node'}, inplace=True)
 
     # List all subfolders in the specified parent folder
-    subfolders = os.listdir(os.path.join("../data/outputs", parent_folder))
+    subfolders = os.listdir(os.path.join("../outputs", parent_folder))
 
     # Exclude unwanted files and folders
     subfolders = [folder for folder in subfolders if folder not in ['Figures'] and not folder.endswith(('.csv', '.png'))]
@@ -1012,7 +1012,7 @@ def import_flow_data(parent_folder, scenarios, column_name):
     combined_data = pd.DataFrame()
 
     for folder in subfolders:
-        directory = os.path.join("../data/outputs", parent_folder, folder)
+        directory = os.path.join("../outputs", parent_folder, folder)
         res = Results(directory)
         df = res.get_full_ts(column_name)
 

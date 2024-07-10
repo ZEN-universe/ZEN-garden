@@ -11,7 +11,10 @@ import pandas as pd
 import numpy as np
 import pint
 import math
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 import seaborn as sns
 from matplotlib.colors import Normalize
 from zen_garden.postprocess.results.folder_structur_JS import create_folder, get_folder_path
@@ -75,7 +78,7 @@ def plots_cost(res, directory, save_fig=True, file_type='png'):
     plt.savefig(path_filename_save, bbox_inches='tight', pad_inches=0.1)
 
 
-def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, scenario, save_fig=False):
+def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, scenario, save_fig=True):
     # Filter DataFrame based on node and carrier
     data_plot = data_plot.reset_index()
     if carrier == 'electricity':
