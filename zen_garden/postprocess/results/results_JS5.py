@@ -22,6 +22,7 @@ import zen_garden.postprocess.results.state_mapping_JS as state_mapping_JS
 
 
 
+
 def create_dict(column_name, unit, dict_info, dict_type, capacity_type=None, carriers=False):
     """
     Create a dictionary containing the filename, title, ylabel, and unit for the given data.
@@ -586,6 +587,7 @@ def create_vmax_scenarios(filename, carriers, path_energy_system, county):
 
     # Load the results object
     directory = os.path.join("../outputs", filename)
+    directory = os.path.join("../outputs", filename)
     res_basic = Results(directory)
     # Get the scenarios
     scenarios = [scenario for scenario in os.listdir(directory) if scenario.startswith('scenario_')]
@@ -934,6 +936,7 @@ def filter_boxplot(parent_folder, folders, specific_scenario_name, filter_compon
 
     for folder in folders:
         directory = os.path.join("../../../outputs", parent_folder)
+        directory = os.path.join("../../../outputs", parent_folder)
         res_basic = Results(directory)
 
         filter_df = get_filter_df(res_basic, folder, directory)
@@ -1116,6 +1119,7 @@ def import_flow_data(parent_folder, output_path, scenarios, column_name, filter_
 
     # Map state abbreviations to full names
     filtered_grouped_data = state_mapping_JS.reverse_mapping(filtered_grouped_data, 'state', 'state_full', 'full_to_abbr')
+
 
     return grouped_data, filtered_grouped_data
 
