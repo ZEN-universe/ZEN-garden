@@ -171,6 +171,14 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 notebooks/postprocess_results_tutorial.ipynb
+<<<<<<< HEAD
 /ZENx_AG/
 
 *.out
+=======
+<<<<<<< Updated upstream
+=======
+/ZENx_AG/
+
+*.out
+
