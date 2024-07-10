@@ -866,7 +866,7 @@ def filter_boxplot(parent_folder, folders, specific_scenario_name, filter_compon
             return filter_capacities_state(res_basic, folder, df_tech_cap)
 
     for folder in folders:
-        directory = os.path.join("../data/outputs", parent_folder, folder)
+        directory = os.path.join("../../../data/outputs", parent_folder, folder)
         res_basic = Results(directory)
 
         filter_df = get_filter_df(res_basic, folder, directory)
