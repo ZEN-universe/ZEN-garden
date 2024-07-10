@@ -5,11 +5,8 @@ from zen_garden.postprocess.results import results_JS5 as results_JS
 
 filename = 'county_0907/county_CA_0507_288_5'
 
-<<<<<<< HEAD
+
 directory = os.path.join("../../../data/outputs", filename)
-=======
-directory = os.path.join("../outputs", filename)
->>>>>>> 14e32f15 (Add postprocess results and unit handling scripts)
 res_basic = Results(directory)
 
 df_co2_dict = res_basic.get_df('carbon_emissions_cumulative')

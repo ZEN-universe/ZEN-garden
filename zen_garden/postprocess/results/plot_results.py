@@ -16,10 +16,7 @@ import seaborn as sns
 from matplotlib.colors import Normalize
 from zen_garden.postprocess.results.folder_structur_JS import create_folder, get_folder_path
 from mpl_toolkits.mplot3d import Axes3D
-<<<<<<< HEAD
 import seaborn as sns
-=======
->>>>>>> 14e32f15 (Add postprocess results and unit handling scripts)
 
 
 def plots_cost(res, directory, save_fig=True, file_type='png'):
@@ -200,11 +197,7 @@ def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, sce
 
         plt.savefig(path_filename_save, bbox_inches='tight', pad_inches=0.1)
     # Show plot
-<<<<<<< HEAD
     #plt.show()
-=======
-    plt.show()
->>>>>>> 14e32f15 (Add postprocess results and unit handling scripts)
 
 
 

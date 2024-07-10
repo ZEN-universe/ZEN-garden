@@ -18,10 +18,8 @@ from zen_garden.postprocess.results.results_JS2 import Results
 #from zen_garden.postprocess.results.results import Results as Results2
 from zen_garden.postprocess.results.folder_structur_JS import create_folder, get_folder_path
 from zen_garden.postprocess.results.plot_results import plot_map_data, plot_energy_balance_JS2
-<<<<<<< HEAD
 import zen_garden.postprocess.results.state_mapping_JS as state_mapping_JS
-=======
->>>>>>> 14e32f15 (Add postprocess results and unit handling scripts)
+
 
 
 
@@ -997,7 +995,6 @@ def get_df_variables(res_basic, scenario, scenario_name):
     df_var2.reset_index(inplace=True)
     df_var2.drop(columns='index', inplace=True)
     print(df_var2.head())
-<<<<<<< HEAD
     return df_var2
 
 
@@ -1053,7 +1050,6 @@ def import_flow_data(parent_folder, scenarios, column_name):
     # Map state abbreviations to full names
     filtered_grouped_data = state_mapping_JS.reverse_mapping(filtered_grouped_data, 'state', 'state_full', 'full_to_abbr')
 
+
     return grouped_data, filtered_grouped_data
-=======
-    return df_var2
->>>>>>> 14e32f15 (Add postprocess results and unit handling scripts)
+
