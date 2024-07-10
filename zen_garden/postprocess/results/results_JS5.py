@@ -847,6 +847,74 @@ def get_info_system(res, scenario, print_system=False, print_nodes=False):
     print("\nConduct scenario analysis setting:")
     pprint(system.conduct_scenario_analysis)
 
+def filter_boxplot_no_parent_folder(folder, specific_scenario_name, filter_component, df_tech_cap=None):
+    dfs = pd.DataFrame()
+    is_scenario = True
+
+    # Function to determine filter_df based on filter_component
+    def get_filter_df(res_basic, folder, directory):
+        if filter_component == 'flow_import':
+            return get_df_imports(res_basic, folder)
+        elif filter_component == 'cost_co2':
+            return get_cost_co2(res_basic, folder, directory)
+        elif filter_component == 'costs':
+            return get_costs(res_basic, folder, directory)
+        elif filter_component == 'capacities':
+            if df_tech_cap is None:
+                raise ValueError("The dataframe df_tech_cap is needed for the component capacities")
+            return filter_capacities_state(res_basic, folder, df_tech_cap)
+
+
+    directory = os.path.join("../../../outputs", folder)
+    res_basic = Results(directory)
+
+    filter_df = get_filter_df(res_basic, folder, directory)
+
+    # Add the time_steps column
+    filter_df['time_steps'] = determine_time_steps(folder)
+
+    # Check if there is a column named scenario
+    if 'scenario' not in filter_df.columns:
+        filter_df['scenario'] = ''
+        is_scenario = False
+
+    # Create the 'grid' column based on the condition
+    filter_df['grid'] = filter_df['folder'].apply(lambda x: 'w/o grid' if 'no_grid' in x else 'with grid')
+
+    # Concatenate the filtered dataframe to the main dataframe
+    dfs = pd.concat([dfs, filter_df], axis=0)
+    # Define the scenario_name based on specific_scenario_name
+    def create_scenario_name(row):
+        if specific_scenario_name == 'time_series_anlaysis':
+            return f"{row['time_steps']},{row['grid']},{row['scenario']}"
+        elif specific_scenario_name == 'folder':
+            if not is_scenario:
+                return row['folder']
+            else:
+                scenario = row['scenario'].replace('scenario_', '').replace(',no_grid', '').replace('co2', ' co2')
+                folder = row['folder'].replace('county_CA_1206_', '').replace('_no_grid_tradeoffs', '')
+                return f"{scenario}, {folder}, {row['scenario']}"
+        elif specific_scenario_name == 'analysis_1806':
+            scenario = row['scenario'].replace('scenario_', '').replace(',no_grid', '').replace('co2', ' co2')
+            return f"{row['time_steps']}, {row['grid']}"
+        else:
+            return row['scenario']
+
+    # Apply the scenario_name creation logic and update scenario_name and scenario columns
+    dfs['scenario_name'] = dfs.apply(create_scenario_name, axis=1)
+    dfs['scenario'] = dfs.apply(lambda row: row['scenario'].replace('scenario_', ''), axis=1)
+
+
+    # Drop the 'year' column if it exists
+    if 'year' in dfs.columns:
+        dfs.drop('year', axis=1, inplace=True)
+
+    # Reorder the columns
+    column_order = ['folder', 'scenario_name', 'scenario', 'time_steps', 'grid']
+    dfs = dfs[column_order + [col for col in dfs.columns if col not in column_order]]
+
+    return dfs
+    
 def filter_boxplot(parent_folder, folders, specific_scenario_name, filter_component, df_tech_cap=None):
     dfs = pd.DataFrame()
     is_scenario = True
