@@ -171,4 +171,13 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 notebooks/postprocess_results_tutorial.ipynb
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+=======
 /ZENx_AG/
+
+*.out
+>>>>>>> Stashed changes
+=======
+/ZENx_AG/
+>>>>>>> origin/development_ZENx_JS_1
