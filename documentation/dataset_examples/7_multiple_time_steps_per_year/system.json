@@ -1,0 +1,24 @@
+{
+    "set_conversion_technologies": [
+        "natural_gas_boiler",
+        "photovoltaics"
+    ],
+    "set_storage_technologies": [
+        "natural_gas_storage"
+    ],
+    "set_transport_technologies": [
+        "natural_gas_pipeline"
+    ],
+    "set_nodes": [
+        "DE",
+        "CH"
+    ],
+    "reference_year": 2023,
+    "unaggregated_time_steps_per_year": 96,
+    "aggregated_time_steps_per_year": 96,
+    "conduct_time_series_aggregation": false,
+    "optimized_years": 3,
+    "interval_between_years": 1,
+    "use_rolling_horizon": false,
+    "years_in_rolling_horizon": 1
+}

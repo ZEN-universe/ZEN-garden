@@ -98,19 +98,19 @@ jobs:
         run: |
           echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
           echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
-
-      - name: Create Coverage Badge
-        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
-        uses: schneegans/dynamic-badges-action@v1.6.0
-        with:
-          auth: ${{ secrets.COVERAGE_SECRET }}
-          gistID: 5d0d79e86182cd9ccd785d824b1f9ac7
-          filename: zen_coverage.json
-          label: Coverage
-          message: ${{ env.COVERAGE_FLT }}%
-          valColorRange: ${{ env.COVERAGE_INT }}
-          maxColorRange: 100
-          minColorRange: 0
+      # COMMENTED OUT BECAUSE THIS LEAD TO A 400 Bad request ERROR
+      # - name: Create Coverage Badge
+      #   if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
+      #   uses: schneegans/dynamic-badges-action@v1.6.0
+      #   with:
+      #     auth: ${{ secrets.COVERAGE_SECRET }}
+      #     gistID: 5d0d79e86182cd9ccd785d824b1f9ac7
+      #     filename: zen_coverage.json
+      #     label: Coverage
+      #     message: ${{ env.COVERAGE_FLT }}%
+      #     valColorRange: ${{ env.COVERAGE_INT }}
+      #     maxColorRange: 100
+      #     minColorRange: 0
 
 
   # Auto pull request into master if build succeeds

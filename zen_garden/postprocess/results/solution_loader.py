@@ -208,8 +208,14 @@ class SolutionLoader(ABC):
         pass
 
     @abstractmethod
-    def get_timesteps_of_year(
-        self, scenario: Scenario, ts_type: TimestepType, year: int
+    def get_optimized_years(
+            self, scenario: Scenario
+    ) -> list[int]:
+        pass
+
+    @abstractmethod
+    def get_timesteps_of_years(
+        self, scenario: Scenario, ts_type: TimestepType, years: tuple
     ) -> "pd.DataFrame | pd.Series[Any]":
         pass
 

@@ -1,4 +1,4 @@
-numpy
+numpy<=1.26.4
 glpk
 geopandas
 gurobipy
@@ -6,15 +6,15 @@ hdfdict
 pandas
 pip
 ordered-set
-xarray==2023.8.0
-linopy==0.1.5
+xarray
+linopy<=0.3.10
 coverage
 pytest
 scipy
 sympy
 ipython
 jupyter
-pint<0.20
+pint>=0.23
 entsoe-py
 matplotlib
 mpmath

@@ -1,0 +1,18 @@
+{
+  "1": {
+    "system": {
+      "reference_year": 2023,
+      "set_transport_technologies": [],
+      "conduct_time_series_aggregation": true,
+      "unaggregated_time_steps_per_year": 8760,
+      "aggregated_time_steps_per_year": 1
+    },
+    "analysis": {
+      "objective": "total_carbon_emissions"
+    },
+    "solver": {
+      "check_unit_consistency": false,
+      "use_scaling": false
+    }
+  }
+}

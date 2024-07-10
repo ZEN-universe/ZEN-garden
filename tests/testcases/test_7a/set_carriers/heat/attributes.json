@@ -1,14 +1,18 @@
 {
-  "carbon_intensity_carrier": {
+  "carbon_intensity_carrier_import": {
     "default_value": 0.0,
     "unit": "kilotons/GWh"
+  },
+  "carbon_intensity_carrier_export": {
+    "default_value": 0.0,
+    "unit": "ton/MWh"
   },
   "demand": {
     "default_value": 0.0,
     "unit": "GW"
   },
   "price_shed_demand": {
-    "default_value": 200.0,
+    "default_value": "inf",
     "unit": "kiloEuro/GWh"
   },
   "availability_import": {

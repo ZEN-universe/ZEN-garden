@@ -181,6 +181,7 @@ class MultiHdfLoader(AbstractLoader):
 
     def __init__(self, path: str) -> None:
         self.path = path
+        assert len(os.listdir(path)) > 0, f"Path {path} is empty."
         self._scenarios: dict[str, AbstractScenario] = self._read_scenarios()
         self._components: dict[str, AbstractComponent] = self._read_components()
         self._series_cache: dict[str, "pd.Series[Any]"] = {}
@@ -223,13 +224,17 @@ class MultiHdfLoader(AbstractLoader):
         the MF-data (Format: "MF_{year}").
         """
         series_to_concat = []
-        n_years = len(pd_dict)
-
-        for year in range(n_years):
+        optimized_years = sorted(pd_dict.keys())
+        for year in optimized_years:
+            if year != optimized_years[-1]:
+                next_year = optimized_years[optimized_years.index(year) + 1]
+            else:
+                next_year = year + 1
+            decision_horizon = tuple(range(year, next_year))
             current_mf = pd_dict[year]
             if component.timestep_type is TimestepType.yearly:
                 year_series = current_mf[
-                    current_mf.index.get_level_values("year") == year
+                    current_mf.index.get_level_values("year").isin(decision_horizon)
                 ]
                 series_to_concat.append(year_series)
             elif component.timestep_type in [
@@ -238,8 +243,8 @@ class MultiHdfLoader(AbstractLoader):
             ]:
                 assert component.timestep_name is not None
 
-                time_steps = self.get_timesteps_of_year(
-                    scenario, component.timestep_type, year
+                time_steps = self.get_timesteps_of_years(
+                    scenario, component.timestep_type, decision_horizon
                 )
                 time_step_list = {tstep for tstep in time_steps}
                 all_timesteps = current_mf.index.get_level_values(
@@ -264,6 +269,7 @@ class MultiHdfLoader(AbstractLoader):
         the data is kept for all the foresight steps.
         """
         series = pd.concat(pd_dict, keys=pd_dict.keys())
+        series = series.sort_index(level=0)
         index_names = pd_dict[list(pd_dict.keys())[0]].index.names
         new_index_names = ["mf"] + index_names
         series.index.names = new_index_names
@@ -453,15 +459,13 @@ class MultiHdfLoader(AbstractLoader):
         return ans
 
     @cache
-    def get_timesteps_of_year(
-        self, scenario: Scenario, ts_type: TimestepType, year: int
+    def get_timesteps_of_years(
+        self, scenario: Scenario, ts_type: TimestepType, years: tuple
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Method that returns the timesteps of the scenario for a given year. These
         timesteps are stored as HDF files that were created by pandas.
         """
-        tech_proxy = scenario.system.set_storage_technologies[0]
-
         sequence_time_steps_name = [
             i
             for i in os.listdir(scenario.path)
@@ -473,19 +477,18 @@ class MultiHdfLoader(AbstractLoader):
         time_step_file = h5py.File(time_step_path)
 
         if ts_type is TimestepType.storage:
-            tech_proxy = tech_proxy + "_storage_level"
             time_step_name = "time_steps_year2storage"
         elif ts_type is TimestepType.operational:
             time_step_name = "time_steps_year2operation"
 
         time_step_yearly = time_step_file[time_step_name]
 
-        if tech_proxy in time_step_yearly:
-            time_step_yearly = time_step_yearly[tech_proxy]
-
-        year_series = time_step_yearly[str(year)]
-
-        return pd.read_hdf(time_step_path, year_series.name)
+        time_steps = []
+        for year in years:
+            year_series = time_step_yearly[str(year)]
+            time_steps.append(pd.read_hdf(time_step_path, year_series.name))
+        time_steps = pd.concat(time_steps).reset_index(drop=True)
+        return time_steps
 
     def get_sequence_time_steps(
         self, scenario: AbstractScenario, timestep_type: TimestepType
@@ -511,3 +514,33 @@ class MultiHdfLoader(AbstractLoader):
         ans = pd.read_hdf(dict_path, sequence_timesteps_name)
 
         return ans
+
+    def get_optimized_years(
+            self,scenario: AbstractScenario
+    ) -> list[int]:
+        """
+        Method that returns the years for which the solution was optimized.
+        """
+        time_steps_file_name = [
+            i
+            for i in os.listdir(scenario.path)
+            if "dict_all_sequence_time_steps" in i and ".lock" not in i
+        ][0]
+
+        dict_path = os.path.join(
+            scenario.path,
+            time_steps_file_name,
+        )
+        try:
+            ans = pd.read_hdf(dict_path, "optimized_time_steps").tolist()
+        # if old version of the solution
+        except:
+            if self.has_rh:
+                pattern = re.compile(r'^MF_\d+$')
+                subfolder_names = list(filter(lambda x: pattern.match(x), os.listdir(scenario.path)))
+                ans = [int(subfolder_name.replace("MF_", "")) for subfolder_name in subfolder_names]
+            else: # if no rolling horizon, single optimized year
+                ans = [0]
+
+        return ans
+

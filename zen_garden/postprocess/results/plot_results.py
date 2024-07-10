@@ -1,0 +1,793 @@
+"""
+:Title:        ZEN-GARDEN plot_results
+:Created:      March-2024
+:Authors:      Jara Spate (jspaete@ethz.ch)
+:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+
+Used for plotting the results of the optimization model.
+"""
+import os
+import pandas as pd
+import numpy as np
+import pint
+import math
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.colors import Normalize
+from zen_garden.postprocess.results.folder_structur_JS import create_folder, get_folder_path
+from mpl_toolkits.mplot3d import Axes3D
+import seaborn as sns
+
+
+def plots_cost(res, directory, save_fig=True, file_type='png'):
+    """
+    Plot the costs of the energy system.
+
+    :param res: The results object containing energy system data.
+    :param directory: The directory where the plots will be saved.
+    :param save_fig: Boolean indicating if the figure should be saved.
+    :param file_type: The file type of the figure to be saved (default is 'png').
+    :return: None
+    """
+    # Plotting individual cost components
+    res.plot("cost_capex_total", yearly=False,
+                   plot_strings={"title": "Total Capex", "ylabel": "Capex"},
+                   save_fig=save_fig, file_type=file_type)
+    res.plot("cost_opex_total", yearly=False,
+                   plot_strings={"title": "Total Opex", "ylabel": "Opex"},
+                   save_fig=save_fig, file_type=file_type)
+    res.plot("cost_carrier", yearly=False,
+                   plot_strings={"title": "Carrier Cost", "ylabel": "Cost"},
+                   save_fig=save_fig, file_type=file_type)
+    res.plot("cost_carrier_total", yearly=False,
+                   plot_strings={"title": "Carrier Cost", "ylabel": "Cost"},
+                   save_fig=save_fig, file_type=file_type)
+
+    # Get the scenario from the results
+    scenario = res.scenarios[0]
+
+    # List of cost components to be plotted
+    costs = ["cost_capex_total", "cost_opex_total", "cost_carrier_total"]
+    total_costs = pd.DataFrame()
+
+    # Collecting cost data into a DataFrame
+    for cost in costs:
+        # Assuming _get_component_data returns a DataFrame
+        component_name, total = res._get_component_data(cost, scenario=scenario)
+        df_total = total.to_frame()
+        total_costs = pd.concat([total_costs, df_total], axis=1)
+
+    # Plotting the stacked bar chart of costs
+    total_costs.plot(kind='bar', stacked=True)
+    plt.xlabel('Year')
+    plt.ylabel('Cost')
+    plt.title('Stacked Bar Chart of Costs Over Years')
+    plt.show()
+
+    # Directory and file handling for saving the plot
+    folder = 'Figures'
+    path_folder = os.path.join(directory, folder)
+    if not os.path.exists(path_folder):
+        os.makedirs(path_folder)
+
+    filename_save = 'Stacked_Bar_Chart_of_Costs_Over_Years.' + file_type
+    path_filename_save = os.path.join(path_folder, filename_save)
+    plt.savefig(path_filename_save, bbox_inches='tight', pad_inches=0.1)
+
+
+def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, scenario, save_fig=False):
+    # Filter DataFrame based on node and carrier
+    data_plot = data_plot.reset_index()
+    if carrier == 'electricity':
+        data_plot = data_plot[(data_plot['node'] == node) & ((data_plot['carrier'] == 'electricity') | (data_plot['carrier'] == 'diesel'))]
+        data_plot['label'] = data_plot['variable'] + ', ' + data_plot['technology'] + ', ' + data_plot['carrier']
+        data_plot['label'] = data_plot['label'].str.replace(', no_technology','')
+    else:
+        data_plot = data_plot[(data_plot['node'] == node) & (data_plot['carrier'] == carrier)]
+        # Create a combined label and set as index
+        data_plot['label'] = data_plot['variable'] + ', ' + data_plot['technology']
+        data_plot['label'] = data_plot['label'].str.replace(', no_technology','')
+
+    # change 'el_WP' to 'electric_WP'
+    data_plot['label'] = data_plot['label'].str.replace('el_WP','electric_WP')
+    data_plot['label'] = data_plot['label'].str.replace('dieselectric_WP','diesel_WP')
+    # delete duplicate labels:
+    data_plot.drop_duplicates(subset='label', keep='first', inplace=True)
+
+    data_plot.sort_values(by='label', inplace=True)
+    data_plot.set_index('label', inplace=True)
+
+    # Adjust values to be negative if label contains 'flow_conversion_out' and 'irrigation_sys'
+    data_plot.loc[data_plot.index.str.contains('flow_conversion_input, irrigation_sys'), :] *= -1
+    data_plot.loc[data_plot.index.str.contains('flow_storage_charge, water_storage'), :] *= -1
+    data_plot.loc[data_plot.index.str.contains('flow_conversion_input, electric_WP'), :] *= -1
+    data_plot.loc[data_plot.index.str.contains('flow_conversion_input, diesel_WP'), :] *= -1
+
+    # Drop unnecessary columns and filter rows with all zeros
+    data_plot = data_plot.drop(columns=['variable', 'node', 'technology', 'carrier'])
+    data_plot = data_plot.loc[(data_plot != 0).any(axis=1)]
+
+    # Determine colors for the plot based on the labels in the index
+    color_dict = {
+        'electric_WP': '#64557B',                   # muted pink
+        'irrigation_sys': '#F4D35E',                # muted dark blue
+        'diesel_WP': '#F67B45',                     # muted dark orange
+        'PV': '#CB7876',                            # muted dark pink/violet
+        'flow_storage_charge, water_storage': '#81B2D9',  # muted sky blue
+        'flow_storage_discharge, water_storage': '#32769B',  # muted steel blue
+        'flow_storage_charge, battery': '#62866C',  # muted dark green
+        'flow_storage_discharge, battery': '#B4CFA4',  # muted light green
+        'flow_import, electricity': '#E39B99',      # muted light pink
+        'flow_import, diesel': '#FF9C5B'            # muted light orange
+    }
+
+
+    # Prepare the plot layout
+    fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(16, 12), sharex=True, sharey=True)
+
+    # Loop through each month to plot
+    for i, month in enumerate(range(1, 13)):
+        # Calculate start_hour and duration for the current month
+        start_hour_month = start_hour + (i * 24*31)  # 720 hours per month
+        duration_month = 24  # 720 hours in a month
+        # Filter columns for the current month
+        data_plot_month = data_plot.iloc[:, start_hour_month:start_hour_month+duration_month]
+
+        # Select the first 24 columns
+        filtered_df = data_plot_month.iloc[:, :duration_month]
+
+
+        # Transpose the DataFrame for plotting
+        filtered_df = data_plot_month.T
+
+        # Generate a time index for the plot
+        time_index = pd.date_range(start=f'2023-{month:02}-01', periods=duration_month, freq='h')
+
+        # Determine colors for the plot based on the labels in the index
+        colors = []
+        for label in filtered_df.columns:
+            assigned_color = 'grey'  # Default color if no match found
+            for key in color_dict:
+                if key in label:
+                    assigned_color = color_dict[key]
+                    break
+            colors.append(assigned_color)
+
+        # Plot as stacked area plot with specified colors on respective subplot
+        row = i // 4
+        col = i % 4
+        ax = axes[row, col]
+        filtered_df.plot(kind='area', stacked=True, color=colors, ax=ax)
+        # don0t show the legend
+        ax.get_legend().remove()
+
+        # Set custom x-axis labels
+        ax.set_xticks(range(0, duration_month, 3))
+        ax.set_xticklabels([time.strftime('%H') for i, time in enumerate(time_index) if i % 3 == 0], rotation=0, ha='right')
+
+        # Set y-axis label
+        ax.set_ylabel('Power [MW]')
+
+        # Set title for each subplot
+        ax.set_title(time_index[0].strftime('%B'))
+
+     # Set common x-axis label and adjust layout
+    fig.text(0.5, -0.04, 'Hour', ha='center', va='center')
+    fig.tight_layout()
+    #add overall title
+    if carrier == 'electricity':
+        fig.suptitle(f'Energy balance for {node}', fontsize=16, y=1.05)
+    else:
+        fig.suptitle(f'Water balance for {node}', fontsize=16, y=1.05)
+
+    # Add legend to the last subplot
+    axes[0, 0].legend(loc='upper left')
+    if save_fig:
+        # Directory and file handling for saving the plot
+        folder = 'Figures'
+        print(directory)
+        path_folder = os.path.join(directory, folder)
+        if not os.path.exists(path_folder):
+            os.makedirs(path_folder)
+        if carrier == 'electricity':
+            filename_save = f'Energy_Balance_{node}_{scenario}.png'
+        else:
+            filename_save = f'Water_Balance_{node}_{scenario}.png'
+        path_filename_save = os.path.join(path_folder, filename_save)
+
+        plt.savefig(path_filename_save, bbox_inches='tight', pad_inches=0.1)
+    # Show plot
+    #plt.show()
+
+
+
+def get_short_unit_name(unit_str):
+    if 'watt' in unit_str:
+        unit_str = unit_str.replace('peta', 'p')
+        unit_str = unit_str.replace('giga', 'G')
+        unit_str = unit_str.replace('tera', 'T')
+        unit_str = unit_str.replace('kilo', 'k')
+        unit_str = unit_str.replace('mega', 'M')
+        unit_str = unit_str.replace('watt', 'W')
+        unit_str = unit_str.replace('_hour', 'h')
+    elif 'meter ** 3' in unit_str:
+        unit_str = unit_str.replace('meter ** 3', 'm3')
+        # unit_str = unit_str.replace('kilo', 'k')
+        # unit_str = unit_str.replace('tera', '10^3 k')
+        # unit_str = unit_str.replace('kilo', '10^3')
+        # unit_str = unit_str.replace('mega', '10^6')
+    elif 'USD' in unit_str:
+        unit_str = unit_str.replace('USD', '$')
+        unit_str = unit_str.replace('tera', 'trillion')
+        unit_str = unit_str.replace('giga', 'billion')
+        unit_str = unit_str.replace('mega', 'million')
+        unit_str = unit_str.replace('kilo', 'thousand')
+
+    return unit_str
+
+
+def get_best_unit(df, column_name, unit_str, show_unit = False, vmax=None):
+    # Create a Unit Registry
+    ureg = pint.UnitRegistry()
+
+    # Define USD as a unit
+    ureg.define('USD = [currency]')
+
+    if vmax is None:
+        vmax = df[column_name].max()
+
+    # Adjust vmax to the highest power of 10
+    if vmax > 0:
+        vmax_10 = 10 ** int(math.log10(vmax))
+    else:
+        vmax_10 = 1  # Set to 1 if vmax is 0 or negative
+
+    if '*' in unit_str:
+        # Find the position of the first occurrence of a letter (unit part)
+        unit_pos = next((i for i, c in enumerate(unit_str) if c.isalpha()), None)
+
+        if unit_pos is not None:
+            # Split the string based on the position of the unit part
+            input_value_unit = unit_str[:(unit_pos-1)]
+            input_value = float(input_value_unit)
+            unit = unit_str[unit_pos:]
+
+            # Evaluate the value part as a float
+            value = input_value * vmax_10
+
+        else:
+            raise ValueError("Invalid unit string format")
+    else:
+        input_value = 1
+        value = vmax_10  # Assume the value is 1 if "*" is not present
+        unit = unit_str.strip()
+
+    unit = ureg(unit.strip())  # Strip any leading/trailing whitespace and create a pint unit
+
+    # Convert to the best-fitting unit
+    value_best_unit = (value * unit).to_compact()
+
+    # Extract the magnitude and unit
+    output_unit = value_best_unit.units
+    output_unit_name = get_short_unit_name(str(value_best_unit.units))
+
+
+
+    # Calculate the factor to convert original values to the new unit
+    factor = (input_value * unit).to(output_unit)
+    output_factor = factor.magnitude
+    output_factor = factor.magnitude
+    df_out = df.copy()
+    df_out[column_name] = df_out[column_name] * output_factor
+    vmax_output = vmax * output_factor
+    if show_unit:
+        print(f"Best unit: {output_unit}")
+        print(f"Vmax before conversion: {vmax}")
+        print(f"Vmax after conversion: {vmax_output}")
+        print(f"Factor to convert from {unit_str}: {output_factor}")
+
+    return output_unit_name, df_out, vmax_output
+
+
+
+def plot_map_data(directory, df, us_gdf, column_name, plot_dict, default_vmax=None):
+    """
+    Plot the data on the map.
+
+    :param directory: The directory where the map will be saved.
+    :param df: The DataFrame containing the data.
+    :param us_gdf: The GeoDataFrame containing the US map.
+    :param column_name: The column name containing the data.
+    :param plot_dict: The dictionary containing the information for the plot.
+    :param default_vmax: The default vmax for the colorbar.
+    :return: None
+    """
+    print("\n")
+    print(f"Plotting map data for {plot_dict['title']}")
+    input_unit = plot_dict['unit']
+    output_unit, df_converted, default_vmax = get_best_unit(df, column_name, input_unit, default_vmax)
+    # Merge the map and the data
+    filename = plot_dict['filename']
+    title = plot_dict['title'] + f" [{output_unit}]"
+    ylabel = plot_dict['ylabel'] + f" [{output_unit}]"
+
+    df_converted[column_name] = df_converted[column_name].round(1)
+    # Set CRS for DataFrame df to EPSG:4326
+    df_converted.crs = 'EPSG:4326'
+    #us_gdf = us_gdf[us_gdf['state'] == 'CA']
+
+    # Reproject GeoDataFrame us_gdf to match the CRS of DataFrame df
+    us_gdf = us_gdf.to_crs(df_converted.crs)
+
+
+    if 'county_code' in us_gdf.columns:
+        df_map = us_gdf.merge(df_converted, on="county_code", how='left')
+    else:
+        # Merge GeoDataFrame with DataFrame
+        df_map = us_gdf.merge(df_converted, on="State_Code", how='left')
+
+
+
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(15, 15))
+
+    # Formatting changes to the map
+    plt.xticks(rotation=90)  # Rotate the x-labels 90 degrees
+    ax.axis('off')  # Remove the frame around the map
+    plt.rcParams['font.family'] = 'Arial'
+    plt.rcParams['font.size'] = 14
+
+    # Formatting changes to the colorbar
+    vmax = df_map[column_name].max() if default_vmax is None else default_vmax
+
+    # Focus around the contiguous US (excluding Alaska and Hawaii)
+    ax.set_xlim(-125, -65)
+    ax.set_ylim(24, 50)
+
+    # #set the lim around californina
+    # ax.set_xlim(-125, -114)
+    # ax.set_ylim(32, 42)
+
+    # Define the normalization and ticks for the colorbar
+    norm = Normalize(vmin=0, vmax=vmax)
+    ticks = np.linspace(0, vmax, 5)
+
+    # Plot the geospatial data with normalization
+    df_map.plot(column=column_name, cmap="Reds", linewidth=0.4, ax=ax, edgecolor=".4",
+                missing_kwds={"color": "white"}, legend=True, vmin=0, vmax=vmax,
+                legend_kwds={'label': ylabel, 'orientation': 'vertical', 'shrink': 0.4,
+                             'pad': 0.12, 'ticks': ticks})
+
+    plt.title(title, fontsize=20)
+
+    # Save the plot
+    create_folder(directory)  # Assuming this is a defined function
+    path_folder = get_folder_path(df, column_name, plot_dict, directory)  # Assuming this is a defined function
+    filename_save = f"{filename}.png"
+    path_filename_save = os.path.join(path_folder, filename_save)
+    plt.savefig(path_filename_save, bbox_inches='tight', pad_inches=0.1)
+
+def plot_capacity_boxplot(df):
+    # Plotting
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for (tech, cap_type), subset in df.groupby(['technology', 'capacity_type']):
+        ax.bar(subset['scenario_name'], subset['capacity'], label=f'{tech} ({cap_type})')
+
+    ax.set_xlabel('Scenario')
+    ax.set_ylabel('Capacity')
+    ax.set_title('Technology and Capacity Type by Scenario')
+    ax.legend()
+
+    plt.xticks(rotation=70)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_capacity_barplot(df, unit_power):
+    unit_output, df_converted, vmax_output = get_best_unit(df, 'capacity', unit_power)
+    print(df_converted['capacity'].max())
+    max_value = df_converted['capacity'].max()
+
+    # Create a new column combining technology and capacity type
+    df_converted['tech_cap'] = df_converted['technology'] + ' (' + df_converted['capacity_type'] + ')'
+
+    # Plotting
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # Create barplot with seaborn
+    sns.barplot(x='scenario_name', y='capacity', hue='tech_cap', data=df_converted, ax=ax1)
+
+    # Set the axis labels and title
+    ax1.set_xlabel('Scenario')
+    ax1.set_ylabel(f'Capacity (Energy) [{unit_output}h]')
+    ax1.set_title('Technology and Capacity Type by Scenario')
+
+    # Set the second y-axis for Power capacity
+    ax2 = ax1.twinx()
+    ax2.set_ylabel(f'Capacity (Power) [{unit_output}]')
+
+    # Rotate x-axis labels for better readability
+    for tick in ax1.get_xticklabels():
+        tick.set_rotation(90)
+
+    # Adjust layout
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+
+
+
+def plot_flow_import_boxplot(df, unit):
+    unit_output, df_converted, vmax_out = get_best_unit(df, 'flow_import', unit)
+    # Plotting
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for carrier, subset in df_converted.groupby(['carrier']):
+        ax.bar(subset['scenario_name'], subset['flow_import'], label=carrier[0])  # Extracting carrier name from tuple
+
+    ax.set_xlabel('Scenario')
+    ax.set_ylabel('flow_import' + f' [{unit_output}]')
+    ax.set_title('Flow import by Scenario and Carrier' + f' [{unit_output}]')
+
+    # Add legend outside the loop
+    ax.legend()
+
+    plt.xticks(rotation=70)
+    plt.tight_layout()
+    plt.show()
+
+def plot_flow_import_boxplots_separate(df, unit):
+    print(df['flow_import'].max())
+    unit_output, df_converted, vmax_out = get_best_unit(df, 'flow_import', unit)
+    print(df['flow_import'].max())
+    # Get unique carriers
+    unique_carriers = df_converted['carrier'].unique()
+
+    # Plotting
+    for carrier in unique_carriers:
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        # Filter DataFrame for the current carrier
+        df_carrier = df_converted[df_converted['carrier'] == carrier]
+
+        # Plotting for the current carrier
+        ax.bar(df_carrier['scenario_name'], df_carrier['flow_import'])
+
+        ax.set_xlabel('Scenario')
+        ax.set_ylabel('flow_import' + f' [{unit_output}]')
+        ax.set_title(f'Flow import for {carrier}' + f' [{unit_output}]')
+
+        plt.xticks(rotation=70)
+        plt.tight_layout()
+        plt.show()
+
+def plot_flow_import_boxplot_v2(df, unit):
+    print(df['flow_import'].max())
+    unit_output, df_converted, vmax_output = get_best_unit(df, 'flow_import', unit)
+    print(df_converted['flow_import'].max())
+    max_value = df_converted['flow_import'].max()
+    # Reshape the DataFrame to have separate columns for flow_import_diesel and flow_import_el
+    df_pivot = df_converted.pivot(index='scenario_name', columns='carrier', values='flow_import').reset_index()
+
+    # Plotting
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # Define custom colors
+    el_color = '#1f77b4'  # Example: blue color
+    diesel_color = '#ff7f0e'  # Example: orange color
+
+    # Define width of the bars
+    bar_width = 0.35
+
+    # Define positions for the bars
+    scenario_positions = np.arange(len(df_pivot['scenario_name']))
+
+    # Plotting for 'flow_import_el' on the left axis
+    ax1.bar(scenario_positions - bar_width/2, df_pivot['electricity'], bar_width, color=el_color, label='Electricity')
+    ax1.set_xlabel('Scenario')
+    ylabel1 = 'Electricity'  + f' [{unit_output}]'
+    ax1.set_ylabel(ylabel1, color=el_color)
+    ax1.tick_params(axis='y', labelcolor=el_color)
+    ax1.set_ylim(0, max_value)
+
+    # Adding legend for left axis
+    ax1.legend(loc='upper left')
+
+    # Creating a second y-axis for 'flow_import_diesel' on the right side
+    ax2 = ax1.twinx()
+
+    # Plotting for 'flow_import_diesel' on the right axis
+    ax2.bar(scenario_positions + bar_width/2, df_pivot['diesel'], bar_width, color=diesel_color, label='Diesel')
+    ylabel2 = 'Diesel'  + f' [{unit_output}]'
+    ax2.set_ylabel(ylabel2, color=diesel_color)
+    ax2.tick_params(axis='y', labelcolor=diesel_color)
+    ax2.set_ylim(0, max_value)
+
+    # Adding legend for right axis
+    ax2.legend(loc='upper right')
+
+    ax1.set_title('Flow Import by Scenario' + f' [{unit_output}]')
+    ax1.set_xticks(scenario_positions)
+    ax1.set_xticklabels(df_pivot['scenario_name'], rotation=70)
+    plt.tight_layout()
+    plt.show()
+
+def plot_co2_cost_boxplots(df):
+    # Get unique columns
+    unique_columns = ['net_present_cost', 'carbon_emissions_cumulative']
+
+    # Plotting
+    for column in unique_columns:
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        # Plotting for the current column
+        ax.bar(df['scenario_name'], df[column])
+
+        ax.set_xlabel('Scenario')
+        ax.set_ylabel(column)
+        ax.set_title(f'{column.capitalize()} by Scenario')
+
+        plt.xticks(rotation=70)
+        plt.tight_layout()
+        plt.show()
+
+
+def plot_co2_cost_boxplots_v2(df, unit_co2, unit_cost):
+    output_unit_co2, df_converted_co2, vmax_output = get_best_unit(df, 'carbon_emissions_cumulative', unit_co2)
+    output_unit_cost, df_converted_cost, vmax_output = get_best_unit(df, 'net_present_cost', unit_cost)
+    # Define custom colors
+    net_present_cost_color = '#1f77b4'  # Example: blue color
+    carbon_emissions_color = '#ff7f0e'  # Example: orange color
+
+    # Plotting
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # Define width of the bars
+    bar_width = 0.35
+
+    # Define positions for the bars
+    scenario_positions = np.arange(len(df['scenario_name']))
+
+    # Plotting for 'net_present_cost' on the left axis
+    ax1.bar(scenario_positions - bar_width/2, df_converted_cost['net_present_cost'], bar_width, color=net_present_cost_color, label='Net Present Cost')
+    ylabel1 = 'Net Present Cost'  + f' [{output_unit_cost}]'
+    ax1.set_xlabel('Scenario')
+    ax1.set_ylabel(ylabel1, color=net_present_cost_color)
+    ax1.tick_params(axis='y', labelcolor=net_present_cost_color)
+
+    # Adding legend for left axis
+    ax1.legend(loc='upper left')
+
+    # Creating a second y-axis for 'carbon_emissions_cumulative' on the right side
+    ax2 = ax1.twinx()
+
+    # Plotting for 'carbon_emissions_cumulative' on the right axis
+    ylabel2 = 'Carbon Emissions'  + f' [{output_unit_co2}]'
+    ax2.bar(scenario_positions + bar_width/2, df_converted_co2['carbon_emissions_cumulative'], bar_width, color=carbon_emissions_color, label='Carbon Emissions')
+    ax2.set_ylabel(ylabel2, color=carbon_emissions_color)
+    ax2.tick_params(axis='y', labelcolor=carbon_emissions_color)
+
+    # Adding legend for right axis
+    ax2.legend(loc='upper right')
+
+    ax1.set_title('Net Present Cost and Carbon Emissions by Scenario')
+    ax1.set_xticks(scenario_positions)
+    ax1.set_xticklabels(df['scenario_name'], rotation=70)
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+def plot_pareto_front(df, parent_folder, title, unit_co2, unit_y_axis, y_axis, y_axis_label, save_fig=True):
+    # Define the colors you want to use
+    colors = ['#818F42', '#3395ab', '#C55D57']
+
+    output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', unit_co2)
+    output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, y_axis, unit_y_axis)
+
+    plt.figure(figsize=(10, 6))
+
+    pareto_groups = df_converted['pareto_group'].unique()
+
+    for idx, pareto_group in enumerate(pareto_groups):
+        group_df = df_converted[df_converted['pareto_group'] == pareto_group]
+        group_df.sort_values(by='carbon_emissions_cumulative', inplace=True)
+        # Use color based on the index of the pareto_group
+        plt.plot(group_df['carbon_emissions_cumulative'], group_df[y_axis],
+                 label=f'Time steps {pareto_group}', marker='o', color=colors[idx % len(colors)])
+
+    plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
+    plt.ylabel(f'{y_axis_label} [{output_unit_y_axis}]')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+
+    save_folder = os.path.join("../data/outputs", parent_folder, 'Figures')
+    # Make directory if it does not exist
+    os.makedirs(save_folder, exist_ok=True)
+
+    if save_fig:
+        save_file = f'{y_axis}_no_grid.png'
+        save_file_path = os.path.join(save_folder, save_file)
+        plt.savefig(save_file_path)
+
+    plt.show()
+
+def plot_pareto_front_cost(df, parent_folder, title, unit_cost, unit_y_axis, y_axis, y_axis_label, save_fig=True):
+    # Define the colors you want to use
+    colors = ['#818F42', '#3395ab', '#C55D57']
+
+    output_unit_cost, df_converted, _ = get_best_unit(df, 'net_present_cost', unit_cost)
+    output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, y_axis, unit_y_axis)
+
+    plt.figure(figsize=(10, 6))
+
+    pareto_groups = df_converted['pareto_group'].unique()
+
+    for idx, pareto_group in enumerate(pareto_groups):
+        group_df = df_converted[df_converted['pareto_group'] == pareto_group]
+        group_df.sort_values(by='net_present_cost', inplace=True)
+        # Use color based on the index of the pareto_group
+        plt.plot(group_df['net_present_cost'], group_df[y_axis],
+                 label=f'Time steps {pareto_group}', marker='o', color=colors[idx % len(colors)])
+
+    plt.xlabel(f'Net Present Cost [{output_unit_cost}]')
+    plt.ylabel(f'{y_axis_label} [{output_unit_y_axis}]')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+
+    save_folder = os.path.join("../data/outputs", parent_folder, 'Figures')
+    # Make directory if it does not exist
+    os.makedirs(save_folder, exist_ok=True)
+
+    if save_fig:
+        save_file = f'{y_axis}_net_present_cost_no_grid.png'
+        save_file_path = os.path.join(save_folder, save_file)
+        plt.savefig(save_file_path)
+
+    plt.show()
+
+
+def plot_pareto_front_3d(df, parent_folder, title, unit_co2, unit_z_axis, unit_cost, z_axis, z_axis_label, save_fig=False):
+    output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', unit_co2)
+
+    output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, 'net_present_cost', unit_cost)
+    output_unit_z_axis, df_converted, _ = get_best_unit(df_converted, z_axis, unit_z_axis)
+
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    for pareto_group in df_converted['pareto_group'].unique():
+        group_df = df_converted[df_converted['pareto_group'] == pareto_group]
+        group_df.sort_values(by='carbon_emissions_cumulative', inplace=True)
+
+        X = group_df['carbon_emissions_cumulative'].values
+        Y = group_df['net_present_cost'].values
+        Z = group_df[z_axis].values
+
+        # Creating a surface plot
+        ax.plot_trisurf(X, Y, Z, label=f'Time steps {pareto_group}', linewidth=0.2, antialiased=True, alpha=0.6)
+
+    ax.set_xlabel(f'Cumulative Carbon Emissions [{output_unit_co2}]')
+    ax.set_ylabel(f'Net Present Cost [{output_unit_y_axis}]')
+    ax.set_zlabel(f'{z_axis_label} [{output_unit_z_axis}]')
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True)
+
+    save_folder = os.path.join("../data/outputs", parent_folder, 'Figures')
+    # Make directory if it does not exist
+    os.makedirs(save_folder, exist_ok=True)
+    if save_fig:
+        save_file = f'{z_axis}_3d_plot.png'
+        save_file_path = os.path.join(save_folder, save_file)
+
+        plt.savefig(save_file_path)
+    plt.show()
+
+
+def plot_pareto_front_3d_scatter(df, parent_folder, title, unit_co2, unit_z_axis, unit_cost, z_axis, z_axis_label, save_fig=False):
+    output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', unit_co2)
+    output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, 'net_present_cost', unit_cost)
+    output_unit_z_axis, df_converted, _ = get_best_unit(df_converted, z_axis, unit_z_axis)
+
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    for pareto_group in df_converted['pareto_group'].unique():
+        group_df = df_converted[df_converted['pareto_group'] == pareto_group]
+        group_df.sort_values(by='carbon_emissions_cumulative', inplace=True)
+
+        X = group_df['carbon_emissions_cumulative'].values
+        Y = group_df['net_present_cost'].values
+        Z = group_df[z_axis].values
+
+        # Creating a scatter plot
+        ax.scatter(X, Y, Z, label=f'Time steps {pareto_group}', alpha=0.6)
+
+    ax.set_xlabel(f'Cumulative Carbon Emissions [{output_unit_co2}]')
+    ax.set_ylabel(f'Net Present Cost [{output_unit_y_axis}]')
+    ax.set_zlabel(f'{z_axis_label} [{output_unit_z_axis}]')
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True)
+
+    save_folder = os.path.join("../data/outputs", parent_folder, 'Figures')
+    # Make directory if it does not exist
+    os.makedirs(save_folder, exist_ok=True)
+    if save_fig:
+        save_file = f'{z_axis}_3d_plot.png'
+        save_file_path = os.path.join(save_folder, save_file)
+
+        plt.savefig(save_file_path)
+    plt.show()
+
+
+def plot_costs_boxplot(df, unit):
+
+    melted_df = pd.melt(df, id_vars=['scenario_name'], value_vars=['cost_capex_total', 'cost_opex_total', 'cost_carbon_emissions_total', 'cost_carrier_total'], var_name='cost_type', value_name='cost_value')
+    # Plotting
+    fig, ax = plt.subplots(figsize=(10, 6))
+    output_unit, df_converted, vmax_output = get_best_unit(melted_df, 'cost_value', unit)
+    for carrier, subset in df_converted.groupby(['cost_type']):
+        ax.bar(subset['scenario_name'], subset['cost_value'], label=carrier[0])  # Extracting carrier name from tuple
+
+    ax.set_xlabel('Scenario')
+    ax.set_ylabel('Costs' + f' [{output_unit}]')
+    ax.set_title('Costs by Scenario and Cost')
+
+    # Add legend outside the loop
+    ax.legend()
+
+    plt.xticks(rotation=70)
+    plt.tight_layout()
+    plt.show()
+
+def plot_comparison_PV_in_out(df_PV_max_load, node, start_hour, duration):
+    input_col = 'input_' + node
+    output_col = 'output_' + node
+    label_max_load = 'Max Load ' + node
+    label_flow_output = 'Flow Conversion Output PV ' + node
+    titel = 'Max Load and Flow Conversion Output for ' + node
+    columns = df_PV_max_load.columns
+    index = df_PV_max_load.index
+    # Ensure 'time' is the index
+    if 'time' in df_PV_max_load.columns:
+        df_PV_max_load.set_index('time', inplace=True, drop=False)
+    #df_PV_max_load.set_index('time', inplace=True, drop=False)
+    #df_PV_max_load.index = pd.date_range(start='2023-01-01', periods=len(df_PV_max_load), freq='h')
+
+    # Create figure and axis
+    fig, ax1 = plt.subplots(figsize=(30, 6))
+
+    # Plot the input data on the primary y-axis
+    ax1.plot(df_PV_max_load['time'], df_PV_max_load[input_col], label=label_max_load, color='#1f77b4', marker='o')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Max Load', color='#1f77b4')
+    ax1.tick_params(axis='y', labelcolor='#1f77b4')
+
+    # Create a secondary y-axis for the output data
+    ax2 = ax1.twinx()
+    ax2.plot(df_PV_max_load['time'], df_PV_max_load[output_col], label=label_flow_output, color='#ff7f0e', marker='x')
+    ax2.set_ylabel('Flow Conversion Output PV', color='#ff7f0e')
+    ax2.tick_params(axis='y', labelcolor='#ff7f0e')
+
+    # Set x-axis limits
+    ax1.set_xlim([df_PV_max_load['time'][start_hour], df_PV_max_load['time'][start_hour + duration - 1]])
+    #ax1.set_xlim([df_PV_max_load.index[start_hour], df_PV_max_load.index[start_hour + duration - 1]])
+
+    # Add titles and labels
+    plt.title(titel)
+
+    # Add grid, legends, and show plot
+    ax1.grid(True)
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper right')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+
+    plt.show()

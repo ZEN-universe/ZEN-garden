@@ -64,7 +64,7 @@ class Postprocess:
         self.subfolder = subfolder
         # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
         if subfolder != Path(""):
-            #check if mf within scenario analysis
+            # check if mf within scenario analysis
             if isinstance(self.subfolder, tuple):
                 scenario_dir = self.name_dir.joinpath(self.subfolder[0])
                 os.makedirs(scenario_dir, exist_ok=True)
@@ -93,16 +93,12 @@ class Postprocess:
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
-
+        self.dict_sequence_time_steps["optimized_time_steps"] = model.optimized_time_steps
         if include_year2operation:
             self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
             self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
 
         self.save_sequence_time_steps(scenario=scenario_name)
-
-        # case where we should run the post-process as normal
-        if model.analysis['postprocess']:
-            pass  # TODO: implement this...  # self.process()
 
     def write_file(self, name, dictionary, format=None):
         """Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
@@ -243,6 +239,7 @@ class Postprocess:
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
+            units = self._unit_df(units,df.index)
             # update dict
             data_frames[param] = self._transform_df(df, doc, units)
 
@@ -273,6 +270,7 @@ class Postprocess:
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
+            units = self._unit_df(units,df.index)
             # we transform the dataframe to a json string and load it into the dictionary as dict
             data_frames[name] = self._transform_df(df,doc,units)
 
@@ -295,7 +293,11 @@ class Postprocess:
                 doc = None
 
             # create dataframe
-            df = arr.to_dataframe("value").dropna()
+            if len(arr.shape) > 0:
+                df = arr.to_series().dropna()
+            else:
+                df = pd.DataFrame(data=[arr.values], columns=["value"])
+
             # rename the index
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
@@ -425,6 +427,24 @@ class Postprocess:
             return pd.Series(doc.split(";")).str.split(":",expand=True).set_index(0).squeeze()
         else:
             return pd.DataFrame()
+
+    def _unit_df(self, units, index):
+        """Transforms the units to a series
+
+        :param units: units string
+        :param index: index of the target dataframe
+        :return: pd.Series of the units
+        """
+        if units is not None:
+            if isinstance(units, str):
+                return pd.Series(units, index=index)
+            elif len(units) == len(index):
+                units.index.names = index.names
+                return units
+            else:
+                raise AssertionError("The length of the units does not match the length of the index")
+        else:
+            return None
 
     def flatten_dict(self, dictionary):
         """Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can

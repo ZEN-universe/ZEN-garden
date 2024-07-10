@@ -1,0 +1,16 @@
+{
+  "1": {
+    "set_carriers": {
+      "price_import": {
+        "default_op": [1, 1.3, 1.6],
+        "default_op_fmt": "price_import_{}",
+        "exclude": ["heat"]
+      }
+    },
+    "natural_gas_boiler": {
+      "opex_specific_fixed": {
+        "default": ["attributes_cheap","attributes_expensive"]
+      }
+    }
+  }
+}

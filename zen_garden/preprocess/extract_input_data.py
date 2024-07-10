@@ -209,15 +209,12 @@ class DataInput:
                     attribute_dict[k] = v
         return attribute_dict
 
-    def extract_attribute(self, attribute_name, unit_category, return_unit=False,subelement=None):
-        """ reads input data and restructures the dataframe to return (multi)indexed dict
+    def get_attribute_dict(self, attribute_name):
+        """ get attribute dict and factor for attribute
 
         :param attribute_name: name of selected attribute
-        :param unit_category: dict defining the dimensions of the parameter's unit
-        :param return_unit: only returns unit
-        :param subelement: dependent element for which data is extracted
-        :return: attribute value and multiplier
-        :return: unit of attribute """
+        :return attribute_dict: attribute dict
+        :return factor: factor for attribute """
         if self.scenario_dict is not None:
             filename, factor = self.scenario_dict.get_default(self.element.name, attribute_name)
         else:
@@ -227,6 +224,18 @@ class DataInput:
             attribute_dict = self.load_attribute_file(filename)
         else:
             attribute_dict = self.attribute_dict
+        return attribute_dict, factor
+
+    def extract_attribute(self, attribute_name, unit_category, return_unit=False,subelement=None):
+        """ reads input data and restructures the dataframe to return (multi)indexed dict
+
+        :param attribute_name: name of selected attribute
+        :param unit_category: dict defining the dimensions of the parameter's unit
+        :param return_unit: only returns unit
+        :param subelement: dependent element for which data is extracted
+        :return: attribute value and multiplier
+        :return: unit of attribute """
+        attribute_dict, factor = self.get_attribute_dict(attribute_name)
         attribute_value, attribute_unit = self._extract_attribute_value(attribute_name,attribute_dict)
         if subelement is not None:
             assert subelement in attribute_value.keys(), f"{subelement} not in {attribute_name} of {self.element.name}"
@@ -361,16 +370,18 @@ class DataInput:
             carrier_list = []
         return carrier_list
 
-    def extract_technologies(self, technology_type):
-        """ reads input data and extracts conversion carriers
+    def extract_retrofit_base_technology(self):
+        """ extract base technologies for retrofitting technology
 
-        :return carrier_list: list with input, output or reference carriers of technology """
-        assert technology_type in ["retrofit_base_technology"], "technology type must be retrofit_base_technology"
-        technology_list = self.extract_attribute(technology_type, unit_category=None)
-        if type(technology_list) == str:
-            technology_list = technology_list.strip().split(" ")
-        assert len(technology_list) == 1, f"retrofit base technology must be a single technology, but {technology_list} are given for {self.element.name}"
-        return technology_list
+        :return base_technology: return base technology of retrofit technology """
+        attribute_name = "retrofit_flow_coupling_factor"
+        technology_type = "base_technology"
+        attribute_dict, _ = self.get_attribute_dict(attribute_name)
+        base_technology = attribute_dict[attribute_name][technology_type]
+        if type(base_technology) == str:
+            base_technology = base_technology.strip().split(" ")
+        assert len(base_technology) == 1, f"retrofit base technology must be a single technology, but {base_technology} are given for {self.element.name}"
+        return base_technology
 
     def extract_set_technologies_existing(self, storage_energy=False):
         """ reads input data and creates setExistingCapacity for each technology
@@ -434,13 +445,10 @@ class DataInput:
         time_steps = "set_time_steps_yearly"
         unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
         # import all input data
-        default_value = self.extract_attribute(attribute_name, unit_category=unit_category)
-        df_input_nonlinear,has_unit_nonlinear = self.read_pwa_capex_files(file_type="nonlinear_")
-        df_input_breakpoints,has_unit_breakpoints = self.read_pwa_capex_files(file_type="breakpoints_pwa_")
-        df_input_linear,has_unit_linear = self.read_pwa_capex_files()
+        df_input_nonlinear, has_unit_nonlinear = self.read_pwa_capex_files(file_type="nonlinear_")
         # if nonlinear
-        if (df_input_nonlinear is not None and df_input_breakpoints is not None):
-            if not has_unit_nonlinear or not has_unit_breakpoints:
+        if df_input_nonlinear is not None:
+            if not has_unit_nonlinear:
                 raise NotImplementedError("Nonlinear pwa files must have units")
             # select data
             pwa_dict = {}
@@ -451,11 +459,8 @@ class DataInput:
             for column in df_input_nonlinear.columns:
                 nonlinear_values[column] = df_input_nonlinear[column].to_list()
 
-            # assert that breakpoint variable (x variable in nonlinear input)
-            assert df_input_breakpoints.columns[0] in df_input_nonlinear.columns, \
-                f"breakpoint variable for pwa '{df_input_breakpoints.columns[0]}' is not in nonlinear variables [{df_input_nonlinear.columns}]"
-            breakpoint_variable = df_input_breakpoints.columns[0]
-            breakpoints = df_input_breakpoints[breakpoint_variable].to_list()
+            breakpoint_variable = df_input_nonlinear.columns[0]
+            breakpoints = df_input_nonlinear[breakpoint_variable].to_list()
 
             pwa_dict[breakpoint_variable] = breakpoints
             pwa_dict["pwa_variables"] = []  # select only those variables that are modeled as pwa
@@ -491,8 +496,8 @@ class DataInput:
                         # save bounds
                         values_between_bounds = [pwa_dict
                              [value_variable][idx_breakpoint] for idx_breakpoint, breakpoint in enumerate(breakpoints)
-                                if breakpoint >= min_capacity_tech and breakpoint <= max_capacity_tech
-                        ]
+                                                 if min_capacity_tech <= breakpoint <= max_capacity_tech
+                                                 ]
                         values_between_bounds.extend(list(
                             np.interp([min_capacity_tech, max_capacity_tech], breakpoints, pwa_dict[value_variable])))
                         pwa_dict["bounds"][value_variable] = (min(values_between_bounds), max(values_between_bounds))
@@ -532,14 +537,14 @@ class DataInput:
         df_input = self.read_input_csv(file_type + "capex")
         has_unit = False
         if df_input is not None:
-            string_row = df_input.applymap(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
+            string_row = df_input.map(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
             if string_row.any():
                 unit_row = df_input.loc[string_row]
                 #save non-linear capex units for consistency checks
                 if file_type == "nonlinear_":
                     self.element.units_nonlinear_capex_files = {"nonlinear": unit_row}
-                elif file_type == "breakpoints_pwa_":
-                    self.element.units_nonlinear_capex_files["breakpoints"] = unit_row
+                # elif file_type == "breakpoints_pwa_":
+                #     self.element.units_nonlinear_capex_files["breakpoints"] = unit_row
                 df_input = df_input.loc[~string_row]
                 if isinstance(unit_row, pd.DataFrame):
                     unit_row = unit_row.squeeze()

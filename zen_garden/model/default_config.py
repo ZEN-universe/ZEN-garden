@@ -82,37 +82,6 @@ class HeaderDataInputs(Subscriptable):
     set_technologies_existing: str = "technology_existing"
     set_capacity_types: str = "capacity_type"
 
-
-class TimeSeriesAggregation(Subscriptable):
-    clusterMethod: str = "hierarchical"
-    solver: str = "gurobi"
-    hoursPerPeriod: int = 1
-    extremePeriodMethod: Optional[str] = "None"
-    rescaleClusterPeriods: bool = False
-    representationMethod: str = "meanRepresentation"
-    resolution: int = 1
-    segmentation: bool = False
-    noSegments: int = 12
-
-
-class Analysis(Subscriptable):
-    dataset: str = ""
-    objective: str = "total_cost"
-    sense: str = "minimize"
-    transport_distance: str = "Euclidean"
-    subsets: Subsets = Subsets()
-    header_data_inputs: HeaderDataInputs = HeaderDataInputs()
-    time_series_aggregation: TimeSeriesAggregation = TimeSeriesAggregation()
-    postprocess: bool = False
-    folder_output: str = "./outputs/"
-    overwrite_output: bool = True
-    output_format: str = "h5"
-    write_results_yml: bool = False
-    max_output_size_mb: int = 500
-    folder_name_system_specification: str = "system_specification"
-    earliest_year_of_data: int = 1900
-
-
 class System(Subscriptable):
     model_config = ConfigDict(extra="allow")
     set_carriers: list[str] = []
@@ -140,24 +109,23 @@ class System(Subscriptable):
     interval_between_years: int = 1
     use_rolling_horizon: bool = False
     years_in_rolling_horizon: int = 5
+    interval_between_optimizations: int = 1
     use_capacities_existing: bool = True
-
 
 class SolverOptions(Subscriptable):
     pass
 
 class Solver(Subscriptable):
-    name: str = "glpk"
+    name: str = "highs"
     solver_options: SolverOptions = SolverOptions()
     check_unit_consistency: bool = True
     solver_dir: str = ".//outputs//solver_files"
     keep_files: bool = False
-    io_api: str = "direct"
+    io_api: str = "lp"
     add_duals: bool = False
     recommend_base_units: bool = False
     immutable_unit: list[str] = []
     range_unit_exponents: dict[str, int] = {"min": -1, "max": 1, "step_width": 1}
-    define_ton_as_metric_ton: bool = True
     rounding_decimal_points: int = 5
     rounding_decimal_points_ts: int = 4
     linear_regression_check: dict[str, float] = {
@@ -168,17 +136,43 @@ class Solver(Subscriptable):
     round_parameters: bool = True
     rounding_decimal_points_capacity: int = 4
     analyze_numerics: bool = True
-    use_symbolic_labels: bool = False
+    use_scaling: bool = True
+    scaling_include_rhs: bool = False
+    scaling_algorithm: list[str] = ["geom","geom","geom"]
 
+
+
+class TimeSeriesAggregation(Subscriptable):
+    slv: Solver = Solver()
+    clusterMethod: str = "hierarchical"
+    solver: str = slv.name
+    hoursPerPeriod: int = 1
+    extremePeriodMethod: Optional[str] = "None"
+    rescaleClusterPeriods: bool = False
+    representationMethod: str = "meanRepresentation"
+    resolution: int = 1
+    segmentation: bool = False
+    noSegments: int = 12
+
+class Analysis(Subscriptable):
+    dataset: str = ""
+    objective: str = "total_cost"
+    sense: str = "minimize"
+    transport_distance: str = "Euclidean"
+    subsets: Subsets = Subsets()
+    header_data_inputs: HeaderDataInputs = HeaderDataInputs()
+    time_series_aggregation: TimeSeriesAggregation = TimeSeriesAggregation()
+    folder_output: str = "./outputs/"
+    overwrite_output: bool = True
+    output_format: str = "h5"
+    write_results_yml: bool = False
+    max_output_size_mb: int = 500
+    folder_name_system_specification: str = "system_specification"
+    earliest_year_of_data: int = 1900
 
 class Config(Subscriptable):
-    # analysis: dict = Analysis().model_dump()
     analysis: Analysis = Analysis()
-
-    # solver: dict = Solver().model_dump()
     solver: Solver = Solver()
-
     system: System = System()
-    # system: System = System()
 
     scenarios: dict[str, Any] = {"": {}}

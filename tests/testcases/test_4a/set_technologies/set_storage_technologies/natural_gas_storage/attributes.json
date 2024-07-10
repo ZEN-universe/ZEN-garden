@@ -7,6 +7,10 @@
     "default_value": 0.0,
     "unit": "GW"
   },
+  "energy_to_power_ratio": {
+    "default_value": "inf",
+    "unit": "h"
+  },
   "capacity_existing": {
     "default_value": 0.0,
     "unit": "GW"

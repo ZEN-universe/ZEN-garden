@@ -1,5 +1,9 @@
 {
-  "carbon_intensity_carrier": {
+  "carbon_intensity_carrier_import": {
+    "default_value": 0.2,
+    "unit": "kilotons/GWh"
+  },
+  "carbon_intensity_carrier_export": {
     "default_value": 0.2,
     "unit": "kilotons/GWh"
   },
@@ -16,7 +20,7 @@
     "unit": "GW"
   },
   "availability_export": {
-    "default_value": 0.0,
+    "default_value": "inf",
     "unit": "GW"
   },
   "availability_import_yearly": {

@@ -7,6 +7,7 @@
 
 Compilation  of the optimization problem.
 """
+import cProfile
 import importlib.util
 import logging
 import os
@@ -15,7 +16,8 @@ import importlib
 
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
-from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
+from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils, OptimizationError
+from .preprocess.unit_handling import Scaling
 
 # we setup the logger here
 setup_logger()
@@ -50,12 +52,7 @@ def main(config, dataset_path=None, job_index=None):
     ### SYSTEM CONFIGURATION
     input_data_checks = InputDataChecks(config=config, optimization_setup=None)
     input_data_checks.check_dataset()
-    system_path = os.path.join(config.analysis['dataset'], "system.py")
-    spec = importlib.util.spec_from_file_location("module", system_path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    system = module.system
-    config.system.update(system)
+    input_data_checks.read_system_file(config)
     input_data_checks.check_technology_selections()
     input_data_checks.check_year_definitions()
     # overwrite default system and scenario dictionaries
@@ -73,18 +70,24 @@ def main(config, dataset_path=None, job_index=None):
         steps_horizon = optimization_setup.get_optimization_horizon()
         # iterate through horizon steps
         for step in steps_horizon:
-            StringUtils.print_optimization_progress(scenario,steps_horizon,step)
+            StringUtils.print_optimization_progress(scenario,steps_horizon,step,system=config.system)
             # overwrite time indices
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem
             optimization_setup.construct_optimization_problem()
+            #TODO scaling algorithm
+            if config.solver["use_scaling"]:
+                optimization_setup.scaling.run_scaling()
+            else:
+                optimization_setup.scaling.analyze_numerics()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()
             # break if infeasible
             if not optimization_setup.optimality:
                 # write IIS
-                optimization_setup.write_IIS()
-                break
+                raise OptimizationError(optimization_setup.model.termination_condition)
+            if config.solver["use_scaling"]:
+                optimization_setup.scaling.re_scale()
             # save new capacity additions and cumulative carbon emissions for next time step
             optimization_setup.add_results_of_optimization_step(step)
             # EVALUATE RESULTS

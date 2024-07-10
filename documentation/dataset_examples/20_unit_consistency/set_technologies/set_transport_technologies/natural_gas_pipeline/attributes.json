@@ -1,0 +1,75 @@
+{
+  "capacity_addition_min": {
+    "default_value": 0.0,
+    "unit": "kilotons/hour"
+  },
+  "capacity_addition_max": {
+    "default_value": "inf",
+    "unit": "kilotons/hour"
+  },
+  "capacity_existing": {
+    "default_value": 0.0,
+    "unit": "kilotons/hour"
+  },
+  "capacity_limit": {
+    "default_value": "inf",
+    "unit": "kilotons/hour"
+  },
+  "min_load": {
+    "default_value": 0.0,
+    "unit": "1"
+  },
+  "max_load": {
+    "default_value": 1.0,
+    "unit": "1"
+  },
+  "lifetime": {
+    "default_value": 50.0,
+    "unit": "1"
+  },
+  "opex_specific_variable": {
+    "default_value": 0.0,
+    "unit": "kiloEuro/kilotons"
+  },
+  "reference_carrier": {
+    "default_value": [
+      "natural_gas"
+    ]
+  },
+  "carbon_intensity_technology": {
+    "default_value": 0.0,
+    "unit": "kilotons/kilotons"
+  },
+  "construction_time": {
+    "default_value": 0.0,
+    "unit": "1"
+  },
+  "capacity_investment_existing": {
+    "default_value": 0.0,
+    "unit": "GWh/hour"
+  },
+  "opex_specific_fixed": {
+    "default_value": 0.0,
+    "unit": "Euro/kilotons*hour"
+  },
+  "max_diffusion_rate": {
+    "default_value": "inf",
+    "unit": "1"
+  },
+  "transport_loss_factor_linear": {
+    "default_value": 5e-05,
+    "unit": "1/km"
+  },
+  "capex_per_distance_transport": {
+    "default_value": 265.0,
+    "unit": "Euro/km/kilotons*hour"
+  },
+  "distance": {
+    "default_value": "inf",
+    "unit": "km"
+  },
+  "capacity_addition_unbounded": {
+    "default_value": 0.0,
+    "unit": "kilotons/hour"
+  }
+}

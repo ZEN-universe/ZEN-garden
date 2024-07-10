@@ -9,10 +9,15 @@ Class defining a standard Element. Contains methods to add parameters, variables
 optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
 optimization model as an input.
 """
+import cProfile
 import copy
 import itertools
 import logging
 import os
+
+import pandas as pd
+import xarray as xr
+import linopy as lp
 import psutil
 import time
 from pathlib import Path
@@ -79,82 +84,82 @@ class Element:
         :param optimization_setup: The OptimizationSetup the element is part of """
         logging.info("\n--- Construct model components ---\n")
         pid = os.getpid()
-        # construct pe.Sets
+        # construct Sets
         t_start = time.perf_counter()
         cls.construct_sets(optimization_setup)
         t1 = time.perf_counter()
-        logging.info(f"Time to construct pe.Sets: {t1 - t_start:0.4f} seconds")
-        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
-        # construct pe.Params
+        logging.info(f"Time to construct Sets: {t1 - t_start:0.1f} seconds")
+        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+        # construct Params
         t0 = time.perf_counter()
         cls.construct_params(optimization_setup)
         t1 = time.perf_counter()
-        logging.info(f"Time to construct pe.Params: {t1 - t0:0.4f} seconds")
-        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
-        # construct pe.Vars
+        logging.info(f"Time to construct Params: {t1 - t0:0.1f} seconds")
+        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+        # construct Vars
         t0 = time.perf_counter()
         cls.construct_vars(optimization_setup)
         t1 = time.perf_counter()
-        logging.info(f"Time to construct pe.Vars: {t1 - t0:0.4f} seconds")
-        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
-        # construct pe.Constraints
+        logging.info(f"Time to construct Vars: {t1 - t0:0.1f} seconds")
+        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+        # construct Constraints
         t0 = time.perf_counter()
         cls.construct_constraints(optimization_setup)
         t1 = time.perf_counter()
-        logging.info(f"Time to construct pe.Constraints: {t1 - t0:0.4f} seconds")
-        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2} MB")
-        # construct pe.Objective
+        logging.info(f"Time to construct Constraints: {t1 - t0:0.1f} seconds")
+        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+        # construct Objective
         optimization_setup.energy_system.construct_objective()
         t_end = time.perf_counter()
-        logging.info(f"Total time to construct model components: {t_end - t_start:0.4f} seconds")
+        logging.info(f"Total time to construct model components: {t_end - t_start:0.1f} seconds")
 
     @classmethod
     def construct_sets(cls, optimization_setup):
-        """ constructs the pe.Sets of the class <Element>
+        """ constructs the Sets of the class <Element>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
-        logging.info("Construct pe.Sets")
-        # construct pe.Sets of energy system
+        logging.info("Construct Sets")
+        # construct Sets of energy system
         optimization_setup.energy_system.construct_sets()
-        # construct pe.Sets of the child classes
+        # construct Sets of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_sets(optimization_setup)
 
     @classmethod
     def construct_params(cls, optimization_setup):
-        """ constructs the pe.Params of the class <Element>
+        """ constructs the Params of the class <Element>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
-        logging.info("Construct pe.Params")
-        # construct pe.Params of energy system
+        logging.info("Construct Params")
+        # construct Params of energy system
         optimization_setup.energy_system.construct_params()
-        # construct pe.Params of the child classes
+        # construct Params of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_params(optimization_setup)
 
     @classmethod
     def construct_vars(cls, optimization_setup):
-        """ constructs the pe.Vars of the class <Element>
+        """ constructs the Vars of the class <Element>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
-        logging.info("Construct pe.Vars")
-        # construct pe.Vars of energy system
+        logging.info("Construct Vars")
+        # construct Vars of energy system
         optimization_setup.energy_system.construct_vars()
-        # construct pe.Vars of the child classes
+        # construct Vars of the child classes
         for subclass in cls.__subclasses__():
             subclass.construct_vars(optimization_setup)
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the pe.Constraints of the class <Element>
+        """ constructs the Constraints of the class <Element>
 
         :param optimization_setup: The OptimizationSetup the element is part of """
-        logging.info("Construct pe.Constraints")
-        # construct pe.Constraints of energy system
+        logging.info("Construct Constraints")
+        # construct Constraints of energy system
         optimization_setup.energy_system.construct_constraints()
-        # construct pe.Constraints of the child classes
+        # construct Constraints of the child classes
         for subclass in cls.__subclasses__():
-            logging.info(f"Construct pe.Constraints of {subclass.__name__}")
+            logging.info(f"Construct Constraints of {subclass.__name__}")
             subclass.construct_constraints(optimization_setup)
 
     @classmethod
@@ -309,3 +314,84 @@ class GenericRule(object):
         self.constraints = self.optimization_setup.constraints
         self.energy_system = self.optimization_setup.energy_system
         self.time_steps = self.energy_system.time_steps
+
+    # helper methods for constraint rules
+    def get_year_time_step_array(self,storage = False):
+        """ returns array with year and time steps of each year """
+        # create times xarray with 1 where the operation time step is in the year
+        if storage:
+            meth = self.time_steps.get_time_steps_year2storage
+            time_step_name = "set_time_steps_storage"
+        else:
+            meth = self.time_steps.get_time_steps_year2operation
+            time_step_name = "set_time_steps_operation"
+        times = [(y, t) for y in self.sets["set_time_steps_yearly"] for t in meth(y)]
+        times = pd.MultiIndex.from_tuples(times)
+        times.names = ["set_time_steps_yearly", time_step_name]
+        times = pd.Series(index=times, data=1)
+        times = times.to_xarray()
+        times = times.fillna(0.0)
+        return times
+
+    def get_year_time_step_duration_array(self):
+        """ returns array with year and duration of time steps of each year """
+        times = self.get_year_time_step_array()
+        times = times * self.parameters.time_steps_operation_duration
+        return times
+
+    def get_previous_storage_time_step_array(self):
+        """ returns array with storage time steps and previous storage time steps """
+        times_prev = []
+        mask = []
+        for ts in self.sets["set_time_steps_storage"]:
+            ts_end = self.energy_system.time_steps.get_time_steps_storage_startend(ts)
+            if ts_end is not None:
+                if self.system["storage_periodicity"]:
+                    times_prev.append(ts_end)
+                    mask.append(True)
+                else:
+                    times_prev.append(ts)
+                    mask.append(False)
+            else:
+                ts_prev = self.energy_system.time_steps.get_previous_storage_time_step(ts)
+                times_prev.append(ts_prev)
+                mask.append(True)
+        mask = xr.DataArray(mask, dims="set_time_steps_storage", coords={"set_time_steps_storage": self.sets["set_time_steps_storage"]})
+        return times_prev, mask
+
+    def get_power2energy_time_step_array(self):
+        """ returns array with power2energy time steps """
+        times = {st: self.energy_system.time_steps.convert_time_step_energy2power(st) for st in self.sets["set_time_steps_storage"]}
+        times = pd.Series(times,name="set_time_steps_operation")
+        times.index.name = "set_time_steps_storage"
+        return times
+
+    def get_storage2year_time_step_array(self):
+        """ returns array with storage2year time steps """
+        times = {st: y for y in self.sets["set_time_steps_yearly"] for st in self.energy_system.time_steps.get_time_steps_year2storage(y)}
+        times = pd.Series(times,name="set_time_steps_yearly")
+        times.index.name = "set_time_steps_storage"
+        return times
+
+    def map_and_expand(self, array, mapping):
+        """ maps and expands array """
+        assert (isinstance(mapping, pd.Series) or isinstance(mapping.index, pd.Index)), "Mapping must be a pd.Series or with a single-level pd.Index"
+        # get mapping values
+        array = array.sel({mapping.name: mapping.values})
+        # rename
+        array = array.rename({mapping.name: mapping.index.name})
+        # assign coordinates
+        array = array.assign_coords({mapping.index.name: mapping.index})
+        return array
+
+    def align_and_mask(self, expr, mask):
+        """ aligns and masks expr """
+        if isinstance(expr, xr.DataArray):
+            aligner = expr
+        elif isinstance(expr, lp.Variable):
+            aligner = expr.lower
+        else:
+            aligner = expr.const
+        mask = xr.align(mask, aligner, join="right")[0]
+        expr = expr.where(mask)
+        return expr

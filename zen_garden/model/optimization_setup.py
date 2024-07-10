@@ -25,6 +25,7 @@ from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
+from zen_garden.preprocess.unit_handling import Scaling
 
 from ..utils import ScenarioDict, IISConstraintParser, StringUtils
 
@@ -49,7 +50,7 @@ class OptimizationSetup(object):
         # create a dictionary with the paths to access the model inputs and check if input data exists
         self.create_paths()
         # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis, self.paths)
+        self.scenario_dict = ScenarioDict(scenario_dict, config, self.paths)
         # check if all needed data inputs for the chosen technologies exist and remove non-existent
         self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
@@ -61,6 +62,7 @@ class OptimizationSetup(object):
         self.parameters = None
         self.constraints = None
         self.sets = None
+
 
         # sorted list of class names
         element_classes = self.dict_element_classes.keys()
@@ -91,6 +93,11 @@ class OptimizationSetup(object):
 
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
+
+
+
+
+
 
     def create_paths(self):
         """
@@ -272,6 +279,16 @@ class OptimizationSetup(object):
         else:
             return None
 
+    def get_class_set_of_element(self, element_name: str, klass):
+        """ returns the set of all elements in the class of the element
+
+        :param element_name: name of element
+        :param klass: class of the elements to return
+        :return class_set: set of all elements in the class of the element """
+        class_name = self.get_element(klass,element_name).__class__.label
+        class_set = self.sets[class_name]
+        return class_set
+
     def get_attribute_of_all_elements(self, cls, attribute_name: str, capacity_types=False,
                                       return_attribute_is_series=False):
         """ get attribute values of all elements in a class
@@ -402,24 +419,42 @@ class OptimizationSetup(object):
         self.sets = IndexSet()
         self.variables = Variable(self)
         self.parameters = Parameter(self)
-        self.constraints = Constraint(self.sets)
+        self.constraints = Constraint(self.sets,self.model)
         # define and construct components of self.model
         Element.construct_model_components(self)
+        # Initiate scaling object
+        self.scaling = Scaling(self.model, self.solver['scaling_algorithm'],self.solver['scaling_include_rhs'])
         # find smallest and largest coefficient and RHS
-        self.analyze_numerics()
+        #self.analyze_numerics() -> Replaced through scaling
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
         # if using rolling horizon
-        if self.system["use_rolling_horizon"]:
-            self.years_in_horizon = self.system["years_in_rolling_horizon"]
+        if self.system.use_rolling_horizon:
+            assert self.system.years_in_rolling_horizon >= self.system.interval_between_optimizations, f"There must be more years in the rolling horizon than the interval between optimizations. years_in_rolling_horizon ({self.system.years_in_rolling_horizon}) < interval_between_optimizations ({self.system.interval_between_optimizations})"
+            self.years_in_horizon = self.system.years_in_rolling_horizon
             time_steps_yearly = self.energy_system.set_time_steps_yearly
-            self.steps_horizon = {year: list(range(year, min(year + self.years_in_horizon, max(time_steps_yearly) + 1))) for year in time_steps_yearly}
+            # skip interval_between_optimizations years
+            self.optimized_time_steps = [year for year in time_steps_yearly if (year % self.system.interval_between_optimizations == 0 or year == time_steps_yearly[-1])]
+            self.steps_horizon = {year: list(range(year, min(year + self.years_in_horizon, max(time_steps_yearly) + 1))) for year in self.optimized_time_steps}
         # if no rolling horizon
         else:
             self.years_in_horizon = len(self.energy_system.set_time_steps_yearly)
+            self.optimized_time_steps = [0]
             self.steps_horizon = {0: self.energy_system.set_time_steps_yearly}
         return list(self.steps_horizon.keys())
+
+    def get_decision_horizon(self,step_horizon):
+        """ returns the decision horizon for the optimization step, i.e., the time steps for which the decisions are saved
+
+        :param step_horizon: step of the rolling horizon
+        :return decision_horizon: list of time steps in the decision horizon """
+        if step_horizon == self.optimized_time_steps[-1]:
+            decision_horizon = [step_horizon]
+        else:
+            next_optimization_step = self.optimized_time_steps[self.optimized_time_steps.index(step_horizon) + 1]
+            decision_horizon = list(range(step_horizon, next_optimization_step))
+        return decision_horizon
 
     def set_base_configuration(self, scenario="", elements={}):
         """set base configuration
@@ -435,11 +470,9 @@ class OptimizationSetup(object):
         :param step_horizon: step of the rolling horizon """
 
         if self.system["use_rolling_horizon"]:
+            self.step_horizon = step_horizon
             time_steps_yearly_horizon = self.steps_horizon[step_horizon]
             base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(time_steps_yearly_horizon)
-            # # overwrite time steps of each element
-            # for element in self.get_all_elements(Element):
-            #     element.overwrite_time_steps(base_time_steps_horizon)
             # overwrite aggregated time steps - operation
             set_time_steps_operation = self.energy_system.time_steps.encode_time_step(base_time_steps=base_time_steps_horizon,
                                                                                       time_step_type="operation")
@@ -461,80 +494,6 @@ class OptimizationSetup(object):
             self.energy_system.set_base_time_steps = new_base_time_steps_horizon
             self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
 
-    def analyze_numerics(self):
-        """ get largest and smallest matrix coefficients and RHS """
-        if self.solver["analyze_numerics"]:
-            largest_rhs = [None, 0]
-            smallest_rhs = [None, np.inf]
-            largest_coeff = [None, 0]
-            smallest_coeff = [None, np.inf]
-
-            for cname in self.model.constraints:
-                cons = self.model.constraints[cname]
-                # get smallest coeff and corresponding variable
-                coeffs = np.abs(cons.lhs.coeffs.data)
-                coeffs_flat = coeffs.ravel()
-                # coeffs_reshaped = coeffs.reshape(-1, coeffs.shape[-1])
-                # filter
-                sorted_args = np.argsort(coeffs_flat)
-                coeffs_sorted = coeffs_flat[sorted_args]
-                mask = np.isfinite(coeffs_sorted) & (coeffs_sorted != 0.0)
-                coeffs_sorted = coeffs_sorted[mask]
-
-                # check if there is something left
-                if coeffs_sorted.size == 0:
-                    continue
-
-                # get min max
-                coeff_min = coeffs_sorted[0]
-                coeff_max = coeffs_sorted[-1]
-                # same for variables
-                variables = cons.lhs.vars.data
-                variables_flat = variables.ravel()
-                variables_reshaped = variables.reshape(-1, variables.shape[-1])
-                variables_sorted = variables_flat[sorted_args]
-                variables_sorted = variables_sorted[mask]
-                var_min = variables_sorted[0]
-                var_max = variables_sorted[-1]
-
-                # extract the coords, note that the ordering of cons.coords and cons.lhs.coords can be different
-                coords_idx_min = np.where((variables == var_min) & (coeffs == coeff_min))
-                coords_min = [cons.lhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.lhs.coords.dims, coords_idx_min[:-1])]
-                coords_idx_max = np.where((variables == var_max) & (coeffs == coeff_max))
-                coords_max = [cons.lhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.lhs.coords.dims, coords_idx_max[:-1])]
-                if 0.0 < coeff_min < smallest_coeff[1]:
-                    smallest_coeff[0] = (f"{cons.name}{coords_min}", lp.constraints.print_single_expression([coeff_min], [var_min], self.model))
-                    smallest_coeff[1] = coeff_min
-                if coeff_max > largest_coeff[1]:
-                    largest_coeff[0] = (f"{cons.name}{coords_max}", lp.constraints.print_single_expression([coeff_max], [var_max], self.model))
-                    largest_coeff[1] = coeff_max
-
-                # smallest and largest rhs
-                rhs = cons.rhs.data.ravel()
-                # get first argument for non nan non zero element
-                rhs_sorted = np.sort(rhs)
-                rhs_sorted = rhs_sorted[np.isfinite(rhs_sorted) & (rhs_sorted > 0)]
-                if rhs_sorted.size == 0:
-                    continue
-                rhs_min = rhs_sorted[0]
-                rhs_max = rhs_sorted[-1]
-
-                # get coords for rhs_min and rhs_max
-                coords_idx_min = np.where(cons.rhs.data == rhs_min)
-                coords_min = [cons.rhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.rhs.coords.dims, coords_idx_min)]
-                coords_idx_max = np.where(cons.rhs.data == rhs_max)
-                coords_max = [cons.rhs.coords.indexes[dim][idx[0]] for dim, idx in zip(cons.rhs.coords.dims, coords_idx_max)]
-
-                if 0.0 < rhs_min < smallest_rhs[1]:
-                    smallest_rhs[0] = f"{cons.name}{coords_min}"
-                    smallest_rhs[1] = rhs_min
-                if np.inf > rhs_max > largest_rhs[1]:
-                    largest_rhs[0] = f"{cons.name}{coords_max}"
-                    largest_rhs[1] = rhs_max
-
-            logging.info(
-                f"Numeric Range Statistics:\nLargest Matrix Coefficient: {largest_coeff[1]} in {largest_coeff[0]}\nSmallest Matrix Coefficient: {smallest_coeff[1]} in {smallest_coeff[0]}\nLargest RHS: {largest_rhs[1]} in {largest_rhs[0]}\nSmallest RHS: {smallest_rhs[1]} in {smallest_rhs[0]}")
-
     def solve(self):
         """Create model instance by assigning parameter values and instantiating the sets """
         solver_name = self.solver["name"]
@@ -555,25 +514,19 @@ class OptimizationSetup(object):
                              keep_files=self.solver["keep_files"], sanitize_zeros=True)
         # enable logger
         logging.disable(logging.NOTSET)
-        # write IIS
         if self.model.termination_condition == 'optimal':
             self.optimality = True
         elif self.model.termination_condition == "suboptimal":
-            logging.info("The optimization is suboptimal")
+            logging.warning("The optimization is suboptimal")
             self.optimality = True
-        elif self.model.termination_condition == "infeasible":
-            logging.info("The optimization is infeasible")
-            self.optimality = False
         else:
-            logging.info("The optimization is infeasible or unbounded, or finished with an error")
             self.optimality = False
 
     def write_IIS(self):
         """ write an ILP file to print the IIS if infeasible. Only possible for gurobi
         """
         if self.model.termination_condition == 'infeasible' and self.solver["name"] == "gurobi":
-            logging.info("The optimization is infeasible")
-            # ilp_file = f"{os.path.dirname(solver['solver_options']['logfile'])}//infeasible_model_IIS.ilp"
+
             output_folder = StringUtils.get_output_folder(self.analysis,self.system)
             ilp_file = os.path.join(output_folder,"infeasible_model_IIS.ilp")
             logging.info(f"Writing parsed IIS to {ilp_file}")
@@ -603,13 +556,14 @@ class OptimizationSetup(object):
                 capacity_addition[capacity_addition <= rounding_value] = 0
                 invest_capacity[invest_capacity <= rounding_value] = 0
                 cost_capex[cost_capex <= rounding_value] = 0
+                decision_horizon = self.get_decision_horizon(step_horizon)
                 for tech in self.get_all_elements(Technology):
                     # new capacity
                     capacity_addition_tech = capacity_addition.loc[tech.name].unstack()
                     capacity_investment = invest_capacity.loc[tech.name].unstack()
                     cost_capex_tech = cost_capex.loc[tech.name].unstack()
-                    tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, step_horizon)
-                    tech.add_new_capacity_investment(capacity_investment, step_horizon)
+                    tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, decision_horizon)
+                    tech.add_new_capacity_investment(capacity_investment, decision_horizon)
             else:
                 # TODO clean up
                 # reset to initial values
@@ -642,10 +596,11 @@ class OptimizationSetup(object):
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 interval_between_years = self.energy_system.system["interval_between_years"]
-                _carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[step_horizon].item()
-                carbon_emissions_annual = self.model.solution["carbon_emissions_annual"].loc[step_horizon].item()
-                # carbon_emissions_overshoot = self.model.solution["carbon_emissions_overshoot"].loc[step_horizon].item()
-                self.energy_system.carbon_emissions_cumulative_existing = _carbon_emissions_cumulative + carbon_emissions_annual * (interval_between_years - 1)
+                decision_horizon = self.get_decision_horizon(step_horizon)
+                last_year = decision_horizon[-1]
+                carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[last_year].item()
+                carbon_emissions_annual = self.model.solution["carbon_emissions_annual"].loc[last_year].item()
+                self.energy_system.carbon_emissions_cumulative_existing = carbon_emissions_cumulative + carbon_emissions_annual * (interval_between_years - 1)
             else:
                 self.energy_system.carbon_emissions_cumulative_existing = self.energy_system.data_input.extract_input_data(
                     "carbon_emissions_cumulative_existing", index_sets=[], unit_category={"emissions": 1})
@@ -717,3 +672,43 @@ class OptimizationSetup(object):
                 return component_data
             except KeyError:
                 raise KeyError(f"the custom set {custom_set} cannot be used as a subindex of {component_data.index}")
+
+    def analyze_numerics(self):
+        """ get largest and smallest matrix coefficients and RHS """
+        if self.solver["analyze_numerics"]:
+            logging.info("\n--- Analyze Matrix Ranges ---\n")
+            flat = self.model.constraints.flat
+            # coeffs
+            coeffs = flat["coeffs"].abs()
+            coeffs = coeffs[coeffs > 0]
+            rhs = flat["rhs"].abs()
+            rhs = rhs[rhs > 0]
+            min_coeff = flat.loc[coeffs.idxmin()]
+            max_coeff = flat.loc[coeffs.idxmax()]
+            min_rhs = flat.loc[rhs.idxmin()]
+            max_rhs = flat.loc[rhs.idxmax()]
+            # print coeffs
+            max_coeff_str = f"Largest Matrix Coefficient: {self.create_cons_var_string(max_coeff)}"
+            min_coeff_str = f"Smallest Matrix Coefficient: {self.create_cons_var_string(min_coeff)}"
+            # print rhs
+            max_rhs_str = f"Largest RHS: {self.create_cons_var_string(max_rhs,is_coeff=False)}"
+            min_rhs_str = f"Smallest RHS: {self.create_cons_var_string(min_rhs,is_coeff=False)}"
+            logging.info(f"Numeric Range Statistics:\n{max_coeff_str}\n{min_coeff_str}\n{max_rhs_str}\n{min_rhs_str}")
+
+    def create_cons_var_string(self, cons_series, is_coeff=True):
+        """ create a string of constraints or variables
+
+        :param cons_series: pd.Series of constraints or variables
+        :param is_coeff: boolean if coefficients, else rhs
+        :return cons_str: string of maximum coefficient or rhs"""
+        cons_str = self.model.constraints.get_label_position(cons_series["labels"])
+        cons_str = cons_str[0] + str(list(cons_str[1].values()))
+
+        if is_coeff:
+            var_str = self.model.variables.get_label_position(cons_series["vars"])
+            var_str = var_str[0] + str(list(var_str[1].values()))
+            coeff_str = abs(cons_series["coeffs"])
+            cons_str = f"{coeff_str} {var_str} in {cons_str}"
+        else:
+            cons_str = f"{abs(cons_series['rhs'])} in {cons_str}"
+        return cons_str
