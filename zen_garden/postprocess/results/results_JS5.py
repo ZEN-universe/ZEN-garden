@@ -18,6 +18,7 @@ from zen_garden.postprocess.results.results_JS2 import Results
 #from zen_garden.postprocess.results.results import Results as Results2
 from zen_garden.postprocess.results.folder_structur_JS import create_folder, get_folder_path
 from zen_garden.postprocess.results.plot_results import plot_map_data, plot_energy_balance_JS2
+import zen_garden.postprocess.results.state_mapping_JS as state_mapping_JS
 
 
 
@@ -994,3 +995,58 @@ def get_df_variables(res_basic, scenario, scenario_name):
     df_var2.drop(columns='index', inplace=True)
     print(df_var2.head())
     return df_var2
+
+
+
+def import_flow_data(parent_folder, scenarios, column_name):
+    # Create and prepare the US counties data
+    us_counties = gdf_US_JS.create_county_US()
+    us_counties.rename(columns={'county_code': 'node'}, inplace=True)
+
+    # List all subfolders in the specified parent folder
+    subfolders = os.listdir(os.path.join("../data/outputs", parent_folder))
+
+    # Exclude unwanted files and folders
+    subfolders = [folder for folder in subfolders if folder not in ['Figures'] and not folder.endswith(('.csv', '.png'))]
+
+    combined_data = pd.DataFrame()
+
+    for folder in subfolders:
+        directory = os.path.join("../data/outputs", parent_folder, folder)
+        res = Results(directory)
+        df = res.get_full_ts(column_name)
+
+        # Sum across columns and reset index
+        df_sum = df.sum(axis=1).to_frame()
+        df_sum.reset_index(inplace=True)
+
+        # Filter and concatenate data for each scenario
+        df_combined = pd.concat([df_sum[df_sum['level_0'] == scenario] for scenario in scenarios])
+
+        # Pivot the DataFrame
+        df_pivot = df_combined.pivot_table(index=['carrier', 'node'], columns='level_0', values=0)
+
+        # Flatten the MultiIndex columns
+        df_pivot.columns = [f'{column_name}_{col}' for col in df_pivot.columns]
+        df_pivot.reset_index(inplace=True)
+
+        # Combine all data
+        combined_data = pd.concat([combined_data, df_pivot], axis=0)
+
+    # Merge with US counties data to include state information
+    merged_data = pd.merge(combined_data, us_counties[['node', 'state']], on='node', how='left')
+    merged_data.reset_index(inplace=True)
+
+    # Group by state and carrier, summing the values
+    columns = [col for col in merged_data.columns if col != 'node']
+    grouped_data = merged_data[columns].groupby(['state', 'carrier']).sum()
+    grouped_data.reset_index(inplace=True)
+    grouped_data.drop(columns=['index'], inplace=True)
+
+    # Filter for specific carriers
+    filtered_grouped_data = grouped_data[grouped_data['carrier'].isin(['electricity', 'diesel'])]
+
+    # Map state abbreviations to full names
+    filtered_grouped_data = state_mapping_JS.reverse_mapping(filtered_grouped_data, 'state', 'state_full', 'full_to_abbr')
+
+    return grouped_data, filtered_grouped_data
