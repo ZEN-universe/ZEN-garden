@@ -185,3 +185,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 notebooks/postprocess_results_tutorial.ipynb
+<<<<<<< Updated upstream
+=======
+/ZENx_AG/
+
+*.out
+>>>>>>> Stashed changes
