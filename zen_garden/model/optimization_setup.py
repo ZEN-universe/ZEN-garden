@@ -95,10 +95,6 @@ class OptimizationSetup(object):
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
 
 
-
-
-
-
     def create_paths(self):
         """
         This method creates a dictionary with the paths of the data split
