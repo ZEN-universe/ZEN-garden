@@ -581,76 +581,122 @@ def plot_co2_cost_boxplots_v2(df, unit_co2, unit_cost):
 
 
 
-def plot_pareto_front(df, parent_folder, title, unit_co2, unit_y_axis, y_axis, y_axis_label, save_fig=True):
-    # Define the colors you want to use
+def plot_pareto_front(df, parent_folder, output_path, title, unit_co2, unit_y_axis, y_axis, y_axis_label, save_fig=True):
+    """
+    Plot the Pareto front for the given data.
+
+    Parameters:
+    df (DataFrame): The data containing optimization results.
+    parent_folder (str): The parent folder for saving the plot.
+    output_path (str): The base output path where the plot will be saved.
+    title (str): The title of the plot.
+    unit_co2 (str): The unit for CO2 emissions.
+    unit_y_axis (str): The unit for the y-axis.
+    y_axis (str): The column name for the y-axis data.
+    y_axis_label (str): The label for the y-axis.
+    save_fig (bool): Whether to save the figure. Defaults to True.
+    """
+
+    # Print information about the step in the optimization process
+    print(f"Plotting Pareto front for {title}:\n")
+
+    # Define the colors to use
     colors = ['#818F42', '#3395ab', '#C55D57']
 
+    # Convert units for carbon emissions and the y-axis data
     output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', unit_co2)
     output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, y_axis, unit_y_axis)
 
+    # Create the plot
     plt.figure(figsize=(10, 6))
 
+    # Plot each Pareto group
     pareto_groups = df_converted['pareto_group'].unique()
-
     for idx, pareto_group in enumerate(pareto_groups):
         group_df = df_converted[df_converted['pareto_group'] == pareto_group]
         group_df.sort_values(by='carbon_emissions_cumulative', inplace=True)
-        # Use color based on the index of the pareto_group
         plt.plot(group_df['carbon_emissions_cumulative'], group_df[y_axis],
                  label=f'Time steps {pareto_group}', marker='o', color=colors[idx % len(colors)])
 
+    # Label the axes and add a title
     plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     plt.ylabel(f'{y_axis_label} [{output_unit_y_axis}]')
     plt.title(title)
     plt.legend()
     plt.grid(True)
 
-    save_folder = os.path.join("../data/outputs", parent_folder, 'Figures')
-    # Make directory if it does not exist
+    # Create the directory if it does not exist
+    save_folder = os.path.join(output_path, parent_folder, 'Figures')
     os.makedirs(save_folder, exist_ok=True)
 
+    # Save the figure if required
     if save_fig:
         save_file = f'{y_axis}_no_grid.png'
         save_file_path = os.path.join(save_folder, save_file)
         plt.savefig(save_file_path)
+        print(f"Saving Pareto front for {title} as {save_file_path}\n")
 
-    plt.show()
+    #plt.show()
 
-def plot_pareto_front_cost(df, parent_folder, title, unit_cost, unit_y_axis, y_axis, y_axis_label, save_fig=True):
-    # Define the colors you want to use
+
+
+
+def plot_pareto_front_cost(df, parent_folder, output_path, title, unit_cost, unit_y_axis, y_axis, y_axis_label, save_fig=True):
+    """
+    Plot the Pareto front for the given data based on net present cost.
+
+    Parameters:
+    df (DataFrame): The data containing optimization results.
+    parent_folder (str): The parent folder for saving the plot.
+    output_path (str): The base output path where the plot will be saved.
+    title (str): The title of the plot.
+    unit_cost (str): The unit for net present cost.
+    unit_y_axis (str): The unit for the y-axis.
+    y_axis (str): The column name for the y-axis data.
+    y_axis_label (str): The label for the y-axis.
+    save_fig (bool): Whether to save the figure. Defaults to True.
+    """
+
+    # Print information about the step in the optimization process
+    print(f"Plotting Pareto front for {title}:\n")
+
+    # Define the colors to use
     colors = ['#818F42', '#3395ab', '#C55D57']
 
+    # Convert units for net present cost and the y-axis data
     output_unit_cost, df_converted, _ = get_best_unit(df, 'net_present_cost', unit_cost)
     output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, y_axis, unit_y_axis)
 
+    # Create the plot
     plt.figure(figsize=(10, 6))
 
+    # Plot each Pareto group
     pareto_groups = df_converted['pareto_group'].unique()
-
     for idx, pareto_group in enumerate(pareto_groups):
         group_df = df_converted[df_converted['pareto_group'] == pareto_group]
         group_df.sort_values(by='net_present_cost', inplace=True)
-        # Use color based on the index of the pareto_group
         plt.plot(group_df['net_present_cost'], group_df[y_axis],
                  label=f'Time steps {pareto_group}', marker='o', color=colors[idx % len(colors)])
 
+    # Label the axes and add a title
     plt.xlabel(f'Net Present Cost [{output_unit_cost}]')
     plt.ylabel(f'{y_axis_label} [{output_unit_y_axis}]')
     plt.title(title)
     plt.legend()
     plt.grid(True)
 
-    save_folder = os.path.join("../data/outputs", parent_folder, 'Figures')
-    # Make directory if it does not exist
+    # Create the directory if it does not exist
+    save_folder = os.path.join(output_path, parent_folder, 'Figures')
     os.makedirs(save_folder, exist_ok=True)
 
+    # Save the figure if required
     if save_fig:
         save_file = f'{y_axis}_net_present_cost_no_grid.png'
         save_file_path = os.path.join(save_folder, save_file)
         plt.savefig(save_file_path)
+        print(f"Saving Pareto front for {title} as {save_file_path}\n")
 
-    plt.show()
-
+    #plt.show()
 
 def plot_pareto_front_3d(df, parent_folder, title, unit_co2, unit_z_axis, unit_cost, z_axis, z_axis_label, save_fig=False):
     output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', unit_co2)
