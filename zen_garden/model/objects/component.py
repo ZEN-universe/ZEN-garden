@@ -700,7 +700,6 @@ class Variable(Component):
                 else:
                     domain = "Reals"
             self.docs[name] = self.compile_doc_string(doc, index_list, name, domain)
-            logging.info(f'Variable {name} added')
             self.units[name] = self.get_var_units(unit_category, index_values, index_list)
         else:
             logging.warning(f"Variable {name} already added. Can only be added once")
@@ -741,7 +740,6 @@ class Variable(Component):
                 tech_level = [level for level in var_units.index.names if "technologies" in level][0]
                 for technology in self.optimization_setup.dict_elements["Technology"]:
                     reference_carrier = technology.reference_carrier[0]
-                    logging.info(f"Reference carrier of technology {technology.name} is {reference_carrier}.\n")
                     energy_quantity = [energy_quantity for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items() if carrier == reference_carrier][0]
                     tech_idx = var_units.index.get_level_values(tech_level) == technology.name
                     var_units[tech_idx] = str((unit * energy_quantity ** unit_category["energy_quantity"]).units)
