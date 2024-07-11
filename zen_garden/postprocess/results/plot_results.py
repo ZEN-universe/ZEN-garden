@@ -673,10 +673,6 @@ def plot_pareto_front(df, parent_folder, output_path, title, unit_co2, unit_y_ax
 
 
 
-    #plt.show()
-
-
-
 
 def plot_pareto_front_cost(df, parent_folder, output_path, title, unit_cost, unit_y_axis, y_axis, y_axis_label, save_fig=True):
     """
