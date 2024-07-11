@@ -144,7 +144,7 @@ def plot_pareto_front(folder, output_path, specific_scenario_name, custom_order,
 
 def main():
     folder = "county_CA_0507_288_3"
-    output_path = "../../../data/outputs/"
+    output_path = "../../../outputs/"
     directory = os.path.join(output_path, folder)
     res_basic = Results(directory)
 

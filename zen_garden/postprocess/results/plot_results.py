@@ -79,7 +79,7 @@ def plots_cost(res, directory, save_fig=True, file_type='png'):
     plt.savefig(path_filename_save, bbox_inches='tight', pad_inches=0.1)
 
 
-def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, scenario, save_fig=True):
+
 def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, scenario, save_fig=True):
     # Filter DataFrame based on node and carrier
     data_plot = data_plot.reset_index()
@@ -668,10 +668,6 @@ def plot_pareto_front(df, parent_folder, output_path, title, unit_co2, unit_y_ax
         plt.savefig(save_file_path)
         print(f"Saving Pareto front for {title} as {save_file_path}\n")
         print(f"Saving Pareto front for {title} as {save_file_path}\n")
-
-    #plt.show()
-
-
 
     #plt.show()
 
