@@ -668,17 +668,21 @@ class TechnologyRules(GenericRule):
             \mathrm{else}\ \Delta S_{h,p,y} = 0
 
         """
-        # take the maximum of the capacity limit and the existing capacities.
-        # If the capacity limit is 0 (or lower than existing capacities), the maximum is the existing capacity
-        maximum_capacity_limit = np.maximum(self.parameters.existing_capacities,self.parameters.capacity_limit)
+        # if the capacity limit is not reached by the existing capacities, the capacity is constrained by the capacity limit.
+        # if the capacity limit is reached, the capacity addition is 0.
+        capacity_limit_not_reached = self.parameters.existing_capacities < self.parameters.capacity_limit
         # create mask so that skipped if capacity_limit is inf
-        m = maximum_capacity_limit != np.inf
+        m = self.parameters.capacity_limit != np.inf
 
-        lhs = self.variables["capacity"].where(m)
-        rhs = maximum_capacity_limit.where(m,0.0)
-        constraints = lhs <= rhs
+        lhs_not_reached = self.variables["capacity"].where(m).where(capacity_limit_not_reached)
+        rhs_not_reached = self.parameters.capacity_limit.where(m,0.0).where(capacity_limit_not_reached,0.0)
+        constraints_not_reached = lhs_not_reached <= rhs_not_reached
+        lhs_reached = self.variables["capacity_addition"].where(m).where(~capacity_limit_not_reached)
+        rhs_reached = 0
+        constraints_reached = lhs_reached == rhs_reached
 
-        self.constraints.add_constraint("constraint_technology_capacity_limit",constraints)
+        self.constraints.add_constraint("constraint_technology_capacity_limit_not_reached",constraints_not_reached)
+        self.constraints.add_constraint("constraint_technology_capacity_limit_reached",constraints_reached)
 
     def constraint_technology_min_capacity_addition(self):
         """ min capacity addition of technology
