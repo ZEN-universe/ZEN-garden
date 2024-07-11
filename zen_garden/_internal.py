@@ -85,6 +85,7 @@ def main(config, dataset_path=None, job_index=None):
             # break if infeasible
             if not optimization_setup.optimality:
                 # write IIS
+                optimization_setup.write_IIS()
                 raise OptimizationError(optimization_setup.model.termination_condition)
             if config.solver["use_scaling"]:
                 optimization_setup.scaling.re_scale()

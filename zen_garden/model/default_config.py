@@ -8,7 +8,7 @@ Default configuration. Changes from the default values are specified in config.p
 """
 
 from pydantic import BaseModel, ConfigDict
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 
 class Subscriptable(BaseModel, extra="allow"):
@@ -138,7 +138,7 @@ class Solver(Subscriptable):
     analyze_numerics: bool = True
     use_scaling: bool = True
     scaling_include_rhs: bool = False
-    scaling_algorithm: list[str] = ["geom","geom","geom"]
+    scaling_algorithm: Union[list[str],str] = ["geom","geom","geom"]
 
 
 
