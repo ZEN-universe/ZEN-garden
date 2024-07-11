@@ -22,7 +22,7 @@ import os
 
 DIRECTORY = '../zen_garden/postprocess/results/'
 FILENAME = 'state_mappings_JS.json'
-FILE_DIR = os.path.join(DIRECTORY, FILENAME)
+FILE_DIR = FILENAME
 
 def print_unmapped_states(df, column_name, column_name_mapped):
     """

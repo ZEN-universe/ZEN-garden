@@ -1081,9 +1081,8 @@ def import_flow_data(parent_folder, output_path, scenarios, column_name, filter_
     subfolders = [folder for folder in subfolders if folder not in ['Figures'] and not folder.endswith(('.csv', '.png'))]
 
     combined_data = pd.DataFrame()
-
-    for folder in subfolders:
-        directory = os.path.join(output_path, parent_folder, folder)
+    if 'scenario_' in subfolders:
+        directory = os.path.join(output_path, parent_folder)
         res = Results(directory)
         df = res.get_full_ts(column_name)
 
@@ -1103,6 +1102,28 @@ def import_flow_data(parent_folder, output_path, scenarios, column_name, filter_
 
         # Combine all data
         combined_data = pd.concat([combined_data, df_pivot], axis=0)
+    else:
+        for folder in subfolders:
+            directory = os.path.join(output_path, parent_folder, folder)
+            res = Results(directory)
+            df = res.get_full_ts(column_name)
+
+            # Sum across columns and reset index
+            df_sum = df.sum(axis=1).to_frame()
+            df_sum.reset_index(inplace=True)
+
+            # Filter and concatenate data for each scenario
+            df_combined = pd.concat([df_sum[df_sum['level_0'] == scenario] for scenario in scenarios])
+
+            # Pivot the DataFrame
+            df_pivot = df_combined.pivot_table(index=['carrier', 'node'], columns='level_0', values=0)
+
+            # Flatten the MultiIndex columns
+            df_pivot.columns = [f'{column_name}_{col}' for col in df_pivot.columns]
+            df_pivot.reset_index(inplace=True)
+
+            # Combine all data
+            combined_data = pd.concat([combined_data, df_pivot], axis=0)
 
     # Merge with US counties data to include state information
     merged_data = pd.merge(combined_data, us_counties[['node', 'state']], on='node', how='left')

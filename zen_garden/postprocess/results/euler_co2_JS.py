@@ -143,22 +143,33 @@ def plot_pareto_front(folder, output_path, specific_scenario_name, custom_order,
         )
 
 def main():
-    folder = "county_CA_0507_288_3"
+    # folder = "county_CA_0507_288_3"
     output_path = "../../../data/outputs/"
-    directory = os.path.join(output_path, folder)
-    res_basic = Results(directory)
+    # directory = os.path.join(output_path, folder)
+    # res_basic = Results(directory)
 
-    get_co2_emissions(res_basic)
+    # get_co2_emissions(res_basic)
 
-    node = 'LA_EV039'
-    scenarios = ['scenario_0','scenario_25','scenario_75','scenario_100']
-    plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True)
+    # node = 'LA_EV039'
+    # scenarios = ['scenario_0','scenario_25','scenario_75','scenario_100']
+    # plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True)
 
-    area = 'Nodes 3'
-    custom_order = ['','100','75','25','0']
-    pareto_group = 'time_steps'
-    specific_scenario_name = 'analysis_1806'
-    plot_pareto_front(folder, output_path, specific_scenario_name, custom_order, area, pareto_group, save_fig=True)
+    # area = 'Nodes 3'
+    # custom_order = ['','100','75','25','0']
+    # pareto_group = 'time_steps'
+    # specific_scenario_name = 'analysis_1806'
+    # plot_pareto_front(folder, output_path, specific_scenario_name, custom_order, area, pareto_group, save_fig=True)
+
+
+
+    folder = "county_1007/county_CA_0907_288_7"
+    scenarios  = ['scenario_autark_optimal', 'scenario_low_CO2_grid','scenario_']
+    df_caps_all_filtered = results_JS.aggregate_to_states(folder, output_path, 'capacity_addition', scenarios)
+    plot_results.plot_boxplot_capacities_states(scenarios, df_caps_all_filtered, output_path, folder)
+    df_group, df_group_filtered = results_JS.import_flow_data(folder, output_path, scenarios, column_name='flow_import', filter_carriers= ['electricity', 'diesel'])
+    plot_results.plot_boxplot_energy_states(scenarios, df_group_filtered, folder, output_path, target_column='flow_import')
+    df_group_demand, df_group_filtered_demand = results_JS.import_flow_data(folder, output_path, scenarios, 'demand', filter_carriers=['irrigation_water'])
+    plot_results.plot_boxplot_energy_states(scenarios, df_group_filtered_demand, folder, output_path, 'demand')
 
 if __name__ == "__main__":
     main()

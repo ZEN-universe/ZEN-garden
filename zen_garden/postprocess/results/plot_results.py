@@ -79,7 +79,7 @@ def plots_cost(res, directory, save_fig=True, file_type='png'):
     plt.savefig(path_filename_save, bbox_inches='tight', pad_inches=0.1)
 
 
-def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, scenario, save_fig=True):
+
 def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, scenario, save_fig=True):
     # Filter DataFrame based on node and carrier
     data_plot = data_plot.reset_index()

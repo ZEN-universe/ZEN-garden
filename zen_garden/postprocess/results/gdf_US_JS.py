@@ -1,5 +1,7 @@
 import geopandas as gpd
 from shapely.geometry import Polygon
+import os
+DIRECTORY = '../zen_garden/postprocess/results/'
 
 def make_bbox(long0, lat0, long1, lat1):
     """
@@ -31,7 +33,7 @@ def create_US():
     bbox_gdf = gpd.GeoDataFrame(index=[0], geometry=[bbox])
 
     # Read the geospatial dataset of European countries
-    us_gdf = gpd.read_file('results_models/States_shapefile.geojson')
+    us_gdf = gpd.read_file(os.path.join(DIRECTORY, 'States_shapefile.geojson'))
 
     return us_gdf
 
@@ -47,7 +49,7 @@ def create_county_US():
     # Read the geospatial dataset of European countries
 
     # Construct the path to the state shapefile
-    state_shapefile_path = 'results_models/cb_2023_us_county_20m/cb_2023_us_county_20m.shp'
+    state_shapefile_path = 'cb_2023_us_county_20m/cb_2023_us_county_20m.shp'
 
     # Read the shapefile
     us_counties = gpd.read_file(state_shapefile_path)
