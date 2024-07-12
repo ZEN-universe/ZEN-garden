@@ -53,8 +53,8 @@ def plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True):
 
 
 def main():
-    folder = "county_1107/county_CA_0507_288_4"
-    output_path = "../../../data/outputs/"
+    folder = "county_1107_288_1"
+    output_path = "../../../outputs/"
     directory = os.path.join(output_path, folder)
     res_basic = Results(directory)
 
@@ -66,8 +66,8 @@ def main():
     # plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True)
 
     #################################################################################
-    list_folders = ["county_1107/county_CA_0507_288_4" ]
-    area = 'Nodes 3'
+    list_folders = ["county_1107_288_1", "county_1107_288_2", "county_1107_288_3", "county_1107_288_4", "county_1107_288_5", "county_1107_288_6", "county_1107_288_7"]
+    area = 'United States'
     custom_order = ['','100','75','25','0']
     pareto_group = 'scenario_name'
     specific_scenario_name = 'analysis_110724'
@@ -79,13 +79,12 @@ def main():
         'energy': 'MWh',
         'power': 'MW'
     }
-    results_JS.plot_pareto_front(folder, output_path, units, specific_scenario_name, custom_order, area, pareto_group, list_folders=list_folders, save_fig=True)
+    #results_JS.plot_pareto_front(folder, output_path, units, specific_scenario_name, custom_order, area, pareto_group, list_folders=list_folders, save_fig=True)
 
     #################################################################################
-    list_folders = ["county_0907/county_CA_0907_288_7", "county_0907/county_CA_0507_288_1", "county_0907/county_CA_0507_288_5", "county_0907/county_CA_0507_288_4"]
-    folder = "county_0907/county_CA_0907_288_7"
-    scenarios  = ['scenario_autark_optimal', 'scenario_low_CO2_grid','scenario_']
-    list_folders = None
+
+    scenarios = ['scenario_0','scenario_25','scenario_75','scenario_100']
+
 
     df_caps_all_filtered = results_JS.aggregate_to_states(folder, output_path, 'capacity_addition', scenarios, list_folders)
     plot_results.plot_boxplot_capacities_states(scenarios, df_caps_all_filtered, output_path, folder)

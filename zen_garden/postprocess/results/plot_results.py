@@ -721,7 +721,7 @@ def plot_pareto_front_cost(df, parent_folder, output_path, title, unit_cost, uni
 
     # Save the figure if required
     if save_fig:
-        save_file = f'{y_axis}_net_present_cost_no_grid.png'
+        save_file = f'{y_axis}_net_present_cost.png'
         save_file_path = os.path.join(save_folder, save_file)
         plt.savefig(save_file_path)
         print(f"Saving Pareto front for {title} as {save_file_path}\n")
@@ -891,7 +891,7 @@ def plot_boxplot_capacities_states(scenarios, df_filtered, output_path, folder):
         df_scenario.rename(columns={scenario_col: 'capacity_addition'}, inplace=True)
 
         # Plot using FacetGrid
-        g = sns.FacetGrid(df_scenario, col='state_full', col_wrap=3, sharey=False)
+        g = sns.FacetGrid(df_scenario, col='state_full', col_wrap=6, sharey=False)
         g.map_dataframe(sns.barplot, x='tech_cap', y='capacity_addition', hue='tech_cap', palette='Set2')
 
         # Add legend and adjust the layout
@@ -912,14 +912,17 @@ def plot_boxplot_capacities_states(scenarios, df_filtered, output_path, folder):
 
         # Save the plot
         save_file = f"capacity_addition_{scenario}.png"
-        save_path = os.path.join(output_path, folder, save_file)
+        save_folder = os.path.join(output_path, folder, 'Figures')
+        os.makedirs(save_folder, exist_ok=True)
+        save_path = os.path.join(save_folder, save_file)
+        
         plt.savefig(save_path, bbox_inches='tight')
         plt.close()  # Close the figure to avoid overlapping
 
         print(f"Saved plot for {scenario} at {save_path}")
 
 
-def plot_boxplot_energy_states(scenarios, filtered_data, parent_folder, output_folder, target_column):
+def plot_boxplot_energy_states(scenarios, filtered_data, parent_folder, output_path, target_column):
     """
     Plots boxplots of energy data for various states and scenarios.
 
@@ -941,7 +944,7 @@ def plot_boxplot_energy_states(scenarios, filtered_data, parent_folder, output_f
         scenario_data.rename(columns={scenario_column: 'flow_import'}, inplace=True)
 
         # Plot using FacetGrid
-        g = sns.FacetGrid(scenario_data, col='state_full', col_wrap=3, sharey=False)
+        g = sns.FacetGrid(scenario_data, col='state_full', col_wrap=6, sharey=False)
         g.map_dataframe(sns.barplot, x='carrier', y='flow_import', hue='carrier', legend=False, palette='Set2')
         g.add_legend()
 
@@ -964,7 +967,9 @@ def plot_boxplot_energy_states(scenarios, filtered_data, parent_folder, output_f
 
         # Save the plot
         save_file = f"{target_column}_{scenario}.png"
-        save_path = os.path.join(output_folder, parent_folder, save_file)
+        save_folder = os.path.join(output_path, parent_folder, 'Figures')
+        os.makedirs(save_folder, exist_ok=True)
+        save_path = os.path.join(save_folder, save_file)
         plt.savefig(save_path, bbox_inches='tight')
         plt.close()  # Close the figure to avoid overlapping
         print(f"Saved plot to {save_path}")
