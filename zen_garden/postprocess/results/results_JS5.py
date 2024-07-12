@@ -17,9 +17,8 @@ from zen_garden.postprocess.results.unit_handling_JS import EnergySystemUnits
 from zen_garden.postprocess.results.results_JS2 import Results
 #from zen_garden.postprocess.results.results import Results as Results2
 from zen_garden.postprocess.results.folder_structur_JS import create_folder, get_folder_path
-from zen_garden.postprocess.results.plot_results import plot_map_data, plot_energy_balance_JS2
+import zen_garden.postprocess.results.plot_results as plot_results
 import zen_garden.postprocess.results.state_mapping_JS as state_mapping_JS
-
 
 
 
@@ -246,7 +245,7 @@ def create_map(directory, df, dict_tech_type, column_name, county=True, default_
     else:
         us_gdf = gdf_US_JS.create_US()
         df_map = df.groupby(["State_Code"])[column_name].sum().reset_index()
-    plot_map_data(directory, df_map, us_gdf, column_name, dict_tech_type, default_vmax=default_vmax)
+    plot_results.plot_map_data(directory, df_map, us_gdf, column_name, dict_tech_type, default_vmax=default_vmax)
 
 
 
@@ -608,7 +607,7 @@ def plot_energy_balances_carriers(res_basic, node, carriers, directory, scenario
         if carrier == 'electricity':
             data_plot_2 = create_df_components(res_basic, 'diesel', scenario)
             data_plot = pd.concat([data_plot, data_plot_2], axis=0)
-        plot_energy_balance_JS2(data_plot, node, carrier, 0, directory, scenario, save_fig)
+        plot_results.plot_energy_balance_JS2(data_plot, node, carrier, 0, directory, scenario, save_fig)
 
 
 
@@ -872,33 +871,28 @@ def filter_boxplot_no_parent_folder(folder, output_path, specific_scenario_name,
 
     filter_df = get_filter_df(res_basic, folder, directory)
 
-    # Add the time_steps column
-    filter_df['time_steps'] = determine_time_steps(folder)
+
 
     # Check if there is a column named scenario
     if 'scenario' not in filter_df.columns:
         filter_df['scenario'] = ''
         is_scenario = False
 
-    # Create the 'grid' column based on the condition
-    filter_df['grid'] = filter_df['folder'].apply(lambda x: 'w/o grid' if 'no_grid' in x else 'with grid')
+
 
     # Concatenate the filtered dataframe to the main dataframe
     dfs = pd.concat([dfs, filter_df], axis=0)
     # Define the scenario_name based on specific_scenario_name
     def create_scenario_name(row):
-        if specific_scenario_name == 'time_series_anlaysis':
-            return f"{row['time_steps']},{row['grid']},{row['scenario']}"
-        elif specific_scenario_name == 'folder':
+        if specific_scenario_name == 'folder':
             if not is_scenario:
                 return row['folder']
             else:
                 scenario = row['scenario'].replace('scenario_', '').replace(',no_grid', '').replace('co2', ' co2')
                 folder = row['folder'].replace('county_CA_1206_', '').replace('_no_grid_tradeoffs', '')
                 return f"{scenario}, {folder}, {row['scenario']}"
-        elif specific_scenario_name == 'analysis_1806':
-            scenario = row['scenario'].replace('scenario_', '').replace(',no_grid', '').replace('co2', ' co2')
-            return f"{row['time_steps']}, {row['grid']}"
+        elif specific_scenario_name == 'analysis_110724':
+            return 'analysis_110724'
         else:
             return row['scenario']
 
@@ -912,7 +906,7 @@ def filter_boxplot_no_parent_folder(folder, output_path, specific_scenario_name,
         dfs.drop('year', axis=1, inplace=True)
 
     # Reorder the columns
-    column_order = ['folder', 'scenario_name', 'scenario', 'time_steps', 'grid']
+    column_order = ['folder', 'scenario_name', 'scenario']
     dfs = dfs[column_order + [col for col in dfs.columns if col not in column_order]]
 
     return dfs
@@ -982,7 +976,7 @@ def filter_boxplot(parent_folder, folders, specific_scenario_name, filter_compon
         dfs.drop('year', axis=1, inplace=True)
 
     # Reorder the columns
-    column_order = ['folder', 'scenario_name', 'scenario', 'time_steps', 'grid']
+    column_order = ['folder', 'scenario_name', 'scenario']
     dfs = dfs[column_order + [col for col in dfs.columns if col not in column_order]]
 
     return dfs
@@ -995,13 +989,13 @@ def filter_pareto_group(df, custom_order, pareto_group, delete_empty_scenario=Tr
 
     df['pareto_group'] = df[pareto_group]
 
-    if delete_empty_scenario:
-        #df = df[df['scenario'].notna() & (df['scenario'] != '') & (df['scenario'] != '100') & (df['scenario'] != '95')]
-        df = df[(df['scenario'] != '100') & (df['scenario'] != '95')]
+    # if delete_empty_scenario:
+    #     #df = df[df['scenario'].notna() & (df['scenario'] != '') & (df['scenario'] != '100') & (df['scenario'] != '95')]
+    #     #df = df[(df['scenario'] != '100')]
 
 
     # Sort the DataFrame by the 'scenario_name' column
-    df = df.sort_values(by=['time_steps','scenario'])
+    df = df.sort_values(by=['scenario'])
 
     return df
 
@@ -1069,20 +1063,15 @@ def get_df_variables(res_basic, scenario, scenario_name):
 
 
 
-def import_flow_data(parent_folder, output_path, scenarios, column_name, filter_carriers):
+def import_flow_data(folder, output_path, scenarios, column_name, filter_carriers, list_folders=None):
     # Create and prepare the US counties data
     us_counties = gdf_US_JS.create_county_US()
     us_counties.rename(columns={'county_code': 'node'}, inplace=True)
 
-    # List all subfolders in the specified parent folder
-    subfolders = os.listdir(os.path.join(output_path, parent_folder))
-
-    # Exclude unwanted files and folders
-    subfolders = [folder for folder in subfolders if folder not in ['Figures'] and not folder.endswith(('.csv', '.png'))]
 
     combined_data = pd.DataFrame()
-    if 'scenario_' in subfolders:
-        directory = os.path.join(output_path, parent_folder)
+    if list_folders is None:
+        directory = os.path.join(output_path, folder)
         res = Results(directory)
         df = res.get_full_ts(column_name)
 
@@ -1103,8 +1092,8 @@ def import_flow_data(parent_folder, output_path, scenarios, column_name, filter_
         # Combine all data
         combined_data = pd.concat([combined_data, df_pivot], axis=0)
     else:
-        for folder in subfolders:
-            directory = os.path.join(output_path, parent_folder, folder)
+        for folder_temp in list_folders:
+            directory = os.path.join(output_path, folder_temp)
             res = Results(directory)
             df = res.get_full_ts(column_name)
 
@@ -1221,7 +1210,7 @@ def aggregate_data(df_merged, us_counties):
 
     return filtered_df
 
-def aggregate_to_states(data_folder, result_path, target_column, scenario_list):
+def aggregate_to_states(data_folder, result_path, target_column, scenario_list, folders_list=None):
     """
     Aggregates data from counties to states based on provided scenarios and merges with US county geometries.
 
@@ -1238,11 +1227,17 @@ def aggregate_to_states(data_folder, result_path, target_column, scenario_list):
     us_counties = gdf_US_JS.create_county_US()
     us_counties.rename(columns={'county_code': 'node'}, inplace=True)
 
-    # Merge data from multiple scenarios
-    merged_data = merge_data_folders(data_folder, result_path, target_column, scenario_list)
-
+    if folders_list is None:
+        # Merge data from multiple scenarios
+        merged_data = merge_data_folders(data_folder, result_path, target_column, scenario_list)
+        merged_data_dfs = merged_data.copy()
+    else:
+        merged_data_dfs = pd.DataFrame()
+        for folder in folders_list:
+            merged_data = merge_data_folders(folder, result_path, target_column, scenario_list)
+            merged_data_dfs = pd.concat([merged_data_dfs, merged_data], axis=0)
     # Aggregate data based on US counties
-    aggregated_data = aggregate_data(merged_data, us_counties)
+    aggregated_data = aggregate_data(merged_data_dfs, us_counties)
 
     # Create a new column combining technology and capacity type
     aggregated_data['tech_cap'] = aggregated_data['technology'] + ', ' + aggregated_data['capacity_type']
@@ -1254,3 +1249,141 @@ def aggregate_to_states(data_folder, result_path, target_column, scenario_list):
     aggregated_data.drop(columns=['technology', 'capacity_type'], inplace=True)
 
     return aggregated_data
+
+
+def plot_pareto_front(folder, output_path, units, specific_scenario_name, custom_order, area, pareto_group, list_folders=None, save_fig=True):
+    """
+    Plots Pareto fronts for various cost and capacity components against CO2 emissions.
+
+    Args:
+        folder (str): Folder where the data is located.
+        output_path (str): Path to save the output figures.
+        specific_scenario_name (str): Name of the specific scenario being analyzed.
+        custom_order (list): Custom order for Pareto front filtering.
+        area (str): The area being analyzed.
+        pareto_group (str): The group used for Pareto front filtering.
+        save_fig (bool): Flag to save the figures. Defaults to True.
+
+    Returns:
+        None
+    """
+
+
+
+    # Define parameters for the first set of plots
+    cost_components = [
+       ('cost_co2', f'Net Present Cost vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'net_present_cost', 'Net Present Cost'),
+       ('costs', f'CAPEX vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'cost_capex_total', 'Capex'),
+       ('costs', f'OPEX vs. CO2 Emissions', 'cost_opex_total', 'Opex'),
+       ('costs', f'Cost Carrier vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'cost_carrier_total', 'Cost Carrier'),
+       ('costs', f'Cost Carbon Emissions vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'cost_carbon_emissions_total', 'Cost Carbon Emissions')
+    ]
+
+    # Generate the first set of plots
+    for filter_component, title, y_axis, y_axis_label in cost_components:
+        if list_folders is None:
+            df = filter_boxplot_no_parent_folder(folder, output_path, specific_scenario_name, filter_component=filter_component)
+            pareto_df = filter_pareto_group(df, custom_order, pareto_group)
+            result_df = pareto_df.copy()
+        else:
+            pareto_dfs = pd.DataFrame()
+            for folder_temp in list_folders:
+                df = filter_boxplot_no_parent_folder(folder_temp, output_path, specific_scenario_name, filter_component=filter_component)
+                pareto_df = filter_pareto_group(df, custom_order, pareto_group)
+
+
+                pareto_dfs = pd.concat([pareto_dfs, pareto_df])
+
+        # Group by 'scenario' and sum up the relevant columns
+        result_df = pareto_dfs.groupby('scenario', as_index=False).agg({
+            'folder': 'first',
+            'scenario_name': 'first',
+            'pareto_group': 'first',
+            y_axis: 'sum',
+            'carbon_emissions_cumulative': 'sum'
+        })
+        plot_results.plot_pareto_front(
+            result_df, folder, output_path, title=title, unit_co2=units['co2'],
+            unit_y_axis=units['cost'], y_axis=y_axis, y_axis_label=y_axis_label, save_fig=save_fig
+        )
+
+    # Define parameters for the capacities plots
+    capacity_components = [
+        ('water_storage, energy', f'Water Storage Capacity vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['water_energy'], 'Installed Capacity'),
+        ('battery, energy', f'Battery Capacity vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['energy'], 'Installed Capacity'),
+        ('PV, power', f'PV Capacity vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['power'], 'Installed Capacity')
+    ]
+
+    # Read the capacities boxplot data
+    df_tech_cap = pd.read_csv("capacities_boxplot_JS.csv")
+
+    # Generate the capacities plots
+    if list_folders is None:
+        capacities_df = filter_boxplot_no_parent_folder(folder, output_path, filter_component='capacities', df_tech_cap=df_tech_cap, specific_scenario_name=specific_scenario_name)
+        capacities_pareto_df = filter_pareto_group(capacities_df, custom_order, pareto_group)
+        capacities_pareto_dfs = capacities_pareto_df.copy()
+    else:
+        capacities_pareto_dfs = pd.DataFrame()
+        for folder_temp in list_folders:
+            capacities_df = filter_boxplot_no_parent_folder(folder_temp, output_path, filter_component='capacities', df_tech_cap=df_tech_cap, specific_scenario_name=specific_scenario_name)
+            capacities_pareto_df = filter_pareto_group(capacities_df, custom_order, pareto_group)
+            capacities_pareto_dfs = pd.concat([capacities_pareto_dfs, capacities_pareto_df])
+
+        columns_first = ['folder', 'scenario_name', 'pareto_group']
+        columns_sum = [col for col in capacities_pareto_dfs.columns if col not in columns_first + ['scenario']]
+
+        # Create the aggregation dictionary
+        agg_dict = {col: 'first' for col in columns_first}
+        agg_dict.update({col: 'sum' for col in columns_sum})
+
+        # Group by 'scenario' and apply the aggregation
+        result_capacities_pareto_dfs = capacities_pareto_dfs.groupby('scenario', as_index=False).agg(agg_dict)
+
+    for y_axis, title, unit_y_axis, y_axis_label in capacity_components:
+        plot_results.plot_pareto_front(
+            result_capacities_pareto_dfs, folder, output_path, title=title, unit_co2=units['co2'],
+            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=save_fig
+        )
+
+    # Define parameters for the flow import plots
+    flow_import_components = [
+        ('electricity', f'Imported Electricity vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['energy'], 'Import'),
+        ('diesel', f'Imported Diesel vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['energy'], 'Import'),
+    ]
+
+    # Generate the flow import plots
+    if list_folders is None:
+        flow_import_df = filter_boxplot_no_parent_folder(folder, output_path, filter_component='flow_import', specific_scenario_name='analysis_1806')
+        flow_import_pareto_df = filter_pareto_group(flow_import_df, custom_order, pareto_group)
+        result_flow_import_pareto_dfs = flow_import_pareto_df.copy()
+    else:
+        flow_import_pareto_dfs = pd.DataFrame()
+        for folder_temp in list_folders:
+            flow_import_df = filter_boxplot_no_parent_folder(folder_temp, output_path, filter_component='flow_import', specific_scenario_name='analysis_1806')
+            flow_import_pareto_df = filter_pareto_group(flow_import_df, custom_order, pareto_group)
+            flow_import_pareto_dfs = pd.concat([flow_import_pareto_dfs, flow_import_pareto_df])
+        columns_first = ['folder', 'scenario_name', 'pareto_group']
+        columns_sum = [col for col in flow_import_pareto_dfs.columns if col not in columns_first + ['scenario']]
+        # Create the aggregation dictionary
+        agg_dict = {col: 'first' for col in columns_first}
+        agg_dict.update({col: 'sum' for col in columns_sum})
+        # Group by 'scenario' and apply the aggregation
+        result_flow_import_pareto_dfs = flow_import_pareto_dfs.groupby('scenario', as_index=False).agg(agg_dict)
+
+    for y_axis, title, unit_y_axis, y_axis_label in flow_import_components:
+        plot_results.plot_pareto_front(
+            result_flow_import_pareto_dfs, folder, output_path, title=title, unit_co2=units['co2'],
+            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=save_fig
+        )
+
+    # Generate cost plots for flow import and capacities
+    for y_axis, title, unit_y_axis, y_axis_label in flow_import_components:
+        plot_results.plot_pareto_front_cost(
+            result_flow_import_pareto_dfs, folder, output_path, title=title, unit_cost=units['cost'],
+            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=True
+        )
+    for y_axis, title, unit_y_axis, y_axis_label in capacity_components:
+        plot_results.plot_pareto_front_cost(
+            result_capacities_pareto_dfs, folder, output_path, title=title, unit_cost=units['cost'],
+            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=True
+        )

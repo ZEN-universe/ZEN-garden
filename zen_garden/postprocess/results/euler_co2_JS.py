@@ -51,124 +51,47 @@ def plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True):
 ####################################################################
 
 
-def plot_pareto_front(folder, output_path, specific_scenario_name, custom_order, area, pareto_group, save_fig=True):
-    """
-    Plots Pareto fronts for various cost and capacity components against CO2 emissions.
 
-    Args:
-        folder (str): Folder where the data is located.
-        output_path (str): Path to save the output figures.
-        specific_scenario_name (str): Name of the specific scenario being analyzed.
-        custom_order (list): Custom order for Pareto front filtering.
-        area (str): The area being analyzed.
-        pareto_group (str): The group used for Pareto front filtering.
-        save_fig (bool): Flag to save the figures. Defaults to True.
+def main():
+    folder = "county_1107/county_CA_0507_288_4"
+    output_path = "../../../data/outputs/"
+    directory = os.path.join(output_path, folder)
+    res_basic = Results(directory)
 
-    Returns:
-        None
-    """
+    #get_co2_emissions(res_basic)
 
-    # Define unit conversions
+    node = 'NE_BO015'
+    scenarios = ['scenario_','scenario_0','scenario_25','scenario_75','scenario_100']
+
+    # plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True)
+
+    #################################################################################
+    list_folders = ["county_1107/county_CA_0507_288_4" ]
+    area = 'Nodes 3'
+    custom_order = ['','100','75','25','0']
+    pareto_group = 'scenario_name'
+    specific_scenario_name = 'analysis_110724'
+        # Define unit conversions
     units = {
-        'co2': '0.000001*tons',
+        'co2': 'tons',
         'cost': '1000000*USD',
         'water_energy': '1000*meter ** 3',
         'energy': 'MWh',
         'power': 'MW'
     }
+    results_JS.plot_pareto_front(folder, output_path, units, specific_scenario_name, custom_order, area, pareto_group, list_folders=list_folders, save_fig=True)
 
-    # Define parameters for the first set of plots
-    cost_components = [
-       ('cost_co2', f'Net Present Cost vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'net_present_cost', 'Net Present Cost'),
-       ('costs', f'CAPEX vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'cost_capex_total', 'Capex'),
-       ('costs', f'OPEX vs. CO2 Emissions', 'cost_opex_total', 'Opex'),
-       ('costs', f'Cost Carrier vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'cost_carrier_total', 'Cost Carrier'),
-       ('costs', f'Cost Carbon Emissions vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'cost_carbon_emissions_total', 'Cost Carbon Emissions')
-    ]
-
-    # Generate the first set of plots
-    for filter_component, title, y_axis, y_axis_label in cost_components:
-        df = results_JS.filter_boxplot_no_parent_folder(folder, output_path, specific_scenario_name, filter_component=filter_component)
-        print(df.head())
-        pareto_df = results_JS.filter_pareto_group(df, custom_order, pareto_group)
-        plot_results.plot_pareto_front(
-            pareto_df, folder, output_path, title=title, unit_co2=units['co2'],
-            unit_y_axis=units['cost'], y_axis=y_axis, y_axis_label=y_axis_label, save_fig=save_fig
-        )
-
-    # Define parameters for the capacities plots
-    capacity_components = [
-        ('water_storage, energy', f'Water Storage Capacity vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['water_energy'], 'Installed Capacity'),
-        ('battery, energy', f'Battery Capacity vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['energy'], 'Installed Capacity'),
-        ('PV, power', f'PV Capacity vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['power'], 'Installed Capacity')
-    ]
-
-    # Read the capacities boxplot data
-    df_tech_cap = pd.read_csv("capacities_boxplot_JS.csv")
-
-    # Generate the capacities plots
-    capacities_df = results_JS.filter_boxplot_no_parent_folder(folder, output_path, filter_component='capacities', df_tech_cap=df_tech_cap, specific_scenario_name='analysis_1806')
-    capacities_pareto_df = results_JS.filter_pareto_group(capacities_df, custom_order, pareto_group)
-    for y_axis, title, unit_y_axis, y_axis_label in capacity_components:
-        plot_results.plot_pareto_front(
-            capacities_pareto_df, folder, output_path, title=title, unit_co2=units['co2'],
-            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=save_fig
-        )
-
-    # Define parameters for the flow import plots
-    flow_import_components = [
-        ('electricity', f'Imported Electricity vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['energy'], 'Import'),
-        ('diesel', f'Imported Diesel vs. $\\mathrm{{CO_2}}$ Emissions in {area}', units['energy'], 'Import'),
-    ]
-
-    # Generate the flow import plots
-    flow_import_df = results_JS.filter_boxplot_no_parent_folder(folder, output_path, filter_component='flow_import', specific_scenario_name='analysis_1806')
-    flow_import_pareto_df = results_JS.filter_pareto_group(flow_import_df, custom_order, pareto_group)
-    for y_axis, title, unit_y_axis, y_axis_label in flow_import_components:
-        plot_results.plot_pareto_front(
-            flow_import_pareto_df, folder, output_path, title=title, unit_co2=units['co2'],
-            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=save_fig
-        )
-
-    # Generate cost plots for flow import and capacities
-    for y_axis, title, unit_y_axis, y_axis_label in flow_import_components:
-        plot_results.plot_pareto_front_cost(
-            flow_import_pareto_df, folder, output_path, title=title, unit_cost=units['cost'],
-            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=True
-        )
-    for y_axis, title, unit_y_axis, y_axis_label in capacity_components:
-        plot_results.plot_pareto_front_cost(
-            capacities_pareto_df, folder, output_path, title=title, unit_cost=units['cost'],
-            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=True
-        )
-
-def main():
-    folder = "county_CA_0507_288_3"
-    output_path = "../../../outputs/"
-    directory = os.path.join(output_path, folder)
-    res_basic = Results(directory)
-
-    # get_co2_emissions(res_basic)
-
-    # node = 'LA_EV039'
-    # scenarios = ['scenario_0','scenario_25','scenario_75','scenario_100']
-    # plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True)
-
-    # area = 'Nodes 3'
-    # custom_order = ['','100','75','25','0']
-    # pareto_group = 'time_steps'
-    # specific_scenario_name = 'analysis_1806'
-    # plot_pareto_front(folder, output_path, specific_scenario_name, custom_order, area, pareto_group, save_fig=True)
-
-
-
-    folder = "county_1007/county_CA_0907_288_7"
+    #################################################################################
+    list_folders = ["county_0907/county_CA_0907_288_7", "county_0907/county_CA_0507_288_1", "county_0907/county_CA_0507_288_5", "county_0907/county_CA_0507_288_4"]
+    folder = "county_0907/county_CA_0907_288_7"
     scenarios  = ['scenario_autark_optimal', 'scenario_low_CO2_grid','scenario_']
-    df_caps_all_filtered = results_JS.aggregate_to_states(folder, output_path, 'capacity_addition', scenarios)
+    list_folders = None
+
+    df_caps_all_filtered = results_JS.aggregate_to_states(folder, output_path, 'capacity_addition', scenarios, list_folders)
     plot_results.plot_boxplot_capacities_states(scenarios, df_caps_all_filtered, output_path, folder)
-    df_group, df_group_filtered = results_JS.import_flow_data(folder, output_path, scenarios, column_name='flow_import', filter_carriers= ['electricity', 'diesel'])
+    df_group, df_group_filtered = results_JS.import_flow_data(folder, output_path, scenarios, column_name='flow_import', filter_carriers= ['electricity', 'diesel'], list_folders= list_folders)
     plot_results.plot_boxplot_energy_states(scenarios, df_group_filtered, folder, output_path, target_column='flow_import')
-    df_group_demand, df_group_filtered_demand = results_JS.import_flow_data(folder, output_path, scenarios, 'demand', filter_carriers=['irrigation_water'])
+    df_group_demand, df_group_filtered_demand = results_JS.import_flow_data(folder, output_path, scenarios, 'demand', filter_carriers=['irrigation_water'], list_folders= list_folders)
     plot_results.plot_boxplot_energy_states(scenarios, df_group_filtered_demand, folder, output_path, 'demand')
 
 if __name__ == "__main__":
