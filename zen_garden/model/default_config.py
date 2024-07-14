@@ -175,7 +175,7 @@ class Analysis(Subscriptable):
     max_output_size_mb: int = 500
     folder_name_system_specification: str = "system_specification"
     earliest_year_of_data: int = 1900
-    benchmarking: bool = False
+    save_benchmarking_results: bool = False
 
 class Config(Subscriptable):
     # analysis: dict = Analysis().model_dump()

@@ -92,7 +92,7 @@ class Postprocess:
         self.save_scenarios()
         self.save_solver()
         self.save_param_map()
-        if self.analysis["benchmarking"]:
+        if self.analysis.save_benchmarking_results:
             self.save_benchmarking_data()
 
         # extract and save sequence time steps, we transform the arrays to lists
@@ -179,14 +179,16 @@ class Postprocess:
         #initialize dictionary
         benchmarking_data = {}
         # get the benchmarking data
-        benchmarking_data["Solving_time"] = self.model.solver_model.Runtime
-        benchmarking_data["Number_iterations"] = self.model.solver_model.IterCount
-        benchmarking_data["Scaling_time"] = self.scaling.scaling_time
+        benchmarking_data["solving_time"] = self.model.solver_model.Runtime
+        benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
+        benchmarking_data["solver_status"] = self.model.solver_model.Status
+        benchmarking_data["objective_value"] = self.model.objective_value
+        benchmarking_data["scaling_time"] = self.scaling.scaling_time
 
         #get numerical range
         range_lhs, range_rhs = self.scaling.print_numerics(0, False, True)
-        benchmarking_data["Numerical_range_lhs"] = range_lhs
-        benchmarking_data["Numerical_range_rhs"] = range_rhs
+        benchmarking_data["numerical_range_lhs"] = range_lhs
+        benchmarking_data["numerical_range_rhs"] = range_rhs
 
 
         fname = self.name_dir.joinpath('benchmarking')

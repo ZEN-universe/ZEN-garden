@@ -909,15 +909,9 @@ class Scaling:
         cons_rhs_min = self.generate_numerics_string(rhs_min_index, is_rhs=True)
         if benchmarking_output: #for postprocessing
             #LHS
-            range_lhs = A_abs[index_max]/A_abs[index_min]
-            exponent = np.floor(np.log10(range_lhs))
-            coefficient = int(range_lhs/10**exponent)
-            range_lhs = coefficient * 10**exponent
+            range_lhs = np.floor(np.log10(A_abs[index_max])-np.log10(A_abs[index_min]))
             #RHS
-            range_rhs = np.abs(self.rhs[rhs_max_index])/np.abs(self.rhs[rhs_min_index])
-            exponent = np.floor(np.log10(range_rhs))
-            coefficient = int(range_rhs/10**exponent)
-            range_rhs = coefficient * 10**exponent
+            range_rhs = np.floor(np.log10(np.abs(self.rhs[rhs_max_index]))-np.log10(np.abs(self.rhs[rhs_min_index])))
             return range_lhs, range_rhs
         else:
             #Prints
