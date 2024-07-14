@@ -6,7 +6,7 @@
 
 Class is defining to read in the results of an Optimization problem.
 """
-
+import json
 import logging
 import os
 import sys
@@ -258,13 +258,14 @@ class ScenarioDict(dict):
     """
 
     _param_dict_keys = {"file", "file_op", "default", "default_op"}
-    _special_elements = ["system", "analysis","solver","base_scenario", "sub_folder", "param_map"]
+    _special_elements = ["system", "analysis","solver", "base_scenario", "sub_folder", "param_map"]
 
-    def __init__(self, init_dict, system, analysis,solver,paths):
+    def __init__(self, init_dict, config, paths):
         """
         Initializes the dictionary from a normal dictionary
         :param init_dict: The dictionary to initialize from
-        :param system: The system to which the dictionary belongs
+        :param config: The config to which the dictionary belongs
+        :param paths: The paths to the elements
         """
 
         # avoid circular imports
@@ -272,9 +273,9 @@ class ScenarioDict(dict):
         self.element_classes = reversed(inheritors.copy())
 
         # set the attributes and expand the dict
-        self.system = system
-        self.analysis = analysis
-        self.solver = solver
+        self.system = config.system
+        self.analysis = config.analysis
+        self.solver = config.solver
         self.init_dict = init_dict
         self.paths = paths
         expanded_dict = self.expand_subsets(init_dict)
@@ -284,60 +285,24 @@ class ScenarioDict(dict):
         # super init TODO adds both system and "system"  (same for analysis) to the dict - necessary?
         super().__init__(self.dict)
 
-        # finally we update the analysis and system
-        self.update_analysis_system()
+        # finally we update the analysis, system, and solver in the config
+        self.update_config()
 
-
-
-    def update_analysis_system(self):
+    def update_config(self):
         """
-        Updates the analysis and system
+        Updates the analysis, system, and solver in the config
         """
+        config_parts = {"analysis": self.analysis, "system": self.system, "solver": self.solver}
+        for key, value in config_parts.items():
+            if key in self.dict:
+                for sub_key, sub_value in self.dict[key].items():
+                    assert sub_key in value, f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
+                    if type(value[sub_key]) == type(sub_value):
+                        value[sub_key] = sub_value
+                    else:
+                        raise ValueError(f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)}, "
+                                         f"but the {key} has already a value of type {type(value[sub_key])}")
 
-        if "analysis" in self.dict:
-            for key, value in self.dict["analysis"].items():
-                assert key in self.analysis, f"Trying to update analysis with key {key} and value {value}, but the analysis does not have this key!"
-                if type(self.analysis[key]) == type(value):
-                    self.analysis[key] = value
-                else:
-                    raise ValueError(
-                        f"Trying to update analysis with key {key} and value {value} of type {type(value)}, "
-                        f"but the analysis has already a value of type {type(self.analysis[key])}")
-        if "system" in self.dict:
-            for key, value in self.dict["system"].items():
-                assert key in self.system, f"Trying to update system with key {key} and value {value}, but the system does not have this key!"
-                if type(self.system[key]) == type(value):
-                    # overwrite the value
-                    self.system[key] = value
-                    # # check if key is a subset TODO what the hell does this do?
-                    # stack = [self.analysis["subsets"]]
-                    # set_name_list = []
-                    # while stack:
-                    #     cur_dict = stack.pop()
-                    #     for set_name, subsets in cur_dict.items():
-                    #         if (isinstance(subsets, dict) and key in subsets.keys()) or (isinstance(subsets, list) and key in subsets):
-                    #             # remove old subset values from higher level sets and add new values
-                    #             for _name in [set_name] + set_name_list:
-                    #                 self.system[_name] = [val for val in self.system[set_name] if not val in self.system[key]]
-                    #                 self.system[_name].extend(value)
-                    #         elif isinstance(subsets, dict):
-                    #             stack.append(subsets)
-                    #             set_name_list.append(set_name)
-                else:
-                    raise ValueError(f"Trying to update system with key {key} and value {value} of type {type(value)}, "
-                                     f"but the system has already a value of type {type(self.system[key])}")
-
-        if "solver" in self.dict:
-            for key, value in self.dict["solver"].items():
-                assert key in self.solver, f"Trying to update solver with key {key} and value {value}, but the solver does not have this key!"
-                if key == "solver_options":
-                    self.solver[key] = value
-                elif type(self.solver[key]) == type(value):
-                    self.solver[key] = value
-                else:
-                    raise ValueError(
-                        f"Trying to update solver with key {key} and value {value} of type {type(value)}, "
-                        f"but the solver has already a value of type {type(self.solver[key])}")
     @staticmethod
     def expand_lists(scenarios: dict):
         """
@@ -350,6 +315,7 @@ class ScenarioDict(dict):
 
         expanded_scenarios = dict()
         for scenario_name, scenario_dict in sorted(scenarios.items(), key=lambda x: x[0]):
+            assert type(scenario_dict) == dict, f"Scenario {scenario_name} is not a dictionary!"
             scenario_dict["base_scenario"] = scenario_name
             scenario_dict["sub_folder"] = ""
             scenario_dict["param_map"] = dict()
@@ -1207,8 +1173,9 @@ class InputDataChecks:
         assert os.path.exists(dirname),f"Requested folder {dirname} is not a valid path"
         assert os.path.exists(self.analysis["dataset"]),f"The chosen dataset {dataset} does not exist at {self.analysis['dataset']} as it is specified in the config"
         # check if chosen dataset contains a system.py file
-        if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")):
-            raise FileNotFoundError(f"system.py not found in dataset: {self.analysis['dataset']}")
+
+        if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")) and not os.path.exists(os.path.join(self.analysis['dataset'], "system.json")):
+            raise FileNotFoundError(f"Neither system.json nor system.py not found in dataset: {self.analysis['dataset']}")
 
     def check_single_directed_edges(self, set_edges_input):
         """
@@ -1276,14 +1243,16 @@ class InputDataChecks:
         :param config: config object
         """
         # check if system.json file exists
-        # if os.path.exists(os.path.join(config.analysis["dataset"], "system.json")):
-        #     with open(os.path.join(config.analysis["dataset"], "system.json"), "r") as file:
-        #         system = json.load(file)
-        system_path = os.path.join(config.analysis['dataset'], "system.py")
-        spec = importlib.util.spec_from_file_location("module", system_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        system = module.system
+        if os.path.exists(os.path.join(config.analysis["dataset"], "system.json")):
+            with open(os.path.join(config.analysis["dataset"], "system.json"), "r") as file:
+                system = json.load(file)
+        # otherwise read system.py file
+        else:
+            system_path = os.path.join(config.analysis['dataset'], "system.py")
+            spec = importlib.util.spec_from_file_location("module", system_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            system = module.system
         config.system.update(system)
 
 class StringUtils:
@@ -1295,18 +1264,21 @@ class StringUtils:
         pass
 
     @classmethod
-    def print_optimization_progress(cls,scenario, steps_horizon,step):
+    def print_optimization_progress(cls,scenario, steps_horizon,step,system):
         """ prints the current optimization progress
 
         :param scenario: string of scenario name
         :param steps_horizon: all steps of horizon
-        :param step: current step of horizon """
+        :param step: current step of horizon
+        :param system: system of optimization
+        """
         scenario_string = ScenarioUtils.scenario_string(scenario)
         if len(steps_horizon) == 1:
             logging.info(f"\n--- Conduct optimization for perfect foresight {scenario_string}--- \n")
         else:
+            corresponding_year = system.reference_year + step * system.interval_between_years
             logging.info(
-                f"\n--- Conduct optimization for rolling horizon step {step} of {max(steps_horizon)} {scenario_string}--- \n")
+                f"\n--- Conduct optimization for rolling horizon step for {corresponding_year} ({steps_horizon.index(step) + 1} of {len(steps_horizon)}) {scenario_string}--- \n")
 
     @classmethod
     def generate_folder_path(cls,config,scenario,scenario_dict,steps_horizon, step):
@@ -1446,13 +1418,18 @@ class ScenarioUtils:
         :return: elements in scenario
         """
         if config.system["conduct_scenario_analysis"]:
-            scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
-            if not os.path.exists(scenarios_path):
-                raise FileNotFoundError(f"scenarios.py not found in dataset: {config.analysis['dataset']}")
-            spec = importlib.util.spec_from_file_location("module", scenarios_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            scenarios = module.scenarios
+            scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.json"))
+            if os.path.exists(scenarios_path):
+                with open(scenarios_path, "r") as file:
+                    scenarios = json.load(file)
+            else:
+                scenarios_path = os.path.abspath(os.path.join(config.analysis['dataset'], "scenarios.py"))
+                if not os.path.exists(scenarios_path):
+                    raise FileNotFoundError(f"Neither scenarios.json nor scenarios.py not found in dataset: {config.analysis['dataset']}")
+                spec = importlib.util.spec_from_file_location("module", scenarios_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                scenarios = module.scenarios
             config.scenarios.update(scenarios)
             # remove the default scenario if necessary
             if not config.system["run_default_scenario"] and "" in config.scenarios:
@@ -1480,3 +1457,17 @@ class ScenarioUtils:
             scenarios = [""]
             elements = [{}]
         return scenarios,elements
+
+class OptimizationError(RuntimeError):
+    """
+    Exception raised when the optimization problem is infeasible
+    """
+
+    def __init__(self, status="The optimization is infeasible or unbounded, or finished with an error"):
+        """
+        Initializes the class
+
+        :param message: The message to display
+        """
+        self.message = f"The termination condition was {status}"
+        super().__init__(self.message)

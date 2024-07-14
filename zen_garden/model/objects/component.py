@@ -712,6 +712,9 @@ class Variable(Component):
         :param index_list: list of index names
         :return: series of variable units
         """
+        # if not check_unit_consistency
+        if not self.optimization_setup.solver.check_unit_consistency:
+            return
         # binary variables
         if not unit_category:
             return
@@ -943,10 +946,18 @@ class Constraint(Component):
             if (sign == "=").any():
                 # the "<=" cons
                 sign_c = sign.where(sign != "=", "<=")
-                m_arr = xr.zeros_like(rhs).where(sign_c != "<=", bounds).where(sign_c != ">=", -bounds)
+                # todo fix this when fixed in xarray
+                m_arr = xr.zeros_like(rhs).where(
+                    (sign_c != "<=") & (sign_c != "<"), bounds
+                ).where(
+                    (sign_c != ">=") & (sign_c != ">"), -bounds)
                 self.model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + "<=", mask=mask)
+                # the ">=" cons
                 sign_c = sign.where(sign != "=", ">=")
-                m_arr = xr.zeros_like(rhs).where(sign_c != "<=", bounds).where(sign_c != ">=", -bounds)
+                m_arr = xr.zeros_like(rhs).where(
+                    (sign_c != "<=") & (sign_c != "<"), bounds
+                ).where(
+                    (sign_c != ">=") & (sign_c != ">"), -bounds)
                 self.model.add_constraints(lhs + m_arr * disjunction_var, sign_c, rhs + m_arr, name=name + ">=", mask=mask)
             # create the arr
             else:
