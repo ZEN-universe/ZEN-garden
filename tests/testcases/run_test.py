@@ -32,6 +32,7 @@ def config():
     """
     :return: A new instance of the config
     """
+    # TODO make work with new json! maybe use run_module from __main__.py directly
     from config import config
 
     config.solver["keep_files"] = False

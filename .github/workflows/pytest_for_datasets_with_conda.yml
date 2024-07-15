@@ -1,0 +1,87 @@
+name: Dataset Tests
+
+# Define when to run
+on:
+  schedule:
+    - cron:  '30 4 1 * *'
+
+# Env variables
+env:
+  CACHE_NUMBER: 0  # increase to reset cache manually
+
+# Jobs
+jobs:
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check Env File
+        id: check-env-file
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            zen_garden_env.yml
+
+      - name: Set Env
+        # trigger if env file change or on schedule
+        if: ${{ steps.check-env-file.outputs.any_changed == 'true' || github.event_name == 'schedule' }}
+        run: echo "ENV_STATE=env_change" >> $GITHUB_ENV
+
+      - id: set-matrix
+        uses: JoshuaTheMiller/conditional-build-matrix@main
+        with:
+          # Run filter -> see matrix_includes.json!
+          filter: '[?runs_when==`${{ env.ENV_STATE }}` || runs_when==`${{ github.event_name }}` || runs_when==`always`]'
+
+  build:
+    # the testing
+    needs: matrix_prep
+    strategy:
+      fail-fast: false # if true all jobs are cancelled if one fails
+      matrix: ${{fromJson(needs.matrix_prep.outputs.matrix)}}
+
+    name: linux-64
+    runs-on: ubuntu-latest
+    steps:
+      # checkout the dev branch
+      - uses: actions/checkout@v3
+
+      # setup the conda env
+      - name: Setup Mambaforge
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+            miniforge-variant: Mambaforge
+            miniforge-version: latest
+            activate-environment: zen-garden
+            use-mamba: true
+
+      # date for the cache
+      - name: Set cache date
+        run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
+
+      # reset cache if env file changed
+      - uses: actions/cache@v3
+        with:
+          path: /usr/share/miniconda3/envs/zen-garden
+          key: linux-64-conda-${{ hashFiles('zen_garden_env.yml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
+        id: cache
+
+      # This step is cached in case the env file was not changed
+      - name: Update environment
+        run: mamba env update -f zen_garden_env.yml
+        if: steps.cache.outputs.cache-hit != 'true'
+
+      - name: Install package
+        shell: bash -l {0}
+        run: pip install -e .
+
+      - name: Run Tests
+        shell: bash -l {0}
+        run: |
+          coverage run --source="zen_garden" -m pytest -v documentation/dataset_examples/run_datasets.py
+          coverage report -m
