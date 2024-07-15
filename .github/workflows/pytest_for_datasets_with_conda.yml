@@ -4,12 +4,6 @@ name: Dataset Tests
 on:
   schedule:
     - cron:  '30 4 1 * *'
-  push:
-    branches:
-      - development
-  pull_request:
-    branches:
-      - development
 
 # Env variables
 env:
