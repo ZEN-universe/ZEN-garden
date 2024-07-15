@@ -34,8 +34,8 @@ def main(config, dataset_path=None, job_index=None):
     """
 
     # print the version
-    version = importlib.metadata.version("zen-garden")
-    logging.info(f"Running ZEN-Garden version: {version}")
+    # version = importlib.metadata.version("zen-garden")
+    # logging.info(f"Running ZEN-Garden version: {version}")
 
     # prevent double printing
     logging.propagate = False
