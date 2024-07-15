@@ -1018,12 +1018,14 @@ class Scaling:
                 mean_rows = sp.sparse.linalg.norm(self.A_matrix, ord=1, axis=1)/(np.diff(self.A_matrix.indptr)+np.ones(self.A_matrix.get_shape()[0]))
                 if self.include_rhs:
                     mean_rows = mean_rows + np.abs(self.rhs)/(np.diff(self.A_matrix.indptr)+np.ones(self.A_matrix.get_shape()[0]))
+                mean_rows[mean_rows == 0] = 1 #to avoid warning outputs
                 c_vector = 1/mean_rows
                 c_vector = np.power(2, np.round(np.emath.logn(2, c_vector)))
                 #update A and row scaling matrix
                 self.update_A(c_vector,1)
                 #update column scaling vector
                 mean_cols = sp.sparse.linalg.norm(self.A_matrix, ord=1, axis=0)/np.diff(self.A_matrix.tocsc().indptr)
+                mean_cols[mean_cols == 0] = 1 #to avoid warning outputs
                 r_vector = 1/mean_cols
                 r_vector = np.power(2, np.round(np.emath.logn(2, r_vector)))
                 #update A and column scaling matrix
