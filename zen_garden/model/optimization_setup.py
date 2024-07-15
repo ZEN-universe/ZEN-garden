@@ -25,6 +25,7 @@ from .objects.element import Element
 from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
+from zen_garden.preprocess.unit_handling import Scaling
 
 from ..utils import ScenarioDict, IISConstraintParser, StringUtils
 
@@ -49,7 +50,7 @@ class OptimizationSetup(object):
         # create a dictionary with the paths to access the model inputs and check if input data exists
         self.create_paths()
         # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self.system, self.analysis, self.paths)
+        self.scenario_dict = ScenarioDict(scenario_dict, config, self.paths)
         # check if all needed data inputs for the chosen technologies exist and remove non-existent
         self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
@@ -61,6 +62,7 @@ class OptimizationSetup(object):
         self.parameters = None
         self.constraints = None
         self.sets = None
+
 
         # sorted list of class names
         element_classes = self.dict_element_classes.keys()
@@ -91,6 +93,7 @@ class OptimizationSetup(object):
 
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
+
 
     def create_paths(self):
         """
@@ -417,8 +420,10 @@ class OptimizationSetup(object):
         self.constraints = Constraint(self.sets,self.model)
         # define and construct components of self.model
         Element.construct_model_components(self)
+        # Initiate scaling object
+        self.scaling = Scaling(self.model, self.solver['scaling_algorithm'],self.solver['scaling_include_rhs'])
         # find smallest and largest coefficient and RHS
-        self.analyze_numerics()
+        #self.analyze_numerics() -> Replaced through scaling
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """

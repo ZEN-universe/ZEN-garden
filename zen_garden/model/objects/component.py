@@ -713,6 +713,9 @@ class Variable(Component):
         :param index_list: list of index names
         :return: series of variable units
         """
+        # if not check_unit_consistency
+        if not self.optimization_setup.solver.check_unit_consistency:
+            return
         # binary variables
         if not unit_category:
             return
