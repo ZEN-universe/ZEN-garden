@@ -32,7 +32,7 @@ def run_module(args=None):
                   "note that the output directory will always be the current working directory, independent of the " \
                   "dataset specified in the config file."
     parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET]")
-
+    # TODO make json config default
     parser.add_argument("--config", required=False, type=str, default="./config.py", help="The config file used to run the pipeline, "
                                                                                         "defaults to config.py in the current directory.")
     parser.add_argument("--dataset", required=False, type=str, default=None, help="Path to the dataset used for the run. IMPORTANT: This will overwrite the "
