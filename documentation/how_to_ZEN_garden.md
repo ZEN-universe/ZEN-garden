@@ -11,19 +11,7 @@
 
 1. GitHub registration: If you don't have a GitHub account yet register at: [GitHub](https://github.com/)
 2. Join ZEN-garden repository: If you didn't receive a GitHub invitation, ask your supervisor to invite you to the repository (write them your GitHub email address) [ZEN-Garden Repository](https://github.com/RRE-ETH/ZEN-garden)
-3. Create your own branch: In the ZEN-garden repository click on "branches" and then "new branch", choose "main" as the branch source and "development\_ZENx\_NS" (NS= name, surname) as its name
-![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/77b44be5-5b11-4c6d-a431-e1a41cb99a14)
-
-
-![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/59a8ed6f-e97b-4d6e-8826-dc01787216e5)
-
-
-4. Cloning the repository: To create a local copy of your branch on your computer, you must clone the remote repository from GitHub. **It is important that you clone the repository to a path which doesn't contain any spaces!** (Don't clone to e.g. ./Users/Name Surname, otherwise you'll have issues while executing the framework). To clone your branch there's a more beginner-friendly way using GitHub Desktop and a more advanced way using Git Bash for example.
-
-GitHub Desktop: [Clone Repository with GitHub Desktop](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-a-repository-from-github-to-github-desktop)
-
-To clone the repository by using Git Bash, two methods are available: [HTTPS](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui) or [SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
-
+3. Fork the ZEN-garden framework into a personal repository. Follow the instructions [on how to fork ZEN-garden](https://github.com/ZEN-universe/ZEN-garden/discussions/439).
 5. ZEN-garden environment creation: Open PyCharm to view the _zen\_garden\_env.yml_ file (contained in the ZEN-garden folder), copy ```conda env create -f zen_garden_env.yml``` and run the command in your Anaconda prompt (takes several minutes), if the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
 6. Gurobi license: To use all of Gurobi's functionalities, you need to obtain a free academic license: [Get your Gurobi license](https://www.gurobi.com/features/academic-named-user-license/)
  Following these instructions, you'll get a Gurobi license key which you have to run in your command prompt to activate the license for your computer
