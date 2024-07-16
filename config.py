@@ -19,7 +19,7 @@ solver = config.solver
 scenarios = config.scenarios
 
 ## Analysis - settings update compared to default values
-analysis["dataset"] = os.path.join(os.path.dirname(__file__), "data/county_CA_0507_288_3") # path to dataset
+analysis["dataset"] = os.path.join(os.path.dirname(__file__), "data/county_1607_5_small_unit") # path to dataset
 
 analysis["objective"] =  "total_cost" #"total_carbon_emissions" total_cost
 # use greenfield or brownfield approach depending on dataset name
