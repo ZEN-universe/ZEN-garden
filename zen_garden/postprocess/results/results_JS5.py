@@ -1387,3 +1387,60 @@ def plot_pareto_front(folder, output_path, units, specific_scenario_name, custom
             result_capacities_pareto_dfs, folder, output_path, title=title, unit_cost=units['cost'],
             unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=True
         )
+
+
+def plot_pareto_front2(folder, output_path, units, specific_scenario_name, custom_order, area, pareto_group, list_folders=None, save_fig=True):
+    """
+    Plots Pareto fronts for various cost and capacity components against CO2 emissions.
+
+    Args:
+        folder (str): Folder where the data is located.
+        output_path (str): Path to save the output figures.
+        specific_scenario_name (str): Name of the specific scenario being analyzed.
+        custom_order (list): Custom order for Pareto front filtering.
+        area (str): The area being analyzed.
+        pareto_group (str): The group used for Pareto front filtering.
+        save_fig (bool): Flag to save the figures. Defaults to True.
+
+    Returns:
+        None
+    """
+
+
+
+    # Define parameters for the first set of plots
+    cost_components = [
+       ('costs', f'CAPEX vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'cost_capex_total', 'Capex'),
+       ('costs', f'OPEX vs. CO2 Emissions', 'cost_opex_total', 'Opex'),
+       ('costs', f'Cost Carrier vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'cost_carrier_total', 'Cost Carrier'),
+       ('costs', f'Cost Carbon Emissions vs. $\\mathrm{{CO_2}}$ Emissions in {area}', 'cost_carbon_emissions_total', 'Cost Carbon Emissions')
+    ]
+
+    # Generate the first set of plots
+    for filter_component, title, y_axis, y_axis_label in cost_components:
+        if list_folders is None:
+            df = filter_boxplot_no_parent_folder(folder, output_path, specific_scenario_name, filter_component=filter_component)
+            pareto_df = filter_pareto_group(df, custom_order, pareto_group)
+            result_df = pareto_df.copy()
+        else:
+            pareto_dfs = pd.DataFrame()
+            for folder_temp in list_folders:
+                df = filter_boxplot_no_parent_folder(folder_temp, output_path, specific_scenario_name, filter_component=filter_component)
+                pareto_df = filter_pareto_group(df, custom_order, pareto_group)
+
+
+                pareto_dfs = pd.concat([pareto_dfs, pareto_df])
+
+        # Group by 'scenario' and sum up the relevant columns
+        result_df = pareto_dfs.groupby('scenario', as_index=False).agg({
+            'folder': 'first',
+            'scenario_name': 'first',
+            'pareto_group': 'first',
+            y_axis: 'sum',
+            'carbon_emissions_cumulative': 'sum'
+        })
+        plot_results.plot_pareto_front(
+            result_df, folder, output_path, title=title, unit_co2=units['co2'],
+            unit_y_axis=units['cost'], y_axis=y_axis, y_axis_label=y_axis_label, save_fig=save_fig
+        )
+

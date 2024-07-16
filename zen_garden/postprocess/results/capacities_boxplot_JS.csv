@@ -2,3 +2,5 @@ technology,capacity_type
 PV,power
 battery,energy
 water_storage,energy
+diesel_WP,power
+el_WP,power

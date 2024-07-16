@@ -239,7 +239,14 @@ def get_best_unit(df, column_name, unit_str, show_unit = False, vmax=None):
     ureg.define('USD = [currency]')
 
     if vmax is None:
-        vmax = df[column_name].max()
+        # if column name is a list
+        if isinstance(column_name, list):
+            vmax = 0
+            for col in column_name:
+                if df[col].max() > vmax:
+                    vmax = df[col].max()
+        else:
+            vmax = df[column_name].max()
 
     # Adjust vmax to the highest power of 10
     if vmax > 0:
@@ -915,7 +922,7 @@ def plot_boxplot_capacities_states(scenarios, df_filtered, output_path, folder):
         save_folder = os.path.join(output_path, folder, 'Figures')
         os.makedirs(save_folder, exist_ok=True)
         save_path = os.path.join(save_folder, save_file)
-        
+
         plt.savefig(save_path, bbox_inches='tight')
         plt.close()  # Close the figure to avoid overlapping
 
@@ -974,3 +981,92 @@ def plot_boxplot_energy_states(scenarios, filtered_data, parent_folder, output_p
         plt.close()  # Close the figure to avoid overlapping
         print(f"Saved plot to {save_path}")
         # plt.show()
+
+def plot_stacked_costs(df, output_path,parent_folder, units, save_fig=True):
+    # Drop the row where the scenario is ''
+    df = df[df['scenario'] != '']
+
+    file_title = 'cost_stacked'
+    # Convert units for carbon emissions and the y-axis data
+    output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', units['co2'])
+    columns = ['cost_capex_total', 'cost_opex_total', 'cost_carbon_emissions_total', 'cost_carrier_total']
+    output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, columns, units['cost'])
+
+    # Sort df by carbon_emissions_cumulative
+    df_converted = df_converted.sort_values(by='carbon_emissions_cumulative')
+    # Extracting the data needed for the plot
+    x = df_converted['carbon_emissions_cumulative']
+    y1 = df_converted['cost_capex_total']
+    y2 = df_converted['cost_opex_total']
+    y3 = df_converted['cost_carbon_emissions_total']
+    y4 = df_converted['cost_carrier_total']
+    # Plotting the stacked area chart using Seaborn
+    plt.figure(figsize=(10, 6))
+    sns.set(style="white")
+    colors = ['#64557B', '#F4D35E',  '#62866C', '#CB7876']
+    plt.stackplot(x, y1, y2, y3, y4, labels=['Capex Total', 'Opex Total', 'Carbon Emissions Total', 'Carrier Total'], colors=colors)
+    plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
+    plt.ylabel(f'Cost [{output_unit_y_axis}]')
+    plt.title('Cost vs. $\\mathrm{{CO_2}}$ Emissions')
+    plt.legend(loc='upper right')
+
+    #Save the figure if required
+    save_folder = os.path.join(output_path, parent_folder, 'Figures')
+    os.makedirs(save_folder, exist_ok=True)
+
+    if save_fig:
+        save_file = f'{file_title}.png'
+        save_file_path = os.path.join(save_folder, save_file)
+        plt.savefig(save_file_path, bbox_inches='tight')
+        print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
+
+    #plt.show()
+
+
+def plot_percentage_stacked_costs(df, output_path, parent_folder, units, save_fig=True):
+    # Drop the row where the scenario is ''
+    df = df[df['scenario'] != '']
+
+    file_title = 'cost_stacked_percentage'
+    # Convert units for carbon emissions and the y-axis data
+    output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', units['co2'])
+    columns = ['cost_capex_total', 'cost_opex_total', 'cost_carbon_emissions_total', 'cost_carrier_total']
+    output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, columns, units['cost'])
+
+    # Calculate the total cost for each row
+    df_converted['total_cost'] = df_converted[columns].sum(axis=1)
+
+    # Calculate the percentage distribution
+    for column in columns:
+        df_converted[column + '_pct'] = df_converted[column] / df_converted['total_cost'] * 100
+
+    # Sort df by carbon_emissions_cumulative
+    df_converted = df_converted.sort_values(by='carbon_emissions_cumulative')
+
+    # Extracting the data needed for the plot
+    x = df_converted['carbon_emissions_cumulative']
+    y1 = df_converted['cost_capex_total_pct']
+    y2 = df_converted['cost_opex_total_pct']
+    y3 = df_converted['cost_carbon_emissions_total_pct']
+    y4 = df_converted['cost_carrier_total_pct']
+
+    # Plotting the stacked area chart using Seaborn
+    plt.figure(figsize=(10, 6))
+    sns.set(style="white")
+    colors = ['#64557B', '#F4D35E',  '#62866C', '#CB7876']
+    plt.stackplot(x, y1, y2, y3, y4, labels=['Capex Total', 'Opex Total', 'Carbon Emissions Total', 'Carrier Total'], colors=colors)
+    plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
+    plt.ylabel('Cost Percentage [%]')
+    plt.title('Cost Percentage Distribution vs. $\\mathrm{{CO_2}}$ Emissions')
+    plt.legend(loc='upper right')
+
+    # Save the figure if required
+    save_folder = os.path.join(output_path, parent_folder, 'Figures')
+    os.makedirs(save_folder, exist_ok=True)
+
+    if save_fig:
+        save_file = f'{file_title}.png'
+        save_file_path = os.path.join(save_folder, save_file)
+        plt.savefig(save_file_path, bbox_inches='tight')
+        print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
+    plt.show()
