@@ -1376,17 +1376,6 @@ def plot_pareto_front(folder, output_path, units, specific_scenario_name, custom
             unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=save_fig
         )
 
-    # Generate cost plots for flow import and capacities
-    for y_axis, title, unit_y_axis, y_axis_label in flow_import_components:
-        plot_results.plot_pareto_front_cost(
-            result_flow_import_pareto_dfs, folder, output_path, title=title, unit_cost=units['cost'],
-            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=True
-        )
-    for y_axis, title, unit_y_axis, y_axis_label in capacity_components:
-        plot_results.plot_pareto_front_cost(
-            result_capacities_pareto_dfs, folder, output_path, title=title, unit_cost=units['cost'],
-            unit_y_axis=unit_y_axis, y_axis=y_axis, y_axis_label=y_axis_label, save_fig=True
-        )
 
 
 def plot_pareto_front2(folder, output_path, units, specific_scenario_name, custom_order, area, pareto_group, list_folders=None, save_fig=True):
