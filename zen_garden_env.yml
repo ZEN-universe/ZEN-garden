@@ -1,4 +1,4 @@
-name: zen-garden_new_linopy
+name: zen-garden
 channels:
   - conda-forge
   - gurobi
@@ -21,6 +21,8 @@ dependencies:
   - gurobi
   - pytables
   - pydantic
+  - tqdm
+  - ipython
   - jupyter
   - utm
   - grid-strategy
