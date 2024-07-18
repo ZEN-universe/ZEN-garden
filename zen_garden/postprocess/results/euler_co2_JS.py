@@ -357,19 +357,19 @@ def print_import_cost_carrier(res_basic, folder, output_path):
 
 
 def main():
-    folder = "county_1707_5_corr"
+    folder = "county_1707_5_price_battery_2"
     print(folder)
     output_path = "../../../outputs/"
     directory = os.path.join(output_path, folder)
     res_basic = Results(directory)
 
-    get_co2_emissions(res_basic, folder, output_path)
-    print_import_cost_carrier(res_basic, folder, output_path)
+    #get_co2_emissions(res_basic, folder, output_path)
+    #print_import_cost_carrier(res_basic, folder, output_path)
 
-    node = 'MS_BE009'
+    node = 'MS_BO011'
     scenarios = ['scenario_','scenario_0']
 
-#    plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True)
+    plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True)
 #
 #    #################################################################################
 #    list_folders = ["county_1607_5_small_unit"]

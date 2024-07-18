@@ -167,7 +167,7 @@ def create_df_components(res, carrier, scenario):
 
     component_mapping_carrier = {
             'water': ["flow_storage_charge", "flow_storage_discharge", "flow_conversion_input", "flow_conversion_output"],
-            'electricity': ["flow_import", "flow_conversion_input", "flow_conversion_output"],
+            'electricity': ["flow_import","flow_storage_charge", "flow_storage_discharge" , "flow_conversion_input", "flow_conversion_output"],
             'diesel': ["flow_import", "flow_conversion_input", "flow_conversion_output"],
             'irrigation_water': ["flow_conversion_input", "flow_conversion_output", "demand"],
             'blue_water': ["flow_import", "flow_conversion_input", "flow_conversion_output"]
@@ -599,15 +599,15 @@ def create_vmax_scenarios(filename, carriers, path_energy_system, county):
         create_df_vmax_carrier(res_basic, directory, carrier,  path_energy_system, scenarios)
     create_df_vmax_capacity(res_basic, directory, path_energy_system, scenarios, county)
 
-
 def plot_energy_balances_carriers(res_basic, node, carriers, directory, scenario=None, save_fig=False):
     '''Visualise the energy balance at the node for the carrier in year 0 for different time periods'''
     for carrier in carriers:
         data_plot = create_df_components(res_basic, carrier, scenario)
+        data_plot_masked = data_plot.mask((data_plot < 0) & (data_plot >= -0.001), 0)
         if carrier == 'electricity':
             data_plot_2 = create_df_components(res_basic, 'diesel', scenario)
             data_plot = pd.concat([data_plot, data_plot_2], axis=0)
-        plot_results.plot_energy_balance_JS2(data_plot, node, carrier, 0, directory, scenario, save_fig)
+        plot_results.plot_energy_balance_JS2(data_plot_masked, node, carrier, 0, directory, scenario, save_fig)
 
 
 

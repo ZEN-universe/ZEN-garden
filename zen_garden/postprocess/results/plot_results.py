@@ -105,6 +105,7 @@ def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, sce
     # Adjust values to be negative if label contains 'flow_conversion_out' and 'irrigation_sys'
     data_plot.loc[data_plot.index.str.contains('flow_conversion_input, irrigation_sys'), :] *= -1
     data_plot.loc[data_plot.index.str.contains('flow_storage_charge, water_storage'), :] *= -1
+    data_plot.loc[data_plot.index.str.contains('flow_storage_charge, battery'), :] *= -1
     data_plot.loc[data_plot.index.str.contains('flow_conversion_input, electric_WP'), :] *= -1
     data_plot.loc[data_plot.index.str.contains('flow_conversion_input, diesel_WP'), :] *= -1
 
