@@ -167,11 +167,7 @@ def create_df_components(res, carrier, scenario):
 
     component_mapping_carrier = {
             'water': ["flow_storage_charge", "flow_storage_discharge", "flow_conversion_input", "flow_conversion_output"],
-<<<<<<< Updated upstream
             'electricity': ["flow_import","flow_storage_charge", "flow_storage_discharge" , "flow_conversion_input", "flow_conversion_output"],
-=======
-            'electricity': ["flow_import", "flow_storage_charge", "flow_storage_discharge" , "flow_conversion_input", "flow_conversion_output"],
->>>>>>> Stashed changes
             'diesel': ["flow_import", "flow_conversion_input", "flow_conversion_output"],
             'irrigation_water': ["flow_conversion_input", "flow_conversion_output", "demand"],
             'blue_water': ["flow_import", "flow_conversion_input", "flow_conversion_output"]
@@ -1522,14 +1518,6 @@ def prepare_data_for_flow_import_stacked(folder, list_folders, output_path, spec
 
 
 
-# Define scenario and directory paths
-folder = 'outputs/county_1507/county_1507_1'
-output_path = 'outputs'
-
-# Define list of folders
-list_folders = [
-    'county_1507/county_1507_1',
-]
 
 def prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None):
     # Process capacity and demand data from multiple folders
