@@ -216,8 +216,9 @@ def get_short_unit_name(unit_str):
         unit_str = unit_str.replace('mega', 'M')
         unit_str = unit_str.replace('watt', 'W')
         unit_str = unit_str.replace('_hour', 'h')
-    elif 'meter ** 3' in unit_str:
+    elif 'meter ** 3' or 'km**3' in unit_str:
         unit_str = unit_str.replace('meter ** 3', 'm3')
+        unit_str = unit_str.replace('km**3', 'km^3')
         # unit_str = unit_str.replace('kilo', 'k')
         # unit_str = unit_str.replace('tera', '10^3 k')
         # unit_str = unit_str.replace('kilo', '10^3')
@@ -260,8 +261,9 @@ def get_best_unit(df, column_name, unit_str, show_unit = False, vmax=None):
         unit_pos = next((i for i, c in enumerate(unit_str) if c.isalpha()), None)
 
         if unit_pos is not None:
+            print(unit_pos)
             # Split the string based on the position of the unit part
-            input_value_unit = unit_str[:(unit_pos-1)]
+            input_value_unit = unit_str[:(unit_pos-2)]
             input_value = float(input_value_unit)
             unit = unit_str[unit_pos:]
 
@@ -275,21 +277,26 @@ def get_best_unit(df, column_name, unit_str, show_unit = False, vmax=None):
         value = vmax_10  # Assume the value is 1 if "*" is not present
         unit = unit_str.strip()
 
-    unit = ureg(unit.strip())  # Strip any leading/trailing whitespace and create a pint unit
+    unit = ureg.parse_expression(unit_str.strip())  # Parse the unit string to handle expressions
+
 
     # Convert to the best-fitting unit
     value_best_unit = (value * unit).to_compact()
 
     # Extract the magnitude and unit
     output_unit = value_best_unit.units
-    output_unit_name = get_short_unit_name(str(value_best_unit.units))
-
-
-
     # Calculate the factor to convert original values to the new unit
     factor = (input_value * unit).to(output_unit)
     output_factor = factor.magnitude
-    output_factor = factor.magnitude
+    if output_factor == 1:
+        output_unit = unit_str
+        #Delet 1* from the unit string
+        output_unit = output_unit[2:]
+    output_unit_name = get_short_unit_name(str(output_unit))
+
+
+
+
     df_out = df.copy()
     df_out[column_name] = df_out[column_name] * output_factor
     vmax_output = vmax * output_factor
@@ -1059,7 +1066,7 @@ def plot_percentage_stacked_costs(df, output_path, parent_folder, units, save_fi
     plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     plt.ylabel('Cost Percentage [%]')
     plt.title('Cost Percentage Distribution vs. $\\mathrm{{CO_2}}$ Emissions')
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower right')
 
     # Save the figure if required
     save_folder = os.path.join(output_path, parent_folder, 'Figures')
@@ -1070,4 +1077,184 @@ def plot_percentage_stacked_costs(df, output_path, parent_folder, units, save_fi
         save_file_path = os.path.join(save_folder, save_file)
         plt.savefig(save_file_path, bbox_inches='tight')
         print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
-    plt.show()
+    #plt.show()
+
+
+def plot_pareto_capacities(result_capacities_dfs, output_path, parent_folder, units, save_fig=True):
+    # Capacity components list
+    capacity_components = [
+        ('PV, power', f'PV', units['power'], 'Installed Capacity'),
+        ('water_storage, energy', f'Water Storage', units['water_energy'], 'Installed Capacity'),
+        ('battery, energy', f'Battery', units['energy'], 'Installed Capacity'),
+        ('diesel_WP, power', f'Diesel Water Pump', units['power'], 'Installed Capacity'),
+        ('el_WP, power', f'Electric Water Pump', units['power'], 'Installed Capacity')
+    ]
+    # Convert units for carbon emissions
+    output_unit_co2, df_converted, _ = get_best_unit(result_capacities_dfs, 'carbon_emissions_cumulative', units['co2'])
+
+    # Create the subplots
+    fig, axes = plt.subplots(nrows=1, ncols=5, figsize=(20, 5), sharex=True)
+
+    # Plot each component
+    for ax, (y_axis, title, unit_y_axis, y_axis_label) in zip(axes, capacity_components):
+        output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, y_axis, unit_y_axis)
+        ax.plot(df_converted['carbon_emissions_cumulative'], df_converted[y_axis], marker='o')
+        ax.set_title(title)
+        ax.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
+        ax.set_ylabel(f'{y_axis_label} [{output_unit_y_axis}]')
+    # Add overall title
+    fig.suptitle(f'Pareto Front: Capacities vs. $\\mathrm{{CO_2}}$ Emissions', y=1.05, fontsize=16)
+    # Adjust subplot spacing
+    plt.subplots_adjust(wspace=0.5)  # Adjust horizontal space between subplots
+    # Save the figure if required
+    save_folder = os.path.join(output_path, parent_folder, 'Figures')
+    os.makedirs(save_folder, exist_ok=True)
+
+    if save_fig:
+        save_file = 'capacities_pareto.png'
+        save_file_path = os.path.join(save_folder, save_file)
+        plt.savefig(save_file_path, bbox_inches='tight')
+        print(f"Saving Pareto front for {save_file} as {save_file_path}\n")
+
+
+def plot_stacked_import(df, output_path, parent_folder, units, save_fig=True):
+    # Drop the row where the scenario is ''
+    df = df[df['scenario'] != '']
+
+    file_title = 'import_stacked'
+    # Convert units for carbon emissions and the y-axis data
+    output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', units['co2'])
+    columns = ['diesel', 'electricity']
+    output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, columns, units['energy'])
+
+    # Sort df by carbon_emissions_cumulative
+    df_converted = df_converted.sort_values(by='carbon_emissions_cumulative')
+    # Extracting the data needed for the plot
+    x = df_converted['carbon_emissions_cumulative']
+    y1 = df_converted['diesel']
+    y2 = df_converted['electricity']
+    # Plotting the stacked area chart using Seaborn
+    plt.figure(figsize=(10, 6))
+    sns.set(style="white")
+    colors = ['#64557B', '#F4D35E']
+    plt.stackplot(x, y1, y2, labels=['Diesel', 'Electricity'], colors=colors)
+    plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
+    plt.ylabel(f'Import [{output_unit_y_axis}]')
+    plt.title('Import energy carrier vs. $\\mathrm{{CO_2}}$ Emissions')
+    plt.legend(loc='upper left')
+
+    #Save the figure if required
+    save_folder = os.path.join(output_path, parent_folder, 'Figures')
+    os.makedirs(save_folder, exist_ok=True)
+
+    if save_fig:
+        save_file = f'{file_title}.png'
+        save_file_path = os.path.join(save_folder, save_file)
+        plt.savefig(save_file_path, bbox_inches='tight')
+        print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
+
+
+
+# Define a function to create a main figure and axes
+def create_main_figure(num_scenarios):
+    num_cols = num_scenarios  # Adjust as needed based on your scenarios
+    fig, axes = plt.subplots(1, num_cols, figsize=(30, 20))
+    return fig, axes.flatten()
+
+# Define a function to plot each subplot for a scenario
+def plot_scenario(ax, df_merge, us_gdf, column_name, title, ylabel, default_vmax):
+    df_merge.crs = 'EPSG:4326'
+
+    # Reproject GeoDataFrame us_gdf to match the CRS of DataFrame df
+    us_gdf = us_gdf.to_crs(df_merge.crs)
+
+    df_map = us_gdf.merge(df_merge, on="county_code", how='left')
+
+    ax.axis('off')  # Remove the frame around the map
+
+    # Formatting changes to the colorbar
+    vmax = df_merge[column_name].max() if default_vmax is None else default_vmax
+
+    # Focus around the contiguous US (excluding Alaska and Hawaii)
+    ax.set_xlim(-125, -65)
+    ax.set_ylim(24, 50)
+
+    # Define the normalization and ticks for the colorbar
+    norm = Normalize(vmin=0, vmax=vmax)
+    ticks = np.linspace(0, vmax, 5)
+
+    #Plot the geospatial data with normalization
+    df_map.plot(column=column_name, cmap="Reds", linewidth=0.4, ax=ax, edgecolor=".4",
+                missing_kwds={"color": "white"}, legend=True, vmin=0, vmax=vmax,
+                legend_kwds={'label': ylabel, 'orientation': 'vertical', 'shrink': 0.2,
+                             'pad': 0.12, 'ticks': ticks})
+
+    ax.set_title(title, fontsize=20)
+
+
+# Main plotting logic
+def plot_scenarios(scenarios, df_capacities, df_demand_water, df_tech_cap_info, us_gdf, output_path, folder, save_filename):
+    num_def_tech_cap = len(df_tech_cap_info)
+    print(num_def_tech_cap)
+
+
+    for i, scenario in enumerate(scenarios):
+        fig, axes = create_main_figure(num_def_tech_cap)
+        scenario_title = scenario
+        scenario_title = scenario_title.title()
+        scenario_title = scenario_title.replace('Scenario_0', 'Net-Zero-Emissions-Scenario')
+        scenario_title = scenario_title.replace('Scenario_', 'Cost-Optimal-Scenario')
+        fig.suptitle(f'Plots for Scenario: {scenario_title}', fontsize=24, y=0.75)
+        print(scenario)
+        if scenario != 'no_scenario':
+            df_scenario = df_capacities[df_capacities['scenario'] == scenario]
+        else:
+            df_scenario = df_capacities.copy()
+
+        for index, (technology, capacity_type, carrier, input_unit, unit_cap_demand, factor) in enumerate(df_tech_cap_info.itertuples(index=False)):
+            print(technology, capacity_type, carrier, unit_cap_demand)
+            if not pd.isna(technology):
+                # Filter capacity data for current technology and capacity type
+                df_tech_cap = df_scenario[(df_scenario['technology'] == technology) & (df_scenario['capacity_type'] == capacity_type)]
+            else:
+                df_tech_cap = df_scenario[(df_scenario['carrier'] == carrier)]
+
+            if 'scenario' in df_tech_cap.columns:
+                df_merge = df_tech_cap.merge(df_demand_water[['scenario', 'county_code', 'demand']], on=['county_code', 'scenario'])
+            else:
+                df_merge = df_tech_cap.merge(df_demand_water[['county_code', 'demand']], on='county_code')
+
+            if not pd.isna(technology):
+                df_merge['capacity/demand'] = df_merge['capacity'] / df_merge['demand'] * 10**6 * factor
+                column_name = 'capacity/demand'
+                title = f'{technology} {capacity_type}'
+            else:
+                df_merge['flow_import/demand'] = df_merge['flow_import'] / df_merge['demand'] * 10**6 * factor
+                column_name = 'flow_import/demand'
+                title = f'{carrier}'
+            default_vmax = df_merge[column_name].max()
+
+
+            title = title.title()
+            title = title.replace('Scenario_0', 'Net-Zero-Emissions-Scenario')
+            title = title.replace('Scenario_', 'Cost-Optimal-Scenario')
+            title = title.replace('No_scearnio', 'Cost-Optimal-Scenario')
+            title = title.replace('_', ' ')
+
+            ylabel = f'{column_name} [{unit_cap_demand}]'
+            # Plot the scenario on the appropriate subplot
+            plot_scenario(axes[index], df_merge, us_gdf, column_name, title, ylabel, default_vmax)
+
+        # Ensure layout is tight and save or show the figure
+        plt.tight_layout()
+        #plt.subplots_adjust(top=0.50)  # Adjust the top parameter to fit the title closer
+        save_path = os.path.join(output_path, folder, 'Figures')
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+
+        save_filename_temp = scenario + '_' + save_filename
+        plt.savefig(os.path.join(save_path, save_filename_temp), bbox_inches='tight')
+        print(f'Figure saved to {os.path.join(save_path, save_filename)}')
+        #plt.show()
+        plt.close()
+

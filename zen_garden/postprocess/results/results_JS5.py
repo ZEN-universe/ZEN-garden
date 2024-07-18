@@ -167,7 +167,11 @@ def create_df_components(res, carrier, scenario):
 
     component_mapping_carrier = {
             'water': ["flow_storage_charge", "flow_storage_discharge", "flow_conversion_input", "flow_conversion_output"],
+<<<<<<< Updated upstream
             'electricity': ["flow_import","flow_storage_charge", "flow_storage_discharge" , "flow_conversion_input", "flow_conversion_output"],
+=======
+            'electricity': ["flow_import", "flow_storage_charge", "flow_storage_discharge" , "flow_conversion_input", "flow_conversion_output"],
+>>>>>>> Stashed changes
             'diesel': ["flow_import", "flow_conversion_input", "flow_conversion_output"],
             'irrigation_water': ["flow_conversion_input", "flow_conversion_output", "demand"],
             'blue_water': ["flow_import", "flow_conversion_input", "flow_conversion_output"]
@@ -1433,3 +1437,155 @@ def plot_pareto_front2(folder, output_path, units, specific_scenario_name, custo
             unit_y_axis=units['cost'], y_axis=y_axis, y_axis_label=y_axis_label, save_fig=save_fig
         )
 
+def prepare_data_for_stacked_cost_plot(folder, list_folders, output_path, specific_scenario_name, filter_component=None):
+    """
+    Prepare the data for the stacked cost plot
+    """
+
+    if list_folders is None:
+        df = filter_boxplot_no_parent_folder(folder, output_path, specific_scenario_name, filter_component=filter_component)
+        result_dfs = df.copy()
+    else:
+        dfs = pd.DataFrame()
+        for folder_temp in list_folders:
+            df = filter_boxplot_no_parent_folder(folder_temp, output_path, specific_scenario_name, filter_component=filter_component)
+            dfs = pd.concat([dfs, df])
+
+        columns_first = ['folder', 'scenario_name']
+        columns_sum = [col for col in dfs.columns if col not in columns_first + ['scenario']]
+
+        # Create the aggregation dictionary
+        agg_dict = {col: 'first' for col in columns_first}
+        agg_dict.update({col: 'sum' for col in columns_sum})
+
+        # Group by 'scenario' and apply the aggregation
+        result_dfs = dfs.groupby('scenario', as_index=False).agg(agg_dict)
+    # sort the dataframe by carbon_emissions_cumulative
+    result_dfs = result_dfs.sort_values(by='carbon_emissions_cumulative')
+    return result_dfs
+
+
+
+def prepare_data_for_capacity_figure(folder, output_path, list_folders, specific_scenario_name):
+
+
+
+    # Read the capacities boxplot data
+    df_tech_cap = pd.read_csv("capacities_boxplot_JS.csv")
+
+    # Generate the capacities plots
+    if list_folders is None:
+        capacities_df = filter_boxplot_no_parent_folder(folder, output_path, filter_component='capacities', df_tech_cap=df_tech_cap, specific_scenario_name=specific_scenario_name)
+        capacities_dfs = capacities_df.copy()
+    else:
+        capacities_dfs = pd.DataFrame()
+        for folder_temp in list_folders:
+            capacities_df = filter_boxplot_no_parent_folder(folder_temp, output_path, filter_component='capacities', df_tech_cap=df_tech_cap, specific_scenario_name=specific_scenario_name)
+            capacities_dfs = pd.concat([capacities_dfs, capacities_df])
+
+    columns_first = ['folder', 'scenario_name']
+    columns_sum = [col for col in capacities_dfs.columns if col not in columns_first + ['scenario']]
+
+    # Create the aggregation dictionary
+    agg_dict = {col: 'first' for col in columns_first}
+    agg_dict.update({col: 'sum' for col in columns_sum})
+
+    # Group by 'scenario' and apply the aggregation
+    result_capacities_dfs = capacities_dfs.groupby('scenario', as_index=False).agg(agg_dict)
+    # sort the dataframe by carbon_emissions_cumulative
+    result_capacities_dfs = result_capacities_dfs.sort_values(by='carbon_emissions_cumulative')
+    return result_capacities_dfs
+
+
+def prepare_data_for_flow_import_stacked(folder, list_folders, output_path, specific_scenario_name):
+    # Define parameters for the flow import plots
+
+    # Generate the flow import plots
+    if list_folders is None:
+        flow_import_df = filter_boxplot_no_parent_folder(folder, output_path, filter_component='flow_import', specific_scenario_name=specific_scenario_name)
+        result_flow_import_dfs = flow_import_df.copy()
+    else:
+        flow_import_dfs = pd.DataFrame()
+        for folder_temp in list_folders:
+            flow_import_df = filter_boxplot_no_parent_folder(folder_temp, output_path, filter_component='flow_import', specific_scenario_name=specific_scenario_name)
+            flow_import_dfs = pd.concat([flow_import_dfs, flow_import_df])
+        columns_first = ['folder', 'scenario_name']
+        columns_sum = [col for col in flow_import_dfs.columns if col not in columns_first + ['scenario']]
+        # Create the aggregation dictionary
+        agg_dict = {col: 'first' for col in columns_first}
+        agg_dict.update({col: 'sum' for col in columns_sum})
+        # Group by 'scenario' and apply the aggregation
+        result_flow_import_dfs = flow_import_dfs.groupby('scenario', as_index=False).agg(agg_dict)
+    #sort the values using carbon_emissions_cumulative
+    result_flow_import_dfs.sort_values(by='carbon_emissions_cumulative', inplace=True)
+    return result_flow_import_dfs
+
+
+
+# Define scenario and directory paths
+folder = 'outputs/county_1507/county_1507_1'
+output_path = 'outputs'
+
+# Define list of folders
+list_folders = [
+    'county_1507/county_1507_1',
+]
+
+def prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None):
+    # Process capacity and demand data from multiple folders
+    df_capacities = pd.DataFrame()
+    df_demands = pd.DataFrame()
+    df_flow_imports = pd.DataFrame()
+
+    for folder_temp in list_folders:
+        directory = os.path.join(output_path, folder_temp)
+        res = Results(directory)
+
+        # Get capacity addition data
+        df_capacity = res.get_full_ts("capacity_addition")
+        df_capacity.reset_index(inplace=True)
+        df_capacity.rename(columns={0: 'capacity', 'location': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        #insert row with 'carrier' column
+        df_capacity.insert(1, 'carrier', '')
+        df_capacities = pd.concat([df_capacities, df_capacity])
+
+        # Get demand data and filter for 'irrigation_water'
+        df_flow_import = res.get_full_ts('flow_import').sum(axis=1).reset_index()
+        df_flow_import_filtered = df_flow_import[(df_flow_import['carrier'] == 'diesel') | (df_flow_import['carrier'] == 'electricity')]
+        df_flow_import_filtered.rename(columns={0: 'flow_import', 'node': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        df_flow_import_filtered.insert(1, 'technology', '')
+        df_flow_import_filtered.insert(2, 'capacity_type', '')
+        df_flow_imports = pd.concat([df_flow_imports, df_flow_import_filtered])
+
+        # Get demand data and filter for 'irrigation_water'
+        df_demand = res.get_full_ts('demand').sum(axis=1).reset_index()
+        df_demand_water = df_demand[df_demand['carrier'] == 'irrigation_water']
+        df_demand_water.rename(columns={0: 'demand', 'node': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        df_demands = pd.concat([df_demands, df_demand_water])
+
+    # Create US county geographical data
+    us_gdf = gdf_US_JS.create_county_US()
+
+    # Read technology capacity information
+    df_tech_cap_info = pd.read_csv("capacities_boxplot_JS.csv")
+    df_merge_cap_import = pd.concat([df_capacities, df_flow_imports], axis=0)
+    if scenarios is None:
+        if 'scenario' in df_merge_cap_import.columns:
+            scenarios = df_merge_cap_import['scenario'].unique()
+        else:
+            scenarios = ['no_scenario']
+    print(scenarios)
+
+    # Define chunk sizes for splitting df_tech_cap_info
+    chunk_sizes = [3, 2, 2]  # Define sizes for each chunk
+
+    # Get the indices for each chunk
+    start_idx = 0
+    for i, chunk_size in enumerate(chunk_sizes):
+        end_idx = start_idx + chunk_size
+        df_tech_cap_chunk = df_tech_cap_info.iloc[start_idx:end_idx]
+        start_idx = end_idx
+        save_filename = f"maps_{i}.png"
+        #print(df_tech_cap_chunk)
+        # Call plot_scenarios with the current chunk
+        plot_results.plot_scenarios(scenarios, df_merge_cap_import, df_demand_water, df_tech_cap_chunk, us_gdf, output_path, folder, save_filename)

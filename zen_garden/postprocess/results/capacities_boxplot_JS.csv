@@ -1,6 +1,8 @@
-technology,capacity_type
-PV,power
-battery,energy
-water_storage,energy
-diesel_WP,power
-el_WP,power
+technology,capacity_type, carrier, unit, unit_cap_demand, factor
+PV,power,,MW,MW/$\mathrm{{km}}^{3}$, 1
+battery,energy,,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
+water_storage,energy,,1000*m**3,1000*m^3/$\mathrm{{km}}^{3}$, 1
+diesel_WP,power,,1000*m**3,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
+el_WP,power,,1000*m**3,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
+,,diesel,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
+,,electricity,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
