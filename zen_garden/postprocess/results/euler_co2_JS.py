@@ -101,7 +101,7 @@ def get_co2_emissions(res_basic, folder, output_path):
         df_opex.rename(columns={'level_0': 'scenario'}, inplace=True)
         df_opex_sum = df_opex[['scenario', 'technology','cost_opex']].groupby(['scenario', 'technology']).sum()
     else:
-        df_opex_sum = df_opex[['technology', 'capacity_type','cost_opex']].groupby(['technology', 'capacity_type']).sum()
+        df_opex_sum = df_opex[['technology', 'cost_opex']].groupby(['technology']).sum()
     save_file = os.path.join(save_folder, 'opex.csv')
     df_opex_sum.to_csv(save_file, index=True)
 
@@ -113,7 +113,7 @@ def get_co2_emissions(res_basic, folder, output_path):
         df_opex_yearly.rename(columns={'level_0': 'scenario'}, inplace=True)
         df_opex_yearly_sum = df_opex_yearly[['scenario', 'technology', 'opex_yearly']].groupby(['scenario', 'technology']).sum()
     else:
-        df_opex_yearly_sum = df_opex_yearly[['technology', 'capacity_type','opex_yearly']].groupby(['technology', 'capacity_type']).sum()
+        df_opex_yearly_sum = df_opex_yearly[['technology', 'opex_yearly']].groupby(['technology']).sum()
     save_file = os.path.join(save_folder, 'opex_yearly.csv')
     df_opex_yearly_sum.to_csv(save_file, index=True)
 
@@ -301,7 +301,7 @@ def print_import_cost_carrier(res_basic, folder, output_path):
 
     # Save the summarized data to CSV files
     df_demand_sum_sum_filtered.to_csv(os.path.join(save_folder, 'demand.csv'), index=False)
-    df_demand_sum_filtered.to_csv(os.path.join(save_folder, 'demand_long.csv'), index=False)
+    #df_demand_sum_filtered.to_csv(os.path.join(save_folder, 'demand_long.csv'), index=False)
 
 
 
@@ -357,14 +357,14 @@ def print_import_cost_carrier(res_basic, folder, output_path):
 
 
 def main():
-    folder = 'county_1107/county_CA_0507_288_4'
+    folder = 'county_1707_7'
     print(folder)
-    output_path = "../../../data/outputs/"
+    output_path = "../../..//outputs/"
     directory = os.path.join(output_path, folder)
     res_basic = Results(directory)
 
-    #get_co2_emissions(res_basic, folder, output_path)
-    #print_import_cost_carrier(res_basic, folder, output_path)
+    get_co2_emissions(res_basic, folder, output_path)
+    print_import_cost_carrier(res_basic, folder, output_path)
 
     node = 'NE_BO015'
     scenarios = ['scenario_','scenario_0']
@@ -372,7 +372,7 @@ def main():
     #plot_energy_balance(res_basic, node, scenarios, directory, save_fig=True)
 
     ################################################################################
-    list_folders = ['county_1107/county_CA_0507_288_4']
+    list_folders = ['county_1707_1','county_1707_2','county_1707_3','county_1707_4','county_1707_5','county_1707_6','county_1707_7','county_1707_8']
     area = 'United States'
     custom_order = ['','0']
     pareto_group = 'scenario_name'
@@ -388,21 +388,21 @@ def main():
     filter_component = 'costs'
 
     ##### Plot figure 1
-    dfs = results_JS.prepare_data_for_stacked_cost_plot(folder, list_folders, output_path, specific_scenario_name, filter_component)
-    plot_results.plot_stacked_costs(dfs, output_path, folder, units, save_fig=True)
-    plot_results.plot_percentage_stacked_costs(dfs, output_path, folder, units, save_fig=True)
+#    dfs = results_JS.prepare_data_for_stacked_cost_plot(folder, list_folders, output_path, specific_scenario_name, filter_component)
+#    plot_results.plot_stacked_costs(dfs, output_path, folder, units, save_fig=True)
+#    plot_results.plot_percentage_stacked_costs(dfs, output_path, folder, units, save_fig=True)
+#
+#    #### Plot figure 2 (Capacities + Stacked flow import)
+#    result_capacities_dfs = results_JS.prepare_data_for_capacity_figure(folder, output_path, list_folders, specific_scenario_name)
+#    plot_results.plot_pareto_capacities(result_capacities_dfs, output_path, folder, units, save_fig=True)
+#
+#    result_flow_import_dfs = results_JS.prepare_data_for_flow_import_stacked(folder, list_folders, output_path, specific_scenario_name)
+#    plot_results.plot_stacked_import(result_flow_import_dfs, output_path, folder, units, save_fig=True)
 
-    #### Plot figure 2 (Capacities + Stacked flow import)
-    result_capacities_dfs = results_JS.prepare_data_for_capacity_figure(folder, output_path, list_folders, specific_scenario_name)
-    plot_results.plot_pareto_capacities(result_capacities_dfs, output_path, folder, units, save_fig=True)
-
-    result_flow_import_dfs = results_JS.prepare_data_for_flow_import_stacked(folder, list_folders, output_path, specific_scenario_name)
-    plot_results.plot_stacked_import(result_flow_import_dfs, output_path, folder, units, save_fig=True)
 
 
-
-    #### Plot figure 3 (Map Capacities and Flow import)
-    results_JS.prepare_data_for_map_plot(folder, list_folders, output_path, scenarios)
+    ### Plot figure 3 (Map Capacities and Flow import)
+    results_JS.prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
     #    #################################################################################
 
     #    #scenarios = ['scenario_0','scenario_25','scenario_75','scenario_100']

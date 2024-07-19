@@ -1576,4 +1576,4 @@ def prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
         save_filename = f"maps_{i}.png"
         #print(df_tech_cap_chunk)
         # Call plot_scenarios with the current chunk
-        plot_results.plot_scenarios(scenarios, df_merge_cap_import, df_demand_water, df_tech_cap_chunk, us_gdf, output_path, folder, save_filename)
+        plot_results.plot_scenarios(scenarios, df_merge_cap_import, df_demands, df_tech_cap_chunk, us_gdf, output_path, folder, save_filename)
