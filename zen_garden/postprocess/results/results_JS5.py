@@ -1526,7 +1526,7 @@ def prepare_data_for_flow_import_stacked(folder, list_folders, output_path, spec
 
 
 
-def prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None):
+def prepare_data_for_map_plot(folder, list_folders, output_path, BAU=False, scenarios=None):
     # Process capacity and demand data from multiple folders
     df_capacities = pd.DataFrame()
     df_demands = pd.DataFrame()
@@ -1567,6 +1567,10 @@ def prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
     if scenarios is None:
         if 'scenario' in df_merge_cap_import.columns:
             scenarios = df_merge_cap_import['scenario'].unique()
+        elif BAU:
+            df_merge_cap_import['scenario'] = 'BAU'
+            df_demands['scenario'] = 'BAU'
+            scenarios = ['BAU']
         else:
             scenarios = ['Cost-Optimal-Scenario']
     print(scenarios)
@@ -1577,14 +1581,17 @@ def prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
     # Get the indices for each chunk
     start_idx = 0
     titles = ['Capacity Addition Weighted by Water Demand', 'Capacity Addition of Water Pumps Weighted by Water Demand', 'Imports of Energy Carriers Weighted by Water Demand']
-    for i, chunk_size in enumerate(chunk_sizes):
+    for i, chunk_size in enumerate(chunk_sizes):       
         end_idx = start_idx + chunk_size
         df_tech_cap_chunk = df_tech_cap_info.iloc[start_idx:end_idx]
         start_idx = end_idx
         save_filename = f"maps_{i}.png"
+        if BAU and i==0:
+          continue
         #print(df_tech_cap_chunk)
         # Call plot_scenarios with the current chunk
         plot_results.plot_scenarios(scenarios, df_merge_cap_import, df_demands, df_tech_cap_chunk, us_gdf, output_path, folder, save_filename, titles[i])
+
 
 
 def create_co2_cost_point(output_path, list_folders):

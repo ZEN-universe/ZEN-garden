@@ -1025,14 +1025,14 @@ def plot_stacked_costs(df, output_path,parent_folder, units, point=None, save_fi
     # Extracting the data needed for the plot
     x = df_converted['carbon_emissions_cumulative']
     y1 = df_converted['cost_capex_total']
-    y2 = df_converted['cost_opex_total']
-    y3 = df_converted['cost_carbon_emissions_total']
-    y4 = df_converted['cost_carrier_total']
+    y2 = df_converted['cost_opex_total']    
+    y3 = df_converted['cost_carrier_total']
+    y4 = df_converted['cost_carbon_emissions_total']
     # Plotting the stacked area chart using Seaborn
     plt.figure(figsize=(10, 6))
     sns.set(style="white")
     colors = ['#64557B', '#F4D35E',  '#62866C', '#CB7876']
-    plt.stackplot(x, y1, y2, y3, y4, labels=['Capex', 'Opex', 'Cost Carrier', 'Cost Carbon Emissions'], colors=colors)
+    plt.stackplot(x, y1, y2, y3, y4, labels=['Capex', 'Opex', 'Cost Carrier', 'Cost $\\mathrm{{CO_2}}$ Emissions'], colors=colors)
     print(f'max capex: {y1.max()}')
 
 
@@ -1089,22 +1089,22 @@ def plot_percentage_stacked_costs(df, output_path, parent_folder, units, save_fi
     # Extracting the data needed for the plot
     x = df_converted['carbon_emissions_cumulative']
     y1 = df_converted['cost_capex_total_pct']
-    y2 = df_converted['cost_opex_total_pct']
-    y3 = df_converted['cost_carbon_emissions_total_pct']
-    y4 = df_converted['cost_carrier_total_pct']
+    y2 = df_converted['cost_opex_total_pct']  
+    y3 = df_converted['cost_carrier_total_pct']
+    y4 = df_converted['cost_carbon_emissions_total_pct']
 
     # Plotting the stacked area chart using Seaborn
     plt.figure(figsize=(10, 6))
     sns.set(style="white")
     colors = ['#64557B', '#F4D35E',  '#62866C', '#CB7876']
-    plt.stackplot(x, y1, y2, y3, y4, labels=['Capex Total', 'Opex Total', 'Carbon Emissions Total', 'Carrier Total'], colors=colors)
+    plt.stackplot(x, y1, y2, y3, y4, labels=['Capex', 'Opex', 'Cost Carrier', 'Cost $\\mathrm{{CO_2}}$ Emissions'], colors=colors)
 
 
 
     plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     plt.ylabel('Cost Percentage [%]')
     plt.title('Cost Percentage Distribution vs. $\\mathrm{{CO_2}}$ Emissions')
-    plt.legend(loc='lower right')
+    plt.legend(loc='upper right')
 
     # Save the figure if required
     save_folder = os.path.join(output_path, parent_folder, 'Figures')
@@ -1124,14 +1124,14 @@ def plot_pareto_capacities(result_capacities_dfs, output_path, parent_folder, un
         ('PV, power', f'PV', units['power'], 'Installed Capacity'),
         ('water_storage, energy', f'Water Storage', units['water_energy'], 'Installed Capacity'),
         ('battery, energy', f'Battery', units['energy'], 'Installed Capacity'),
-        ('diesel_WP, power', f'Diesel Water Pump', units['power'], 'Installed Capacity'),
+#        ('diesel_WP, power', f'Diesel Water Pump', units['power'], 'Installed Capacity'),
         ('el_WP, power', f'Electric Water Pump', units['power'], 'Installed Capacity')
     ]
     # Convert units for carbon emissions
     output_unit_co2, df_converted, _ = get_best_unit(result_capacities_dfs, 'carbon_emissions_cumulative', units['co2'])
 
     # Create the subplots
-    fig, axes = plt.subplots(nrows=1, ncols=5, figsize=(20, 5), sharex=True)
+    fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(20, 5), sharex=True)
 
     # Plot each component
     for ax, (y_axis, title, unit_y_axis, y_axis_label) in zip(axes, capacity_components):
@@ -1301,16 +1301,17 @@ def plot_stacked_procentage_BAU(dfs, output_path, folder, units, save_fig=True):
     dfs['total_cost'] = dfs[['cost_capex_total', 'cost_opex_total', 'cost_carbon_emissions_total', 'cost_carrier_total']].sum(axis=1)
     y1 = dfs['cost_capex_total'].iloc[0] / dfs['total_cost'].iloc[0] * 100
     y2 = dfs['cost_opex_total'].iloc[0]/ dfs['total_cost'].iloc[0] * 100
-    y3 = dfs['cost_carbon_emissions_total'].iloc[0] / dfs['total_cost'].iloc[0] * 100
-    y4 = dfs['cost_carrier_total'].iloc[0] / dfs['total_cost'].iloc[0] * 100
+    
+    y3 = dfs['cost_carrier_total'].iloc[0] / dfs['total_cost'].iloc[0] * 100
+    y4 = dfs['cost_carbon_emissions_total'].iloc[0] / dfs['total_cost'].iloc[0] * 100
     output_unit_co2, df_converted, factor_co2 = get_best_unit(dfs, 'carbon_emissions_cumulative', units['co2'])
     x = df_converted['carbon_emissions_cumulative'].iloc[0].round(1)
     categories = (str(x))
     data_base = {
         'Capex': np.array([y1]),
         'Opex' : np.array([y2]),
-        'Cost Carrier' : np.array([y4]),
-        'Cost Carbon Emissions' : np.array([y3])
+        'Cost Carrier' : np.array([y3]),
+        'Cost $\\mathrm{{CO_2}}$ Emissions' : np.array([y4])
     }
 
 
