@@ -80,7 +80,7 @@ def plots_cost(res, directory, save_fig=True, file_type='png'):
 
 
 
-def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, scenario, save_fig=True):
+def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, scenario, short=False, save_fig=True):
     # Filter DataFrame based on node and carrier
     data_plot = data_plot.reset_index()
     if carrier == 'electricity':
@@ -127,12 +127,20 @@ def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, sce
         'flow_import, diesel': '#FF9C5B'            # muted light orange
     }
 
-
-    # Prepare the plot layout
-    fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(16, 12), sharex=True, sharey=True)
+    if short:
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 12), sharex=True, sharey=True)
+    else:
+        # Prepare the plot layout
+        fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(16, 12), sharex=True, sharey=True)
 
     # Loop through each month to plot
     for i, month in enumerate(range(1, 13)):
+        if short:
+            # Continue for all month beside January and July
+            if month not in [1, 7]:
+                print(f"Skipping month {month}")
+                continue
+        print(f"Processing month {month}")
         # Calculate start_hour and duration for the current month
         start_hour_month = start_hour + (i * 24*31)  # 720 hours per month
         duration_month = 24  # 720 hours in a month
@@ -160,9 +168,18 @@ def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, sce
             colors.append(assigned_color)
 
         # Plot as stacked area plot with specified colors on respective subplot
-        row = i // 4
-        col = i % 4
-        ax = axes[row, col]
+        if short:
+            if month == 1:
+                ax = axes[0]
+            if month == 7:
+                ax = axes[1]
+            else:
+                #Raise a warning
+                print('Month not in [1, 7]')
+        else:
+            row = i // 4
+            col = i % 4
+            ax = axes[row, col]
         filtered_df.plot(kind='area', stacked=True, color=colors, ax=ax)
         # don0t show the legend
         ax.get_legend().remove()
@@ -187,7 +204,10 @@ def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, sce
         fig.suptitle(f'Water balance for {node}', fontsize=16, y=1.05)
 
     # Add legend to the last subplot
-    axes[0, 0].legend(loc='upper left')
+    if short:
+        axes[0].legend(loc='upper left')
+    else:
+        axes[0, 0].legend(loc='upper left')
     if save_fig:
         # Directory and file handling for saving the plot
         folder = 'Figures'
@@ -306,7 +326,7 @@ def get_best_unit(df, column_name, unit_str, show_unit = False, vmax=None):
         print(f"Vmax after conversion: {vmax_output}")
         print(f"Factor to convert from {unit_str}: {output_factor}")
 
-    return output_unit_name, df_out, vmax_output
+    return output_unit_name, df_out, output_factor
 
 
 
@@ -990,15 +1010,15 @@ def plot_boxplot_energy_states(scenarios, filtered_data, parent_folder, output_p
         print(f"Saved plot to {save_path}")
         # plt.show()
 
-def plot_stacked_costs(df, output_path,parent_folder, units, save_fig=True):
+def plot_stacked_costs(df, output_path,parent_folder, units, point=None, save_fig=True):
     # Drop the row where the scenario is ''
     df = df[df['scenario'] != '']
 
     file_title = 'cost_stacked'
     # Convert units for carbon emissions and the y-axis data
-    output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', units['co2'])
+    output_unit_co2, df_converted, factor_co2 = get_best_unit(df, 'carbon_emissions_cumulative', units['co2'])
     columns = ['cost_capex_total', 'cost_opex_total', 'cost_carbon_emissions_total', 'cost_carrier_total']
-    output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, columns, units['cost'])
+    output_unit_y_axis, df_converted, factor_cost = get_best_unit(df_converted, columns, units['cost'])
 
     # Sort df by carbon_emissions_cumulative
     df_converted = df_converted.sort_values(by='carbon_emissions_cumulative')
@@ -1012,7 +1032,22 @@ def plot_stacked_costs(df, output_path,parent_folder, units, save_fig=True):
     plt.figure(figsize=(10, 6))
     sns.set(style="white")
     colors = ['#64557B', '#F4D35E',  '#62866C', '#CB7876']
-    plt.stackplot(x, y1, y2, y3, y4, labels=['Capex Total', 'Opex Total', 'Carbon Emissions Total', 'Carrier Total'], colors=colors)
+    plt.stackplot(x, y1, y2, y3, y4, labels=['Capex', 'Opex', 'Cost Carrier', 'Cost Carbon Emissions'], colors=colors)
+    print(f'max capex: {y1.max()}')
+
+
+    ################################################################################################
+    # Add a separate point
+    if point:
+        print(factor_cost)
+        print(factor_co2)
+        bau_co2_emissions = point[0]*factor_co2  # Example value for CO2 emissions
+        bau_cost = point[1]*factor_cost  # Example value for cost
+        print(bau_cost)
+        plt.scatter(bau_co2_emissions, bau_cost, color='#32769B', zorder=5)
+        plt.text(bau_co2_emissions, bau_cost, 'BAU', fontsize=12, color='black', ha='right')
+
+    ################################################################################################
     plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     plt.ylabel(f'Cost [{output_unit_y_axis}]')
     plt.title('Cost vs. $\\mathrm{{CO_2}}$ Emissions')
@@ -1063,6 +1098,9 @@ def plot_percentage_stacked_costs(df, output_path, parent_folder, units, save_fi
     sns.set(style="white")
     colors = ['#64557B', '#F4D35E',  '#62866C', '#CB7876']
     plt.stackplot(x, y1, y2, y3, y4, labels=['Capex Total', 'Opex Total', 'Carbon Emissions Total', 'Carrier Total'], colors=colors)
+
+
+
     plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     plt.ylabel('Cost Percentage [%]')
     plt.title('Cost Percentage Distribution vs. $\\mathrm{{CO_2}}$ Emissions')
@@ -1193,7 +1231,7 @@ def plot_scenario(ax, df_merge, us_gdf, column_name, title, ylabel, default_vmax
 
 
 # Main plotting logic
-def plot_scenarios(scenarios, df_capacities, df_demand_water, df_tech_cap_info, us_gdf, output_path, folder, save_filename):
+def plot_scenarios(scenarios, df_capacities, df_demand_water, df_tech_cap_info, us_gdf, output_path, folder, save_filename, suptitle):
     num_def_tech_cap = len(df_tech_cap_info)
     print(num_def_tech_cap)
 
@@ -1204,9 +1242,9 @@ def plot_scenarios(scenarios, df_capacities, df_demand_water, df_tech_cap_info, 
         scenario_title = scenario_title.title()
         scenario_title = scenario_title.replace('Scenario_0', 'Net-Zero-Emissions-Scenario')
         scenario_title = scenario_title.replace('Scenario_', 'Cost-Optimal-Scenario')
-        fig.suptitle(f'Plots for Scenario: {scenario_title}', fontsize=24, y=0.75)
+        fig.suptitle(f'{suptitle} for Scenario: {scenario_title}', fontsize=24, y=0.75)
         print(scenario)
-        if scenario != 'no_scenario':
+        if scenario != 'Cost-Optimal-Scenario':
             df_scenario = df_capacities[df_capacities['scenario'] == scenario]
         else:
             df_scenario = df_capacities.copy()

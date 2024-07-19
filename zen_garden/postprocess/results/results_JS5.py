@@ -599,7 +599,7 @@ def create_vmax_scenarios(filename, carriers, path_energy_system, county):
         create_df_vmax_carrier(res_basic, directory, carrier,  path_energy_system, scenarios)
     create_df_vmax_capacity(res_basic, directory, path_energy_system, scenarios, county)
 
-def plot_energy_balances_carriers(res_basic, node, carriers, directory, scenario=None, save_fig=False):
+def plot_energy_balances_carriers(res_basic, node, carriers, directory, scenario=None, short=False, save_fig=False):
     '''Visualise the energy balance at the node for the carrier in year 0 for different time periods'''
     for carrier in carriers:
         data_plot = create_df_components(res_basic, carrier, scenario)
@@ -607,7 +607,7 @@ def plot_energy_balances_carriers(res_basic, node, carriers, directory, scenario
         if carrier == 'electricity':
             data_plot_2 = create_df_components(res_basic, 'diesel', scenario)
             data_plot = pd.concat([data_plot, data_plot_2], axis=0)
-        plot_results.plot_energy_balance_JS2(data_plot_masked, node, carrier, 0, directory, scenario, save_fig)
+        plot_results.plot_energy_balance_JS2(data_plot_masked, node, carrier, 0, directory, scenario, short, save_fig)
 
 
 
@@ -1561,7 +1561,7 @@ def prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
         if 'scenario' in df_merge_cap_import.columns:
             scenarios = df_merge_cap_import['scenario'].unique()
         else:
-            scenarios = ['no_scenario']
+            scenarios = ['Cost-Optimal-Scenario']
     print(scenarios)
 
     # Define chunk sizes for splitting df_tech_cap_info
@@ -1569,6 +1569,7 @@ def prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
 
     # Get the indices for each chunk
     start_idx = 0
+    titles = ['Capacity Addition Weighted by Water Demand', 'Capacity Addition of Water Pumps Weighted by Water Demand', 'Imports of Energy Carriers Weighted by Water Demand']
     for i, chunk_size in enumerate(chunk_sizes):
         end_idx = start_idx + chunk_size
         df_tech_cap_chunk = df_tech_cap_info.iloc[start_idx:end_idx]
@@ -1576,4 +1577,22 @@ def prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
         save_filename = f"maps_{i}.png"
         #print(df_tech_cap_chunk)
         # Call plot_scenarios with the current chunk
-        plot_results.plot_scenarios(scenarios, df_merge_cap_import, df_demands, df_tech_cap_chunk, us_gdf, output_path, folder, save_filename)
+        plot_results.plot_scenarios(scenarios, df_merge_cap_import, df_demands, df_tech_cap_chunk, us_gdf, output_path, folder, save_filename, titles[i])
+
+
+def create_co2_cost_point(output_path, list_folders):
+    cumulative_point = np.zeros(2)
+    for folder_temp in list_folders:
+        directory = os.path.join(output_path, folder_temp)
+        res = Results(directory)
+        df_cost = pd.DataFrame(res.get_df('net_present_cost'))
+        df_co2 = pd.DataFrame(res.get_df('carbon_emissions_cumulative'))
+
+        # Get the point values for the current folder
+        point = np.array([df_co2['carbon_emissions_cumulative'].iloc[0], df_cost['net_present_cost'].iloc[0]])
+
+        # Add the current point values to the cumulative point
+        cumulative_point += point
+    print(point)
+    print(cumulative_point)
+    return cumulative_point
