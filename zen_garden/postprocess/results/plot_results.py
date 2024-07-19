@@ -33,7 +33,7 @@ def plots_cost(res, directory, save_fig=True, file_type='png'):
     :param file_type: The file type of the figure to be saved (default is 'png').
     :return: None
     """
-    # Plotting individual cost components
+    # Plotting individual cost component
     res.plot("cost_capex_total", yearly=False,
                    plot_strings={"title": "Total Capex", "ylabel": "Capex"},
                    save_fig=save_fig, file_type=file_type)
@@ -1038,7 +1038,7 @@ def plot_stacked_costs(df, output_path,parent_folder, units, point=None, save_fi
 
     ################################################################################################
     # Add a separate point
-    if point:
+    if point.any():
         print(factor_cost)
         print(factor_co2)
         bau_co2_emissions = point[0]*factor_co2  # Example value for CO2 emissions
