@@ -874,8 +874,8 @@ def filter_boxplot_no_parent_folder(folder, output_path, specific_scenario_name,
 
 
     # Check if there is a column named scenario
-    if 'scenario' not in filter_df.columns:
-        filter_df['scenario'] = ''
+    if 'scenario' not in filter_df.columns or filter_df['scenario'].isna().all():
+        filter_df['scenario'] = 'no_scenario'
         is_scenario = False
 
 
