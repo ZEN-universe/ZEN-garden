@@ -407,11 +407,14 @@ def main():
     result_flow_import_dfs = results_JS.prepare_data_for_flow_import_stacked(folder, list_folders, output_path, specific_scenario_name)
     plot_results.plot_stacked_import(result_flow_import_dfs, output_path, folder, units, save_fig=True)
 
-
+    #Flow import BAU:
+    result_flow_import_dfs_BAU = results_JS.prepare_data_for_flow_import_stacked(folder, list_folders_BAU, output_path, specific_scenario_name)
+    plot_results.plot_stacked_import_BAU(folder, output_path, result_flow_import_dfs_BAU, units, save_fig=True)
 
     ### Plot figure 3 (Map Capacities and Flow import)
     results_JS.prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
-    #    #################################################################################
+    results_JS.prepare_data_for_map_plot(folder, list_folders_BAU, output_path, scenarios=None)
+    # #    #################################################################################
 
     #    #scenarios = ['scenario_0','scenario_25','scenario_75','scenario_100']
 

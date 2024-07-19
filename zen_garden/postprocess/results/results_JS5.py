@@ -646,7 +646,9 @@ def filter_capacities_state(res_basic, folder, df_tech_cap):
     # Convert the dictionary to a DataFrame
     df_co2 = pd.DataFrame.from_dict(df_co2_dict)
     df_cost = pd.DataFrame.from_dict(df_cost_dict)
-
+    if 'carbon_emissions_cumulative' in df_co2.columns:
+        df_co2.rename(columns={'carbon_emissions_cumulative': 'scenario_cost_optimal'}, inplace=True)
+        df_cost.rename(columns={'net_present_cost': 'scenario_cost_optimal'}, inplace=True)
     # Drop the 'year' column
     if 'year' in df_co2.columns:
         df_co2.drop('year', axis=1, inplace=True)
@@ -723,6 +725,8 @@ def get_df_imports(res_basic,folder):
 
     # Filter for the carriers 'diesel' and 'electricity'
     df_filtered = df_flow_import_sum[(df_flow_import_sum['carrier'] == 'electricity') | (df_flow_import_sum['carrier'] == 'diesel')]
+    if 'scenario' not in df_filtered.columns:
+        df_filtered['scenario'] = 'no_scenario'
     df_grouped = df_filtered.groupby(['scenario', 'carrier']).sum()
     df_grouped = df_grouped.drop(columns=['node'])
     df_grouped.reset_index(inplace=True)
@@ -740,7 +744,9 @@ def get_df_imports(res_basic,folder):
     # Convert the dictionary to a DataFrame
     df_co2 = pd.DataFrame.from_dict(df_co2_dict)
     df_cost = pd.DataFrame.from_dict(df_cost_dict)
-
+    if 'carbon_emissions_cumulative' in df_co2.columns:
+        df_co2.rename(columns={'carbon_emissions_cumulative': 'no_scenario'}, inplace=True)
+        df_cost.rename(columns={'net_present_cost': 'no_scenario'}, inplace=True)
     # Drop the 'year' column
     if 'year' in df_co2.columns:
         df_co2.drop('year', axis=1, inplace=True)
@@ -757,6 +763,7 @@ def get_df_imports(res_basic,folder):
     # Merge capacities_df with df_co2 on 'scenario'
     merged_df = pivot_df.merge(df_co2_2, on='scenario', how='left')
     merged_df = merged_df.merge(df_cost_2, on='scenario', how='left')
+    print(merged_df)
     return merged_df
 
 

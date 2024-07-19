@@ -1344,3 +1344,59 @@ def plot_stacked_procentage_BAU(dfs, output_path, folder, units, save_fig=True):
             os.makedirs(save_file_path)
         plt.savefig(os.path.join(save_file_path, save_file), bbox_inches='tight')
     plt.show()
+
+
+def plot_stacked_import_BAU(folder, output_path, df, units, save_fig=True):
+    # Drop the row where the scenario is ''
+    df = df[df['scenario'] != '']
+
+    file_title = 'import_stacked_BAU'
+    # Convert units for carbon emissions and the y-axis data
+    output_unit_co2, df_converted, _ = get_best_unit(df, 'carbon_emissions_cumulative', units['co2'])
+    columns = ['diesel', 'electricity']
+    output_unit_y_axis, df_converted, _ = get_best_unit(df_converted, columns, units['energy'])
+
+    # Sort df by carbon_emissions_cumulative
+    df_converted = df_converted.sort_values(by='carbon_emissions_cumulative')
+    # Extracting the data needed for the plot
+    x = df_converted['carbon_emissions_cumulative'].iloc[0].round(1)
+    y1 = df_converted['diesel'].iloc[0]
+    y2 = df_converted['electricity'].iloc[0]
+
+    cat1 = f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]: {x}'
+    categories = (cat1)
+    data_base = {
+        'Diesel': np.array([y1]),
+        'Electricity' : np.array([y2]),
+    }
+
+
+    width = 0.2  # the width of the bars
+    colors = ['#64557B', '#F4D35E']
+
+
+    fig, ax = plt.subplots(figsize=(4, 6))
+
+
+    # Initialize the bottom position for the stacked bars
+    bottom = np.zeros(len(categories))
+
+    # Plot each component with specified colors
+    for (base, base_count), color in zip(data_base.items(), colors):
+        p = ax.bar(categories, base_count, width, label=base, bottom=bottom, color=color)
+        bottom += base_count
+
+    ax.set_title('Imported Energy Carriers in the BAU scenario')
+    ax.set_ylabel(f'Imports [{output_unit_y_axis}]')
+    ax.set_xlabel(f'$\\mathrm{{CO_2}}$  Emissions [{output_unit_co2}]')
+    # Add some space to the right and left of the bars
+    ax.margins(x=0.2)
+
+    # Place the legend in the upper right corner
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), shadow=True, ncol=2)
+    if save_fig:
+        save_file_path = os.path.join(output_path, folder, 'Figures')    # Save the figure if required
+        if not os.path.exists(save_file_path):
+            os.makedirs(save_file_path)
+        plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
+    plt.show()
