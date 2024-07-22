@@ -21,7 +21,7 @@ Navigate to ``ZEN-garden`` on Github and click on the "Fork" button at the top r
 .. image:: _static/images/create_fork.png
     :alt: creating a fork
 
-*Clone your forked repository using Git-Bash:*
+**Clone your forked repository using Git-Bash:**
 
 .. code-block:: bash 
     git clone git@github.com:your-username/ZEN-garden.git
@@ -30,13 +30,13 @@ Navigate to ``ZEN-garden`` on Github and click on the "Fork" button at the top r
 .. note:: 
 If you get the permissions error "Permission denied (publickey)", you will need to create the SSH key. Follow the instructions on `how to generate an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key>`_ and then how to add it to your account. You will not need to add the SSH key to the Agent, so only follow the first website until before `Adding your SSH key to the ssh-agent <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent>`_
 
-*Track the upstream repository:*
+**Track the upstream repository:**
 
 .. code-block:: bash
     git remote add upstream git@github.com:ZEN-universe/ZEN-garden.git
     git fetch upstream
 
-*Create the ZEN-garden conda environment:*
+**Create the ZEN-garden conda environment:**
 
 Open the Anaconda prompt. Change the directory to the root directory of your local ZEN-garden repository where the file ``zen_garden_env.yml`` is located::
 
@@ -48,7 +48,7 @@ Now you can install the conda environment for zen-garden with the following comm
 
 The installation may take a couple of minutes. If the installation was successful, you can see the environment at ``_C:\Users\username \anaconda3\envs`` or wherever Anaconda is installed
 
-*Create PyCharm Configurations:*
+**Create PyCharm Configurations:**
 
 To execute ZEN-garden's different functionalities configurations are used. 
 To add them, follow the steps at "PyCharm Setup": [Create Configurations](https://github.com/RRE-ETH/ZEN-garden/discussions/183)
