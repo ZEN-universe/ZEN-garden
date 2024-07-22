@@ -54,9 +54,8 @@ To execute ZEN-garden's different functionalities configurations are used.
 To add them, follow the steps at "PyCharm Setup": [Create Configurations](https://github.com/RRE-ETH/ZEN-garden/discussions/183)
 
 We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ``zen_garden_env.yml``, the zen-garden package, as well as all other dependencies, are installed automatically. 
-You can also install the zen-garden package directly by running the following command in the root directory of your repository.
+You can also install the zen-garden package directly by running the following command in the root directory of your repository::
 
-::
   pip install -e
 
 
