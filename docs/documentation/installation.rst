@@ -42,7 +42,7 @@ Now you can install the conda environment for zen-garden with the following comm
 
   conda env create -f zen_garden_env.yml
 
- The installation may take a couple of minutes. If the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
+The installation may take a couple of minutes. If the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
 
 7. Create PyCharm Configurations: 
 To execute ZEN-garden's different functionalities configurations are used. 
