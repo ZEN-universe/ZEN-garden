@@ -30,6 +30,15 @@ language = "en"
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.mathjax',
+              'sphinx.ext.autodoc',
+              'sphinx.ext.autosummary',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.todo',
+              'sphinx.ext.mathjax',
+              'sphinx.ext.napoleon',
+              'sphinx_reredirects',
+              'nbsphinx',
+              'nbsphinx_link',
               'myst_parser',
               "sphinx.ext.imgconverter",  # for SVG conversion
              ]
@@ -69,7 +78,7 @@ html_title = "ZEN-garden"
 html_short_title = "ZEN-garden"
 
 # The name of an image file (relative to this directory)
-html_logo = "images/zen_garden_logo.png"
+html_logo = "images/zen_garden_logo.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
