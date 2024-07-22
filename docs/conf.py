@@ -68,7 +68,7 @@ html_title = "ZEN-garden"
 html_short_title = "ZEN"
 
 # The name of an image file (relative to this directory)
-html_logo = "img/zen-garden-logo.svg"
+html_logo = "imagesg/zen_garden_logo.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
