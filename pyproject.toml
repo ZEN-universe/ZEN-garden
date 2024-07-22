@@ -8,12 +8,13 @@ authors = [
   {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
   {name = "Alissa Ganter", email = "aganter@ethz.ch"}
   ]
+dynamic = ["version", "description"]
 
 dependencies = [
     "xarray",
     "cython",
     "pytest",
-    "numpy",
+    "numpy<=1.26.4",
     "pandas",
     "geopandas",
     "scipy",
