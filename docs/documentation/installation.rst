@@ -15,10 +15,12 @@ Installing ZEN-garden
 ==============
 
 If it's your first time using GitHub, register at `https://github.com/`_. Login to Github and create a fork of the ZEN-garden repository. 
+
 1. Navigate to ``ZEN-garden`` on Github
+
 2. Click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
 
-.. image:: images/create_fork.png
+.. image:: _static/images/create_fork.png
     :alt: creating a fork
 
 3. Clone your forked repository using Git-Bash:
