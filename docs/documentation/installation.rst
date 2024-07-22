@@ -15,7 +15,7 @@ Installing ZEN-garden
 ==============
 
 If it's your first time using GitHub, register at `>https://github.com/>`_. Login to Github and create a fork of the ZEN-garden repository. 
-1. Navigate to ```ZEN-garden on Github
+1. Navigate to ``ZEN-garden`` on Github
 2. Click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
 
 .. image:: images/create_fork.png
@@ -34,7 +34,7 @@ If it's your first time using GitHub, register at `>https://github.com/>`_. Logi
   git fetch upstream
 
 5. Create the ZEN-garden conda environment: 
-Open the Anaconda prompt. Change the directory to the root directory of your local ZEN-garden repository where the file ```zen_garden_env.yml is located::
+Open the Anaconda prompt. Change the directory to the root directory of your local ZEN-garden repository where the file ``zen_garden_env.yml`` is located::
 
   cd <path_to_zen_garden_repo>
 
@@ -42,7 +42,7 @@ Now you can install the conda environment for zen-garden with the following comm
 
   conda env create -f zen_garden_env.yml
 
-The installation may take a couple of minutes. If the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
+The installation may take a couple of minutes. If the installation was successful, you can see the environment at ``_C:\Users\username \anaconda3\envs`` or wherever Anaconda is installed
 
 7. Create PyCharm Configurations: 
 To execute ZEN-garden's different functionalities configurations are used. 
