@@ -1,0 +1,11 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "ZEN-garden"
+authors = [
+  {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
+  {name = "Alissa Ganter", email = "aganter@ethz.ch"}
+  ]
+dynamic = ["version", "description"]
