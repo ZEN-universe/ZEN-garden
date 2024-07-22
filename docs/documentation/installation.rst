@@ -14,7 +14,7 @@ If it is your first time using Python, we recommend using `conda <https://docs.c
 Installing ZEN-garden 
 ==============
 
-If it's your first time using GitHub, register at `>https://github.com/>`_. Login to Github and create a fork of the ZEN-garden repository. 
+If it's your first time using GitHub, register at `https://github.com/`_. Login to Github and create a fork of the ZEN-garden repository. 
 1. Navigate to ``ZEN-garden`` on Github
 2. Click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
 
@@ -49,7 +49,7 @@ The installation may take a couple of minutes. If the installation was successfu
 To execute ZEN-garden's different functionalities configurations are used. 
 To add them, follow the steps at "PyCharm Setup": [Create Configurations](https://github.com/RRE-ETH/ZEN-garden/discussions/183)
 
-We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ```zen_garden_env.yml, the zen-garden package, as well as all other dependencies, are installed automatically. 
+We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ``zen_garden_env.yml``, the zen-garden package, as well as all other dependencies, are installed automatically. 
 You can also install the zen-garden package directly by running the following command in the root directory of your repository::
 
   pip install -e
