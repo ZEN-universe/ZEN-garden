@@ -8,7 +8,6 @@ authors = [
   {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
   {name = "Alissa Ganter", email = "aganter@ethz.ch"}
   ]
-dynamic = ["version", "description"]
 
 dependencies = [
     "xarray",
