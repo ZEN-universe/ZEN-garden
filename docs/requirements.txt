@@ -9,7 +9,6 @@ coverage==7.5.4
 pint==0.24.1
 matplotlib==3.8.4
 entsoe-py==0.6.8
-gurobi==11.0.2
 pytables==3.9.2
 pydantic==2.8.2
 tsam==2.3.1
