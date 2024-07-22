@@ -6,7 +6,6 @@ pandas==2.2.2
 geopandas==1.0.1
 scipy==1.14.0
 coverage==7.5.4
-glpk==5.0
 pint==0.24.1
 matplotlib==3.8.4
 entsoe-py==0.6.8
