@@ -29,7 +29,9 @@ release = 'v1.2.0'
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.mathjax',
-              'myst_parser']
+              'myst_parser',
+              "sphinx.ext.imgconverter",  # for SVG conversion
+             ]
 
 # Specify the special members to include in the documentation
 autodoc_default_options = {
@@ -51,6 +53,22 @@ exclude_patterns = []
 # a list of builtin themes.
 #
 html_theme = 'sphinx_book_theme'
+
+# Theme-specific options to customize the look of a theme
+# For a list of options available for each theme, see the documentation.
+html_theme_options = {
+    "repository_url": "https://github.com/pypsa/pypsa",
+    "use_repository_button": True,
+    "show_navbar_depth": 1,
+    "show_toc_level": 2,
+}
+
+# The name for this set of Sphinx documents.  
+html_title = "ZEN-garden"
+html_short_title = "ZEN"
+
+# The name of an image file (relative to this directory)
+html_logo = "img/zen-garden-logo.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
