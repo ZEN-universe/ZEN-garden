@@ -17,6 +17,7 @@ Documentation
 * :doc:`/documentation/functionalities`
 * :doc:`/documentation/target_group`
 * :doc:`/documentation/dependencies`
+* :doc:`/documentation/license`
 
 
 .. toctree::
@@ -26,27 +27,57 @@ Documentation
    documentation/functionalities
    documentation/target_group
    documentation/dependencies
+   documentation/license
 
 **User guide**
+
+* :doc:`/documentation/installation`
+* :doc:`/documentation/building_models`
+* :doc:`/documentation/running_models`
+* :doc:`/documentation/analyzing_models`
 
 .. toctree::
    :maxdepth: 3
    :caption: User guide
 
+   documentation/installation
+   documentation/building_models
+   documentation/running_models   
+   documentation/analyzing_models
+   
 **Dataset Examples**
 
 .. toctree::
    :maxdepth: 3
    :caption: Dataset Examples
 
+
 **Contributing & Support**
+
+* :doc:`/documentation/contributing`
+* :doc:`/documentation/troubleshooting`
+* :doc:`/documentation/get_help`
 
 .. toctree::
    :maxdepth: 3
    :caption: Contributing & Support
 
+   documentation/contributing
+   documentation/troubleshooting
+   documentation/get_help   
+
 **References**
+
+* :doc:`/documentation/api_reference`
+* :doc:`/documentation/release_notes`
+* :doc:`/documentation/citing`
+* :doc:`/documentation/zen_garden_developers`
 
 .. toctree::
    :maxdepth: 3
    :caption: References
+
+   documentation/api_reference
+   documentation/release_notes
+   documentation/citing   
+   documentation/zen_garden_developers
