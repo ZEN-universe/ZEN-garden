@@ -20,6 +20,7 @@ project = 'ZEN-garden'
 copyright = '2024, Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Giovanni Sansavini'
 author = 'Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Giovanni Sansavini'
 release = 'v1.2.0'
+language = "en"
 
 # -- General configuration ---------------------------------------------------
 
@@ -65,7 +66,7 @@ html_theme_options = {
 
 # The name for this set of Sphinx documents.  
 html_title = "ZEN-garden"
-html_short_title = "ZEN"
+html_short_title = "ZEN-garde"
 
 # The name of an image file (relative to this directory)
 html_logo = "imagesg/zen_garden_logo.svg"
