@@ -24,6 +24,7 @@ If it's your first time using GitHub, register at `>https://github.com/>`_. Logi
 3. Clone your forked repository using Git-Bash::
 
   git clone git@github.com:your-username/ZEN-garden.git
+  
   cd ZEN-garden
 
 *Note:* If you get the permissions error "Permission denied (publickey)", you will need to create the SSH key. Follow the instructions on `how to generate an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key>`_ and then how to add it to your account. You will not need to add the SSH key to the Agent, so only follow the first website until before `Adding your SSH key to the ssh-agent <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent>`_
