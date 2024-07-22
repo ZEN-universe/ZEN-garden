@@ -11,27 +11,27 @@ authors = [
 dynamic = ["version", "description"]
 
 dependencies = [
-    "xarray"
-    "cython"
-    "pytest"
-    "numpy"
-    "pandas"
-    "geopandas"
-    "scipy"
-    "coverage"
-    "pint"
-    "matplotlib"
-    "entsoe-py"
-    "tables"
-    "pydantic"
-    "tsam"
-    "h5py"
-    "filelock"
-    "ordered-set"
-    "pyogrio"
-    "psutil"
-    "linopy"<=0.3.10
-    "sphinx"
-    "myst-parser"
-    "sphinx_book_theme"
+    "xarray",
+    "cython",
+    "pytest",
+    "numpy",
+    "pandas",
+    "geopandas",
+    "scipy",
+    "coverage",
+    "pint",
+    "matplotlib",
+    "entsoe-py",
+    "tables",
+    "pydantic",
+    "tsam",
+    "h5py",
+    "filelock",
+    "ordered-set",
+    "pyogrio",
+    "psutil",
+    "linopy"<=0.3.10,
+    "sphinx",
+    "myst-parser",
+    "sphinx_book_theme",
 ]
