@@ -18,8 +18,7 @@ If it's your first time using GitHub, register at `>https://github.com/>`_. Logi
 1. Navigate to ``ZEN-garden`` on Github
 2. Click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
 
-.. image:: images/create_fork.png
-  :width: 2326
+.. image:: /images/create_fork.png
 
 3. Clone your forked repository using Git-Bash:
 
