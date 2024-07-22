@@ -13,6 +13,7 @@ ZEN-garden is developed and maintained by the `Reliability and Risk Engineering 
 Documentation
 ======================================
 **Overview**
+
 * :doc:`/documentation/functionalities`
 * :doc:`/documentation/target_group`
 * :doc:`/documentation/dependencies`
