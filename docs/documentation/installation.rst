@@ -17,24 +17,29 @@ Installing ZEN-garden
 If it's your first time using GitHub, register at `>https://github.com/>`_. Login to Github and create a fork of the ZEN-garden repository. 
 1. Navigate to ```ZEN-garden on Github
 2. Click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
+
 .. image:: images/create_fork.png
   :width: 2326
 
-3. Clone your forked repository using Git-Bash
+3. Clone your forked repository using Git-Bash::
+
   git clone git@github.com:your-username/ZEN-garden.git
   cd ZEN-garden
 
 *Note:* If you get the permissions error "Permission denied (publickey)", you will need to create the SSH key. Follow the instructions on `how to generate an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key>`_ and then how to add it to your account. You will not need to add the SSH key to the Agent, so only follow the first website until before `Adding your SSH key to the ssh-agent <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent>`_
 
-4. Track the upstream repository:
+4. Track the upstream repository::
+
   git remote add upstream git@github.com:ZEN-universe/ZEN-garden.git
   git fetch upstream
 
 5. Create the ZEN-garden conda environment: 
-Open the Anaconda prompt. Change the directory to the root directory of your local ZEN-garden repository where the file ```zen_garden_env.yml is located.
+Open the Anaconda prompt. Change the directory to the root directory of your local ZEN-garden repository where the file ```zen_garden_env.yml is located::
+
   cd <path_to_zen_garden_repo>
 
-Now you can install the conda environment for zen-garden with the following command.
+Now you can install the conda environment for zen-garden with the following command::
+
   conda env create -f zen_garden_env.yml
 
  The installation may take a couple of minutes. If the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
@@ -44,7 +49,7 @@ To execute ZEN-garden's different functionalities configurations are used.
 To add them, follow the steps at "PyCharm Setup": [Create Configurations](https://github.com/RRE-ETH/ZEN-garden/discussions/183)
 
 We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ```zen_garden_env.yml, the zen-garden package, as well as all other dependencies, are installed automatically. 
-You can also install the zen-garden package directly by running the following command in the root directory of your repository:
+You can also install the zen-garden package directly by running the following command in the root directory of your repository::
 
   pip install -e
 
