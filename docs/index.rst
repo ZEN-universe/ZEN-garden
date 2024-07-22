@@ -13,18 +13,18 @@ ZEN-garden is developed and maintained by the `Reliability and Risk Engineering 
 Documentation
 ======================================
 **Overview**
-* :doc: `/documentation/functionalities`
-* :doc: `/documentation/target_group`
-* :doc: `/documentation/dependencies`
+* :doc:`/documentation/functionalities`
+* :doc:`/documentation/target_group`
+* :doc:`/documentation/dependencies`
 
 
 .. toctree::
    :maxdepth: 3
    :caption: Overview
 
-documentation/functionalities
-documentation/target_group
-documentation/dependencies
+   documentation/functionalities
+   documentation/target_group
+   documentation/dependencies
 
 **User guide**
 
