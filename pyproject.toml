@@ -8,7 +8,9 @@ authors = [
   {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
   {name = "Alissa Ganter", email = "aganter@ethz.ch"}
   ]
-dynamic = ["version", "description"]
+version = "1.2.0"
+description="ZEN-garden is an optimization model of energy systems and value chains."
+
 
 dependencies = [
     "xarray",
