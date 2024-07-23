@@ -106,6 +106,6 @@ To run the test and also get the coverage report, we use the pipeline settings o
 
 In the end, your configuration to run the coverage should look similar to this:
 
-.. image:: ../images/pycharm_run_coverage.png
+.. image:: ../images/pycharm_coverage.png
     :alt: run coverage
 
