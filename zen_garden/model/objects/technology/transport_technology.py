@@ -265,7 +265,7 @@ class TransportTechnology(Technology):
 
         # since it is an equality con we add lower and upper bounds
         constraints.add_constraint_block(model, name=f"disjunct_transport_technology_off_{tech}_{capacity_type}_{edge}_{time}_lower",
-                                         constraint=(model.variables["flow_transport"][tech, edge, time].to_linexpr()
+                                         constraint=(model.variables["flow_transport"].loc[tech, edge, time].to_linexpr()
                                                      == 0),
                                          disjunction_var=binary_var)
 

@@ -3,7 +3,6 @@ Title:        ZEN-GARDEN
 Created:      October-2021
 Authors:      Alissa Ganter (aganter@ethz.ch)
 Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Description:  Model settings. Overwrite default values defined in default_config.py here.
 ==========================================================================================================================================================================="""
 
@@ -24,5 +23,3 @@ analysis["objective"] = "total_cost"
 
 ## Solver - settings update compared to default values
 solver["name"] = "highs" # free solver
-
-
