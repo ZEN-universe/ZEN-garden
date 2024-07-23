@@ -814,6 +814,7 @@ class TechnologyRules(GenericRule):
         capacity_existing = self.parameters.capacity_existing
         knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
         interval_between_years = self.system["interval_between_years"]
+        spillover_rate = self.parameters.knowledge_spillover_rate
         # technology diffusion rate per investment period
         tdr = (1 + self.parameters.max_diffusion_rate) ** interval_between_years - 1
         tdr = tdr.broadcast_like(capacity_addition.lower)
@@ -839,7 +840,9 @@ class TechnologyRules(GenericRule):
              itertools.product(self.sets["set_time_steps_yearly"], self.sets["set_time_steps_yearly"])
              if py < y],
             names=["set_time_steps_yearly", "set_time_steps_yearly_prev"])
-        # only formulate term_spillover if there are previous years
+        # only formulate term_knowledge if there are previous years
+        term_knowledge_no_spillover = capacity_addition.where(False) # dummy term
+        term_knowledge = capacity_addition.where(False) # dummy term
         if len(years) != 0:
             # kdr for capacity additions
             kdr = {(y, py): (1 - knowledge_depreciation_rate) ** (interval_between_years * (y - 1 - py))
@@ -852,23 +855,22 @@ class TechnologyRules(GenericRule):
             years = years.to_xarray().fillna(0)
             # expand and sum capacity addition over all nodes for spillover
             capacity_addition_years = capacity_addition.rename({"set_time_steps_yearly": "set_time_steps_yearly_prev"}).broadcast_like(years)
-            location_index = pd.Series(index=pd.MultiIndex.from_product(
-                [capacity_addition.coords["set_location"].values, capacity_addition.coords["set_location"].values],
-                names=["set_location", "set_location_temp"])).to_xarray()
-            capacity_addition_location = capacity_addition_years.rename({"set_location": "set_location_temp"}).broadcast_like(
-                location_index).sel({"set_location_temp": self.sets["set_nodes"]}).sum("set_location_temp")
-            # calculate term spillover
-            term_spillover = capacity_addition_location - capacity_addition_years
-            sr = xr.full_like(term_spillover.const, self.parameters.knowledge_spillover_rate)
-            sr = sr.where(mask_technology_type, 0).where(mask_location, 0)
-            # annual knowledge addition
-            term_knowledge = capacity_addition_years + sr * term_spillover
             kdr = kdr.broadcast_like(capacity_addition_years.lower)
-            term_knowledge = tdr*(term_knowledge * kdr).sum("set_time_steps_yearly_prev")
             term_knowledge_no_spillover = tdr * (capacity_addition_years * kdr).sum("set_time_steps_yearly_prev")
-        else:
-            term_knowledge = capacity_addition.where(False)
-            term_knowledge_no_spillover = capacity_addition.where(False)
+            # if spillover rate is not inf, calculate term knowledge with spillover
+            if spillover_rate != np.inf:
+                location_index = pd.Series(index=pd.MultiIndex.from_product(
+                    [capacity_addition.coords["set_location"].values, capacity_addition.coords["set_location"].values],
+                    names=["set_location", "set_location_temp"])).to_xarray()
+                capacity_addition_location = capacity_addition_years.rename({"set_location": "set_location_temp"}).broadcast_like(
+                    location_index).sel({"set_location_temp": self.sets["set_nodes"]}).sum("set_location_temp")
+                # calculate term spillover
+                term_spillover = capacity_addition_location - capacity_addition_years
+                sr = xr.full_like(term_spillover.const, spillover_rate)
+                sr = sr.where(mask_technology_type, 0).where(mask_location, 0)
+                # annual knowledge addition
+                term_knowledge = capacity_addition_years + sr * term_spillover
+                term_knowledge = tdr*(term_knowledge * kdr).sum("set_time_steps_yearly_prev")
         # unbounded market share --> only for same technology class
         capacity_previous = self.variables["capacity_previous"]
         market_share_unbounded = {
@@ -881,35 +883,34 @@ class TechnologyRules(GenericRule):
         market_share_unbounded = market_share_unbounded.to_xarray().broadcast_like(capacity_previous.lower).fillna(0)
         mask_market_share_unbounded = market_share_unbounded != 0
         term_unbounded_addition = (market_share_unbounded * capacity_previous.rename({"set_technologies":"set_other_technologies"})).where(mask_market_share_unbounded).sum("set_other_technologies")
-        # build lhs
-        lhs_an = lp.merge(1*capacity_addition,-1*term_knowledge,-1*term_unbounded_addition, compat="broadcast_equals")
-        lhs_sn = lp.merge(1*capacity_addition,-1*term_knowledge_no_spillover,-1*term_unbounded_addition, compat="broadcast_equals").sum("set_location")
-        # build rhs
-        delta_years = interval_between_years*(capacity_addition.coords["set_time_steps_yearly"]-1-self.energy_system.set_time_steps_yearly[0])
+        # existing capacities
+        delta_years = interval_between_years * (capacity_addition.coords["set_time_steps_yearly"] - 1 - self.energy_system.set_time_steps_yearly[0])
         lifetime_existing = self.parameters.lifetime_existing
         lifetime = self.parameters.lifetime
-        kdr_existing = (1 - knowledge_depreciation_rate)**(delta_years + lifetime - lifetime_existing)
-        capacity_existing_total = capacity_existing + self.parameters.knowledge_spillover_rate*(capacity_existing.sum("set_location")-capacity_existing).where(mask_technology_type,0)
+        kdr_existing = (1 - knowledge_depreciation_rate) ** (delta_years + lifetime - lifetime_existing)
+        capacity_existing_total = capacity_existing + spillover_rate * (capacity_existing.sum("set_location") - capacity_existing).where(mask_technology_type, 0)
         capacity_existing_total_nosr = capacity_existing
-        rhs_an = tdr * (capacity_existing_total * kdr_existing).sum("set_technologies_existing") + self.parameters.capacity_addition_unbounded
+        # build constraints for all nodes summed ("sn")
+        lhs_sn = lp.merge(1*capacity_addition,-1*term_knowledge_no_spillover,-1*term_unbounded_addition, compat="broadcast_equals").sum("set_location")
         rhs_sn = (tdr * (capacity_existing_total_nosr * kdr_existing).sum("set_technologies_existing") + self.parameters.capacity_addition_unbounded).sum("set_location")
-        # mask for tdr == inf
-        rhs_an = rhs_an.broadcast_like(lhs_an.const)
         rhs_sn = rhs_sn.broadcast_like(lhs_sn.const)
-        lhs_an = self.align_and_mask(lhs_an, mask_inf_tdr)
-        rhs_an = self.align_and_mask(rhs_an, mask_inf_tdr)
+        # mask for tdr == inf
         lhs_sn = self.align_and_mask(lhs_sn, mask_inf_tdr_sum)
         rhs_sn = self.align_and_mask(rhs_sn, mask_inf_tdr_sum)
-        # lhs_an = lhs_an.where(mask_inf_tdr)
-        # rhs_an = rhs_an.where(mask_inf_tdr)
-        # lhs_sn = lhs_sn.where(mask_inf_tdr_sum)
-        # rhs_sn = rhs_sn.where(mask_inf_tdr_sum)
-        # combine
+        # combine constraint
         constraints_sn = lhs_sn <= rhs_sn
-        constraints_an = lhs_an <= rhs_an
-        ### add constraints
-        self.constraints.add_constraint("constraint_technology_diffusion_limit",constraints_an)
-        self.constraints.add_constraint("constraint_technology_diffusion_limit_total",constraints_sn)
+        self.constraints.add_constraint("constraint_technology_diffusion_limit_total", constraints_sn)
+        # build constraints for all nodes ("an") if spillover rate is not inf
+        if spillover_rate != np.inf:
+            lhs_an = lp.merge(1*capacity_addition,-1*term_knowledge,-1*term_unbounded_addition, compat="broadcast_equals")
+            rhs_an = tdr * (capacity_existing_total * kdr_existing).sum("set_technologies_existing") + self.parameters.capacity_addition_unbounded
+            rhs_an = rhs_an.broadcast_like(lhs_an.const)
+            # mask for tdr == inf
+            lhs_an = self.align_and_mask(lhs_an, mask_inf_tdr)
+            rhs_an = self.align_and_mask(rhs_an, mask_inf_tdr)
+            # combine constraint
+            constraints_an = lhs_an <= rhs_an
+            self.constraints.add_constraint("constraint_technology_diffusion_limit",constraints_an)
 
     def constraint_capex_yearly(self):
         """ aggregates the capex of built capacity and of existing capacity
