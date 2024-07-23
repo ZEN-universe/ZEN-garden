@@ -25,11 +25,6 @@ Documentation
 
 **User guide**
 
-* :doc:`/documentation/installation`
-* :doc:`/documentation/building_models`
-* :doc:`/documentation/running_models`
-* :doc:`/documentation/analyzing_models`
-
 .. toctree::
    :maxdepth: 3
    :caption: User guide
@@ -48,10 +43,6 @@ Documentation
 
 **Contributing & Support**
 
-* :doc:`/documentation/contributing`
-* :doc:`/documentation/troubleshooting`
-* :doc:`/documentation/get_help`
-
 .. toctree::
    :maxdepth: 3
    :caption: Contributing & Support
@@ -61,11 +52,6 @@ Documentation
    documentation/get_help   
 
 **References**
-
-* :doc:`/documentation/api_reference`
-* :doc:`/documentation/release_notes`
-* :doc:`/documentation/citing`
-* :doc:`/documentation/zen_garden_developers`
 
 .. toctree::
    :maxdepth: 3
