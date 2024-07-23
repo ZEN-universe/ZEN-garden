@@ -14,12 +14,6 @@ Documentation
 ======================================
 **Overview**
 
-* :doc:`/documentation/functionalities`
-* :doc:`/documentation/target_group`
-* :doc:`/documentation/dependencies`
-* :doc:`/documentation/license`
-
-
 .. toctree::
    :maxdepth: 3
    :caption: Overview
