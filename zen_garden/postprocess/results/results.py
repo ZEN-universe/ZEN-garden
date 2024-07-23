@@ -538,16 +538,16 @@ class Results:
     def extract_carrier(
         self, dataframe: pd.DataFrame, carrier: str, scenario_name: str
     ) -> pd.DataFrame:
-        """Returns a dataframe that only contains the desired carrier. 
+        """Returns a dataframe that only contains the desired carrier.
         If carrier is not contained in the dataframe, the technologies that have the provided reference carrier are returned.
-        
+
         :param dataframe: pd.Dataframe containing the base data
         :param carrier: name of the carrier
         :param scenario_name: name of the scenario
         :return: filtered pd.Dataframe containing only the provided carrier
         """
 
-        if "carrier" not in dataframe.index.dtypes:
+        if "carrier" not in dataframe.index.names:
             reference_carriers = self.get_df(
                 "set_reference_carriers", scenario_name=scenario_name
             )[scenario_name]
@@ -555,18 +555,16 @@ class Results:
             for tech in dataframe.index.get_level_values("technology"):
                 if reference_carriers[tech] == carrier:
                     data_extracted = pd.concat(
-                        [data_extracted, dataframe.loc[(tech, slice(None)), :]], axis=0
+                        [data_extracted, dataframe.query(f"technology == '{tech}'")],
+                        axis=0,
                     )
             return data_extracted
+
         # check if desired carrier isn't contained in data (otherwise .loc raises an error)
         if carrier not in dataframe.index.get_level_values("carrier"):
             return None
-        if dataframe.index.nlevels == 2:
-            dataframe = dataframe.loc[(carrier, slice(None)), :]
-            return dataframe
-        elif dataframe.index.nlevels == 3:
-            dataframe = dataframe.loc[(slice(None), carrier, slice(None)), :]
-            return dataframe
+
+        return dataframe.query(f"carrier == '{carrier}'")
 
     def edit_carrier_flows(
         self, data: pd.DataFrame, node: str, direction: str, scenario: str
@@ -601,7 +599,7 @@ class Results:
     def get_energy_balance_dataframes(
         self, node: str, carrier: str, year: int, scenario_name: Optional[str] = None
     ) -> dict[str, "pd.Series[Any]"]:
-        """Returns a dictionary with all dataframes that are relevant for the energy balance. 
+        """Returns a dictionary with all dataframes that are relevant for the energy balance.
         The dataframes "flow_transport_in" and "flow_transport_out" contain the data of "flow_transport", filtered for in / out flow.
 
         :param node: Node of interest
@@ -634,7 +632,13 @@ class Results:
                 full_ts = self.get_full_ts(
                     "flow_transport", scenario_name=scenario_name, year=year
                 )
-                full_ts = self.edit_carrier_flows(full_ts, node, "in", scenario_name)
+                transport_loss = self.get_full_ts(
+                    "flow_transport_loss", scenario_name=scenario_name, year=year
+                )
+
+                full_ts = self.edit_carrier_flows(
+                    full_ts - transport_loss, node, "in", scenario_name
+                )
             elif component == "flow_transport_out":
                 full_ts = self.get_full_ts(
                     "flow_transport", scenario_name=scenario_name, year=year
@@ -647,11 +651,8 @@ class Results:
 
             carrier_df = self.extract_carrier(full_ts, carrier, scenario_name)
             if carrier_df is not None:
-                carrier_df = carrier_df.drop_duplicates()
-
                 if "node" in carrier_df.index.names:
                     carrier_df = carrier_df.query(f"node == '{node}'")
-
                 ans[component] = carrier_df.multiply(factor)
 
         return ans
