@@ -14,25 +14,27 @@ If it is your first time using Python, we recommend using `conda <https://docs.c
 Installing ZEN-garden 
 ==============
 
-If it's your first time using GitHub, register at `https://github.com/`_. Login to Github and create a fork of the ZEN-garden repository. 
+If it's your first time using GitHub, register at `<https://github.com/>`_. Login to Github and create a fork of the ZEN-garden repository. 
 
 Navigate to ``ZEN-garden`` on Github and click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
 
-.. image:: _static/images/create_fork.png
+.. image:: ../images/create_fork.png
     :alt: creating a fork
 
-**Clone your forked repository using Git-Bash:**
+**Clone your forked repository:**
 
-.. code-block:: bash 
+Clone your forked repository by running the following lines in Git-Bash::
+
     git clone git@github.com:your-username/ZEN-garden.git
     cd ZEN-garden
 
-.. note:: 
-If you get the permissions error "Permission denied (publickey)", you will need to create the SSH key. Follow the instructions on `how to generate an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key>`_ and then how to add it to your account. You will not need to add the SSH key to the Agent, so only follow the first website until before `Adding your SSH key to the ssh-agent <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent>`_
+.. note::
+    If you get the permissions error "Permission denied (publickey)", you will need to create the SSH key. Follow the instructions on `how to generate an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key>`_ and then how to add it to your account. You will not need to add the SSH key to the Agent, so only follow the first website until before `Adding your SSH key to the ssh-agent <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent>`_
 
 **Track the upstream repository:**
 
-.. code-block:: bash
+Track the upstream repository by running the following lines in Git-Bash::
+
     git remote add upstream git@github.com:ZEN-universe/ZEN-garden.git
     git fetch upstream
 
@@ -46,21 +48,13 @@ Now you can install the conda environment for zen-garden with the following comm
 
   conda env create -f zen_garden_env.yml
 
-The installation may take a couple of minutes. If the installation was successful, you can see the environment at ``_C:\Users\username \anaconda3\envs`` or wherever Anaconda is installed
+The installation may take a couple of minutes. If the installation was successful, you can see the environment at ``C:\Users\username \anaconda3\envs`` or wherever Anaconda is installed
 
-**Create PyCharm Configurations:**
-
-To execute ZEN-garden's different functionalities configurations are used. 
-To add them, follow the steps at "PyCharm Setup": [Create Configurations](https://github.com/RRE-ETH/ZEN-garden/discussions/183)
-
-We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ``zen_garden_env.yml``, the zen-garden package, as well as all other dependencies, are installed automatically. 
-You can also install the zen-garden package directly by running the following command in the root directory of your repository::
-
-  pip install -e
-
+.. note::
+    We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ``zen_garden_env.yml``, the zen-garden package, as well as all other dependencies, are installed automatically. 
+    You can also install the zen-garden package directly by running the following command in the root directory of your repository: ``pip install -e``
 
 Solver options
 ==============
+
 ZEN-garden passes the optimization problem to an external solver, per default, the open source solver `HiGHS <https://highs.dev/>`_ is selected. Alternatively, the commercial solver `Gurobi <https://www.gurobi.com/>`_ can be used. Academic licenses are available for free and allow you to access all of Gurobi's functionalities. You can get your Gurobi license `here <https://www.gurobi.com/features/academic-named-user-license/>`_. Follow the instructions to retrieve your Gurobi license key and activate the license for your computer.
-
-
