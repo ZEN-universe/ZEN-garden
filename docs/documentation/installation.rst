@@ -14,7 +14,7 @@ If it is your first time using Python, we recommend using `conda <https://docs.c
 Installing ZEN-garden 
 ==============
 
-If it's your first time using GitHub, register at `https://github.com/`_. Login to Github and create a fork of the ZEN-garden repository. 
+If it's your first time using GitHub, register at `<https://github.com/>`_. Login to Github and create a fork of the ZEN-garden repository. 
 
 Navigate to ``ZEN-garden`` on Github and click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
 
