@@ -304,7 +304,7 @@ class TransportTechnologyRules(GenericRule):
 
         lhs = term_capacity - self.variables["flow_transport"].loc[techs, edges, :]
         rhs = 0
-        constraints = lhs == rhs
+        constraints = lhs >= rhs
         ### return
         self.constraints.add_constraint("constraint_capacity_factor_transport", constraints)
 
