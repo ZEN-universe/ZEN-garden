@@ -1,8 +1,8 @@
-technology,capacity_type, carrier, unit, unit_cap_demand, factor
-PV,power,,MW,MW/$\mathrm{{km}}^{3}$, 1
-battery,energy,,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
-water_storage,energy,,1000*m**3,1000*m^3/$\mathrm{{km}}^{3}$, 1
-diesel_WP,power,,1000*m**3,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
-el_WP,power,,1000*m**3,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
-,,diesel,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
-,,electricity,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$, 1
+technology,capacity_type, carrier, unit, unit_cap_demand, factor, max_value
+PV,power,,MW,MW/$\mathrm{{km}}^{3}$,1,3000
+battery,energy,,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,3000
+water_storage,energy,,1000*m**3,1000*m^3/$\mathrm{{km}}^{3}$,1,7000
+diesel_WP,power,,1000*m**3,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,2400
+el_WP,power,,1000*m**3,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,2400
+,,diesel,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,950000
+,,electricity,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,950000

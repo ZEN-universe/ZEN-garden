@@ -1581,7 +1581,74 @@ def prepare_data_for_map_plot(folder, list_folders, output_path, BAU=False, scen
     # Get the indices for each chunk
     start_idx = 0
     titles = ['Capacity Addition Weighted by Water Demand', 'Capacity Addition of Water Pumps Weighted by Water Demand', 'Imports of Energy Carriers Weighted by Water Demand']
-    for i, chunk_size in enumerate(chunk_sizes):       
+    for i, chunk_size in enumerate(chunk_sizes):
+        end_idx = start_idx + chunk_size
+        df_tech_cap_chunk = df_tech_cap_info.iloc[start_idx:end_idx]
+        start_idx = end_idx
+        save_filename = f"maps_{i}.png"
+        if BAU and i==0:
+          continue
+        #print(df_tech_cap_chunk)
+        # Call plot_scenarios with the current chunk
+        plot_results.plot_scenarios(scenarios, df_merge_cap_import, df_demands, df_tech_cap_chunk, us_gdf, output_path, folder, save_filename, titles[i])
+
+
+def prepare_data_for_map_plot2(folder, list_folders, list_folders_BAU,output_path, BAU=False, scenarios=None):
+    # Process capacity and demand data from multiple folders
+    df_capacities = pd.DataFrame()
+    df_demands = pd.DataFrame()
+    df_flow_imports = pd.DataFrame()
+
+    for folder_temp in list_folders:
+        directory = os.path.join(output_path, folder_temp)
+        res = Results(directory)
+
+        # Get capacity addition data
+        df_capacity = res.get_full_ts("capacity_addition")
+        df_capacity.reset_index(inplace=True)
+        df_capacity.rename(columns={0: 'capacity', 'location': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        #insert row with 'carrier' column
+        df_capacity.insert(1, 'carrier', '')
+        df_capacities = pd.concat([df_capacities, df_capacity])
+
+        # Get demand data and filter for 'irrigation_water'
+        df_flow_import = res.get_full_ts('flow_import').sum(axis=1).reset_index()
+        df_flow_import_filtered = df_flow_import[(df_flow_import['carrier'] == 'diesel') | (df_flow_import['carrier'] == 'electricity')]
+        df_flow_import_filtered.rename(columns={0: 'flow_import', 'node': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        df_flow_import_filtered.insert(1, 'technology', '')
+        df_flow_import_filtered.insert(2, 'capacity_type', '')
+        df_flow_imports = pd.concat([df_flow_imports, df_flow_import_filtered])
+
+        # Get demand data and filter for 'irrigation_water'
+        df_demand = res.get_full_ts('demand').sum(axis=1).reset_index()
+        df_demand_water = df_demand[df_demand['carrier'] == 'irrigation_water']
+        df_demand_water.rename(columns={0: 'demand', 'node': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        df_demands = pd.concat([df_demands, df_demand_water])
+
+    # Create US county geographical data
+    us_gdf = gdf_US_JS.create_county_US()
+
+    # Read technology capacity information
+    df_tech_cap_info = pd.read_csv("capacities_boxplot_JS.csv")
+    df_merge_cap_import = pd.concat([df_capacities, df_flow_imports], axis=0)
+    if scenarios is None:
+        if 'scenario' in df_merge_cap_import.columns:
+            scenarios = df_merge_cap_import['scenario'].unique()
+        elif BAU:
+            df_merge_cap_import['scenario'] = 'BAU'
+            df_demands['scenario'] = 'BAU'
+            scenarios = ['BAU']
+        else:
+            scenarios = ['Cost-Optimal-Scenario']
+    print(scenarios)
+
+    # Define chunk sizes for splitting df_tech_cap_info
+    chunk_sizes = [3, 2, 2]  # Define sizes for each chunk
+
+    # Get the indices for each chunk
+    start_idx = 0
+    titles = ['Capacity Addition Weighted by Water Demand', 'Capacity Addition of Water Pumps Weighted by Water Demand', 'Imports of Energy Carriers Weighted by Water Demand']
+    for i, chunk_size in enumerate(chunk_sizes):
         end_idx = start_idx + chunk_size
         df_tech_cap_chunk = df_tech_cap_info.iloc[start_idx:end_idx]
         start_idx = end_idx

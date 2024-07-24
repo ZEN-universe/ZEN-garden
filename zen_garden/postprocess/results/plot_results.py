@@ -14,6 +14,7 @@ import math
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.colors import BoundaryNorm, ListedColormap
 
 
 import seaborn as sns
@@ -228,7 +229,8 @@ def plot_energy_balance_JS2(data_plot, node, carrier, start_hour, directory, sce
 
 
 def get_short_unit_name(unit_str):
-    if 'watt' in unit_str:
+    print(unit_str)
+    if 'watt' in unit_str or 'ton' in unit_str:
         unit_str = unit_str.replace('peta', 'p')
         unit_str = unit_str.replace('giga', 'G')
         unit_str = unit_str.replace('tera', 'T')
@@ -237,19 +239,18 @@ def get_short_unit_name(unit_str):
         unit_str = unit_str.replace('watt', 'W')
         unit_str = unit_str.replace('_hour', 'h')
     elif 'meter ** 3' or 'km**3' in unit_str:
-        unit_str = unit_str.replace('meter ** 3', 'm3')
-        unit_str = unit_str.replace('km**3', 'km^3')
-        # unit_str = unit_str.replace('kilo', 'k')
-        # unit_str = unit_str.replace('tera', '10^3 k')
-        # unit_str = unit_str.replace('kilo', '10^3')
-        # unit_str = unit_str.replace('mega', '10^6')
+        unit_str = unit_str.replace('meter ** 3', '$\\mathrm{{m^3}}$')
+        unit_str = unit_str.replace('km**3', '$\\mathrm{{km^3}}$')
+        unit_str = unit_str.replace('kilo', '$\\mathrm{{10^3}}$')
+        unit_str = unit_str.replace('mega', '$\\mathrm{{10^6}}$')
     elif 'USD' in unit_str:
+        print(unit_str)
         unit_str = unit_str.replace('USD', '$')
         unit_str = unit_str.replace('tera', 'trillion')
         unit_str = unit_str.replace('giga', 'billion')
         unit_str = unit_str.replace('mega', 'million')
         unit_str = unit_str.replace('kilo', 'thousand')
-
+    unit_str = unit_str.replace('ton', 't')
     return unit_str
 
 
@@ -275,8 +276,9 @@ def get_best_unit(df, column_name, unit_str, show_unit = False, vmax=None):
         vmax_10 = 10 ** int(math.log10(vmax))
     else:
         vmax_10 = 1  # Set to 1 if vmax is 0 or negative
-
+    star = False
     if '*' in unit_str:
+        star = True
         # Find the position of the first occurrence of a letter (unit part)
         unit_pos = next((i for i, c in enumerate(unit_str) if c.isalpha()), None)
 
@@ -308,7 +310,7 @@ def get_best_unit(df, column_name, unit_str, show_unit = False, vmax=None):
     # Calculate the factor to convert original values to the new unit
     factor = (input_value * unit).to(output_unit)
     output_factor = factor.magnitude
-    if output_factor == 1:
+    if output_factor == 1 and star:
         output_unit = unit_str
         #Delet 1* from the unit string
         output_unit = output_unit[2:]
@@ -1025,7 +1027,7 @@ def plot_stacked_costs(df, output_path,parent_folder, units, point=None, save_fi
     # Extracting the data needed for the plot
     x = df_converted['carbon_emissions_cumulative']
     y1 = df_converted['cost_capex_total']
-    y2 = df_converted['cost_opex_total']    
+    y2 = df_converted['cost_opex_total']
     y3 = df_converted['cost_carrier_total']
     y4 = df_converted['cost_carbon_emissions_total']
     # Plotting the stacked area chart using Seaborn
@@ -1089,7 +1091,7 @@ def plot_percentage_stacked_costs(df, output_path, parent_folder, units, save_fi
     # Extracting the data needed for the plot
     x = df_converted['carbon_emissions_cumulative']
     y1 = df_converted['cost_capex_total_pct']
-    y2 = df_converted['cost_opex_total_pct']  
+    y2 = df_converted['cost_opex_total_pct']
     y3 = df_converted['cost_carrier_total_pct']
     y4 = df_converted['cost_carbon_emissions_total_pct']
 
@@ -1125,7 +1127,7 @@ def plot_pareto_capacities(result_capacities_dfs, output_path, parent_folder, un
         ('water_storage, energy', f'Water Storage', units['water_energy'], 'Installed Capacity'),
         ('battery, energy', f'Battery', units['energy'], 'Installed Capacity'),
 #        ('diesel_WP, power', f'Diesel Water Pump', units['power'], 'Installed Capacity'),
-        ('el_WP, power', f'Electric Water Pump', units['power'], 'Installed Capacity')
+        ('el_WP, power', f'Electric Water Pump', units['water_power'], 'Installed Capacity')
     ]
     # Convert units for carbon emissions
     output_unit_co2, df_converted, _ = get_best_unit(result_capacities_dfs, 'carbon_emissions_cumulative', units['co2'])
@@ -1141,7 +1143,7 @@ def plot_pareto_capacities(result_capacities_dfs, output_path, parent_folder, un
         ax.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
         ax.set_ylabel(f'{y_axis_label} [{output_unit_y_axis}]')
     # Add overall title
-    fig.suptitle(f'Pareto Front: Capacities vs. $\\mathrm{{CO_2}}$ Emissions', y=1.05, fontsize=16)
+    #fig.suptitle(f'Pareto Front: Capacities vs. $\\mathrm{{CO_2}}$ Emissions', y=1.05, fontsize=16)
     # Adjust subplot spacing
     plt.subplots_adjust(wspace=0.5)  # Adjust horizontal space between subplots
     # Save the figure if required
@@ -1199,6 +1201,42 @@ def create_main_figure(num_scenarios):
     fig, axes = plt.subplots(1, num_cols, figsize=(30, 20))
     return fig, axes.flatten()
 
+def plot_scenario2(ax, df_merge, us_gdf, column_name, title, ylabel, default_vmax):
+    df_merge.crs = 'EPSG:4326'
+
+    # Reproject GeoDataFrame us_gdf to match the CRS of DataFrame df
+    us_gdf = us_gdf.to_crs(df_merge.crs)
+
+    df_map = us_gdf.merge(df_merge, on="county_code", how='left')
+
+    ax.axis('off')  # Remove the frame around the map
+
+    # Formatting changes to the colorbar
+    vmax = df_merge[column_name].max() if default_vmax is None else default_vmax
+    default_vmax = vmax  # Ensure default_vmax is set for ranges
+
+    # Focus around the contiguous US (excluding Alaska and Hawaii)
+    ax.set_xlim(-125, -65)
+    ax.set_ylim(24, 50)
+
+    # Define the ranges and colors
+    boundaries = [0, 0.05 * default_vmax, 0.25 * default_vmax, 0.75 * default_vmax, default_vmax]
+    colors = ['#B0B0B0', '#62866C', '#F4A261', '#CB7876']  # Define the colors for low, medium, high ranges
+
+    # Create a custom colormap
+    cmap = ListedColormap(colors)
+
+    # Create the normalization and color mapping
+    norm = BoundaryNorm(boundaries, cmap.N, clip=True)
+
+    # Plot the geospatial data with normalization
+    df_map.plot(column=column_name, cmap=cmap, linewidth=0.4, ax=ax, edgecolor=".4",
+                missing_kwds={"color": "white"}, legend=True, norm=norm,
+                legend_kwds={'label': ylabel, 'orientation': 'vertical', 'shrink': 0.5,
+                             'pad': 0.12})
+
+    ax.set_title(title, fontsize=20)
+
 # Define a function to plot each subplot for a scenario
 def plot_scenario(ax, df_merge, us_gdf, column_name, title, ylabel, default_vmax):
     df_merge.crs = 'EPSG:4326'
@@ -1249,7 +1287,7 @@ def plot_scenarios(scenarios, df_capacities, df_demand_water, df_tech_cap_info, 
         else:
             df_scenario = df_capacities.copy()
 
-        for index, (technology, capacity_type, carrier, input_unit, unit_cap_demand, factor) in enumerate(df_tech_cap_info.itertuples(index=False)):
+        for index, (technology, capacity_type, carrier, input_unit, unit_cap_demand, factor, max_value) in enumerate(df_tech_cap_info.itertuples(index=False)):
             print(technology, capacity_type, carrier, unit_cap_demand)
             if not pd.isna(technology):
                 # Filter capacity data for current technology and capacity type
@@ -1270,7 +1308,6 @@ def plot_scenarios(scenarios, df_capacities, df_demand_water, df_tech_cap_info, 
                 df_merge['flow_import/demand'] = df_merge['flow_import'] / df_merge['demand'] * 10**6 * factor
                 column_name = 'flow_import/demand'
                 title = f'{carrier}'
-            default_vmax = df_merge[column_name].max()
 
 
             title = title.title()
@@ -1281,7 +1318,7 @@ def plot_scenarios(scenarios, df_capacities, df_demand_water, df_tech_cap_info, 
 
             ylabel = f'{column_name} [{unit_cap_demand}]'
             # Plot the scenario on the appropriate subplot
-            plot_scenario(axes[index], df_merge, us_gdf, column_name, title, ylabel, default_vmax)
+            plot_scenario2(axes[index], df_merge, us_gdf, column_name, title, ylabel, max_value)
 
         # Ensure layout is tight and save or show the figure
         plt.tight_layout()
@@ -1301,7 +1338,7 @@ def plot_stacked_procentage_BAU(dfs, output_path, folder, units, save_fig=True):
     dfs['total_cost'] = dfs[['cost_capex_total', 'cost_opex_total', 'cost_carbon_emissions_total', 'cost_carrier_total']].sum(axis=1)
     y1 = dfs['cost_capex_total'].iloc[0] / dfs['total_cost'].iloc[0] * 100
     y2 = dfs['cost_opex_total'].iloc[0]/ dfs['total_cost'].iloc[0] * 100
-    
+
     y3 = dfs['cost_carrier_total'].iloc[0] / dfs['total_cost'].iloc[0] * 100
     y4 = dfs['cost_carbon_emissions_total'].iloc[0] / dfs['total_cost'].iloc[0] * 100
     output_unit_co2, df_converted, factor_co2 = get_best_unit(dfs, 'carbon_emissions_cumulative', units['co2'])
