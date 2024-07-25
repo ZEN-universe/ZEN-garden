@@ -1695,6 +1695,9 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
         labels_BAU[i]: percent_distribution_BAU[i] for i in range(len(labels_BAU))
     }
 
+    # Define colors based on labels
+    color_dict = {label: Category10[10][i % 10] for i, label in enumerate(labels)}
+
     # Plotting the charts using Matplotlib and GridSpec
     fig = plt.figure(figsize=(21, 6))
     gs = GridSpec(1, 3, width_ratios=[3, 1, 1])
@@ -1706,7 +1709,7 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
         bau_cost = point[1] * factor_cost
         ax0.scatter(bau_co2_emissions, bau_cost, color='#32769B', zorder=5)
         ax0.text(bau_co2_emissions, bau_cost, 'BAU', fontsize=12, color='black', ha='right')
-    ax0.stackplot(x, y_values, labels=labels, colors=Category10[10][:len(labels)])
+    ax0.stackplot(x, y_values, labels=labels, colors=[color_dict[label] for label in labels])
     ax0.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     ax0.set_ylabel(f'Cost [{output_unit_y_axis}]')
     ax0.legend(loc='upper right')
@@ -1714,7 +1717,7 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
 
     # Percentual distribution plot
     ax1 = plt.subplot(gs[1])
-    ax1.stackplot(x, percent_distribution, labels=labels, colors=Category10[10][:len(labels)])
+    ax1.stackplot(x, percent_distribution, labels=labels, colors=[color_dict[label] for label in labels])
     ax1.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     ax1.set_ylabel('Percentual Distribution [%]')
     ax1.set_title('Percentual Distribution')
@@ -1722,7 +1725,7 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     # Percentual distribution plot for BAU scenario
     width = 0.2  # the width of the bars
     bottom = np.zeros(1)
-    colors = Category10[10][:len(labels_BAU)]
+    colors = [color_dict[label] for label in labels_BAU]
     ax2 = plt.subplot(gs[2])
     # Plot each component with specified colors
     for (base, base_count), color in zip(data_base.items(), colors):
@@ -1743,3 +1746,4 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
             os.makedirs(save_file_path)
         plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
         print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
+
