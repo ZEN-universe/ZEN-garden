@@ -47,8 +47,9 @@ def create_county_US():
     """
 
     # Read the geospatial dataset of European countries
-
+    #show current directory
     # Construct the path to the state shapefile
+    #state_shapefile_path = '../zen_garden/postprocess/results/cb_2023_us_county_20m/cb_2023_us_county_20m.shp'
     state_shapefile_path = 'cb_2023_us_county_20m/cb_2023_us_county_20m.shp'
 
     # Read the shapefile

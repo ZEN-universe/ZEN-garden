@@ -1789,3 +1789,139 @@ def prepare_data_for_plot_stacked_tech_car(list_folders, output_path, BAU=False)
     df_costs_final = df_costs.groupby(['scenario', 'technology/carrier']).sum().reset_index()
     print(df_costs_final.head(10))
     return  df_costs_final
+
+def prepare_data_for_map_plot_capacities_renewables(list_folders, output_path):
+    # Process capacity and demand data from multiple folders
+    df_capacities = pd.DataFrame()
+    df_demands = pd.DataFrame()
+
+    for folder_temp in list_folders:
+        directory = os.path.join(output_path, folder_temp)
+        res = Results(directory)
+
+        # Get capacity addition data
+        df_capacity = res.get_full_ts("capacity_addition")
+        df_capacity.reset_index(inplace=True)
+        df_capacity.rename(columns={0: 'capacity', 'location': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        #insert row with 'carrier' column
+        df_capacity.insert(1, 'carrier', '')
+        df_capacities = pd.concat([df_capacities, df_capacity])
+
+        # Get demand data and filter for 'irrigation_water'
+        df_demand = res.get_full_ts('demand').sum(axis=1).reset_index()
+        df_demand_water = df_demand[df_demand['carrier'] == 'irrigation_water']
+        df_demand_water.rename(columns={0: 'demand', 'node': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        df_demands = pd.concat([df_demands, df_demand_water])
+
+    return df_capacities, df_demands
+
+def process_folders(folder_list, output_path, scenario_name):
+    df_demands = pd.DataFrame()
+    df_flow_imports = pd.DataFrame()
+
+    for folder_temp in folder_list:
+        directory = os.path.join(output_path, folder_temp)
+        res = Results(directory)
+
+        # Process flow import data
+        df_flow_import = res.get_full_ts('flow_import').sum(axis=1).reset_index()
+        df_flow_import_filtered = df_flow_import[(df_flow_import['carrier'] == 'diesel') | (df_flow_import['carrier'] == 'electricity')]
+        df_flow_import_filtered.rename(columns={0: 'flow_import', 'node': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        df_flow_import_filtered.insert(1, 'technology', '')
+        df_flow_import_filtered.insert(2, 'capacity_type', '')
+        df_flow_import_filtered['scenario'] = scenario_name
+        df_flow_imports = pd.concat([df_flow_imports, df_flow_import_filtered])
+
+        # Process demand data
+        df_demand = res.get_full_ts('demand').sum(axis=1).reset_index()
+        df_demand_water = df_demand[df_demand['carrier'] == 'irrigation_water']
+        df_demand_water.rename(columns={0: 'demand', 'node': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        df_demand_water['scenario'] = scenario_name
+        df_demands = pd.concat([df_demands, df_demand_water])
+
+    return df_demands, df_flow_imports
+
+
+def prepare_data_water_pumps_map(list_folders, output_path):
+    # Process capacity and demand data from multiple folders
+    df_capacities = pd.DataFrame()
+    df_demands = pd.DataFrame()
+
+    for folder_temp in list_folders:
+        directory = os.path.join(output_path, folder_temp)
+        res = Results(directory)
+
+        # Get capacity addition data
+        df_capacity = res.get_full_ts("capacity_addition")
+        df_capacity.reset_index(inplace=True)
+        df_capacity.rename(columns={0: 'capacity', 'location': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        #insert row with 'carrier' column
+        df_capacity.insert(1, 'carrier', '')
+        df_capacities = pd.concat([df_capacities, df_capacity])
+
+        # Get demand data and filter for 'irrigation_water'
+        df_demand = res.get_full_ts('demand').sum(axis=1).reset_index()
+        df_demand_water = df_demand[df_demand['carrier'] == 'irrigation_water']
+        df_demand_water.rename(columns={0: 'demand', 'node': 'county_code', 'level_0': 'scenario'}, inplace=True)
+        df_demands = pd.concat([df_demands, df_demand_water])
+    return df_capacities, df_demands
+
+
+def plot_all_maps(list_folders, list_folders_BAU, output_path, folder):
+    us_gdf = gdf_US_JS.create_county_US()
+    keys = ['capacity', 'import', 'water_pumps']
+    df_tech_cap_info_files = ['capacities_renewable_JS.csv', 'imports.csv', 'water_pump.csv']
+    save_filenames = ['maps_capacity_renewables.png', 'maps_flow_import.png', 'maps_water_pumps.png']
+    scenarios_list = [
+        ['scenario_0', 'scenario_'],
+        ['cost-optimal', 'BAU'],
+        ['scenario_0', 'scenario_']
+    ]
+
+    # Initialize an empty dictionary
+    data_dict = {}
+
+    # Populate the dictionary
+    for i, key in enumerate(keys):
+        data_dict[key] = {
+            'save_filename': save_filenames[i],
+            'df_tech_cap_info': pd.read_csv(df_tech_cap_info_files[i]),  # Load DataFrame from CSV file
+            'scenarios': scenarios_list[i]
+        }
+    key = 'capacity'
+    df_capacities, df_demands = prepare_data_for_map_plot_capacities_renewables(list_folders, output_path)
+    df_tech_cap_info = data_dict[key]['df_tech_cap_info']
+    scenarios = data_dict[key]['scenarios']
+    print(scenarios)
+    save_filename = data_dict[key]['save_filename']
+
+    plot_results.plot_map_capacities_JS(df_capacities, df_demands, df_tech_cap_info, us_gdf, output_path, folder, save_filename, scenarios)
+
+    key = 'import'
+    df_tech_cap_info = data_dict[key]['df_tech_cap_info']
+    scenarios = data_dict[key]['scenarios']
+    save_filename = data_dict[key]['save_filename']
+
+    # Process data for both sets of folders
+    df_demands, df_flow_imports = process_folders(list_folders, output_path, 'cost-optimal')
+    df_demands_BAU, df_flow_imports_BAU = process_folders(list_folders_BAU, output_path, 'BAU')
+
+    # Change scenario names if necessary
+    df_demands['scenario'] = df_demands['scenario'].replace('scenario_', 'cost-optimal')
+    df_flow_imports['scenario'] = df_flow_imports['scenario'].replace('scenario_', 'cost-optimal')
+
+    df_merge_import = pd.concat([df_flow_imports_BAU, df_flow_imports], axis=0)
+    df_merge_demands = pd.concat([df_demands_BAU, df_demands], axis=0)
+
+
+    plot_results.plot_map_imports(df_merge_import, df_merge_demands, df_tech_cap_info, us_gdf, output_path, folder, save_filename, scenarios)
+
+
+    key = 'water_pumps'
+    df_tech_cap_info = data_dict[key]['df_tech_cap_info']
+    scenarios = data_dict[key]['scenarios']
+    save_filename = data_dict[key]['save_filename']
+
+    df_capacities, df_demands = prepare_data_water_pumps_map(list_folders, output_path)
+
+    plot_results.plot_map_water_pumps(df_capacities, df_demands, df_tech_cap_info, us_gdf, output_path, folder, save_filename, scenarios)

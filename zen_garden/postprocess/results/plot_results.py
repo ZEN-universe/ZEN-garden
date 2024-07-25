@@ -1747,3 +1747,204 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
         plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
         print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
 
+def plot_scenario_JS(ax, df_merge, us_gdf, column_name, title, default_vmax, norm, cmap):
+    df_merge.crs = 'EPSG:4326'
+
+    # Reproject GeoDataFrame us_gdf to match the CRS of DataFrame df
+    us_gdf = us_gdf.to_crs(df_merge.crs)
+
+    df_map = us_gdf.merge(df_merge, on="county_code", how='left')
+
+    ax.axis('off')  # Remove the frame around the map
+
+    # Formatting changes to the colorbar
+    vmax = df_merge[column_name].max() if default_vmax is None else default_vmax
+    default_vmax = vmax  # Ensure default_vmax is set for ranges
+
+    # Focus around the contiguous US (excluding Alaska and Hawaii)
+    ax.set_xlim(-125, -65)
+    ax.set_ylim(24, 50)
+
+    # Define the ranges and colors
+    boundaries = [0, 0.05 * default_vmax, 0.25 * default_vmax, 0.75 * default_vmax, default_vmax]
+    #Name bounderies
+
+    colors = ['#B0B0B0', '#62866C', '#F4A261', '#CB7876']  # Define the colors for low, medium, high ranges
+
+    # Create a custom colormap
+    cmap = ListedColormap(colors)
+
+    # Create the normalization and color mapping
+    norm = BoundaryNorm(boundaries, cmap.N, clip=True)
+
+    # Plot the geospatial data with normalization
+    df_map.plot(column=column_name, cmap=cmap, linewidth=0.4, ax=ax, edgecolor=".4",
+                missing_kwds={"color": "white"}, legend=False, norm=norm)
+
+    ax.set_title(title, fontsize=20)
+
+def plot_map_capacities_JS(df_capacities, df_demands, df_tech_cap_info, us_gdf, output_path, folder, save_filename, scenarios):
+    fig, axes = plt.subplots(2, 3, figsize=(10, 6))
+    # Define the ranges and colors
+    boundaries = [0, 0, 0.25, 0.75, 1]  # Use relative values for illustration purposes
+    colors = ['#B0B0B0', '#62866C', '#F4A261', '#CB7876']  # Define the colors for low, medium, high ranges
+
+    # Create a custom colormap
+    cmap = ListedColormap(colors)
+
+    # Create the normalization and color mapping
+    norm = BoundaryNorm(boundaries, cmap.N, clip=True)
+
+    for i, scenario in enumerate(scenarios):
+
+        scenario_title = scenario.title().replace('Scenario_0', 'Net-Zero-Emissions').replace('Scenario_', 'Cost-Optimal')
+        df_scenario = df_capacities[df_capacities['scenario'] == scenario]
+        # Add scenario name on the left side, vertically centered for each row
+        fig.text(-0.04, 0.75 - 0.5 * i, scenario_title, va='center', ha='center', rotation='vertical', fontsize=15)
+
+        for index, (technology, capacity_type, carrier, input_unit, unit_cap_demand, factor, max_value) in enumerate(df_tech_cap_info.itertuples(index=False)):
+            if not pd.isna(technology):
+                # Filter capacity data for current technology and capacity type
+                df_tech_cap = df_scenario[(df_scenario['technology'] == technology) & (df_scenario['capacity_type'] == capacity_type)]
+            else:
+                df_tech_cap = df_scenario[(df_scenario['carrier'] == carrier)]
+
+            if 'scenario' in df_tech_cap.columns:
+                df_merge = df_tech_cap.merge(df_demands[['scenario', 'county_code', 'demand']], on=['county_code', 'scenario'])
+            else:
+                df_merge = df_tech_cap.merge(df_demands[['county_code', 'demand']], on='county_code')
+
+            df_merge['capacity/demand'] = df_merge['capacity'] / df_merge['demand'] * 10**6 * factor
+            column_name = 'capacity/demand'
+            title = f'{technology} {capacity_type}'.title().replace('Scenario_0', 'Net-Zero-Emissions-Scenario').replace('Scenario_', 'Cost-Optimal-Scenario').replace('No_scearnio', 'Cost-Optimal-Scenario').replace('_', ' ')
+
+            # Plot the scenario on the appropriate subplot
+            plot_scenario_JS(axes[i, index], df_merge, us_gdf, column_name, title, max_value, norm, cmap)
+
+    # Add a custom legend at the bottom of the figure
+    legend_labels = ['No Installation', 'low', 'medium', 'high']
+    legend_colors = [plt.Rectangle((0, 0), 1, 1, color=color) for color in colors]
+
+    fig.legend(legend_colors, legend_labels, loc='lower center', ncol=4, fontsize=12, title='Color Legend')
+
+    # Ensure layout is tight and save or show the figure
+    plt.tight_layout(rect=[0, 0.1, 1, 1])  # Adjust layout to make room for the legend
+    save_path = os.path.join(output_path, folder, 'Figures')
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    plt.savefig(os.path.join(save_path, save_filename), bbox_inches='tight')
+    print(f'Figure saved to {os.path.join(save_path, save_filename)}')
+    plt.close()
+
+def plot_map_imports(df_merge_import, df_merge_demands, df_tech_cap_info, us_gdf, output_path, folder, save_filename, scenarios):
+    fig, axes = plt.subplots(2, 2, figsize=(10, 6))
+
+    # Define the ranges and colors
+    boundaries = [0, 0, 0.25, 0.75, 1]  # Use relative values for illustration purposes
+    colors = ['#B0B0B0', '#62866C', '#F4A261', '#CB7876']  # Define the colors for low, medium, high ranges
+
+    # Create a custom colormap
+    cmap = ListedColormap(colors)
+
+    # Create the normalization and color mapping
+    norm = BoundaryNorm(boundaries, cmap.N, clip=True)
+
+    for i, scenario in enumerate(scenarios):
+
+        scenario_title = scenario.title()
+        df_scenario = df_merge_import[df_merge_import['scenario'] == scenario]
+        # Add scenario name on the left side, vertically centered for each row
+        fig.text(-0.04, 0.75 - 0.5 * i, scenario_title, va='center', ha='center', rotation='vertical', fontsize=15)
+
+        for index, (technology, capacity_type, carrier, input_unit, unit_cap_demand, factor, max_value) in enumerate(df_tech_cap_info.itertuples(index=False)):
+            if not pd.isna(technology):
+                # Filter capacity data for current technology and capacity type
+                df_tech_cap = df_scenario[(df_scenario['technology'] == technology) & (df_scenario['capacity_type'] == capacity_type)]
+            else:
+                df_tech_cap = df_scenario[(df_scenario['carrier'] == carrier)]
+
+            if 'scenario' in df_tech_cap.columns:
+                df_merge = df_tech_cap.merge(df_merge_demands[['scenario', 'county_code', 'demand']], on=['county_code', 'scenario'])
+            else:
+                df_merge = df_tech_cap.merge(df_merge_demands[['county_code', 'demand']], on='county_code')
+
+            df_merge['flow_import/demand'] = df_merge['flow_import'] / df_merge['demand'] * 10**6 * factor
+            column_name = 'flow_import/demand'
+            title = f'{carrier}'
+
+            # Plot the scenario on the appropriate subplot
+            plot_scenario_JS(axes[i, index], df_merge, us_gdf, column_name, title, max_value, norm, cmap)
+
+    # Add a custom legend at the bottom of the figure
+    legend_labels = ['No Import', 'low', 'medium', 'high']
+    legend_colors = [plt.Rectangle((0, 0), 1, 1, color=color) for color in colors]
+
+    fig.legend(legend_colors, legend_labels, loc='lower center', ncol=4, fontsize=12, title='Color Legend')
+
+    # Ensure layout is tight and save or show the figure
+    plt.tight_layout(rect=[0, 0.1, 1, 1])  # Adjust layout to make room for the legend
+    save_path = os.path.join(output_path, folder, 'Figures')
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    plt.savefig(os.path.join(save_path, save_filename), bbox_inches='tight')
+    print(f'Figure saved to {os.path.join(save_path, save_filename)}')
+    plt.close()
+
+def plot_map_water_pumps(df_capacities, df_demands, df_tech_cap_info, us_gdf, output_path, folder, save_filename, scenarios):
+    fig, axes = plt.subplots(2, 1, figsize=(6, 10))
+
+    # Define the ranges and colors
+    boundaries = [0, 0, 0.25, 0.75, 1]  # Use relative values for illustration purposes
+    colors = ['#B0B0B0', '#62866C', '#F4A261', '#CB7876']  # Define the colors for low, medium, high ranges
+
+    # Create a custom colormap
+    cmap = ListedColormap(colors)
+
+    # Create the normalization and color mapping
+    norm = BoundaryNorm(boundaries, cmap.N, clip=True)
+
+    for i, scenario in enumerate(scenarios):
+
+        scenario_title = scenario.title().replace('Scenario_0', 'Net-Zero-Emissions').replace('Scenario_', 'Cost-Optimal')
+        df_scenario = df_capacities[df_capacities['scenario'] == scenario]
+        # Add scenario name on the left side, vertically centered for each row
+        fig.text(-0.04, 0.75 - 0.5 * i, scenario_title, va='center', ha='center', rotation='vertical', fontsize=15)
+
+        for index, (technology, capacity_type, carrier, input_unit, unit_cap_demand, factor, max_value) in enumerate(df_tech_cap_info.itertuples(index=False)):
+            if not pd.isna(technology):
+                # Filter capacity data for current technology and capacity type
+                df_tech_cap = df_scenario[(df_scenario['technology'] == technology) & (df_scenario['capacity_type'] == capacity_type)]
+            else:
+                df_tech_cap = df_scenario[(df_scenario['carrier'] == carrier)]
+
+            if 'scenario' in df_tech_cap.columns:
+                df_merge = df_tech_cap.merge(df_demands[['scenario', 'county_code', 'demand']], on=['county_code', 'scenario'])
+            else:
+                df_merge = df_tech_cap.merge(df_demands[['county_code', 'demand']], on='county_code')
+
+            df_merge['capacity/demand'] = df_merge['capacity'] / df_merge['demand'] * 10**6 * factor
+            column_name = 'capacity/demand'
+            title = f'{technology} {capacity_type}'.title().replace('Scenario_0', 'Net-Zero-Emissions-Scenario').replace('Scenario_', 'Cost-Optimal-Scenario').replace('No_scearnio', 'Cost-Optimal-Scenario').replace('_', ' ')
+
+            # Plot the scenario on the appropriate subplot
+            plot_scenario_JS(axes[i], df_merge, us_gdf, column_name, title, max_value, norm, cmap)
+
+    # Add a custom legend at the bottom of the figure
+    legend_labels = ['No Installation', 'low', 'medium', 'high']
+    legend_colors = [plt.Rectangle((0, 0), 1, 1, color=color) for color in colors]
+
+    fig.legend(legend_colors, legend_labels, loc='lower center', ncol=4, fontsize=12, title='Color Legend')
+
+    # Ensure layout is tight and save or show the figure
+    plt.tight_layout(rect=[0, 0.1, 1, 1])  # Adjust layout to make room for the legend
+    save_path = os.path.join(output_path, folder, 'Figures')
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    plt.savefig(os.path.join(save_path, save_filename), bbox_inches='tight')
+    print(f'Figure saved to {os.path.join(save_path, save_filename)}')
+    plt.close()
+
+

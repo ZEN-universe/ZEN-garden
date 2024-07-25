@@ -372,7 +372,7 @@ def main():
 
     #plot_energy_balance(res_basic, node, scenarios, directory, short=True, save_fig=True)
 
-    ################################################################################
+    ###################################s#############################################
 
     list_folders = ['county_2307_1_sce','county_2307_2_sce','county_2307_3_sce','county_2307_4_sce','county_2307_5_sce','county_2307_6_sce']
     list_folders_BAU = ['county_2307_1_base','county_2307_2_base','county_2307_3_base','county_2307_4_base','county_2307_5_base','county_2307_6_base']
@@ -393,20 +393,20 @@ def main():
         'power': 'MW'
     }
     filter_component = 'costs'
+    results_JS.plot_all_maps(list_folders, list_folders_BAU, output_path, folder)
+    # #### Plot figure 1
+    # point_BAU = results_JS.create_co2_cost_point(output_path, list_folders_BAU)
 
-    #### Plot figure 1
-    point_BAU = results_JS.create_co2_cost_point(output_path, list_folders_BAU)
+    # # dfs = results_JS.prepare_data_for_stacked_cost_plot(folder, list_folders, output_path, specific_scenario_name, filter_component)
+    # # plot_results.plot_stacked_costs(dfs, output_path, folder, units, point_BAU, save_fig=True)
+    # # dfs_BAU = results_JS.prepare_data_for_stacked_cost_plot(folder, list_folders_BAU, output_path, specific_scenario_name, filter_component)
+    # # plot_results.plot_stacked_procentage_BAU(dfs_BAU, output_path, folder, units, save_fig=True)
+    # # plot_results.plot_percentage_stacked_costs(dfs, output_path, folder, units, save_fig=True)
 
-    # dfs = results_JS.prepare_data_for_stacked_cost_plot(folder, list_folders, output_path, specific_scenario_name, filter_component)
-    # plot_results.plot_stacked_costs(dfs, output_path, folder, units, point_BAU, save_fig=True)
-    # dfs_BAU = results_JS.prepare_data_for_stacked_cost_plot(folder, list_folders_BAU, output_path, specific_scenario_name, filter_component)
-    # plot_results.plot_stacked_procentage_BAU(dfs_BAU, output_path, folder, units, save_fig=True)
-    # plot_results.plot_percentage_stacked_costs(dfs, output_path, folder, units, save_fig=True)
-
-    dfs_tech_car = results_JS.prepare_data_for_plot_stacked_tech_car(list_folders, output_path)
-    dfs_tech_car_BAU = results_JS.prepare_data_for_plot_stacked_tech_car(list_folders_BAU, output_path, BAU=True)
-    print(dfs_tech_car_BAU)
-    plot_results.plot_stacked_tech_car3(folder, output_path, dfs_tech_car, units, point_BAU, dfs_tech_car_BAU)
+    # dfs_tech_car = results_JS.prepare_data_for_plot_stacked_tech_car(list_folders, output_path)
+    # dfs_tech_car_BAU = results_JS.prepare_data_for_plot_stacked_tech_car(list_folders_BAU, output_path, BAU=True)
+    # print(dfs_tech_car_BAU)
+    # plot_results.plot_stacked_tech_car3(folder, output_path, dfs_tech_car, units, point_BAU, dfs_tech_car_BAU)
 
     # ### Plot figure 2 (Capacities + Stacked flow import)
     # result_capacities_dfs = results_JS.prepare_data_for_capacity_figure(folder, output_path, list_folders, specific_scenario_name)
@@ -420,8 +420,8 @@ def main():
 #    plot_results.plot_stacked_import_BAU(folder, output_path, result_flow_import_dfs_BAU, units, save_fig=True)
 
 #    ### Plot figure 3 (Map Capacities and Flow import)
-    # results_JS.prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
-    # results_JS.prepare_data_for_map_plot(folder, list_folders_BAU, output_path, BAU=True, scenarios=None)
+#     results_JS.prepare_data_for_map_plot(folder, list_folders, output_path, scenarios=None)
+#     results_JS.prepare_data_for_map_plot(folder, list_folders_BAU, output_path, BAU=True, scenarios=None)
     # #    #################################################################################
 
     #    #scenarios = ['scenario_0','scenario_25','scenario_75','scenario_100']
