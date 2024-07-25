@@ -393,7 +393,7 @@ def main():
         'power': 'MW'
     }
     filter_component = 'costs'
-    results_JS.plot_all_maps(list_folders, list_folders_BAU, output_path, folder)
+    #results_JS.plot_all_maps(list_folders, list_folders_BAU, output_path, folder)
     #### Plot figure 1
     # point_BAU = results_JS.create_co2_cost_point(output_path, list_folders_BAU)
 

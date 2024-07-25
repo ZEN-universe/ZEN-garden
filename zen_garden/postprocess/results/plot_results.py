@@ -1143,7 +1143,7 @@ def plot_pareto_capacities(result_capacities_dfs, output_path, parent_folder, un
         ax.plot(df_converted['carbon_emissions_cumulative'], df_converted[y_axis], marker='o')
         ax.set_ylim(bottom=0)
         ax.set_title(title)
-        ax.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
+        ax.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}/ year]')
         ax.set_ylabel(f'{y_axis_label} [{output_unit_y_axis}]')
     # Add overall title
     #fig.suptitle(f'Pareto Front: Capacities vs. $\\mathrm{{CO_2}}$ Emissions', y=1.05, fontsize=16)
