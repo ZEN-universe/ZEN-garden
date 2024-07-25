@@ -357,10 +357,10 @@ def print_import_cost_carrier(res_basic, folder, output_path):
 
 
 def main():
-    folder = 'county_1707_2/county_1707_1_sce'
+    folder = 'county_2307_1_sce'
     #folder = 'county_1707_2_base'
     print(folder)
-    output_path = "../../../data/outputs/"
+    output_path = "../../../outputs/"
     directory = os.path.join(output_path, folder)
     res_basic = Results(directory)
 
@@ -374,10 +374,10 @@ def main():
 
     ################################################################################
 
-    list_folders = ['county_2307_2_sce','county_2307_3_sce','county_2307_4_sce','county_2307_5_sce','county_2307_6_sce']
-    list_folders_BAU = ['county_2307_2_base','county_2307_3_base','county_2307_4_base','county_2307_5_base','county_2307_6_base']
-    #list_folders = ['county_1707_2/county_1707_1_sce','county_1707_2/county_1707_2_sce','county_1707_2/county_1707_3_sce','county_1707_2/county_1707_4_sce','county_1707_2/county_1707_5_sce','county_1707_2/county_1707_6_sce','county_1707_2/county_1707_7_sce','county_1707_2/county_1707_8_sce']
-    #list_folders_BAU = ['county_1907/county_1707_1_base','county_1907/county_1707_2_base','county_1907/county_1707_6_base','county_1907/county_1707_8_base']
+    list_folders = ['county_2307_1_sce','county_2307_2_sce','county_2307_3_sce','county_2307_4_sce','county_2307_5_sce','county_2307_6_sce']
+    list_folders_BAU = ['county_2307_1_base','county_2307_2_base','county_2307_3_base','county_2307_4_base','county_2307_5_base','county_2307_6_base']
+    # list_folders = ['county_1707_2/county_1707_1_sce','county_1707_2/county_1707_2_sce','county_1707_2/county_1707_3_sce','county_1707_2/county_1707_4_sce','county_1707_2/county_1707_5_sce','county_1707_2/county_1707_6_sce','county_1707_2/county_1707_7_sce','county_1707_2/county_1707_8_sce']
+    # list_folders_BAU = ['county_1707_2/county_1707_1_base','county_1707_2/county_1707_2_base','county_1707_2/county_1707_3_base','county_1707_2/county_1707_4_base','county_1707_2/county_1707_5_base','county_1707_2/county_1707_6_base','county_1707_2/county_1707_7_base','county_1707_2/county_1707_8_base']
 
     area = 'United States'
     custom_order = ['','0']
@@ -404,7 +404,7 @@ def main():
     # plot_results.plot_percentage_stacked_costs(dfs, output_path, folder, units, save_fig=True)
 
     dfs_tech_car = results_JS.prepare_data_for_plot_stacked_tech_car(list_folders, output_path)
-    plot_stacked_tech_car(folder, output_path, dfs_tech_car, units, point_BAU)
+    plot_results.plot_stacked_tech_car(folder, output_path, dfs_tech_car, units, point_BAU)
 
     # ### Plot figure 2 (Capacities + Stacked flow import)
     # result_capacities_dfs = results_JS.prepare_data_for_capacity_figure(folder, output_path, list_folders, specific_scenario_name)

@@ -1501,3 +1501,5 @@ def plot_stacked_tech_car(folder, output_path, df, units, point, save_fig = True
         if not os.path.exists(save_file_path):
             os.makedirs(save_file_path)
         plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
+        #print directory
+        print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
