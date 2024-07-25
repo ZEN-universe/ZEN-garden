@@ -1652,8 +1652,8 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     for tech_car in df_converted['technology/carrier'].unique():
         if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].isnull().all() or df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() == 0:
             continue
-        if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() / df_converted['cost'].sum() < 0.01:
-            continue
+        # if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() / df_converted['cost'].sum() < 0.01:
+        #     continue
         y_values.append(df_converted[df_converted['technology/carrier'] == tech_car]['cost'].values)
         labels.append(tech_car)
 
