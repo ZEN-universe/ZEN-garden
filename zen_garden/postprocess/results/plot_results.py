@@ -1461,6 +1461,9 @@ def plot_stacked_tech_car(folder, output_path, df, units, point, save_fig = True
         # if values are missing or 0 exclude
         if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].isnull().all() or df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() == 0:
             continue
+        #if the contribution is less than 1% exclude
+        if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() / df_converted['cost'].sum() < 0.01:
+            continue
         y_values.append(df_converted[df_converted['technology/carrier'] == tech_car]['cost'].values)
         labels.append(tech_car)
 
@@ -1494,7 +1497,7 @@ def plot_stacked_tech_car(folder, output_path, df, units, point, save_fig = True
     plt.stackplot(x, y_values, labels=labels, colors=colors[:len(labels)])
     plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     plt.ylabel(f'Cost [{output_unit_y_axis}]')
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower right')
     plt.title('Stacked Area Chart of Costs vs $\\mathrm{{CO_2}}$ Emissions')
     if save_fig:
         save_file_path = os.path.join(output_path, folder, 'Figures')    # Save the figure if required
