@@ -360,7 +360,7 @@ def main():
     folder = 'county_2307_1_sce'
     #folder = 'county_1707_2/county_1707_2_base'
     print(folder)
-    output_path = "../../../data/outputs/"
+    output_path = "../../../outputs/"
     directory = os.path.join(output_path, folder)
     res_basic = Results(directory)
 
