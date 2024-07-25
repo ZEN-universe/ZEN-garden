@@ -1679,7 +1679,7 @@ def create_co2_cost_point(output_path, list_folders):
     return cumulative_point
 
 
-def prepare_data_for_plot_stacked_tech_car(list_folders, output_path):
+def prepare_data_for_plot_stacked_tech_car(list_folders, output_path, BAU=False):
     df_costs = pd.DataFrame()
 
     for folder_temp in list_folders:
@@ -1696,6 +1696,7 @@ def prepare_data_for_plot_stacked_tech_car(list_folders, output_path):
             df_capex_yearly_sum = df_capex_yearly[['scenario', 'technology', 'capex_yearly']].groupby(['scenario', 'technology']).sum()
         else:
             df_capex_yearly_sum = df_capex_yearly[['technology','capex_yearly']].groupby(['technology']).sum()
+            df_capex_yearly_sum['scenario'] = 'BAU'
         df_capex_yearly_sum = df_capex_yearly_sum.reset_index()
 
 
@@ -1711,6 +1712,7 @@ def prepare_data_for_plot_stacked_tech_car(list_folders, output_path):
             df_opex_yearly_sum = df_opex_yearly[['scenario', 'technology', 'opex_yearly']].groupby(['scenario', 'technology']).sum()
         else:
             df_opex_yearly_sum = df_opex_yearly[['technology', 'opex_yearly']].groupby(['technology']).sum()
+            df_opex_yearly_sum['scenario'] = 'BAU'
         df_opex_yearly_sum = df_opex_yearly_sum.reset_index()
 
         # Capex + Opex
@@ -1733,6 +1735,7 @@ def prepare_data_for_plot_stacked_tech_car(list_folders, output_path):
             df_cost_carrier = data_sum_node[['scenario', 'carrier', 'cost_carrier']].groupby(['scenario', 'carrier']).sum().reset_index()
         else:
             df_cost_carrier = data_sum_node[['carrier', 'cost_carrier']].groupby(['carrier']).sum().reset_index()
+            df_cost_carrier['scenario'] = 'BAU'
 
         df_cost_carrier['technology/carrier'] = df_cost_carrier['carrier']
         df_cost_carrier['cost']= df_cost_carrier['cost_carrier']
@@ -1746,7 +1749,7 @@ def prepare_data_for_plot_stacked_tech_car(list_folders, output_path):
         df_cost_co2.reset_index(inplace=True)
         df_cost_co2.rename(columns={'index': 'scenario',0:'cost'}, inplace=True)
         df_cost_co2['technology/carrier'] = 'cost CO2'
-        df_cost = pd.concat([df_cost, df_cost_co2], axis=0)
+
 
         # Carbon emission cumulative
         df_co2_dict = res_basic.get_df('carbon_emissions_cumulative')
@@ -1759,8 +1762,13 @@ def prepare_data_for_plot_stacked_tech_car(list_folders, output_path):
         df_net_cost= pd.DataFrame(df_net_cost_dict).T
         df_net_cost.reset_index(inplace=True)
         df_net_cost.rename(columns={'index': 'scenario',0:'net_present_cost'}, inplace=True)
+        if BAU:
+            df_cost_co2['scenario'] = df_cost_co2['scenario'].replace('cost_carbon_emissions_total', 'BAU')
+            df_net_cost['scenario'] = df_net_cost['scenario'].replace('net_present_cost', 'BAU')
+            df_co2['scenario'] = df_co2['scenario'].replace('carbon_emissions_cumulative', 'BAU')
 
 
+        df_cost = pd.concat([df_cost, df_cost_co2], axis=0)
         df_cost = pd.merge(df_cost, df_net_cost, on='scenario', how='outer')
         df_cost = pd.merge(df_cost, df_co2, on='scenario', how='outer')
 

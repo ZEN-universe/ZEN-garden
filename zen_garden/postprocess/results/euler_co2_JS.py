@@ -358,7 +358,7 @@ def print_import_cost_carrier(res_basic, folder, output_path):
 
 def main():
     folder = 'county_2307_1_sce'
-    #folder = 'county_1707_2_base'
+    #folder = 'county_1707_2/county_1707_2_base'
     print(folder)
     output_path = "../../../outputs/"
     directory = os.path.join(output_path, folder)
@@ -404,7 +404,9 @@ def main():
     # plot_results.plot_percentage_stacked_costs(dfs, output_path, folder, units, save_fig=True)
 
     dfs_tech_car = results_JS.prepare_data_for_plot_stacked_tech_car(list_folders, output_path)
-    plot_results.plot_stacked_tech_car(folder, output_path, dfs_tech_car, units, point_BAU)
+    dfs_tech_car_BAU = results_JS.prepare_data_for_plot_stacked_tech_car(list_folders_BAU, output_path, BAU=True)
+    print(dfs_tech_car_BAU)
+    plot_results.plot_stacked_tech_car3(folder, output_path, dfs_tech_car, units, point_BAU, dfs_tech_car_BAU)
 
     # ### Plot figure 2 (Capacities + Stacked flow import)
     # result_capacities_dfs = results_JS.prepare_data_for_capacity_figure(folder, output_path, list_folders, specific_scenario_name)
