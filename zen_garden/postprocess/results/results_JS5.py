@@ -1677,3 +1677,107 @@ def create_co2_cost_point(output_path, list_folders):
     print(point)
     print(cumulative_point)
     return cumulative_point
+
+
+def prepare_data_for_plot_stacked_tech_car(list_folders, output_path):
+    df_costs = pd.DataFrame()
+
+    for folder_temp in list_folders:
+        directory = os.path.join(output_path, folder_temp)
+        res_basic = Results(directory)
+
+        # Capex yearly
+        df_capex_yearly = res_basic.get_full_ts("capex_yearly")
+        #df_capex_yearly = df_capex_yearly[(df_capex_yearly > 0.001) | (df_capex_yearly < -0.001)]
+        df_capex_yearly.reset_index(inplace=True)
+        df_capex_yearly.rename(columns={0: 'capex_yearly'}, inplace=True)
+        if 'level_0' in df_capex_yearly.columns:
+            df_capex_yearly.rename(columns={'level_0': 'scenario'}, inplace=True)
+            df_capex_yearly_sum = df_capex_yearly[['scenario', 'technology', 'capex_yearly']].groupby(['scenario', 'technology']).sum()
+        else:
+            df_capex_yearly_sum = df_capex_yearly[['technology','capex_yearly']].groupby(['technology']).sum()
+        df_capex_yearly_sum = df_capex_yearly_sum.reset_index()
+
+
+
+        # Opex
+        df_opex_yearly = res_basic.get_full_ts("opex_yearly")
+        #Delet the row if the data is between -0.001 and 0
+        #df_opex_yearly = df_opex_yearly[(df_opex_yearly > 0.001) | (df_opex_yearly < -0.001)]
+        df_opex_yearly.reset_index(inplace=True)
+        df_opex_yearly.rename(columns={0: 'opex_yearly'}, inplace=True)
+        if 'level_0' in df_opex_yearly.columns:
+            df_opex_yearly.rename(columns={'level_0': 'scenario'}, inplace=True)
+            df_opex_yearly_sum = df_opex_yearly[['scenario', 'technology', 'opex_yearly']].groupby(['scenario', 'technology']).sum()
+        else:
+            df_opex_yearly_sum = df_opex_yearly[['technology', 'opex_yearly']].groupby(['technology']).sum()
+        df_opex_yearly_sum = df_opex_yearly_sum.reset_index()
+
+        # Capex + Opex
+        df_cost_technologies = pd.merge(df_capex_yearly_sum, df_opex_yearly_sum, on=['technology', 'scenario'], how='outer')
+        df_cost_technologies['cost_technology'] = df_cost_technologies['capex_yearly'] + df_cost_technologies['opex_yearly']
+        df_cost_technologies['technology/carrier'] = df_cost_technologies['technology']
+        df_cost_technologies['cost'] = df_cost_technologies['cost_technology']
+
+
+
+        # Cost Carrier
+        data = res_basic.get_full_ts('cost_carrier')
+        data = data[(data > 0.001) | (data < -0.001)]
+        data_sum_node = data.sum(axis=1).reset_index()
+        #Filter for blue_water, electricity and diesel
+        data_sum_node = data_sum_node[data_sum_node['carrier'].isin(['blue_water', 'electricity', 'diesel'])]
+        data_sum_node.rename(columns={0: 'cost_carrier'}, inplace=True)
+        if 'level_0' in data_sum_node.columns:
+            data_sum_node.rename(columns={'level_0': 'scenario'}, inplace=True)
+            df_cost_carrier = data_sum_node[['scenario', 'carrier', 'cost_carrier']].groupby(['scenario', 'carrier']).sum().reset_index()
+        else:
+            df_cost_carrier = data_sum_node[['carrier', 'cost_carrier']].groupby(['carrier']).sum().reset_index()
+
+        df_cost_carrier['technology/carrier'] = df_cost_carrier['carrier']
+        df_cost_carrier['cost']= df_cost_carrier['cost_carrier']
+
+        df_cost = pd.concat([df_cost_technologies[['scenario','technology/carrier','cost']], df_cost_carrier[['scenario','technology/carrier','cost']]], axis=0)
+
+        # Cost Carbon emission cumulative
+        res_basic.get_df("cost_carbon_emissions_total")
+        df_cost_co2_dict = res_basic.get_df('cost_carbon_emissions_total')
+        df_cost_co2 = pd.DataFrame(df_cost_co2_dict).T
+        df_cost_co2.reset_index(inplace=True)
+        df_cost_co2.rename(columns={'index': 'scenario',0:'cost'}, inplace=True)
+        df_cost_co2['technology/carrier'] = 'cost CO2'
+        df_cost = pd.concat([df_cost, df_cost_co2], axis=0)
+
+        # Carbon emission cumulative
+        df_co2_dict = res_basic.get_df('carbon_emissions_cumulative')
+        df_co2 = pd.DataFrame(df_co2_dict).T
+        df_co2.reset_index(inplace=True)
+        df_co2.rename(columns={'index': 'scenario',0:'co2_emissions'}, inplace=True)
+
+        # Net present Cost
+        df_net_cost_dict = res_basic.get_df('net_present_cost')
+        df_net_cost= pd.DataFrame(df_net_cost_dict).T
+        df_net_cost.reset_index(inplace=True)
+        df_net_cost.rename(columns={'index': 'scenario',0:'net_present_cost'}, inplace=True)
+
+
+        df_cost = pd.merge(df_cost, df_net_cost, on='scenario', how='outer')
+        df_cost = pd.merge(df_cost, df_co2, on='scenario', how='outer')
+
+
+        # Change the name of the technology/carrier in the df_cost
+        df_tech_car = pd.read_csv('stacked_plot.csv')
+        short_name_rename_dict = dict(zip(df_tech_car['short_name'], df_tech_car['full_name']))
+        #df_cost_filter = df_cost[df_cost['technology/carrier'].isin(short_name_rename_dict.keys())]
+        df_cost_filter = df_cost.copy()
+        df_cost_filter['technology/carrier'] = df_cost_filter['technology/carrier'].replace(short_name_rename_dict)
+
+
+        # Add the data to the final dataframe so cost_new = cost_old + cost_new for each technology/carrier
+        df_costs = pd.concat([df_costs, df_cost_filter], axis=0)
+        # Concatenate the data
+
+    # Group by 'scenario' and 'technology/carrier' and sum the 'cost' and 'co2_emissions'
+    df_costs_final = df_costs.groupby(['scenario', 'technology/carrier']).sum().reset_index()
+    print(df_costs_final.head(10))
+    return  df_costs_final

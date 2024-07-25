@@ -11,10 +11,12 @@ import pandas as pd
 import numpy as np
 import pint
 import math
+from bokeh.palettes import Category10
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import BoundaryNorm, ListedColormap
+
 
 
 import seaborn as sns
@@ -1437,4 +1439,65 @@ def plot_stacked_import_BAU(folder, output_path, df, units, save_fig=True):
         if not os.path.exists(save_file_path):
             os.makedirs(save_file_path)
         plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
-    plt.show()
+    #plt.show()
+
+def plot_stacked_tech_car(folder, output_path, df, units, point, save_fig = True):
+    file_title = 'cost_stacked'
+    # Convert units for carbon emissions and the y-axis data
+    output_unit_co2, df_converted, factor_co2 = get_best_unit(df, 'co2_emissions', units['co2'])
+    output_unit_y_axis, df_converted, factor_cost = get_best_unit(df_converted, 'cost', units['cost'])
+    output_unit_y_axis = output_unit_y_axis.replace('USD', '$')
+    output_unit_y_axis = output_unit_y_axis.replace('giga', 'billion')
+
+    # Sort df by carbon_emissions_cumulative
+    df_converted = df_converted.sort_values(by='co2_emissions')
+
+    # Initialize lists for the y-values and labels
+    y_values = []
+    labels = []
+
+    # Extract the data needed for the plot
+    for tech_car in df_converted['technology/carrier'].unique():
+        # if values are missing or 0 exclude
+        if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].isnull().all() or df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() == 0:
+            continue
+        y_values.append(df_converted[df_converted['technology/carrier'] == tech_car]['cost'].values)
+        labels.append(tech_car)
+
+    # Convert y_values to a 2D array for stackplot
+    y_values = np.array(y_values)
+
+    # Extract x-axis data
+    df_co2_emissions = df_converted.groupby('scenario')['co2_emissions'].first().reset_index()
+    print(df_co2_emissions.head(10))
+    x = df_co2_emissions['co2_emissions'].values
+    #delet duplicates of x
+    x = np.unique(x)
+    # sort x values
+    x = np.sort(x)
+
+    # Plotting the stacked area chart using Matplotlib
+    plt.figure(figsize=(10, 6))
+    sns.set(style="white")
+    if point.any():
+        print(factor_cost)
+        print(factor_co2)
+        bau_co2_emissions = point[0]*factor_co2  # Example value for CO2 emissions
+        bau_cost = point[1]*factor_cost  # Example value for cost
+        print(bau_cost)
+        plt.scatter(bau_co2_emissions, bau_cost, color='#32769B', zorder=5)
+        plt.text(bau_co2_emissions, bau_cost, 'BAU', fontsize=12, color='black', ha='right')
+    #colors = ['#64557B', '#F4D35E', '#62866C', '#CB7876', '#6A8CAF', '#A6D854', '#FFD92F', '#E5C494', '#B3B3B3', '#FC8D62']
+    # Replace colors line with Bokeh Colorblind palette and add additional colors
+    #colors = Colorblind[8] + ('#E69F00', '#56B4E9')
+    colors = Category10[10]
+    plt.stackplot(x, y_values, labels=labels, colors=colors[:len(labels)])
+    plt.xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
+    plt.ylabel(f'Cost [{output_unit_y_axis}]')
+    plt.legend(loc='upper right')
+    plt.title('Stacked Area Chart of Costs vs $\\mathrm{{CO_2}}$ Emissions')
+    if save_fig:
+        save_file_path = os.path.join(output_path, folder, 'Figures')    # Save the figure if required
+        if not os.path.exists(save_file_path):
+            os.makedirs(save_file_path)
+        plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
