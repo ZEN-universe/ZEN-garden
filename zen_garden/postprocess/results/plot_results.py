@@ -1629,14 +1629,19 @@ def plot_stacked_tech_car2(folder, output_path, df, units, point, dfs_BAU, save_
         plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
         print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
 
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from bokeh.palettes import Category10
+
 
 def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_fig=True):
     file_title = 'cost_stacked'
+
+    # Update rcParams to set the font size
+    plt.rcParams.update({'font.size': 14})  # Adjust the font size as needed
+
+    # Import the color definitions
+    df_colors = pd.read_csv('stacked_plot.csv')
+
+    # Define colors based on labels
+    color_dict = {row['full_name']: row['color'] for _, row in df_colors.iterrows()}
 
     # Convert units for carbon emissions and the y-axis data
     output_unit_co2, df_converted, factor_co2 = get_best_unit(df, 'co2_emissions', units['co2'])
@@ -1648,16 +1653,17 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     # Sort df by co2_emissions
     df_converted = df_converted.sort_values(by='co2_emissions')
 
-    # Initialize lists for the y-values and labels
+    # Use the order and colors from df_colors
+    df_colors_sorted = df_colors.set_index('full_name')
+    labels = df_colors_sorted.index.tolist()
+    colors = df_colors_sorted['color'].tolist()
+
+    # Initialize lists for the y-values
     y_values = []
-    labels = []
 
     # Extract the data needed for the plot
-    for tech_car in df_converted['technology/carrier'].unique():
-        if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].isnull().all() or df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() == 0:
-            continue
-        y_values.append(df_converted[df_converted['technology/carrier'] == tech_car]['cost'].values)
-        labels.append(tech_car)
+    for label in labels:
+        y_values.append(df_converted[df_converted['technology/carrier'] == label]['cost'].values)
 
     # Convert y_values to a 2D array for stackplot
     y_values = np.array(y_values)
@@ -1693,13 +1699,10 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     total_cost_BAU = np.sum(y_values_BAU, axis=0)
     percent_distribution_BAU = (y_values_BAU / total_cost_BAU) * 100
     x_BAU = df_converted_BAU['co2_emissions'].iloc[0].round(1)
-    categories = (f'{x_BAU} [{output_unit_BAU}]')
+    categories = (f'{x_BAU} $\\mathrm{{CO_2}}$ Emissionen [{output_unit_BAU}]')
     data_base = {
         labels_BAU[i]: percent_distribution_BAU[i] for i in range(len(labels_BAU))
     }
-
-    # Define colors based on labels
-    color_dict = {label: Category10[10][i % 10] for i, label in enumerate(labels)}
 
     # Plotting the charts using Matplotlib and GridSpec
     fig = plt.figure(figsize=(21, 6))
@@ -1710,36 +1713,47 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     if point.any():
         bau_co2_emissions = point[0] * factor_co2
         bau_cost = point[1] * factor_cost
-        ax0.scatter(bau_co2_emissions, bau_cost, color='#32769B', zorder=5)
-        ax0.text(bau_co2_emissions, bau_cost, 'BAU', fontsize=12, color='black', ha='right')
-    stackplot0 = ax0.stackplot(x, y_values, labels=labels, colors=[color_dict[label] for label in labels])
+        ax0.scatter(bau_co2_emissions, bau_cost, color='#32769B', zorder=5, s=100)  # Adjust 's' value as needed for size
+        ax0.text(bau_co2_emissions, bau_cost, 'BAU', fontsize=20, color='black', ha='right')
+
+    # Plot the stackplot with the specified order and colors
+    stackplot0 = ax0.stackplot(x, y_values, labels=labels, colors=colors)
     ax0.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     ax0.set_ylabel(f'Cost [{output_unit_y_axis}]')
-    ax0.set_title('Stacked Area Chart of Costs vs $\\mathrm{{CO_2}}$ Emissions')
+    ax0.set_title('Pareto Front: Cost vs $\\mathrm{{CO_2}}$ Emissions by Technology and Supplies')
+    ax0.text(0.01, 1.06, 'a)', transform=ax0.transAxes, fontsize=16, verticalalignment='top')
 
     # Percentual distribution plot
     ax1 = plt.subplot(gs[1])
-    stackplot1 = ax1.stackplot(x, percent_distribution, labels=labels, colors=[color_dict[label] for label in labels])
+    stackplot1 = ax1.stackplot(x, percent_distribution, labels=labels, colors=colors)
     ax1.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
-    ax1.set_ylabel('Percentual Distribution [%]')
-    ax1.set_title('Percentual Distribution')
+    ax1.set_ylabel('Percentage [%]')
+    ax1.set_title('Cost Distribution [%]')
+    ax1.text(0.01, 1.06, 'b)', transform=ax1.transAxes, fontsize=16, verticalalignment='top')
 
     # Percentual distribution plot for BAU scenario
     width = 0.2  # the width of the bars
     bottom = np.zeros(1)
-    colors = [color_dict[label] for label in labels_BAU]
+    colors_BAU = [color_dict.get(label, '#000000') for label in labels_BAU]  # Default to black if label not found
     ax2 = plt.subplot(gs[2])
-    for (base, base_count), color in zip(data_base.items(), colors):
+    for (base, base_count), color in zip(data_base.items(), colors_BAU):
         p = ax2.bar(categories, base_count, width, label=base, bottom=bottom, color=color)
         bottom += base_count
 
-    ax2.set_title('Percentage distribution of costs in the BAU scenario')
-    ax2.set_ylabel('Percentage')
-    ax2.set_xlabel(f'$\\mathrm{{CO_2}}$  Emissions [{output_unit_BAU}]')
+    ax2.set_title('Cost Distribution in BAU Scenario')
+    ax2.text(-0.1, 1.06, 'c)', transform=ax2.transAxes, fontsize=16, verticalalignment='top')
+    ax2.set_ylabel('Percentage [%]')
+    #ax2.set_xlabel(f'$\\mathrm{{CO_2}}$  Emissions [{output_unit_BAU}]')
     ax2.margins(x=0.2)
 
-    # Add a common legend below all subplots
+    # Retrieve handles and labels
     handles, labels = ax0.get_legend_handles_labels()
+    # Filter out handles and labels where the corresponding y_values sum is below the minimum threshold
+    min_threshold = 1e-1
+    filtered_handles_labels = [(h, l) for h, l in zip(handles, labels) if y_values[labels.index(l)].sum() > min_threshold]
+    sorted_handles_labels = sorted(filtered_handles_labels, key=lambda x: y_values[labels.index(x[1])].sum(), reverse=True)
+    handles, labels = zip(*sorted_handles_labels) if sorted_handles_labels else ([], [])
+
     fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.15), ncol=3)
 
     plt.tight_layout(rect=[0, 0.05, 1, 1])
@@ -1752,8 +1766,11 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
         print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
 
 
+
+
 # def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_fig=True):
 #     file_title = 'cost_stacked'
+#     plt.rcParams.update({'font.size': 14})
 
 #     # Convert units for carbon emissions and the y-axis data
 #     output_unit_co2, df_converted, factor_co2 = get_best_unit(df, 'co2_emissions', units['co2'])
@@ -1771,9 +1788,7 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
 
 #     # Extract the data needed for the plot
 #     for tech_car in df_converted['technology/carrier'].unique():
-#         if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].isnull().all() or df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() == 0:
-#             continue
-#         # if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() / df_converted['cost'].sum() < 0.01:
+#         # if df_converted[df_converted['technology/carrier'] == tech_car]['cost'].isnull().all() or df_converted[df_converted['technology/carrier'] == tech_car]['cost'].sum() == 0:
 #         #     continue
 #         y_values.append(df_converted[df_converted['technology/carrier'] == tech_car]['cost'].values)
 #         labels.append(tech_car)
@@ -1812,10 +1827,12 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
 #     total_cost_BAU = np.sum(y_values_BAU, axis=0)
 #     percent_distribution_BAU = (y_values_BAU / total_cost_BAU) * 100
 #     x_BAU = df_converted_BAU['co2_emissions'].iloc[0].round(1)
-#     categories = (f'{x_BAU} [{output_unit_BAU}]')
+#     categories = (f'{x_BAU} $\\mathrm{{CO_2}}$ Emissionen [{output_unit_BAU}]')
 #     data_base = {
 #         labels_BAU[i]: percent_distribution_BAU[i] for i in range(len(labels_BAU))
 #     }
+
+#     df_colors = pd.read_csv('stacked_plot.csv')
 
 #     # Define colors based on labels
 #     color_dict = {label: Category10[10][i % 10] for i, label in enumerate(labels)}
@@ -1831,43 +1848,64 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
 #         bau_cost = point[1] * factor_cost
 #         ax0.scatter(bau_co2_emissions, bau_cost, color='#32769B', zorder=5)
 #         ax0.text(bau_co2_emissions, bau_cost, 'BAU', fontsize=12, color='black', ha='right')
-#     ax0.stackplot(x, y_values, labels=labels, colors=[color_dict[label] for label in labels])
+#     stackplot0 = ax0.stackplot(x, y_values, labels=labels, colors=[color_dict[label] for label in labels])
 #     ax0.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
 #     ax0.set_ylabel(f'Cost [{output_unit_y_axis}]')
-#     ax0.legend(loc='lower right')
-#     ax0.set_title('Stacked Area Chart of Costs vs $\\mathrm{{CO_2}}$ Emissions')
+#     ax0.set_title('Pareto Front: Cost vs $\\mathrm{{CO_2}}$ Emissions by Technology and Supplies')
+#     ax0.text(-0.2, 1.05, 'a)', transform=ax0.transAxes, fontsize=14, verticalalignment='top')
 
 #     # Percentual distribution plot
 #     ax1 = plt.subplot(gs[1])
-#     ax1.stackplot(x, percent_distribution, labels=labels, colors=[color_dict[label] for label in labels])
+#     stackplot1 = ax1.stackplot(x, percent_distribution, labels=labels, colors=[color_dict[label] for label in labels])
 #     ax1.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
-#     ax1.set_ylabel('Percentual Distribution [%]')
-#     ax1.set_title('Percentual Distribution')
+#     ax1.set_ylabel('Percentage [%]')
+#     ax1.set_title('Cost Distribution [%]')
+#     ax1.text(-0.2, 1.05, 'b)', transform=ax1.transAxes, fontsize=14, verticalalignment='top')
 
 #     # Percentual distribution plot for BAU scenario
 #     width = 0.2  # the width of the bars
 #     bottom = np.zeros(1)
 #     colors = [color_dict[label] for label in labels_BAU]
 #     ax2 = plt.subplot(gs[2])
-#     # Plot each component with specified colors
 #     for (base, base_count), color in zip(data_base.items(), colors):
 #         p = ax2.bar(categories, base_count, width, label=base, bottom=bottom, color=color)
 #         bottom += base_count
 
-#     ax2.set_title('Percentage distribution of costs in the BAU scenario')
-#     ax2.set_ylabel('Percentage')
-#     ax2.set_xlabel(f'$\\mathrm{{CO_2}}$  Emissions [{output_unit_BAU}]')
+#     ax2.set_title('Cost Distribution in BAU Scenario')
+#     ax2.text(-0.5, 1.05, 'c)', transform=ax2.transAxes, fontsize=14, verticalalignment='top')
+#     ax2.set_ylabel('Percentage [%]')
+#     #ax2.set_xlabel(f'$\\mathrm{{CO_2}}$  Emissions [{output_unit_BAU}]')
 #     ax2.margins(x=0.2)
-#     ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), shadow=True, ncol=2)
 
-#     plt.tight_layout()
+#     # Retrieve handles and labels
+#     handles, labels = ax0.get_legend_handles_labels()
+#     # Set the minimum threshold
+#     min_threshold = 1e-3
+#     # Filter out handles and labels where the corresponding y_values sum is below the minimum threshold
+#     filtered_handles_labels = [(h, l) for h, l in zip(handles, labels) if y_values[labels.index(l)].sum() > min_threshold]
+#     sorted_handles_labels = sorted(filtered_handles_labels, key=lambda x: y_values[labels.index(x[1])].sum(), reverse=True)
+#     handles, labels = zip(*sorted_handles_labels) if sorted_handles_labels else ([], [])
+#     fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.15), ncol=3)
 
-    if save_fig:
-        save_file_path = os.path.join(output_path, folder, 'Figures')
-        if not os.path.exists(save_file_path):
-            os.makedirs(save_file_path)
-        plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
-        print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
+
+#     plt.tight_layout(rect=[0, 0.05, 1, 1])
+#     #plt.rcParams.update({'font.size': 20})
+
+#     if save_fig:
+#         save_file_path = os.path.join(output_path, folder, 'Figures')
+#         if not os.path.exists(save_file_path):
+#             os.makedirs(save_file_path)
+#         plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
+#         print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
+
+
+
+#     if save_fig:
+#         save_file_path = os.path.join(output_path, folder, 'Figures')
+#         if not os.path.exists(save_file_path):
+#             os.makedirs(save_file_path)
+#         plt.savefig(os.path.join(save_file_path, file_title), bbox_inches='tight')
+#         print(f"Saving Pareto front for {file_title} as {save_file_path}\n")
 
 def plot_scenario_JS(ax, df_merge, us_gdf, column_name, title, default_vmax, norm, cmap):
     df_merge.crs = 'EPSG:4326'

@@ -1,11 +1,11 @@
-short_name,full_name
-PV, PV (Capex + Opex)
-battery, Battery (Capex + Opex)
-water_storage, Water Storage (Capex + Opex)
-irrigation_sys, Irrigation System (Opex)
-diesel_WP, Diesel Water Pump (Capex)
-el_WP, Electric Water Pump (Capex)
-diesel, Diesel (Import Cost)
-electricity, Grid Electricity (Import Cost)
-cost CO2, Cost Co2 Emissions
-blue_water, Water (Import Cost)
+short_name,full_name,color
+blue_water,Water (Import Cost),#527ad1
+PV,PV (Capex + Opex),#e6854b
+irrigation_sys,Irrigation System (Opex),#99a255
+electricity,Grid Electricity (Import Cost),#cd6161
+diesel,Diesel (Import Cost),#89633f
+el_WP,Electric Water Pump (Capex),#926eb5
+water_storage,Water Storage (Capex + Opex),#8cc6e2
+battery,Battery (Capex + Opex),#7acb63
+diesel_WP,Diesel Water Pump (Capex),#7a7a7a
+cost CO2,Cost Co2 Emissions,#d580c1
