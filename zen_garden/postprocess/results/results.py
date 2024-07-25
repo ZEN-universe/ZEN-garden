@@ -8,7 +8,7 @@ from zen_garden.postprocess.results.solution_loader import (
     ComponentType,
 )
 from zen_garden.postprocess.results.multi_hdf_loader import MultiHdfLoader
-from functools import cache
+from functools import cached_property, cache
 from zen_garden.model.default_config import Config, Analysis, Solver, System
 import importlib
 import os
@@ -440,8 +440,13 @@ class Results:
         units = res[scenario_name]
         if droplevel:
             # TODO make more flexible
-            loc_idx = ["node", "location", "edge"]
-            time_idx = ["year", "time_operation", "time_storage_level"]
+            loc_idx = ["node", "location", "edge", "set_location", "set_nodes"]
+            time_idx = [
+                "year",
+                "time_operation",
+                "time_storage_level",
+                "set_time_steps_operation",
+            ]
             drop_idx = pd.Index(loc_idx + time_idx).intersection(units.index.names)
             units.index = units.index.droplevel(drop_idx.to_list())
             units = units[~units.index.duplicated()]
@@ -648,7 +653,6 @@ class Results:
                 full_ts = self.get_full_ts(
                     component, scenario_name=scenario_name, year=year
                 )
-
             carrier_df = self.extract_carrier(full_ts, carrier, scenario_name)
             if carrier_df is not None:
                 if "node" in carrier_df.index.names:
