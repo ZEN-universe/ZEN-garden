@@ -8,7 +8,7 @@ from zen_garden.postprocess.results.solution_loader import (
     ComponentType,
 )
 from zen_garden.postprocess.results.multi_hdf_loader import MultiHdfLoader
-from functools import cached_property, cache
+from functools import cache
 from zen_garden.model.default_config import Config, Analysis, Solver, System
 import importlib
 import os
