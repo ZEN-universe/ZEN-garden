@@ -1,2 +1,2 @@
 technology,capacity_type, carrier, unit, unit_cap_demand, factor, max_value
-el_WP,power,,1000*m**3,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,2400
+el_WP,power,,1000*m**3,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,2000

@@ -1,3 +1,3 @@
 technology,capacity_type, carrier, unit, unit_cap_demand, factor, max_value
-,,diesel,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,950000
-,,electricity,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,950000
+,,diesel,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,940000
+,,electricity,MWh,$\mathrm{{10}}^{3}\mathrm{{m}}^{3}/\mathrm{{km}}^{3}$,1,940000
