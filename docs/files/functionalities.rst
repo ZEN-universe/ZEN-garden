@@ -6,6 +6,14 @@ ZEN-garden is an open source energy system optimization model that can be used t
 The model is developed in Python and uses the Linopy library to formulate the optimization problem.
 The optimization problem can be solved with open-source and commercial solvers, including HiGHs and Gurobi.
 
+Key features of ZEN-garden are:
+- Flexible modification of input data
+- Dataset tutorials
+- Unit handling: Unit conversion and consistency checks
+- Scaling
+- The model is flexible and can be easily adapted to different use cases.
+- The model is modular and can be easily extended with additional functionalities.
+
 Target group
 ------------
 The target group of ZEN-garden are researchers, policy makers, and other stakeholders who are interested in planning the energy transition.
