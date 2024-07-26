@@ -33,7 +33,8 @@ jobs:
       - name: Check commit messages for version bump
         id: check_commits
         run: |
-          message=${{ github.event.head_commit.message }}
+          message="${{ github.event.head_commit.message }}"
+          echo $message
           if contains($message, "[patch]"); then
             bump="patch"
           elif contains($message, "[minor]"); then
