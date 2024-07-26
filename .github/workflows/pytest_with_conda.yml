@@ -7,9 +7,9 @@ on:
   push:
     branches:
       - development
-  pull_request:
-    branches:
-      - development
+#  pull_request:
+#    branches:
+#      - development
 
 # Env variables
 env:
