@@ -34,11 +34,11 @@ jobs:
         id: check_commits
         run: |
           message="${{ github.event.head_commit.message }}"
-          if contains($message, "[patch]"); then
+          if [[ $message =~ "[patch]" ]]; then
             bump="patch"
-          elif contains($message, "[minor]"); then
+          elif [[ $message =~ "[minor]" ]]; then
             bump="minor"
-          elif contains($message, "[major]"); then
+          elif [[ $message =~ "[major]" ]]; then
             bump="major"
           else
             bump="none"
