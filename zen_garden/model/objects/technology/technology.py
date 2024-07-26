@@ -834,6 +834,10 @@ class TechnologyRules(GenericRule):
         mask_location.index.name = "set_location"
         mask_location[mask_location.index.isin(self.sets["set_edges"])] = 0
         mask_location = mask_location.to_xarray()
+        # mask match technology type and location
+        mask_transport_edge = (1-mask_technology_type) & (1-mask_location)
+        mask_not_transport_not_edge = mask_technology_type & mask_location
+        mask_technology_location = mask_transport_edge | mask_not_transport_not_edge
         # create xarray for previous years
         years = pd.MultiIndex.from_tuples(
             [(y, py) for y, py in
@@ -888,11 +892,14 @@ class TechnologyRules(GenericRule):
         lifetime_existing = self.parameters.lifetime_existing
         lifetime = self.parameters.lifetime
         kdr_existing = (1 - knowledge_depreciation_rate) ** (delta_years + lifetime - lifetime_existing)
-        capacity_existing_total = capacity_existing + spillover_rate * (capacity_existing.sum("set_location") - capacity_existing).where(mask_technology_type, 0)
         capacity_existing_total_nosr = capacity_existing
+        # capacity addition unbounded
+        capacity_addition_unbounded = self.parameters.capacity_addition_unbounded
+        capacity_addition_unbounded = capacity_addition_unbounded.broadcast_like(tdr)
+        capacity_addition_unbounded = capacity_addition_unbounded.where(mask_technology_location, 0)
         # build constraints for all nodes summed ("sn")
         lhs_sn = lp.merge(1*capacity_addition,-1*term_knowledge_no_spillover,-1*term_unbounded_addition, compat="broadcast_equals").sum("set_location")
-        rhs_sn = (tdr * (capacity_existing_total_nosr * kdr_existing).sum("set_technologies_existing") + self.parameters.capacity_addition_unbounded).sum("set_location")
+        rhs_sn = (tdr * (capacity_existing_total_nosr * kdr_existing).sum("set_technologies_existing") + capacity_addition_unbounded).sum("set_location")
         rhs_sn = rhs_sn.broadcast_like(lhs_sn.const)
         # mask for tdr == inf
         lhs_sn = self.align_and_mask(lhs_sn, mask_inf_tdr_sum)
@@ -902,8 +909,11 @@ class TechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_technology_diffusion_limit_total", constraints_sn)
         # build constraints for all nodes ("an") if spillover rate is not inf
         if spillover_rate != np.inf:
+            # existing capacities with spillover
+            capacity_existing_total = capacity_existing + spillover_rate * (
+                        capacity_existing.sum("set_location") - capacity_existing).where(mask_technology_type, 0)
             lhs_an = lp.merge(1*capacity_addition,-1*term_knowledge,-1*term_unbounded_addition, compat="broadcast_equals")
-            rhs_an = tdr * (capacity_existing_total * kdr_existing).sum("set_technologies_existing") + self.parameters.capacity_addition_unbounded
+            rhs_an = tdr * (capacity_existing_total * kdr_existing).sum("set_technologies_existing") + capacity_addition_unbounded
             rhs_an = rhs_an.broadcast_like(lhs_an.const)
             # mask for tdr == inf
             lhs_an = self.align_and_mask(lhs_an, mask_inf_tdr)

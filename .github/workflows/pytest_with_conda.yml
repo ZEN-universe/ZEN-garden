@@ -18,6 +18,7 @@ env:
 # Jobs
 jobs:
   matrix_prep:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
