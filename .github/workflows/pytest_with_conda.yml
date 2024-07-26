@@ -147,6 +147,8 @@ jobs:
       - name: Bump version
         if: env.bump != 'none'
         run: bump2version ${{ env.bump }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push changes
         if: env.bump != 'none'
