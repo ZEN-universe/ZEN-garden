@@ -10,6 +10,7 @@ authors = [
   ]
 version = "1.2.0"
 description="ZEN-garden is an optimization model of energy systems and value chains."
+requires-python= ">=3.10"
 
 dependencies = [
     "xarray",
@@ -50,3 +51,7 @@ dev = [
 ]
 
 gurobipy = ["gurobipy"]
+
+[project.urls]
+Homepage = "https://github.com/ZEN-universe/ZEN-garden"
+Documentation = "https://zen-garden.readthedocs.io/en/latest/"
