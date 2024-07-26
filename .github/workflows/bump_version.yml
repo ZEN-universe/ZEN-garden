@@ -28,10 +28,11 @@ jobs:
           current_version=$(grep -oP '(?<=version = ")[^"]*' pyproject.toml)
           echo "current_version=${current_version}" >> $GITHUB_ENV
 
+#          commits=${{join(github.event.commits.*.message, ', ') }}
       - name: Check commit messages for version bump
         id: check_commits
         run: |
-          commits=${{join(github.event.commits.*.message, ', ') }}
+          commits = github.event.commits.*.message
           if contains($commits, "[patch]"); then
             bump="patch"
           elif contains($commits, "[minor]"); then
