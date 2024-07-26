@@ -32,18 +32,16 @@ jobs:
       - name: Check commit messages for version bump
         id: check_commits
         run: |
-          commits=${{ github.event.commits.*.message }}
-          echo $commits
-#          if contains($commits, "[patch]"); then
-#            bump="patch"
-#          elif contains($commits, "[minor]"); then
-#            bump="minor"
-#          elif contains($commits, "[major]"); then
-#            bump="major"
-#          fi
-#          echo "bump=$bump"
-#          echo "bump=$bump" >> $GITHUB_ENV
-#
+          commits=${{join(github.event.commits.*.message, ', ') }}
+          if contains($commits, "[patch]"); then
+            bump="patch"
+          elif contains($commits, "[minor]"); then
+            bump="minor"
+          elif contains($commits, "[major]"); then
+            bump="major"
+          fi
+          echo "bump=$bump" >> $GITHUB_ENV
+#           echo "bump=$bump"
 #      - name: Bump version
 #        if: env.bump != 'none'
 #        run: bump2version ${{ env.bump }}
