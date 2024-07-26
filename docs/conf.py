@@ -78,7 +78,9 @@ html_title = "ZEN-garden"
 html_short_title = "ZEN-garden"
 
 # The name of an image file (relative to this directory)
-html_logo = "images/zen_garden_logo.png"
+html_logo = "images/zen_garden_logo_text.png"
+
+html_favicon = "_static/favicon.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
