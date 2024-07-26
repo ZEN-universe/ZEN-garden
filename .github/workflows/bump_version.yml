@@ -44,16 +44,17 @@ jobs:
             bump="none"
           fi
           echo "bump=$bump" >> $GITHUB_ENV
-#           echo "bump=$bump"
-#      - name: Bump version
-#        if: env.bump != 'none'
-#        run: bump2version ${{ env.bump }}
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - name: Push changes
-#        if: env.bump != 'none'
-#        run: |
-#          git push origin development --tags
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "bump=$bump"
+
+      - name: Bump version
+        if: env.bump != 'none'
+        run: bump2version ${{ env.bump }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push changes
+        if: env.bump != 'none'
+        run: |
+          git push origin development --tags
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
