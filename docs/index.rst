@@ -18,10 +18,9 @@ Documentation
    :maxdepth: 3
    :caption: Overview
 
-   documentation/functionalities
-   documentation/target_group
-   documentation/dependencies
-   documentation/license
+   files/functionalities
+   files/dependencies
+   files/license
 
 **User guide**
 
@@ -29,10 +28,10 @@ Documentation
    :maxdepth: 3
    :caption: User guide
 
-   documentation/installation
-   documentation/building_models
-   documentation/running_models   
-   documentation/analyzing_models
+   files/installation
+   files/building_models
+   files/running_models
+   files/analyzing_models
    
 **Dataset Examples**
 
@@ -47,9 +46,9 @@ Documentation
    :maxdepth: 3
    :caption: Contributing & Support
 
-   documentation/contributing
-   documentation/troubleshooting
-   documentation/get_help   
+   files/contributing
+   files/troubleshooting
+   files/get_help
 
 **References**
 
@@ -57,7 +56,7 @@ Documentation
    :maxdepth: 3
    :caption: References
 
-   documentation/api_reference
-   documentation/release_notes
-   documentation/citing   
-   documentation/zen_garden_developers
+   files/api_reference
+   files/release_notes
+   files/citing
+   files/zen_garden_developers
