@@ -134,11 +134,11 @@ jobs:
       - name: Check commit message for version bump
         id: check_commit
         run: |
-          if [[ "$(git log -1 --pretty=%B)" =~ "[bump version: patch]" ]]; then
+          if [[ "$(git log -1 --pretty=%B)" =~ "[patch]" ]]; then
             echo "bump=patch" >> $GITHUB_ENV
-          elif [[ "$(git log -1 --pretty=%B)" =~ "[bump version: minor]" ]]; then
+          elif [[ "$(git log -1 --pretty=%B)" =~ "[minor]" ]]; then
             echo "bump=minor" >> $GITHUB_ENV
-          elif [[ "$(git log -1 --pretty=%B)" =~ "[bump version: major]" ]]; then
+          elif [[ "$(git log -1 --pretty=%B)" =~ "[major]" ]]; then
             echo "bump=major" >> $GITHUB_ENV
           else
             echo "bump=none" >> $GITHUB_ENV
@@ -147,6 +147,8 @@ jobs:
       - name: Bump version
         if: env.bump != 'none'
         run: bump2version ${{ env.bump }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push changes
         if: env.bump != 'none'
