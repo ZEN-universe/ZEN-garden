@@ -1,0 +1,58 @@
+name: Bump version
+
+on:
+  push:
+    branches:
+      - development
+
+
+jobs:
+  bump-version:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: development
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install bump2version
+        run: pip install bump2version
+
+      - name: Extract Current Version
+        id: get_version
+        run: |
+          current_version=$(grep -oP '(?<=version = ")[^"]*' pyproject.toml)
+          echo "current_version=${current_version}" >> $GITHUB_ENV
+
+      - name: Check commit messages for version bump
+        id: check_commits
+        run: |
+          commits=${{join(github.event.commits.*.message, ', ') }}
+          echo $commits
+          if contains($commits, "[patch]"); then
+            bump="patch"
+          elif contains($commits, "[minor]"); then
+            bump="minor"
+          elif contains($commits, "[major]"); then
+            bump="major"
+          fi
+          echo "bump=$bump" 
+          echo "bump=$bump" >> $GITHUB_ENV
+
+      - name: Bump version
+        if: env.bump != 'none'
+        run: bump2version ${{ env.bump }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push changes
+        if: env.bump != 'none'
+        run: |
+          git push origin development --tags
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
