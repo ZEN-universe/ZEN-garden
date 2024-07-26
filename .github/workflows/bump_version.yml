@@ -13,44 +13,47 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: development
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install bump2version
-        run: pip install bump2version
-
-      - name: Extract Current Version
-        id: get_version
-        run: |
-          current_version=$(grep -oP '(?<=version = ")[^"]*' pyproject.toml)
-          echo "current_version=${current_version}" >> $GITHUB_ENV
-
-#          commits=${{join(github.event.commits.*.message, ', ') }}
-#      echo $message
-      - name: Check commit messages for version bump
-        id: check_commits
-        run: |
-          message="${{ github.event.head_commit.message }}"
-          if [[ $message =~ "[patch]" ]]; then
-            bump="patch"
-          elif [[ $message =~ "[minor]" ]]; then
-            bump="minor"
-          elif [[ $message =~ "[major]" ]]; then
-            bump="major"
-          else
-            bump="none"
-          fi
-          echo "bump=$bump" >> $GITHUB_ENV
-          echo "bump=$bump"
-
-      - name: Bump version
-        if: env.bump != 'none'
-        run: bump2version ${{ env.bump }}
+      - name: Bump version and push tag
+        uses: jasonamyers/github-bumpversion-action@v1.0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Set up Python
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: '3.10'
+#
+#      - name: Install bump2version
+#        run: pip install bump2version
+#
+#      - name: Extract Current Version
+#        id: get_version
+#        run: |
+#          current_version=$(grep -oP '(?<=version = ")[^"]*' pyproject.toml)
+#          echo "current_version=${current_version}" >> $GITHUB_ENV
+#
+##          commits=${{join(github.event.commits.*.message, ', ') }}
+##      echo $message
+#      - name: Check commit messages for version bump
+#        id: check_commits
+#        run: |
+#          message="${{ github.event.head_commit.message }}"
+#          if [[ $message =~ "[patch]" ]]; then
+#            bump="patch"
+#          elif [[ $message =~ "[minor]" ]]; then
+#            bump="minor"
+#          elif [[ $message =~ "[major]" ]]; then
+#            bump="major"
+#          else
+#            bump="none"
+#          fi
+#          echo "bump=$bump" >> $GITHUB_ENV
+#          echo "bump=$bump"
+#
+#      - name: Bump version
+#        if: env.bump != 'none'
+#        run: bump2version ${{ env.bump }}
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push changes
         if: env.bump != 'none'
