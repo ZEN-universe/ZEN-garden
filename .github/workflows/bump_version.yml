@@ -32,26 +32,27 @@ jobs:
       - name: Check commit messages for version bump
         id: check_commits
         run: |
-          commits = github.event.commits.*.message
-          if contains($commits, "[patch]"); then
-            bump="patch"
-          elif contains($commits, "[minor]"); then
-            bump="minor"
-          elif contains($commits, "[major]"); then
-            bump="major"
-          fi
-          echo "bump=$bump" 
-          echo "bump=$bump" >> $GITHUB_ENV
-
-      - name: Bump version
-        if: env.bump != 'none'
-        run: bump2version ${{ env.bump }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push changes
-        if: env.bump != 'none'
-        run: |
-          git push origin development --tags
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          commits=${{join(github.event.commits.*.message, ', ') }}
+          echo $commits
+#          if contains($commits, "[patch]"); then
+#            bump="patch"
+#          elif contains($commits, "[minor]"); then
+#            bump="minor"
+#          elif contains($commits, "[major]"); then
+#            bump="major"
+#          fi
+#          echo "bump=$bump"
+#          echo "bump=$bump" >> $GITHUB_ENV
+#
+#      - name: Bump version
+#        if: env.bump != 'none'
+#        run: bump2version ${{ env.bump }}
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Push changes
+#        if: env.bump != 'none'
+#        run: |
+#          git push origin development --tags
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
