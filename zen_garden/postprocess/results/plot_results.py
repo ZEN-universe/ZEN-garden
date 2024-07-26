@@ -1683,10 +1683,10 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     labels_BAU = []
 
     for tech_car in dfs_BAU['technology/carrier'].unique():
-        if dfs_BAU[dfs_BAU['technology/carrier'] == tech_car]['cost'].isnull().all() or dfs_BAU[dfs_BAU['technology/carrier'] == tech_car]['cost'].sum() == 0:
-            continue
-        if dfs_BAU[dfs_BAU['technology/carrier'] == tech_car]['cost'].sum() / dfs_BAU['cost'].sum() < 0.01:
-            continue
+        # if dfs_BAU[dfs_BAU['technology/carrier'] == tech_car]['cost'].isnull().all() or dfs_BAU[dfs_BAU['technology/carrier'] == tech_car]['cost'].sum() == 0:
+        #     continue
+        # if dfs_BAU[dfs_BAU['technology/carrier'] == tech_car]['cost'].sum() / dfs_BAU['cost'].sum() < 0.01:
+        #     continue
         y_values_BAU_dict[tech_car] = dfs_BAU[dfs_BAU['technology/carrier'] == tech_car]['cost'].values
         labels_BAU.append(tech_car)
 
@@ -1749,7 +1749,7 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     # Retrieve handles and labels
     handles, labels = ax0.get_legend_handles_labels()
     # Filter out handles and labels where the corresponding y_values sum is below the minimum threshold
-    min_threshold = 1e-1
+    min_threshold = 1e-8
     filtered_handles_labels = [(h, l) for h, l in zip(handles, labels) if y_values[labels.index(l)].sum() > min_threshold]
     sorted_handles_labels = sorted(filtered_handles_labels, key=lambda x: y_values[labels.index(x[1])].sum(), reverse=True)
     handles, labels = zip(*sorted_handles_labels) if sorted_handles_labels else ([], [])
