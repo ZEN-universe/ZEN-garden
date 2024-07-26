@@ -8,7 +8,6 @@ on:
 
 jobs:
   bump-version:
-    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
