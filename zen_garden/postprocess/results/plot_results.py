@@ -1635,7 +1635,7 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     file_title = 'cost_stacked'
 
     # Update rcParams to set the font size
-    plt.rcParams.update({'font.size': 14})  # Adjust the font size as needed
+    plt.rcParams.update({'font.size': 20})  # Adjust the font size as needed
 
     # Import the color definitions
     df_colors = pd.read_csv('stacked_plot.csv')
@@ -1721,7 +1721,7 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     ax0.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     ax0.set_ylabel(f'Cost [{output_unit_y_axis}]')
     ax0.set_title('Pareto Front: Cost vs $\\mathrm{{CO_2}}$ Emissions by Technology and Supplies')
-    ax0.text(0.01, 1.06, 'a)', transform=ax0.transAxes, fontsize=16, verticalalignment='top')
+    #ax0.text(0.01, 1.06, 'a)', transform=ax0.transAxes, fontsize=16, verticalalignment='top')
 
     # Percentual distribution plot
     ax1 = plt.subplot(gs[1])
@@ -1729,7 +1729,7 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
     ax1.set_xlabel(f'$\\mathrm{{CO_2}}$ Emissions [{output_unit_co2}]')
     ax1.set_ylabel('Percentage [%]')
     ax1.set_title('Cost Distribution [%]')
-    ax1.text(0.01, 1.06, 'b)', transform=ax1.transAxes, fontsize=16, verticalalignment='top')
+    #ax1.text(0.01, 1.06, 'b)', transform=ax1.transAxes, fontsize=16, verticalalignment='top')
 
     # Percentual distribution plot for BAU scenario
     width = 0.2  # the width of the bars
@@ -1741,7 +1741,7 @@ def plot_stacked_tech_car3(folder, output_path, df, units, point, dfs_BAU, save_
         bottom += base_count
 
     ax2.set_title('Cost Distribution in BAU Scenario')
-    ax2.text(-0.1, 1.06, 'c)', transform=ax2.transAxes, fontsize=16, verticalalignment='top')
+    #ax2.text(-0.1, 1.06, 'c)', transform=ax2.transAxes, fontsize=16, verticalalignment='top')
     ax2.set_ylabel('Percentage [%]')
     #ax2.set_xlabel(f'$\\mathrm{{CO_2}}$  Emissions [{output_unit_BAU}]')
     ax2.margins(x=0.2)
