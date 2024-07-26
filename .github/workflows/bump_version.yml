@@ -34,7 +34,6 @@ jobs:
         id: check_commits
         run: |
           message="${{ github.event.head_commit.message }}"
-          echo $message
           if contains($message, "[patch]"); then
             bump="patch"
           elif contains($message, "[minor]"); then
