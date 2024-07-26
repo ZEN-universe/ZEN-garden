@@ -32,7 +32,6 @@ jobs:
         id: check_commits
         run: |
           commits=${{join(github.event.commits.*.message, ', ') }}
-#          echo $commits
           if contains($commits, "[patch]"); then
             bump="patch"
           elif contains($commits, "[minor]"); then
