@@ -176,7 +176,10 @@ class Postprocess:
         benchmarking_data = {}
         # get the benchmarking data
         benchmarking_data["solving_time"] = self.model.solver_model.Runtime
-        benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
+        if self.solver.solver_options["Method"] == 2:
+            benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
+        else:
+            benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
         benchmarking_data["solver_status"] = self.model.solver_model.Status
         benchmarking_data["objective_value"] = self.model.objective_value
         benchmarking_data["scaling_time"] = self.scaling.scaling_time
