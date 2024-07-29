@@ -1320,8 +1320,8 @@ class StringUtils:
 
         return scenario_name,subfolder,param_map
 
-    @staticmethod
-    def get_model_name(analysis,system):
+    @classmethod
+    def setup_model_folder(cls,analysis,system):
         """
         return model name while conducting some tests
         :param analysis: analysis of optimization
@@ -1330,21 +1330,21 @@ class StringUtils:
         :return: output folder
         """
         model_name = os.path.basename(analysis["dataset"])
-        out_folder = StringUtils.get_output_folder(analysis,system)
+        out_folder = cls.setup_output_folder(analysis,system)
         return model_name,out_folder
 
-    @staticmethod
-    def get_output_folder(analysis,system):
+    @classmethod
+    def setup_output_folder(cls,analysis,system):
         """
         return model name while conducting some tests
         :param analysis: analysis of optimization
         :param system: system of optimization
         :return: output folder
         """
-        model_name = os.path.basename(analysis["dataset"])
         if not os.path.exists(analysis["folder_output"]):
             os.mkdir(analysis["folder_output"])
-        if not os.path.exists(out_folder := os.path.join(analysis["folder_output"], model_name)):
+        out_folder = cls.get_output_folder(analysis)
+        if not os.path.exists(out_folder):
             os.mkdir(out_folder)
         else:
             logging.warning(f"The output folder '{out_folder}' already exists")
@@ -1358,6 +1358,17 @@ class StringUtils:
                             os.unlink(file_path)
                         elif os.path.isdir(file_path):
                             shutil.rmtree(file_path)
+        return out_folder
+
+    @staticmethod
+    def get_output_folder(analysis):
+        """
+        return name of output folder
+        :param analysis: analysis of optimization
+        :return: output folder
+        """
+        model_name = os.path.basename(analysis["dataset"])
+        out_folder = os.path.join(analysis["folder_output"], model_name)
         return out_folder
 
 class ScenarioUtils:

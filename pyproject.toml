@@ -1,0 +1,57 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "zen_garden"
+authors = [
+  {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
+  {name = "Alissa Ganter", email = "aganter@ethz.ch"}
+  ]
+version = "1.2.1"
+description="ZEN-garden is an optimization model of energy systems and value chains."
+requires-python= ">=3.10"
+
+dependencies = [
+    "xarray",
+    "cython",
+    "pytest",
+    "numpy<=1.26.4",
+    "pandas",
+    "geopandas",
+    "scipy",
+    "coverage",
+    "pint",
+    "matplotlib",
+    "entsoe-py",
+    "tables",
+    "pydantic",
+    "tsam",
+    "h5py",
+    "filelock",
+    "ordered-set",
+    "pyogrio",
+    "psutil",
+    "linopy<=0.3.10",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx==7.3.7",
+    "myst-parser==3.0.1",
+    "sphinx-book-theme==1.1.3",
+    "pydata-sphinx-theme==0.15.4",
+    "sphinx-reredirects==0.1.4",
+    "nbsphinx==0.9.4",
+    "nbsphinx-link==1.3.0",
+]
+
+dev = [
+    "pytest",
+]
+
+gurobipy = ["gurobipy"]
+
+[project.urls]
+Homepage = "https://github.com/ZEN-universe/ZEN-garden"
+Documentation = "https://zen-garden.readthedocs.io/en/latest/"
